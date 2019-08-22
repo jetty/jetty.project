@@ -493,7 +493,7 @@ public class HttpTester
             }
         }
 
-        abstract public MetaData getInfo();
+        public abstract MetaData getInfo();
 
         @Override
         public int getHeaderCacheSize()

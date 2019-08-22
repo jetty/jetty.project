@@ -63,16 +63,14 @@ public class TestSecurityAnnotationConversions
 
     @ServletSecurity(value = @HttpConstraint(value = EmptyRoleSemantic.PERMIT, transportGuarantee = TransportGuarantee.CONFIDENTIAL, rolesAllowed = {
         "tom", "dick", "harry"
-    }), httpMethodConstraints =
-    {@HttpMethodConstraint(value = "GET")})
+    }), httpMethodConstraints = {@HttpMethodConstraint(value = "GET")})
     public static class Method1Servlet extends HttpServlet
     {
     }
 
     @ServletSecurity(value = @HttpConstraint(value = EmptyRoleSemantic.PERMIT, transportGuarantee = TransportGuarantee.CONFIDENTIAL, rolesAllowed = {
         "tom", "dick", "harry"
-    }), httpMethodConstraints =
-    {@HttpMethodConstraint(value = "GET", transportGuarantee = TransportGuarantee.CONFIDENTIAL)})
+    }), httpMethodConstraints = {@HttpMethodConstraint(value = "GET", transportGuarantee = TransportGuarantee.CONFIDENTIAL)})
     public static class Method2Servlet extends HttpServlet
     {
     }

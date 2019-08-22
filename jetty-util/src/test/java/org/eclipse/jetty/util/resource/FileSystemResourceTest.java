@@ -336,6 +336,7 @@ public class FileSystemResourceTest
             }
             catch (Exception e)
             {
+                // FIXME why ignoring exceptions??
             }
         }
 

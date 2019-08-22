@@ -31,7 +31,7 @@ import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 public class MyBinaryEchoSocket
 {
     @OnWebSocketMessage
-    public void onWebSocketText(Session session, byte buf[], int offset, int len)
+    public void onWebSocketText(Session session, byte[] buf, int offset, int len)
     {
         // Echo message back, asynchronously
         session.getRemote().sendBytes(ByteBuffer.wrap(buf, offset, len), null);

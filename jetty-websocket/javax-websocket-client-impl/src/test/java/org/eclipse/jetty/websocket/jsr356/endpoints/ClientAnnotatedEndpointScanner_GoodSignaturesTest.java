@@ -142,7 +142,7 @@ public class ClientAnnotatedEndpointScanner_GoodSignaturesTest
         // The JsrAnnotatedMetadata field that should be populated
         Field metadataField;
         // The expected parameters for the Callable found by the scanner
-        Class<?> expectedParameters[];
+        Class<?>[] expectedParameters;
 
         public Scenario(Class<?> pojo, Field metadataField, Class<?>... expectedParams)
         {

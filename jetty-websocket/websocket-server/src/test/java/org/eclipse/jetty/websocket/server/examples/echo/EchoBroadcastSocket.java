@@ -35,7 +35,7 @@ public class EchoBroadcastSocket
     protected Session session;
 
     @OnWebSocketMessage
-    public void onBinary(byte buf[], int offset, int len)
+    public void onBinary(byte[] buf, int offset, int len)
     {
         ByteBuffer data = ByteBuffer.wrap(buf, offset, len);
         for (EchoBroadcastSocket sock : BROADCAST)

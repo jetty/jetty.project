@@ -54,7 +54,7 @@ public class AnnotatedStreamingSocket
 
     // Binary
     @OnWebSocketMessage
-    public void onMessage(byte buf[], int offset, int length)
+    public void onMessage(byte[] buf, int offset, int length)
     {
     }
 

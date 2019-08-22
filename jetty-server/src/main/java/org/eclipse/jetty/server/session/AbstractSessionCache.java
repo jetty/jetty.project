@@ -723,8 +723,8 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
             LOG.debug("Checking for idle {}", session.getId());
         try (Lock s = session.lock())
         {
-            if (getEvictionPolicy() > 0 && session.isIdleLongerThan(getEvictionPolicy())
-                && session.isValid() && session.isResident() && session.getRequests() <= 0)
+            if (getEvictionPolicy() > 0 && session.isIdleLongerThan(getEvictionPolicy()) &&
+                    session.isValid() && session.isResident() && session.getRequests() <= 0)
             {
                 //Be careful with saveOnInactiveEviction - you may be able to re-animate a session that was
                 //being managed on another node and has expired.

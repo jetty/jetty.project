@@ -223,12 +223,13 @@ public class GracefulStopTest
                         {
                             try (Socket s = new Socket("127.0.0.1", port))
                             {
+                                // no op
                             }
                             throw new IllegalStateException();
                         }
                         catch (ConnectException e)
                         {
-
+                            // no op
                         }
 
                         // Try another request on existing connection
@@ -298,6 +299,7 @@ public class GracefulStopTest
                                 }
                                 catch (InterruptedException e)
                                 {
+                                    // no op
                                 }
                                 finally
                                 {

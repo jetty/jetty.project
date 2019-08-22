@@ -83,7 +83,7 @@ public class ServletRequestLogTest
     }
 
     @SuppressWarnings("serial")
-    private static abstract class AbstractTestServlet extends HttpServlet
+    private abstract static class AbstractTestServlet extends HttpServlet
     {
         @Override
         public String toString()

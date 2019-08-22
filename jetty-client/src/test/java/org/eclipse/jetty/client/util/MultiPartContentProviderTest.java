@@ -435,7 +435,7 @@ public class MultiPartContentProviderTest extends AbstractHttpClientServerTest
         assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
     }
 
-    private static abstract class AbstractMultiPartHandler extends AbstractHandler
+    private abstract static class AbstractMultiPartHandler extends AbstractHandler
     {
         @Override
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException

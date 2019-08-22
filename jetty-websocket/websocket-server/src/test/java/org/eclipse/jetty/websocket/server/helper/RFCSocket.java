@@ -39,7 +39,7 @@ public class RFCSocket
     private Session session;
 
     @OnWebSocketMessage
-    public void onBinary(byte buf[], int offset, int len) throws IOException
+    public void onBinary(byte[] buf, int offset, int len) throws IOException
     {
         LOG.debug("onBinary(byte[{}],{},{})", buf.length, offset, len);
 

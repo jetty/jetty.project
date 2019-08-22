@@ -37,7 +37,7 @@ import static org.hamcrest.Matchers.is;
 public class LifeCycleListenerNestedTest
 {
     // Set this true to use test-specific workaround.
-    private final boolean WORKAROUND = false;
+    private final boolean workaround = false;
 
     public static class Foo extends ContainerLifeCycle
     {
@@ -186,7 +186,7 @@ public class LifeCycleListenerNestedTest
 
         CapturingListener listener = new CapturingListener();
         foo.addLifeCycleListener(listener);
-        if (WORKAROUND)
+        if (workaround)
             foo.addEventListener(listener);
 
         try
@@ -217,7 +217,7 @@ public class LifeCycleListenerNestedTest
 
         CapturingListener listener = new CapturingListener();
         foo.addLifeCycleListener(listener);
-        if (WORKAROUND)
+        if (workaround)
             foo.addEventListener(listener);
 
         Bar bara = new Bar("a");
@@ -255,7 +255,7 @@ public class LifeCycleListenerNestedTest
 
         CapturingListener listener = new CapturingListener();
         foo.addLifeCycleListener(listener);
-        if (WORKAROUND)
+        if (workaround)
             foo.addEventListener(listener);
 
         try
