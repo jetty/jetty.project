@@ -116,7 +116,7 @@ public class CookieCutter_LenientTest
             Arguments.of("x=\"abc\\", "x", "\"abc\\"),
 
             // UTF-8 raw values (not encoded) - VIOLATION of RFC6265
-            Arguments.of("2sides=\u262F", "2sides", "\u262f"), // 2 byte (YIN YANG)
+            Arguments.of("2sides=\u262F", null, null), // 2 byte (YIN YANG) - rejected due to not being DQUOTED
             Arguments.of("currency=\"\u20AC\"", "currency", "\u20AC"), // 3 byte (EURO SIGN)
             Arguments.of("gothic=\"\uD800\uDF48\"", "gothic", "\uD800\uDF48"), // 4 byte (GOTHIC LETTER HWAIR)
 

@@ -314,7 +314,7 @@ public class CookieCutter
 
                                 if (_compliance == CookieCompliance.RFC6265)
                                 {
-                                    if (isRFC6265RejectedCharacter(c))
+                                    if (isRFC6265RejectedCharacter(inQuoted, c))
                                     {
                                         reject = true;
                                     }
@@ -368,7 +368,7 @@ public class CookieCutter
 
                                 if (_compliance == CookieCompliance.RFC6265)
                                 {
-                                    if (isRFC6265RejectedCharacter(c))
+                                    if (isRFC6265RejectedCharacter(inQuoted, c))
                                     {
                                         reject = true;
                                     }
@@ -388,20 +388,29 @@ public class CookieCutter
         _lastCookies = _cookies;
     }
 
-    protected boolean isRFC6265RejectedCharacter(char c)
+    protected boolean isRFC6265RejectedCharacter(boolean inQuoted, char c)
     {
-        // We only reject if a Control Character is encountered
-        if (Character.isISOControl(c))
+        if (inQuoted)
         {
-            return true;
+            // We only reject if a Control Character is encountered
+            if (Character.isISOControl(c))
+            {
+                return true;
+            }
         }
-
-        /* TODO: Should we also reject for the complete list of invalid characters in RFC6265?
-         *
-         * US-ASCII characters excluding CTLs,
-         * whitespace DQUOTE, comma, semicolon,
-         * and backslash
-         */
+        else
+        {
+            /* From RFC6265 - Section 4.1.1 - Syntax
+             *  cookie-octet  = %x21 / %x23-2B / %x2D-3A / %x3C-5B / %x5D-7E
+             *                  ; US-ASCII characters excluding CTLs,
+             *                  ; whitespace DQUOTE, comma, semicolon,
+             *                  ; and backslash
+             */
+            return Character.isISOControl(c) || // control characters
+                c > 127 || // 8-bit characters
+                c == ',' || // comma
+                c == ';'; // semicolon
+        }
 
         return false;
     }
