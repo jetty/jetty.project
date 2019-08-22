@@ -196,7 +196,7 @@ public class JarResourceTest
         Path testJar = MavenTestingUtils.getTestResourcePathFile("jar-file-resource.jar");
         String uri = "jar:" + testJar.toUri().toASCIIString() + "!/";
 
-        Resource resource = new JarFileResource(URI.create(uri).toURL());
+        Resource resource = new JarFileResource(URI.create(uri).toURL(),false);
         Resource rez = resource.addPath("rez/");
 
         assertThat("path /rez/ is a dir", rez.isDirectory(), is(true));
@@ -224,7 +224,7 @@ public class JarResourceTest
         Path testJar = MavenTestingUtils.getTestResourcePathFile("jar-file-resource.jar");
         String uri = "jar:" + testJar.toUri().toASCIIString() + "!/";
 
-        Resource resource = new JarFileResource(URI.create(uri).toURL());
+        Resource resource = new JarFileResource(URI.create(uri).toURL(),false);
         Resource rez = resource.addPath("rez/oddities/");
 
         assertThat("path /rez/oddities/ is a dir", rez.isDirectory(), is(true));
@@ -248,7 +248,7 @@ public class JarResourceTest
         Path testJar = MavenTestingUtils.getTestResourcePathFile("jar-file-resource.jar");
         String uri = "jar:" + testJar.toUri().toASCIIString() + "!/";
 
-        Resource resource = new JarFileResource(URI.create(uri).toURL());
+        Resource resource = new JarFileResource(URI.create(uri).toURL(),false);
         Resource anotherDir = resource.addPath("rez/another dir/");
 
         assertThat("path /rez/another dir/ is a dir", anotherDir.isDirectory(), is(true));
