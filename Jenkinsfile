@@ -156,4 +156,5 @@ def mavenBuild(jdk, cmdline, mvnName, junitPublishDisabled) {
   }
 }
 
+
 // vim: et:ts=2:sw=2:ft=groovy
