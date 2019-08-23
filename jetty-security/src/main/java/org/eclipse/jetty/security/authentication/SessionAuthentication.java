@@ -23,7 +23,6 @@ import java.io.ObjectInputStream;
 import java.io.Serializable;
 import javax.servlet.http.HttpSession;
 import javax.servlet.http.HttpSessionActivationListener;
-import javax.servlet.http.HttpSessionBindingEvent;
 import javax.servlet.http.HttpSessionBindingListener;
 import javax.servlet.http.HttpSessionEvent;
 
@@ -112,17 +111,5 @@ public class SessionAuthentication extends AbstractUserAuthentication
         {
             _session = se.getSession();
         }
-    }
-
-    @Override
-    @Deprecated
-    public void valueBound(HttpSessionBindingEvent event)
-    {
-    }
-
-    @Override
-    @Deprecated
-    public void valueUnbound(HttpSessionBindingEvent event)
-    {
     }
 }
