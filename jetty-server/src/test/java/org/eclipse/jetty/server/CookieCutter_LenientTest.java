@@ -60,12 +60,17 @@ public class CookieCutter_LenientTest
             //   quoted-string  = ( <"> *(qdtext) <"> )
             //   qdtext         = <any TEXT except <">>
 
+            // rejected, as name cannot be DQUOTED
+            Arguments.of("\"a\"=bcd", null, null),
+            Arguments.of("\"a\"=\"b c d\"", null, null),
+
             // lenient with spaces and EOF
             Arguments.of("abc=", "abc", ""),
             Arguments.of("abc = ", "abc", ""),
             Arguments.of("abc = ;", "abc", ""),
             Arguments.of("abc = ; ", "abc", ""),
             Arguments.of("abc = x ", "abc", "x"),
+            Arguments.of("abc = e f g ", "abc", "e f g"),
             Arguments.of("abc=\"\"", "abc", ""),
             Arguments.of("abc= \"\" ", "abc", ""),
             Arguments.of("abc= \"x\" ", "abc", "x"),
@@ -110,28 +115,29 @@ public class CookieCutter_LenientTest
             // Unterminated Quotes with trailing escape
             Arguments.of("x=\"abc\\", "x", "\"abc\\"),
 
-            // UTF-8 values
-            Arguments.of("2sides=\u262F", "2sides", "\u262f"), // 2 byte
-            Arguments.of("currency=\"\u20AC\"", "currency", "\u20AC"), // 3 byte
-            Arguments.of("gothic=\"\uD800\uDF48\"", "gothic", "\uD800\uDF48"), // 4 byte
+            // UTF-8 raw values (not encoded) - VIOLATION of RFC6265
+            Arguments.of("2sides=\u262F", null, null), // 2 byte (YIN YANG) - rejected due to not being DQUOTED
+            Arguments.of("currency=\"\u20AC\"", "currency", "\u20AC"), // 3 byte (EURO SIGN)
+            Arguments.of("gothic=\"\uD800\uDF48\"", "gothic", "\uD800\uDF48"), // 4 byte (GOTHIC LETTER HWAIR)
 
             // Spaces
             Arguments.of("foo=bar baz", "foo", "bar baz"),
             Arguments.of("foo=\"bar baz\"", "foo", "bar baz"),
             Arguments.of("z=a b c d e f g", "z", "a b c d e f g"),
 
-            // Bad tspecials usage
+            // Bad tspecials usage - VIOLATION of RFC6265
             Arguments.of("foo=bar;baz", "foo", "bar"),
             Arguments.of("foo=\"bar;baz\"", "foo", "bar;baz"),
             Arguments.of("z=a;b,c:d;e/f[g]", "z", "a"),
             Arguments.of("z=\"a;b,c:d;e/f[g]\"", "z", "a;b,c:d;e/f[g]"),
+            Arguments.of("name=quoted=\"\\\"badly\\\"\"", "name", "quoted=\"\\\"badly\\\"\""), // someone attempting to escape a DQUOTE from within a DQUOTED pair)
 
             // Quoted with other Cookie keywords
             Arguments.of("x=\"$Version=0\"", "x", "$Version=0"),
             Arguments.of("x=\"$Path=/\"", "x", "$Path=/"),
             Arguments.of("x=\"$Path=/ $Domain=.foo.com\"", "x", "$Path=/ $Domain=.foo.com"),
             Arguments.of("x=\" $Path=/ $Domain=.foo.com \"", "x", " $Path=/ $Domain=.foo.com "),
-            Arguments.of("a=\"b; $Path=/a; c=d; $PATH=/c; e=f\"; $Path=/e/", "a", "b; $Path=/a; c=d; $PATH=/c; e=f"),
+            Arguments.of("a=\"b; $Path=/a; c=d; $PATH=/c; e=f\"; $Path=/e/", "a", "b; $Path=/a; c=d; $PATH=/c; e=f"), // VIOLATES RFC6265
 
             // Lots of equals signs
             Arguments.of("query=b=c&d=e", "query", "b=c&d=e"),
@@ -142,7 +148,7 @@ public class CookieCutter_LenientTest
             // Google cookies (seen in wild, has `tspecials` of ':' in value)
             Arguments.of("GAPS=1:A1aaaAaAA1aaAAAaa1a11a:aAaaAa-aaA1-", "GAPS", "1:A1aaaAaAA1aaAAAaa1a11a:aAaaAa-aaA1-"),
 
-            // Strong abuse of cookie spec (lots of tspecials)
+            // Strong abuse of cookie spec (lots of tspecials) - VIOLATION of RFC6265
             Arguments.of("$Version=0; rToken=F_TOKEN''!--\"</a>=&{()}", "rToken", "F_TOKEN''!--\"</a>=&{()}"),
 
             // Commas that were not commas
