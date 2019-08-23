@@ -221,7 +221,6 @@ public class WebSocketProxyTest
         assertThat(closeStatus.getReason(), containsString("Failed to upgrade to websocket: Unexpected HTTP Response Status Code:"));
     }
 
-
     @Test
     public void testClientError() throws Exception
     {
@@ -241,7 +240,7 @@ public class WebSocketProxyTest
             ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(_client, new URI("ws://localhost:8080/proxy/"), clientFrameHandler);
             upgradeRequest.setConfiguration(defaultCustomizer);
             CompletableFuture<CoreSession> response = _client.connect(upgradeRequest);
-            Exception e = assertThrows(ExecutionException.class, ()->response.get(5, TimeUnit.SECONDS));
+            Exception e = assertThrows(ExecutionException.class, () -> response.get(5, TimeUnit.SECONDS));
             assertThat(e.getMessage(), containsString("simulated client onOpen error"));
             assertTrue(clientFrameHandler.closeLatch.await(5, TimeUnit.SECONDS));
             assertTrue(serverFrameHandler.closeLatch.await(5, TimeUnit.SECONDS));
