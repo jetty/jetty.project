@@ -21,6 +21,8 @@ package org.eclipse.jetty.http2;
 import java.io.EOFException;
 import java.io.IOException;
 import java.nio.channels.WritePendingException;
+import java.util.ArrayDeque;
+import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
@@ -52,6 +54,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
 {
     private static final Logger LOG = Log.getLogger(HTTP2Stream.class);
 
+    private final Queue<DataEntry> dataQueue = new ArrayDeque<>();
     private final AtomicReference<Object> attachment = new AtomicReference<>();
     private final AtomicReference<ConcurrentMap<String, Object>> attributes = new AtomicReference<>();
     private final AtomicReference<CloseState> closeState = new AtomicReference<>(CloseState.NOT_CLOSED);
@@ -67,6 +70,8 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
     private Listener listener;
     private boolean remoteReset;
     private long dataLength;
+    private long dataDemand;
+    private boolean dataProcess;
 
     public HTTP2Stream(Scheduler scheduler, ISession session, int streamId, MetaData.Request request, boolean local)
     {
@@ -76,6 +81,8 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
         this.request = request;
         this.local = local;
         this.dataLength = Long.MIN_VALUE;
+        // Deliver the first DATA frame.
+        this.dataDemand = 1;
     }
 
     @Override
@@ -343,10 +350,80 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
             }
         }
 
-        if (updateClose(frame.isEndStream(), CloseState.Event.RECEIVED))
-            session.removeStream(this);
+        boolean proceed = false;
+        DataEntry entry = new DataEntry(frame, callback);
+        synchronized (this)
+        {
+            dataQueue.offer(entry);
+            if (!dataProcess)
+                dataProcess = proceed = dataDemand > 0;
+            if (LOG.isDebugEnabled())
+                LOG.debug("{} data processing of {} for {}", proceed ? "Proceeding" : "Stalling", frame, this);
+        }
+        if (proceed)
+            processData();
+    }
 
-        notifyData(this, frame, callback);
+    @Override
+    public void demand(long n)
+    {
+        if (n <= 0)
+            throw new IllegalArgumentException("Invalid demand " + n);
+        boolean proceed = false;
+        synchronized (this)
+        {
+            dataDemand = addDemand(dataDemand, n);
+            if (!dataProcess)
+                dataProcess = proceed = !dataQueue.isEmpty();
+            if (LOG.isDebugEnabled())
+                LOG.debug("Demand {}/{}, {} data processing for {}", n, dataDemand, proceed ? "proceeding" : "stalling", this);
+        }
+        if (proceed)
+            processData();
+    }
+
+    private void processData()
+    {
+        while (true)
+        {
+            DataEntry dataEntry;
+            synchronized (this)
+            {
+                if (dataQueue.isEmpty() || dataDemand == 0)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Stalling data processing for {}", this);
+                    dataProcess = false;
+                    return;
+                }
+                --dataDemand;
+                dataEntry = dataQueue.poll();
+            }
+            DataFrame frame = dataEntry.frame;
+            if (updateClose(frame.isEndStream(), CloseState.Event.RECEIVED))
+                session.removeStream(this);
+            notifyDataRequested(this, frame, dataEntry.callback);
+        }
+    }
+
+    private long demand()
+    {
+        synchronized (this)
+        {
+            return dataDemand;
+        }
+    }
+
+    private static long addDemand(long x, long y)
+    {
+        try
+        {
+            return Math.addExact(x, y);
+        }
+        catch (ArithmeticException e)
+        {
+            return Long.MAX_VALUE;
+        }
     }
 
     private void onReset(ResetFrame frame, Callback callback)
@@ -573,14 +650,14 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
         }
     }
 
-    private void notifyData(Stream stream, DataFrame frame, Callback callback)
+    private void notifyDataRequested(Stream stream, DataFrame frame, Callback callback)
     {
         Listener listener = this.listener;
         if (listener != null)
         {
             try
             {
-                listener.onData(stream, frame, callback);
+                listener.onDataRequested(stream, frame, callback);
             }
             catch (Throwable x)
             {
@@ -682,16 +759,29 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
     @Override
     public String toString()
     {
-        return String.format("%s@%x#%d{sendWindow=%s,recvWindow=%s,reset=%b/%b,%s,age=%d,attachment=%s}",
+        return String.format("%s@%x#%d{sendWindow=%s,recvWindow=%s,demand=%d,reset=%b/%b,%s,age=%d,attachment=%s}",
             getClass().getSimpleName(),
             hashCode(),
             getId(),
             sendWindow,
             recvWindow,
+            demand(),
             localReset,
             remoteReset,
             closeState,
             TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - timeStamp),
             attachment);
+    }
+
+    private static class DataEntry
+    {
+        private final DataFrame frame;
+        private final Callback callback;
+
+        private DataEntry(DataFrame frame, Callback callback)
+        {
+            this.frame = frame;
+            this.callback = callback;
+        }
     }
 }

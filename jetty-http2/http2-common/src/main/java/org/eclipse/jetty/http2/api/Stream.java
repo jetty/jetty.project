@@ -29,7 +29,7 @@ import org.eclipse.jetty.util.Promise;
  * <p>A {@link Stream} represents a bidirectional exchange of data on top of a {@link Session}.</p>
  * <p>Differently from socket streams, where the input and output streams are permanently associated
  * with the socket (and hence with the connection that the socket represents), there can be multiple
- * HTTP/2 streams present concurrent for a HTTP/2 session.</p>
+ * HTTP/2 streams present concurrently for a HTTP/2 session.</p>
  * <p>A {@link Stream} maps to a HTTP request/response cycle, and after the request/response cycle is
  * completed, the stream is closed and removed from the session.</p>
  * <p>Like {@link Session}, {@link Stream} is the active part and by calling its API applications
@@ -130,8 +130,24 @@ public interface Stream
     public void setIdleTimeout(long idleTimeout);
 
     /**
+     * <p>Demands {@code n} more {@code DATA} frames for this stream.</p>
+     *
+     * @param n the increment of the demand, must be greater than zero
+     * @see Listener#onDataRequested(Stream, DataFrame, Callback)
+     */
+    public void demand(long n);
+
+    /**
      * <p>A {@link Stream.Listener} is the passive counterpart of a {@link Stream} and receives
      * events happening on a HTTP/2 stream.</p>
+     * <p>HTTP/2 data is flow controlled - this means that only a finite number of data events
+     * are delivered, until the flow control window is exhausted.</p>
+     * <p>Applications control the delivery of data events by requesting them via
+     * {@link Stream#demand(long)}; the first event is always delivered, while subsequent
+     * events must be explicitly demanded.</p>
+     * <p>Applications control the HTTP/2 flow control by completing the callback associated
+     * with data events - this allows the implementation to recycle the data buffer and
+     * eventually enlarges the flow control window so that the sender can send more data.</p>
      *
      * @see Stream
      */
@@ -166,12 +182,30 @@ public interface Stream
 
         /**
          * <p>Callback method invoked when a DATA frame has been received.</p>
+         * <p>When this method is called, the {@link #demand(long) demand} has
+         * already been incremented by 1.</p>
+         *
+         * @param stream the stream
+         * @param frame the DATA frame received
+         * @param callback the callback to complete when the bytes of the DATA frame have been consumed
+         * @see #onDataRequested(Stream, DataFrame, Callback)
+         */
+        public void onData(Stream stream, DataFrame frame, Callback callback);
+
+        /**
+         * <p>Callback method invoked when a DATA frame has been demanded.</p>
+         * <p>Implementations of this method must arrange to call (within the
+         * method or otherwise asynchronously) {@link #demand(long)}.</p>
          *
          * @param stream the stream
          * @param frame the DATA frame received
          * @param callback the callback to complete when the bytes of the DATA frame have been consumed
          */
-        public void onData(Stream stream, DataFrame frame, Callback callback);
+        public default void onDataRequested(Stream stream, DataFrame frame, Callback callback)
+        {
+            stream.demand(1);
+            onData(stream, frame, callback);
+        }
 
         /**
          * <p>Callback method invoked when a RST_STREAM frame has been received for this stream.</p>
