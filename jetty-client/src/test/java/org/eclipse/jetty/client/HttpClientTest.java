@@ -1810,7 +1810,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         }
     }
 
-    public static abstract class RetryListener implements Response.CompleteListener
+    public abstract static class RetryListener implements Response.CompleteListener
     {
         private final HttpClient client;
         private final String scheme;

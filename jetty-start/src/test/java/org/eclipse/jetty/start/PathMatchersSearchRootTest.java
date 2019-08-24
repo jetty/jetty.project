@@ -41,7 +41,9 @@ public class PathMatchersSearchRootTest
         {
             // absolute first
             arguments.add(Arguments.of("/opt/app/*.jar", "/opt/app"));
+            //@checkstyle-disable-check : LegacyMethodSeparators
             arguments.add(Arguments.of("/lib/jvm/**/jre/lib/*.jar", "/lib/jvm"));
+            //@checkstyle-enable-check :  LegacyMethodSeparators
             arguments.add(Arguments.of("glob:/var/lib/*.xml", "/var/lib"));
             arguments.add(Arguments.of("glob:/var/lib/*.{xml,java}", "/var/lib"));
             arguments.add(Arguments.of("glob:/opt/corporate/lib-{dev,prod}/*.ini", "/opt/corporate"));

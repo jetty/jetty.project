@@ -64,7 +64,7 @@ public final class Hex
         return ByteBuffer.wrap(asByteArray(hstr));
     }
 
-    public static String asHex(byte buf[])
+    public static String asHex(byte[] buf)
     {
         int len = buf.length;
         char[] out = new char[len * 2];

@@ -22,6 +22,7 @@
  * To change the template for this generated file go to
  * Window&gt;Preferences&gt;Java&gt;Code Generation&gt;Code and Comments
  */
+
 package org.eclipse.jetty.server;
 
 import java.io.BufferedReader;
@@ -145,7 +146,7 @@ public class HttpConnectionTest
      * HTTP/0.9 does not support HttpVersion (this is a bad request)
      */
     @Test
-    public void testHttp09_NoVersion() throws Exception
+    public void testHttp09NoVersion() throws Exception
     {
         connector.getConnectionFactory(HttpConnectionFactory.class).setHttpCompliance(HttpCompliance.RFC2616);
         String request = "GET / HTTP/0.9\r\n\r\n";
@@ -162,7 +163,7 @@ public class HttpConnectionTest
      * HTTP/0.9 does not support headers
      */
     @Test
-    public void testHttp09_NoHeaders() throws Exception
+    public void testHttp09NoHeaders() throws Exception
     {
         connector.getConnectionFactory(HttpConnectionFactory.class).setHttpCompliance(HttpCompliance.RFC2616);
         // header looking like another request is ignored
@@ -176,7 +177,7 @@ public class HttpConnectionTest
      * Http/0.9 does not support pipelining.
      */
     @Test
-    public void testHttp09_MultipleRequests() throws Exception
+    public void testHttp09MultipleRequests() throws Exception
     {
         connector.getConnectionFactory(HttpConnectionFactory.class).setHttpCompliance(HttpCompliance.RFC2616);
 
@@ -193,7 +194,7 @@ public class HttpConnectionTest
      * Ensure that excessively large hexadecimal chunk body length is parsed properly.
      */
     @Test
-    public void testHttp11_ChunkedBodyTruncation() throws Exception
+    public void testHttp11ChunkedBodyTruncation() throws Exception
     {
         String request = "POST /?id=123 HTTP/1.1\r\n" +
             "Host: local\r\n" +
@@ -222,10 +223,10 @@ public class HttpConnectionTest
      * More then 1 Content-Length is a bad requests per HTTP rfcs.
      */
     @Test
-    public void testHttp11_MultipleContentLength() throws Exception
+    public void testHttp11MultipleContentLength() throws Exception
     {
         HttpParser.LOG.info("badMessage: 400 Bad messages EXPECTED...");
-        int contentLengths[][] = {
+        int[][] contentLengths = {
             {0, 8},
             {8, 0},
             {8, 8},
@@ -266,10 +267,10 @@ public class HttpConnectionTest
      * More then 1 Content-Length is a bad requests per HTTP rfcs.
      */
     @Test
-    public void testHttp11_ContentLengthAndChunk() throws Exception
+    public void testHttp11ContentLengthAndChunk() throws Exception
     {
         HttpParser.LOG.info("badMessage: 400 Bad messages EXPECTED...");
-        int contentLengths[][] = {
+        int[][] contentLengths = {
             {-1, 8},
             {8, -1},
             {8, -1, 8},
@@ -403,7 +404,7 @@ public class HttpConnectionTest
     }
 
     @Test
-    public void test_0_9() throws Exception
+    public void test09() throws Exception
     {
         connector.getConnectionFactory(HttpConnectionFactory.class).setHttpCompliance(HttpCompliance.RFC2616_LEGACY);
         LocalEndPoint endp = connector.executeRequest("GET /R1\n");

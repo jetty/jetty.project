@@ -248,7 +248,6 @@ public class PartialListenerTest
         }
     }
 
-
     public static class PartialCreator implements WebSocketCreator
     {
         public PartialEndpoint partialEndpoint;

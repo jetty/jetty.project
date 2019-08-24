@@ -461,6 +461,7 @@ public class SslConnectionTest
                 }
                 catch (SocketTimeoutException e)
                 {
+                    // no op
                 }
 
                 assertTrue(__onIncompleteFlush.get());
@@ -507,6 +508,7 @@ public class SslConnectionTest
                 }
                 catch (SocketTimeoutException e)
                 {
+                    // no op
                 }
 
                 __blockFor.set(0);

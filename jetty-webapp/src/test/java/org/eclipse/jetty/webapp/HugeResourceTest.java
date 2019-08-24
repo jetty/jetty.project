@@ -48,6 +48,9 @@ import org.eclipse.jetty.client.util.MultiPartContentProvider;
 import org.eclipse.jetty.client.util.PathContentProvider;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpConnectionFactory;
+import org.eclipse.jetty.server.MultiPartFormDataCompliance;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.DefaultHandler;
@@ -166,7 +169,9 @@ public class HugeResourceTest
     public void startServer() throws Exception
     {
         server = new Server();
-        ServerConnector connector = new ServerConnector(server);
+        HttpConfiguration httpConfig = new HttpConfiguration();
+        httpConfig.setMultiPartFormDataCompliance(MultiPartFormDataCompliance.RFC7578);
+        ServerConnector connector = new ServerConnector(server, new HttpConnectionFactory(httpConfig));
         connector.setPort(0);
         server.addConnector(connector);
 

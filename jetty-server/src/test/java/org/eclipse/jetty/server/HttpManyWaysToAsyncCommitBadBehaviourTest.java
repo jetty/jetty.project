@@ -46,7 +46,7 @@ import static org.hamcrest.Matchers.is;
 
 public class HttpManyWaysToAsyncCommitBadBehaviourTest extends AbstractHttpTest
 {
-    private final String CONTEXT_ATTRIBUTE = getClass().getName() + ".asyncContext";
+    private final String contextAttribute = getClass().getName() + ".asyncContext";
 
     public static Stream<Arguments> httpVersions()
     {
@@ -95,7 +95,7 @@ public class HttpManyWaysToAsyncCommitBadBehaviourTest extends AbstractHttpTest
                 return;
             }
 
-            if (request.getAttribute(CONTEXT_ATTRIBUTE) == null)
+            if (request.getAttribute(contextAttribute) == null)
             {
                 final AsyncContext asyncContext = baseRequest.startAsync();
                 new Thread(new Runnable()
