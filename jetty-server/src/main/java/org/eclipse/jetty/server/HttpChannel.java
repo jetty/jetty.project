@@ -70,6 +70,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
  */
 public class HttpChannel implements Runnable, HttpOutput.Interceptor
 {
+    public static Listener NOOP_LISTENER = new Listener(){};
     private static final Logger LOG = Log.getLogger(HttpChannel.class);
 
     private final AtomicBoolean _committed = new AtomicBoolean();
@@ -1204,8 +1205,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         {
         }
     }
-
-    private static Listener NOOP_LISTENER = new Listener(){};
 
     private class SendCallback extends Callback.Nested
     {

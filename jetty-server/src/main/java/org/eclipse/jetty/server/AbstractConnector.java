@@ -155,7 +155,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     private final Set<EndPoint> _endpoints = Collections.newSetFromMap(new ConcurrentHashMap<>());
     private final Set<EndPoint> _immutableEndPoints = Collections.unmodifiableSet(_endpoints);
     private final Graceful.Shutdown _shutdown = new Graceful.Shutdown();
-    private HttpChannel.Listener _httpChannelListeners;
+    private HttpChannel.Listener _httpChannelListeners = HttpChannel.NOOP_LISTENER;
     private CountDownLatch _stopping;
     private long _idleTimeout = 30000;
     private String _defaultProtocol;
