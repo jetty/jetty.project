@@ -44,7 +44,7 @@ import static org.hamcrest.Matchers.nullValue;
 //TODO: add protocol specific tests for connection: close and/or chunking
 public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
 {
-    private final String CONTEXT_ATTRIBUTE = getClass().getName() + ".asyncContext";
+    private final String contextAttribute = getClass().getName() + ".asyncContext";
 
     public static Stream<Arguments> httpVersion()
     {
@@ -101,10 +101,10 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
         @Override
         public void doNonErrorHandle(String target, Request baseRequest, final HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
-            if (request.getAttribute(CONTEXT_ATTRIBUTE) == null)
+            if (request.getAttribute(contextAttribute) == null)
             {
                 final AsyncContext asyncContext = baseRequest.startAsync();
-                request.setAttribute(CONTEXT_ATTRIBUTE, asyncContext);
+                request.setAttribute(contextAttribute, asyncContext);
                 new Thread(new Runnable()
                 {
                     @Override
@@ -164,10 +164,10 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
         @Override
         public void doNonErrorHandle(String target, Request baseRequest, final HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
-            if (request.getAttribute(CONTEXT_ATTRIBUTE) == null)
+            if (request.getAttribute(contextAttribute) == null)
             {
                 final AsyncContext asyncContext = baseRequest.startAsync();
-                request.setAttribute(CONTEXT_ATTRIBUTE, asyncContext);
+                request.setAttribute(contextAttribute, asyncContext);
                 new Thread(new Runnable()
                 {
                     @Override
@@ -227,10 +227,10 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
         @Override
         public void doNonErrorHandle(String target, Request baseRequest, final HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
-            if (request.getAttribute(CONTEXT_ATTRIBUTE) == null)
+            if (request.getAttribute(contextAttribute) == null)
             {
                 final AsyncContext asyncContext = baseRequest.startAsync();
-                request.setAttribute(CONTEXT_ATTRIBUTE, asyncContext);
+                request.setAttribute(contextAttribute, asyncContext);
                 new Thread(new Runnable()
                 {
                     @Override
@@ -301,10 +301,10 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
         @Override
         public void doNonErrorHandle(String target, Request baseRequest, final HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
-            if (request.getAttribute(CONTEXT_ATTRIBUTE) == null)
+            if (request.getAttribute(contextAttribute) == null)
             {
                 final AsyncContext asyncContext = baseRequest.startAsync();
-                request.setAttribute(CONTEXT_ATTRIBUTE, asyncContext);
+                request.setAttribute(contextAttribute, asyncContext);
                 new Thread(new Runnable()
                 {
                     @Override
@@ -377,10 +377,10 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
         @Override
         public void doNonErrorHandle(String target, Request baseRequest, final HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
-            if (request.getAttribute(CONTEXT_ATTRIBUTE) == null)
+            if (request.getAttribute(contextAttribute) == null)
             {
                 final AsyncContext asyncContext = baseRequest.startAsync();
-                request.setAttribute(CONTEXT_ATTRIBUTE, asyncContext);
+                request.setAttribute(contextAttribute, asyncContext);
                 new Thread(new Runnable()
                 {
                     @Override
@@ -453,10 +453,10 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
         @Override
         public void doNonErrorHandle(String target, Request baseRequest, final HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
-            if (request.getAttribute(CONTEXT_ATTRIBUTE) == null)
+            if (request.getAttribute(contextAttribute) == null)
             {
                 final AsyncContext asyncContext = baseRequest.startAsync();
-                request.setAttribute(CONTEXT_ATTRIBUTE, asyncContext);
+                request.setAttribute(contextAttribute, asyncContext);
                 new Thread(new Runnable()
                 {
                     @Override
@@ -533,10 +533,10 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
         @Override
         public void doNonErrorHandle(String target, Request baseRequest, final HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
-            if (request.getAttribute(CONTEXT_ATTRIBUTE) == null)
+            if (request.getAttribute(contextAttribute) == null)
             {
                 final AsyncContext asyncContext = baseRequest.startAsync();
-                request.setAttribute(CONTEXT_ATTRIBUTE, asyncContext);
+                request.setAttribute(contextAttribute, asyncContext);
                 new Thread(new Runnable()
                 {
                     @Override
@@ -610,10 +610,10 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
         @Override
         public void doNonErrorHandle(String target, Request baseRequest, final HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
-            if (request.getAttribute(CONTEXT_ATTRIBUTE) == null)
+            if (request.getAttribute(contextAttribute) == null)
             {
                 final AsyncContext asyncContext = baseRequest.startAsync();
-                request.setAttribute(CONTEXT_ATTRIBUTE, asyncContext);
+                request.setAttribute(contextAttribute, asyncContext);
                 new Thread(new Runnable()
                 {
                     @Override
@@ -688,10 +688,10 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
         @Override
         public void doNonErrorHandle(String target, Request baseRequest, final HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
-            if (request.getAttribute(CONTEXT_ATTRIBUTE) == null)
+            if (request.getAttribute(contextAttribute) == null)
             {
                 final AsyncContext asyncContext = baseRequest.startAsync();
-                request.setAttribute(CONTEXT_ATTRIBUTE, asyncContext);
+                request.setAttribute(contextAttribute, asyncContext);
                 new Thread(new Runnable()
                 {
                     @Override
@@ -761,10 +761,10 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
         @Override
         public void doNonErrorHandle(String target, Request baseRequest, final HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
-            if (request.getAttribute(CONTEXT_ATTRIBUTE) == null)
+            if (request.getAttribute(contextAttribute) == null)
             {
                 final AsyncContext asyncContext = baseRequest.startAsync();
-                request.setAttribute(CONTEXT_ATTRIBUTE, asyncContext);
+                request.setAttribute(contextAttribute, asyncContext);
                 new Thread(new Runnable()
                 {
                     @Override
@@ -835,10 +835,10 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
         @Override
         public void doNonErrorHandle(String target, Request baseRequest, final HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
-            if (request.getAttribute(CONTEXT_ATTRIBUTE) == null)
+            if (request.getAttribute(contextAttribute) == null)
             {
                 final AsyncContext asyncContext = baseRequest.startAsync();
-                request.setAttribute(CONTEXT_ATTRIBUTE, asyncContext);
+                request.setAttribute(contextAttribute, asyncContext);
                 new Thread(new Runnable()
                 {
                     @Override

@@ -101,7 +101,7 @@ public class DispatchServletTest
         tester.addServlet(DefaultServlet.class, "/");
         tester.start();
 
-        String selfRefs[] =
+        String[] selfRefs =
             {"/dispatch/forward", "/dispatch/includeS", "/dispatch/includeW", "/dispatch/includeN",};
 
         /*

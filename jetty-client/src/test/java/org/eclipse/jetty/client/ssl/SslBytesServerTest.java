@@ -1397,6 +1397,7 @@ public class SslBytesServerTest extends SslBytesTest
             {
                 case APPLICATION:
                     fail("application data not allows after renegotiate");
+                    return; // this is just to avoid checkstyle warning
                 case ALERT:
                     break loop;
                 default:

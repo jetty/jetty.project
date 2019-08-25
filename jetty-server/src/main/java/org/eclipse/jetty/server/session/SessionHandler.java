@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.server.session;
 
-import static java.lang.Math.round;
-
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -64,6 +62,8 @@ import org.eclipse.jetty.util.statistic.SampleStatistic;
 import org.eclipse.jetty.util.thread.Locker.Lock;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
+
+import static java.lang.Math.round;
 
 /**
  * SessionHandler.
@@ -242,8 +242,8 @@ public class SessionHandler extends ScopedHandler
             // Do we need to refresh the cookie?
             if (isUsingCookies() &&
                 (s.isIdChanged() ||
-                    (getSessionCookieConfig().getMaxAge() > 0 && getRefreshCookieAge() > 0 
-                        && ((now - s.getCookieSetTime())/1000 > getRefreshCookieAge()))))
+                    (getSessionCookieConfig().getMaxAge() > 0 && getRefreshCookieAge() > 0 &&
+                            ((now - s.getCookieSetTime()) / 1000 > getRefreshCookieAge()))))
             {
                 HttpCookie cookie = getSessionCookie(session, _context == null ? "/" : (_context.getContextPath()), secure);
                 s.cookieSet();
@@ -833,8 +833,8 @@ public class SessionHandler extends ScopedHandler
     public void setSessionIdPathParameterName(String param)
     {
         _sessionIdPathParameterName = (param == null || "none".equals(param)) ? null : param;
-        _sessionIdPathParameterNamePrefix = (param == null || "none".equals(param)) ? 
-                                            null : (";" + _sessionIdPathParameterName + "=");
+        _sessionIdPathParameterNamePrefix = (param == null || "none".equals(param))
+                                            ? null : (";" + _sessionIdPathParameterName + "=");
     }
 
     /**
@@ -1009,7 +1009,7 @@ public class SessionHandler extends ScopedHandler
             sessionTrackingModes.size() > 1 &&
             sessionTrackingModes.contains(SessionTrackingMode.SSL))
         {
-            throw new IllegalArgumentException ("sessionTrackingModes specifies a combination of SessionTrackingMode.SSL with a session tracking mode other than SessionTrackingMode.SSL");
+            throw new IllegalArgumentException("sessionTrackingModes specifies a combination of SessionTrackingMode.SSL with a session tracking mode other than SessionTrackingMode.SSL");
         }
         _sessionTrackingModes = new HashSet<>(sessionTrackingModes);
         _usingCookies = _sessionTrackingModes.contains(SessionTrackingMode.COOKIE);
@@ -1270,8 +1270,8 @@ public class SessionHandler extends ScopedHandler
                 //most efficient if it can be done as a bulk operation to eg reduce
                 //roundtrips to the persistent store. Only do this if the HouseKeeper that
                 //does the scavenging is configured to actually scavenge
-                if (_sessionIdManager.getSessionHouseKeeper() != null
-                    && _sessionIdManager.getSessionHouseKeeper().getIntervalSec() > 0)
+                if (_sessionIdManager.getSessionHouseKeeper() != null &&
+                        _sessionIdManager.getSessionHouseKeeper().getIntervalSec() > 0)
                 {
                     _candidateSessionIdsForExpiry.add(session.getId());
                     if (LOG.isDebugEnabled())
@@ -1501,9 +1501,9 @@ public class SessionHandler extends ScopedHandler
             {
                 HttpCookie cookie = access(existingSession, request.isSecure());
                 // Handle changed ID or max-age refresh, but only if this is not a redispatched request
-                if ((cookie != null) 
-                    && (request.getDispatcherType() == DispatcherType.ASYNC
-                        || request.getDispatcherType() == DispatcherType.REQUEST))
+                if ((cookie != null) &&
+                        (request.getDispatcherType() == DispatcherType.ASYNC ||
+                                request.getDispatcherType() == DispatcherType.REQUEST))
                     baseRequest.getResponse().replaceCookie(cookie);
             }
 

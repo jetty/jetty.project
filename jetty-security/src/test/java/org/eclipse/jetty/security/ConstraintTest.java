@@ -1708,7 +1708,7 @@ public class ConstraintTest
                 {
                     request.login("admin", "fail");
                 }
-                catch (ServletException se)
+                catch (ServletException e)
                 {
                     request.login("admin", "password");
                 }

@@ -94,7 +94,7 @@ public class RolloverFileOutputStreamTest
         ZonedDateTime midnight = RolloverFileOutputStream.toMidnight(initialDate);
         assertThat("Midnight", toString(midnight), is("2017.04.27-12:00:00.0 AM PDT"));
 
-        Object expected[][] = {
+        Object[][] expected = {
             {"2017.04.27-12:00:00.0 AM PDT", 14_400_000L},
             {"2017.04.28-12:00:00.0 AM PDT", 86_400_000L},
             {"2017.04.29-12:00:00.0 AM PDT", 86_400_000L},
@@ -115,7 +115,7 @@ public class RolloverFileOutputStreamTest
         ZonedDateTime midnight = RolloverFileOutputStream.toMidnight(initialDate);
         assertThat("Midnight", toString(midnight), is("2016.03.11-12:00:00.0 AM PST"));
 
-        Object expected[][] = {
+        Object[][] expected = {
             {"2016.03.12-12:00:00.0 AM PST", 86_400_000L},
             {"2016.03.13-12:00:00.0 AM PST", 86_400_000L},
             {"2016.03.14-12:00:00.0 AM PDT", 82_800_000L}, // the short day
@@ -135,7 +135,7 @@ public class RolloverFileOutputStreamTest
         ZonedDateTime midnight = RolloverFileOutputStream.toMidnight(initialDate);
         assertThat("Midnight", toString(midnight), is("2016.11.04-12:00:00.0 AM PDT"));
 
-        Object expected[][] = {
+        Object[][] expected = {
             {"2016.11.05-12:00:00.0 AM PDT", 86_400_000L},
             {"2016.11.06-12:00:00.0 AM PDT", 86_400_000L},
             {"2016.11.07-12:00:00.0 AM PST", 90_000_000L}, // the long day
@@ -155,7 +155,7 @@ public class RolloverFileOutputStreamTest
         ZonedDateTime midnight = RolloverFileOutputStream.toMidnight(initialDate);
         assertThat("Midnight", toString(midnight), is("2016.10.01-12:00:00.0 AM AEST"));
 
-        Object expected[][] = {
+        Object[][] expected = {
             {"2016.10.02-12:00:00.0 AM AEST", 86_400_000L},
             {"2016.10.03-12:00:00.0 AM AEDT", 82_800_000L}, // the short day
             {"2016.10.04-12:00:00.0 AM AEDT", 86_400_000L},
@@ -175,7 +175,7 @@ public class RolloverFileOutputStreamTest
         ZonedDateTime midnight = RolloverFileOutputStream.toMidnight(initialDate);
         assertThat("Midnight", toString(midnight), is("2016.04.02-12:00:00.0 AM AEDT"));
 
-        Object expected[][] = {
+        Object[][] expected = {
             {"2016.04.03-12:00:00.0 AM AEDT", 86_400_000L},
             {"2016.04.04-12:00:00.0 AM AEST", 90_000_000L}, // The long day
             {"2016.04.05-12:00:00.0 AM AEST", 86_400_000L},

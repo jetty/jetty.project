@@ -169,7 +169,7 @@ public class InetAccessHandlerTest
                 {"127.0.0.1-127.0.0.254", "", "", "nothttp", "200"},
                 {"192.0.0.1", "", "", "nothttp", "403"},
                 {"192.0.0.1-192.0.0.254", "", "", "nothttp", "403"},
-                };
+            };
         return Arrays.asList(data).stream().map(Arguments::of);
     }
 }

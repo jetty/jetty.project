@@ -881,7 +881,7 @@ public class StreamResetTest extends AbstractTest
                         // Try to write again, must fail immediately.
                         output.write(0xFF);
                     }
-                    catch (IOException xx)
+                    catch (IOException e)
                     {
                         writeLatch2.countDown();
                     }

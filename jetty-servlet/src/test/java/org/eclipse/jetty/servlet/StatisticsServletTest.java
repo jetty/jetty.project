@@ -128,7 +128,8 @@ public class StatisticsServletTest
 
     public static class Stats
     {
-        int responses2xx, responses4xx;
+        int responses2xx;
+        int responses4xx;
 
         public Stats(int responses2xx, int responses4xx)
         {

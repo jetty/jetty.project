@@ -40,6 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
@@ -138,23 +139,8 @@ public class ContextHandlerGetResourceTest
     public void testBadPath() throws Exception
     {
         final String path = "bad";
-        try
-        {
-            context.getResource(path);
-            fail("Expected " + MalformedURLException.class);
-        }
-        catch (MalformedURLException e)
-        {
-        }
-
-        try
-        {
-            context.getServletContext().getResource(path);
-            fail("Expected " + MalformedURLException.class);
-        }
-        catch (MalformedURLException e)
-        {
-        }
+        assertThrows(MalformedURLException.class,() -> context.getResource(path));
+        assertThrows(MalformedURLException.class,() -> context.getServletContext().getResource(path));
     }
 
     @Test

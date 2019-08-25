@@ -828,7 +828,7 @@ public abstract class RFC2616BaseTest
             // Header expected ...
             // Allow: GET, HEAD, POST, PUT, DELETE, MOVE, OPTIONS, TRACE
             String allow = response.get("Allow");
-            String expectedMethods[] =
+            String[] expectedMethods =
                 {"GET", "HEAD", "POST", "PUT", "DELETE", "MOVE", "OPTIONS", "TRACE"};
             for (String expectedMethod : expectedMethods)
             {
@@ -875,7 +875,7 @@ public abstract class RFC2616BaseTest
         // Header expected ...
         // Allow: GET, HEAD, POST, TRACE, OPTIONS
         String allow = response.get("Allow");
-        String expectedMethods[] =
+        String[] expectedMethods =
             {"GET", "HEAD", "POST", "OPTIONS", "TRACE"};
         for (String expectedMethod : expectedMethods)
         {
