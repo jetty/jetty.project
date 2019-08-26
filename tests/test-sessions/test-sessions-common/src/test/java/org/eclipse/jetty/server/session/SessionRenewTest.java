@@ -173,6 +173,7 @@ public class SessionRenewTest
             _server.stop();
         }
     }
+
     /**
      * Perform the test by making a request to create a session
      * then another request that will renew the session id.
@@ -280,6 +281,7 @@ public class SessionRenewTest
         }
         
     }
+
     public static class TestServlet extends HttpServlet
     {
         private static final long serialVersionUID = 1L;

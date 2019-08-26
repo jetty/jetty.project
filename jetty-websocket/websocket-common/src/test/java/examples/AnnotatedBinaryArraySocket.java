@@ -31,7 +31,7 @@ public class AnnotatedBinaryArraySocket
     public EventCapture capture = new EventCapture();
 
     @OnWebSocketMessage
-    public void onBinary(byte payload[], int offset, int length)
+    public void onBinary(byte[] payload, int offset, int length)
     {
         capture.offer("onBinary([%d],%d,%d)", payload.length, offset, length);
     }

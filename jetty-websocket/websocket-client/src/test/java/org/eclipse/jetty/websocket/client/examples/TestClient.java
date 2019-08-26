@@ -246,10 +246,10 @@ public class TestClient
             long duration = System.currentTimeMillis() - __start;
             System.out.println("--- " + host + " websocket ping statistics using " + clients + " connection" + (clients > 1 ? "s" : "") + " ---");
             System.out.printf("%d/%d frames sent/recv, %d/%d mesg sent/recv, time %dms %dm/s %.2fbps%n", __framesSent, __framesReceived.get(), __messagesSent,
-                __messagesReceived.get(), duration, ((1000L * __messagesReceived.get()) / duration), (1000.0D * __messagesReceived.get() * 8 * size)
-                    / duration / 1024 / 1024);
-            System.out.printf("rtt min/ave/max = %.3f/%.3f/%.3f ms\n", __minDuration.get() / 1000000.0, __messagesReceived.get() == 0 ? 0.0 : (__totalTime.get()
-                / __messagesReceived.get() / 1000000.0), __maxDuration.get() / 1000000.0);
+                __messagesReceived.get(), duration, ((1000L * __messagesReceived.get()) / duration), (1000.0D * __messagesReceived.get() * 8 * size) /
+                            duration / 1024 / 1024);
+            System.out.printf("rtt min/ave/max = %.3f/%.3f/%.3f ms\n", __minDuration.get() / 1000000.0, __messagesReceived.get() == 0 ? 0.0 : (__totalTime.get() /
+                __messagesReceived.get() / 1000000.0), __maxDuration.get() / 1000000.0);
 
             wsclient.stop();
         }

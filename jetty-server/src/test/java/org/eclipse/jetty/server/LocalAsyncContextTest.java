@@ -333,7 +333,7 @@ public class LocalAsyncContextTest
 
                 final AsyncContext asyncContext = baseRequest.startAsync();
                 response.getOutputStream().println("STARTASYNC");
-                asyncContext.addListener(__asyncListener);
+                asyncContext.addListener(_asyncListener);
                 if (_suspendFor > 0)
                     asyncContext.setTimeout(_suspendFor);
 
@@ -470,7 +470,7 @@ public class LocalAsyncContextTest
         }
     }
 
-    private AsyncListener __asyncListener = new AsyncListener()
+    private AsyncListener _asyncListener = new AsyncListener()
     {
         @Override
         public void onComplete(AsyncEvent event) throws IOException

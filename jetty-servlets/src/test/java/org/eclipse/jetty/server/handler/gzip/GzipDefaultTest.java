@@ -101,10 +101,10 @@ public class GzipDefaultTest
     @SuppressWarnings("serial")
     public static class HttpContentTypeWithEncoding extends HttpServlet
     {
-        public static final String COMPRESSED_CONTENT = "<html><head></head><body><h1>COMPRESSABLE CONTENT</h1>"
-            + "This content must be longer than the default min gzip length, which is 256 bytes. "
-            + "The moon is blue to a fish in love. How now brown cow. The quick brown fox jumped over the lazy dog. A woman needs a man like a fish needs a bicycle!"
-            + "</body></html>";
+        public static final String COMPRESSED_CONTENT = "<html><head></head><body><h1>COMPRESSABLE CONTENT</h1>" +
+                "This content must be longer than the default min gzip length, which is 256 bytes. " +
+                "The moon is blue to a fish in love. How now brown cow. The quick brown fox jumped over the lazy dog. A woman needs a man like a fish needs a bicycle!" +
+                "</body></html>";
 
         @Override
         protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException

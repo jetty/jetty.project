@@ -60,6 +60,7 @@ import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public abstract class HttpServerTestBase extends HttpServerTestFixture
@@ -198,7 +199,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
              StacklessLogging stackless = new StacklessLogging(HttpConnection.class))
         {
             client.setSoTimeout(10000);
-            ((AbstractLogger)Log.getLogger(HttpConnection.class)).info("expect request is too large, then ISE extra data ...");
+            Log.getLogger(HttpConnection.class).info("expect request is too large, then ISE extra data ...");
             OutputStream os = client.getOutputStream();
 
             byte[] buffer = new byte[64 * 1024];
@@ -479,7 +480,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
         {
             OutputStream os = client.getOutputStream();
-
+            //@checkstyle-disable-check : IllegalTokenText
             os.write(("GET /R2 HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
                 "Content-Length: 5\r\n" +
@@ -488,6 +489,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                 "\r\n" +
                 "ABCDE\r\n" +
                 "\r\n"
+            //@checkstyle-enable-check : IllegalTokenText
             ).getBytes());
             os.flush();
 
@@ -953,7 +955,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             }
 
             // check close
-            assertTrue(in.readLine() == null);
+            assertNull(in.readLine());
         }
     }
 
@@ -1141,6 +1143,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             OutputStream os = client.getOutputStream();
             InputStream is = client.getInputStream();
 
+            //@checkstyle-disable-check : IllegalTokenText
             os.write((
                 "POST /R1 HTTP/1.1\r\n" +
                     "Host: " + _serverURI.getHost() + ":" + _serverURI.getPort() + "\r\n" +
@@ -1163,7 +1166,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                     "Connection: close\r\n" +
                     "\r\n" +
                     "abcdefghi\n"
-
+            //@checkstyle-enable-check : IllegalTokenText
             ).getBytes(StandardCharsets.ISO_8859_1));
 
             String in = IO.toString(is);
@@ -1295,7 +1298,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             client.close();
             Thread.sleep(200);
 
-            assertTrue(!handler._endp.isOpen());
+            assertFalse(handler._endp.isOpen());
         }
     }
 
