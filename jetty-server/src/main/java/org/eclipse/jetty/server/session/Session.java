@@ -481,6 +481,10 @@ public class Session implements SessionHandler.SessionIf
     @Override
     public long getLastAccessedTime()
     {
+        if (isInvalid())
+        {
+            throw new IllegalStateException("Session not valid");
+        }
         try (Lock lock = _lock.lock())
         {
             return _sessionData.getLastAccessed();
