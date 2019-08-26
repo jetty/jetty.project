@@ -407,9 +407,6 @@ public class WebAppContextTest
                 }
                 history.add(e.getMessage());
             }
-            finally
-            {
-            }
         }
 
         assertThat(history, contains("I0", "I1", "I2", "Listener2 init broken", "D1", "D0", "Listener1 destroy broken"));

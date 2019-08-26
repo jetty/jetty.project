@@ -42,33 +42,33 @@ import static org.junit.jupiter.api.Assertions.fail;
 public class InfinispanSessionDataStoreTest extends AbstractSessionDataStoreTest
 {
 
-    public InfinispanTestSupport __testSupport;
+    public InfinispanTestSupport _testSupport;
 
     @BeforeEach
     public void setup() throws Exception
     {
-        __testSupport = new InfinispanTestSupport();
-        __testSupport.setup();
+        _testSupport = new InfinispanTestSupport();
+        _testSupport.setup();
     }
 
     @AfterEach
     public void teardown() throws Exception
     {
-        __testSupport.teardown();
+        _testSupport.teardown();
     }
 
     @Override
     public SessionDataStoreFactory createSessionDataStoreFactory()
     {
         InfinispanSessionDataStoreFactory factory = new InfinispanSessionDataStoreFactory();
-        factory.setCache(__testSupport.getCache());
+        factory.setCache(_testSupport.getCache());
         return factory;
     }
 
     @Override
     public void persistSession(SessionData data) throws Exception
     {
-        __testSupport.createSession(data);
+        _testSupport.createSession(data);
     }
 
     @Override
@@ -80,7 +80,7 @@ public class InfinispanSessionDataStoreTest extends AbstractSessionDataStoreTest
     @Override
     public boolean checkSessionExists(SessionData data) throws Exception
     {
-        return __testSupport.checkSessionExists(data);
+        return _testSupport.checkSessionExists(data);
     }
 
     /**
@@ -153,7 +153,7 @@ public class InfinispanSessionDataStoreTest extends AbstractSessionDataStoreTest
         Thread.currentThread().setContextClassLoader(_contextClassLoader);
         try
         {
-            return __testSupport.checkSessionPersisted(data);
+            return _testSupport.checkSessionPersisted(data);
         }
         finally
         {
@@ -164,7 +164,7 @@ public class InfinispanSessionDataStoreTest extends AbstractSessionDataStoreTest
     @Test
     public void testQuery() throws Exception
     {
-        Cache<String, SessionData> cache = __testSupport.getCache();
+        Cache<String, SessionData> cache = _testSupport.getCache();
 
         SessionData sd1 = new SessionData("sd1", "", "", 0, 0, 0, 0);
         SessionData sd2 = new SessionData("sd2", "", "", 0, 0, 0, 1000);

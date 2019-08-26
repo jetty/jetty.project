@@ -22,12 +22,42 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.QuotedStringTokenizer;
+import org.eclipse.jetty.util.StringUtil;
 
 // TODO consider replacing this with java.net.HttpCookie
 public class HttpCookie
 {
     private static final String __COOKIE_DELIM = "\",;\\ \t";
     private static final String __01Jan1970_COOKIE = DateGenerator.formatCookieDate(0).trim();
+
+    /**
+     *If this string is found within the comment parsed with {@link #isHttpOnlyInComment(String)} the check will return true
+     **/
+    private static final String HTTP_ONLY_COMMENT = "__HTTP_ONLY__";
+    /**
+     *These strings are used by {@link #getSameSiteFromComment(String)} to check for a SameSite specifier in the comment
+     **/
+    private static final String SAME_SITE_COMMENT = "__SAME_SITE_";
+    private static final String SAME_SITE_NONE_COMMENT = SAME_SITE_COMMENT + "NONE__";
+    private static final String SAME_SITE_LAX_COMMENT = SAME_SITE_COMMENT + "LAX__";
+    private static final String SAME_SITE_STRICT_COMMENT = SAME_SITE_COMMENT + "STRICT__";
+
+    public enum SameSite
+    {
+        NONE("None"), STRICT("Strict"), LAX("Lax");
+
+        private String attributeValue;
+
+        SameSite(String attributeValue)
+        {
+            this.attributeValue = attributeValue;
+        }
+
+        public String getAttributeValue()
+        {
+            return this.attributeValue;
+        }
+    }
 
     private final String _name;
     private final String _value;
@@ -39,6 +69,7 @@ public class HttpCookie
     private final int _version;
     private final boolean _httpOnly;
     private final long _expiration;
+    private final SameSite _sameSite;
 
     public HttpCookie(String name, String value)
     {
@@ -62,6 +93,11 @@ public class HttpCookie
 
     public HttpCookie(String name, String value, String domain, String path, long maxAge, boolean httpOnly, boolean secure, String comment, int version)
     {
+        this(name, value, domain, path, maxAge, httpOnly, secure, comment, version, null);
+    }
+
+    public HttpCookie(String name, String value, String domain, String path, long maxAge, boolean httpOnly, boolean secure, String comment, int version, SameSite sameSite)
+    {
         _name = name;
         _value = value;
         _domain = domain;
@@ -72,6 +108,7 @@ public class HttpCookie
         _comment = comment;
         _version = version;
         _expiration = maxAge < 0 ? -1 : System.nanoTime() + TimeUnit.SECONDS.toNanos(maxAge);
+        _sameSite = sameSite;
     }
 
     public HttpCookie(String setCookie)
@@ -92,6 +129,8 @@ public class HttpCookie
         _comment = cookie.getComment();
         _version = cookie.getVersion();
         _expiration = _maxAge < 0 ? -1 : System.nanoTime() + TimeUnit.SECONDS.toNanos(_maxAge);
+        // support for SameSite values has not yet been added to java.net.HttpCookie
+        _sameSite = getSameSiteFromComment(cookie.getComment());
     }
 
     /**
@@ -156,6 +195,14 @@ public class HttpCookie
     public int getVersion()
     {
         return _version;
+    }
+
+    /**
+     * @return the cookie SameSite enum attribute
+     */
+    public SameSite getSameSite()
+    {
+        return _sameSite;
     }
 
     /**
@@ -366,7 +413,56 @@ public class HttpCookie
             buf.append("; Secure");
         if (_httpOnly)
             buf.append("; HttpOnly");
+        if (_sameSite != null)
+        {
+            buf.append("; SameSite=");
+            buf.append(_sameSite.getAttributeValue());
+        }
+
         return buf.toString();
+    }
+
+    public static boolean isHttpOnlyInComment(String comment)
+    {
+        return comment != null && comment.contains(HTTP_ONLY_COMMENT);
+    }
+
+    public static SameSite getSameSiteFromComment(String comment)
+    {
+        if (comment != null)
+        {
+            if (comment.contains(SAME_SITE_NONE_COMMENT))
+            {
+                return SameSite.NONE;
+            }
+            if (comment.contains(SAME_SITE_LAX_COMMENT))
+            {
+                return SameSite.LAX;
+            }
+            if (comment.contains(SAME_SITE_STRICT_COMMENT))
+            {
+                return SameSite.STRICT;
+            }
+        }
+
+        return null;
+    }
+
+    public static String getCommentWithoutAttributes(String comment)
+    {
+        if (comment == null)
+        {
+            return null;
+        }
+
+        String strippedComment = comment.trim();
+
+        strippedComment = StringUtil.strip(strippedComment, HTTP_ONLY_COMMENT);
+        strippedComment = StringUtil.strip(strippedComment, SAME_SITE_NONE_COMMENT);
+        strippedComment = StringUtil.strip(strippedComment, SAME_SITE_LAX_COMMENT);
+        strippedComment = StringUtil.strip(strippedComment, SAME_SITE_STRICT_COMMENT);
+
+        return strippedComment.length() == 0 ? null : strippedComment;
     }
 
     public static class SetCookieHttpField extends HttpField

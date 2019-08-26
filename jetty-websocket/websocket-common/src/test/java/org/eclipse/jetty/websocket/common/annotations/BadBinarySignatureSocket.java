@@ -38,7 +38,7 @@ public class BadBinarySignatureSocket
      * @return the response boolean
      */
     @OnWebSocketMessage
-    public boolean onBinary(Session session, byte buf[], int offset, int len)
+    public boolean onBinary(Session session, byte[] buf, int offset, int len)
     {
         return false;
     }

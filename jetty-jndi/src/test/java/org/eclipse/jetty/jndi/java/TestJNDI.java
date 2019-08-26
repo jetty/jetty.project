@@ -472,9 +472,9 @@ public class TestJNDI
                 ((Context)zzz.lookup("java:comp")).bind("crud2", "xxx2");
                 fail("Should not be able to write to locked context");
             }
-            catch (NamingException ne)
+            catch (NamingException e)
             {
-                assertThat(ne.getMessage(), Matchers.containsString("immutable"));
+                assertThat(e.getMessage(), Matchers.containsString("immutable"));
             }
             finally
             {
@@ -492,9 +492,9 @@ public class TestJNDI
                 ((Context)zzz.lookup("java:comp")).bind("foo", "bar");
                 fail("Should not be able to write to locked context");
             }
-            catch (NamingException ne)
+            catch (NamingException e)
             {
-                assertThat(ne.getMessage(), Matchers.containsString("immutable"));
+                assertThat(e.getMessage(), Matchers.containsString("immutable"));
             }
             finally
             {

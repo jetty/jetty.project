@@ -41,7 +41,7 @@ public class ABSocket
     private Session session;
 
     @OnWebSocketMessage
-    public void onBinary(byte buf[], int offset, int len)
+    public void onBinary(byte[] buf, int offset, int len)
     {
         LOG.debug("onBinary(byte[{}],{},{})", buf.length, offset, len);
 

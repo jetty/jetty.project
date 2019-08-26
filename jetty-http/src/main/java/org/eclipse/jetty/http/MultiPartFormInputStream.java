@@ -205,7 +205,8 @@ public class MultiPartFormInputStream
         @Override
         public Collection<String> getHeaders(String name)
         {
-            return _headers.getValues(name);
+            Collection<String> headers = _headers.getValues(name);
+            return headers == null ? Collections.emptyList() : headers;
         }
 
         @Override

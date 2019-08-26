@@ -375,9 +375,8 @@ public class ContainerLifeCycleTest
                 child.add(c);
             }
 
-            public
             @Override
-            String toString()
+            public String toString()
             {
                 return "listener";
             }
@@ -385,18 +384,16 @@ public class ContainerLifeCycleTest
 
         ContainerLifeCycle c0 = new ContainerLifeCycle()
         {
-            public
             @Override
-            String toString()
+            public String toString()
             {
                 return "c0";
             }
         };
         ContainerLifeCycle c00 = new ContainerLifeCycle()
         {
-            public
             @Override
-            String toString()
+            public String toString()
             {
                 return "c00";
             }
@@ -437,9 +434,8 @@ public class ContainerLifeCycleTest
                 child.add(c);
             }
 
-            public
             @Override
-            String toString()
+            public String toString()
             {
                 return "inherited";
             }
@@ -526,27 +522,24 @@ public class ContainerLifeCycleTest
     {
         ContainerLifeCycle c0 = new ContainerLifeCycle()
         {
-            public
             @Override
-            String toString()
+            public String toString()
             {
                 return "c0";
             }
         };
         ContainerLifeCycle c00 = new ContainerLifeCycle()
         {
-            public
             @Override
-            String toString()
+            public String toString()
             {
                 return "c00";
             }
         };
         ContainerLifeCycle c01 = new ContainerLifeCycle()
         {
-            public
             @Override
-            String toString()
+            public String toString()
             {
                 return "c01";
             }

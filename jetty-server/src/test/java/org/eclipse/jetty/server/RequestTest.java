@@ -226,15 +226,7 @@ public class RequestTest
                 assertNull(request.getCookies());
                 assertEquals("", request.getHeader("Name"));
                 assertTrue(request.getHeaders("Name").hasMoreElements()); // empty
-                try
-                {
-                    request.getDateHeader("Name");
-                    assertTrue(false);
-                }
-                catch (IllegalArgumentException e)
-                {
-
-                }
+                assertThrows(IllegalArgumentException.class, () ->  request.getDateHeader("Name"));
                 assertEquals(-1, request.getDateHeader("Other"));
                 return true;
             }
@@ -640,26 +632,26 @@ public class RequestTest
     }
 
     @Test
-    public void testContentLength_ExceedsMaxInteger() throws Exception
+    public void testContentLengthExceedsMaxInteger() throws Exception
     {
-        final long HUGE_LENGTH = (long) Integer.MAX_VALUE * 10L;
+        final long HUGE_LENGTH = (long)Integer.MAX_VALUE * 10L;
 
         _handler._checker = (request, response) ->
-                request.getContentLength() == (-1) // per HttpServletRequest javadoc this must return (-1);
-             && request.getContentLengthLong() == HUGE_LENGTH;
+                request.getContentLength() == (-1) && // per HttpServletRequest javadoc this must return (-1);
+                request.getContentLengthLong() == HUGE_LENGTH;
 
         //Send a request with encoded form content
-        String request="POST / HTTP/1.1\r\n"+
-                "Host: whatever\r\n"+
-                "Content-Type: application/octet-stream\n"+
-                "Content-Length: " + HUGE_LENGTH + "\n"+
-                "Connection: close\n"+
-                "\n"+
+        String request = "POST / HTTP/1.1\r\n" +
+                "Host: whatever\r\n" +
+                "Content-Type: application/octet-stream\n" +
+                "Content-Length: " + HUGE_LENGTH + "\n" +
+                "Connection: close\n" +
+                "\n" +
                 "<insert huge amount of content here>\n";
 
         System.out.println(request);
 
-        String responses=_connector.getResponse(request);
+        String responses = _connector.getResponse(request);
         assertThat(responses,startsWith("HTTP/1.1 200"));
     }
 
@@ -667,25 +659,25 @@ public class RequestTest
      * The Servlet spec and API cannot parse Content-Length that exceeds Long.MAX_VALUE
      */
     @Test
-    public void testContentLength_ExceedsMaxLong() throws Exception
+    public void testContentLengthExceedsMaxLong() throws Exception
     {
-        String HUGE_LENGTH = Long.MAX_VALUE + "0";
+        String hugeLength = Long.MAX_VALUE + "0";
 
         _handler._checker = (request, response) ->
-            request.getHeader("Content-Length").equals(HUGE_LENGTH)
-                && request.getContentLength() == (-1) // per HttpServletRequest javadoc this must return (-1);
-                && request.getContentLengthLong() == (-1); // exact behavior here not specified in Servlet javadoc
+            request.getHeader("Content-Length").equals(hugeLength) &&
+                    request.getContentLength() == (-1) && // per HttpServletRequest javadoc this must return (-1);
+                    request.getContentLengthLong() == (-1); // exact behavior here not specified in Servlet javadoc
 
         //Send a request with encoded form content
-        String request="POST / HTTP/1.1\r\n"+
-            "Host: whatever\r\n"+
-            "Content-Type: application/octet-stream\n"+
-            "Content-Length: " + HUGE_LENGTH + "\n"+
-            "Connection: close\n"+
-            "\n"+
+        String request = "POST / HTTP/1.1\r\n" +
+            "Host: whatever\r\n" +
+            "Content-Type: application/octet-stream\n" +
+            "Content-Length: " + hugeLength + "\n" +
+            "Connection: close\n" +
+            "\n" +
             "<insert huge amount of content here>\n";
 
-        String responses=_connector.getResponse(request);
+        String responses = _connector.getResponse(request);
         assertThat(responses, startsWith("HTTP/1.1 400"));
     }
 
@@ -1667,8 +1659,7 @@ public class RequestTest
         String request = "POST / HTTP/1.1\r\n" +
             "Host: whatever\r\n" +
             "Cookie: other=cookie\r\n" +
-            "\r\n"
-            +
+            "\r\n" +
             "POST / HTTP/1.1\r\n" +
             "Host: whatever\r\n" +
             "Cookie: name=value\r\n" +
@@ -1683,8 +1674,7 @@ public class RequestTest
         request = "POST / HTTP/1.1\r\n" +
             "Host: whatever\r\n" +
             "Cookie: name=value\r\n" +
-            "\r\n"
-            +
+            "\r\n" +
             "POST / HTTP/1.1\r\n" +
             "Host: whatever\r\n" +
             "Cookie: \r\n" +
@@ -1699,8 +1689,7 @@ public class RequestTest
             "Host: whatever\r\n" +
             "Cookie: name=value\r\n" +
             "Cookie: other=cookie\r\n" +
-            "\r\n"
-            +
+            "\r\n" +
             "POST / HTTP/1.1\r\n" +
             "Host: whatever\r\n" +
             "Cookie: name=value\r\n" +
@@ -1727,11 +1716,11 @@ public class RequestTest
             buf.append("a=b");
 
             // The evil keys file is not distributed - as it is dangerous
-            File evil_keys = new File("/tmp/keys_mapping_to_zero_2m");
-            if (evil_keys.exists())
+            File evilKeys = new File("/tmp/keys_mapping_to_zero_2m");
+            if (evilKeys.exists())
             {
                 // Using real evil keys!
-                try (BufferedReader in = new BufferedReader(new FileReader(evil_keys)))
+                try (BufferedReader in = new BufferedReader(new FileReader(evilKeys)))
                 {
                     String key = null;
                     while ((key = in.readLine()) != null)
@@ -1879,9 +1868,9 @@ public class RequestTest
         {
             ((Request)request).setHandled(true);
 
-            if (request.getContentLength() > 0
-                && !request.getContentType().startsWith(MimeTypes.Type.FORM_ENCODED.asString())
-                && !request.getContentType().startsWith("multipart/form-data"))
+            if (request.getContentLength() > 0 &&
+                    !request.getContentType().startsWith(MimeTypes.Type.FORM_ENCODED.asString()) &&
+                    !request.getContentType().startsWith("multipart/form-data"))
                 _content = IO.toString(request.getInputStream());
 
             if (_checker != null && _checker.check(request, response))

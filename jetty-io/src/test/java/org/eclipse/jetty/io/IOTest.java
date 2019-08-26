@@ -43,6 +43,7 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.OS;
 
@@ -93,14 +94,8 @@ public class IOTest
             assertEquals(-1, server.getInputStream().read());
 
             // but cannot write
-            try
-            {
-                client.getOutputStream().write(1);
-                fail("exception expected");
-            }
-            catch (SocketException expected)
-            {
-            }
+            Assertions.assertThrows(SocketException.class, () -> client.getOutputStream().write(1));
+
 
             // but can still write in opposite direction.
             server.getOutputStream().write(1);
@@ -110,14 +105,7 @@ public class IOTest
             server.shutdownInput();
 
             // now we EOF instead of reading -1
-            try
-            {
-                server.getInputStream().read();
-                fail("exception expected");
-            }
-            catch (SocketException expected)
-            {
-            }
+            Assertions.assertThrows(SocketException.class, () -> server.getInputStream().read());
 
             // but can still write in opposite direction.
             server.getOutputStream().write(1);
@@ -127,14 +115,7 @@ public class IOTest
             client.shutdownInput();
 
             // now we EOF instead of reading -1
-            try
-            {
-                client.getInputStream().read();
-                fail("exception expected");
-            }
-            catch (SocketException expected)
-            {
-            }
+            Assertions.assertThrows(SocketException.class, () -> client.getInputStream().read());
 
             // But we can still write at the server (data which will never be read)
             server.getOutputStream().write(1);
@@ -146,14 +127,7 @@ public class IOTest
             server.shutdownOutput();
 
             // and now we can't write
-            try
-            {
-                server.getOutputStream().write(1);
-                fail("exception expected");
-            }
-            catch (SocketException expected)
-            {
-            }
+            Assertions.assertThrows(SocketException.class, () -> server.getOutputStream().write(1));
 
             // but the sockets are still open
             assertFalse(client.isClosed());

@@ -89,7 +89,7 @@ public class StressTest
             "/path/d",
             "/path/e",
             "/path/f",
-            };
+        };
 
     @BeforeAll
     public static void init() throws Exception

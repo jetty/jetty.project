@@ -114,7 +114,7 @@ public class URIUtilCanonicalPathTest
                 // paths with encoded segments should remain encoded
                 // canonicalPath() is not responsible for decoding characters
                 {"%2e%2e/", "%2e%2e/"},
-                };
+            };
 
         ArrayList<Arguments> ret = new ArrayList<>();
         for (String[] args : canonical)

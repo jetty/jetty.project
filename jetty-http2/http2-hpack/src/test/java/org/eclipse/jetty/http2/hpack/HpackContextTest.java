@@ -104,7 +104,7 @@ public class HpackContextTest
                 new HttpField("name", "v3"),
                 new HttpField("name", "v4"),
                 new HttpField("name", "v5"),
-                };
+            };
 
         Entry[] entry = new Entry[field.length];
 
@@ -197,7 +197,7 @@ public class HpackContextTest
                 new HttpField("fo8", "b8r"),
                 new HttpField("fo9", "b9r"),
                 new HttpField("foA", "bAr"),
-                };
+            };
 
         Entry[] entry = new Entry[100];
 
@@ -324,7 +324,7 @@ public class HpackContextTest
                 new HttpField("fo8", "b8r"),
                 new HttpField("fo9", "b9r"),
                 new HttpField("foA", "bAr"),
-                };
+            };
         Entry[] entry = new Entry[field.length];
 
         // Add 5 entries

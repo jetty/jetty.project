@@ -44,15 +44,15 @@ public class JSONPojoConvertorTest
         Foo foo = new Foo();
         foo._name = "Foo @ " + TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
         foo._int1 = 1;
-        foo._int2 = new Integer(2);
-        foo._long1 = 1000001l;
-        foo._long2 = new Long(1000002l);
+        foo._int2 =  Integer.valueOf(2);
+        foo._long1 = 1000001L;
+        foo._long2 = Long.valueOf(1000002L);
         foo._float1 = 10.11f;
-        foo._float2 = new Float(10.22f);
+        foo._float2 = Float.valueOf(10.22f);
         foo._double1 = 10000.11111d;
-        foo._double2 = new Double(10000.22222d);
+        foo._double2 = Double.valueOf(10000.22222d);
         foo._char1 = 'a';
-        foo._char2 = new Character('b');
+        foo._char2 = Character.valueOf('b');
 
         Bar bar = new Bar("Hello", true, new Baz("World", Boolean.FALSE, foo), new Baz[]{
             new Baz("baz0", Boolean.TRUE, null), new Baz("baz1", Boolean.FALSE, null)
@@ -92,15 +92,15 @@ public class JSONPojoConvertorTest
         Foo foo = new Foo();
         foo._name = "Foo @ " + TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
         foo._int1 = 1;
-        foo._int2 = new Integer(2);
-        foo._long1 = 1000001l;
-        foo._long2 = new Long(1000002l);
+        foo._int2 = Integer.valueOf(2);
+        foo._long1 = 1000001L;
+        foo._long2 = Long.valueOf(1000002L);
         foo._float1 = 10.11f;
-        foo._float2 = new Float(10.22f);
+        foo._float2 = Float.valueOf(10.22f);
         foo._double1 = 10000.11111d;
-        foo._double2 = new Double(10000.22222d);
+        foo._double2 = Double.valueOf(10000.22222d);
         foo._char1 = 'a';
-        foo._char2 = new Character('b');
+        foo._char2 = Character.valueOf('b');
 
         Bar bar = new Bar("Hello", true, new Baz("World", Boolean.FALSE, foo));
         // bar.setColor(Color.Blue);
@@ -135,7 +135,8 @@ public class JSONPojoConvertorTest
 
     public static class Bar
     {
-        private String _title, _nullTest;
+        private String _title;
+        private String _nullTest;
         private Baz _baz;
         private boolean _boolean1;
         private Baz[] _bazs;
@@ -334,17 +335,17 @@ public class JSONPojoConvertorTest
             if (another instanceof Foo)
             {
                 Foo foo = (Foo)another;
-                return getName().equals(foo.getName())
-                    && getInt1() == foo.getInt1()
-                    && getInt2().equals(foo.getInt2())
-                    && getLong1() == foo.getLong1()
-                    && getLong2().equals(foo.getLong2())
-                    && getFloat1() == foo.getFloat1()
-                    && getFloat2().equals(foo.getFloat2())
-                    && getDouble1() == foo.getDouble1()
-                    && getDouble2().equals(foo.getDouble2())
-                    && getChar1() == foo.getChar1()
-                    && getChar2().equals(foo.getChar2());
+                return getName().equals(foo.getName()) &&
+                        getInt1() == foo.getInt1() &&
+                        getInt2().equals(foo.getInt2()) &&
+                        getLong1() == foo.getLong1() &&
+                        getLong2().equals(foo.getLong2()) &&
+                        getFloat1() == foo.getFloat1() &&
+                        getFloat2().equals(foo.getFloat2()) &&
+                        getDouble1() == foo.getDouble1() &&
+                        getDouble2().equals(foo.getDouble2()) &&
+                        getChar1() == foo.getChar1() &&
+                        getChar2().equals(foo.getChar2());
             }
 
             return false;
