@@ -48,6 +48,7 @@ import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
+import org.openjdk.jmh.runner.options.TimeValue;
 
 import static org.eclipse.jetty.server.jmh.ListVsMapBenchmark.trials;
 
@@ -60,12 +61,13 @@ public class ListenersBenchmark
     @Param({"0", "1", "5"})
     public static int listeners;
 
-    @Param({"list", "lambda", "methodhandle"})
+    @Param({"existing", "list", "lambda", "methodhandle"})
     public static String type;
 
     private final AtomicInteger requests = new AtomicInteger();
     private final AtomicLong count = new AtomicLong();
 
+    List<HttpChannel.Listener> list;
     HttpChannel.Listener listener;
 
     @Setup(Level.Trial)
@@ -74,7 +76,7 @@ public class ListenersBenchmark
         requests.set(0);
         count.set(0);
 
-        List<HttpChannel.Listener> list = new ArrayList<>();
+        list = new ArrayList<>();
         if (listeners >= 1)
         {
             list.add(new MyListener0());
@@ -93,8 +95,11 @@ public class ListenersBenchmark
         }
         switch (type)
         {
+            case "existing":
+                listener = null;
+                break;
             case "list":
-                listener = new HttpChannelListenersList(list);
+                listener = new HttpChannelListenersList(Collections.unmodifiableList(list));
                 break;
             case "lambda":
                 listener = new HttpChannelListeners(list);
@@ -114,20 +119,23 @@ public class ListenersBenchmark
     public long testListeners() throws Exception
     {
         Request request = new Request(null, null);
-        listener.onRequestBegin(request);
-        listener.onBeforeDispatch(request);
-        listener.onRequestContent(request, BufferUtil.toBuffer("Request Content"));
-        listener.onRequestContentEnd(request);
-        listener.onResponseEnd(request);
-        listener.onResponseBegin(request);
-        listener.onResponseCommit(request);
-        listener.onResponseContent(request, BufferUtil.toBuffer("Response Content"));
-        listener.onResponseContent(request, BufferUtil.toBuffer("Chunk0"));
-        listener.onResponseContent(request, BufferUtil.toBuffer("Chunk1"));
-        listener.onResponseContent(request, BufferUtil.toBuffer("Chunk2"));
-        listener.onResponseContent(request, BufferUtil.toBuffer("Chunk3"));
-        listener.onResponseEnd(request);
-        listener.onComplete(request);
+        HttpChannel.Listener l = listener;
+        if (l == null)
+            l = new HttpChannelListenersList(Collections.unmodifiableList(list));
+        l.onRequestBegin(request);
+        l.onBeforeDispatch(request);
+        l.onRequestContent(request, BufferUtil.toBuffer("Request Content"));
+        l.onRequestContentEnd(request);
+        l.onResponseEnd(request);
+        l.onResponseBegin(request);
+        l.onResponseCommit(request);
+        l.onResponseContent(request, BufferUtil.toBuffer("Response Content"));
+        l.onResponseContent(request, BufferUtil.toBuffer("Chunk0"));
+        l.onResponseContent(request, BufferUtil.toBuffer("Chunk1"));
+        l.onResponseContent(request, BufferUtil.toBuffer("Chunk2"));
+        l.onResponseContent(request, BufferUtil.toBuffer("Chunk3"));
+        l.onResponseEnd(request);
+        l.onComplete(request);
         return count.get() + requests.get();
     }
 
@@ -260,6 +268,8 @@ public class ListenersBenchmark
             .include(ListenersBenchmark.class.getSimpleName())
             // .addProfiler(GCProfiler.class)
             .forks(1)
+            .warmupTime(new TimeValue(5, TimeUnit.SECONDS))
+            .measurementTime(new TimeValue(5, TimeUnit.SECONDS))
             .build();
 
         new Runner(opt).run();
