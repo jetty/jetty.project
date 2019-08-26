@@ -69,6 +69,11 @@ public class NullSessionCache extends AbstractSessionCache
                 return;
 
             Session session = (Session)event.getSession();
+            
+            SessionDataStore store = getSessionDataStore();
+            
+            if (store == null)
+                return;
 
             if (_writeThroughMode == WriteThroughMode.ALWAYS
                 || (_writeThroughMode == WriteThroughMode.NEW && session.isNew()))
@@ -78,22 +83,18 @@ public class NullSessionCache extends AbstractSessionCache
                 //be called again
                 if (_sessionsBeingWritten.add(session))
                 {
-                    SessionDataStore store = getSessionDataStore();
                     try
                     {
-                        if (store != null)
-                        {
-                            //should hold the lock on the session, but as sessions are never shared
-                            //with the NullSessionCache, there can be no other thread modifying the 
-                            //same session at the same time (although of course there can be another
-                            //request modifying its copy of the session data, so it is impossible
-                            //to guarantee the order of writes).
-                            if (store.isPassivating())
-                                session.willPassivate();
-                            store.store(session.getId(), session.getSessionData());
-                            if (store.isPassivating())
-                                session.didActivate();
-                        }
+                        //should hold the lock on the session, but as sessions are never shared
+                        //with the NullSessionCache, there can be no other thread modifying the 
+                        //same session at the same time (although of course there can be another
+                        //request modifying its copy of the session data, so it is impossible
+                        //to guarantee the order of writes).
+                        if (store.isPassivating())
+                            session.willPassivate();
+                        store.store(session.getId(), session.getSessionData());
+                        if (store.isPassivating())
+                            session.didActivate();
                     }
                     catch (Exception e)
                     {
@@ -108,29 +109,29 @@ public class NullSessionCache extends AbstractSessionCache
         }
     }
 
-
-    
     /**
-     * ALWAYS means write through every attribute change.
-     * NEW means to write through every attribute change only 
-     * while the session is freshly created, ie its id has not yet been returned to the client.
-     * ON_EXIT means write the session only when the request exits (which is the behaviour of AbstractSessionCache).
-     *
+     * Defines the circumstances a session will be written to the backing store. 
      */
     public enum WriteThroughMode
     {
+        /**
+         * ALWAYS means write through every attribute change.
+         */
         ALWAYS,
+        /**
+         * NEW means to write through every attribute change only 
+         * while the session is freshly created, ie its id has not yet been returned to the client
+         */
         NEW,
+        /**
+         * ON_EXIT means write the session only when the request exits 
+         * (which is the default behaviour of AbstractSessionCache)
+         */
         ON_EXIT
     };
     
-    
-    /**
-     * Default is to only write out the session if it is new or changed
-     * when the request exits.
-     */
-    WriteThroughMode _writeThroughMode = WriteThroughMode.ON_EXIT;
-    WriteThroughAttributeListener _listener = null;
+    private WriteThroughMode _writeThroughMode = WriteThroughMode.ON_EXIT;
+    protected WriteThroughAttributeListener _listener = null;
     
 
     /**
@@ -140,7 +141,6 @@ public class NullSessionCache extends AbstractSessionCache
     {
         return _writeThroughMode;
     }
-
 
 
     /**
@@ -173,17 +173,16 @@ public class NullSessionCache extends AbstractSessionCache
             case NEW:
             case ALWAYS:
             {
-                if (_listener != null)
-                    break;
-                
-                _listener = new WriteThroughAttributeListener();
-                getSessionHandler().addEventListener(_listener);
+                if (_listener == null)
+                {
+                    _listener = new WriteThroughAttributeListener();
+                    getSessionHandler().addEventListener(_listener);
+                }
                 break;
             }
         }
         _writeThroughMode = writeThroughMode;
     }
-
 
 
     /**
@@ -194,7 +193,6 @@ public class NullSessionCache extends AbstractSessionCache
         super(handler);
         super.setEvictionPolicy(EVICT_ON_SESSION_EXIT);
     }
-    
     
 
     /**

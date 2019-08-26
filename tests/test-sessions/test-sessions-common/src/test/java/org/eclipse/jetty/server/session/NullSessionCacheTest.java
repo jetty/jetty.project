@@ -32,6 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -174,7 +175,7 @@ public class NullSessionCacheTest
         cache.setWriteThroughMode(NullSessionCache.WriteThroughMode.ALWAYS);
         assertEquals(NullSessionCache.WriteThroughMode.ALWAYS, cache.getWriteThroughMode());
         assertNotNull(cache._listener);
-        assertTrue(old == cache._listener);
+        assertSame(old,cache._listener);
         assertEquals(1, context.getSessionHandler()._sessionAttributeListeners.size());
         
         //check null is same as ON_EXIT
