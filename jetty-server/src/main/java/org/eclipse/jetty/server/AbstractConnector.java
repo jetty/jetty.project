@@ -196,18 +196,14 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
             public void beanAdded(Container parent, Object bean)
             {
                 if (bean instanceof HttpChannel.Listener)
-                    // TODO evaluate which is faster?
                     _httpChannelListeners = new HttpChannelListeners(getBeans(HttpChannel.Listener.class));
-                    // _httpChannelListeners = new HttpChannelListenersMethodHandles(getBeans(HttpChannel.Listener.class));
             }
 
             @Override
             public void beanRemoved(Container parent, Object bean)
             {
                 if (bean instanceof HttpChannel.Listener)
-                    // TODO evaluate which is faster?
                     _httpChannelListeners = new HttpChannelListeners(getBeans(HttpChannel.Listener.class));
-                    // _httpChannelListeners = new HttpChannelListenersMethodHandles(getBeans(HttpChannel.Listener.class));
             }
         });
 
