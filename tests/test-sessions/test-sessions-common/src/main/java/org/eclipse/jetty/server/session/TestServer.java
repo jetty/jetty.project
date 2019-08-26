@@ -94,7 +94,7 @@ public class TestServer
         return h;
     }
 
-    public ServerConnector getConnector()
+    public ServerConnector getServerConnector()
     {
         return _server.getBean(ServerConnector.class);
     }

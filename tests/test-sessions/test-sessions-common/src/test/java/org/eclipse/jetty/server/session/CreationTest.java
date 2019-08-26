@@ -77,7 +77,7 @@ public class CreationTest
         ServletHolder holder = new ServletHolder(servlet);
         ServletContextHandler contextHandler = server1.addContext(contextPath);
         TestHttpChannelCompleteListener scopeListener = new TestHttpChannelCompleteListener();
-        server1.getConnector().addBean(scopeListener);
+        server1.getServerConnector().addBean(scopeListener);
         contextHandler.addServlet(holder, servletMapping);
         servlet.setStore(contextHandler.getSessionHandler().getSessionCache().getSessionDataStore());
         server1.start();
@@ -146,7 +146,7 @@ public class CreationTest
         ServletHolder holder = new ServletHolder(servlet);
         ServletContextHandler contextHandler = server1.addContext(contextPath);
         TestHttpChannelCompleteListener scopeListener = new TestHttpChannelCompleteListener();
-        server1.getConnector().addBean(scopeListener);
+        server1.getServerConnector().addBean(scopeListener);
         contextHandler.addServlet(holder, servletMapping);
         servlet.setStore(contextHandler.getSessionHandler().getSessionCache().getSessionDataStore());
         server1.start();
@@ -198,7 +198,7 @@ public class CreationTest
         ServletHolder holder = new ServletHolder(servlet);
         ServletContextHandler contextHandler = server1.addContext(contextPath);
         TestHttpChannelCompleteListener scopeListener = new TestHttpChannelCompleteListener();
-        server1.getConnector().addBean(scopeListener);
+        server1.getServerConnector().addBean(scopeListener);
         contextHandler.addServlet(holder, servletMapping);
         servlet.setStore(contextHandler.getSessionHandler().getSessionCache().getSessionDataStore());
         server1.start();
@@ -246,7 +246,7 @@ public class CreationTest
         ServletHolder holder = new ServletHolder(servlet);
         ServletContextHandler contextHandler = server1.addContext(contextPath);
         TestHttpChannelCompleteListener scopeListener = new TestHttpChannelCompleteListener();
-        server1.getConnector().addBean(scopeListener);
+        server1.getServerConnector().addBean(scopeListener);
         contextHandler.addServlet(holder, servletMapping);
         servlet.setStore(contextHandler.getSessionHandler().getSessionCache().getSessionDataStore());
         server1.start();
@@ -300,7 +300,7 @@ public class CreationTest
         ServletHolder holder = new ServletHolder(servlet);
         ServletContextHandler contextHandler = server1.addContext(contextPath);
         TestHttpChannelCompleteListener scopeListener = new TestHttpChannelCompleteListener();
-        server1.getConnector().addBean(scopeListener);
+        server1.getServerConnector().addBean(scopeListener);
         contextHandler.addServlet(holder, servletMapping);
         ServletContextHandler ctxB = server1.addContext(contextB);
         ctxB.addServlet(TestServletB.class, servletMapping);
@@ -355,7 +355,7 @@ public class CreationTest
         ServletHolder holder = new ServletHolder(servlet);
         ServletContextHandler contextHandler = server1.addContext(contextPath);
         TestHttpChannelCompleteListener scopeListener = new TestHttpChannelCompleteListener();
-        server1.getConnector().addBean(scopeListener);
+        server1.getServerConnector().addBean(scopeListener);
         contextHandler.addServlet(holder, servletMapping);
         ServletContextHandler ctxB = server1.addContext(contextB);
         ctxB.addServlet(TestServletB.class, servletMapping);

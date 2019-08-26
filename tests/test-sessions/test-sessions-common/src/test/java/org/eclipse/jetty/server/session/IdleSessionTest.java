@@ -77,7 +77,7 @@ public class IdleSessionTest
         ServletHolder holder = new ServletHolder(_servlet);
         ServletContextHandler contextHandler = _server1.addContext(contextPath);
         TestHttpChannelCompleteListener scopeListener = new TestHttpChannelCompleteListener();
-        _server1.getConnector().addBean(scopeListener);
+        _server1.getServerConnector().addBean(scopeListener);
         contextHandler.addServlet(holder, servletMapping);
         _server1.start();
         int port1 = _server1.getPort();
@@ -203,7 +203,7 @@ public class IdleSessionTest
         ServletHolder holder = new ServletHolder(_servlet);
         ServletContextHandler contextHandler = _server1.addContext(contextPath);
         TestHttpChannelCompleteListener scopeListener = new TestHttpChannelCompleteListener();
-        _server1.getConnector().addBean(scopeListener);
+        _server1.getServerConnector().addBean(scopeListener);
         contextHandler.addServlet(holder, servletMapping);
         _server1.start();
         int port1 = _server1.getPort();

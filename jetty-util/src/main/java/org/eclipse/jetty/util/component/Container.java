@@ -50,24 +50,11 @@ public interface Container
     <T> Collection<T> getBeans(Class<T> clazz);
 
     /**
-     * @param clazz the class of the beans
-     * @param <T> the Bean type
-     * @return a list of beans of the given class (or subclass), which may be cached/shared.
-     * @see #getBeans()
-     * @see #getContainedBeans(Class)
-     */
-    default <T> Collection<T> getCachedBeans(Class<T> clazz)
-    {
-        return getBeans(clazz);
-    }
-
-    /**
      * @param clazz the class of the bean
      * @param <T> the Bean type
      * @return the first bean of a specific class (or subclass), or null if no such bean exist
      */
     <T> T getBean(Class<T> clazz);
-
 
     /**
      * Removes the given bean.

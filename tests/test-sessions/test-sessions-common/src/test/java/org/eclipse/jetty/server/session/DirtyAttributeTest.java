@@ -95,7 +95,7 @@ public class DirtyAttributeTest
         ctxA.addServlet(TestDirtyServlet.class, "/test");
 
         TestHttpChannelCompleteListener scopeListener = new TestHttpChannelCompleteListener();
-        server.getConnector().addBean(scopeListener);
+        server.getServerConnector().addBean(scopeListener);
 
         server.start();
         int port = server.getPort();

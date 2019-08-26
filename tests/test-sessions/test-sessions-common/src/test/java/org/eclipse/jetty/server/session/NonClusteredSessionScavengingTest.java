@@ -76,7 +76,7 @@ public class NonClusteredSessionScavengingTest extends AbstractTestBase
         TestHttpSessionListener listener = new TestHttpSessionListener();
         context1.getSessionHandler().addEventListener(listener);
         TestHttpChannelCompleteListener scopeListener = new TestHttpChannelCompleteListener();
-        server1.getConnector().addBean(scopeListener);
+        server1.getServerConnector().addBean(scopeListener);
 
         try
         {
@@ -145,7 +145,7 @@ public class NonClusteredSessionScavengingTest extends AbstractTestBase
             cacheFactory, storeFactory);
         ServletContextHandler context = server.addContext("/");
         TestHttpChannelCompleteListener scopeListener = new TestHttpChannelCompleteListener();
-        server.getConnector().addBean(scopeListener);
+        server.getServerConnector().addBean(scopeListener);
         _dataStore = context.getSessionHandler().getSessionCache().getSessionDataStore();
 
         context.addServlet(TestServlet.class, servletMapping);
@@ -209,7 +209,7 @@ public class NonClusteredSessionScavengingTest extends AbstractTestBase
             cacheFactory, storeFactory);
         ServletContextHandler context = server.addContext("/");
         TestHttpChannelCompleteListener scopeListener = new TestHttpChannelCompleteListener();
-        server.getConnector().addBean(scopeListener);
+        server.getServerConnector().addBean(scopeListener);
         _dataStore = context.getSessionHandler().getSessionCache().getSessionDataStore();
         context.addServlet(TestServlet.class, servletMapping);
         String contextPath = "/";

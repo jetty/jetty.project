@@ -26,19 +26,7 @@ import org.eclipse.jetty.server.Request;
 
 public class TestHttpChannelCompleteListener implements Listener
 {
-    AtomicReference<CountDownLatch> _exitSynchronizer = new AtomicReference<>();
-
-    public TestHttpChannelCompleteListener()
-    {
-    }
-
-    /**
-     * @return the exitSynchronizer
-     */
-    public CountDownLatch getExitSynchronizer()
-    {
-        return _exitSynchronizer.get();
-    }
+    private final AtomicReference<CountDownLatch> _exitSynchronizer = new AtomicReference<>();
 
     /**
      * @param exitSynchronizer the exitSynchronizer to set

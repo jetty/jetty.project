@@ -66,7 +66,7 @@ public abstract class AbstractClusteredInvalidationSessionTest extends AbstractT
         ServletContextHandler context = server1.addContext(contextPath);
         context.addServlet(TestServlet.class, servletMapping);
         TestHttpChannelCompleteListener scopeListener = new TestHttpChannelCompleteListener();
-        server1.getConnector().addBean(scopeListener);
+        server1.getServerConnector().addBean(scopeListener);
 
         try
         {

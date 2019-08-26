@@ -79,7 +79,7 @@ public class DefaultSessionCacheTest
         TestServer server = new TestServer(0, inactivePeriod, scavengePeriod, cacheFactory, storeFactory);
         ServletContextHandler contextHandler = server.addContext("/test");
         TestHttpChannelCompleteListener scopeListener = new TestHttpChannelCompleteListener();
-        server.getConnector().addBean(scopeListener);
+        server.getServerConnector().addBean(scopeListener);
 
         TestHttpSessionListener listener = new TestHttpSessionListener();
         contextHandler.getSessionHandler().addEventListener(listener);
