@@ -26,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -727,13 +728,13 @@ public class ServletContextHandlerTest
         
         //check the handler linking order
         HandlerWrapper h = (HandlerWrapper)context.getHandler();
-        assertTrue(h == sessionHandler);
+        assertSame(h, sessionHandler);
 
         h = (HandlerWrapper)h.getHandler();
-        assertTrue(h == securityHandler);
+        assertSame(h, securityHandler);
 
         h = (HandlerWrapper)h.getHandler();
-        assertTrue(h == gzipHandler);
+        assertSame(h, gzipHandler);
 
         //replace the security handler
         SecurityHandler myHandler = new SecurityHandler()
@@ -768,20 +769,18 @@ public class ServletContextHandlerTest
         
         //check the linking order
         context.setSecurityHandler(myHandler);
-        assertTrue(myHandler == context.getSecurityHandler());
+        assertSame(myHandler, context.getSecurityHandler());
         
         h = (HandlerWrapper)context.getHandler();
-        assertTrue(h == sessionHandler);
+        assertSame(h, sessionHandler);
 
         h = (HandlerWrapper)h.getHandler();
-        assertTrue(h == myHandler);
+        assertSame(h, myHandler);
 
         h = (HandlerWrapper)h.getHandler();
-        assertTrue(h == gzipHandler);
+        assertSame(h, gzipHandler);
     }
-    
-    
-    
+ 
     @Test
     public void testReplaceServletHandlerWithoutServlet() throws Exception
     {
