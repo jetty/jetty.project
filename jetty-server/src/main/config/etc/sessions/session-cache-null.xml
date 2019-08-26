@@ -12,6 +12,11 @@
     <New class="org.eclipse.jetty.server.session.NullSessionCacheFactory">
      <Set name="saveOnCreate" property="jetty.session.saveOnCreate"/>
      <Set name="removeUnloadableSessions" property="jetty.session.removeUnloadableSessions"/>
+     <Set name="writeThroughMode">
+         <Call class="org.eclipse.jetty.server.session.NullSessionCache$WriteThroughMode" name="valueOf">
+            <Arg><Property name="jetty.session.writeThroughMode" default="ON_EXIT"/></Arg>
+         </Call>
+    </Set>
     </New>
    </Arg>
   </Call>
