@@ -144,13 +144,12 @@ public class CookieCutter
             boolean inQuoted = false;
             boolean quoted = false;
             boolean escaped = false;
+            boolean reject = false;
             int tokenstart = -1;
             int tokenend = -1;
             for (int i = 0, length = hdr.length(); i <= length; i++)
             {
                 char c = i == length ? 0 : hdr.charAt(i);
-
-                // System.err.printf("i=%d/%d c=%s v=%b q=%b/%b e=%b u=%s s=%d e=%d \t%s=%s%n" ,i,length,c==0?"|":(""+c),invalue,inQuoted,quoted,escaped,unquoted,tokenstart,tokenend,name,value);
 
                 // Handle quoted values for name or value
                 if (inQuoted)
@@ -199,7 +198,7 @@ public class CookieCutter
                     // Handle name and value state machines
                     if (invalue)
                     {
-                        // parse the value
+                        // parse the cookie-value
                         switch (c)
                         {
                             case ' ':
@@ -273,7 +272,10 @@ public class CookieCutter
                                         cookie = new Cookie(name, value);
                                         if (version > 0)
                                             cookie.setVersion(version);
-                                        cookies.add(cookie);
+                                        if (!reject)
+                                        {
+                                            cookies.add(cookie);
+                                        }
                                     }
                                 }
                                 catch (Exception e)
@@ -284,6 +286,7 @@ public class CookieCutter
                                 name = null;
                                 tokenstart = -1;
                                 invalue = false;
+                                reject = false;
 
                                 break;
                             }
@@ -308,6 +311,15 @@ public class CookieCutter
                                     quoted = false;
                                     continue;
                                 }
+
+                                if (_compliance == CookieCompliance.RFC6265)
+                                {
+                                    if (isRFC6265RejectedCharacter(inQuoted, c))
+                                    {
+                                        reject = true;
+                                    }
+                                }
+
                                 if (tokenstart < 0)
                                     tokenstart = i;
                                 tokenend = i;
@@ -316,11 +328,18 @@ public class CookieCutter
                     }
                     else
                     {
-                        // parse the name
+                        // parse the cookie-name
                         switch (c)
                         {
                             case ' ':
                             case '\t':
+                                continue;
+
+                            case ';':
+                                // a cookie terminated with no '=' sign.
+                                tokenstart = -1;
+                                invalue = false;
+                                reject = false;
                                 continue;
 
                             case '=':
@@ -346,6 +365,15 @@ public class CookieCutter
                                     quoted = false;
                                     continue;
                                 }
+
+                                if (_compliance == CookieCompliance.RFC6265)
+                                {
+                                    if (isRFC6265RejectedCharacter(inQuoted, c))
+                                    {
+                                        reject = true;
+                                    }
+                                }
+
                                 if (tokenstart < 0)
                                     tokenstart = i;
                                 tokenend = i;
@@ -356,7 +384,34 @@ public class CookieCutter
             }
         }
 
-        _cookies = cookies.toArray(new Cookie[cookies.size()]);
+        _cookies = cookies.toArray(new Cookie[0]);
         _lastCookies = _cookies;
+    }
+
+    protected boolean isRFC6265RejectedCharacter(boolean inQuoted, char c)
+    {
+        if (inQuoted)
+        {
+            // We only reject if a Control Character is encountered
+            if (Character.isISOControl(c))
+            {
+                return true;
+            }
+        }
+        else
+        {
+            /* From RFC6265 - Section 4.1.1 - Syntax
+             *  cookie-octet  = %x21 / %x23-2B / %x2D-3A / %x3C-5B / %x5D-7E
+             *                  ; US-ASCII characters excluding CTLs,
+             *                  ; whitespace DQUOTE, comma, semicolon,
+             *                  ; and backslash
+             */
+            return Character.isISOControl(c) || // control characters
+                c > 127 || // 8-bit characters
+                c == ',' || // comma
+                c == ';'; // semicolon
+        }
+
+        return false;
     }
 }

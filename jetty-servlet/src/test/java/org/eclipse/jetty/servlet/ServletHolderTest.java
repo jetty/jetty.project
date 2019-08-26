@@ -108,9 +108,9 @@ public class ServletHolderTest
         {
             assertThat(e.getMessage(), containsString("foo"));
         }
-        catch (MultiException m)
+        catch (MultiException e)
         {
-            assertThat(m.getCause().getMessage(), containsString("foo"));
+            assertThat(e.getCause().getMessage(), containsString("foo"));
         }
     }
 
@@ -132,9 +132,9 @@ public class ServletHolderTest
         {
             assertThat(e.getMessage(), containsString("foo"));
         }
-        catch (MultiException m)
+        catch (MultiException e)
         {
-            assertThat(m.getCause().getMessage(), containsString("foo"));
+            assertThat(e.getCause().getMessage(), containsString("foo"));
         }
     }
 }

@@ -138,7 +138,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
 
         tester.assertNegotiated("permessage-deflate");
 
-        tester.parseIncomingHex( // context takeover (2 messages)
+        tester.parseIncomingHex(// context takeover (2 messages)
             // message 1
             "0xc1 0x07", // (HEADER added for this test)
             "0xf2 0x48 0xcd 0xc9 0xc9 0x07 0x00",
@@ -524,7 +524,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
 
         // Captured from Pywebsocket (r790) - 3 messages with similar parts.
 
-        tester.parseIncomingHex( // context takeover (3 messages)
+        tester.parseIncomingHex(// context takeover (3 messages)
             "c1 09 0a c9 2f 4a 0c 01  62 00 00", // ToraTora
             "c1 0b 72 2c c9 2f 4a 74  cb 01 12 00 00", // AtoraFlora
             "c1 0b 0a c8 c8 c9 2f 4a  0c 01 62 00 00" // PhloraTora
@@ -542,7 +542,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
 
         // Captured from Pywebsocket (r790) - "tora" sent 3 times.
 
-        tester.parseIncomingHex( // context takeover (3 messages)
+        tester.parseIncomingHex(// context takeover (3 messages)
             "c1 06 2a c9 2f 4a 04 00", // tora 1
             "c1 05 2a 01 62 00 00", // tora 2
             "c1 04 02 61 00 00" // tora 3
@@ -560,7 +560,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
 
         // Captured from Pywebsocket (r790) - 3 messages with similar parts.
 
-        tester.parseIncomingHex( // context takeover (3 messages)
+        tester.parseIncomingHex(// context takeover (3 messages)
             "c1 89 88 bc 1b b1 82 75  34 fb 84 bd 79 b1 88", // ToraTora
             "c1 8b 50 86 88 b2 22 aa  41 9d 1a f2 43 b3 42 86 88", // AtoraFlora
             "c1 8b e2 3e 05 53 e8 f6  cd 9a cd 74 09 52 80 3e 05" // PhloraTora
@@ -578,7 +578,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
 
         // Captured from Pywebsocket (r790) - "tora" sent 3 times.
 
-        tester.parseIncomingHex( // context takeover (3 messages)
+        tester.parseIncomingHex(// context takeover (3 messages)
             "c1 86 69 39 fe 91 43 f0  d1 db 6d 39", // tora 1
             "c1 85 2d f3 eb 96 07 f2  89 96 2d", // tora 2
             "c1 84 53 ad a5 34 51 cc  a5 34" // tora 3

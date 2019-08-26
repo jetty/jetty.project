@@ -109,9 +109,9 @@ public class WebSocketServletRFCTest
         try (BlockheadConnection clientConn = connFut.get(Timeouts.CONNECT, Timeouts.CONNECT_UNIT))
         {
             // Generate binary frames
-            byte buf1[] = new byte[128];
-            byte buf2[] = new byte[128];
-            byte buf3[] = new byte[128];
+            byte[] buf1 = new byte[128];
+            byte[] buf2 = new byte[128];
+            byte[] buf3 = new byte[128];
 
             Arrays.fill(buf1, (byte)0xAA);
             Arrays.fill(buf2, (byte)0xBB);

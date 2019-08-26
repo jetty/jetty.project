@@ -245,4 +245,18 @@ public class CookieCutterTest
 
         assertThat("Cookies.length", cookies.length, is(0));
     }
+
+    @Test
+    public void testMultipleCookies()
+    {
+        String rawCookie = "testcookie; server.id=abcd; server.detail=cfg";
+
+        // The first cookie "testcookie" should be ignored, per RFC6265, as it's missing the "=" sign.
+
+        Cookie[] cookies = parseCookieHeaders(CookieCompliance.RFC6265, rawCookie);
+
+        assertThat("Cookies.length", cookies.length, is(2));
+        assertCookie("Cookies[0]", cookies[0], "server.id", "abcd", 0, null);
+        assertCookie("Cookies[1]", cookies[1], "server.detail", "cfg", 0, null);
+    }
 }

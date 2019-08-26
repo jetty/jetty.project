@@ -34,7 +34,7 @@ public class TestConfiguration extends HashMap<String, Object>
 {
     public static int VALUE = 77;
 
-    public final Object ID = new Object();
+    public final Object id = new Object();
 
     public final String name;
     public TestConfiguration nested;

@@ -43,7 +43,9 @@ public class PathMatchersAbsoluteTest
             arguments.add(Arguments.of("/opt/florb", true));
             arguments.add(Arguments.of("/home/user/benfranklin", true));
             arguments.add(Arguments.of("glob:/home/user/benfranklin/*.jar", true));
+            //@checkstyle-disable-check : LegacyMethodSeparators
             arguments.add(Arguments.of("glob:/**/*.jar", true));
+            //@checkstyle-enable-check : LegacyMethodSeparators
             arguments.add(Arguments.of("regex:/*-[^dev].ini", true));
         }
 

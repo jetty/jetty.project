@@ -39,6 +39,7 @@ import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class PartialRFC2616Test
 {
@@ -116,10 +117,12 @@ public class PartialRFC2616Test
                 "Host: localhost\n" +
                 "Transfer-Encoding: chunked,identity\n" +
                 "Content-Type: text/plain\n" +
+                //@checkstyle-disable-check : IllegalTokenText
                 "\015\012" +
                 "5;\015\012" +
                 "123\015\012\015\012" +
                 "0;\015\012\015\012");
+                //@checkstyle-enable-check : IllegalTokenText
         checkContains(response, offset, "HTTP/1.1 400 Bad", "Chunked last");
     }
 
@@ -308,8 +311,9 @@ public class PartialRFC2616Test
                 "Content-Type: text/plain\n" +
                 "Content-Length: 5\n" +
                 "\n" +
+                //@checkstyle-disable-check : IllegalTokenText
                 "123\015\012" +
-
+                //@checkstyle-enable-check : IllegalTokenText
                 "GET /R2 HTTP/1.1\n" +
                 "Host: localhost\n" +
                 "Transfer-Encoding: other\n" +
@@ -440,7 +444,9 @@ public class PartialRFC2616Test
     {
         int offset = 0;
         String response = connector.getResponse("GET /R1 HTTP/1.1\n" + "Host: localhost\n" + "\n", 250, TimeUnit.MILLISECONDS);
+        //@checkstyle-disable-check : IllegalTokenText
         offset = checkContains(response, offset, "HTTP/1.1 200 OK\015\012", "8.1.2 default") + 10;
+        //@checkstyle-enable-check : IllegalTokenText
         checkContains(response, offset, "Content-Length: ", "8.1.2 default");
 
         LocalEndPoint endp = connector.executeRequest("GET /R1 HTTP/1.1\n" + "Host: localhost\n" + "\n" +
@@ -449,12 +455,16 @@ public class PartialRFC2616Test
 
         offset = 0;
         response = endp.getResponse();
+        //@checkstyle-disable-check : IllegalTokenText
         offset = checkContains(response, offset, "HTTP/1.1 200 OK\015\012", "8.1.2 default") + 1;
+        //@checkstyle-enable-check : IllegalTokenText
         offset = checkContains(response, offset, "/R1", "8.1.2 default") + 1;
 
         offset = 0;
         response = endp.getResponse();
+        //@checkstyle-disable-check : IllegalTokenText
         offset = checkContains(response, offset, "HTTP/1.1 200 OK\015\012", "8.1.2.2 pipeline") + 11;
+        //@checkstyle-enable-check : IllegalTokenText
         offset = checkContains(response, offset, "Connection: close", "8.1.2.2 pipeline") + 1;
         offset = checkContains(response, offset, "/R2", "8.1.2.1 close") + 3;
 
@@ -491,7 +501,9 @@ public class PartialRFC2616Test
                 "Content-Length: 8\n" +
                 "Connection: close\n" +
                 "\n" +
+                //@checkstyle-disable-check : IllegalTokenText
                 "123456\015\012");
+                //@checkstyle-enable-check : IllegalTokenText
         checkNotContained(response, offset, "HTTP/1.1 100 ", "8.2.3 expect 100");
         offset = checkContains(response, offset, "HTTP/1.1 200 OK", "8.2.3 expect with body") + 1;
     }
@@ -511,9 +523,9 @@ public class PartialRFC2616Test
         String infomational = endp.getResponse();
         offset = checkContains(infomational, offset, "HTTP/1.1 100 ", "8.2.3 expect 100") + 1;
         checkNotContained(infomational, offset, "HTTP/1.1 200", "8.2.3 expect 100");
-
+        //@checkstyle-disable-check : IllegalTokenText
         endp.addInput("654321\015\012");
-
+        //@checkstyle-enable-check : IllegalTokenText
         String response = endp.getResponse();
         offset = 0;
         offset = checkContains(response, offset, "HTTP/1.1 200", "8.2.3 expect 100") + 1;
@@ -608,6 +620,7 @@ public class PartialRFC2616Test
         {
             int offset = 0;
             String response = connector.getResponse("GET /R1 HTTP/1.0\n" + "\n");
+            //@checkstyle-disable-check : IllegalTokenText
             offset = checkContains(response, offset, "HTTP/1.1 200 OK\015\012", "19.6.2 default close") + 10;
             checkNotContained(response, offset, "Connection: close", "19.6.2 not assumed");
 
@@ -659,7 +672,7 @@ public class PartialRFC2616Test
             response = endp.getResponse();
             offset = checkContains(response, offset, "HTTP/1.1 200 OK\015\012", "19.6.2 Keep-alive 2") + 11;
             offset = checkContains(response, offset, "/R2", "19.6.2 Keep-alive close") + 3;
-
+            //@checkstyle-enable-check : IllegalTokenText
             offset = 0;
             response = endp.getResponse();
             assertThat("19.6.2 closed", response, nullValue());
@@ -667,7 +680,7 @@ public class PartialRFC2616Test
         catch (Exception e)
         {
             e.printStackTrace();
-            assertTrue(false);
+            fail(e.getMessage());
         }
     }
 
