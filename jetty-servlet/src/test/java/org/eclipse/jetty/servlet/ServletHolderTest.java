@@ -18,7 +18,11 @@
 
 package org.eclipse.jetty.servlet;
 
+import javax.servlet.ServletException;
 import javax.servlet.UnavailableException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.MultiException;
@@ -31,8 +35,20 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import java.io.IOException;
+
 public class ServletHolderTest
 {
+    
+    public static class FakeServlet extends HttpServlet
+    {
+        @Override
+        protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+        {
+            super.doGet(req, resp);
+        }
+    }
+    
 
     @Test
     public void testTransitiveCompareTo() throws Exception
@@ -112,6 +128,40 @@ public class ServletHolderTest
         {
             assertThat(e.getCause().getMessage(), containsString("foo"));
         }
+    }
+    
+    @Test
+    public void testWithClass() throws Exception
+    {
+        try (StacklessLogging stackless = new StacklessLogging(BaseHolder.class, ServletHandler.class, ContextHandler.class, ServletContextHandler.class))
+        {
+            ServletContextHandler context = new ServletContextHandler();
+            ServletHandler handler = context.getServletHandler();
+            ServletHolder holder = new ServletHolder();
+            holder.setName("foo");
+            holder.setHeldClass(FakeServlet.class);
+            handler.addServlet(holder);
+            handler.start();
+            assertTrue(holder.isAvailable());
+            assertTrue(holder.isStarted());
+        }
+    }
+    
+    @Test
+    public void testWithClassName() throws Exception
+    {
+        try (StacklessLogging stackless = new StacklessLogging(BaseHolder.class, ServletHandler.class, ContextHandler.class, ServletContextHandler.class))
+        {
+            ServletContextHandler context = new ServletContextHandler();
+            ServletHandler handler = context.getServletHandler();
+            ServletHolder holder = new ServletHolder();
+            holder.setName("foo");
+            holder.setClassName("org.eclipse.jetty.servlet.ServletHolderTest$FakeServlet");
+            handler.addServlet(holder);
+            handler.start();
+            assertTrue(holder.isAvailable());
+            assertTrue(holder.isStarted());
+        } 
     }
 
     @Test

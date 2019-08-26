@@ -37,6 +37,7 @@ import javax.servlet.ServletContextAttributeListener;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 import javax.servlet.ServletException;
+import javax.servlet.ServletRegistration;
 import javax.servlet.ServletRequestAttributeEvent;
 import javax.servlet.ServletRequestAttributeListener;
 import javax.servlet.ServletRequestEvent;
@@ -81,6 +82,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -619,7 +621,124 @@ public class ServletContextHandlerTest
         response = _connector.getResponse(request.toString());
         assertThat("Response", response, containsString("Hello World"));
     }
+    
+    @Test
+    public void testServletRegistrationByClass() throws Exception
+    {
+        ServletContextHandler context = new ServletContextHandler();
+        context.setContextPath("/");
+        ServletRegistration reg = context.getServletContext().addServlet("test", TestServlet.class);
+        reg.addMapping("/test");
 
+        _server.setHandler(context);
+        _server.start();
+
+        StringBuffer request = new StringBuffer();
+        request.append("GET /test HTTP/1.0\n");
+        request.append("Host: localhost\n");
+        request.append("\n");
+
+        String response = _connector.getResponse(request.toString());
+        assertThat("Response", response, containsString("Test"));
+    }
+
+    @Test
+    public void testServletRegistrationByClassName() throws Exception
+    {
+        ServletContextHandler context = new ServletContextHandler();
+        context.setContextPath("/");
+        ServletRegistration reg = context.getServletContext().addServlet("test", TestServlet.class.getName());
+        reg.addMapping("/test");
+
+        _server.setHandler(context);
+        _server.start();
+
+        StringBuffer request = new StringBuffer();
+        request.append("GET /test HTTP/1.0\n");
+        request.append("Host: localhost\n");
+        request.append("\n");
+
+        String response = _connector.getResponse(request.toString());
+        assertThat("Response", response, containsString("Test"));
+    }
+    
+    @Test
+    public void testPartialServletRegistrationByName() throws Exception
+    {
+        ServletContextHandler context = new ServletContextHandler();
+        context.setContextPath("/");
+        ServletHolder partial = new ServletHolder();
+        partial.setName("test");
+        context.addServlet(partial, "/test");
+        
+        ServletRegistration reg = context.getServletContext().addServlet("test", TestServlet.class.getName());
+        assertNotNull(reg);
+        assertEquals(TestServlet.class.getName(), partial.getClassName());
+
+        _server.setHandler(context);
+        _server.start();
+
+        StringBuffer request = new StringBuffer();
+        request.append("GET /test HTTP/1.0\n");
+        request.append("Host: localhost\n");
+        request.append("\n");
+
+        String response = _connector.getResponse(request.toString());
+        assertThat("Response", response, containsString("Test"));
+    }
+    
+    @Test
+    public void testPartialServletRegistrationByClass() throws Exception
+    {
+        ServletContextHandler context = new ServletContextHandler();
+        context.setContextPath("/");
+        ServletHolder partial = new ServletHolder();
+        partial.setName("test");
+        context.addServlet(partial, "/test");
+        
+        ServletRegistration reg = context.getServletContext().addServlet("test", TestServlet.class);
+        assertNotNull(reg);
+        assertEquals(TestServlet.class.getName(), partial.getClassName());
+        assertSame(TestServlet.class, partial.getHeldClass());
+
+        _server.setHandler(context);
+        _server.start();
+
+        StringBuffer request = new StringBuffer();
+        request.append("GET /test HTTP/1.0\n");
+        request.append("Host: localhost\n");
+        request.append("\n");
+
+        String response = _connector.getResponse(request.toString());
+        assertThat("Response", response, containsString("Test"));
+    }
+    
+    @Test
+    public void testNullServletRegistration() throws Exception
+    {
+        ServletContextHandler context = new ServletContextHandler();
+        context.setContextPath("/");
+        ServletHolder full = new ServletHolder();
+        full.setName("test");
+        full.setHeldClass(TestServlet.class);
+        context.addServlet(full, "/test");
+        
+        //Must return null if the servlet has been fully defined previously
+        ServletRegistration reg = context.getServletContext().addServlet("test", TestServlet.class);
+        assertNull(reg);
+
+        _server.setHandler(context);
+        _server.start();
+
+        StringBuffer request = new StringBuffer();
+        request.append("GET /test HTTP/1.0\n");
+        request.append("Host: localhost\n");
+        request.append("\n");
+
+        String response = _connector.getResponse(request.toString());
+        assertThat("Response", response, containsString("Test"));
+    }
+    
     @Test
     public void testHandlerBeforeServletHandler() throws Exception
     {
