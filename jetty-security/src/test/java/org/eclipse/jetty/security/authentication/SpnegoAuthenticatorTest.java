@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.security.authentication;
 
+import java.io.IOException;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpFields;
@@ -26,6 +27,7 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.server.Authentication;
 import org.eclipse.jetty.server.HttpChannel;
+import org.eclipse.jetty.server.HttpChannelState;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpOutput;
 import org.eclipse.jetty.server.Request;
@@ -34,6 +36,8 @@ import org.eclipse.jetty.server.Server;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class SpnegoAuthenticatorTest
@@ -56,20 +60,27 @@ public class SpnegoAuthenticatorTest
             {
                 return null;
             }
-        };
-        Request req = new Request(channel, null);
-        HttpOutput out = new HttpOutput(channel)
-        {
+
             @Override
-            public void close()
+            protected HttpOutput newHttpOutput()
             {
+                return new HttpOutput(this)
+                {
+                    @Override
+                    public void close() {}
+
+                    @Override
+                    public void flush() throws IOException {}
+                };
             }
         };
-        Response res = new Response(channel, out);
+        Request req = channel.getRequest();
+        Response res = channel.getResponse();
         MetaData.Request metadata = new MetaData.Request(new HttpFields());
         metadata.setURI(new HttpURI("http://localhost"));
         req.setMetaData(metadata);
 
+        assertThat(channel.getState().handling(), is(HttpChannelState.Action.DISPATCH));
         assertEquals(Authentication.SEND_CONTINUE, _authenticator.validateRequest(req, res, true));
         assertEquals(HttpHeader.NEGOTIATE.asString(), res.getHeader(HttpHeader.WWW_AUTHENTICATE.asString()));
         assertEquals(HttpServletResponse.SC_UNAUTHORIZED, res.getStatus());
@@ -85,16 +96,22 @@ public class SpnegoAuthenticatorTest
             {
                 return null;
             }
-        };
-        Request req = new Request(channel, null);
-        HttpOutput out = new HttpOutput(channel)
-        {
+
             @Override
-            public void close()
+            protected HttpOutput newHttpOutput()
             {
+                return new HttpOutput(this)
+                {
+                    @Override
+                    public void close() {}
+
+                    @Override
+                    public void flush() throws IOException {}
+                };
             }
         };
-        Response res = new Response(channel, out);
+        Request req = channel.getRequest();
+        Response res = channel.getResponse();
         HttpFields http_fields = new HttpFields();
         // Create a bogus Authorization header. We don't care about the actual credentials.
         http_fields.add(HttpHeader.AUTHORIZATION, "Basic asdf");
@@ -102,6 +119,7 @@ public class SpnegoAuthenticatorTest
         metadata.setURI(new HttpURI("http://localhost"));
         req.setMetaData(metadata);
 
+        assertThat(channel.getState().handling(), is(HttpChannelState.Action.DISPATCH));
         assertEquals(Authentication.SEND_CONTINUE, _authenticator.validateRequest(req, res, true));
         assertEquals(HttpHeader.NEGOTIATE.asString(), res.getHeader(HttpHeader.WWW_AUTHENTICATE.asString()));
         assertEquals(HttpServletResponse.SC_UNAUTHORIZED, res.getStatus());

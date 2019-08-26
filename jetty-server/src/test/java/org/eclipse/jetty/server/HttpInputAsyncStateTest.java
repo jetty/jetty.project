@@ -190,6 +190,10 @@ public class HttpInputAsyncStateTest
                     __history.add("COMPLETE");
                     break;
 
+                case READ_REGISTER:
+                    _state.getHttpChannel().onAsyncWaitForContent();
+                    break;
+
                 default:
                     fail("Bad Action: " + action);
             }

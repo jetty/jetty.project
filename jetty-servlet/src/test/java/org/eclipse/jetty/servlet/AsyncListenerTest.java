@@ -32,6 +32,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.tools.HttpTester;
+import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.QuietServletException;
 import org.eclipse.jetty.server.Server;
@@ -42,6 +43,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class AsyncListenerTest
@@ -140,7 +142,7 @@ public class AsyncListenerTest
         test_StartAsync_Throw_OnError(event ->
         {
             HttpServletResponse response = (HttpServletResponse)event.getAsyncContext().getResponse();
-            response.sendError(HttpStatus.BAD_GATEWAY_502);
+            response.sendError(HttpStatus.BAD_GATEWAY_502, "Message!!!");
         });
         String httpResponse = connector.getResponse(
             "GET /ctx/path HTTP/1.1\r\n" +
@@ -148,7 +150,8 @@ public class AsyncListenerTest
                 "Connection: close\r\n" +
                 "\r\n");
         assertThat(httpResponse, containsString("HTTP/1.1 502 "));
-        assertThat(httpResponse, containsString(TestRuntimeException.class.getName()));
+        assertThat(httpResponse, containsString("Message!!!"));
+        assertThat(httpResponse, not(containsString(TestRuntimeException.class.getName())));
     }
 
     @Test
@@ -191,7 +194,7 @@ public class AsyncListenerTest
             protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
             {
                 AsyncContext asyncContext = request.startAsync();
-                asyncContext.setTimeout(0);
+                asyncContext.setTimeout(10000);
                 asyncContext.addListener(new AsyncListenerAdapter()
                 {
                     @Override
@@ -268,7 +271,8 @@ public class AsyncListenerTest
                 "Connection: close\r\n" +
                 "\r\n");
         assertThat(httpResponse, containsString("HTTP/1.1 500 "));
-        assertThat(httpResponse, containsString(TestRuntimeException.class.getName()));
+        assertThat(httpResponse, containsString("AsyncContext timeout"));
+        assertThat(httpResponse, not(containsString(TestRuntimeException.class.getName())));
     }
 
     @Test
@@ -292,6 +296,7 @@ public class AsyncListenerTest
         {
             HttpServletResponse response = (HttpServletResponse)event.getAsyncContext().getResponse();
             response.sendError(HttpStatus.BAD_GATEWAY_502);
+            event.getAsyncContext().complete();
         });
         String httpResponse = connector.getResponse(
             "GET / HTTP/1.1\r\n" +
@@ -384,7 +389,7 @@ public class AsyncListenerTest
             protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
             {
                 AsyncContext asyncContext = request.startAsync();
-                asyncContext.setTimeout(0);
+                asyncContext.setTimeout(10000);
                 asyncContext.addListener(new AsyncListenerAdapter()
                 {
                     @Override
@@ -447,7 +452,7 @@ public class AsyncListenerTest
     }
 
     // Unique named RuntimeException to help during debugging / assertions.
-    public static class TestRuntimeException extends RuntimeException
+    public static class TestRuntimeException extends RuntimeException implements QuietException
     {
     }
 

@@ -20,8 +20,22 @@ package org.eclipse.jetty.servlet;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
+import java.util.EnumSet;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import javax.servlet.AsyncContext;
+import javax.servlet.DispatcherType;
+import javax.servlet.Filter;
+import javax.servlet.FilterChain;
+import javax.servlet.FilterConfig;
 import javax.servlet.Servlet;
 import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -29,8 +43,12 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.server.Dispatcher;
 import org.eclipse.jetty.server.HttpChannel;
+import org.eclipse.jetty.server.HttpChannelState;
 import org.eclipse.jetty.server.LocalConnector;
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.HandlerWrapper;
+import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
@@ -40,24 +58,30 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ErrorPageTest
 {
     private Server _server;
     private LocalConnector _connector;
     private StacklessLogging _stackless;
+    private static CountDownLatch __asyncSendErrorCompleted;
+    private ErrorPageErrorHandler _errorPageErrorHandler;
 
     @BeforeEach
     public void init() throws Exception
     {
         _server = new Server();
         _connector = new LocalConnector(_server);
+        _server.addConnector(_connector);
+
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.NO_SECURITY | ServletContextHandler.NO_SESSIONS);
 
-        _server.addConnector(_connector);
         _server.setHandler(context);
 
         context.setContextPath("/");
+
+        context.addFilter(SingleDispatchFilter.class, "/*", EnumSet.allOf(DispatcherType.class));
 
         context.addServlet(DefaultServlet.class, "/");
         context.addServlet(FailServlet.class, "/fail/*");
@@ -65,18 +89,40 @@ public class ErrorPageTest
         context.addServlet(ErrorServlet.class, "/error/*");
         context.addServlet(AppServlet.class, "/app/*");
         context.addServlet(LongerAppServlet.class, "/longer.app/*");
+        context.addServlet(SyncSendErrorServlet.class, "/sync/*");
+        context.addServlet(AsyncSendErrorServlet.class, "/async/*");
+        context.addServlet(NotEnoughServlet.class, "/notenough/*");
+        context.addServlet(DeleteServlet.class, "/delete/*");
+        context.addServlet(ErrorAndStatusServlet.class, "/error-and-status/*");
 
-        ErrorPageErrorHandler error = new ErrorPageErrorHandler();
-        context.setErrorHandler(error);
-        error.addErrorPage(599, "/error/599");
-        error.addErrorPage(400, "/error/400");
+        HandlerWrapper noopHandler = new HandlerWrapper()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                if (target.startsWith("/noop"))
+                    return;
+                else
+                    super.handle(target, baseRequest, request, response);
+            }
+        };
+        context.insertHandler(noopHandler);
+
+        _errorPageErrorHandler = new ErrorPageErrorHandler();
+        context.setErrorHandler(_errorPageErrorHandler);
+        _errorPageErrorHandler.addErrorPage(595, "/error/595");
+        _errorPageErrorHandler.addErrorPage(597, "/sync");
+        _errorPageErrorHandler.addErrorPage(599, "/error/599");
+        _errorPageErrorHandler.addErrorPage(400, "/error/400");
         // error.addErrorPage(500,"/error/500");
-        error.addErrorPage(IllegalStateException.class.getCanonicalName(), "/error/TestException");
-        error.addErrorPage(BadMessageException.class, "/error/BadMessageException");
-        error.addErrorPage(ErrorPageErrorHandler.GLOBAL_ERROR_PAGE, "/error/GlobalErrorPage");
+        _errorPageErrorHandler.addErrorPage(IllegalStateException.class.getCanonicalName(), "/error/TestException");
+        _errorPageErrorHandler.addErrorPage(BadMessageException.class, "/error/BadMessageException");
+        _errorPageErrorHandler.addErrorPage(ErrorPageErrorHandler.GLOBAL_ERROR_PAGE, "/error/GlobalErrorPage");
 
         _server.start();
         _stackless = new StacklessLogging(ServletHandler.class);
+
+        __asyncSendErrorCompleted = new CountDownLatch(1);
     }
 
     @AfterEach
@@ -85,6 +131,101 @@ public class ErrorPageTest
         _stackless.close();
         _server.stop();
         _server.join();
+    }
+
+    @Test
+    void testErrorOverridesStatus() throws Exception
+    {
+        String response = _connector.getResponse("GET /error-and-status/anything HTTP/1.0\r\n\r\n");
+        assertThat(response, Matchers.containsString("HTTP/1.1 594 594"));
+        assertThat(response, Matchers.containsString("ERROR_PAGE: /GlobalErrorPage"));
+        assertThat(response, Matchers.containsString("ERROR_MESSAGE: custom get error"));
+        assertThat(response, Matchers.containsString("ERROR_CODE: 594"));
+        assertThat(response, Matchers.containsString("ERROR_EXCEPTION: null"));
+        assertThat(response, Matchers.containsString("ERROR_EXCEPTION_TYPE: null"));
+        assertThat(response, Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.servlet.ErrorPageTest$ErrorAndStatusServlet-"));
+        assertThat(response, Matchers.containsString("ERROR_REQUEST_URI: /error-and-status/anything"));
+    }
+
+    @Test
+    void testHttp204CannotHaveBody() throws Exception
+    {
+        String response = _connector.getResponse("GET /fail/code?code=204 HTTP/1.0\r\n\r\n");
+        assertThat(response, Matchers.containsString("HTTP/1.1 204 No Content"));
+        assertThat(response, not(Matchers.containsString("DISPATCH: ")));
+        assertThat(response, not(Matchers.containsString("ERROR_PAGE: ")));
+        assertThat(response, not(Matchers.containsString("ERROR_CODE: ")));
+        assertThat(response, not(Matchers.containsString("ERROR_EXCEPTION: ")));
+        assertThat(response, not(Matchers.containsString("ERROR_EXCEPTION_TYPE: ")));
+        assertThat(response, not(Matchers.containsString("ERROR_SERVLET: ")));
+        assertThat(response, not(Matchers.containsString("ERROR_REQUEST_URI: ")));
+    }
+
+    @Test
+    void testDeleteCannotHaveBody() throws Exception
+    {
+        String response = _connector.getResponse("DELETE /delete/anything HTTP/1.0\r\n\r\n");
+        assertThat(response, Matchers.containsString("HTTP/1.1 595 595"));
+        assertThat(response, not(Matchers.containsString("DISPATCH: ")));
+        assertThat(response, not(Matchers.containsString("ERROR_PAGE: ")));
+        assertThat(response, not(Matchers.containsString("ERROR_MESSAGE: ")));
+        assertThat(response, not(Matchers.containsString("ERROR_CODE: ")));
+        assertThat(response, not(Matchers.containsString("ERROR_EXCEPTION: ")));
+        assertThat(response, not(Matchers.containsString("ERROR_EXCEPTION_TYPE: ")));
+        assertThat(response, not(Matchers.containsString("ERROR_SERVLET: ")));
+        assertThat(response, not(Matchers.containsString("ERROR_REQUEST_URI: ")));
+
+        assertThat(response, not(containsString("This shouldn't be seen")));
+    }
+
+    @Test
+    void testGenerateAcceptableResponse_noAcceptHeader() throws Exception
+    {
+        // no global error page here
+        _errorPageErrorHandler.getErrorPages().remove(ErrorPageErrorHandler.GLOBAL_ERROR_PAGE);
+
+        String response = _connector.getResponse("GET /fail/code?code=598 HTTP/1.0\r\n\r\n");
+        assertThat(response, Matchers.containsString("HTTP/1.1 598 598"));
+        assertThat(response, Matchers.containsString("<title>Error 598"));
+        assertThat(response, Matchers.containsString("<h2>HTTP ERROR 598"));
+        assertThat(response, Matchers.containsString("/fail/code"));
+    }
+
+    @Test
+    void testGenerateAcceptableResponse_htmlAcceptHeader() throws Exception
+    {
+        // no global error page here
+        _errorPageErrorHandler.getErrorPages().remove(ErrorPageErrorHandler.GLOBAL_ERROR_PAGE);
+
+        // even when text/html is not the 1st content type, a html error page should still be generated
+        String response = _connector.getResponse("GET /fail/code?code=598 HTTP/1.0\r\n" +
+            "Accept: application/bytes,text/html\r\n\r\n");
+        assertThat(response, Matchers.containsString("HTTP/1.1 598 598"));
+        assertThat(response, Matchers.containsString("<title>Error 598"));
+        assertThat(response, Matchers.containsString("<h2>HTTP ERROR 598"));
+        assertThat(response, Matchers.containsString("/fail/code"));
+    }
+
+    @Test
+    void testGenerateAcceptableResponse_noHtmlAcceptHeader() throws Exception
+    {
+        // no global error page here
+        _errorPageErrorHandler.getErrorPages().remove(ErrorPageErrorHandler.GLOBAL_ERROR_PAGE);
+
+        String response = _connector.getResponse("GET /fail/code?code=598 HTTP/1.0\r\n" +
+            "Accept: application/bytes\r\n\r\n");
+        assertThat(response, Matchers.containsString("HTTP/1.1 598 598"));
+        assertThat(response, not(Matchers.containsString("<title>Error 598")));
+        assertThat(response, not(Matchers.containsString("<h2>HTTP ERROR 598")));
+        assertThat(response, not(Matchers.containsString("/fail/code")));
+    }
+
+    @Test
+    void testNestedSendErrorDoesNotLoop() throws Exception
+    {
+        String response = _connector.getResponse("GET /fail/code?code=597 HTTP/1.0\r\n\r\n");
+        assertThat(response, Matchers.containsString("HTTP/1.1 597 597"));
+        assertThat(response, not(Matchers.containsString("time this error page is being accessed")));
     }
 
     @Test
@@ -167,7 +308,7 @@ public class ErrorPageTest
         try (StacklessLogging ignore = new StacklessLogging(Dispatcher.class))
         {
             String response = _connector.getResponse("GET /app?baa=%88%A4 HTTP/1.0\r\n\r\n");
-            assertThat(response, Matchers.containsString("HTTP/1.1 400 "));
+            assertThat(response, Matchers.containsString("HTTP/1.1 400 Bad Request"));
             assertThat(response, Matchers.containsString("ERROR_PAGE: /BadMessageException"));
             assertThat(response, Matchers.containsString("ERROR_MESSAGE: Bad query encoding"));
             assertThat(response, Matchers.containsString("ERROR_CODE: 400"));
@@ -177,6 +318,94 @@ public class ErrorPageTest
             assertThat(response, Matchers.containsString("ERROR_REQUEST_URI: /app"));
             assertThat(response, Matchers.containsString("getParameterMap()= {}"));
         }
+    }
+
+    @Test
+    public void testAsyncErrorPageDSC() throws Exception
+    {
+        try (StacklessLogging ignore = new StacklessLogging(Dispatcher.class))
+        {
+            String response = _connector.getResponse("GET /async/info?mode=DSC HTTP/1.0\r\n\r\n");
+            assertThat(response, Matchers.containsString("HTTP/1.1 599 599"));
+            assertThat(response, Matchers.containsString("ERROR_PAGE: /599"));
+            assertThat(response, Matchers.containsString("ERROR_CODE: 599"));
+            assertThat(response, Matchers.containsString("ERROR_EXCEPTION: null"));
+            assertThat(response, Matchers.containsString("ERROR_EXCEPTION_TYPE: null"));
+            assertThat(response, Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.servlet.ErrorPageTest$AsyncSendErrorServlet-"));
+            assertThat(response, Matchers.containsString("ERROR_REQUEST_URI: /async/info"));
+            assertTrue(__asyncSendErrorCompleted.await(10, TimeUnit.SECONDS));
+        }
+    }
+
+    @Test
+    public void testAsyncErrorPageSDC() throws Exception
+    {
+        try (StacklessLogging ignore = new StacklessLogging(Dispatcher.class))
+        {
+            String response = _connector.getResponse("GET /async/info?mode=SDC HTTP/1.0\r\n\r\n");
+            assertThat(response, Matchers.containsString("HTTP/1.1 599 599"));
+            assertThat(response, Matchers.containsString("ERROR_PAGE: /599"));
+            assertThat(response, Matchers.containsString("ERROR_CODE: 599"));
+            assertThat(response, Matchers.containsString("ERROR_EXCEPTION: null"));
+            assertThat(response, Matchers.containsString("ERROR_EXCEPTION_TYPE: null"));
+            assertThat(response, Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.servlet.ErrorPageTest$AsyncSendErrorServlet-"));
+            assertThat(response, Matchers.containsString("ERROR_REQUEST_URI: /async/info"));
+            assertTrue(__asyncSendErrorCompleted.await(10, TimeUnit.SECONDS));
+        }
+    }
+
+    @Test
+    public void testAsyncErrorPageSCD() throws Exception
+    {
+        try (StacklessLogging ignore = new StacklessLogging(Dispatcher.class))
+        {
+            String response = _connector.getResponse("GET /async/info?mode=SCD HTTP/1.0\r\n\r\n");
+            assertThat(response, Matchers.containsString("HTTP/1.1 599 599"));
+            assertThat(response, Matchers.containsString("ERROR_PAGE: /599"));
+            assertThat(response, Matchers.containsString("ERROR_CODE: 599"));
+            assertThat(response, Matchers.containsString("ERROR_EXCEPTION: null"));
+            assertThat(response, Matchers.containsString("ERROR_EXCEPTION_TYPE: null"));
+            assertThat(response, Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.servlet.ErrorPageTest$AsyncSendErrorServlet-"));
+            assertThat(response, Matchers.containsString("ERROR_REQUEST_URI: /async/info"));
+            assertTrue(__asyncSendErrorCompleted.await(10, TimeUnit.SECONDS));
+        }
+    }
+
+    @Test
+    public void testNoop() throws Exception
+    {
+        String response = _connector.getResponse("GET /noop/info HTTP/1.0\r\n\r\n");
+        assertThat(response, Matchers.containsString("HTTP/1.1 404 Not Found"));
+        assertThat(response, Matchers.containsString("DISPATCH: ERROR"));
+        assertThat(response, Matchers.containsString("ERROR_PAGE: /GlobalErrorPage"));
+        assertThat(response, Matchers.containsString("ERROR_CODE: 404"));
+        assertThat(response, Matchers.containsString("ERROR_EXCEPTION: null"));
+        assertThat(response, Matchers.containsString("ERROR_EXCEPTION_TYPE: null"));
+        assertThat(response, Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.servlet.DefaultServlet-"));
+        assertThat(response, Matchers.containsString("ERROR_REQUEST_URI: /noop/info"));
+    }
+
+    @Test
+    public void testNotEnough() throws Exception
+    {
+        String response = _connector.getResponse("GET /notenough/info HTTP/1.0\r\n\r\n");
+        assertThat(response, Matchers.containsString("HTTP/1.1 500 Server Error"));
+        assertThat(response, Matchers.containsString("DISPATCH: ERROR"));
+        assertThat(response, Matchers.containsString("ERROR_PAGE: /GlobalErrorPage"));
+        assertThat(response, Matchers.containsString("ERROR_CODE: 500"));
+        assertThat(response, Matchers.containsString("ERROR_EXCEPTION: null"));
+        assertThat(response, Matchers.containsString("ERROR_EXCEPTION_TYPE: null"));
+        assertThat(response, Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.servlet.ErrorPageTest$NotEnoughServlet-"));
+        assertThat(response, Matchers.containsString("ERROR_REQUEST_URI: /notenough/info"));
+    }
+
+    @Test
+    public void testNotEnoughCommitted() throws Exception
+    {
+        String response = _connector.getResponse("GET /notenough/info?commit=true HTTP/1.0\r\n\r\n");
+        assertThat(response, Matchers.containsString("HTTP/1.1 200 OK"));
+        assertThat(response, Matchers.containsString("Content-Length: 1000"));
+        assertThat(response, Matchers.endsWith("SomeBytes"));
     }
 
     public static class AppServlet extends HttpServlet implements Servlet
@@ -195,6 +424,112 @@ public class ErrorPageTest
         {
             PrintWriter writer = response.getWriter();
             writer.println(request.getRequestURI());
+        }
+    }
+
+    public static class SyncSendErrorServlet extends HttpServlet implements Servlet
+    {
+        public static final AtomicInteger COUNTER = new AtomicInteger();
+
+        @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        {
+            int count = COUNTER.incrementAndGet();
+
+            PrintWriter writer = response.getWriter();
+            writer.println("this is the " + count + " time this error page is being accessed");
+            response.sendError(597, "loop #" + count);
+        }
+    }
+
+    public static class AsyncSendErrorServlet extends HttpServlet implements Servlet
+    {
+        @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        {
+            try
+            {
+                final CountDownLatch hold = new CountDownLatch(1);
+                final String mode = request.getParameter("mode");
+                switch(mode)
+                {
+                    case "DSC":
+                    case "SDC":
+                    case "SCD":
+                        break;
+                    default:
+                        throw new IllegalStateException(mode);
+                }
+
+                final boolean lateComplete = "true".equals(request.getParameter("latecomplete"));
+                AsyncContext async = request.startAsync();
+                async.start(() ->
+                {
+                    try
+                    {
+                        switch(mode)
+                        {
+                            case "SDC":
+                                response.sendError(599);
+                                break;
+                            case "SCD":
+                                response.sendError(599);
+                                async.complete();
+                                break;
+                            default:
+                                break;
+                        }
+
+                        // Complete after original servlet
+                        hold.countDown();
+
+                        // Wait until request async waiting
+                        while (Request.getBaseRequest(request).getHttpChannelState().getState() == HttpChannelState.State.HANDLING)
+                        {
+                            try
+                            {
+                                Thread.sleep(10);
+                            }
+                            catch (InterruptedException e)
+                            {
+                                e.printStackTrace();
+                            }
+                        }
+                        try
+                        {
+                            switch (mode)
+                            {
+                                case "DSC":
+                                    response.sendError(599);
+                                    async.complete();
+                                    break;
+                                case "SDC":
+                                    async.complete();
+                                    break;
+                                default:
+                                    break;
+                            }
+                        }
+                        catch(IllegalStateException e)
+                        {
+                            Log.getLog().ignore(e);
+                        }
+                        finally
+                        {
+                            __asyncSendErrorCompleted.countDown();
+                        }
+                    }
+                    catch (IOException e)
+                    {
+                        Log.getLog().warn(e);
+                    }
+                });
+                hold.await();
+            }
+            catch (InterruptedException e)
+            {
+                throw new ServletException(e);
+            }
         }
     }
 
@@ -225,16 +560,51 @@ public class ErrorPageTest
             }
             catch (Throwable ignore)
             {
-                // no opEchoSocket
+                Log.getLog().ignore(ignore);
             }
+        }
+    }
+
+    public static class ErrorAndStatusServlet extends HttpServlet implements Servlet
+    {
+        @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        {
+            response.sendError(594, "custom get error");
+            response.setStatus(200);
+        }
+    }
+
+    public static class DeleteServlet extends HttpServlet implements Servlet
+    {
+        @Override
+        protected void doDelete(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        {
+            response.getWriter().append("This shouldn't be seen");
+            response.sendError(595, "custom delete");
+        }
+    }
+
+    public static class NotEnoughServlet extends HttpServlet implements Servlet
+    {
+        @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        {
+            response.setContentLength(1000);
+            response.getOutputStream().write("SomeBytes".getBytes(StandardCharsets.UTF_8));
+            if (Boolean.parseBoolean(request.getParameter("commit")))
+                response.flushBuffer();
         }
     }
 
     public static class ErrorServlet extends HttpServlet implements Servlet
     {
         @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
+            if (request.getDispatcherType() != DispatcherType.ERROR && request.getDispatcherType() != DispatcherType.ASYNC)
+                throw new IllegalStateException("Bad Dispatcher Type " + request.getDispatcherType());
+
             PrintWriter writer = response.getWriter();
             writer.println("DISPATCH: " + request.getDispatcherType().name());
             writer.println("ERROR_PAGE: " + request.getPathInfo());
@@ -245,6 +615,57 @@ public class ErrorPageTest
             writer.println("ERROR_SERVLET: " + request.getAttribute(Dispatcher.ERROR_SERVLET_NAME));
             writer.println("ERROR_REQUEST_URI: " + request.getAttribute(Dispatcher.ERROR_REQUEST_URI));
             writer.println("getParameterMap()= " + request.getParameterMap());
+        }
+    }
+
+    public static class SingleDispatchFilter implements Filter
+    {
+        ConcurrentMap<Integer, Thread> dispatches = new ConcurrentHashMap<>();
+
+        @Override
+        public void init(FilterConfig filterConfig) throws ServletException
+        {
+
+        }
+
+        @Override
+        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
+        {
+            final Integer key = request.hashCode();
+            Thread current = Thread.currentThread();
+            final Thread existing = dispatches.putIfAbsent(key, current);
+            if (existing != null && existing != current)
+            {
+                System.err.println("DOUBLE DISPATCH OF REQUEST!!!!!!!!!!!!!!!!!!");
+                System.err.println("Thread " + existing + " :");
+                for (StackTraceElement element : existing.getStackTrace())
+                {
+                    System.err.println("\tat " + element);
+                }
+                IllegalStateException ex = new IllegalStateException();
+                ex.printStackTrace();
+                response.flushBuffer();
+                throw ex;
+            }
+
+            try
+            {
+                chain.doFilter(request, response);
+            }
+            finally
+            {
+                if (existing == null)
+                {
+                    if (!dispatches.remove(key, current))
+                        throw new IllegalStateException();
+                }
+            }
+        }
+
+        @Override
+        public void destroy()
+        {
+
         }
     }
 }

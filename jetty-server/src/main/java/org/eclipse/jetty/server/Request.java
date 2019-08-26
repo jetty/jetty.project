@@ -212,6 +212,7 @@ public class Request implements HttpServletRequest
     private String _contentType;
     private String _characterEncoding;
     private ContextHandler.Context _context;
+    private ContextHandler.Context _errorContext;
     private Cookies _cookies;
     private DispatcherType _dispatcherType;
     private int _inputState = INPUT_NONE;
@@ -757,6 +758,22 @@ public class Request implements HttpServletRequest
     public Context getContext()
     {
         return _context;
+    }
+
+    /**
+     * @return The current {@link Context context} used for this error handling for this request.  If the request is asynchronous,
+     * then it is the context that called async. Otherwise it is the last non-null context passed to #setContext
+     */
+    public Context getErrorContext()
+    {
+        if (isAsyncStarted())
+        {
+            ContextHandler handler = _channel.getState().getContextHandler();
+            if (handler != null)
+                return handler.getServletContext();
+        }
+
+        return _errorContext;
     }
 
     /*
@@ -1983,6 +2000,7 @@ public class Request implements HttpServletRequest
         else
         {
             _context = context;
+            _errorContext = context;
         }
     }
 
