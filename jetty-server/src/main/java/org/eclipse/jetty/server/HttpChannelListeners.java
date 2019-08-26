@@ -267,15 +267,9 @@ public class HttpChannelListeners implements HttpChannel.Listener
     private static NotifyContent combine(NotifyContent first, NotifyContent second)
     {
         if (first == NotifyContent.NOOP)
-            return (request, content) ->
-            {
-                second.onContent(request, content.slice());
-            };
+            return (request, content) -> second.onContent(request, content.slice());
         if (second == NotifyContent.NOOP)
-            return (request, content) ->
-            {
-                first.onContent(request, content.slice());
-            };
+            return (request, content) -> first.onContent(request, content.slice());
         return (request, content) ->
         {
             content = content.slice();

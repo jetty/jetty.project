@@ -305,13 +305,4 @@ public class HttpChannelListenersMethodHandles implements HttpChannel.Listener
             LOG.warn(th);
         }
     }
-
-    static class MyListener0 implements HttpChannel.Listener
-    {
-        @Override
-        public void onRequestBegin(Request request)
-        {
-            System.err.println("On Request Begin 0");
-        }
-    }
 }
