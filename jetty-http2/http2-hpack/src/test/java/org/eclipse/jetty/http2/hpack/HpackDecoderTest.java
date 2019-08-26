@@ -328,7 +328,7 @@ public class HpackDecoderTest
         }
     }
 
-    @Test()
+    @Test
     public void test8_1_2_2_ConnectionSpecificHeaderFields() throws Exception
     {
         MetaDataBuilder mdb;
@@ -365,7 +365,7 @@ public class HpackDecoderTest
         assertNotNull(mdb.build());
     }
 
-    @Test()
+    @Test
     public void test8_1_2_3_RequestPseudoHeaderFields() throws Exception
     {
         {
@@ -444,7 +444,7 @@ public class HpackDecoderTest
         }
     }
 
-    @Test()
+    @Test
     public void testHuffmanEncodedStandard() throws Exception
     {
         HpackDecoder decoder = new HpackDecoder(4096, 8192);
@@ -462,7 +462,7 @@ public class HpackDecoderTest
     }
 
     /* 5.2.1: Sends a Huffman-encoded string literal representation with padding longer than 7 bits */
-    @Test()
+    @Test
     public void testHuffmanEncodedExtraPadding() throws Exception
     {
         HpackDecoder decoder = new HpackDecoder(4096, 8192);
@@ -474,7 +474,7 @@ public class HpackDecoderTest
     }
 
     /* 5.2.2: Sends a Huffman-encoded string literal representation padded by zero */
-    @Test()
+    @Test
     public void testHuffmanEncodedZeroPadding() throws Exception
     {
         HpackDecoder decoder = new HpackDecoder(4096, 8192);
@@ -487,7 +487,7 @@ public class HpackDecoderTest
     }
 
     /* 5.2.3: Sends a Huffman-encoded string literal representation containing the EOS symbol */
-    @Test()
+    @Test
     public void testHuffmanEncodedWithEOS() throws Exception
     {
         HpackDecoder decoder = new HpackDecoder(4096, 8192);
@@ -499,7 +499,7 @@ public class HpackDecoderTest
         assertThat(ex.getMessage(), Matchers.containsString("EOS in content"));
     }
 
-    @Test()
+    @Test
     public void testHuffmanEncodedOneIncompleteOctet() throws Exception
     {
         HpackDecoder decoder = new HpackDecoder(4096, 8192);
@@ -511,7 +511,7 @@ public class HpackDecoderTest
         assertThat(ex.getMessage(), Matchers.containsString("Bad termination"));
     }
 
-    @Test()
+    @Test
     public void testHuffmanEncodedTwoIncompleteOctet() throws Exception
     {
         HpackDecoder decoder = new HpackDecoder(4096, 8192);
@@ -523,7 +523,7 @@ public class HpackDecoderTest
         assertThat(ex.getMessage(), Matchers.containsString("Bad termination"));
     }
 
-    @Test()
+    @Test
     public void testZeroLengthName() throws Exception
     {
         HpackDecoder decoder = new HpackDecoder(4096, 8192);
@@ -534,7 +534,7 @@ public class HpackDecoderTest
         assertThat(ex.getMessage(), Matchers.containsString("Header size 0"));
     }
 
-    @Test()
+    @Test
     public void testZeroLengthValue() throws Exception
     {
         HpackDecoder decoder = new HpackDecoder(4096, 8192);
@@ -546,7 +546,7 @@ public class HpackDecoderTest
         assertThat(metaData.getFields().get("h"), is(""));
     }
 
-    @Test()
+    @Test
     public void testUpperCaseName() throws Exception
     {
         HpackDecoder decoder = new HpackDecoder(4096, 8192);
@@ -557,7 +557,7 @@ public class HpackDecoderTest
         assertThat(ex.getMessage(), Matchers.containsString("Uppercase header"));
     }
 
-    @Test()
+    @Test
     public void testWhiteSpaceName() throws Exception
     {
         HpackDecoder decoder = new HpackDecoder(4096, 8192);
