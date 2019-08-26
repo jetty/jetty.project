@@ -27,6 +27,23 @@ public class NullSessionCacheFactory implements SessionCacheFactory
 {
     boolean _saveOnCreate;
     boolean _removeUnloadableSessions;
+    NullSessionCache.WriteThroughMode _writeThroughMode;
+
+    /**
+     * @return the writeThroughMode
+     */
+    public NullSessionCache.WriteThroughMode getWriteThroughMode()
+    {
+        return _writeThroughMode;
+    }
+
+    /**
+     * @param writeThroughMode the writeThroughMode to set
+     */
+    public void setWriteThroughMode(NullSessionCache.WriteThroughMode writeThroughMode)
+    {
+        _writeThroughMode = writeThroughMode;
+    }
 
     /**
      * @return the saveOnCreate
@@ -69,6 +86,7 @@ public class NullSessionCacheFactory implements SessionCacheFactory
         NullSessionCache cache = new NullSessionCache(handler);
         cache.setSaveOnCreate(isSaveOnCreate());
         cache.setRemoveUnloadableSessions(isRemoveUnloadableSessions());
+        cache.setWriteThroughMode(_writeThroughMode);
         return cache;
     }
 }
