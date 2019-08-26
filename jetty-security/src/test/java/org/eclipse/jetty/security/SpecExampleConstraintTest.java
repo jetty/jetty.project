@@ -44,6 +44,7 @@ import org.junit.jupiter.api.Test;
 
 import static java.nio.charset.StandardCharsets.ISO_8859_1;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -321,7 +322,8 @@ public class SpecExampleConstraintTest
         response = _connector.getResponse("POST /ctx/acme/wholesale/index.html HTTP/1.0\r\n" +
             "Authorization: Basic " + encodedChris + "\r\n" +
             "\r\n");
-        assertThat(response, startsWith("HTTP/1.1 403 !"));
+        assertThat(response, startsWith("HTTP/1.1 403 Forbidden"));
+        assertThat(response, containsString("!Secure"));
 
         //a user in role HOMEOWNER can do a GET
         response = _connector.getResponse("GET /ctx/acme/retail/index.html HTTP/1.0\r\n" +

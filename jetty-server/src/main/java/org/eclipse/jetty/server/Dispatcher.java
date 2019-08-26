@@ -42,8 +42,6 @@ public class Dispatcher implements RequestDispatcher
 {
     private static final Logger LOG = Log.getLogger(Dispatcher.class);
 
-    public static final String __ERROR_DISPATCH = "org.eclipse.jetty.server.Dispatcher.ERROR";
-
     /**
      * Dispatch include attribute names
      */
@@ -83,15 +81,7 @@ public class Dispatcher implements RequestDispatcher
 
     public void error(ServletRequest request, ServletResponse response) throws ServletException, IOException
     {
-        try
-        {
-            request.setAttribute(__ERROR_DISPATCH, Boolean.TRUE);
-            forward(request, response, DispatcherType.ERROR);
-        }
-        finally
-        {
-            request.setAttribute(__ERROR_DISPATCH, null);
-        }
+        forward(request, response, DispatcherType.ERROR);
     }
 
     @Override

@@ -40,7 +40,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 
 public class HttpServerTestFixture
-{    // Useful constants
+{
+    // Useful constants
     protected static final long PAUSE = 10L;
     protected static final int LOOPS = 50;
 
@@ -183,6 +184,31 @@ public class HttpServerTestFixture
             baseRequest.setHandled(true);
             response.setStatus(200);
             response.getOutputStream().print("Hello world\r\n");
+        }
+    }
+
+
+    protected static class SendErrorHandler extends AbstractHandler
+    {
+        private final int code;
+        private final String message;
+
+        public SendErrorHandler()
+        {
+            this(500, null);
+        }
+
+        public SendErrorHandler(int code, String message)
+        {
+            this.code = code;
+            this.message = message;
+        }
+
+        @Override
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        {
+            baseRequest.setHandled(true);
+            response.sendError(code, message);
         }
     }
 

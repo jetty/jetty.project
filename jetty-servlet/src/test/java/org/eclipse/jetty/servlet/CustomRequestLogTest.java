@@ -85,7 +85,8 @@ public class CustomRequestLogTest
 
         _connector.getResponse("GET /context/servlet/info HTTP/1.0\n\n");
         String log = _entries.poll(5, TimeUnit.SECONDS);
-        assertThat(log, is("Filename: " + _tmpDir + File.separator + "servlet" + File.separator + "info"));
+        String expected = new File(_tmpDir + File.separator + "servlet" + File.separator + "info").getCanonicalPath();
+        assertThat(log, is("Filename: " + expected));
     }
 
     @Test
