@@ -276,7 +276,7 @@ public class HpackDecoderTest
     }
 
     /* 8.1.2.1. Pseudo-Header Fields */
-    @Test()
+    @Test
     public void test8_1_2_1_PsuedoHeaderFields() throws Exception
     {
         // 1:Sends a HEADERS frame that contains a unknown pseudo-header field
@@ -555,5 +555,16 @@ public class HpackDecoderTest
         ByteBuffer buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
         StreamException ex = assertThrows(StreamException.class, () -> decoder.decode(buffer));
         assertThat(ex.getMessage(), Matchers.containsString("Uppercase header"));
+    }
+
+    @Test()
+    public void testWhiteSpaceName() throws Exception
+    {
+        HpackDecoder decoder = new HpackDecoder(4096, 8192);
+
+        String encoded = "0001200130";
+        ByteBuffer buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
+        StreamException ex = assertThrows(StreamException.class, () -> decoder.decode(buffer));
+        assertThat(ex.getMessage(), Matchers.containsString("Illegal header"));
     }
 }

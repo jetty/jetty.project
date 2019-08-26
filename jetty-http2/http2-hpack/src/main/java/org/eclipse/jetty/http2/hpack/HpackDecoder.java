@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpTokens;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.hpack.HpackContext.Entry;
 import org.eclipse.jetty.util.TypeUtil;
@@ -175,13 +176,33 @@ public class HpackDecoder
                         name = Huffman.decode(buffer, length);
                     else
                         name = toASCIIString(buffer, length);
-                    for (int i = name.length(); i-- > 0;)
+                    check: for (int i = name.length(); i-- > 0;)
                     {
                         char c = name.charAt(i);
-                        if (c >= 'A' && c <= 'Z')
+                        if (c>0xff)
                         {
-                            _builder.streamException("Uppercase header name %s", name);
-                            break;
+                            _builder.streamException("Illegal header name %s", name);
+                            break check;
+                        }
+                        HttpTokens.Token token = HttpTokens.TOKENS[0xFF & c];
+                        switch(token.getType())
+                        {
+                            case ALPHA:
+                                if (c >= 'A' && c <= 'Z')
+                                {
+                                    _builder.streamException("Uppercase header name %s", name);
+                                    break check;
+                                }
+                                break;
+
+                            case COLON:
+                            case TCHAR:
+                            case DIGIT:
+                                break;
+
+                            default:
+                                _builder.streamException("Illegal header name %s", name);
+                                break check;
                         }
                     }
                     header = HttpHeader.CACHE.get(name);
