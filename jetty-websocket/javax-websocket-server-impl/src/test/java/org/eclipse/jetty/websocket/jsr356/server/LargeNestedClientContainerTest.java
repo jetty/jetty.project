@@ -45,7 +45,7 @@ import static org.hamcrest.Matchers.is;
  */
 public class LargeNestedClientContainerTest
 {
-    public static abstract class WSServerConfig
+    public abstract static class WSServerConfig
     {
         private final String description;
 

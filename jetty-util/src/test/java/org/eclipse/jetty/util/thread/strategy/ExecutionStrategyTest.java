@@ -78,7 +78,7 @@ public class ExecutionStrategyTest
         _threads.stop();
     }
 
-    public static abstract class TestProducer implements Producer
+    public abstract static class TestProducer implements Producer
     {
         @Override
         public String toString()
@@ -122,14 +122,7 @@ public class ExecutionStrategyTest
             {
                 if (tasks-- > 0)
                 {
-                    return new Runnable()
-                    {
-                        @Override
-                        public void run()
-                        {
-                            latch.countDown();
-                        }
-                    };
+                    return () -> latch.countDown();
                 }
 
                 return null;
@@ -175,15 +168,7 @@ public class ExecutionStrategyTest
                         try
                         {
                             final CountDownLatch latch = q.take();
-                            return new Runnable()
-                            {
-                                @Override
-                                public void run()
-                                {
-                                    // System.err.println("RUN "+id);
-                                    latch.countDown();
-                                }
-                            };
+                            return () -> latch.countDown();
                         }
                         catch (InterruptedException e)
                         {

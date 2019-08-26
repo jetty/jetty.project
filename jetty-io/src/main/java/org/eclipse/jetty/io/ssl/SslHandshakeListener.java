@@ -35,6 +35,7 @@ public interface SslHandshakeListener extends EventListener
      * <p>Callback method invoked when the TLS handshake succeeds.</p>
      *
      * @param event the event object carrying information about the TLS handshake event
+     * @throws SSLException if any error happen during handshake
      */
     default void handshakeSucceeded(Event event) throws SSLException
     {

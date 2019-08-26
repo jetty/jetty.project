@@ -18,16 +18,6 @@
 
 package org.eclipse.jetty.server.session;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-
 import java.util.Collections;
 import java.util.Random;
 import java.util.Set;
@@ -41,6 +31,16 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * DefaultSessionCacheTest
@@ -65,8 +65,7 @@ public class DefaultSessionCacheTest
             ++activateCalls;
         }
     }
-    
-    
+
     @Test
     public void testRenewWithInvalidate() throws Exception
     {
@@ -162,25 +161,20 @@ public class DefaultSessionCacheTest
             }
                 );
 
-            Thread invalidateThread = new Thread(new Runnable()
+            Thread invalidateThread = new Thread(() ->
             {
-            
-                @Override
-                public void run()
+                //simulate req4 doing an invalidate that we hope overlaps with req3 renewId
+                try
                 {
-                    //simulate req4 doing an invalidate that we hope overlaps with req3 renewId
-                    try
-                    {
-                        Random random = new Random();
-                        if ((random.nextInt(10) % 2)  == 0)
-                            Thread.currentThread().sleep(2); //small sleep to try and make timing more random
-                        ((Session)s4).invalidate();
-                        assertFalse(((Session)s4).isValid());
-                    }
-                    catch (InterruptedException e)
-                    {
-                        
-                    }
+                    Random random = new Random();
+                    if ((random.nextInt(10) % 2)  == 0)
+                        Thread.currentThread().sleep(2); //small sleep to try and make timing more random
+                    ((Session)s4).invalidate();
+                    assertFalse(((Session)s4).isValid());
+                }
+                catch (InterruptedException e)
+                {
+                    // no op
                 }
             }
             );
@@ -559,7 +553,7 @@ public class DefaultSessionCacheTest
         assertFalse(cache.contains("1234"));
 
         //test remove of session in both store and cache
-        session = cache.newSession(null, "1234",now - 20 ,TimeUnit.MINUTES.toMillis(10));//saveOnCreate ensures write to store
+        session = cache.newSession(null, "1234",now - 20, TimeUnit.MINUTES.toMillis(10));//saveOnCreate ensures write to store
         cache.add("1234", session);
         assertTrue(store.exists("1234"));
         assertTrue(cache.contains("1234"));

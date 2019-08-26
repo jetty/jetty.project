@@ -466,6 +466,7 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
                 }
                 catch (InterruptedException expected)
                 {
+                    // no op
                 }
             }
         });

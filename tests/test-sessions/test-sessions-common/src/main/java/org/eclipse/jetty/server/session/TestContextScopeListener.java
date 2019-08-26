@@ -59,7 +59,7 @@ public class TestContextScopeListener implements ContextScopeListener
     {
         if (request != null && !listenerAdded)
         {
-            listenerAdded=true;
+            listenerAdded = true;
             request.getHttpChannel().addListener(new Listener()
             {
                 @Override

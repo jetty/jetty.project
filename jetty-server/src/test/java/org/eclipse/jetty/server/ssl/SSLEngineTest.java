@@ -254,6 +254,7 @@ public class SSLEngineTest
                             }
                             catch (SocketException e)
                             {
+                                // no op
                             }
                         }
                     }

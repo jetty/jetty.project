@@ -50,7 +50,7 @@ public class BlockheadConnection extends AbstractConnection implements Connectio
 {
     private static final int BUFFER_SIZE = 4096;
     public static final String STATIC_REQUEST_HASH_KEY = "dGhlIHNhbXBsZSBub25jZQ==";
-    private final Logger LOG;
+    private final Logger log;
     private final WebSocketPolicy policy;
     private final ByteBufferPool bufferPool;
     private final Parser parser;
@@ -66,7 +66,7 @@ public class BlockheadConnection extends AbstractConnection implements Connectio
     public BlockheadConnection(WebSocketPolicy policy, ByteBufferPool bufferPool, ExtensionStack extensionStack, CompletableFuture<BlockheadConnection> openFut, EndPoint endp, Executor executor)
     {
         super(endp, executor);
-        this.LOG = Log.getLogger(this.getClass());
+        this.log = Log.getLogger(this.getClass());
         this.policy = policy;
         this.bufferPool = bufferPool;
         this.parser = new Parser(policy, bufferPool);
@@ -189,7 +189,7 @@ public class BlockheadConnection extends AbstractConnection implements Connectio
 
     public void processConnectionError(Throwable cause)
     {
-        LOG.warn("Connection Error", cause);
+        log.warn("Connection Error", cause);
         if (this.openFuture != null)
             this.openFuture.completeExceptionally(cause);
     }
@@ -263,9 +263,9 @@ public class BlockheadConnection extends AbstractConnection implements Connectio
      */
     protected void setInitialBuffer(ByteBuffer prefilled)
     {
-        if (LOG.isDebugEnabled())
+        if (log.isDebugEnabled())
         {
-            LOG.debug("set Initial Buffer - {}", BufferUtil.toDetailString(prefilled));
+            log.debug("set Initial Buffer - {}", BufferUtil.toDetailString(prefilled));
         }
 
         if ((prefilled != null) && (prefilled.hasRemaining()))
@@ -294,8 +294,8 @@ public class BlockheadConnection extends AbstractConnection implements Connectio
 
                 int filled = getEndPoint().fill(nBuffer);
 
-                if (LOG.isDebugEnabled())
-                    LOG.debug("endpointFill() filled={}: {}", filled, BufferUtil.toDetailString(nBuffer));
+                if (log.isDebugEnabled())
+                    log.debug("endpointFill() filled={}: {}", filled, BufferUtil.toDetailString(nBuffer));
 
                 if (filled < 0)
                 {

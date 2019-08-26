@@ -80,7 +80,7 @@ public class DigestPostTest
             "How now brown cow.\n" +
             "The quick brown fox jumped over the lazy dog.\n";
 
-    public volatile static String _received = null;
+    public static volatile String _received = null;
     private static Server _server;
 
     public static class TestLoginService extends AbstractLoginService

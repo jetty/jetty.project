@@ -68,18 +68,18 @@ public class PostServletTest
                     len = request.getInputStream().read(buffer);
                 }
             }
-            catch (Exception e0)
+            catch (Exception e)
             {
-                ex0.set(e0);
+                ex0.set(e);
                 try
                 {
                     // this read-call should fail immediately
                     request.getInputStream().read(buffer);
                 }
-                catch (Exception e1)
+                catch (Exception ex)
                 {
-                    ex1.set(e1);
-                    LOG.warn(e1.toString());
+                    ex1.set(ex);
+                    LOG.warn(ex.toString());
                 }
             }
             finally

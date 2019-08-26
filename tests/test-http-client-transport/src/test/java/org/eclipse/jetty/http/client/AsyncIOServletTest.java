@@ -311,9 +311,11 @@ public class AsyncIOServletTest extends AbstractTest<AsyncIOServletTest.AsyncTra
                         scenario.assertScope();
                         errors.incrementAndGet();
                         throw new NullPointerException("explicitly_thrown_by_test_2")
-                        {{
-                            this.initCause(t);
-                        }};
+                        {
+                            {
+                                this.initCause(t);
+                            }
+                        };
                     }
                 });
             }
@@ -503,6 +505,7 @@ public class AsyncIOServletTest extends AbstractTest<AsyncIOServletTest.AsyncTra
                                         }
                                         catch (Exception e)
                                         {
+                                            // no op
                                         }
                                     }).start();
                                     return;

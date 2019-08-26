@@ -141,9 +141,11 @@ public class ReverseProxyTest
             }
         });
         startProxy(new HashMap<String, String>()
-        {{
-            put("preserveHost", "true");
-        }});
+        {
+            {
+                put("preserveHost", "true");
+            }
+        });
         startClient();
 
         ContentResponse response = client.newRequest("localhost", proxyConnector.getLocalPort()).send();
