@@ -27,6 +27,7 @@ import java.util.zip.Deflater;
 
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.compression.CompressionPool;
 import org.eclipse.jetty.util.compression.DeflaterPool;
 import org.eclipse.jetty.util.compression.InflaterPool;
@@ -37,8 +38,9 @@ import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
 import org.eclipse.jetty.websocket.common.extensions.compress.CompressExtension;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 
-public class WebSocketExtensionFactory extends ContainerLifeCycle implements ExtensionFactory
+public class WebSocketExtensionFactory extends ExtensionFactory implements LifeCycle
 {
+    private ContainerLifeCycle lifecycle;
     private WebSocketContainerScope container;
     private ServiceLoader<Extension> extensionLoader = ServiceLoader.load(Extension.class);
     private Map<String, Class<? extends Extension>> availableExtensions;
@@ -47,6 +49,7 @@ public class WebSocketExtensionFactory extends ContainerLifeCycle implements Ext
 
     public WebSocketExtensionFactory(WebSocketContainerScope container)
     {
+        lifecycle = new ContainerLifeCycle();
         availableExtensions = new HashMap<>();
         for (Extension ext : extensionLoader)
         {
@@ -55,8 +58,8 @@ public class WebSocketExtensionFactory extends ContainerLifeCycle implements Ext
         }
 
         this.container = container;
-        addBean(inflaterPool);
-        addBean(deflaterPool);
+        lifecycle.addBean(inflaterPool);
+        lifecycle.addBean(deflaterPool);
     }
 
     @Override
@@ -143,5 +146,67 @@ public class WebSocketExtensionFactory extends ContainerLifeCycle implements Ext
     public Iterator<Class<? extends Extension>> iterator()
     {
         return availableExtensions.values().iterator();
+    }
+
+    /* --- All of the below ugliness due to not being able to break API compatibility with ExtensionFactory --- */
+
+    @Override
+    public void start() throws Exception
+    {
+        lifecycle.start();
+    }
+
+    @Override
+    public void stop() throws Exception
+    {
+        lifecycle.stop();
+    }
+
+    @Override
+    public boolean isRunning()
+    {
+        return lifecycle.isRunning();
+    }
+
+    @Override
+    public boolean isStarted()
+    {
+        return lifecycle.isStarted();
+    }
+
+    @Override
+    public boolean isStarting()
+    {
+        return lifecycle.isStarting();
+    }
+
+    @Override
+    public boolean isStopping()
+    {
+        return lifecycle.isStopping();
+    }
+
+    @Override
+    public boolean isStopped()
+    {
+        return lifecycle.isStopped();
+    }
+
+    @Override
+    public boolean isFailed()
+    {
+        return lifecycle.isFailed();
+    }
+
+    @Override
+    public void addLifeCycleListener(Listener listener)
+    {
+        lifecycle.addLifeCycleListener(listener);
+    }
+
+    @Override
+    public void removeLifeCycleListener(Listener listener)
+    {
+        lifecycle.removeLifeCycleListener(listener);
     }
 }
