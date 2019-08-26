@@ -1059,6 +1059,11 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
      * <p>Listener methods are invoked synchronously from the thread that is
      * performing the request processing, and they should not call blocking code
      * (otherwise the request processing will be blocked as well).</p>
+     * <p>Listener instances that are set as a bean on the {@link Connector} are
+     * efficiently added to {@link HttpChannel}.  If additional listeners are added
+     * using the deprecated {@link HttpChannel#addListener(Listener)}</p> method,
+     * then an instance of {@link TransientListeners} must be added to the connector
+     * in order for them to be invoked.
      */
     public interface Listener extends EventListener
     {
@@ -1289,8 +1294,8 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     }
 
     /**
-     * A Listener instance that can be added via an {@link AbstractConnector} to the HttpChannel that
-     * will invoke the listeners obtained from HttpChannel{@link #getTransientListeners()}
+     * A Listener instance that can be added as a bean to {@link AbstractConnector} so that
+     * the listeners obtained from HttpChannel{@link #getTransientListeners()}
      */
     @Deprecated
     public static class TransientListeners implements Listener

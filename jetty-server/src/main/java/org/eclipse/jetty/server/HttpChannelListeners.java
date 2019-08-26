@@ -24,6 +24,12 @@ import java.util.Collection;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
+/**
+ * A {@link HttpChannel.Listener} that holds a collection of
+ * other {@link HttpChannel.Listener} instances that are efficiently
+ * invoked without iteration.
+ * @see AbstractConnector
+ */
 public class HttpChannelListeners implements HttpChannel.Listener
 {
     static final Logger LOG = Log.getLogger(HttpChannel.class);
