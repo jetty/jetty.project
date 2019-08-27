@@ -332,7 +332,7 @@ public class HttpTransportOverHTTP2 implements HttpTransport
         stream.setAttachment(endPoint);
         if (request.getHttpInput().hasContent())
             return channel.sendErrorOrAbort("Unexpected content in CONNECT request");
-        return true;
+        return false;
     }
 
     @Override

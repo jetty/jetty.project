@@ -736,7 +736,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
      * <p>This avoids a race where the server is unprepared if the client sends
      * data immediately after having received the upgrade response.</p>
      * @return true if the channel is not complete and more processing is required,
-     * either because the upgrade has succeeded or sendError has been called.
+     * typically because sendError has been called.
      */
     protected boolean checkAndPrepareUpgrade()
     {
