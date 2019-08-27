@@ -1863,6 +1863,7 @@ public class Request implements HttpServletRequest
         _remote = null;
         _sessions = null;
         _input.recycle();
+        _requestAttributeListeners.clear();
     }
 
     /*
