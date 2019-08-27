@@ -608,6 +608,7 @@ public class ServletContextHandlerTest
     @Test
     public void testAddServletFromServlet() throws Exception
     {
+        //A servlet cannot be added by another servlet
         Logger logger = Log.getLogger(ContextHandler.class.getName() + "ROOT");
         
         try (StacklessLogging stackless = new StacklessLogging(logger))
@@ -636,6 +637,7 @@ public class ServletContextHandlerTest
     @Test
     public void testAddFilterFromServlet() throws Exception
     {
+        //A filter cannot be added from a servlet
         Logger logger = Log.getLogger(ContextHandler.class.getName() + "ROOT");
 
         try (StacklessLogging stackless = new StacklessLogging(logger))
@@ -664,6 +666,7 @@ public class ServletContextHandlerTest
     @Test
     public void testAddServletFromFilter() throws Exception
     {
+        //A servlet cannot be added from a Filter
         Logger logger = Log.getLogger(ContextHandler.class.getName() + "ROOT");
 
         try (StacklessLogging stackless = new StacklessLogging(logger))
@@ -715,6 +718,7 @@ public class ServletContextHandlerTest
     @Test
     public void testAddServletFromSCL() throws Exception
     {
+        //A servlet can be added from a ServletContextListener
         ServletContextHandler context = new ServletContextHandler();
         context.getServletHandler().setStartWithUnavailable(false);
         context.setContextPath("/");
@@ -749,6 +753,7 @@ public class ServletContextHandlerTest
     @Test
     public void testAddServletFromSCI() throws Exception
     {
+        //A servlet can be added from a ServletContainerInitializer
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         _server.setHandler(contexts);
 
@@ -852,6 +857,7 @@ public class ServletContextHandlerTest
         partial.setName("test");
         context.addServlet(partial, "/test");
         
+        //complete partial servlet registration by providing name of the servlet class
         ServletRegistration reg = context.getServletContext().addServlet("test", TestServlet.class.getName());
         assertNotNull(reg);
         assertEquals(TestServlet.class.getName(), partial.getClassName());
@@ -877,6 +883,7 @@ public class ServletContextHandlerTest
         partial.setName("test");
         context.addServlet(partial, "/test");
         
+        //complete partial servlet registration by providing the servlet class
         ServletRegistration reg = context.getServletContext().addServlet("test", TestServlet.class);
         assertNotNull(reg);
         assertEquals(TestServlet.class.getName(), partial.getClassName());

@@ -42,11 +42,6 @@ public class ServletHolderTest
     
     public static class FakeServlet extends HttpServlet
     {
-        @Override
-        protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
-        {
-            super.doGet(req, resp);
-        }
     }
     
 
@@ -133,6 +128,7 @@ public class ServletHolderTest
     @Test
     public void testWithClass() throws Exception
     {
+        //Test adding servlet by class
         try (StacklessLogging stackless = new StacklessLogging(BaseHolder.class, ServletHandler.class, ContextHandler.class, ServletContextHandler.class))
         {
             ServletContextHandler context = new ServletContextHandler();
@@ -150,6 +146,7 @@ public class ServletHolderTest
     @Test
     public void testWithClassName() throws Exception
     {
+        //Test adding servlet by classname
         try (StacklessLogging stackless = new StacklessLogging(BaseHolder.class, ServletHandler.class, ContextHandler.class, ServletContextHandler.class))
         {
             ServletContextHandler context = new ServletContextHandler();
