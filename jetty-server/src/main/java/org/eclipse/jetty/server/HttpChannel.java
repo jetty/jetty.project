@@ -491,11 +491,15 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                             if (sendErrorOrAbort("Insufficient content written"))
                                 break;
                         }
+
+                        // Check if an update is done (if so, do not close)
+                        if (checkAndPrepareUpgrade())
+                            break;
+
                         // TODO Currently a blocking/aborting consumeAll is done in the handling of the TERMINATED
                         // TODO Action triggered by the completed callback below.  It would be possible to modify the
                         // TODO callback to do a non-blocking consumeAll at this point and only call completed when
                         // TODO that is done.
-                        checkAndPrepareUpgrade();
 
                         // Set a close callback on the HttpOutput to make it an async callback
                         _response.closeOutput(Callback.from(_state::completed));
@@ -731,9 +735,12 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
      * response is sent back to the client.</p>
      * <p>This avoids a race where the server is unprepared if the client sends
      * data immediately after having received the upgrade response.</p>
+     * @return true if the channel is not complete and more processing is required,
+     * either because the upgrade has succeeded or sendError has been called.
      */
-    protected void checkAndPrepareUpgrade()
+    protected boolean checkAndPrepareUpgrade()
     {
+        return false;
     }
 
     public void onCompleted()
@@ -791,7 +798,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                 if (handler != null)
                     content = handler.badMessageError(status, reason, fields);
 
-                sendResponse(new MetaData.Response(HttpVersion.HTTP_1_1, status, reason, fields, BufferUtil.length(content)), content, true);
+                sendResponse(new MetaData.Response(HttpVersion.HTTP_1_1, status, null, fields, BufferUtil.length(content)), content, true);
             }
         }
         catch (IOException e)
