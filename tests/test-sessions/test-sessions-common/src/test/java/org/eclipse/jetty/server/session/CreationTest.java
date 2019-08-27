@@ -76,8 +76,8 @@ public class CreationTest
         TestServlet servlet = new TestServlet();
         ServletHolder holder = new ServletHolder(servlet);
         ServletContextHandler contextHandler = server1.addContext(contextPath);
-        TestContextScopeListener scopeListener = new TestContextScopeListener();
-        contextHandler.addEventListener(scopeListener);
+        TestHttpChannelCompleteListener scopeListener = new TestHttpChannelCompleteListener();
+        server1.getServerConnector().addBean(scopeListener);
         contextHandler.addServlet(holder, servletMapping);
         servlet.setStore(contextHandler.getSessionHandler().getSessionCache().getSessionDataStore());
         server1.start();
@@ -145,8 +145,8 @@ public class CreationTest
         TestServlet servlet = new TestServlet();
         ServletHolder holder = new ServletHolder(servlet);
         ServletContextHandler contextHandler = server1.addContext(contextPath);
-        TestContextScopeListener scopeListener = new TestContextScopeListener();
-        contextHandler.addEventListener(scopeListener);
+        TestHttpChannelCompleteListener scopeListener = new TestHttpChannelCompleteListener();
+        server1.getServerConnector().addBean(scopeListener);
         contextHandler.addServlet(holder, servletMapping);
         servlet.setStore(contextHandler.getSessionHandler().getSessionCache().getSessionDataStore());
         server1.start();
@@ -197,8 +197,8 @@ public class CreationTest
         TestServlet servlet = new TestServlet();
         ServletHolder holder = new ServletHolder(servlet);
         ServletContextHandler contextHandler = server1.addContext(contextPath);
-        TestContextScopeListener scopeListener = new TestContextScopeListener();
-        contextHandler.addEventListener(scopeListener);
+        TestHttpChannelCompleteListener scopeListener = new TestHttpChannelCompleteListener();
+        server1.getServerConnector().addBean(scopeListener);
         contextHandler.addServlet(holder, servletMapping);
         servlet.setStore(contextHandler.getSessionHandler().getSessionCache().getSessionDataStore());
         server1.start();
@@ -245,8 +245,8 @@ public class CreationTest
         TestServlet servlet = new TestServlet();
         ServletHolder holder = new ServletHolder(servlet);
         ServletContextHandler contextHandler = server1.addContext(contextPath);
-        TestContextScopeListener scopeListener = new TestContextScopeListener();
-        contextHandler.addEventListener(scopeListener);
+        TestHttpChannelCompleteListener scopeListener = new TestHttpChannelCompleteListener();
+        server1.getServerConnector().addBean(scopeListener);
         contextHandler.addServlet(holder, servletMapping);
         servlet.setStore(contextHandler.getSessionHandler().getSessionCache().getSessionDataStore());
         server1.start();
@@ -299,8 +299,8 @@ public class CreationTest
         TestServlet servlet = new TestServlet();
         ServletHolder holder = new ServletHolder(servlet);
         ServletContextHandler contextHandler = server1.addContext(contextPath);
-        TestContextScopeListener scopeListener = new TestContextScopeListener();
-        contextHandler.addEventListener(scopeListener);
+        TestHttpChannelCompleteListener scopeListener = new TestHttpChannelCompleteListener();
+        server1.getServerConnector().addBean(scopeListener);
         contextHandler.addServlet(holder, servletMapping);
         ServletContextHandler ctxB = server1.addContext(contextB);
         ctxB.addServlet(TestServletB.class, servletMapping);
@@ -354,8 +354,8 @@ public class CreationTest
         TestServlet servlet = new TestServlet();
         ServletHolder holder = new ServletHolder(servlet);
         ServletContextHandler contextHandler = server1.addContext(contextPath);
-        TestContextScopeListener scopeListener = new TestContextScopeListener();
-        contextHandler.addEventListener(scopeListener);
+        TestHttpChannelCompleteListener scopeListener = new TestHttpChannelCompleteListener();
+        server1.getServerConnector().addBean(scopeListener);
         contextHandler.addServlet(holder, servletMapping);
         ServletContextHandler ctxB = server1.addContext(contextB);
         ctxB.addServlet(TestServletB.class, servletMapping);

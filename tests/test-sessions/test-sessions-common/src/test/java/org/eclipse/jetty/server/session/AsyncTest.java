@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.lang.reflect.Proxy;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
@@ -65,8 +64,8 @@ public class AsyncTest
         String mapping = "/server";
 
         ServletContextHandler contextHandler = server.addContext(contextPath);
-        TestContextScopeListener scopeListener = new TestContextScopeListener();
-        contextHandler.addEventListener(scopeListener);
+        TestHttpChannelCompleteListener scopeListener = new TestHttpChannelCompleteListener();
+        server.getServerConnector().addBean(scopeListener);
         TestServlet servlet = new TestServlet();
         ServletHolder holder = new ServletHolder(servlet);
         contextHandler.addServlet(holder, mapping);
@@ -117,8 +116,8 @@ public class AsyncTest
         String mapping = "/server";
 
         ServletContextHandler contextHandler = server.addContext(contextPath);
-        TestContextScopeListener scopeListener = new TestContextScopeListener();
-        contextHandler.addEventListener(scopeListener);
+        TestHttpChannelCompleteListener scopeListener = new TestHttpChannelCompleteListener();
+        server.getServerConnector().addBean(scopeListener);
         TestServlet servlet = new TestServlet();
         ServletHolder holder = new ServletHolder(servlet);
         contextHandler.addServlet(holder, mapping);
@@ -167,8 +166,8 @@ public class AsyncTest
         TestServer server = new TestServer(0, -1, -1, cacheFactory, storeFactory);
 
         ServletContextHandler contextA = server.addContext("/ctxA");
-        TestContextScopeListener scopeListener = new TestContextScopeListener();
-        contextA.addEventListener(scopeListener); //just pick one of the contexts to register the listener
+        TestHttpChannelCompleteListener scopeListener = new TestHttpChannelCompleteListener();
+        server.getServerConnector().addBean(scopeListener); //just pick one of the contexts to register the listener
         CrossContextServlet ccServlet = new CrossContextServlet();
         ServletHolder ccHolder = new ServletHolder(ccServlet);
         contextA.addServlet(ccHolder, "/*");
@@ -224,8 +223,8 @@ public class AsyncTest
         String mapping = "/server";
 
         ServletContextHandler contextHandler = server.addContext(contextPath);
-        TestContextScopeListener scopeListener = new TestContextScopeListener();
-        contextHandler.addEventListener(scopeListener);
+        TestHttpChannelCompleteListener scopeListener = new TestHttpChannelCompleteListener();
+        server.getServerConnector().addBean(scopeListener);
 
         TestServlet servlet = new TestServlet();
         ServletHolder holder = new ServletHolder(servlet);
@@ -277,8 +276,8 @@ public class AsyncTest
         TestServer server = new TestServer(0, -1, -1, cacheFactory, storeFactory);
 
         ServletContextHandler contextA = server.addContext("/ctxA");
-        TestContextScopeListener scopeListener = new TestContextScopeListener();
-        contextA.addEventListener(scopeListener); //just pick a context
+        TestHttpChannelCompleteListener scopeListener = new TestHttpChannelCompleteListener();
+        server.getServerConnector().addBean(scopeListener);
         CrossContextServlet ccServlet = new CrossContextServlet();
         ServletHolder ccHolder = new ServletHolder(ccServlet);
         contextA.addServlet(ccHolder, "/*");

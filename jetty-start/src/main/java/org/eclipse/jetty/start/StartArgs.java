@@ -842,7 +842,7 @@ public class StartArgs
         if (Utils.isBlank(localRepo))
         {
             // Try generic env variable
-            Path home = Paths.get(System.getenv("HOME"));
+            Path home = Paths.get(System.getProperty("user.home"));
             Path localMavenRepository = home.resolve(".m2/repository");
             if (Files.exists(localMavenRepository))
                 localRepo = localMavenRepository.toString();

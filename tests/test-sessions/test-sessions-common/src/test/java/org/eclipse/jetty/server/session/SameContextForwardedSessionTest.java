@@ -58,8 +58,8 @@ public class SameContextForwardedSessionTest
         TestServer testServer = new TestServer(0, -1, -1, cacheFactory, storeFactory);
 
         ServletContextHandler testServletContextHandler = testServer.addContext("/context");
-        TestContextScopeListener scopeListener = new TestContextScopeListener();
-        testServletContextHandler.addEventListener(scopeListener);
+        TestHttpChannelCompleteListener scopeListener = new TestHttpChannelCompleteListener();
+        testServer.getServerConnector().addBean(scopeListener);
         ServletHolder holder = new ServletHolder(new Servlet1());
         testServletContextHandler.addServlet(holder, "/one");
         testServletContextHandler.addServlet(Servlet2.class, "/two");

@@ -45,6 +45,7 @@ import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.component.Container;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.Graceful;
@@ -154,6 +155,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     private final Set<EndPoint> _endpoints = Collections.newSetFromMap(new ConcurrentHashMap<>());
     private final Set<EndPoint> _immutableEndPoints = Collections.unmodifiableSet(_endpoints);
     private final Graceful.Shutdown _shutdown = new Graceful.Shutdown();
+    private HttpChannel.Listener _httpChannelListeners = HttpChannel.NOOP_LISTENER;
     private CountDownLatch _stopping;
     private long _idleTimeout = 30000;
     private String _defaultProtocol;
@@ -188,6 +190,23 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
             pool = _server.getBean(ByteBufferPool.class);
         _byteBufferPool = pool != null ? pool : new ArrayByteBufferPool();
 
+        addEventListener(new Container.Listener()
+        {
+            @Override
+            public void beanAdded(Container parent, Object bean)
+            {
+                if (bean instanceof HttpChannel.Listener)
+                    _httpChannelListeners = new HttpChannelListeners(getBeans(HttpChannel.Listener.class));
+            }
+
+            @Override
+            public void beanRemoved(Container parent, Object bean)
+            {
+                if (bean instanceof HttpChannel.Listener)
+                    _httpChannelListeners = new HttpChannelListeners(getBeans(HttpChannel.Listener.class));
+            }
+        });
+
         addBean(_server, false);
         addBean(_executor);
         if (executor == null)
@@ -206,6 +225,24 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
         if (acceptors > cores)
             LOG.warn("Acceptors should be <= availableProcessors: " + this);
         _acceptors = new Thread[acceptors];
+    }
+
+    /**
+     * Get the {@link HttpChannel.Listener}s added to the connector
+     * as a single combined Listener.
+     * This is equivalent to a listener that iterates over the individual
+     * listeners returned from <code>getBeans(HttpChannel.Listener.class);</code>,
+     * except that: <ul>
+     *     <li>The result is precomputed, so it is more efficient</li>
+     *     <li>The result is ordered by the order added.</li>
+     *     <li>The result is immutable.</li>
+     * </ul>
+     * @see #getBeans(Class)
+     * @return An unmodifiable list of EventListener beans
+     */
+    public HttpChannel.Listener getHttpChannelListeners()
+    {
+        return _httpChannelListeners;
     }
 
     @Override
