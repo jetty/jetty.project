@@ -155,8 +155,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     private final Set<EndPoint> _endpoints = Collections.newSetFromMap(new ConcurrentHashMap<>());
     private final Set<EndPoint> _immutableEndPoints = Collections.unmodifiableSet(_endpoints);
     private final Graceful.Shutdown _shutdown = new Graceful.Shutdown();
-    private final List<HttpChannel.Listener> _channelListeners = new ArrayList<>();
-    private final List<HttpChannel.Listener> _channelListenersUnmodifiable = Collections.unmodifiableList(_channelListeners);
+    private HttpChannel.Listener _httpChannelListeners = HttpChannel.NOOP_LISTENER;
     private CountDownLatch _stopping;
     private long _idleTimeout = 30000;
     private String _defaultProtocol;
@@ -196,17 +195,18 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
             @Override
             public void beanAdded(Container parent, Object bean)
             {
-                if (bean instanceof HttpChannel.Listener && !_channelListeners.contains(bean))
-                    _channelListeners.add((HttpChannel.Listener)bean);
+                if (bean instanceof HttpChannel.Listener)
+                    _httpChannelListeners = new HttpChannelListeners(getBeans(HttpChannel.Listener.class));
             }
 
             @Override
             public void beanRemoved(Container parent, Object bean)
             {
                 if (bean instanceof HttpChannel.Listener)
-                    _channelListeners.remove(bean);
+                    _httpChannelListeners = new HttpChannelListeners(getBeans(HttpChannel.Listener.class));
             }
         });
+
         addBean(_server, false);
         addBean(_executor);
         if (executor == null)
@@ -228,8 +228,10 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     }
 
     /**
-     * Get the {@link HttpChannel.Listener}s added to the connector.
-     * This is equivalent to <code>getBeans(HttpChannel.Listener.class);</code>,
+     * Get the {@link HttpChannel.Listener}s added to the connector
+     * as a single combined Listener.
+     * This is equivalent to a listener that iterates over the individual
+     * listeners returned from <code>getBeans(HttpChannel.Listener.class);</code>,
      * except that: <ul>
      *     <li>The result is precomputed, so it is more efficient</li>
      *     <li>The result is ordered by the order added.</li>
@@ -238,9 +240,9 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
      * @see #getBeans(Class)
      * @return An unmodifiable list of EventListener beans
      */
-    public List<HttpChannel.Listener> getHttpChannelListeners()
+    public HttpChannel.Listener getHttpChannelListeners()
     {
-        return _channelListenersUnmodifiable;
+        return _httpChannelListeners;
     }
 
     @Override

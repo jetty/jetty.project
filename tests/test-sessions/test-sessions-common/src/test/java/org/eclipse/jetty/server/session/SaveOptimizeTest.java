@@ -125,7 +125,7 @@ public class SaveOptimizeTest
         ServletHolder holder = new ServletHolder(_servlet);
         ServletContextHandler contextHandler = _server1.addContext(contextPath);
         TestHttpChannelCompleteListener scopeListener = new TestHttpChannelCompleteListener();
-        _server1.getConnector().addBean(scopeListener);
+        _server1.getServerConnector().addBean(scopeListener);
         contextHandler.addServlet(holder, servletMapping);
         _servlet.setStore(contextHandler.getSessionHandler().getSessionCache().getSessionDataStore());
         _server1.start();
@@ -208,7 +208,7 @@ public class SaveOptimizeTest
         ServletHolder holder = new ServletHolder(_servlet);
         ServletContextHandler contextHandler = _server1.addContext(contextPath);
         TestHttpChannelCompleteListener scopeListener = new TestHttpChannelCompleteListener();
-        _server1.getConnector().addBean(scopeListener);
+        _server1.getServerConnector().addBean(scopeListener);
         contextHandler.addServlet(holder, servletMapping);
         _servlet.setStore(contextHandler.getSessionHandler().getSessionCache().getSessionDataStore());
         _server1.start();
@@ -298,7 +298,7 @@ public class SaveOptimizeTest
         ServletHolder holder = new ServletHolder(_servlet);
         ServletContextHandler contextHandler = _server1.addContext(contextPath);
         TestHttpChannelCompleteListener scopeListener = new TestHttpChannelCompleteListener();
-        _server1.getConnector().addBean(scopeListener);
+        _server1.getServerConnector().addBean(scopeListener);
         contextHandler.addServlet(holder, servletMapping);
         _servlet.setStore(contextHandler.getSessionHandler().getSessionCache().getSessionDataStore());
         _server1.start();
@@ -393,7 +393,7 @@ public class SaveOptimizeTest
         ServletHolder holder = new ServletHolder(_servlet);
         ServletContextHandler contextHandler = _server1.addContext(contextPath);
         TestHttpChannelCompleteListener scopeListener = new TestHttpChannelCompleteListener();
-        _server1.getConnector().addBean(scopeListener);
+        _server1.getServerConnector().addBean(scopeListener);
         contextHandler.addServlet(holder, servletMapping);
         _servlet.setStore(contextHandler.getSessionHandler().getSessionCache().getSessionDataStore());
         _server1.start();
@@ -472,7 +472,7 @@ public class SaveOptimizeTest
         ServletHolder holder = new ServletHolder(_servlet);
         ServletContextHandler contextHandler = _server1.addContext(contextPath);
         TestHttpChannelCompleteListener scopeListener = new TestHttpChannelCompleteListener();
-        _server1.getConnector().addBean(scopeListener);
+        _server1.getServerConnector().addBean(scopeListener);
         contextHandler.addServlet(holder, servletMapping);
         _servlet.setStore(contextHandler.getSessionHandler().getSessionCache().getSessionDataStore());
         _server1.start();

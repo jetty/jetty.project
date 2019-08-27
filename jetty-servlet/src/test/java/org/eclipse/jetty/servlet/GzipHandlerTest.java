@@ -153,7 +153,10 @@ public class GzipHandlerTest
             response.setHeader("ETag", __contentETag);
             String ifnm = req.getHeader("If-None-Match");
             if (ifnm != null && ifnm.equals(__contentETag))
-                response.sendError(304);
+            {
+                response.setStatus(304);
+                response.flushBuffer();
+            }
             else
             {
                 PrintWriter writer = response.getWriter();

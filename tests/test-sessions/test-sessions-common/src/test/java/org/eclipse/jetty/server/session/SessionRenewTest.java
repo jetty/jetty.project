@@ -117,7 +117,7 @@ public class SessionRenewTest
         String servletMapping = "/server";
         WebAppContext contextA = _server.addWebAppContext(".", contextPathA);
         TestHttpChannelCompleteListener scopeListener = new TestHttpChannelCompleteListener();
-        _server.getConnector().addBean(scopeListener);
+        _server.getServerConnector().addBean(scopeListener);
         contextA.setParentLoaderPriority(true);
         contextA.addServlet(TestServlet.class, servletMapping);
         
@@ -184,7 +184,7 @@ public class SessionRenewTest
         String servletMapping = "/server";
         WebAppContext context = _server.addWebAppContext(".", contextPath);
         TestHttpChannelCompleteListener scopeListener = new TestHttpChannelCompleteListener();
-        _server.getConnector().addBean(scopeListener);
+        _server.getServerConnector().addBean(scopeListener);
         context.setParentLoaderPriority(true);
         context.addServlet(TestServlet.class, servletMapping);
         TestHttpSessionIdListener testListener = new TestHttpSessionIdListener();

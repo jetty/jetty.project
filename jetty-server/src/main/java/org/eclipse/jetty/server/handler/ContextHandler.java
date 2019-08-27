@@ -836,7 +836,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
      * insert additional handling (Eg configuration) before the call to super.doStart by this method will start contained handlers.
      *
      * @throws Exception if unable to start the context
-     * @see org.eclipse.jetty.server.handler.ContextHandler.Context
+     * @see ContextHandler.Context
      */
     protected void startContext() throws Exception
     {
@@ -1079,7 +1079,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             case UNAVAILABLE:
                 baseRequest.setHandled(true);
                 response.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
-                return true;
+                return false;
             default:
                 if ((DispatcherType.REQUEST.equals(dispatch) && baseRequest.isHandled()))
                     return false;
@@ -1114,8 +1114,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         if (oldContext != _scontext)
         {
             // check the target.
-            if (DispatcherType.REQUEST.equals(dispatch) || DispatcherType.ASYNC.equals(dispatch) ||
-                DispatcherType.ERROR.equals(dispatch) && baseRequest.getHttpChannelState().isAsync())
+            if (DispatcherType.REQUEST.equals(dispatch) || DispatcherType.ASYNC.equals(dispatch))
             {
                 if (_compactPath)
                     target = URIUtil.compactPath(target);
@@ -1252,29 +1251,11 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             if (new_context)
                 requestInitialized(baseRequest, request);
 
-            switch (dispatch)
+            if (dispatch == DispatcherType.REQUEST && isProtectedTarget(target))
             {
-                case REQUEST:
-                    if (isProtectedTarget(target))
-                    {
-                        response.sendError(HttpServletResponse.SC_NOT_FOUND);
-                        baseRequest.setHandled(true);
-                        return;
-                    }
-                    break;
-
-                case ERROR:
-                    // If this is already a dispatch to an error page, proceed normally
-                    if (Boolean.TRUE.equals(baseRequest.getAttribute(Dispatcher.__ERROR_DISPATCH)))
-                        break;
-
-                    // We can just call doError here. If there is no error page, then one will
-                    // be generated. If there is an error page, then a RequestDispatcher will be
-                    // used to route the request through appropriate filters etc.
-                    doError(target, baseRequest, request, response);
-                    return;
-                default:
-                    break;
+                baseRequest.setHandled(true);
+                response.sendError(HttpServletResponse.SC_NOT_FOUND);
+                return;
             }
 
             nextHandle(target, baseRequest, request, response);

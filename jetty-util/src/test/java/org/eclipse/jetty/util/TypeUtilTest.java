@@ -18,10 +18,11 @@
 
 package org.eclipse.jetty.util;
 
-import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import org.eclipse.jetty.util.resource.Resource;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnJre;
 import org.junit.jupiter.api.condition.EnabledOnJre;
@@ -161,16 +162,15 @@ public class TypeUtilTest
     }
 
     @Test
-    public void testGetLocationOfClass_FromMavenRepo() throws IOException
+    public void testGetLocationOfClass_FromMavenRepo() throws Exception
     {
         String mavenRepoPathProperty = System.getProperty("mavenRepoPath");
         assumeTrue(mavenRepoPathProperty != null);
         Path mavenRepoPath = Paths.get(mavenRepoPathProperty);
 
-        String mavenRepo = mavenRepoPath.toFile().getCanonicalPath().replaceAll("\\\\", "/");
-
         // Classes from maven dependencies
-        assertThat(TypeUtil.getLocationOfClass(org.junit.jupiter.api.Assertions.class).toASCIIString(), containsString(mavenRepo));
+        Resource resource = Resource.newResource(TypeUtil.getLocationOfClass(org.junit.jupiter.api.Assertions.class).toASCIIString());
+        assertThat(resource.getFile().getCanonicalPath(), Matchers.startsWith(mavenRepoPath.toFile().getCanonicalPath()));
     }
 
     @Test

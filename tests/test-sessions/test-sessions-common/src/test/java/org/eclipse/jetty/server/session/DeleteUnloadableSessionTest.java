@@ -152,7 +152,7 @@ public class DeleteUnloadableSessionTest
         ServletContextHandler context = server.addContext(contextPath);
 
         TestHttpChannelCompleteListener scopeListener = new TestHttpChannelCompleteListener();
-        server.getConnector().addBean(scopeListener);
+        server.getServerConnector().addBean(scopeListener);
 
         TestServlet servlet = new TestServlet();
         ServletHolder holder = new ServletHolder(servlet);

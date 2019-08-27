@@ -108,8 +108,8 @@ public class BadAppTests extends AbstractDistributionTest
                 startHttpClient();
                 ContentResponse response = client.GET("http://localhost:" + port + "/badapp/");
                 assertEquals(HttpStatus.SERVICE_UNAVAILABLE_503, response.getStatus());
-                assertThat(response.getContentAsString(), containsString("Unavailable"));
-                assertThat(response.getContentAsString(), containsString("Problem accessing /badapp/"));
+                assertThat(response.getContentAsString(), containsString("<h2>HTTP ERROR 503 Service Unavailable</h2>"));
+                assertThat(response.getContentAsString(), containsString("<tr><th>URI:</th><td>/badapp/</td></tr>"));
             }
         }
     }
@@ -148,8 +148,8 @@ public class BadAppTests extends AbstractDistributionTest
                 startHttpClient();
                 ContentResponse response = client.GET("http://localhost:" + port + "/badapp/");
                 assertEquals(HttpStatus.SERVICE_UNAVAILABLE_503, response.getStatus());
-                assertThat(response.getContentAsString(), containsString("Unavailable"));
-                assertThat(response.getContentAsString(), containsString("Problem accessing /badapp/"));
+                assertThat(response.getContentAsString(), containsString("<h2>HTTP ERROR 503 Service Unavailable</h2>"));
+                assertThat(response.getContentAsString(), containsString("<tr><th>URI:</th><td>/badapp/</td></tr>"));
             }
         }
     }

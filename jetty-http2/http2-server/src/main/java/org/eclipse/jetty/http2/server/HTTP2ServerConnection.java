@@ -376,10 +376,9 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
         }
 
         @Override
-        protected void checkAndPrepareUpgrade()
+        protected boolean checkAndPrepareUpgrade()
         {
-            if (isTunnel())
-                getHttpTransport().prepareUpgrade();
+            return isTunnel() && getHttpTransport().prepareUpgrade();
         }
 
         @Override

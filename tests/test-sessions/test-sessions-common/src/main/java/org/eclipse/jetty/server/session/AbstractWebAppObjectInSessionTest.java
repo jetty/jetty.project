@@ -104,7 +104,7 @@ public abstract class AbstractWebAppObjectInSessionTest extends AbstractTestBase
             cacheFactory, storeFactory);
         WebAppContext wac1 = server1.addWebAppContext(warDir.getCanonicalPath(), contextPath);
         TestHttpChannelCompleteListener scopeListener = new TestHttpChannelCompleteListener();
-        server1.getConnector().addBean(scopeListener);
+        server1.getServerConnector().addBean(scopeListener);
         wac1.addServlet(WebAppObjectInSessionServlet.class.getName(), servletMapping);
 
         try
