@@ -126,7 +126,7 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
                     LOG.debug("Store: id={}, dirty={}, lsave={}, period={}, elapsed={}", id, data.isDirty(), data.getLastSaved(), savePeriodMs, (System.currentTimeMillis() - lastSave));
 
                 //save session if attribute changed or never been saved or time between saves exceeds threshold
-                if (data.isDirty() || (lastSave <= 0) || ((System.currentTimeMillis() - lastSave) > savePeriodMs))
+                if (data.isDirty() || (lastSave <= 0) || ((System.currentTimeMillis() - lastSave) >= savePeriodMs))
                 {
                     //set the last saved time to now
                     data.setLastSaved(System.currentTimeMillis());
