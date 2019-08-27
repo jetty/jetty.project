@@ -471,9 +471,9 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
     }
 
     /**
-     * Get SessionHandler for every context.
+     * Get SessionManager for every context.
      *
-     * @return all SessionHandlers that are running
+     * @return all session managers
      */
     @Override
     public Set<SessionHandler> getSessionHandlers()
@@ -484,8 +484,7 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
         {
             for (Handler h : tmp)
             {
-                if (h.isStarted())
-                    handlers.add((SessionHandler)h);
+                handlers.add((SessionHandler)h);
             }
         }
         return handlers;
