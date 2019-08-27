@@ -25,7 +25,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSessionAttributeListener;
 import javax.servlet.http.HttpSessionBindingEvent;
 
-
 /**
  * NullSessionCache
  *
@@ -75,8 +74,7 @@ public class NullSessionCache extends AbstractSessionCache
             if (store == null)
                 return;
 
-            if (_writeThroughMode == WriteThroughMode.ALWAYS
-                || (_writeThroughMode == WriteThroughMode.NEW && session.isNew()))
+            if (_writeThroughMode == WriteThroughMode.ALWAYS || (_writeThroughMode == WriteThroughMode.NEW && session.isNew()))
             {
                 //ensure that a call to willPassivate doesn't result in a passivation
                 //listener removing an attribute, which would cause this listener to
@@ -128,11 +126,10 @@ public class NullSessionCache extends AbstractSessionCache
          * (which is the default behaviour of AbstractSessionCache)
          */
         ON_EXIT
-    };
+    }
     
     private WriteThroughMode _writeThroughMode = WriteThroughMode.ON_EXIT;
     protected WriteThroughAttributeListener _listener = null;
-    
 
     /**
      * @return the writeThroughMode
@@ -142,14 +139,13 @@ public class NullSessionCache extends AbstractSessionCache
         return _writeThroughMode;
     }
 
-
     /**
      * @param writeThroughMode the writeThroughMode to set
      */
     public void setWriteThroughMode(WriteThroughMode writeThroughMode)
     {
         if (getSessionHandler() == null)
-            throw new IllegalStateException ("No SessionHandler");
+            throw new IllegalStateException("No SessionHandler");
         
         //assume setting null is the same as ON_EXIT
         if (writeThroughMode == null)
@@ -184,7 +180,6 @@ public class NullSessionCache extends AbstractSessionCache
         _writeThroughMode = writeThroughMode;
     }
 
-
     /**
      * @param handler The SessionHandler related to this SessionCache
      */
@@ -193,7 +188,6 @@ public class NullSessionCache extends AbstractSessionCache
         super(handler);
         super.setEvictionPolicy(EVICT_ON_SESSION_EXIT);
     }
-    
 
     /**
      * @see org.eclipse.jetty.server.session.SessionCache#shutdown()
