@@ -176,9 +176,6 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
     @Override
     public SessionData newSessionData(String id, long created, long accessed, long lastAccessed, long maxInactiveMs)
     {
-        if (!isStarted())
-            throw new IllegalStateException("Not started");
-        
         return new SessionData(id, _context.getCanonicalContextPath(), _context.getVhost(), created, accessed, lastAccessed, maxInactiveMs);
     }
 
