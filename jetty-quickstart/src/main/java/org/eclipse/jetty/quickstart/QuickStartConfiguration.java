@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.quickstart;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
@@ -231,7 +232,12 @@ public class QuickStartConfiguration extends AbstractConfiguration
 
         Resource webInf = context.getWebInf();
         if (webInf == null || !webInf.exists())
-            throw new IllegalStateException("No WEB-INF");
+        {
+            File tmp = new File (context.getBaseResource().getFile(), "WEB-INF");
+            tmp.mkdirs();
+            webInf = context.getWebInf();
+        }
+        
         LOG.debug("webinf={}", webInf);
         Resource qstart = webInf.addPath("quickstart-web.xml");
         context.setAttribute(QUICKSTART_WEB_XML, qstart);

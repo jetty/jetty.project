@@ -220,7 +220,7 @@ public class JettyRunForkedMojo extends JettyRunMojo
             if (!forkWebXml.exists())
                 forkWebXml.createNewFile();
             
-            webApp.addConfiguration(new QuickStartConfiguration());
+            webApp.addConfiguration(new MavenQuickStartConfiguration());
             webApp.setAttribute(QuickStartConfiguration.MODE, Mode.GENERATE);
             webApp.setAttribute(QuickStartConfiguration.QUICKSTART_WEB_XML, Resource.newResource(forkWebXml));
             webApp.setCopyWebDir(false);

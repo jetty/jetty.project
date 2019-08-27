@@ -1289,7 +1289,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
     @Override
     protected void startContext()
-        throws Exception
+            throws Exception
     {
         if (configure())
         {

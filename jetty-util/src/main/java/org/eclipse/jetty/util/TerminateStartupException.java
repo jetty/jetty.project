@@ -28,5 +28,26 @@ package org.eclipse.jetty.util;
  */
 public class TerminateStartupException extends Exception
 {
-
+    public static boolean isTerminateStartup (Throwable e)
+    {
+        if (e instanceof TerminateStartupException)
+            return true;
+        
+        if (e instanceof MultiException)
+        {
+            for (Throwable t: ((MultiException)e).getThrowables())
+            {
+                if (t instanceof TerminateStartupException)
+                    return true;
+            }
+            return false;
+        }
+        
+        if (e instanceof Exception)
+        {
+           return isTerminateStartup(e.getCause());
+        }
+        
+        return false;
+    }
 }

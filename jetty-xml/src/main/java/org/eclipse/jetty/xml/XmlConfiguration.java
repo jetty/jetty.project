@@ -34,6 +34,7 @@ import java.net.UnknownHostException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.AccessController;
+import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -1807,32 +1808,13 @@ public class XmlConfiguration
         }
         catch (Exception e)
         {
-            if (! isTerminateStartup(e))
+            if (! TerminateStartupException.isTerminateStartup(e)) 
             {
-                LOG.warn(e);
-                throw e;
+                LOG.warn(e); 
+                throw e; 
             }
+
         }
     }
-    
-    public static boolean isTerminateStartup (Exception e)
-    {
-        if (e instanceof TerminateStartupException)
-            return true;
-        
-        if (e instanceof MultiException)
-        {
-            for (Throwable t: ((MultiException)e).getThrowables())
-            {
-                if (t instanceof TerminateStartupException)
-                    return true;
-            }
-            return false;
-        }
-        
-        if (e.getCause() instanceof TerminateStartupException)
-            return true;
-        
-        return false;
-    }
+  
 }

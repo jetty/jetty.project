@@ -110,7 +110,7 @@ public class PreconfigureQuickStartWar
                                 new AnnotationConfiguration());
         webapp.setAttribute(QuickStartConfiguration.MODE, QuickStartConfiguration.Mode.GENERATE);
         webapp.setAttribute(QuickStartConfiguration.GENERATE_ORIGIN, Boolean.FALSE);
-        
+
         if (xml != null)
         {
             if (xml.isDirectory() || !xml.toString().toLowerCase(Locale.ENGLISH).endsWith(".xml"))
@@ -122,7 +122,7 @@ public class PreconfigureQuickStartWar
         server.setHandler(webapp);
         try
         {
-        server.start();
+            server.start();
         }
         catch (TerminateStartupException e)
         {
@@ -137,7 +137,6 @@ public class PreconfigureQuickStartWar
             if (!server.isStopped())
                 server.stop();
         }
-        
     }
 
     private static void error(String message)

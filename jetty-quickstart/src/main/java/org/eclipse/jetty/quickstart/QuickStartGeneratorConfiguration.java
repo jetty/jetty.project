@@ -52,6 +52,8 @@ import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlet.ServletMapping;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
+import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.util.component.LifeCycle.Listener;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
@@ -84,7 +86,7 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
     protected boolean _generateOrigin;
     protected int _count;
     protected Resource _quickStartWebXml;
-
+   
     public QuickStartGeneratorConfiguration()
     {
         this(false);
@@ -797,6 +799,15 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
         try (FileOutputStream fos = new FileOutputStream(quickStartWebXml.getFile(), false))
         {
             generateQuickStartWebXml(context, fos);
+            LOG.info("Quickstart generated for {}", context);
         }
     }
+
+    @Override
+    public void deconfigure(WebAppContext context) throws Exception
+    {
+        super.deconfigure(context);
+    }
+    
+    
 }
