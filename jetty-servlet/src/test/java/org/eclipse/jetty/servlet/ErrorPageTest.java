@@ -134,7 +134,7 @@ public class ErrorPageTest
     }
 
     @Test
-    void testErrorOverridesStatus() throws Exception
+    public void testErrorOverridesStatus() throws Exception
     {
         String response = _connector.getResponse("GET /error-and-status/anything HTTP/1.0\r\n\r\n");
         assertThat(response, Matchers.containsString("HTTP/1.1 594 594"));
@@ -148,7 +148,7 @@ public class ErrorPageTest
     }
 
     @Test
-    void testHttp204CannotHaveBody() throws Exception
+    public void testHttp204CannotHaveBody() throws Exception
     {
         String response = _connector.getResponse("GET /fail/code?code=204 HTTP/1.0\r\n\r\n");
         assertThat(response, Matchers.containsString("HTTP/1.1 204 No Content"));
@@ -162,7 +162,7 @@ public class ErrorPageTest
     }
 
     @Test
-    void testDeleteCannotHaveBody() throws Exception
+    public void testDeleteCannotHaveBody() throws Exception
     {
         String response = _connector.getResponse("DELETE /delete/anything HTTP/1.0\r\n\r\n");
         assertThat(response, Matchers.containsString("HTTP/1.1 595 595"));
@@ -179,7 +179,7 @@ public class ErrorPageTest
     }
 
     @Test
-    void testGenerateAcceptableResponse_noAcceptHeader() throws Exception
+    public void testGenerateAcceptableResponse_noAcceptHeader() throws Exception
     {
         // no global error page here
         _errorPageErrorHandler.getErrorPages().remove(ErrorPageErrorHandler.GLOBAL_ERROR_PAGE);
@@ -192,7 +192,7 @@ public class ErrorPageTest
     }
 
     @Test
-    void testGenerateAcceptableResponse_htmlAcceptHeader() throws Exception
+    public void testGenerateAcceptableResponse_htmlAcceptHeader() throws Exception
     {
         // no global error page here
         _errorPageErrorHandler.getErrorPages().remove(ErrorPageErrorHandler.GLOBAL_ERROR_PAGE);
@@ -207,7 +207,7 @@ public class ErrorPageTest
     }
 
     @Test
-    void testGenerateAcceptableResponse_noHtmlAcceptHeader() throws Exception
+    public void testGenerateAcceptableResponse_noHtmlAcceptHeader() throws Exception
     {
         // no global error page here
         _errorPageErrorHandler.getErrorPages().remove(ErrorPageErrorHandler.GLOBAL_ERROR_PAGE);
@@ -221,7 +221,7 @@ public class ErrorPageTest
     }
 
     @Test
-    void testNestedSendErrorDoesNotLoop() throws Exception
+    public void testNestedSendErrorDoesNotLoop() throws Exception
     {
         String response = _connector.getResponse("GET /fail/code?code=597 HTTP/1.0\r\n\r\n");
         assertThat(response, Matchers.containsString("HTTP/1.1 597 597"));
