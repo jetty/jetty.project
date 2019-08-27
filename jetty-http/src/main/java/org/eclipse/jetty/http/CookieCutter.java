@@ -192,7 +192,7 @@ public abstract class CookieCutter
                                         // This is a new cookie, so add the completed last cookie if we have one
                                         if (cookieName != null)
                                         {
-                                            if(!reject)
+                                            if (!reject)
                                             {
                                                 addCookie(cookieName, cookieValue, cookieDomain, cookiePath, cookieVersion, cookieComment);
                                                 reject = false;
