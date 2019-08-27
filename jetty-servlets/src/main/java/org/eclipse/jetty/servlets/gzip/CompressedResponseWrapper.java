@@ -136,7 +136,7 @@ public abstract class CompressedResponseWrapper extends HttpServletResponseWrapp
                 if (colon>0)
                     ct=ct.substring(0,colon);
 
-                if (!_mimeTypes.matches(StringUtil.asciiToLowerCase(ct)))
+                if (_mimeTypes!=null && !_mimeTypes.matches(StringUtil.asciiToLowerCase(ct)))
                     noCompression();
             }
         }
