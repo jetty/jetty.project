@@ -52,10 +52,13 @@ import javax.servlet.http.HttpSessionIdListener;
 import javax.servlet.http.HttpSessionListener;
 
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
+import org.eclipse.jetty.security.RoleInfo;
 import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.AbstractHandlerContainer;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -81,6 +84,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -703,6 +707,72 @@ public class ServletContextHandlerTest
         assertThat("Response", response, containsString("Hello World"));
     }
 
+    @Test
+    public void testSetSecurityHandler() throws Exception
+    {
+        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS|ServletContextHandler.SECURITY|ServletContextHandler.GZIP);
+        assertNotNull(context.getSessionHandler());
+        SessionHandler sessionHandler = context.getSessionHandler();
+        assertNotNull(context.getSecurityHandler());
+        SecurityHandler securityHandler = context.getSecurityHandler();
+        assertNotNull(context.getGzipHandler());
+        GzipHandler gzipHandler = context.getGzipHandler();
+        
+        //check the handler linking order
+        HandlerWrapper h = (HandlerWrapper)context.getHandler();
+        assertSame(h, sessionHandler);
+
+        h = (HandlerWrapper)h.getHandler();
+        assertSame(h, securityHandler);
+
+        h = (HandlerWrapper)h.getHandler();
+        assertSame(h, gzipHandler);
+
+        //replace the security handler
+        SecurityHandler myHandler = new SecurityHandler()
+        {
+            @Override
+            protected RoleInfo prepareConstraintInfo(String pathInContext, Request request)
+            {
+                return null;
+            }
+
+            @Override
+            protected boolean checkUserDataPermissions(String pathInContext, Request request, Response response,
+                                                       RoleInfo constraintInfo) throws IOException
+            {
+                return false;
+            }
+
+            @Override
+            protected boolean isAuthMandatory(Request baseRequest, Response baseResponse, Object constraintInfo)
+            {
+                return false;
+            }
+
+            @Override
+            protected boolean checkWebResourcePermissions(String pathInContext, Request request, Response response,
+                                                          Object constraintInfo, UserIdentity userIdentity)
+                                                              throws IOException
+            {
+                return false;
+            }
+        };
+        
+        //check the linking order
+        context.setSecurityHandler(myHandler);
+        assertSame(myHandler, context.getSecurityHandler());
+        
+        h = (HandlerWrapper)context.getHandler();
+        assertSame(h, sessionHandler);
+
+        h = (HandlerWrapper)h.getHandler();
+        assertSame(h, myHandler);
+
+        h = (HandlerWrapper)h.getHandler();
+        assertSame(h, gzipHandler);
+    }
+ 
     @Test
     public void testReplaceServletHandlerWithoutServlet() throws Exception
     {
