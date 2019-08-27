@@ -24,6 +24,12 @@ import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.Set;
 
+/**
+ * The Factory for Extensions.
+ *
+ * @deprecated this class is removed from Jetty 10.0.0+
+ */
+@Deprecated
 public abstract class ExtensionFactory implements Iterable<Class<? extends Extension>>
 {
     private ServiceLoader<Extension> extensionLoader = ServiceLoader.load(Extension.class);
