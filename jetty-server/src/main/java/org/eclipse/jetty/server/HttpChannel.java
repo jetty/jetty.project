@@ -487,14 +487,14 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
                         // RFC 7230, section 3.3.
                         if (!_request.isHead() && !_response.isContentComplete(_response.getHttpOutput().getWritten()))
-                            sendErrorOrAbort("Insufficient content written");
-
-
+                        {
+                            if (sendErrorOrAbort("Insufficient content written"))
+                                break;
+                        }
                         // TODO Currently a blocking/aborting consumeAll is done in the handling of the TERMINATED
                         // TODO Action triggered by the completed callback below.  It would be possible to modify the
                         // TODO callback to do a non-blocking consumeAll at this point and only call completed when
                         // TODO that is done.
-                        
                         checkAndPrepareUpgrade();
 
                         // Set a close callback on the HttpOutput to make it an async callback
@@ -525,20 +525,25 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         return !suspended;
     }
 
-    public void sendErrorOrAbort(String message)
+    public boolean sendErrorOrAbort(String message)
     {
         try
         {
             if (isCommitted())
+            {
                 abort(new IOException(message));
-            else
-                _response.sendError(HttpStatus.INTERNAL_SERVER_ERROR_500, message);
+                return false;
+            }
+
+            _response.sendError(HttpStatus.INTERNAL_SERVER_ERROR_500, message);
+            return true;
         }
         catch (Throwable x)
         {
             LOG.ignore(x);
             abort(x);
         }
+        return false;
     }
 
     private void dispatch(DispatcherType type, Dispatchable dispatchable) throws IOException, ServletException
@@ -628,8 +633,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             _request.setHandled(true);
             _state.completing();
             sendResponse(null, _response.getHttpOutput().getBuffer(), true, Callback.from(_state::completed));
-            {
-            }
         }
         catch (Throwable x)
         {
@@ -758,9 +761,9 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     public void onBadMessage(BadMessageException failure)
     {
         int status = failure.getCode();
-        String message = failure.getReason();
+        String reason = failure.getReason();
         if (status < HttpStatus.BAD_REQUEST_400 || status > 599)
-            failure = new BadMessageException(HttpStatus.BAD_REQUEST_400, message, failure);
+            failure = new BadMessageException(HttpStatus.BAD_REQUEST_400, reason, failure);
 
         notifyRequestFailure(_request, failure);
 
@@ -786,9 +789,9 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
                 ErrorHandler handler = getServer().getBean(ErrorHandler.class);
                 if (handler != null)
-                    content = handler.badMessageError(status, message, fields);
+                    content = handler.badMessageError(status, reason, fields);
 
-                sendResponse(new MetaData.Response(HttpVersion.HTTP_1_1, status, null, fields, BufferUtil.length(content)), content, true);
+                sendResponse(new MetaData.Response(HttpVersion.HTTP_1_1, status, reason, fields, BufferUtil.length(content)), content, true);
             }
         }
         catch (IOException e)
@@ -1127,7 +1130,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
          *
          * @param request the request object
          */
-        public default void onRequestBegin(Request request)
+        default void onRequestBegin(Request request)
         {
         }
 
@@ -1136,7 +1139,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
          *
          * @param request the request object
          */
-        public default void onBeforeDispatch(Request request)
+        default void onBeforeDispatch(Request request)
         {
         }
 
@@ -1146,7 +1149,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
          * @param request the request object
          * @param failure the exception thrown by the application
          */
-        public default void onDispatchFailure(Request request, Throwable failure)
+        default void onDispatchFailure(Request request, Throwable failure)
         {
         }
 
@@ -1155,7 +1158,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
          *
          * @param request the request object
          */
-        public default void onAfterDispatch(Request request)
+        default void onAfterDispatch(Request request)
         {
         }
 
@@ -1166,7 +1169,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
          * @param request the request object
          * @param content a {@link ByteBuffer#slice() slice} of the request content chunk
          */
-        public default void onRequestContent(Request request, ByteBuffer content)
+        default void onRequestContent(Request request, ByteBuffer content)
         {
         }
 
@@ -1175,7 +1178,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
          *
          * @param request the request object
          */
-        public default void onRequestContentEnd(Request request)
+        default void onRequestContentEnd(Request request)
         {
         }
 
@@ -1184,7 +1187,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
          *
          * @param request the request object
          */
-        public default void onRequestTrailers(Request request)
+        default void onRequestTrailers(Request request)
         {
         }
 
@@ -1193,7 +1196,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
          *
          * @param request the request object
          */
-        public default void onRequestEnd(Request request)
+        default void onRequestEnd(Request request)
         {
         }
 
@@ -1203,7 +1206,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
          * @param request the request object
          * @param failure the request failure
          */
-        public default void onRequestFailure(Request request, Throwable failure)
+        default void onRequestFailure(Request request, Throwable failure)
         {
         }
 
@@ -1212,7 +1215,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
          *
          * @param request the request object
          */
-        public default void onResponseBegin(Request request)
+        default void onResponseBegin(Request request)
         {
         }
 
@@ -1223,7 +1226,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
          *
          * @param request the request object
          */
-        public default void onResponseCommit(Request request)
+        default void onResponseCommit(Request request)
         {
         }
 
@@ -1233,7 +1236,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
          * @param request the request object
          * @param content a {@link ByteBuffer#slice() slice} of the response content chunk
          */
-        public default void onResponseContent(Request request, ByteBuffer content)
+        default void onResponseContent(Request request, ByteBuffer content)
         {
         }
 
@@ -1242,7 +1245,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
          *
          * @param request the request object
          */
-        public default void onResponseEnd(Request request)
+        default void onResponseEnd(Request request)
         {
         }
 
@@ -1252,7 +1255,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
          * @param request the request object
          * @param failure the response failure
          */
-        public default void onResponseFailure(Request request, Throwable failure)
+        default void onResponseFailure(Request request, Throwable failure)
         {
         }
 
@@ -1261,7 +1264,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
          *
          * @param request the request object
          */
-        public default void onComplete(Request request)
+        default void onComplete(Request request)
         {
         }
     }
