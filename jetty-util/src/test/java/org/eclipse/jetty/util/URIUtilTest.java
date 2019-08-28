@@ -26,6 +26,7 @@ import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -40,339 +41,442 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @SuppressWarnings("SpellCheckingInspection")
 public class URIUtilTest
 {
-    @Test // TODO: Parameterize
-    public void testEncodePath()
+    public static Stream<Arguments> encodePathSource()
+    {
+        return Stream.of(
+            Arguments.of("/foo%23+;,:=/b a r/?info ", "/foo%2523+%3B,:=/b%20a%20r/%3Finfo%20"),
+            Arguments.of("/context/'list'/\"me\"/;<script>window.alert('xss');</script>",
+                "/context/%27list%27/%22me%22/%3B%3Cscript%3Ewindow.alert(%27xss%27)%3B%3C/script%3E"),
+            Arguments.of("test\u00f6?\u00f6:\u00df", "test%C3%B6%3F%C3%B6:%C3%9F"),
+            Arguments.of("test?\u00f6?\u00f6:\u00df", "test%3F%C3%B6%3F%C3%B6:%C3%9F")
+        );
+    }
+
+    @ParameterizedTest(name = "[{index}] {0}")
+    @MethodSource("encodePathSource")
+    public void testEncodePath(String rawPath, String expectedEncoded)
     {
         // test basic encode/decode
         StringBuilder buf = new StringBuilder();
-
         buf.setLength(0);
-        URIUtil.encodePath(buf, "/foo%23+;,:=/b a r/?info ");
-        assertEquals("/foo%2523+%3B,:=/b%20a%20r/%3Finfo%20", buf.toString());
+        URIUtil.encodePath(buf, rawPath);
+        assertEquals(expectedEncoded, buf.toString());
+    }
 
-        assertEquals("/foo%2523+%3B,:=/b%20a%20r/%3Finfo%20", URIUtil.encodePath("/foo%23+;,:=/b a r/?info "));
-
+    @Test
+    public void testEncodeString()
+    {
+        StringBuilder buf = new StringBuilder();
         buf.setLength(0);
         URIUtil.encodeString(buf, "foo%23;,:=b a r", ";,= ");
         assertEquals("foo%2523%3b%2c:%3db%20a%20r", buf.toString());
-
-        buf.setLength(0);
-        URIUtil.encodePath(buf, "/context/'list'/\"me\"/;<script>window.alert('xss');</script>");
-        assertEquals("/context/%27list%27/%22me%22/%3B%3Cscript%3Ewindow.alert(%27xss%27)%3B%3C/script%3E", buf.toString());
-
-        buf.setLength(0);
-        URIUtil.encodePath(buf, "test\u00f6?\u00f6:\u00df");
-        assertEquals("test%C3%B6%3F%C3%B6:%C3%9F", buf.toString());
-
-        buf.setLength(0);
-        URIUtil.encodePath(buf, "test?\u00f6?\u00f6:\u00df");
-        assertEquals("test%3F%C3%B6%3F%C3%B6:%C3%9F", buf.toString());
     }
 
-    @Test // TODO: Parameterize
-    public void testDecodePath()
+    public static Stream<Arguments> decodePathSource()
     {
-        assertEquals(URIUtil.decodePath("xx/foo/barxx", 2, 8), "/foo/bar");
-        assertEquals("/foo/bar", URIUtil.decodePath("/foo/bar"));
-        assertEquals("/f o/b r", URIUtil.decodePath("/f%20o/b%20r"));
-        assertEquals("/foo/bar", URIUtil.decodePath("/foo;ignore/bar;ignore"));
-        assertEquals("/fää/bar", URIUtil.decodePath("/f\u00e4\u00e4;ignore/bar;ignore"));
-        assertEquals("/f\u0629\u0629%23/bar", URIUtil.decodePath("/f%d8%a9%d8%a9%2523;ignore/bar;ignore"));
+        List<Arguments> arguments = new ArrayList<>();
+        arguments.add(Arguments.of("/foo/bar", "/foo/bar"));
 
-        assertEquals("foo%23;,:=b a r", URIUtil.decodePath("foo%2523%3b%2c:%3db%20a%20r;rubbish"));
-        assertEquals("/foo/bar%23;,:=b a r=", URIUtil.decodePath("xxx/foo/bar%2523%3b%2c:%3db%20a%20r%3Dxxx;rubbish", 3, 35));
-        assertEquals("f\u00e4\u00e4%23;,:=b a r=", URIUtil.decodePath("fää%2523%3b%2c:%3db%20a%20r%3D"));
-        assertEquals("f\u0629\u0629%23;,:=b a r", URIUtil.decodePath("f%d8%a9%d8%a9%2523%3b%2c:%3db%20a%20r"));
+        arguments.add(Arguments.of("/f%20o/b%20r", "/f o/b r"));
+        arguments.add(Arguments.of("fää%2523%3b%2c:%3db%20a%20r%3D", "f\u00e4\u00e4%23;,:=b a r="));
+        arguments.add(Arguments.of("f%d8%a9%d8%a9%2523%3b%2c:%3db%20a%20r", "f\u0629\u0629%23;,:=b a r"));
+
+        // path parameters should be ignored
+        arguments.add(Arguments.of("/foo;ignore/bar;ignore", "/foo/bar"));
+        arguments.add(Arguments.of("/f\u00e4\u00e4;ignore/bar;ignore", "/fää/bar"));
+        arguments.add(Arguments.of("/f%d8%a9%d8%a9%2523;ignore/bar;ignore", "/f\u0629\u0629%23/bar"));
+        arguments.add(Arguments.of("foo%2523%3b%2c:%3db%20a%20r;rubbish", "foo%23;,:=b a r"));
 
         // Test for null character (real world ugly test case)
         byte[] oddBytes = {'/', 0x00, '/'};
         String odd = new String(oddBytes, StandardCharsets.ISO_8859_1);
         assertEquals(odd, URIUtil.decodePath("/%00/"));
+        arguments.add(Arguments.of("/%00/", odd));
+
+        return arguments.stream();
     }
 
-    @Test // TODO: Parameterize
-    public void testAddEncodedPaths()
+    @ParameterizedTest(name = "[{index}] {0}")
+    @MethodSource("decodePathSource")
+    public void testDecodePath(String encodedPath, String expectedPath)
     {
-        assertEquals(URIUtil.addEncodedPaths(null, null), null, "null+null");
-        assertEquals(URIUtil.addEncodedPaths(null, ""), "", "null+");
-        assertEquals(URIUtil.addEncodedPaths(null, "bbb"), "bbb", "null+bbb");
-        assertEquals(URIUtil.addEncodedPaths(null, "/"), "/", "null+/");
-        assertEquals(URIUtil.addEncodedPaths(null, "/bbb"), "/bbb", "null+/bbb");
-
-        assertEquals(URIUtil.addEncodedPaths("", null), "", "+null");
-        assertEquals(URIUtil.addEncodedPaths("", ""), "", "+");
-        assertEquals(URIUtil.addEncodedPaths("", "bbb"), "bbb", "+bbb");
-        assertEquals(URIUtil.addEncodedPaths("", "/"), "/", "+/");
-        assertEquals(URIUtil.addEncodedPaths("", "/bbb"), "/bbb", "+/bbb");
-
-        assertEquals(URIUtil.addEncodedPaths("aaa", null), "aaa", "aaa+null");
-        assertEquals(URIUtil.addEncodedPaths("aaa", ""), "aaa", "aaa+");
-        assertEquals(URIUtil.addEncodedPaths("aaa", "bbb"), "aaa/bbb", "aaa+bbb");
-        assertEquals(URIUtil.addEncodedPaths("aaa", "/"), "aaa/", "aaa+/");
-        assertEquals(URIUtil.addEncodedPaths("aaa", "/bbb"), "aaa/bbb", "aaa+/bbb");
-
-        assertEquals(URIUtil.addEncodedPaths("/", null), "/", "/+null");
-        assertEquals(URIUtil.addEncodedPaths("/", ""), "/", "/+");
-        assertEquals(URIUtil.addEncodedPaths("/", "bbb"), "/bbb", "/+bbb");
-        assertEquals(URIUtil.addEncodedPaths("/", "/"), "/", "/+/");
-        assertEquals(URIUtil.addEncodedPaths("/", "/bbb"), "/bbb", "/+/bbb");
-
-        assertEquals(URIUtil.addEncodedPaths("aaa/", null), "aaa/", "aaa/+null");
-        assertEquals(URIUtil.addEncodedPaths("aaa/", ""), "aaa/", "aaa/+");
-        assertEquals(URIUtil.addEncodedPaths("aaa/", "bbb"), "aaa/bbb", "aaa/+bbb");
-        assertEquals(URIUtil.addEncodedPaths("aaa/", "/"), "aaa/", "aaa/+/");
-        assertEquals(URIUtil.addEncodedPaths("aaa/", "/bbb"), "aaa/bbb", "aaa/+/bbb");
-
-        assertEquals(URIUtil.addEncodedPaths(";JS", null), ";JS", ";JS+null");
-        assertEquals(URIUtil.addEncodedPaths(";JS", ""), ";JS", ";JS+");
-        assertEquals(URIUtil.addEncodedPaths(";JS", "bbb"), "bbb;JS", ";JS+bbb");
-        assertEquals(URIUtil.addEncodedPaths(";JS", "/"), "/;JS", ";JS+/");
-        assertEquals(URIUtil.addEncodedPaths(";JS", "/bbb"), "/bbb;JS", ";JS+/bbb");
-
-        assertEquals(URIUtil.addEncodedPaths("aaa;JS", null), "aaa;JS", "aaa;JS+null");
-        assertEquals(URIUtil.addEncodedPaths("aaa;JS", ""), "aaa;JS", "aaa;JS+");
-        assertEquals(URIUtil.addEncodedPaths("aaa;JS", "bbb"), "aaa/bbb;JS", "aaa;JS+bbb");
-        assertEquals(URIUtil.addEncodedPaths("aaa;JS", "/"), "aaa/;JS", "aaa;JS+/");
-        assertEquals(URIUtil.addEncodedPaths("aaa;JS", "/bbb"), "aaa/bbb;JS", "aaa;JS+/bbb");
-
-        assertEquals(URIUtil.addEncodedPaths("aaa/;JS", null), "aaa/;JS", "aaa;JS+null");
-        assertEquals(URIUtil.addEncodedPaths("aaa/;JS", ""), "aaa/;JS", "aaa;JS+");
-        assertEquals(URIUtil.addEncodedPaths("aaa/;JS", "bbb"), "aaa/bbb;JS", "aaa;JS+bbb");
-        assertEquals(URIUtil.addEncodedPaths("aaa/;JS", "/"), "aaa/;JS", "aaa;JS+/");
-        assertEquals(URIUtil.addEncodedPaths("aaa/;JS", "/bbb"), "aaa/bbb;JS", "aaa;JS+/bbb");
-
-        assertEquals(URIUtil.addEncodedPaths("?A=1", null), "?A=1", "?A=1+null");
-        assertEquals(URIUtil.addEncodedPaths("?A=1", ""), "?A=1", "?A=1+");
-        assertEquals(URIUtil.addEncodedPaths("?A=1", "bbb"), "bbb?A=1", "?A=1+bbb");
-        assertEquals(URIUtil.addEncodedPaths("?A=1", "/"), "/?A=1", "?A=1+/");
-        assertEquals(URIUtil.addEncodedPaths("?A=1", "/bbb"), "/bbb?A=1", "?A=1+/bbb");
-
-        assertEquals(URIUtil.addEncodedPaths("aaa?A=1", null), "aaa?A=1", "aaa?A=1+null");
-        assertEquals(URIUtil.addEncodedPaths("aaa?A=1", ""), "aaa?A=1", "aaa?A=1+");
-        assertEquals(URIUtil.addEncodedPaths("aaa?A=1", "bbb"), "aaa/bbb?A=1", "aaa?A=1+bbb");
-        assertEquals(URIUtil.addEncodedPaths("aaa?A=1", "/"), "aaa/?A=1", "aaa?A=1+/");
-        assertEquals(URIUtil.addEncodedPaths("aaa?A=1", "/bbb"), "aaa/bbb?A=1", "aaa?A=1+/bbb");
-
-        assertEquals(URIUtil.addEncodedPaths("aaa/?A=1", null), "aaa/?A=1", "aaa?A=1+null");
-        assertEquals(URIUtil.addEncodedPaths("aaa/?A=1", ""), "aaa/?A=1", "aaa?A=1+");
-        assertEquals(URIUtil.addEncodedPaths("aaa/?A=1", "bbb"), "aaa/bbb?A=1", "aaa?A=1+bbb");
-        assertEquals(URIUtil.addEncodedPaths("aaa/?A=1", "/"), "aaa/?A=1", "aaa?A=1+/");
-        assertEquals(URIUtil.addEncodedPaths("aaa/?A=1", "/bbb"), "aaa/bbb?A=1", "aaa?A=1+/bbb");
-
-        assertEquals(URIUtil.addEncodedPaths(";JS?A=1", null), ";JS?A=1", ";JS?A=1+null");
-        assertEquals(URIUtil.addEncodedPaths(";JS?A=1", ""), ";JS?A=1", ";JS?A=1+");
-        assertEquals(URIUtil.addEncodedPaths(";JS?A=1", "bbb"), "bbb;JS?A=1", ";JS?A=1+bbb");
-        assertEquals(URIUtil.addEncodedPaths(";JS?A=1", "/"), "/;JS?A=1", ";JS?A=1+/");
-        assertEquals(URIUtil.addEncodedPaths(";JS?A=1", "/bbb"), "/bbb;JS?A=1", ";JS?A=1+/bbb");
-
-        assertEquals(URIUtil.addEncodedPaths("aaa;JS?A=1", null), "aaa;JS?A=1", "aaa;JS?A=1+null");
-        assertEquals(URIUtil.addEncodedPaths("aaa;JS?A=1", ""), "aaa;JS?A=1", "aaa;JS?A=1+");
-        assertEquals(URIUtil.addEncodedPaths("aaa;JS?A=1", "bbb"), "aaa/bbb;JS?A=1", "aaa;JS?A=1+bbb");
-        assertEquals(URIUtil.addEncodedPaths("aaa;JS?A=1", "/"), "aaa/;JS?A=1", "aaa;JS?A=1+/");
-        assertEquals(URIUtil.addEncodedPaths("aaa;JS?A=1", "/bbb"), "aaa/bbb;JS?A=1", "aaa;JS?A=1+/bbb");
-
-        assertEquals(URIUtil.addEncodedPaths("aaa/;JS?A=1", null), "aaa/;JS?A=1", "aaa;JS?A=1+null");
-        assertEquals(URIUtil.addEncodedPaths("aaa/;JS?A=1", ""), "aaa/;JS?A=1", "aaa;JS?A=1+");
-        assertEquals(URIUtil.addEncodedPaths("aaa/;JS?A=1", "bbb"), "aaa/bbb;JS?A=1", "aaa;JS?A=1+bbb");
-        assertEquals(URIUtil.addEncodedPaths("aaa/;JS?A=1", "/"), "aaa/;JS?A=1", "aaa;JS?A=1+/");
-        assertEquals(URIUtil.addEncodedPaths("aaa/;JS?A=1", "/bbb"), "aaa/bbb;JS?A=1", "aaa;JS?A=1+/bbb");
+        String path = URIUtil.decodePath(encodedPath);
+        assertEquals(expectedPath, path);
     }
 
-    @Test // TODO: Parameterize
-    public void testAddDecodedPaths()
+    @Test
+    public void testDecodePathSubstring()
     {
-        assertEquals(URIUtil.addPaths(null, null), null, "null+null");
-        assertEquals(URIUtil.addPaths(null, ""), "", "null+");
-        assertEquals(URIUtil.addPaths(null, "bbb"), "bbb", "null+bbb");
-        assertEquals(URIUtil.addPaths(null, "/"), "/", "null+/");
-        assertEquals(URIUtil.addPaths(null, "/bbb"), "/bbb", "null+/bbb");
+        String path = URIUtil.decodePath("xx/foo/barxx", 2, 8);
+        assertEquals("/foo/bar", path);
 
-        assertEquals(URIUtil.addPaths("", null), "", "+null");
-        assertEquals(URIUtil.addPaths("", ""), "", "+");
-        assertEquals(URIUtil.addPaths("", "bbb"), "bbb", "+bbb");
-        assertEquals(URIUtil.addPaths("", "/"), "/", "+/");
-        assertEquals(URIUtil.addPaths("", "/bbb"), "/bbb", "+/bbb");
-
-        assertEquals(URIUtil.addPaths("aaa", null), "aaa", "aaa+null");
-        assertEquals(URIUtil.addPaths("aaa", ""), "aaa", "aaa+");
-        assertEquals(URIUtil.addPaths("aaa", "bbb"), "aaa/bbb", "aaa+bbb");
-        assertEquals(URIUtil.addPaths("aaa", "/"), "aaa/", "aaa+/");
-        assertEquals(URIUtil.addPaths("aaa", "/bbb"), "aaa/bbb", "aaa+/bbb");
-
-        assertEquals(URIUtil.addPaths("/", null), "/", "/+null");
-        assertEquals(URIUtil.addPaths("/", ""), "/", "/+");
-        assertEquals(URIUtil.addPaths("/", "bbb"), "/bbb", "/+bbb");
-        assertEquals(URIUtil.addPaths("/", "/"), "/", "/+/");
-        assertEquals(URIUtil.addPaths("/", "/bbb"), "/bbb", "/+/bbb");
-
-        assertEquals(URIUtil.addPaths("aaa/", null), "aaa/", "aaa/+null");
-        assertEquals(URIUtil.addPaths("aaa/", ""), "aaa/", "aaa/+");
-        assertEquals(URIUtil.addPaths("aaa/", "bbb"), "aaa/bbb", "aaa/+bbb");
-        assertEquals(URIUtil.addPaths("aaa/", "/"), "aaa/", "aaa/+/");
-        assertEquals(URIUtil.addPaths("aaa/", "/bbb"), "aaa/bbb", "aaa/+/bbb");
-
-        assertEquals(URIUtil.addPaths(";JS", null), ";JS", ";JS+null");
-        assertEquals(URIUtil.addPaths(";JS", ""), ";JS", ";JS+");
-        assertEquals(URIUtil.addPaths(";JS", "bbb"), ";JS/bbb", ";JS+bbb");
-        assertEquals(URIUtil.addPaths(";JS", "/"), ";JS/", ";JS+/");
-        assertEquals(URIUtil.addPaths(";JS", "/bbb"), ";JS/bbb", ";JS+/bbb");
-
-        assertEquals(URIUtil.addPaths("aaa;JS", null), "aaa;JS", "aaa;JS+null");
-        assertEquals(URIUtil.addPaths("aaa;JS", ""), "aaa;JS", "aaa;JS+");
-        assertEquals(URIUtil.addPaths("aaa;JS", "bbb"), "aaa;JS/bbb", "aaa;JS+bbb");
-        assertEquals(URIUtil.addPaths("aaa;JS", "/"), "aaa;JS/", "aaa;JS+/");
-        assertEquals(URIUtil.addPaths("aaa;JS", "/bbb"), "aaa;JS/bbb", "aaa;JS+/bbb");
-
-        assertEquals(URIUtil.addPaths("aaa/;JS", null), "aaa/;JS", "aaa;JS+null");
-        assertEquals(URIUtil.addPaths("aaa/;JS", ""), "aaa/;JS", "aaa;JS+");
-        assertEquals(URIUtil.addPaths("aaa/;JS", "bbb"), "aaa/;JS/bbb", "aaa;JS+bbb");
-        assertEquals(URIUtil.addPaths("aaa/;JS", "/"), "aaa/;JS/", "aaa;JS+/");
-        assertEquals(URIUtil.addPaths("aaa/;JS", "/bbb"), "aaa/;JS/bbb", "aaa;JS+/bbb");
-
-        assertEquals(URIUtil.addPaths("?A=1", null), "?A=1", "?A=1+null");
-        assertEquals(URIUtil.addPaths("?A=1", ""), "?A=1", "?A=1+");
-        assertEquals(URIUtil.addPaths("?A=1", "bbb"), "?A=1/bbb", "?A=1+bbb");
-        assertEquals(URIUtil.addPaths("?A=1", "/"), "?A=1/", "?A=1+/");
-        assertEquals(URIUtil.addPaths("?A=1", "/bbb"), "?A=1/bbb", "?A=1+/bbb");
-
-        assertEquals(URIUtil.addPaths("aaa?A=1", null), "aaa?A=1", "aaa?A=1+null");
-        assertEquals(URIUtil.addPaths("aaa?A=1", ""), "aaa?A=1", "aaa?A=1+");
-        assertEquals(URIUtil.addPaths("aaa?A=1", "bbb"), "aaa?A=1/bbb", "aaa?A=1+bbb");
-        assertEquals(URIUtil.addPaths("aaa?A=1", "/"), "aaa?A=1/", "aaa?A=1+/");
-        assertEquals(URIUtil.addPaths("aaa?A=1", "/bbb"), "aaa?A=1/bbb", "aaa?A=1+/bbb");
-
-        assertEquals(URIUtil.addPaths("aaa/?A=1", null), "aaa/?A=1", "aaa?A=1+null");
-        assertEquals(URIUtil.addPaths("aaa/?A=1", ""), "aaa/?A=1", "aaa?A=1+");
-        assertEquals(URIUtil.addPaths("aaa/?A=1", "bbb"), "aaa/?A=1/bbb", "aaa?A=1+bbb");
-        assertEquals(URIUtil.addPaths("aaa/?A=1", "/"), "aaa/?A=1/", "aaa?A=1+/");
-        assertEquals(URIUtil.addPaths("aaa/?A=1", "/bbb"), "aaa/?A=1/bbb", "aaa?A=1+/bbb");
+        path = URIUtil.decodePath("xxx/foo/bar%2523%3b%2c:%3db%20a%20r%3Dxxx;rubbish", 3, 35);
+        assertEquals("/foo/bar%23;,:=b a r=", path);
     }
 
-    @Test // TODO: Parameterize
-    public void testCompactPath()
+    public static Stream<Arguments> addEncodedPathsSource()
     {
-        assertEquals("/foo/bar", URIUtil.compactPath("/foo/bar"));
-        assertEquals("/foo/bar?a=b//c", URIUtil.compactPath("/foo/bar?a=b//c"));
+        return Stream.of(
+            Arguments.of(null, null, null),
+            Arguments.of(null, "", ""),
+            Arguments.of(null, "bbb", "bbb"),
+            Arguments.of(null, "/", "/"),
+            Arguments.of(null, "/bbb", "/bbb"),
 
-        assertEquals("/foo/bar", URIUtil.compactPath("//foo//bar"));
-        assertEquals("/foo/bar?a=b//c", URIUtil.compactPath("//foo//bar?a=b//c"));
+            Arguments.of("", null, ""),
+            Arguments.of("", "", ""),
+            Arguments.of("", "bbb", "bbb"),
+            Arguments.of("", "/", "/"),
+            Arguments.of("", "/bbb", "/bbb"),
 
-        assertEquals("/foo/bar", URIUtil.compactPath("/foo///bar"));
-        assertEquals("/foo/bar?a=b//c", URIUtil.compactPath("/foo///bar?a=b//c"));
+            Arguments.of("aaa", null, "aaa"),
+            Arguments.of("aaa", "", "aaa"),
+            Arguments.of("aaa", "bbb", "aaa/bbb"),
+            Arguments.of("aaa", "/", "aaa/"),
+            Arguments.of("aaa", "/bbb", "aaa/bbb"),
+
+            Arguments.of("/", null, "/"),
+            Arguments.of("/", "", "/"),
+            Arguments.of("/", "bbb", "/bbb"),
+            Arguments.of("/", "/", "/"),
+            Arguments.of("/", "/bbb", "/bbb"),
+
+            Arguments.of("aaa/", null, "aaa/"),
+            Arguments.of("aaa/", "", "aaa/"),
+            Arguments.of("aaa/", "bbb", "aaa/bbb"),
+            Arguments.of("aaa/", "/", "aaa/"),
+            Arguments.of("aaa/", "/bbb", "aaa/bbb"),
+
+            Arguments.of(";JS", null, ";JS"),
+            Arguments.of(";JS", "", ";JS"),
+            Arguments.of(";JS", "bbb", "bbb;JS"),
+            Arguments.of(";JS", "/", "/;JS"),
+            Arguments.of(";JS", "/bbb", "/bbb;JS"),
+
+            Arguments.of("aaa;JS", null, "aaa;JS"),
+            Arguments.of("aaa;JS", "", "aaa;JS"),
+            Arguments.of("aaa;JS", "bbb", "aaa/bbb;JS"),
+            Arguments.of("aaa;JS", "/", "aaa/;JS"),
+            Arguments.of("aaa;JS", "/bbb", "aaa/bbb;JS"),
+
+            Arguments.of("aaa/;JS", null, "aaa/;JS"),
+            Arguments.of("aaa/;JS", "", "aaa/;JS"),
+            Arguments.of("aaa/;JS", "bbb", "aaa/bbb;JS"),
+            Arguments.of("aaa/;JS", "/", "aaa/;JS"),
+            Arguments.of("aaa/;JS", "/bbb", "aaa/bbb;JS"),
+
+            Arguments.of("?A=1", null, "?A=1"),
+            Arguments.of("?A=1", "", "?A=1"),
+            Arguments.of("?A=1", "bbb", "bbb?A=1"),
+            Arguments.of("?A=1", "/", "/?A=1"),
+            Arguments.of("?A=1", "/bbb", "/bbb?A=1"),
+
+            Arguments.of("aaa?A=1", null, "aaa?A=1"),
+            Arguments.of("aaa?A=1", "", "aaa?A=1"),
+            Arguments.of("aaa?A=1", "bbb", "aaa/bbb?A=1"),
+            Arguments.of("aaa?A=1", "/", "aaa/?A=1"),
+            Arguments.of("aaa?A=1", "/bbb", "aaa/bbb?A=1"),
+
+            Arguments.of("aaa/?A=1", null, "aaa/?A=1"),
+            Arguments.of("aaa/?A=1", "", "aaa/?A=1"),
+            Arguments.of("aaa/?A=1", "bbb", "aaa/bbb?A=1"),
+            Arguments.of("aaa/?A=1", "/", "aaa/?A=1"),
+            Arguments.of("aaa/?A=1", "/bbb", "aaa/bbb?A=1"),
+
+            Arguments.of(";JS?A=1", null, ";JS?A=1"),
+            Arguments.of(";JS?A=1", "", ";JS?A=1"),
+            Arguments.of(";JS?A=1", "bbb", "bbb;JS?A=1"),
+            Arguments.of(";JS?A=1", "/", "/;JS?A=1"),
+            Arguments.of(";JS?A=1", "/bbb", "/bbb;JS?A=1"),
+
+            Arguments.of("aaa;JS?A=1", null, "aaa;JS?A=1"),
+            Arguments.of("aaa;JS?A=1", "", "aaa;JS?A=1"),
+            Arguments.of("aaa;JS?A=1", "bbb", "aaa/bbb;JS?A=1"),
+            Arguments.of("aaa;JS?A=1", "/", "aaa/;JS?A=1"),
+            Arguments.of("aaa;JS?A=1", "/bbb", "aaa/bbb;JS?A=1"),
+
+            Arguments.of("aaa/;JS?A=1", null, "aaa/;JS?A=1"),
+            Arguments.of("aaa/;JS?A=1", "", "aaa/;JS?A=1"),
+            Arguments.of("aaa/;JS?A=1", "bbb", "aaa/bbb;JS?A=1"),
+            Arguments.of("aaa/;JS?A=1", "/", "aaa/;JS?A=1"),
+            Arguments.of("aaa/;JS?A=1", "/bbb", "aaa/bbb;JS?A=1")
+        );
     }
 
-    @Test // TODO: Parameterize
-    public void testParentPath()
+    @ParameterizedTest(name = "[{index}] {0}+{1}")
+    @MethodSource("addEncodedPathsSource")
+    public void testAddEncodedPaths(String path1, String path2, String expected)
     {
-        assertEquals("/aaa/", URIUtil.parentPath("/aaa/bbb/"), "parent /aaa/bbb/");
-        assertEquals("/aaa/", URIUtil.parentPath("/aaa/bbb"), "parent /aaa/bbb");
-        assertEquals("/", URIUtil.parentPath("/aaa/"), "parent /aaa/");
-        assertEquals("/", URIUtil.parentPath("/aaa"), "parent /aaa");
-        assertEquals(null, URIUtil.parentPath("/"), "parent /");
-        assertEquals(null, URIUtil.parentPath(null), "parent null");
+        String actual = URIUtil.addEncodedPaths(path1, path2);
+        assertEquals(expected, actual, String.format("%s+%s", path1, path2));
     }
 
-    @Test // TODO: Parameterize
-    public void testEqualsIgnoreEncoding()
+    public static Stream<Arguments> addDecodedPathsSource()
     {
-        assertTrue(URIUtil.equalsIgnoreEncodings("http://example.com/foo/bar", "http://example.com/foo/bar"));
-        assertTrue(URIUtil.equalsIgnoreEncodings("/barry's", "/barry%27s"));
-        assertTrue(URIUtil.equalsIgnoreEncodings("/barry%27s", "/barry's"));
-        assertTrue(URIUtil.equalsIgnoreEncodings("/barry%27s", "/barry%27s"));
-        assertTrue(URIUtil.equalsIgnoreEncodings("/b rry's", "/b%20rry%27s"));
-        assertTrue(URIUtil.equalsIgnoreEncodings("/b rry%27s", "/b%20rry's"));
-        assertTrue(URIUtil.equalsIgnoreEncodings("/b rry%27s", "/b%20rry%27s"));
+        return Stream.of(
+            Arguments.of(null, null, null),
+            Arguments.of(null, "", ""),
+            Arguments.of(null, "bbb", "bbb"),
+            Arguments.of(null, "/", "/"),
+            Arguments.of(null, "/bbb", "/bbb"),
 
-        assertTrue(URIUtil.equalsIgnoreEncodings("/foo%2fbar", "/foo%2fbar"));
-        assertTrue(URIUtil.equalsIgnoreEncodings("/foo%2fbar", "/foo%2Fbar"));
+            Arguments.of("", null, ""),
+            Arguments.of("", "", ""),
+            Arguments.of("", "bbb", "bbb"),
+            Arguments.of("", "/", "/"),
+            Arguments.of("", "/bbb", "/bbb"),
 
-        assertFalse(URIUtil.equalsIgnoreEncodings("ABC", "abc"));
-        assertFalse(URIUtil.equalsIgnoreEncodings("/barry's", "/barry%26s"));
+            Arguments.of("aaa", null, "aaa"),
+            Arguments.of("aaa", "", "aaa"),
+            Arguments.of("aaa", "bbb", "aaa/bbb"),
+            Arguments.of("aaa", "/", "aaa/"),
+            Arguments.of("aaa", "/bbb", "aaa/bbb"),
 
-        assertFalse(URIUtil.equalsIgnoreEncodings("/foo/bar", "/foo%2fbar"));
-        assertFalse(URIUtil.equalsIgnoreEncodings("/foo2fbar", "/foo/bar"));
+            Arguments.of("/", null, "/"),
+            Arguments.of("/", "", "/"),
+            Arguments.of("/", "bbb", "/bbb"),
+            Arguments.of("/", "/", "/"),
+            Arguments.of("/", "/bbb", "/bbb"),
+
+            Arguments.of("aaa/", null, "aaa/"),
+            Arguments.of("aaa/", "", "aaa/"),
+            Arguments.of("aaa/", "bbb", "aaa/bbb"),
+            Arguments.of("aaa/", "/", "aaa/"),
+            Arguments.of("aaa/", "/bbb", "aaa/bbb"),
+
+            Arguments.of(";JS", null, ";JS"),
+            Arguments.of(";JS", "", ";JS"),
+            Arguments.of(";JS", "bbb", ";JS/bbb"),
+            Arguments.of(";JS", "/", ";JS/"),
+            Arguments.of(";JS", "/bbb", ";JS/bbb"),
+
+            Arguments.of("aaa;JS", null, "aaa;JS"),
+            Arguments.of("aaa;JS", "", "aaa;JS"),
+            Arguments.of("aaa;JS", "bbb", "aaa;JS/bbb"),
+            Arguments.of("aaa;JS", "/", "aaa;JS/"),
+            Arguments.of("aaa;JS", "/bbb", "aaa;JS/bbb"),
+
+            Arguments.of("aaa/;JS", null, "aaa/;JS"),
+            Arguments.of("aaa/;JS", "", "aaa/;JS"),
+            Arguments.of("aaa/;JS", "bbb", "aaa/;JS/bbb"),
+            Arguments.of("aaa/;JS", "/", "aaa/;JS/"),
+            Arguments.of("aaa/;JS", "/bbb", "aaa/;JS/bbb"),
+
+            Arguments.of("?A=1", null, "?A=1"),
+            Arguments.of("?A=1", "", "?A=1"),
+            Arguments.of("?A=1", "bbb", "?A=1/bbb"),
+            Arguments.of("?A=1", "/", "?A=1/"),
+            Arguments.of("?A=1", "/bbb", "?A=1/bbb"),
+
+            Arguments.of("aaa?A=1", null, "aaa?A=1"),
+            Arguments.of("aaa?A=1", "", "aaa?A=1"),
+            Arguments.of("aaa?A=1", "bbb", "aaa?A=1/bbb"),
+            Arguments.of("aaa?A=1", "/", "aaa?A=1/"),
+            Arguments.of("aaa?A=1", "/bbb", "aaa?A=1/bbb"),
+
+            Arguments.of("aaa/?A=1", null, "aaa/?A=1"),
+            Arguments.of("aaa/?A=1", "", "aaa/?A=1"),
+            Arguments.of("aaa/?A=1", "bbb", "aaa/?A=1/bbb"),
+            Arguments.of("aaa/?A=1", "/", "aaa/?A=1/"),
+            Arguments.of("aaa/?A=1", "/bbb", "aaa/?A=1/bbb")
+        );
     }
 
-    @Test // TODO: Parameterize
-    public void testEqualsIgnoreEncoding_JarFile()
+    @ParameterizedTest(name = "[{index}] {0}+{1}")
+    @MethodSource("addDecodedPathsSource")
+    public void testAddDecodedPaths(String path1, String path2, String expected)
     {
-        URI uriA = URI.create("jar:file:/path/to/main.jar!/META-INF/versions/");
-        URI uriB = URI.create("jar:file:/path/to/main.jar!/META-INF/%76ersions/");
-        assertTrue(URIUtil.equalsIgnoreEncodings(uriA, uriB));
-
-        uriA = URI.create("JAR:FILE:/path/to/main.jar!/META-INF/versions/");
-        uriB = URI.create("jar:file:/path/to/main.jar!/META-INF/versions/");
-        assertTrue(URIUtil.equalsIgnoreEncodings(uriA, uriB));
+        String actual = URIUtil.addPaths(path1, path2);
+        assertEquals(expected, actual, String.format("%s+%s", path1, path2));
     }
 
-    @Test // TODO: Parameterize
-    public void testJarSource() throws Exception
+    public static Stream<Arguments> compactPathSource()
     {
-        assertThat(URIUtil.getJarSource("file:///tmp/"), is("file:///tmp/"));
-        assertThat(URIUtil.getJarSource("jar:file:///tmp/foo.jar"), is("file:///tmp/foo.jar"));
-        assertThat(URIUtil.getJarSource("jar:file:///tmp/foo.jar!/some/path"), is("file:///tmp/foo.jar"));
-        assertThat(URIUtil.getJarSource(new URI("file:///tmp/")), is(new URI("file:///tmp/")));
-        assertThat(URIUtil.getJarSource(new URI("jar:file:///tmp/foo.jar")), is(new URI("file:///tmp/foo.jar")));
-        assertThat(URIUtil.getJarSource(new URI("jar:file:///tmp/foo.jar!/some/path")), is(new URI("file:///tmp/foo.jar")));
+        return Stream.of(
+            Arguments.of("/foo/bar", "/foo/bar"),
+            Arguments.of("/foo/bar?a=b//c", "/foo/bar?a=b//c"),
+
+            Arguments.of("//foo//bar", "/foo/bar"),
+            Arguments.of("//foo//bar?a=b//c", "/foo/bar?a=b//c"),
+
+            Arguments.of("/foo///bar", "/foo/bar"),
+            Arguments.of("/foo///bar?a=b//c", "/foo/bar?a=b//c")
+        );
     }
 
-    public static Stream<String[]> encodeSpaces()
+    @ParameterizedTest(name = "[{index}] {0}")
+    @MethodSource("compactPathSource")
+    public void testCompactPath(String path, String expected)
     {
-        List<String[]> data = new ArrayList<>();
+        String actual = URIUtil.compactPath(path);
+        assertEquals(expected, actual);
+    }
 
-        // [raw, expected]
+    public static Stream<Arguments> parentPathSource()
+    {
+        return Stream.of(
+            Arguments.of("/aaa/bbb/", "/aaa/"),
+            Arguments.of("/aaa/bbb", "/aaa/"),
+            Arguments.of("/aaa/", "/"),
+            Arguments.of("/aaa", "/"),
+            Arguments.of("/", null),
+            Arguments.of(null, null)
+        );
+    }
 
-        // null
-        data.add(new String[]{null, null});
+    @ParameterizedTest(name = "[{index}] {0}")
+    @MethodSource("parentPathSource")
+    public void testParentPath(String path, String expectedPath)
+    {
+        String actual = URIUtil.parentPath(path);
+        assertEquals(expectedPath, actual, String.format("parent %s", path));
+    }
 
-        // no spaces
-        data.add(new String[]{"abc", "abc"});
+    public static Stream<Arguments> equalsIgnoreEncodingStringTrueSource()
+    {
+        return Stream.of(
+            Arguments.of("http://example.com/foo/bar", "http://example.com/foo/bar"),
+            Arguments.of("/barry's", "/barry%27s"),
+            Arguments.of("/barry%27s", "/barry's"),
+            Arguments.of("/barry%27s", "/barry%27s"),
+            Arguments.of("/b rry's", "/b%20rry%27s"),
+            Arguments.of("/b rry%27s", "/b%20rry's"),
+            Arguments.of("/b rry%27s", "/b%20rry%27s"),
 
-        // match
-        data.add(new String[]{"a c", "a%20c"});
-        data.add(new String[]{"   ", "%20%20%20"});
-        data.add(new String[]{"a%20space", "a%20space"});
-
-        return data.stream();
+            Arguments.of("/foo%2fbar", "/foo%2fbar"),
+            Arguments.of("/foo%2fbar", "/foo%2Fbar")
+        );
     }
 
     @ParameterizedTest
-    @MethodSource(value = "encodeSpaces")
+    @MethodSource("equalsIgnoreEncodingStringTrueSource")
+    public void testEqualsIgnoreEncodingStringTrue(String uriA, String uriB)
+    {
+        assertTrue(URIUtil.equalsIgnoreEncodings(uriA, uriB));
+    }
+
+    public static Stream<Arguments> equalsIgnoreEncodingStringFalseSource()
+    {
+        return Stream.of(
+            Arguments.of("ABC", "abc"),
+            Arguments.of("/barry's", "/barry%26s"),
+
+            Arguments.of("/foo/bar", "/foo%2fbar"),
+            Arguments.of("/foo2fbar", "/foo/bar")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("equalsIgnoreEncodingStringFalseSource")
+    public void testEqualsIgnoreEncodingStringFalse(String uriA, String uriB)
+    {
+        assertFalse(URIUtil.equalsIgnoreEncodings(uriA, uriB));
+    }
+
+    public static Stream<Arguments> equalsIgnoreEncodingURITrueSource()
+    {
+        return Stream.of(
+            Arguments.of(
+                URI.create("jar:file:/path/to/main.jar!/META-INF/versions/"),
+                URI.create("jar:file:/path/to/main.jar!/META-INF/%76ersions/")
+            ),
+            Arguments.of(
+                URI.create("JAR:FILE:/path/to/main.jar!/META-INF/versions/"),
+                URI.create("jar:file:/path/to/main.jar!/META-INF/versions/")
+            )
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("equalsIgnoreEncodingURITrueSource")
+    public void testEqualsIgnoreEncodingURITrue(URI uriA, URI uriB)
+    {
+        assertTrue(URIUtil.equalsIgnoreEncodings(uriA, uriB));
+    }
+
+    public static Stream<Arguments> getJarSourceStringSource()
+    {
+        return Stream.of(
+            Arguments.of("file:///tmp/", "file:///tmp/"),
+            Arguments.of("jar:file:///tmp/foo.jar", "file:///tmp/foo.jar"),
+            Arguments.of("jar:file:///tmp/foo.jar!/some/path", "file:///tmp/foo.jar")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("getJarSourceStringSource")
+    public void testJarSourceString(String uri, String expectedJarUri) throws Exception
+    {
+        assertThat(URIUtil.getJarSource(uri), is(expectedJarUri));
+    }
+
+    public static Stream<Arguments> getJarSourceURISource()
+    {
+        return Stream.of(
+            Arguments.of(URI.create("file:///tmp/"), URI.create("file:///tmp/")),
+            Arguments.of(URI.create("jar:file:///tmp/foo.jar"), URI.create("file:///tmp/foo.jar")),
+            Arguments.of(URI.create("jar:file:///tmp/foo.jar!/some/path"), URI.create("file:///tmp/foo.jar"))
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("getJarSourceURISource")
+    public void testJarSourceURI(URI uri, URI expectedJarUri) throws Exception
+    {
+        assertThat(URIUtil.getJarSource(uri), is(expectedJarUri));
+    }
+
+    public static Stream<Arguments> encodeSpacesSource()
+    {
+        return Stream.of(
+            // null
+            Arguments.of(null, null),
+
+            // no spaces
+            Arguments.of("abc", "abc"),
+
+            // match
+            Arguments.of("a c", "a%20c"),
+            Arguments.of("   ", "%20%20%20"),
+            Arguments.of("a%20space", "a%20space")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("encodeSpacesSource")
     public void testEncodeSpaces(String raw, String expected)
     {
         assertThat(URIUtil.encodeSpaces(raw), is(expected));
     }
 
-    public static Stream<String[]> encodeSpecific()
+    public static Stream<Arguments> encodeSpecific()
     {
-        List<String[]> data = new ArrayList<>();
+        return Stream.of(
+            // [raw, chars, expected]
 
-        // [raw, chars, expected]
+            // null input
+            Arguments.of(null, null, null),
 
-        // null input
-        data.add(new String[]{null, null, null});
+            // null chars
+            Arguments.of("abc", null, "abc"),
 
-        // null chars
-        data.add(new String[]{"abc", null, "abc"});
+            // empty chars
+            Arguments.of("abc", "", "abc"),
 
-        // empty chars
-        data.add(new String[]{"abc", "", "abc"});
+            // no matches
+            Arguments.of("abc", ".;", "abc"),
+            Arguments.of("xyz", ".;", "xyz"),
+            Arguments.of(":::", ".;", ":::"),
 
-        // no matches
-        data.add(new String[]{"abc", ".;", "abc"});
-        data.add(new String[]{"xyz", ".;", "xyz"});
-        data.add(new String[]{":::", ".;", ":::"});
+            // matches
+            Arguments.of("a c", " ", "a%20c"),
+            Arguments.of("name=value", "=", "name%3Dvalue"),
+            Arguments.of("This has fewer then 10% hits.", ".%", "This has fewer then 10%25 hits%2E"),
 
-        // matches
-        data.add(new String[]{"a c", " ", "a%20c"});
-        data.add(new String[]{"name=value", "=", "name%3Dvalue"});
-        data.add(new String[]{"This has fewer then 10% hits.", ".%", "This has fewer then 10%25 hits%2E"});
-
-        // partially encoded already
-        data.add(new String[]{"a%20name=value%20pair", "=", "a%20name%3Dvalue%20pair"});
-        data.add(new String[]{"a%20name=value%20pair", "=%", "a%2520name%3Dvalue%2520pair"});
-
-        return data.stream();
+            // partially encoded already
+            Arguments.of("a%20name=value%20pair", "=", "a%20name%3Dvalue%20pair"),
+            Arguments.of("a%20name=value%20pair", "=%", "a%2520name%3Dvalue%2520pair")
+        );
     }
 
     @ParameterizedTest
@@ -382,36 +486,34 @@ public class URIUtilTest
         assertThat(URIUtil.encodeSpecific(raw, chars), is(expected));
     }
 
-    public static Stream<String[]> decodeSpecific()
+    public static Stream<Arguments> decodeSpecific()
     {
-        List<String[]> data = new ArrayList<>();
+        return Stream.of(
+            // [raw, chars, expected]
 
-        // [raw, chars, expected]
+            // null input
+            Arguments.of(null, null, null),
 
-        // null input
-        data.add(new String[]{null, null, null});
+            // null chars
+            Arguments.of("abc", null, "abc"),
 
-        // null chars
-        data.add(new String[]{"abc", null, "abc"});
+            // empty chars
+            Arguments.of("abc", "", "abc"),
 
-        // empty chars
-        data.add(new String[]{"abc", "", "abc"});
+            // no matches
+            Arguments.of("abc", ".;", "abc"),
+            Arguments.of("xyz", ".;", "xyz"),
+            Arguments.of(":::", ".;", ":::"),
 
-        // no matches
-        data.add(new String[]{"abc", ".;", "abc"});
-        data.add(new String[]{"xyz", ".;", "xyz"});
-        data.add(new String[]{":::", ".;", ":::"});
+            // matches
+            Arguments.of("a%20c", " ", "a c"),
+            Arguments.of("name%3Dvalue", "=", "name=value"),
+            Arguments.of("This has fewer then 10%25 hits%2E", ".%", "This has fewer then 10% hits."),
 
-        // matches
-        data.add(new String[]{"a%20c", " ", "a c"});
-        data.add(new String[]{"name%3Dvalue", "=", "name=value"});
-        data.add(new String[]{"This has fewer then 10%25 hits%2E", ".%", "This has fewer then 10% hits."});
-
-        // partially decode
-        data.add(new String[]{"a%20name%3Dvalue%20pair", "=", "a%20name=value%20pair"});
-        data.add(new String[]{"a%2520name%3Dvalue%2520pair", "=%", "a%20name=value%20pair"});
-
-        return data.stream();
+            // partially decode
+            Arguments.of("a%20name%3Dvalue%20pair", "=", "a%20name=value%20pair"),
+            Arguments.of("a%2520name%3Dvalue%2520pair", "=%", "a%20name=value%20pair")
+        );
     }
 
     @ParameterizedTest
