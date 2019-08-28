@@ -26,6 +26,7 @@ import java.io.OutputStream;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -842,8 +843,8 @@ public class StartArgs
         if (Utils.isBlank(localRepo))
         {
             // Try generic env variable
-            String home = System.getenv("HOME");
-            Path localMavenRepository = new File(new File(home, ".m2"), "repository").toPath();
+            Path home = Paths.get(System.getProperty("user.home"));
+            Path localMavenRepository = home.resolve(".m2/repository");
             if (Files.exists(localMavenRepository))
                 localRepo = localMavenRepository.toString();
         }
