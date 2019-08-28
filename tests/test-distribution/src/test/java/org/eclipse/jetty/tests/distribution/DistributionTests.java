@@ -85,12 +85,12 @@ public class DistributionTests extends AbstractDistributionTest
             .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
-        String[] args1 = 
-            {
-             "--create-startd",
-             "--approve-all-licenses",
-             "--add-to-start=resources,server,http,webapp,deploy,jsp,servlet,servlets,quickstart"
-            };
+        String[] args1 = {
+            "--create-startd",
+            "--approve-all-licenses",
+            "--add-to-start=resources,server,http,webapp,deploy,jsp,servlet,servlets,quickstart" 
+        };
+        
         try (DistributionTester.Run run1 = distribution.start(args1))
         {
             assertTrue(run1.awaitFor(5, TimeUnit.SECONDS));

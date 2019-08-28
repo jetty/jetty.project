@@ -32,7 +32,6 @@ import org.eclipse.jetty.quickstart.QuickStartConfiguration;
 import org.eclipse.jetty.quickstart.QuickStartConfiguration.Mode;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.TerminateStartupException;
-import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 

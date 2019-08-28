@@ -808,6 +808,5 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
     {
         super.deconfigure(context);
     }
-    
-    
+
 }

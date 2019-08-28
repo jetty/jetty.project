@@ -18,15 +18,12 @@
 
 package org.eclipse.jetty.maven.plugin;
 
-import java.io.File;
-
 import org.eclipse.jetty.quickstart.QuickStartConfiguration;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
-import org.eclipse.jetty.webapp.WebAppClassLoader;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 /**
@@ -35,7 +32,6 @@ import org.eclipse.jetty.webapp.WebAppContext;
 public class MavenQuickStartConfiguration extends QuickStartConfiguration
 {
     private static final Logger LOG = Log.getLogger(QuickStartConfiguration.class);
-
 
     @Override
     public void deconfigure(WebAppContext context) throws Exception

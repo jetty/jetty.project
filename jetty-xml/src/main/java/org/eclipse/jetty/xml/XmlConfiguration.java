@@ -1808,13 +1808,11 @@ public class XmlConfiguration
         }
         catch (Exception e)
         {
-            if (! TerminateStartupException.isTerminateStartup(e)) 
+            if (!TerminateStartupException.isTerminateStartup(e)) 
             {
                 LOG.warn(e); 
                 throw e; 
             }
-
         }
     }
-  
 }

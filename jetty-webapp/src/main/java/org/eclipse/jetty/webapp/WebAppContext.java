@@ -1288,12 +1288,11 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     }
 
     @Override
-    protected void startContext()
-            throws Exception
+    protected void startContext() throws Exception
     {
         if (configure())
         {
-            //resolve the metadata
+            // resolve the metadata
             _metadata.resolve(this);
             super.startContext();
         }

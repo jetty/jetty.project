@@ -16,7 +16,6 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.util;
 
 /**
@@ -28,7 +27,7 @@ package org.eclipse.jetty.util;
  */
 public class TerminateStartupException extends Exception
 {
-    public static boolean isTerminateStartup (Throwable e)
+    public static boolean isTerminateStartup(Throwable e)
     {
         if (e instanceof TerminateStartupException)
             return true;
@@ -42,12 +41,12 @@ public class TerminateStartupException extends Exception
             }
             return false;
         }
-        
+
         if (e instanceof Exception)
         {
-           return isTerminateStartup(e.getCause());
+            return isTerminateStartup(e.getCause());
         }
-        
+
         return false;
     }
 }

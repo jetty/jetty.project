@@ -105,7 +105,6 @@ public class JettyWebAppContext extends WebAppContext
      */
     private boolean _baseAppFirst = true;
 
-
     public JettyWebAppContext() throws Exception
     {
         super();

@@ -72,9 +72,9 @@ public class QuickStartTest
 
         WebAppContext webapp = new WebAppContext();
         webapp.addConfiguration(new QuickStartConfiguration(),
-                                    new EnvConfiguration(),
-                                    new PlusConfiguration(),
-                                    new AnnotationConfiguration());
+                                new EnvConfiguration(),
+                                new PlusConfiguration(),
+                                new AnnotationConfiguration());
         webapp.setAttribute(QuickStartConfiguration.MODE, QuickStartConfiguration.Mode.QUICKSTART);
         webapp.setWar(war);
         webapp.setContextPath("/");

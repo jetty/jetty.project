@@ -41,7 +41,7 @@ import org.eclipse.jetty.webapp.WebXmlConfiguration;
 /**
  * QuickStartConfiguration
  * <p>
- * Generate a quickstart file or use an already-generated quickstart file to run a webapp.
+ * Prepare for quickstart generation, or usage.
  */
 public class QuickStartConfiguration extends AbstractConfiguration
 {
@@ -61,17 +61,12 @@ public class QuickStartConfiguration extends AbstractConfiguration
         __replacedConfigurations.add(org.eclipse.jetty.annotations.AnnotationConfiguration.class);
     }
 
-    ;
-
     public enum Mode
     {
-        DISABLED,  // No Quick start, do normal start
         GENERATE,  // Generate quickstart and then stop
         AUTO,      // Use a quickstart if present, normal start otherwise
         QUICKSTART // Use quickstart
     }
-
-    ;
 
     private Mode _mode = Mode.AUTO;
     private boolean _quickStart;
@@ -104,11 +99,6 @@ public class QuickStartConfiguration extends AbstractConfiguration
         
         switch (_mode)
         {
-            case DISABLED:
-                LOG.info("Quickstart disabled, starting {} normally", context);
-                super.preConfigure(context);
-                break;
-
             case GENERATE:
             {
                 if (quickStartWebXml.exists())
@@ -123,7 +113,6 @@ public class QuickStartConfiguration extends AbstractConfiguration
                 context.addConfiguration(generator);
                 break;
             }
-
             case AUTO:
             {
                 if (quickStartWebXml.exists())
@@ -137,7 +126,6 @@ public class QuickStartConfiguration extends AbstractConfiguration
                 }
                 break;
             }
-
             case QUICKSTART:
                 if (quickStartWebXml.exists())
                     quickStart(context);
@@ -215,7 +203,6 @@ public class QuickStartConfiguration extends AbstractConfiguration
      */
     public Resource getQuickStartWebXml(WebAppContext context) throws Exception
     {
-
         Object attr = context.getAttribute(QUICKSTART_WEB_XML);
         if (attr instanceof Resource)
             return (Resource)attr;
@@ -233,7 +220,7 @@ public class QuickStartConfiguration extends AbstractConfiguration
         Resource webInf = context.getWebInf();
         if (webInf == null || !webInf.exists())
         {
-            File tmp = new File (context.getBaseResource().getFile(), "WEB-INF");
+            File tmp = new File(context.getBaseResource().getFile(), "WEB-INF");
             tmp.mkdirs();
             webInf = context.getWebInf();
         }
