@@ -68,6 +68,7 @@ public class HttpClientTLSTest
     private Server server;
     private ServerConnector connector;
     private HttpClient client;
+    private SSLSocket sslSocket;
 
     private void startServer(SslContextFactory.Server sslContextFactory, Handler handler) throws Exception
     {
@@ -424,7 +425,7 @@ public class HttpClientTLSTest
         String host = "localhost";
         int port = connector.getLocalPort();
         Socket socket = new Socket(host, port);
-        SSLSocket sslSocket = (SSLSocket)clientTLSFactory.getSslContext().getSocketFactory().createSocket(socket, host, port, true);
+        sslSocket = (SSLSocket)clientTLSFactory.getSslContext().getSocketFactory().createSocket(socket, host, port, true);
         CountDownLatch handshakeLatch1 = new CountDownLatch(1);
         AtomicReference<byte[]> session1 = new AtomicReference<>();
         sslSocket.addHandshakeCompletedListener(event ->
@@ -437,14 +438,12 @@ public class HttpClientTLSTest
 
         // In TLS 1.3 the server sends a NewSessionTicket post-handshake message
         // to enable session resumption and without a read, the message is not processed.
-        try
+
+        assertThrows(SocketTimeoutException.class, () ->
         {
             sslSocket.setSoTimeout(1000);
             sslSocket.getInputStream().read();
-        }
-        catch (SocketTimeoutException expected)
-        {
-        }
+        });
 
         // The client closes abruptly.
         socket.close();

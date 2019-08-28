@@ -115,6 +115,7 @@ public class ServletHandler extends ScopedHandler
     private PathMappings<ServletHolder> _servletPathMap;
 
     private ListenerHolder[] _listeners = new ListenerHolder[0];
+    private boolean _initialized = false;
 
     @SuppressWarnings("unchecked")
     protected final ConcurrentMap<String, FilterChain>[] _chainCache = new ConcurrentMap[FilterMapping.ALL];
@@ -330,6 +331,7 @@ public class ServletHandler extends ScopedHandler
         _filterPathMappings = null;
         _filterNameMappings = null;
         _servletPathMap = null;
+        _initialized = false;
     }
 
     protected IdentityService getIdentityService()
@@ -717,6 +719,8 @@ public class ServletHandler extends ScopedHandler
     public void initialize()
         throws Exception
     {
+        _initialized = true;
+        
         MultiException mx = new MultiException();
 
         Stream.concat(Stream.concat(
@@ -741,6 +745,14 @@ public class ServletHandler extends ScopedHandler
             });
 
         mx.ifExceptionThrow();
+    }
+    
+    /**
+     * @return true if initialized has been called, false otherwise
+     */
+    public boolean isInitialized()
+    {
+        return _initialized;
     }
 
     /**

@@ -172,7 +172,9 @@ public class StringUtilTest
         assertThat(StringUtil.indexOfControlChars("\t"), is(0));
         assertThat(StringUtil.indexOfControlChars(";\n"), is(1));
         assertThat(StringUtil.indexOfControlChars("abc\fz"), is(3));
+        //@checkstyle-disable-check : IllegalTokenText
         assertThat(StringUtil.indexOfControlChars("z\010"), is(1));
+        //@checkstyle-enable-check : IllegalTokenText
         assertThat(StringUtil.indexOfControlChars(":\u001c"), is(1));
 
         assertThat(StringUtil.indexOfControlChars(null), is(-1));

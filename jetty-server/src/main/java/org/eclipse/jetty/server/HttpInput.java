@@ -274,7 +274,8 @@ public class HttpInput extends ServletInputStream implements Runnable
                     {
                         BadMessageException bad = new BadMessageException(HttpStatus.REQUEST_TIMEOUT_408,
                             String.format("Request content data rate < %d B/s", minRequestDataRate));
-                        _channelState.getHttpChannel().abort(bad);
+                        if (_channelState.isResponseCommitted())
+                            _channelState.getHttpChannel().abort(bad);
                         throw bad;
                     }
                 }

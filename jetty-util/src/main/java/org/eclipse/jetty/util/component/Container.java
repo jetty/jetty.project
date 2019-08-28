@@ -52,7 +52,7 @@ public interface Container
     /**
      * @param clazz the class of the beans
      * @param <T> the Bean type
-     * @return the list of beans of the given class (or subclass)
+     * @return a list of beans of the given class (or subclass)
      * @see #getBeans()
      * @see #getContainedBeans(Class)
      */

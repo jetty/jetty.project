@@ -50,6 +50,7 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -478,7 +479,7 @@ public class AsyncContextTest
 
         assertThat("error servlet", responseBody, containsString("ERROR: /error"));
         assertThat("error servlet", responseBody, containsString("PathInfo= /500"));
-        assertThat("error servlet", responseBody, containsString("EXCEPTION: java.lang.RuntimeException: TEST"));
+        assertThat("error servlet", responseBody, not(containsString("EXCEPTION: ")));
     }
 
     private class DispatchingRunnable implements Runnable
@@ -552,7 +553,7 @@ public class AsyncContextTest
                     @Override
                     public void onTimeout(AsyncEvent event) throws IOException
                     {
-                        throw new RuntimeException("TEST");
+                        throw new RuntimeException("BAD EXPIRE");
                     }
 
                     @Override

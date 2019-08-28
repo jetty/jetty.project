@@ -501,7 +501,16 @@ public class DoSFilter implements Filter
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Timing out {}", request);
-            response.sendError(HttpStatus.SERVICE_UNAVAILABLE_503);
+            try
+            {
+                response.sendError(HttpStatus.SERVICE_UNAVAILABLE_503);
+            }
+            catch (IllegalStateException ise)
+            {
+                LOG.ignore(ise);
+                // abort instead
+                response.sendError(-1);
+            }
         }
         catch (Throwable x)
         {

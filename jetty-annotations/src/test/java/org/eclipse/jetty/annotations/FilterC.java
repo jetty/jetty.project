@@ -38,7 +38,7 @@ import javax.servlet.http.HttpSession;
 
 @WebFilter(filterName = "CFilter", dispatcherTypes = {DispatcherType.REQUEST}, urlPatterns = {"/*"}, initParams = {
     @WebInitParam(name = "a", value = "99")
-}, asyncSupported = false)
+    }, asyncSupported = false)
 @RunAs("admin")
 public class FilterC implements Filter
 {

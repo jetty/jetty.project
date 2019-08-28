@@ -25,6 +25,7 @@ import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerI
 module org.eclipse.jetty.websocket.jetty.server
 {
     exports org.eclipse.jetty.websocket.server;
+    exports org.eclipse.jetty.websocket.server.config;
 
     requires jetty.servlet.api;
     requires org.eclipse.jetty.http;
