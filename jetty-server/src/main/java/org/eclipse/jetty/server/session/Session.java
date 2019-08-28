@@ -707,6 +707,7 @@ public class Session implements SessionHandler.SessionIf
     {
         try (Lock lock = _lock.lock())
         {
+            checkValidForRead();
             return _sessionData.getAttribute(name);
         }
     }
