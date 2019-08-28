@@ -27,7 +27,7 @@ import javax.websocket.Encoder;
 import javax.websocket.Extension;
 import javax.websocket.server.ServerEndpointConfig;
 
-import org.eclipse.jetty.websocket.javax.server.ContainerDefaultConfigurator;
+import org.eclipse.jetty.websocket.javax.server.config.ContainerDefaultConfigurator;
 
 public class UndefinedServerEndpointConfig implements ServerEndpointConfig
 {

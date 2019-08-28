@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.javax.server;
+package org.eclipse.jetty.websocket.javax.server.internal;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -41,9 +41,7 @@ import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.WebSocketException;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.javax.client.JavaxWebSocketClientContainer;
-import org.eclipse.jetty.websocket.javax.server.internal.AnnotatedServerEndpointConfig;
-import org.eclipse.jetty.websocket.javax.server.internal.JavaxWebSocketCreator;
-import org.eclipse.jetty.websocket.javax.server.internal.UndefinedServerEndpointConfig;
+import org.eclipse.jetty.websocket.javax.server.config.JavaxWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.servlet.WebSocketMapping;
 
 @ManagedObject("JSR356 Server Container")

@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.javax.server;
+package org.eclipse.jetty.websocket.javax.server.examples;
 
 import java.net.URI;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -45,9 +45,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.security.Credential;
-import org.eclipse.jetty.websocket.javax.server.examples.GetHttpSessionSocket;
-import org.eclipse.jetty.websocket.javax.server.examples.MyAuthedSocket;
-import org.eclipse.jetty.websocket.javax.server.examples.StreamingEchoSocket;
+import org.eclipse.jetty.websocket.javax.server.config.JavaxWebSocketServletContainerInitializer;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -93,15 +91,15 @@ public class WebSocketServerExamplesTest
     }
 
     static Server _server;
-    static ServerConnector connector;
+    static ServerConnector _connector;
     static ServletContextHandler _context;
 
     @BeforeAll
     public static void setup() throws Exception
     {
         _server = new Server();
-        connector = new ServerConnector(_server);
-        _server.addConnector(connector);
+        _connector = new ServerConnector(_server);
+        _server.addConnector(_connector);
 
         _context = new ServletContextHandler(ServletContextHandler.SESSIONS);
         _context.setContextPath("/");
@@ -116,7 +114,7 @@ public class WebSocketServerExamplesTest
         });
 
         _server.start();
-        System.setProperty("org.eclipse.jetty.websocket.port", Integer.toString(connector.getLocalPort()));
+        System.setProperty("org.eclipse.jetty.websocket.port", Integer.toString(_connector.getLocalPort()));
     }
 
     @AfterAll
@@ -155,7 +153,7 @@ public class WebSocketServerExamplesTest
     public void testMyAuthedSocket() throws Exception
     {
         //HttpClient is configured for BasicAuthentication with the XmlHttpClientProvider
-        URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/secured/socket");
+        URI uri = URI.create("ws://localhost:" + _connector.getLocalPort() + "/secured/socket");
         WebSocketContainer clientContainer = ContainerProvider.getWebSocketContainer();
 
         ClientSocket clientEndpoint = new ClientSocket();
@@ -172,7 +170,7 @@ public class WebSocketServerExamplesTest
     @Test
     public void testStreamingEchoSocket() throws Exception
     {
-        URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/echo");
+        URI uri = URI.create("ws://localhost:" + _connector.getLocalPort() + "/echo");
         WebSocketContainer clientContainer = ContainerProvider.getWebSocketContainer();
 
         ClientSocket clientEndpoint = new ClientSocket();
@@ -189,7 +187,7 @@ public class WebSocketServerExamplesTest
     @Test
     public void testGetHttpSessionSocket() throws Exception
     {
-        URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/example");
+        URI uri = URI.create("ws://localhost:" + _connector.getLocalPort() + "/example");
         WebSocketContainer clientContainer = ContainerProvider.getWebSocketContainer();
 
         ClientSocket clientEndpoint = new ClientSocket();
