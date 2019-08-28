@@ -34,7 +34,6 @@ import java.net.UnknownHostException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.AccessController;
-import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -56,7 +55,6 @@ import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.TerminateStartupException;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -1801,18 +1799,10 @@ public class XmlConfiguration
                 return null;
             });
         }
-        catch (Error e)
+        catch (Error | Exception e)
         {
             LOG.warn(e);
             throw e;
-        }
-        catch (Exception e)
-        {
-            if (!TerminateStartupException.isTerminateStartup(e)) 
-            {
-                LOG.warn(e); 
-                throw e; 
-            }
         }
     }
 }

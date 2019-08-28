@@ -3,6 +3,11 @@
 
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
 
+  <Call class="org.eclipse.jetty.quickstart.QuickStartConfiguration" name="setMode">
+    <Arg><Ref refid="Server"/>></Arg>
+    <Arg><Property name="jetty.quickstart.mode"/></Arg>
+  </Call>
+
   <New id="props" class="java.util.HashMap">
     <Call name="put">
        <Arg>jetty.quickstart.mode</Arg>

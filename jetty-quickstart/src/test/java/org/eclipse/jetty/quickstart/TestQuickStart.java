@@ -22,15 +22,11 @@ import java.io.File;
 import java.net.URL;
 import java.net.URLClassLoader;
 
-import org.eclipse.jetty.annotations.AnnotationConfiguration;
-import org.eclipse.jetty.plus.webapp.EnvConfiguration;
-import org.eclipse.jetty.plus.webapp.PlusConfiguration;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ListenerHolder;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.util.TerminateStartupException;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -67,10 +63,7 @@ public class TestQuickStart
 
         //generate a quickstart-web.xml
         WebAppContext quickstart = new WebAppContext();
-        quickstart.addConfiguration(new QuickStartConfiguration(),
-                                new EnvConfiguration(),
-                                new PlusConfiguration(),
-                                new AnnotationConfiguration());
+        quickstart.addConfiguration(new QuickStartConfiguration());
         quickstart.setAttribute(QuickStartConfiguration.MODE, QuickStartConfiguration.Mode.GENERATE);
         quickstart.setAttribute(QuickStartConfiguration.GENERATE_ORIGIN, Boolean.TRUE);
         quickstart.setAttribute(QuickStartConfiguration.ORIGIN_ATTRIBUTE, "origin");
@@ -83,33 +76,20 @@ public class TestQuickStart
         lholder.setListener(new FooContextListener());
         quickstart.getServletHandler().addListener(lholder);
         server.setHandler(quickstart);
-        try
-        {
-            server.start();
-        }
-        catch (TerminateStartupException e)
-        {
-            //expected
-        }
-        finally
-        {
-            if (!server.isStopped())
-                server.stop();
-        }
+        server.setDryRun(true);
+        server.start();
 
         assertTrue(quickstartXml.exists());
 
         //now run the webapp again purely from the generated quickstart
         WebAppContext webapp = new WebAppContext();
         webapp.setResourceBase(testDir.getAbsolutePath());
-        webapp.addConfiguration(new QuickStartConfiguration(),
-                                new EnvConfiguration(),
-                                new PlusConfiguration(),
-                                new AnnotationConfiguration());
+        webapp.addConfiguration(new QuickStartConfiguration());
         webapp.setAttribute(QuickStartConfiguration.MODE, QuickStartConfiguration.Mode.QUICKSTART);
         webapp.setClassLoader(new URLClassLoader(new URL[0], Thread.currentThread().getContextClassLoader()));
         server.setHandler(webapp);
 
+        server.setDryRun(false);
         server.start();
 
         //verify that FooServlet is now mapped to / and not the DefaultServlet
@@ -131,46 +111,29 @@ public class TestQuickStart
         // generate a quickstart-web.xml
         WebAppContext quickstart = new WebAppContext();
         quickstart.setResourceBase(testDir.getAbsolutePath());
-        quickstart.addConfiguration(new QuickStartConfiguration(),
-                                    new EnvConfiguration(),
-                                    new PlusConfiguration(),
-                                    new AnnotationConfiguration());
+        quickstart.addConfiguration(new QuickStartConfiguration());
         quickstart.setAttribute(QuickStartConfiguration.MODE, QuickStartConfiguration.Mode.GENERATE);
         quickstart.setAttribute(QuickStartConfiguration.GENERATE_ORIGIN, Boolean.TRUE);
         quickstart.setAttribute(QuickStartConfiguration.ORIGIN_ATTRIBUTE, "origin");
         quickstart.setDescriptor(MavenTestingUtils.getTestResourceFile("web.xml").getAbsolutePath());
         quickstart.setContextPath("/foo");
         server.setHandler(quickstart);
-        try
-        {
-            server.start();
-
-            assertEquals("/foo", quickstart.getContextPath());
-            assertFalse(quickstart.isContextPathDefault());
-        }
-        catch (TerminateStartupException e)
-        {
-            //expected
-        }
-        finally
-        {
-            if (!server.isStopped())
-                server.stop();
-        }
+        server.setDryRun(true);
+        server.start();
+        assertEquals("/foo", quickstart.getContextPath());
+        assertFalse(quickstart.isContextPathDefault());
 
         assertTrue(quickstartXml.exists());
 
         // quick start
         WebAppContext webapp = new WebAppContext();
-        webapp.addConfiguration(new QuickStartConfiguration(),
-                                new EnvConfiguration(),
-                                new PlusConfiguration(),
-                                new AnnotationConfiguration());
+        webapp.addConfiguration(new QuickStartConfiguration());
         quickstart.setAttribute(QuickStartConfiguration.MODE, QuickStartConfiguration.Mode.QUICKSTART);
         webapp.setResourceBase(testDir.getAbsolutePath());
         webapp.setClassLoader(new URLClassLoader(new URL[0], Thread.currentThread().getContextClassLoader()));
         server.setHandler(webapp);
 
+        server.setDryRun(false);
         server.start();
 
         // verify the context path is the default-context-path

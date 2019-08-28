@@ -31,7 +31,6 @@ import org.eclipse.jetty.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.quickstart.QuickStartConfiguration;
 import org.eclipse.jetty.quickstart.QuickStartConfiguration.Mode;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.TerminateStartupException;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
@@ -123,10 +122,6 @@ public class JettyEffectiveWebXml extends JettyRunMojo
                 webApp.setAttribute(AnnotationConfiguration.MULTI_THREADED, Boolean.FALSE.toString());
 
             webApp.start(); //just enough to generate the quickstart
-        }
-        catch (TerminateStartupException e)
-        {
-            //expected
         }
         catch (Exception e)
         {

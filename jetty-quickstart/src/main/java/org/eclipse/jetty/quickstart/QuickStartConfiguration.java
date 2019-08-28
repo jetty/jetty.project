@@ -27,6 +27,7 @@ import java.util.stream.Collectors;
 import org.eclipse.jetty.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.annotations.AnnotationDecorator;
 import org.eclipse.jetty.annotations.ServletContainerInitializersStarter;
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -59,6 +60,12 @@ public class QuickStartConfiguration extends AbstractConfiguration
         __replacedConfigurations.add(org.eclipse.jetty.webapp.MetaInfConfiguration.class);
         __replacedConfigurations.add(org.eclipse.jetty.webapp.FragmentConfiguration.class);
         __replacedConfigurations.add(org.eclipse.jetty.annotations.AnnotationConfiguration.class);
+    }
+
+    public static void setMode(Server server, String mode)
+    {
+        if (mode != null && Mode.valueOf(mode) == Mode.GENERATE)
+            server.setDryRun(true);
     }
 
     public enum Mode

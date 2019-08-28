@@ -47,7 +47,6 @@ import org.eclipse.jetty.quickstart.QuickStartConfiguration;
 import org.eclipse.jetty.quickstart.QuickStartConfiguration.Mode;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.TerminateStartupException;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
@@ -241,16 +240,9 @@ public class JettyRunForkedMojo extends JettyRunMojo
             webApp.setPersistTempDirectory(true);
 
             File props = null;
-            try
-            {
-                webApp.start(); //just enough to generate the quickstart
-            }
-            catch (TerminateStartupException e)
-            {
-                //save config of the webapp BEFORE we stop
-                props = prepareConfiguration();
-            }
-
+            webApp.start(); //just enough to generate the quickstart
+            //save config of the webapp BEFORE we stop
+            props = prepareConfiguration();
             webApp.stop();
 
             if (tpool != null)

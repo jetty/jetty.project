@@ -41,7 +41,6 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.MultiException;
-import org.eclipse.jetty.util.TerminateStartupException;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
@@ -523,8 +522,7 @@ public class DeploymentManager extends ContainerLifeCycle
         }
         catch (Throwable t)
         {
-            if (!TerminateStartupException.isTerminateStartup(t))
-                LOG.warn("Unable to reach node goal: " + nodeName, t);
+            LOG.warn("Unable to reach node goal: " + nodeName, t);
             
             // migrate to FAILED node
             Node failed = _lifecycle.getNodeByName(AppLifeCycle.FAILED);

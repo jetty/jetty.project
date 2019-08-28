@@ -24,7 +24,6 @@ import org.eclipse.jetty.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.plus.webapp.EnvConfiguration;
 import org.eclipse.jetty.plus.webapp.PlusConfiguration;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.util.TerminateStartupException;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.JarResource;
@@ -122,11 +121,8 @@ public class PreconfigureQuickStartWar
         server.setHandler(webapp);
         try
         {
+            server.setDryRun(true);
             server.start();
-        }
-        catch (TerminateStartupException e)
-        {
-            //expected
         }
         catch (Exception e)
         {
