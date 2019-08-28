@@ -1229,11 +1229,12 @@ public class URIUtil
                 }
             }
 
+            // Don't match on encoded slash
             if (ca == '/' && oa != ob)
                 return false;
 
             if (ca != cb)
-                return URIUtil.decodePath(uriA).equals(URIUtil.decodePath(uriB));
+                return false;
         }
         return a == lenA && b == lenB;
     }
