@@ -2231,7 +2231,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         @Override
         public void log(String message, Throwable throwable)
         {
-            _logger.warn(message, throwable);
+            if (throwable == null)
+                _logger.warn(message);
+            else
+                _logger.warn(message, throwable);
         }
 
         /*

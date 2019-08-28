@@ -21,6 +21,6 @@ org.eclipse.jetty.servlet.WebApplicationContext object
   </Get>
 
   <Get name="servletContext">
-    <Call name="log"><Arg>The test-jetty webapp is deployed. DO NOT USE IN PRODUCTION!</Arg></Call>
+    <Call name="log"><Arg>The test-jetty webapp is deployed. DO NOT USE IN PRODUCTION!</Arg><Arg></Arg></Call>
   </Get>
 </Configure>
