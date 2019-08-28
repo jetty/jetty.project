@@ -67,9 +67,7 @@ public class NullSessionCacheTest
             se.getSession().setAttribute("pv", new TestObject(count));
         }
     }
-    
-    
-    
+
     public static class TestObject implements HttpSessionActivationListener
     {
         int i;
@@ -97,8 +95,7 @@ public class NullSessionCacheTest
             ++activates;
         }
     }
-    
-    
+
     @Test
     public void testWritesWithPassivation() throws Exception
     {
@@ -191,8 +188,6 @@ public class NullSessionCacheTest
         assertEquals(0, context.getSessionHandler()._sessionAttributeListeners.size());
     }
     
-    
-    
     @Test
     public void testWriteThroughAlways() throws Exception
     {
@@ -245,7 +240,7 @@ public class NullSessionCacheTest
     }
     
     @Test
-    public void testWriteThroughNew () throws Exception
+    public void testWriteThroughNew() throws Exception
     {
         Server server = new Server();
 
@@ -303,8 +298,7 @@ public class NullSessionCacheTest
         assertEquals(4, store._numSaves.get());//release session should write it out
         assertFalse(session.isResident());  
     }
-    
-    
+
     @Test
     public void testNotCached() throws Exception
     {

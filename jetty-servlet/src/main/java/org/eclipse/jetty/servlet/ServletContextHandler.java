@@ -1061,9 +1061,12 @@ public class ServletContextHandler extends ContextHandler
             return new Dispatcher(context, name);
         }
 
-        private void checkDynamicName(String name)
+        private void checkDynamic(String name)
         {
             if (isStarted())
+                throw new IllegalStateException();
+            
+            if (ServletContextHandler.this.getServletHandler().isInitialized())
                 throw new IllegalStateException();
 
             if (StringUtil.isBlank(name))
@@ -1079,7 +1082,7 @@ public class ServletContextHandler extends ContextHandler
         @Override
         public FilterRegistration.Dynamic addFilter(String filterName, Class<? extends Filter> filterClass)
         {
-            checkDynamicName(filterName);
+            checkDynamic(filterName);
 
             final ServletHandler handler = ServletContextHandler.this.getServletHandler();
             FilterHolder holder = handler.getFilter(filterName);
@@ -1108,7 +1111,7 @@ public class ServletContextHandler extends ContextHandler
         @Override
         public FilterRegistration.Dynamic addFilter(String filterName, String className)
         {
-            checkDynamicName(filterName);
+            checkDynamic(filterName);
 
             final ServletHandler handler = ServletContextHandler.this.getServletHandler();
             FilterHolder holder = handler.getFilter(filterName);
@@ -1137,7 +1140,7 @@ public class ServletContextHandler extends ContextHandler
         @Override
         public FilterRegistration.Dynamic addFilter(String filterName, Filter filter)
         {
-            checkDynamicName(filterName);
+            checkDynamic(filterName);
 
             final ServletHandler handler = ServletContextHandler.this.getServletHandler();
             FilterHolder holder = handler.getFilter(filterName);
@@ -1167,7 +1170,7 @@ public class ServletContextHandler extends ContextHandler
         @Override
         public ServletRegistration.Dynamic addServlet(String servletName, Class<? extends Servlet> servletClass)
         {
-            checkDynamicName(servletName);
+            checkDynamic(servletName);
 
             final ServletHandler handler = ServletContextHandler.this.getServletHandler();
             ServletHolder holder = handler.getServlet(servletName);
@@ -1197,7 +1200,7 @@ public class ServletContextHandler extends ContextHandler
         @Override
         public ServletRegistration.Dynamic addServlet(String servletName, String className)
         {
-            checkDynamicName(servletName);
+            checkDynamic(servletName);
 
             final ServletHandler handler = ServletContextHandler.this.getServletHandler();
             ServletHolder holder = handler.getServlet(servletName);
@@ -1227,7 +1230,7 @@ public class ServletContextHandler extends ContextHandler
         @Override
         public ServletRegistration.Dynamic addServlet(String servletName, Servlet servlet)
         {
-            checkDynamicName(servletName);
+            checkDynamic(servletName);
 
             final ServletHandler handler = ServletContextHandler.this.getServletHandler();
             ServletHolder holder = handler.getServlet(servletName);
