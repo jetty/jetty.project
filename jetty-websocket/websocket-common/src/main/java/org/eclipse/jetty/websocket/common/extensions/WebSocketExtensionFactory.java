@@ -51,12 +51,19 @@ public class WebSocketExtensionFactory extends ExtensionFactory implements LifeC
 
     public WebSocketExtensionFactory(WebSocketContainerScope container)
     {
-        containerLifeCycle = new ContainerLifeCycle();
+        containerLifeCycle = new ContainerLifeCycle()
+        {
+            @Override
+            public String toString()
+            {
+                return String.format("%s@%x{%s}", WebSocketExtensionFactory.class.getSimpleName(), hashCode(), containerLifeCycle.getState());
+            }
+        };
         availableExtensions = new HashMap<>();
         for (Extension ext : extensionLoader)
         {
             if (ext != null)
-                availableExtensions.put(ext.getName(),ext.getClass());
+                availableExtensions.put(ext.getName(), ext.getClass());
         }
 
         this.container = container;
@@ -135,7 +142,7 @@ public class WebSocketExtensionFactory extends ExtensionFactory implements LifeC
     @Override
     public void register(String name, Class<? extends Extension> extension)
     {
-        availableExtensions.put(name,extension);
+        availableExtensions.put(name, extension);
     }
 
     @Override
@@ -233,6 +240,6 @@ public class WebSocketExtensionFactory extends ExtensionFactory implements LifeC
     @Override
     public String toString()
     {
-        return String.format("%s@%x{%s}", WebSocketExtensionFactory.class.getName(), hashCode(), containerLifeCycle.getState());
+        return containerLifeCycle.toString();
     }
 }
