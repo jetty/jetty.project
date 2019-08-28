@@ -657,7 +657,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
         {
             try
             {
-                listener.onDataRequested(stream, frame, callback);
+                listener.onDataDemanded(stream, frame, callback);
             }
             catch (Throwable x)
             {

@@ -133,7 +133,7 @@ public interface Stream
      * <p>Demands {@code n} more {@code DATA} frames for this stream.</p>
      *
      * @param n the increment of the demand, must be greater than zero
-     * @see Listener#onDataRequested(Stream, DataFrame, Callback)
+     * @see Listener#onDataDemanded(Stream, DataFrame, Callback)
      */
     public void demand(long n);
 
@@ -188,7 +188,7 @@ public interface Stream
          * @param stream the stream
          * @param frame the DATA frame received
          * @param callback the callback to complete when the bytes of the DATA frame have been consumed
-         * @see #onDataRequested(Stream, DataFrame, Callback)
+         * @see #onDataDemanded(Stream, DataFrame, Callback)
          */
         public void onData(Stream stream, DataFrame frame, Callback callback);
 
@@ -201,7 +201,7 @@ public interface Stream
          * @param frame the DATA frame received
          * @param callback the callback to complete when the bytes of the DATA frame have been consumed
          */
-        public default void onDataRequested(Stream stream, DataFrame frame, Callback callback)
+        public default void onDataDemanded(Stream stream, DataFrame frame, Callback callback)
         {
             stream.demand(1);
             onData(stream, frame, callback);

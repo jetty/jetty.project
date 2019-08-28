@@ -67,7 +67,7 @@ public class DataDemandTest extends AbstractTest
                 return new Stream.Listener.Adapter()
                 {
                     @Override
-                    public void onDataRequested(Stream stream, DataFrame frame, Callback callback)
+                    public void onDataDemanded(Stream stream, DataFrame frame, Callback callback)
                     {
                         // Don't demand and don't complete callbacks.
                         serverQueue.offer(frame);
@@ -83,7 +83,7 @@ public class DataDemandTest extends AbstractTest
         client.newStream(new HeadersFrame(post, null, false), promise, new Stream.Listener.Adapter()
         {
             @Override
-            public void onDataRequested(Stream stream, DataFrame frame, Callback callback)
+            public void onDataDemanded(Stream stream, DataFrame frame, Callback callback)
             {
                 clientQueue.offer(frame);
             }
@@ -178,7 +178,7 @@ public class DataDemandTest extends AbstractTest
                 return new Stream.Listener.Adapter()
                 {
                     @Override
-                    public void onDataRequested(Stream stream, DataFrame frame, Callback callback)
+                    public void onDataDemanded(Stream stream, DataFrame frame, Callback callback)
                     {
                         stream.demand(1);
                         callback.succeeded();
