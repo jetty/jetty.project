@@ -20,12 +20,14 @@ package org.eclipse.jetty.websocket.server.browser;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.lang.management.ManagementFactory;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ResourceHandler;
@@ -131,10 +133,17 @@ public class BrowserDebugTool implements WebSocketCreator
     public void prepare(int port) throws IOException, URISyntaxException
     {
         server = new Server();
+
+        // Setup JMX
+        MBeanContainer mbContainer = new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
+        server.addBean(mbContainer, true);
+
+        // Setup Connector
         connector = new ServerConnector(server);
         connector.setPort(port);
         server.addConnector(connector);
 
+        // Setup WebSocket
         WebSocketHandler wsHandler = new WebSocketHandler()
         {
             @Override
