@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+  <New id="OpenIdConfiguration" class="org.eclipse.jetty.security.openid.OpenIdConfiguration">
+    <Arg><Property name="jetty.openid.identityProvider"/></Arg>
+    <Arg><Property name="jetty.openid.clientId"/></Arg>
+    <Arg><Property name="jetty.openid.clientSecret"/></Arg>
+    <Call name="addScopes">
+      <Arg>
+        <Call class="org.eclipse.jetty.util.StringUtil" name="csvSplit">
+          <Arg><Property name="jetty.openid.scopes"/></Arg>
+        </Call>
+      </Arg>
+    </Call>
+  </New>
+  <Call name="addBean">
+    <Arg>
+      <New class="org.eclipse.jetty.security.openid.OpenIdLoginService">
+        <Arg><Ref refid="OpenIdConfiguration"/></Arg>
+        <Arg><Ref refid="BaseLoginService"/></Arg>
+      </New>
+    </Arg>
+  </Call>
+</Configure>
