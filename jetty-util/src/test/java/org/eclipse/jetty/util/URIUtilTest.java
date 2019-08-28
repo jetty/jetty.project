@@ -90,8 +90,21 @@ public class URIUtilTest
         // Test for null character (real world ugly test case)
         byte[] oddBytes = {'/', 0x00, '/'};
         String odd = new String(oddBytes, StandardCharsets.ISO_8859_1);
-        assertEquals(odd, URIUtil.decodePath("/%00/"));
         arguments.add(Arguments.of("/%00/", odd));
+
+        // Deprecated Microsoft Percent-U encoding
+        arguments.add(Arguments.of("abc%u3040", "abc\u3040"));
+
+        // Lenient decode
+        arguments.add(Arguments.of("abc%xyz", "abc%xyz")); // not a "%##"
+        arguments.add(Arguments.of("abc%", "abc%")); // percent at end of string
+        arguments.add(Arguments.of("abc%A", "abc%A")); // incomplete "%##" at end of string
+        arguments.add(Arguments.of("abc%uvwxyz", "abc%uvwxyz")); // not a valid "%u####"
+        arguments.add(Arguments.of("abc%uEFGHIJ", "abc%uEFGHIJ")); // not a valid "%u####"
+        arguments.add(Arguments.of("abc%uABC", "abc%uABC")); // incomplete "%u####"
+        arguments.add(Arguments.of("abc%uAB", "abc%uAB")); // incomplete "%u####"
+        arguments.add(Arguments.of("abc%uA", "abc%uA")); // incomplete "%u####"
+        arguments.add(Arguments.of("abc%u", "abc%u")); // incomplete "%u####"
 
         return arguments.stream();
     }
@@ -344,7 +357,11 @@ public class URIUtilTest
             Arguments.of("/b rry%27s", "/b%20rry%27s"),
 
             Arguments.of("/foo%2fbar", "/foo%2fbar"),
-            Arguments.of("/foo%2fbar", "/foo%2Fbar")
+            Arguments.of("/foo%2fbar", "/foo%2Fbar"),
+
+            // encoded vs not-encode ("%" symbol is encoded as "%25")
+            Arguments.of("/abc%25xyz", "/abc%xyz"),
+            Arguments.of("/zzz%25", "/zzz%")
         );
     }
 
@@ -358,11 +375,17 @@ public class URIUtilTest
     public static Stream<Arguments> equalsIgnoreEncodingStringFalseSource()
     {
         return Stream.of(
+            // case difference
             Arguments.of("ABC", "abc"),
+            // Encoding difference ("'" is "%27")
             Arguments.of("/barry's", "/barry%26s"),
-
+            // Never match on "%2f" differences
             Arguments.of("/foo/bar", "/foo%2fbar"),
-            Arguments.of("/foo2fbar", "/foo/bar")
+            // not actually encoded
+            Arguments.of("/foo2fbar", "/foo/bar"),
+            // encoded vs not-encode ("%" symbol is encoded as "%25")
+            Arguments.of("/yyy%25zzz", "/aaa%xxx"),
+            Arguments.of("/zzz%25", "/aaa%")
         );
     }
 
