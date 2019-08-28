@@ -513,9 +513,7 @@ public class URIUtil
                                 // we have a possible "%##" encoding
                                 if (StringUtil.isHex(path, i + 1, 2))
                                 {
-                                    char c1 = path.charAt(i + 1);
-                                    char c2 = path.charAt(i + 2);
-                                    builder.append((byte)(0xff & (TypeUtil.convertHexDigit(c1) * 16 + TypeUtil.convertHexDigit(c2))));
+                                    builder.append((byte)TypeUtil.parseInt(path, i + 1, 2, 16));
                                     i += 2;
                                 }
                                 else
@@ -1245,13 +1243,11 @@ public class URIUtil
         if (offset >= str.length())
             return -1;
 
-        char a1 = str.charAt(offset);
-        char a2 = str.charAt(offset + 1);
-        try
+        if (StringUtil.isHex(str, offset, 2))
         {
-            return TypeUtil.convertHexDigit(a1) * 16 + TypeUtil.convertHexDigit(a2);
+            return TypeUtil.parseInt(str, offset, 2, 16);
         }
-        catch (NumberFormatException e)
+        else
         {
             return -1;
         }

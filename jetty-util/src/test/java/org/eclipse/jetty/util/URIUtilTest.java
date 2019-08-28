@@ -361,6 +361,8 @@ public class URIUtilTest
 
             // encoded vs not-encode ("%" symbol is encoded as "%25")
             Arguments.of("/abc%25xyz", "/abc%xyz"),
+            Arguments.of("/abc%25xy", "/abc%xy"),
+            Arguments.of("/abc%25x", "/abc%x"),
             Arguments.of("/zzz%25", "/zzz%")
         );
     }

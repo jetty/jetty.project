@@ -646,6 +646,11 @@ public class StringUtil
 
     public static boolean isHex(String str, int offset, int length)
     {
+        if (offset + length > str.length())
+        {
+            return false;
+        }
+
         for (int i = offset; i < (offset + length); i++)
         {
             char c = str.charAt(i);
