@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.common.extensions;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -27,6 +28,7 @@ import java.util.zip.Deflater;
 
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.compression.CompressionPool;
 import org.eclipse.jetty.util.compression.DeflaterPool;
@@ -38,9 +40,9 @@ import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
 import org.eclipse.jetty.websocket.common.extensions.compress.CompressExtension;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 
-public class WebSocketExtensionFactory extends ExtensionFactory implements LifeCycle
+public class WebSocketExtensionFactory extends ExtensionFactory implements LifeCycle, Dumpable
 {
-    private ContainerLifeCycle lifecycle;
+    private ContainerLifeCycle containerLifeCycle;
     private WebSocketContainerScope container;
     private ServiceLoader<Extension> extensionLoader = ServiceLoader.load(Extension.class);
     private Map<String, Class<? extends Extension>> availableExtensions;
@@ -49,7 +51,7 @@ public class WebSocketExtensionFactory extends ExtensionFactory implements LifeC
 
     public WebSocketExtensionFactory(WebSocketContainerScope container)
     {
-        lifecycle = new ContainerLifeCycle();
+        containerLifeCycle = new ContainerLifeCycle();
         availableExtensions = new HashMap<>();
         for (Extension ext : extensionLoader)
         {
@@ -58,8 +60,8 @@ public class WebSocketExtensionFactory extends ExtensionFactory implements LifeC
         }
 
         this.container = container;
-        lifecycle.addBean(inflaterPool);
-        lifecycle.addBean(deflaterPool);
+        containerLifeCycle.addBean(inflaterPool);
+        containerLifeCycle.addBean(deflaterPool);
     }
 
     @Override
@@ -153,60 +155,84 @@ public class WebSocketExtensionFactory extends ExtensionFactory implements LifeC
     @Override
     public void start() throws Exception
     {
-        lifecycle.start();
+        containerLifeCycle.start();
     }
 
     @Override
     public void stop() throws Exception
     {
-        lifecycle.stop();
+        containerLifeCycle.stop();
     }
 
     @Override
     public boolean isRunning()
     {
-        return lifecycle.isRunning();
+        return containerLifeCycle.isRunning();
     }
 
     @Override
     public boolean isStarted()
     {
-        return lifecycle.isStarted();
+        return containerLifeCycle.isStarted();
     }
 
     @Override
     public boolean isStarting()
     {
-        return lifecycle.isStarting();
+        return containerLifeCycle.isStarting();
     }
 
     @Override
     public boolean isStopping()
     {
-        return lifecycle.isStopping();
+        return containerLifeCycle.isStopping();
     }
 
     @Override
     public boolean isStopped()
     {
-        return lifecycle.isStopped();
+        return containerLifeCycle.isStopped();
     }
 
     @Override
     public boolean isFailed()
     {
-        return lifecycle.isFailed();
+        return containerLifeCycle.isFailed();
     }
 
     @Override
     public void addLifeCycleListener(Listener listener)
     {
-        lifecycle.addLifeCycleListener(listener);
+        containerLifeCycle.addLifeCycleListener(listener);
     }
 
     @Override
     public void removeLifeCycleListener(Listener listener)
     {
-        lifecycle.removeLifeCycleListener(listener);
+        containerLifeCycle.removeLifeCycleListener(listener);
+    }
+
+    @Override
+    public String dump()
+    {
+        return containerLifeCycle.dump();
+    }
+
+    @Override
+    public String dumpSelf()
+    {
+        return containerLifeCycle.dumpSelf();
+    }
+
+    @Override
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        containerLifeCycle.dump(out, indent);
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%x{%s}", WebSocketExtensionFactory.class.getName(), hashCode(), containerLifeCycle.getState());
     }
 }
