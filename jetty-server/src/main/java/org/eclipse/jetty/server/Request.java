@@ -759,10 +759,18 @@ public class Request implements HttpServletRequest
     }
 
     /**
-     * @return The current {@link Context context} used for this request, or <code>null</code> if {@link #setContext} has not yet been called.
+     * @return The current {@link Context context} used for this error handling for this request.  If the request is asynchronous,
+     * then it is the context that called async. Otherwise it is the last non-null context passed to #setContext
      */
     public Context getErrorContext()
     {
+        if (isAsyncStarted())
+        {
+            ContextHandler handler = _channel.getState().getContextHandler();
+            if (handler != null)
+                return handler.getServletContext();
+        }
+
         return _errorContext;
     }
 
@@ -1865,6 +1873,7 @@ public class Request implements HttpServletRequest
         _remote = null;
         _sessions = null;
         _input.recycle();
+        _requestAttributeListeners.clear();
     }
 
     /*

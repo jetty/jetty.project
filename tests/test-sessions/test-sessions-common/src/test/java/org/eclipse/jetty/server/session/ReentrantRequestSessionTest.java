@@ -59,8 +59,8 @@ public class ReentrantRequestSessionTest
         ServletContextHandler context = server.addContext(contextPath);
         context.addServlet(TestServlet.class, servletMapping);
 
-        TestContextScopeListener scopeListener = new TestContextScopeListener();
-        context.addEventListener(scopeListener);
+        TestHttpChannelCompleteListener scopeListener = new TestHttpChannelCompleteListener();
+        server.getServerConnector().addBean(scopeListener);
 
         try
         {

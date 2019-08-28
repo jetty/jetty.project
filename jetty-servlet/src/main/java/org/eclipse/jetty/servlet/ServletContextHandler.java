@@ -609,7 +609,7 @@ public class ServletContextHandler extends ContextHandler
      */
     public void setSecurityHandler(SecurityHandler securityHandler)
     {
-        replaceHandler(_sessionHandler, securityHandler);
+        replaceHandler(_securityHandler, securityHandler);
         _securityHandler = securityHandler;
         relinkHandlers();
     }

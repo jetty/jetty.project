@@ -65,13 +65,22 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public abstract class HttpServerTestBase extends HttpServerTestFixture
 {
-    private static final String REQUEST1_HEADER = "POST / HTTP/1.0\n" + "Host: localhost\n" + "Content-Type: text/xml; charset=utf-8\n" + "Connection: close\n" + "Content-Length: ";
+    private static final String REQUEST1_HEADER = "POST / HTTP/1.0\n" +
+        "Host: localhost\n" +
+        "Content-Type: text/xml; charset=utf-8\n" +
+        "Connection: close\n" +
+        "Content-Length: ";
     private static final String REQUEST1_CONTENT = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
-            "<nimbus xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n" + "        xsi:noNamespaceSchemaLocation=\"nimbus.xsd\" version=\"1.0\">\n" +
-            "</nimbus>";
+        "<nimbus xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n" +
+        "        xsi:noNamespaceSchemaLocation=\"nimbus.xsd\" version=\"1.0\">\n" +
+        "</nimbus>";
     private static final String REQUEST1 = REQUEST1_HEADER + REQUEST1_CONTENT.getBytes().length + "\n\n" + REQUEST1_CONTENT;
 
-    private static final String RESPONSE1 = "HTTP/1.1 200 OK\n" + "Content-Length: 13\n" + "Server: Jetty(" + Server.getVersion() + ")\n" + "\n" + "Hello world\n";
+    private static final String RESPONSE1 = "HTTP/1.1 200 OK\n" +
+        "Content-Length: 13\n" +
+        "Server: Jetty(" + Server.getVersion() + ")\n" +
+        "\n" +
+        "Hello world\n";
 
     // Break the request up into three pieces, splitting the header.
     private static final String FRAGMENT1 = REQUEST1.substring(0, 16);
@@ -104,7 +113,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             "            <jobId>73</jobId>\n" +
             "        </getJobDetails>\n" +
             "    </request>\n" +
-                "</nimbus>\n";
+            "</nimbus>\n";
     protected static final String RESPONSE2 =
         "HTTP/1.1 200 OK\n" +
             "Content-Type: text/xml;charset=iso-8859-1\n" +
@@ -143,9 +152,9 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             OutputStream os = client.getOutputStream();
 
             os.write(("OPTIONS * HTTP/1.1\r\n" +
-                    "Host: " + _serverURI.getHost() + "\r\n" +
-                    "Connection: close\r\n" +
-                    "\r\n").getBytes(StandardCharsets.ISO_8859_1));
+                "Host: " + _serverURI.getHost() + "\r\n" +
+                "Connection: close\r\n" +
+                "\r\n").getBytes(StandardCharsets.ISO_8859_1));
             os.flush();
 
             // Read the response.
@@ -154,15 +163,20 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             assertThat(response, Matchers.containsString("HTTP/1.1 200 OK"));
             assertThat(response, Matchers.containsString("Allow: GET"));
         }
+    }
 
+    @Test
+    public void testGETStar() throws Exception
+    {
+        configureServer(new OptionsHandler());
         try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
         {
             OutputStream os = client.getOutputStream();
 
             os.write(("GET * HTTP/1.1\r\n" +
-                    "Host: " + _serverURI.getHost() + "\r\n" +
-                    "Connection: close\r\n" +
-                    "\r\n").getBytes(StandardCharsets.ISO_8859_1));
+                "Host: " + _serverURI.getHost() + "\r\n" +
+                "Connection: close\r\n" +
+                "\r\n").getBytes(StandardCharsets.ISO_8859_1));
             os.flush();
 
             // Read the response.
@@ -434,27 +448,22 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
         {
             OutputStream os = client.getOutputStream();
-            //@checkstyle-disable-check : IllegalTokenText
-            os.write(("GET /R2 HTTP/1.1\015\012" +
-                "Host: localhost\015\012" +
-                "Transfer-Encoding: chunked\015\012" +
-                "Content-Type: text/plain\015\012" +
-                "Connection: close\015\012" +
-                "\015\012").getBytes());
-            //@checkstyle-enable-check : IllegalTokenText
+
+            os.write(("GET /R2 HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "Transfer-Encoding: chunked\r\n" +
+                "Content-Type: text/plain\r\n" +
+                "Connection: close\r\n" +
+                "\r\n").getBytes());
             os.flush();
             Thread.sleep(1000);
             os.write(("5").getBytes());
             Thread.sleep(1000);
-            //@checkstyle-disable-check : IllegalTokenText
-            os.write(("\015\012").getBytes());
-            //@checkstyle-enable-check : IllegalTokenText
+            os.write(("\r\n").getBytes());
             os.flush();
             Thread.sleep(1000);
-            //@checkstyle-disable-check : IllegalTokenText
-            os.write(("ABCDE\015\012" +
-                "0;\015\012\015\012").getBytes());
-            //@checkstyle-enable-check : IllegalTokenText
+            os.write(("ABCDE\r\n" +
+                "0;\r\n\r\n").getBytes());
             os.flush();
 
             // Read the response.
@@ -472,14 +481,14 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         {
             OutputStream os = client.getOutputStream();
             //@checkstyle-disable-check : IllegalTokenText
-            os.write(("GET /R2 HTTP/1.1\015\012" +
-                "Host: localhost\015\012" +
-                "Content-Length: 5\015\012" +
-                "Content-Type: text/plain\015\012" +
-                "Connection: close\015\012" +
-                "\015\012" +
-                "ABCDE\015\012" +
-                "\015\012"
+            os.write(("GET /R2 HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "Content-Length: 5\r\n" +
+                "Content-Type: text/plain\r\n" +
+                "Connection: close\r\n" +
+                "\r\n" +
+                "ABCDE\r\n" +
+                "\r\n"
             //@checkstyle-enable-check : IllegalTokenText
             ).getBytes());
             os.flush();
@@ -1136,26 +1145,26 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
 
             //@checkstyle-disable-check : IllegalTokenText
             os.write((
-                "POST /R1 HTTP/1.1\015\012" +
+                "POST /R1 HTTP/1.1\r\n" +
                     "Host: " + _serverURI.getHost() + ":" + _serverURI.getPort() + "\r\n" +
                     "content-type: text/plain; charset=utf-8\r\n" +
                     "content-length: 10\r\n" +
-                    "\015\012" +
+                    "\r\n" +
                     "123456789\n" +
 
-                    "HEAD /R2 HTTP/1.1\015\012" +
-                    "Host: " + _serverURI.getHost() + ":" + _serverURI.getPort() + "\015\012" +
+                    "HEAD /R2 HTTP/1.1\r\n" +
+                    "Host: " + _serverURI.getHost() + ":" + _serverURI.getPort() + "\r\n" +
                     "content-type: text/plain; charset=utf-8\r\n" +
                     "content-length: 10\r\n" +
-                    "\015\012" +
+                    "\r\n" +
                     "ABCDEFGHI\n" +
 
-                    "POST /R3 HTTP/1.1\015\012" +
-                    "Host: " + _serverURI.getHost() + ":" + _serverURI.getPort() + "\015\012" +
+                    "POST /R3 HTTP/1.1\r\n" +
+                    "Host: " + _serverURI.getHost() + ":" + _serverURI.getPort() + "\r\n" +
                     "content-type: text/plain; charset=utf-8\r\n" +
                     "content-length: 10\r\n" +
-                    "Connection: close\015\012" +
-                    "\015\012" +
+                    "Connection: close\r\n" +
+                    "\r\n" +
                     "abcdefghi\n"
             //@checkstyle-enable-check : IllegalTokenText
             ).getBytes(StandardCharsets.ISO_8859_1));
@@ -1553,12 +1562,11 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             {
                 try
                 {
-                    byte[] bytes = (
-                        "GET / HTTP/1.1\r\n" +
-                            "Host: localhost\r\n" +
-                            "Content-Length: " + cl + "\r\n" +
-                            "\r\n" +
-                            content).getBytes(StandardCharsets.ISO_8859_1);
+                    byte[] bytes = ("GET / HTTP/1.1\r\n" +
+                        "Host: localhost\r\n" +
+                        "Content-Length: " + cl + "\r\n" +
+                        "\r\n" +
+                        content).getBytes(StandardCharsets.ISO_8859_1);
 
                     for (int i = 0; i < REQS; i++)
                     {

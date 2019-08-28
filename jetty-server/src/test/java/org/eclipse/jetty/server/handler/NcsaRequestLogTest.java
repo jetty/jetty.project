@@ -37,6 +37,7 @@ import org.eclipse.jetty.server.AbstractNCSARequestLog;
 import org.eclipse.jetty.server.CustomRequestLog;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpChannel;
+import org.eclipse.jetty.server.HttpChannelState;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.RequestLog;
@@ -44,6 +45,7 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
@@ -390,7 +392,7 @@ public class NcsaRequestLogTest
             data.add(new Object[]{logType, new IOExceptionPartialHandler(), "/ioex", "\"GET /ioex HTTP/1.0\" 200"});
             data.add(new Object[]{logType, new RuntimeExceptionHandler(), "/rtex", "\"GET /rtex HTTP/1.0\" 500"});
             data.add(new Object[]{logType, new BadMessageHandler(), "/bad", "\"GET /bad HTTP/1.0\" 499"});
-            data.add(new Object[]{logType, new AbortHandler(), "/bad", "\"GET /bad HTTP/1.0\" 488"});
+            data.add(new Object[]{logType, new AbortHandler(), "/bad", "\"GET /bad HTTP/1.0\" 500"});
             data.add(new Object[]{logType, new AbortPartialHandler(), "/bad", "\"GET /bad HTTP/1.0\" 200"});
         }
 
@@ -517,7 +519,9 @@ public class NcsaRequestLogTest
         startServer();
         makeRequest(requestPath);
 
-        expectedLogEntry = "\"GET " + requestPath + " HTTP/1.0\" 200";
+        // If we abort, we can't write a 200 error page
+        if (!(testHandler instanceof AbortHandler))
+            expectedLogEntry = expectedLogEntry.replaceFirst(" [1-9][0-9][0-9]", " 200");
         assertRequestLog(expectedLogEntry, _log);
     }
 
@@ -577,6 +581,10 @@ public class NcsaRequestLogTest
                         {
                             try
                             {
+                                while (baseRequest.getHttpChannel().getState().getState() != HttpChannelState.State.WAITING)
+                                {
+                                    Thread.sleep(10);
+                                }
                                 baseRequest.setHandled(false);
                                 testHandler.handle(target, baseRequest, request, response);
                                 if (!baseRequest.isHandled())
@@ -584,18 +592,21 @@ public class NcsaRequestLogTest
                             }
                             catch (BadMessageException bad)
                             {
-                                response.sendError(bad.getCode());
+                                response.sendError(bad.getCode(), bad.getReason());
                             }
                             catch (Exception e)
                             {
-                                response.sendError(500);
+                                response.sendError(500, e.toString());
                             }
                         }
-                        catch (Throwable th)
+                        catch (IOException | IllegalStateException th)
                         {
-                            throw new RuntimeException(th);
+                            Log.getLog().ignore(th);
                         }
-                        ac.complete();
+                        finally
+                        {
+                            ac.complete();
+                        }
                     });
                 }
             }

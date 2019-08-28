@@ -79,8 +79,8 @@ public class TestSessionDataStore extends AbstractSessionDataStore
     @Override
     public void doStore(String id, SessionData data, long lastSaveTime) throws Exception
     {
-        _numSaves.addAndGet(1);
         _map.put(id, data);
+        _numSaves.addAndGet(1);
     }
 
     @Override

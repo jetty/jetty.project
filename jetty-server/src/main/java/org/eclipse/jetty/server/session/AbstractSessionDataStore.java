@@ -80,6 +80,9 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
     @Override
     public SessionData load(String id) throws Exception
     {
+        if (!isStarted())
+            throw new IllegalStateException ("Not started");
+
         final AtomicReference<SessionData> reference = new AtomicReference<SessionData>();
         final AtomicReference<Exception> exception = new AtomicReference<Exception>();
 
@@ -109,6 +112,9 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
     @Override
     public void store(String id, SessionData data) throws Exception
     {
+        if (!isStarted())
+            throw new IllegalStateException("Not started");
+        
         if (data == null)
             return;
 
@@ -126,7 +132,7 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
                     LOG.debug("Store: id={}, dirty={}, lsave={}, period={}, elapsed={}", id, data.isDirty(), data.getLastSaved(), savePeriodMs, (System.currentTimeMillis() - lastSave));
 
                 //save session if attribute changed or never been saved or time between saves exceeds threshold
-                if (data.isDirty() || (lastSave <= 0) || ((System.currentTimeMillis() - lastSave) > savePeriodMs))
+                if (data.isDirty() || (lastSave <= 0) || ((System.currentTimeMillis() - lastSave) >= savePeriodMs))
                 {
                     //set the last saved time to now
                     data.setLastSaved(System.currentTimeMillis());
@@ -154,6 +160,9 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
     @Override
     public Set<String> getExpired(Set<String> candidates)
     {
+        if (!isStarted())
+            throw new IllegalStateException ("Not started");
+        
         try
         {
             return doGetExpired(candidates);

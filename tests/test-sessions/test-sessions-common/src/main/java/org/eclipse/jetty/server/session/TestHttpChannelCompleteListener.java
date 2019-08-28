@@ -18,24 +18,28 @@
 
 package org.eclipse.jetty.server.session;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import javax.servlet.SessionTrackingMode;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicReference;
 
-import org.junit.jupiter.api.Test;
+import org.eclipse.jetty.server.HttpChannel.Listener;
+import org.eclipse.jetty.server.Request;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
-public class SessionHandlerTest
+public class TestHttpChannelCompleteListener implements Listener
 {
-    @Test
-    public void testSessionTrackingMode()
+    private final AtomicReference<CountDownLatch> _exitSynchronizer = new AtomicReference<>();
+
+    /**
+     * @param exitSynchronizer the exitSynchronizer to set
+     */
+    public void setExitSynchronizer(CountDownLatch exitSynchronizer)
     {
-        SessionHandler sessionHandler = new SessionHandler();
-        sessionHandler.setSessionTrackingModes(new HashSet<>(Arrays.asList(SessionTrackingMode.COOKIE, SessionTrackingMode.URL)));
-        sessionHandler.setSessionTrackingModes(Collections.singleton(SessionTrackingMode.SSL));
-        assertThrows(IllegalArgumentException.class,() ->
-            sessionHandler.setSessionTrackingModes(new HashSet<>(Arrays.asList(SessionTrackingMode.SSL, SessionTrackingMode.URL))));
+        _exitSynchronizer.set(exitSynchronizer);
+    }
+
+    @Override
+    public void onComplete(Request request)
+    {
+        if (_exitSynchronizer.get() != null)
+            _exitSynchronizer.get().countDown();
     }
 }
