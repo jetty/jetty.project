@@ -52,6 +52,7 @@ import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlet.ServletMapping;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
@@ -82,7 +83,6 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
 
     protected final boolean _abort;
     protected String _originAttribute;
-    protected boolean _generateOrigin;
     protected int _count;
     protected Resource _quickStartWebXml;
    
@@ -115,22 +115,6 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
     public String getOriginAttribute()
     {
         return _originAttribute;
-    }
-
-    /**
-     * @return the generateOrigin
-     */
-    public boolean isGenerateOrigin()
-    {
-        return _generateOrigin;
-    }
-
-    /**
-     * @param generateOrigin the generateOrigin to set
-     */
-    public void setGenerateOrigin(boolean generateOrigin)
-    {
-        _generateOrigin = generateOrigin;
     }
 
     public Resource getQuickStartWebXml()
@@ -200,7 +184,7 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
             out.tag("default-context-path", defaultContextPath);
 
         //add the name of the origin attribute, if it is being used
-        if (_generateOrigin)
+        if (StringUtil.isNotBlank(_originAttribute))
         {
             out.openTag("context-param")
                 .tag("param-name", ORIGIN)
@@ -765,7 +749,7 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
      */
     public Map<String, String> origin(MetaData md, String name)
     {
-        if (!(_generateOrigin || LOG.isDebugEnabled()))
+        if (StringUtil.isBlank(_originAttribute))
             return Collections.emptyMap();
         if (name == null)
             return Collections.emptyMap();

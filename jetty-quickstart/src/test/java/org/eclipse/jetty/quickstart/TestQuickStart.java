@@ -65,7 +65,6 @@ public class TestQuickStart
         WebAppContext quickstart = new WebAppContext();
         quickstart.addConfiguration(new QuickStartConfiguration());
         quickstart.setAttribute(QuickStartConfiguration.MODE, QuickStartConfiguration.Mode.GENERATE);
-        quickstart.setAttribute(QuickStartConfiguration.GENERATE_ORIGIN, Boolean.TRUE);
         quickstart.setAttribute(QuickStartConfiguration.ORIGIN_ATTRIBUTE, "origin");
         quickstart.setResourceBase(testDir.getAbsolutePath());
         ServletHolder fooHolder = new ServletHolder();
@@ -91,6 +90,7 @@ public class TestQuickStart
 
         server.setDryRun(false);
         server.start();
+        server.dumpStdErr();
 
         //verify that FooServlet is now mapped to / and not the DefaultServlet
         ServletHolder sh = webapp.getServletHandler().getMappedServlet("/").getResource();
@@ -113,7 +113,6 @@ public class TestQuickStart
         quickstart.setResourceBase(testDir.getAbsolutePath());
         quickstart.addConfiguration(new QuickStartConfiguration());
         quickstart.setAttribute(QuickStartConfiguration.MODE, QuickStartConfiguration.Mode.GENERATE);
-        quickstart.setAttribute(QuickStartConfiguration.GENERATE_ORIGIN, Boolean.TRUE);
         quickstart.setAttribute(QuickStartConfiguration.ORIGIN_ATTRIBUTE, "origin");
         quickstart.setDescriptor(MavenTestingUtils.getTestResourceFile("web.xml").getAbsolutePath());
         quickstart.setContextPath("/foo");

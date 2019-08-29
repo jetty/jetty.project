@@ -22,6 +22,5 @@ basehome:modules/jetty-quickstart.d/quickstart-webapp.xml|etc/quickstart-webapp.
 
 # Modes are AUTO, GENERATE, QUICKSTART
 # jetty.quickstart.mode=AUTO
-# jetty.quickstart.generateOrigin=true
 # jetty.quickstart.origin=origin
 # jetty.quickstart.xml=

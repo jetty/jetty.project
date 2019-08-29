@@ -49,10 +49,9 @@ public class QuickStartConfiguration extends AbstractConfiguration
     private static final Logger LOG = Log.getLogger(QuickStartConfiguration.class);
 
     public static final Set<Class<? extends Configuration>> __replacedConfigurations = new HashSet<>();
-    public static final String ORIGIN_ATTRIBUTE = "org.eclipse.jetty.quickstart.ORIGIN_ATTRIBUTE";
-    public static final String GENERATE_ORIGIN = "org.eclipse.jetty.quickstart.GENERATE_ORIGIN";
-    public static final String QUICKSTART_WEB_XML = "org.eclipse.jetty.quickstart.QUICKSTART_WEB_XML";
-    public static final String MODE = "org.eclipse.jetty.quickstart.QUICKSTART_MODE";
+    public static final String ORIGIN_ATTRIBUTE = "org.eclipse.jetty.quickstart.origin";
+    public static final String QUICKSTART_WEB_XML = "org.eclipse.jetty.quickstart.xml";
+    public static final String MODE = "org.eclipse.jetty.quickstart.mode";
 
     static
     {
@@ -86,7 +85,7 @@ public class QuickStartConfiguration extends AbstractConfiguration
 
     public QuickStartConfiguration()
     {
-        super(true);
+        super(false);
         addDependencies(WebInfConfiguration.class);
         addDependents(WebXmlConfiguration.class);
     }
@@ -155,9 +154,6 @@ public class QuickStartConfiguration extends AbstractConfiguration
     protected void configure(QuickStartGeneratorConfiguration generator, WebAppContext context) throws IOException
     {
         Object attr;
-        attr = context.getAttribute(GENERATE_ORIGIN);
-        if (attr != null)
-            generator.setGenerateOrigin(Boolean.valueOf(attr.toString()));
         attr = context.getAttribute(ORIGIN_ATTRIBUTE);
         if (attr != null)
             generator.setOriginAttribute(attr.toString());

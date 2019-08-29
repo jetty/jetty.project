@@ -34,7 +34,6 @@ import org.eclipse.jetty.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.plus.webapp.EnvConfiguration;
 import org.eclipse.jetty.plus.webapp.PlusConfiguration;
 import org.eclipse.jetty.quickstart.QuickStartConfiguration;
-import org.eclipse.jetty.quickstart.QuickStartConfiguration.Mode;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.FilterMapping;
 import org.eclipse.jetty.servlet.ServletHolder;
@@ -206,27 +205,6 @@ public class JettyWebAppContext extends WebAppContext
     {
         Object attr = getAttribute(QuickStartConfiguration.ORIGIN_ATTRIBUTE);
         return attr == null ? null : attr.toString();
-    }
-
-    /**
-     * Toggle whether or not the origin attribute will be generated into the
-     * xml.
-     *
-     * @param generateOrigin if true then the origin of each xml element is
-     * added, otherwise it is omitted.
-     */
-    public void setGenerateOrigin(boolean generateOrigin)
-    {
-        setAttribute(QuickStartConfiguration.GENERATE_ORIGIN, generateOrigin);
-    }
-
-    /**
-     * @return true if the origin attribute will be generated, false otherwise
-     */
-    public boolean isGenerateOrigin()
-    {
-        Object attr = getAttribute(QuickStartConfiguration.GENERATE_ORIGIN);
-        return attr == null ? false : Boolean.valueOf(attr.toString());
     }
 
     public List<Overlay> getOverlays()
