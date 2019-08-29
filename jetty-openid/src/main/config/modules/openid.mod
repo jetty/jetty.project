@@ -19,7 +19,7 @@ etc/jetty-openid.xml
 
 [ini-template]
 ## Identity Provider
-# jetty.openid.identityProvider=https://accounts.google.com/
+# jetty.openid.openIdProvider=https://accounts.google.com/
 
 ## Client ID
 # jetty.openid.clientId=1051168419525-5nl60mkugb77p9j194mrh287p1e0ahfi.apps.googleusercontent.com

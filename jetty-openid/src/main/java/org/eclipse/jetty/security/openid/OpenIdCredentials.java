@@ -73,11 +73,25 @@ public class OpenIdCredentials
         {
             try
             {
-                String jwt = getJWT();
-                decodeJWT(jwt);
-
+                response = claimAuthCode(authCode);
                 if (LOG.isDebugEnabled())
-                    LOG.debug("userInfo {}", claims);
+                    LOG.debug("response: {}", response);
+
+                String idToken = (String)response.get("id_token");
+                if (idToken == null)
+                    throw new IllegalArgumentException("no id_token");
+
+                String accessToken = (String)response.get("access_token");
+                if (accessToken == null)
+                    throw new IllegalArgumentException("no access_token");
+
+                String tokenType = (String)response.get("token_type");
+                if (!"Bearer".equalsIgnoreCase(tokenType))
+                    throw new IllegalArgumentException("invalid token_type");
+
+                claims = decodeJWT(idToken);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("userClaims {}", claims);
             }
             finally
             {
@@ -92,18 +106,20 @@ public class OpenIdCredentials
         if (authCode != null)
             return false;
 
-        // Check audience should be clientId
+        // The aud (audience) Claim MUST contain the client_id value.
         String audience = (String)claims.get("aud");
-        if (!configuration.getIdentityProvider().equals(audience))
+        if (!configuration.getClientId().equals(audience))
         {
-            LOG.warn("Audience claim MUST contain the value of the Issuer Identifier for the OP", this);
-            //return false;
+            LOG.warn("Audience claim MUST contain the value of the Issuer Identifier for the OP");
+            return false;
         }
 
+        // TODO: this does not work for microsoft
+        // Issuer Identifier for the OpenID Provider MUST exactly match the value of the iss (issuer) Claim.
         String issuer = (String)claims.get("iss");
-        if (!configuration.getClientId().equals(issuer))
+        if (!configuration.getOpenIdProvider().equals(issuer))
         {
-            LOG.warn("Issuer claim MUST be the client_id of the OAuth Client {}", this);
+            //LOG.warn("");
             //return false;
         }
 
@@ -120,7 +136,7 @@ public class OpenIdCredentials
         return true;
     }
 
-    private void decodeJWT(String jwt) throws IOException
+    protected Map<String, Object> decodeJWT(String jwt) throws IOException
     {
         if (LOG.isDebugEnabled())
             LOG.debug("decodeJWT {}", jwt);
@@ -136,46 +152,41 @@ public class OpenIdCredentials
         Map<String, Object> jwtHeader = (Map)JSON.parse(jwtHeaderString);
         LOG.debug("JWT Header: {}", jwtHeader);
 
-        // validate signature
-        LOG.warn("Signature NOT validated {}", jwtSignature);
+        /* If the ID Token is received via direct communication between the Client
+         and the Token Endpoint (which it is in this flow), the TLS server validation
+          MAY be used to validate the issuer in place of checking the token signature. */
+        if (LOG.isDebugEnabled())
+            LOG.debug("JWT signature not validated {}", jwtSignature);
 
-        // response should be a set of name/value pairs
-        claims = (Map)JSON.parse(jwtClaimString);
+        return (Map)JSON.parse(jwtClaimString);
     }
 
-    private String getJWT() throws IOException
+    private Map<String, Object> claimAuthCode(String authCode) throws IOException
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("getJWT {}", authCode);
+            LOG.debug("claimAuthCode {}", authCode);
 
-        // Use the auth code to get the id_token from the OpenID Provider
+        // Use the authorization code to get the id_token from the OpenID Provider
         String urlParameters = "code=" + authCode +
             "&client_id=" + configuration.getClientId() +
             "&client_secret=" + configuration.getClientSecret() +
             "&redirect_uri=" + redirectUri +
             "&grant_type=authorization_code";
 
-        byte[] payload = urlParameters.getBytes(StandardCharsets.UTF_8);
         URL url = new URL(configuration.getTokenEndpoint());
         HttpURLConnection connection = (HttpURLConnection)url.openConnection();
         connection.setDoOutput(true);
         connection.setRequestMethod("POST");
-        connection.setRequestProperty("Host", configuration.getIdentityProvider());
+        connection.setRequestProperty("Host", configuration.getOpenIdProvider());
         connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
         connection.setRequestProperty("charset", "utf-8");
 
         try (DataOutputStream wr = new DataOutputStream(connection.getOutputStream()))
         {
-            wr.write(payload);
+            wr.write(urlParameters.getBytes(StandardCharsets.UTF_8));
         }
 
-        // get response and extract id_token jwt
         InputStream content = (InputStream)connection.getContent();
-        response = (Map)JSON.parse(IO.toString(content));
-
-        if (LOG.isDebugEnabled())
-            LOG.debug("responseMap: {}", response);
-
-        return (String)response.get("id_token");
+        return (Map)JSON.parse(IO.toString(content));
     }
 }

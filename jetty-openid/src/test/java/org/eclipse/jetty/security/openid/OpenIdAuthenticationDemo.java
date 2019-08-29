@@ -161,13 +161,14 @@ public class OpenIdAuthenticationDemo
         securityHandler.addConstraintMapping(loginMapping);
         securityHandler.addConstraintMapping(adminMapping);
 
-
+        /**/
         // Google Authentication
         OpenIdConfiguration configuration = new OpenIdConfiguration(
             "https://accounts.google.com/",
             "1051168419525-5nl60mkugb77p9j194mrh287p1e0ahfi.apps.googleusercontent.com",
             "XT_MIsSv_aUCGollauCaJY8S");
         configuration.addScopes("email", "profile");
+        /**/
 
         /*
         // Microsoft Authentication
@@ -175,7 +176,7 @@ public class OpenIdAuthenticationDemo
             "https://login.microsoftonline.com/common/v2.0",
             "5f05dea8-2bd9-45de-b30f-cf5c102b8784",
             "IfhQJKi-5[vxhh_=ldqt0y4PkV3z_1ca");
-        */
+         */
 
         /*
         // Yahoo Authentication

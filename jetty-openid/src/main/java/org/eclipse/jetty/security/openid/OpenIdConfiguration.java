@@ -31,7 +31,7 @@ public class OpenIdConfiguration
 {
     private static String CONFIG_PATH = "/.well-known/openid-configuration";
 
-    private final String identityProvider;
+    private final String openIdProvider;
     private final String authEndpoint;
     private final String tokenEndpoint;
     private final String clientId;
@@ -42,7 +42,7 @@ public class OpenIdConfiguration
 
     public OpenIdConfiguration(String provider, String clientId, String clientSecret)
     {
-        this.identityProvider = provider;
+        this.openIdProvider = provider;
         this.clientId = clientId;
         this.clientSecret = clientSecret;
 
@@ -93,9 +93,9 @@ public class OpenIdConfiguration
         return clientSecret;
     }
 
-    public String getIdentityProvider()
+    public String getOpenIdProvider()
     {
-        return identityProvider;
+        return openIdProvider;
     }
 
     public String getTokenEndpoint()
