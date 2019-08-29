@@ -108,7 +108,7 @@ public class PreconfigureQuickStartWar
                                 new PlusConfiguration(),
                                 new AnnotationConfiguration());
         webapp.setAttribute(QuickStartConfiguration.MODE, QuickStartConfiguration.Mode.GENERATE);
-        webapp.setAttribute(QuickStartConfiguration.ORIGIN_ATTRIBUTE, null);
+        webapp.setAttribute(QuickStartConfiguration.ORIGIN_ATTRIBUTE, "");
 
         if (xml != null)
         {
