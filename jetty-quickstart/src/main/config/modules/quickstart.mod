@@ -6,10 +6,7 @@ deployment of preconfigured webapplications.
 
 [depend]
 server
-plus
-annotations
 deploy
-
 
 [lib]
 lib/jetty-quickstart-${jetty.version}.jar

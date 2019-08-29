@@ -62,7 +62,13 @@ public class QuickStartConfiguration extends AbstractConfiguration
         __replacedConfigurations.add(org.eclipse.jetty.annotations.AnnotationConfiguration.class);
     }
 
-    public static void setMode(Server server, String mode)
+    /** Configure the server for the quickstart mode.
+     * <p>In practise this means calling <code>server.setDryRun(true)</code> for GENERATE mode</p>
+     * @see Server#setDryRun(boolean)
+     * @param server The server to configure
+     * @param mode The quickstart mode
+     */
+    public static void configureMode(Server server, String mode)
     {
         if (mode != null && Mode.valueOf(mode) == Mode.GENERATE)
             server.setDryRun(true);
@@ -109,9 +115,9 @@ public class QuickStartConfiguration extends AbstractConfiguration
             case GENERATE:
             {
                 if (quickStartWebXml.exists())
-                    LOG.info("Regenerating quickstart xml for {}", context);
+                    LOG.info("Regenerating {}", quickStartWebXml);
                 else
-                    LOG.info("Generating quickstart xml for {}", context);
+                    LOG.info("Generating {}", quickStartWebXml);
                 
                 super.preConfigure(context);
                 //generate the quickstart file then abort
@@ -128,7 +134,8 @@ public class QuickStartConfiguration extends AbstractConfiguration
                 }
                 else
                 {
-                    LOG.info("No quickstart xml file, starting webapp {} normally", context);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("No quickstart xml file, starting webapp {} normally", context);
                     super.preConfigure(context);
                 }
                 break;
@@ -214,16 +221,6 @@ public class QuickStartConfiguration extends AbstractConfiguration
         if (attr instanceof Resource)
             return (Resource)attr;
 
-        if (attr != null)
-        {
-            String tmp = attr.toString();
-            if (!StringUtil.isBlank(tmp))
-            {
-                Resource qstart = (Resource.newResource(attr.toString()));
-                context.setAttribute(QUICKSTART_WEB_XML, qstart);
-            }
-        }
-
         Resource webInf = context.getWebInf();
         if (webInf == null || !webInf.exists())
         {
@@ -231,9 +228,26 @@ public class QuickStartConfiguration extends AbstractConfiguration
             tmp.mkdirs();
             webInf = context.getWebInf();
         }
-        
-        LOG.debug("webinf={}", webInf);
-        Resource qstart = webInf.addPath("quickstart-web.xml");
+
+        Resource qstart;
+        if (attr == null || StringUtil.isBlank(attr.toString()))
+        {
+            qstart = webInf.addPath("quickstart-web.xml");
+        }
+        else
+        {
+            try
+            {
+                // Try a relative resolution
+                qstart = Resource.newResource(webInf.getFile().toPath().resolve(attr.toString()));
+            }
+            catch (Throwable th)
+            {
+                // try as a resource
+                qstart = (Resource.newResource(attr.toString()));
+            }
+            context.setAttribute(QUICKSTART_WEB_XML, qstart);
+        }
         context.setAttribute(QUICKSTART_WEB_XML, qstart);
         return  qstart;
     }

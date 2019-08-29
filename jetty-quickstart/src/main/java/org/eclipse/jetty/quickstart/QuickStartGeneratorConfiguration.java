@@ -52,8 +52,6 @@ import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlet.ServletMapping;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
-import org.eclipse.jetty.util.component.LifeCycle;
-import org.eclipse.jetty.util.component.LifeCycle.Listener;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
@@ -63,6 +61,7 @@ import org.eclipse.jetty.webapp.MetaData;
 import org.eclipse.jetty.webapp.MetaData.OriginInfo;
 import org.eclipse.jetty.webapp.MetaInfConfiguration;
 import org.eclipse.jetty.webapp.WebAppContext;
+import org.eclipse.jetty.webapp.WebInfConfiguration;
 import org.eclipse.jetty.xml.XmlAppendable;
 
 /**
@@ -792,14 +791,12 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
     {
         MetaData metadata = context.getMetaData();
         metadata.resolve(context);
-
-        Resource quickStartWebXml = _quickStartWebXml;
-        if (_quickStartWebXml == null)
-            quickStartWebXml = context.getWebInf().addPath("/quickstart-web.xml");
-        try (FileOutputStream fos = new FileOutputStream(quickStartWebXml.getFile(), false))
+        try (FileOutputStream fos = new FileOutputStream(_quickStartWebXml.getFile(), false))
         {
             generateQuickStartWebXml(context, fos);
-            LOG.info("Quickstart generated for {}", context);
+            LOG.info("Generated {}", _quickStartWebXml);
+            if (context.getAttribute(WebInfConfiguration.TEMPORARY_RESOURCE_BASE) != null && !context.isPersistTempDirectory())
+                LOG.warn("Generated to non persistent location: " + _quickStartWebXml);
         }
     }
 

@@ -2,9 +2,8 @@
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
 
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
-
-  <Call class="org.eclipse.jetty.quickstart.QuickStartConfiguration" name="setMode">
-    <Arg><Ref refid="Server"/>></Arg>
+  <Call class="org.eclipse.jetty.quickstart.QuickStartConfiguration" name="configureMode">
+    <Arg><Ref refid="Server"/></Arg>
     <Arg><Property name="jetty.quickstart.mode"/></Arg>
   </Call>
 
@@ -26,8 +25,7 @@
        <Arg><Property name="jetty.quickstart.xml"/></Arg>
     </Call>
   </New>
-          
-          
+
   <Ref refid="DeploymentManager">
     <Call name="addLifeCycleBinding">
       <Arg>
