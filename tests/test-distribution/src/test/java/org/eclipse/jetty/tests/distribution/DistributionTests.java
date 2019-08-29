@@ -64,7 +64,7 @@ public class DistributionTests extends AbstractDistributionTest
             int port = distribution.freePort();
             try (DistributionTester.Run run2 = distribution.start("jetty.http.port=" + port))
             {
-                assertTrue(run2.awaitConsoleLogsFor("Started @", 10, TimeUnit.SECONDS));
+                assertTrue(run2.awaitConsoleLogsFor("Started Server@", 10, TimeUnit.SECONDS));
 
                 startHttpClient();
                 ContentResponse response = client.GET("http://localhost:" + port);
@@ -102,7 +102,7 @@ public class DistributionTests extends AbstractDistributionTest
      
             try (DistributionTester.Run run2 = distribution.start("jetty.quickstart.mode=GENERATE"))
             {
-                assertTrue(run2.awaitConsoleLogsFor("Quickstart generated", 10, TimeUnit.SECONDS));
+                assertTrue(run2.awaitConsoleLogsFor("QuickStartGeneratorConfiguration:main: Generated", 10, TimeUnit.SECONDS));
                 Path unpackedWebapp = distribution.getJettyBase().resolve("webapps").resolve("test");
                 assertTrue(Files.exists(unpackedWebapp));
                 Path webInf = unpackedWebapp.resolve("WEB-INF");
@@ -115,7 +115,7 @@ public class DistributionTests extends AbstractDistributionTest
                 
                 try (DistributionTester.Run run3 = distribution.start("jetty.http.port=" + port, "jetty.quickstart.mode=QUICKSTART"))
                 {
-                    assertTrue(run3.awaitConsoleLogsFor("Started @", 10, TimeUnit.SECONDS));
+                    assertTrue(run3.awaitConsoleLogsFor("Started Server@", 10, TimeUnit.SECONDS));
 
                     startHttpClient();
                     ContentResponse response = client.GET("http://localhost:" + port + "/test/index.jsp");
@@ -152,7 +152,7 @@ public class DistributionTests extends AbstractDistributionTest
             int port = distribution.freePort();
             try (DistributionTester.Run run2 = distribution.start("jetty.http.port=" + port))
             {
-                assertTrue(run2.awaitConsoleLogsFor("Started @", 10, TimeUnit.SECONDS));
+                assertTrue(run2.awaitConsoleLogsFor("Started Server@", 10, TimeUnit.SECONDS));
 
                 startHttpClient();
                 ContentResponse response = client.GET("http://localhost:" + port + "/test/index.jsp");
@@ -193,7 +193,7 @@ public class DistributionTests extends AbstractDistributionTest
             };
             try (DistributionTester.Run run2 = distribution.start(args2))
             {
-                assertTrue(run2.awaitConsoleLogsFor("Started @", 10, TimeUnit.SECONDS));
+                assertTrue(run2.awaitConsoleLogsFor("Started Server@", 10, TimeUnit.SECONDS));
 
                 startHttpClient();
                 ContentResponse response = client.GET("http://localhost:" + port + "/test/index.jsp");
@@ -229,7 +229,7 @@ public class DistributionTests extends AbstractDistributionTest
             int port = distribution.freePort();
             try (DistributionTester.Run run2 = distribution.start("jetty.http.port=" + port))
             {
-                assertTrue(run2.awaitConsoleLogsFor("Started @", 10, TimeUnit.SECONDS));
+                assertTrue(run2.awaitConsoleLogsFor("Started Server@", 10, TimeUnit.SECONDS));
 
                 HTTP2Client h2Client = new HTTP2Client();
                 startHttpClient(() -> new HttpClient(new HttpClientTransportOverHTTP2(h2Client)));
@@ -281,7 +281,7 @@ public class DistributionTests extends AbstractDistributionTest
 
             try (DistributionTester.Run run2 = distribution.start("jetty.unixsocket.path=" + sockFile.toString()))
             {
-                assertTrue(run2.awaitConsoleLogsFor("Started @", 10, TimeUnit.SECONDS));
+                assertTrue(run2.awaitConsoleLogsFor("Started Server@", 10, TimeUnit.SECONDS));
 
                 startHttpClient(() -> new HttpClient(new HttpClientTransportOverUnixSockets(sockFile.toString())));
                 ContentResponse response = client.GET("http://localhost/test/index.jsp");
@@ -324,7 +324,7 @@ public class DistributionTests extends AbstractDistributionTest
             int port = distribution.freePort();
             try (DistributionTester.Run run2 = distribution.start("jetty.http.port=" + port))
             {
-                assertTrue(run2.awaitConsoleLogsFor("Started @", 10, TimeUnit.SECONDS));
+                assertTrue(run2.awaitConsoleLogsFor("Started Server@", 10, TimeUnit.SECONDS));
 
                 startHttpClient();
                 ContentResponse response = client.GET("http://localhost:" + port + "/test/index.jsp");
