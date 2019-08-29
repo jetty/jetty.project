@@ -92,7 +92,7 @@ public class SecureWebSocketContainerExample
     public static WebSocketContainer getConfiguredWebSocketContainer() throws Exception
     {
         URL jettyHttpClientConfigUrl = Thread.currentThread().getContextClassLoader()
-            .getResource("examples/jetty-websocket-httpclient.xml");
+            .getResource("jetty-websocket-httpclient.xml");
 
         if (jettyHttpClientConfigUrl == null)
         {
