@@ -7,6 +7,16 @@
     <Arg><Property name="jetty.quickstart.mode"/></Arg>
   </Call>
 
+  <Ref refid="webappprovider">
+    <Get name="configurationManager">
+      <Get name="properties">
+        <Put name="jetty.quickstart.mode"><Property name="jetty.quickstart.mode"/></Put>
+        <Put name="jetty.quickstart.origin"><Property name="jetty.quickstart.origin"/></Put>
+        <Put name="jetty.quickstart.xml"><Property name="jetty.quickstart.xml"/></Put>
+      </Get>
+    </Get>
+  </Ref>
+
   <Ref refid="DeploymentManager">
     <Call name="addLifeCycleBinding">
       <Arg>
@@ -14,20 +24,6 @@
           <Set name="jettyXml">
             <Property name="jetty.base"/>/etc/quickstart-webapp.xml
           </Set>
-          <Get name="properties">
-            <Call name="put">
-              <Arg>jetty.quickstart.mode</Arg>
-              <Arg><Property name="jetty.quickstart.mode"/></Arg>
-            </Call>
-            <Call name="put">
-              <Arg>jetty.quickstart.origin</Arg>
-              <Arg><Property name="jetty.quickstart.origin"/></Arg>
-            </Call>
-            <Call name="put">
-              <Arg>jetty.quickstart.xml</Arg>
-              <Arg><Property name="jetty.quickstart.xml"/></Arg>
-            </Call>
-          </Get>
         </New>
       </Arg>
     </Call>

@@ -114,6 +114,8 @@ public class JettyWebAppContext extends WebAppContext
         addConfiguration(new EnvConfiguration());
         addConfiguration(new PlusConfiguration());
         addConfiguration(new AnnotationConfiguration());
+
+        setAttribute(QuickStartConfiguration.ORIGIN_ATTRIBUTE, "origin");
     }
 
     public void setContainerIncludeJarPattern(String pattern)

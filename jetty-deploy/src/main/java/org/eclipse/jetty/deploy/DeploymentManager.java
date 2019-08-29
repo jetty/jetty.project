@@ -172,7 +172,7 @@ public class DeploymentManager extends ContainerLifeCycle
         for (AppProvider provider : providers)
         {
             if (_providers.add(provider))
-                addBean(provider);
+                addBean(provider, true);
         }
     }
 
@@ -186,7 +186,7 @@ public class DeploymentManager extends ContainerLifeCycle
         if (isRunning())
             throw new IllegalStateException();
         _providers.add(provider);
-        addBean(provider);
+        addBean(provider, true);
     }
 
     public void setLifeCycleBindings(Collection<AppLifeCycle.Binding> bindings)

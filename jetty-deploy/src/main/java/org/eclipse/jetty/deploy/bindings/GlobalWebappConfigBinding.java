@@ -18,12 +18,11 @@
 
 package org.eclipse.jetty.deploy.bindings;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.deploy.AppLifeCycle;
+import org.eclipse.jetty.deploy.AppProvider;
 import org.eclipse.jetty.deploy.graph.Node;
+import org.eclipse.jetty.deploy.providers.WebAppProvider;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -50,7 +49,6 @@ public class GlobalWebappConfigBinding implements AppLifeCycle.Binding
     private static final Logger LOG = Log.getLogger(GlobalWebappConfigBinding.class);
 
     private String _jettyXml;
-    private Map<String,String> _properties = new HashMap<>();
 
     public String getJettyXml()
     {
@@ -68,14 +66,6 @@ public class GlobalWebappConfigBinding implements AppLifeCycle.Binding
         return new String[]{"deploying"};
     }
     
-    /**
-     * @return a modifiable list of properties
-     */
-    public Map<String,String> getProperties()
-    {
-        return _properties;
-    }
-
     @Override
     public void processBinding(Node node, App app) throws Exception
     {
@@ -106,9 +96,15 @@ public class GlobalWebappConfigBinding implements AppLifeCycle.Binding
                 XmlConfiguration jettyXmlConfig = new XmlConfiguration(globalContextSettings);
                 Resource resource = Resource.newResource(app.getOriginId());
                 app.getDeploymentManager().scope(jettyXmlConfig, resource);
+                AppProvider appProvider = app.getAppProvider();
+                if (appProvider instanceof WebAppProvider)
+                {
+                    WebAppProvider webAppProvider = ((WebAppProvider)appProvider);
+                    if (webAppProvider.getConfigurationManager() != null)
+                        jettyXmlConfig.getProperties().putAll(webAppProvider.getConfigurationManager().getProperties());
+                }
                 WebAppClassLoader.runWithServerClassAccess(() ->
                 {
-                    jettyXmlConfig.getProperties().putAll(_properties);
                     jettyXmlConfig.configure(context);
                     return null;
                 });

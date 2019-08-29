@@ -75,9 +75,9 @@ public class QuickStartConfiguration extends AbstractConfiguration
 
     public enum Mode
     {
-        GENERATE,  // Generate quickstart and then stop
-        AUTO,      // Use a quickstart if present, normal start otherwise
-        QUICKSTART // Use quickstart
+        GENERATE,  // Generate quickstart-web.xml and then stop
+        AUTO,      // use or generate depending on the existance of quickstart-web.xml
+        QUICKSTART // Use quickstart-web.xml
     }
 
     private Mode _mode = Mode.AUTO;
