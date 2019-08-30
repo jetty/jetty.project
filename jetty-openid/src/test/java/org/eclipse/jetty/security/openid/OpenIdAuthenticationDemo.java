@@ -18,7 +18,13 @@
 
 package org.eclipse.jetty.security.openid;
 
+import java.io.BufferedWriter;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.security.Principal;
 import java.util.Map;
 import javax.servlet.http.HttpServlet;
@@ -29,6 +35,7 @@ import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.security.ConstraintMapping;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
+import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.security.Constraint;
@@ -187,7 +194,7 @@ public class OpenIdAuthenticationDemo
         configuration.addScopes("sdps-r");
         */
 
-        /*
+
         // Create a realm.properties file to associate roles with users
         Path tmpDir = Paths.get(System.getProperty("java.io.tmpdir"));
         Path tmpPath = Files.createTempFile(tmpDir, "realm", ".properties");
@@ -202,10 +209,9 @@ public class OpenIdAuthenticationDemo
         HashLoginService hashLoginService = new HashLoginService();
         hashLoginService.setConfig(tmpPath.toAbsolutePath().toString());
         hashLoginService.setHotReload(true);
-         */
 
         // Configure OpenIdLoginService optionally providing a base LoginService to provide user roles
-        OpenIdLoginService loginService = new OpenIdLoginService(configuration);//, hashLoginService);
+        OpenIdLoginService loginService = new OpenIdLoginService(configuration, hashLoginService);
         securityHandler.setLoginService(loginService);
 
         Authenticator authenticator = new OpenIdAuthenticator(configuration, "/error");

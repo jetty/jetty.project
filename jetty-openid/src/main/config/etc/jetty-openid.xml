@@ -18,6 +18,11 @@
       <New class="org.eclipse.jetty.security.openid.OpenIdLoginService">
         <Arg><Ref refid="OpenIdConfiguration"/></Arg>
         <Arg><Ref refid="BaseLoginService"/></Arg>
+        <Call name="authenticateNewUsers">
+          <Arg type="boolean">
+            <Property name="jetty.openid.authenticateNewUsers" default="false"/>
+          </Arg>
+        </Call>
       </New>
     </Arg>
   </Call>

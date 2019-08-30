@@ -37,6 +37,7 @@ public class OpenIdLoginService extends ContainerLifeCycle implements LoginServi
     private final OpenIdConfiguration _configuration;
     private final LoginService loginService;
     private IdentityService identityService;
+    private boolean authenticateNewUsers;
 
     public OpenIdLoginService(OpenIdConfiguration configuration)
     {
@@ -90,12 +91,20 @@ public class OpenIdLoginService extends ContainerLifeCycle implements LoginServi
         {
             UserIdentity userIdentity = loginService.login(openIdCredentials.getUserId(), "", req);
             if (userIdentity == null)
+            {
+                if (authenticateNewUsers)
+                    return getIdentityService().newUserIdentity(subject, userPrincipal, new String[0]);
                 return null;
-
+            }
             return new OpenIdUserIdentity(subject, userPrincipal, userIdentity);
         }
 
         return identityService.newUserIdentity(subject, userPrincipal, new String[0]);
+    }
+
+    public void authenticateNewUsers(boolean authenticateNewUsers)
+    {
+        this.authenticateNewUsers = authenticateNewUsers;
     }
 
     @Override

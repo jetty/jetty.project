@@ -18,14 +18,17 @@ etc/openid-baseloginservice.xml
 etc/jetty-openid.xml
 
 [ini-template]
-## Identity Provider
+## The OpenID Identity Provider
 # jetty.openid.openIdProvider=https://accounts.google.com/
 
-## Client ID
+## The Client Identifier
 # jetty.openid.clientId=1051168419525-5nl60mkugb77p9j194mrh287p1e0ahfi.apps.googleusercontent.com
 
-## Client Secret
+## The Client Secret
 # jetty.openid.clientSecret=XT_MIsSv_aUCGollauCaJY8S
 
-## Scopes
+## Additional Scopes to Request
 # jetty.openid.scopes=email,profile
+
+## Whether to Authenticate users not found by base LoginService
+# jetty.openid.authenticateNewUsers=false

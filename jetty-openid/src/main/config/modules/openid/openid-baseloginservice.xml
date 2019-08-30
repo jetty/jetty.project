@@ -3,7 +3,7 @@
 <Configure id="BaseLoginService">
   <!-- Optional code to configure the base LoginService used by the OpenIdLoginService
   <New id="BaseLoginService" class="org.eclipse.jetty.security.HashLoginService">
-    <Set name="config">/Users/Lachlan/webtide/jetty-base/etc/realm.properties</Set>
+    <Set name="config"><SystemProperty name="jetty.home" default="."/>/etc/realm.properties</Set>
     <Set name="hotReload">true</Set>
   </New>
   -->
