@@ -110,7 +110,7 @@ If we take a look at it's contents, we will see the following:
 $ cat start.d/http.ini
 # ---------------------------------------
 # Module: http
-# Enables a HTTP connector on the server.
+# Enables an HTTP connector on the server.
 # By default HTTP/1 is support, but HTTP2C can
 # be added to the connector with the http2c module.
 # ---------------------------------------
@@ -161,7 +161,7 @@ For example:
 $ cat start.d/http.ini
 # ---------------------------------------
 # Module: http
-# Enables a HTTP connector on the server.
+# Enables an HTTP connector on the server.
 # By default HTTP/1 is support, but HTTP2C can
 # be added to the connector with the http2c module.
 # ---------------------------------------
@@ -185,7 +185,7 @@ So let's take a quick look at the associated `$JETTY_HOME/modules/http.mod` file
 ----
 $ cat $JETTY_HOME/modules/http.mod
 [description]
-Enables a HTTP connector on the server.
+Enables an HTTP connector on the server.
 By default HTTP/1 is support, but HTTP2C can
 be added to the connector with the http2c module.
 
@@ -229,13 +229,13 @@ $ cat $JETTY_HOME/etc/jetty-http.xml
 
 <!-- ============================================================= -->
 <!-- Configure the Jetty Server instance with an ID "Server"       -->
-<!-- by adding a HTTP connector.                                   -->
+<!-- by adding an HTTP connector.                                   -->
 <!-- This configuration must be used in conjunction with jetty.xml -->
 <!-- ============================================================= -->
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
 
   <!-- =========================================================== -->
-  <!-- Add a HTTP Connector.                                       -->
+  <!-- Add an HTTP Connector.                                       -->
   <!-- Configure an o.e.j.server.ServerConnector with a single     -->
   <!-- HttpConnectionFactory instance using the common httpConfig  -->
   <!-- instance defined in jetty.xml                               -->
@@ -295,7 +295,7 @@ Context XML files::
   These may be standard web applications or bespoke contexts created from special purpose handlers.
 
 web.xml::
-  The http://en.wikipedia.org/wiki/Servlet[Servlet] Specification defines the http://en.wikipedia.org/wiki/Web.xml[`web.xml`] deployment descriptor that defines and configures the filters, servlets and resources a http://en.wikipedia.org/wiki/Web_application[web application] uses.
+  The http://en.wikipedia.org/wiki/Servlet[Servlet] Specification defines the http://en.wikipedia.org/wiki/Web.xml[`web.xml`] deployment descriptor that defines and configures the filters, servlets and resources an http://en.wikipedia.org/wiki/Web_application[web application] uses.
   The Jetty `WebAppContext` component uses this XML format to:
 
   * Set up the default configuration of a web application context.

@@ -21,7 +21,7 @@
 
 Jetty provides the ability to wire up WebSocket endpoints to Servlet Path Specs via the use of a WebSocketServlet bridge servlet.
 
-Internally, Jetty manages the HTTP Upgrade to WebSocket and migration from a HTTP Connection to a WebSocket Connection.
+Internally, Jetty manages the HTTP Upgrade to WebSocket and migration from an HTTP Connection to a WebSocket Connection.
 
 This will only work when running within the Jetty Container (unlike past Jetty technologies, you cannot get Jetty WebSocket server functionality running Jetty within other containers like JBoss, Tomcat, or WebLogic).
 

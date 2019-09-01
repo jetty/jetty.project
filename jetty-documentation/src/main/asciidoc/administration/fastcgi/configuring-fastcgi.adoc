@@ -169,7 +169,7 @@ You will need to change that to be `https://localhost:8443` from the WordPress a
 The minimal modules required to run WordPress with Jetty on HTTP/2 are therefore: `http2`, `http`, `fcgi` and `deploy`.
 These will setup a clear text connector on port 8080 for HTTP/1.1 and a TLS connector on port 8443 for HTTP/2 and HTTP/1.1.
 
-At this point, you can start Jetty (see xref:startup[]), hit `http://localhost:8080` with your browser and enjoy WordPress via HTTP/2 using a HTTP/2 enabled browser:
+At this point, you can start Jetty (see xref:startup[]), hit `http://localhost:8080` with your browser and enjoy WordPress via HTTP/2 using an HTTP/2 enabled browser:
 
 [source, screen, subs="{sub-order}"]
 ....
@@ -177,4 +177,4 @@ $ cd $JETTY_BASE
 $ java -jar $JETTY_HOME/start.jar
 ....
 
-If you don't have a HTTP/2 enabled browser, WordPress will still be available over HTTP/1.1.
+If you don't have an HTTP/2 enabled browser, WordPress will still be available over HTTP/1.1.

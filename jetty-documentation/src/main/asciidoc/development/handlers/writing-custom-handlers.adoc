@@ -86,7 +86,7 @@ The dispatch argument indicates the state of the handling of the call and may be
 * `REQUEST == 1` - An original request received from a connector.
 * `FORWARD == 2` - A request being forwarded by a RequestDispatcher.
 * `INCLUDE == 4` - A request being included by a RequestDispatcher.
-* `ERROR == 8` - A request being forwarded to a error handler by the container.
+* `ERROR == 8` - A request being forwarded to an error handler by the container.
 
 These mostly have significance for servlet and related handlers.
 For example, the security handler only applies authentication and authorization to REQUEST dispatches.

@@ -149,6 +149,6 @@ For example:
 You can bind four types of objects into a Jetty JNDI reference:
 
 * An ordinary POJO instance.
-* A http://docs.oracle.com/javase/1.5.0/docs/api/javax/naming/Reference.html[javax.naming.Reference] instance.
+* An http://docs.oracle.com/javase/1.5.0/docs/api/javax/naming/Reference.html[javax.naming.Reference] instance.
 * An object instance that implements the http://docs.oracle.com/javase/1.5.0/docs/api/javax/naming/Referenceable.html[javax.naming.Referenceable] interface.
 * A link between a name as referenced in `web.xml` and as referenced in the Jetty environment.

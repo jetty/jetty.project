@@ -39,7 +39,7 @@ This is best done by the container rather than the application.
 ===== Asynchronous Waiting
 
 The main use-case for asynchronous servlets is waiting for non-IO events or resources.
-Many web applications need to wait at some stage during the processing of a HTTP request, for example:
+Many web applications need to wait at some stage during the processing of an HTTP request, for example:
 
 * Waiting for a resource to be available before processing the request (e.g., thread, JDBC Connection).
 

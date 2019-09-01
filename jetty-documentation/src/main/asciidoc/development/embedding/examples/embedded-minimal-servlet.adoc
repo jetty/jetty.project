@@ -35,7 +35,7 @@ include::{SRCDIR}/examples/embedded/src/main/java/org/eclipse/jetty/embedded/Min
 Start things up! By using the `server.join()` the server thread will join with the current thread.
 See link:http://docs.oracle.com/javase/1.5.0/docs/api/java/lang/Thread.html#join()[`Thread.join()`] for more details.
 
-It is really simple to create useful servlets for testing behaviors. Sometimes you need a http server to run a unit test against that will return test content and wiring up a servlet like this makes it trivial.
+It is really simple to create useful servlets for testing behaviors. Sometimes you need an http server to run a unit test against that will return test content and wiring up a servlet like this makes it trivial.
 
 After you have started things up you should be able to navigate to http://localhost:8080/ and you are good to go.
 

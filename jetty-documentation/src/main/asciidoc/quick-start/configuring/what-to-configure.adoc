@@ -102,7 +102,7 @@ ____
 Configuration values that are common to all contexts are:
 
 contextPath::
-  The contextPath is a URL prefix that identifies which context a HTTP request is destined for. 
+  The contextPath is a URL prefix that identifies which context an HTTP request is destined for.
   For example, if a context has a context path `/foo`, it handles requests to `/foo`, `/foo/index.html`,
   `/foo/bar/`, and `/foo/bar/image.png` but it does not handle requests like `/`, `/other/`, or `/favicon.ico`. 
   A context with a context path of / is called the root context.

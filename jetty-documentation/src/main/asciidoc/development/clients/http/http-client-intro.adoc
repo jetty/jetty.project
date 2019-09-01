@@ -28,7 +28,7 @@ However, when all you need to do is to perform a `GET` request to a resource, Je
 where the thread that issued the request blocks until the request/response conversation is complete.
 
 Jetty's HTTP client supports different link:#http-client-transport[transports]: HTTP/1.1, FastCGI and HTTP/2.
-This means that the semantic of a HTTP request (that is, " `GET` me the resource `/index.html` ") can be carried over the network in different formats.
+This means that the semantic of an HTTP request (that is, " `GET` me the resource `/index.html` ") can be carried over the network in different formats.
 The most common and default format is HTTP/1.1.
 That said, Jetty's HTTP client can carry the same request using the FastCGI format or the new HTTP/2 format.
 

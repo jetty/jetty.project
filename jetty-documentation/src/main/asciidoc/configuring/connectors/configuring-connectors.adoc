@@ -58,7 +58,7 @@ Modules for tag 'connector':
         XML: etc/jetty-connectionlimit.xml
 
      Module: http
-           : Enables a HTTP connector on the server.
+           : Enables an HTTP connector on the server.
            : By default HTTP/1 is support, but HTTP2C can
            : be added to the connector with the http2c module.
        Tags: connector, http
@@ -138,7 +138,7 @@ Modules for tag 'connector':
         XML: etc/jetty-unixsocket-forwarded.xml
 
      Module: unixsocket-http
-           : Adds a HTTP protocol support to the Unix Domain Socket connector.
+           : Adds an HTTP protocol support to the Unix Domain Socket connector.
            : It should be used when a proxy is forwarding either HTTP or decrypted
            : HTTPS traffic to the connector and may be used with the
            : unix-socket-http2c modules to upgrade to HTTP/2.
@@ -147,7 +147,7 @@ Modules for tag 'connector':
         XML: etc/jetty-unixsocket-http.xml
 
      Module: unixsocket-http2c
-           : Adds a HTTP2C connetion factory to the Unix Domain Socket Connector
+           : Adds an HTTP2C connetion factory to the Unix Domain Socket Connector
            : It can be used when either the proxy forwards direct
            : HTTP/2C (unecrypted) or decrypted HTTP/2 traffic.
        Tags: connector, http2
@@ -230,7 +230,7 @@ For example, if we examine the `http.ini` file in our `start.d` directory create
 ....
 # ---------------------------------------
 # Module: http
-# Enables a HTTP connector on the server.
+# Enables an HTTP connector on the server.
 # By default HTTP/1 is support, but HTTP2C can
 # be added to the connector with the http2c module.
 # ---------------------------------------
@@ -517,7 +517,7 @@ The information about the client connection is sent as a small data frame on eac
 In Jetty, this protocol can be handled by the link:{JDURL}/org/eclipse/jetty/server/ProxyConnectionFactory.html[`ProxyConnectionFactory`] which parses the data frame and then instantiates the next `ConnectionFactory` on the connection with an end point that has been customized with the data obtained about the original client connection.
 The connection factory can be added to any link:{JDURL}/org/eclipse/jetty/server/ServerConnector.html[`ServerConnector`] and should be the first link:{JDURL}/org/eclipse/jetty/server/ConnectionFactory.html[`ConnectionFactory`].
 
-An example of adding the factory to a HTTP connector is shown below:
+An example of adding the factory to an HTTP connector is shown below:
 
 [source, xml, subs="{sub-order}"]
 ----

@@ -31,7 +31,7 @@ CookieStore cookieStore = httpClient.getCookieStore();
 List<HttpCookie> cookies = cookieStore.get(URI.create("http://domain.com/path"));
 ----
 
-Applications can also programmatically set cookies as if they were returned from a HTTP response:
+Applications can also programmatically set cookies as if they were returned from an HTTP response:
 
 [source, java, subs="{sub-order}"]
 ----

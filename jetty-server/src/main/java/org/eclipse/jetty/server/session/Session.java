@@ -42,7 +42,7 @@ import org.eclipse.jetty.util.thread.Locker.Lock;
 /**
  * Session
  *
- * A heavy-weight Session object representing a HttpSession. Session objects
+ * A heavy-weight Session object representing an HttpSession. Session objects
  * relating to a context are kept in a {@link SessionCache}. The purpose of the
  * SessionCache is to keep the working set of Session objects in memory so that
  * they may be accessed quickly, and facilitate the sharing of a Session object

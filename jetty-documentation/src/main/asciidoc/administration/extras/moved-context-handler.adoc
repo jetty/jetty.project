@@ -31,7 +31,7 @@
 
 You can use the `MovedContextHandler` to relocate or redirect a context that has changed context path and/or virtual hosts.
 
-You can configure it to _permanently_ redirect the old URL to the new URL, in which case Jetty sends a Http Status code of 301 to the browser with the new URL.
+You can configure it to _permanently_ redirect the old URL to the new URL, in which case Jetty sends an Http Status code of 301 to the browser with the new URL.
 Alternatively, you can make it non-permanent, in which case Jetty sends a 302 Http Status code along with the new URL.
 
 In addition, as with any other context, you can configure a list of virtual hosts, meaning that this context responds only to requests to one of the listed host names.

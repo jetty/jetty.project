@@ -22,14 +22,14 @@
 [[http-client-blocking]]
 ==== Blocking APIs
 
-The simple way to perform a HTTP request is the following:
+The simple way to perform an HTTP request is the following:
 
 [source, java, subs="{sub-order}"]
 ----
 ContentResponse response = httpClient.GET("http://domain.com/path?query");
 ----
 
-The method `HttpClient.GET(...)` performs a HTTP `GET` request to the given URI and returns a `ContentResponse` when the request/response conversation completes successfully.
+The method `HttpClient.GET(...)` performs an HTTP `GET` request to the given URI and returns a `ContentResponse` when the request/response conversation completes successfully.
 
 The `ContentResponse` object contains the HTTP response information: status code, headers and possibly content.
 The content length is limited by default to 2 MiB; for larger content see xref:http-client-response-content[].

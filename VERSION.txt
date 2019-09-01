@@ -5288,7 +5288,7 @@ jetty-7.6.0.RC5 - 20 January 2012
 
 jetty-8.1.0.RC4 - 13 January 2012
  + 365048 jetty Http client does not send proxy authentication when requesting
-   a Https-resource through a web-proxy.
+   an Https-resource through a web-proxy.
  + 366774 removed XSS vulnerbility
  + 367099 Upgrade jetty-websocket for RFC 6455 - Addendum
  + 367433 added tests to investigate
@@ -5317,7 +5317,7 @@ jetty-8.1.0.RC4 - 13 January 2012
 
 jetty-7.6.0.RC4 - 13 January 2012
  + 365048 jetty Http client does not send proxy authentication when requesting
-   a Https-resource through a web-proxy.
+   an Https-resource through a web-proxy.
  + 366774 removed XSS vulnerbility
  + 367099 Upgrade jetty-websocket for RFC 6455 - Addendum
  + 367716 simplified maxIdleTime logic
@@ -5421,7 +5421,7 @@ jetty-7.6.0.RC5 - 20 January 2012
 
 jetty-7.6.0.RC4 - 13 January 2012
  + 365048 jetty Http client does not send proxy authentication when requesting
-   a Https-resource through a web-proxy.
+   an Https-resource through a web-proxy.
  + 366774 removed XSS vulnerbility
  + 367099 Upgrade jetty-websocket for RFC 6455 - Addendum
  + 367716 simplified idleTimeout logic
@@ -5766,7 +5766,7 @@ jetty-7.4.4.v20110707 - 07 July 2011
  + 350397 SelectChannelConnector does not shutdown gracefully
  + 350634 Reverted FileResource constructor changes
  + 351039 Forward dispatch should retain locale
- + 351199 HttpServletResponse.encodeURL() wrongly encodes an url without path
+ + 351199 HttpServletResponse.encodeURL() wrongly encodes a url without path
    when cookies are disabled
  + JETTY-1153 Default charset/encoding of HTTP POST requests
  + JETTY-1380 Jetty Rewrite example does not work in Hightide
@@ -8466,7 +8466,7 @@ jetty-6.0.0ALPHA0
  + Missing web.xml based configuration
  + Optional use of NIO Buffering so that efficient direct buffers and memory
    mapped files can be used.
- + Optional use of NIO gather writes, so that for example a HTTP header and a
+ + Optional use of NIO gather writes, so that for example an HTTP header and a
    memory mapped
  + Optional use of NIO non-blocking scheduling so that threads are not
    allocated per connection.

@@ -44,7 +44,7 @@ www.hostname.com::
 @ConnectorName::
   A connector name, which is not strictly a virtual host, but instead will only match requests that are received on connectors that have a matching name set with  link:{JDURL}/org/eclipse/jetty/server/AbstractConnector.html#setName(java.lang.String)[Connector.setName(String)].
 www.√integral.com::
-  Non-ASCII and  http://en.wikipedia.org/wiki/Internationalized_domain_name[IDN] domain names can be set as virtual hosts using http://en.wikipedia.org/wiki/Punycode[Puny Code] equivalents that may be obtained from a http://network-tools.com/idn-convert.asp[Punycode/IDN converters].
+  Non-ASCII and  http://en.wikipedia.org/wiki/Internationalized_domain_name[IDN] domain names can be set as virtual hosts using http://en.wikipedia.org/wiki/Punycode[Puny Code] equivalents that may be obtained from an http://network-tools.com/idn-convert.asp[Punycode/IDN converters].
   For example if the non-ASCII domain name `www.√integral.com` is given to a browser, then it will make a request that uses the domain name `www.xn--integral-7g7d.com`, which is the name that should be added as the virtual host name.
 
 ==== Example Virtual Host Configuration

@@ -103,7 +103,7 @@ Connection: close
 Server: Jetty(9.2.8.v20150217)
 ```
 
-What you are seeing is a http response phrase that includes raw ByteBuffer details on what happened during the parsing failure.
+What you are seeing is an http response phrase that includes raw ByteBuffer details on what happened during the parsing failure.
 
 The parts of the output are in the general form
 `{what_has_been_parsed}<<<{left_to_parse}>>>{old_buffer_seen_past_limit}`

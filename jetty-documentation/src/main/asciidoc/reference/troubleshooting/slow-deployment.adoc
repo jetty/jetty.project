@@ -22,7 +22,7 @@
 After upgrading to a version of Jetty that supports Servlet Spec 3.0 or above, enabling some new modules, or introducing some new jars to your webapp, you notice that your deployment time is increased.
 This could be due to scanning for classes caused by a ServletContainerInitializer.
 
-As documented in the section on link:#using-annotations[Using Annotations], even if your webapp has set `metadata-complete=true` in web.xml, all jars within your webapp may still be scanned due to one or more ServletContainerInitializers that have a http://docs.oracle.com/javaee/6/api/javax/servlet/annotation/HandlesTypes.html[&#64;HandlesTypes] annotation listing the names of classes in which it is interested.
+As documented in the section on link:#using-annotations[Using Annotations], even if your webapp has set `metadata-complete=true` in web.xml, all jars within your webapp may still be scanned due to one or more ServletContainerInitializers that have an http://docs.oracle.com/javaee/6/api/javax/servlet/annotation/HandlesTypes.html[&#64;HandlesTypes] annotation listing the names of classes in which it is interested.
 
 There are 3 ways to speed up deployment time:
 

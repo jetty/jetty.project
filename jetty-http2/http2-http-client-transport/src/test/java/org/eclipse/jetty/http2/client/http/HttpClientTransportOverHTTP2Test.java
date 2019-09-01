@@ -199,7 +199,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
             .onRequestBegin(request ->
             {
                 if (request.getVersion() != HttpVersion.HTTP_2)
-                    request.abort(new Exception("Not a HTTP/2 request"));
+                    request.abort(new Exception("Not an HTTP/2 request"));
             })
             .send();
 
