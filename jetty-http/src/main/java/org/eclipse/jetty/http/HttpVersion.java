@@ -42,12 +42,12 @@ public enum HttpVersion
     }
 
     /**
-     * Optimised lookup to find an Http Version and whitespace in a byte array.
+     * Optimised lookup to find a Http Version and whitespace in a byte array.
      *
      * @param bytes Array containing ISO-8859-1 characters
      * @param position The first valid index
      * @param limit The first non valid index
-     * @return An HttpMethod if a match or null if no easy match.
+     * @return A HttpMethod if a match or null if no easy match.
      */
     public static HttpVersion lookAheadGet(byte[] bytes, int position, int limit)
     {
@@ -84,10 +84,10 @@ public enum HttpVersion
     }
 
     /**
-     * Optimised lookup to find an HTTP Version and trailing white space in a byte array.
+     * Optimised lookup to find a HTTP Version and trailing white space in a byte array.
      *
      * @param buffer buffer containing ISO-8859-1 characters
-     * @return An HttpVersion if a match or null if no easy match.
+     * @return A HttpVersion if a match or null if no easy match.
      */
     public static HttpVersion lookAheadGet(ByteBuffer buffer)
     {

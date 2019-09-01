@@ -82,7 +82,7 @@ public class HttpRedirector
 
     /**
      * @param response the response to check for redirects
-     * @return whether the response code is an HTTP redirect code
+     * @return whether the response code is a HTTP redirect code
      */
     public boolean isRedirect(Response response)
     {

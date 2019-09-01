@@ -170,7 +170,7 @@ public class BufferingFlowControlStrategy extends AbstractFlowControlStrategy
         // and here we keep track of its max value.
 
         // Updating the max session recv window is done here
-        // so that if a peer decides to send a unilateral
+        // so that if a peer decides to send an unilateral
         // window update to enlarge the session window,
         // without the corresponding data consumption, here
         // we can track it.

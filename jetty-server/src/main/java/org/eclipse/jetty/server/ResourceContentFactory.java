@@ -32,7 +32,7 @@ import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 
 /**
- * An HttpContent.Factory for transient content (not cached).  The HttpContent's created by
+ * A HttpContent.Factory for transient content (not cached).  The HttpContent's created by
  * this factory are not intended to be cached, so memory limits for individual
  * HttpOutput streams are enforced.
  */

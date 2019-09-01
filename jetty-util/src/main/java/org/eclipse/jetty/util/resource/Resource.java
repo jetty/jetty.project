@@ -367,7 +367,7 @@ public abstract class Resource implements ResourceFactory, Closeable
     /**
      * URL representing the resource.
      *
-     * @return a URL representing the given resource
+     * @return an URL representing the given resource
      * @deprecated use {{@link #getURI()}.toURL() instead.
      */
     @Deprecated

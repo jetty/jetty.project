@@ -477,7 +477,7 @@ public class HttpParser
         return t;
     }
 
-    /* Quick lookahead for the start state looking for a request method or an HTTP version,
+    /* Quick lookahead for the start state looking for a request method or a HTTP version,
      * otherwise skip white space until something else to parse.
      */
     private boolean quickStart(ByteBuffer buffer)
@@ -1873,14 +1873,14 @@ public class HttpParser
         boolean messageComplete();
 
         /**
-         * This is the method called by parser when an HTTP Header name and value is found
+         * This is the method called by parser when a HTTP Header name and value is found
          *
          * @param field The field parsed
          */
         void parsedHeader(HttpField field);
 
         /**
-         * This is the method called by parser when an HTTP Trailer name and value is found
+         * This is the method called by parser when a HTTP Trailer name and value is found
          *
          * @param field The field parsed
          */
@@ -1890,7 +1890,7 @@ public class HttpParser
 
         /**
          * Called to signal that an EOF was received unexpectedly
-         * during the parsing of an HTTP message
+         * during the parsing of a HTTP message
          */
         void earlyEOF();
 

@@ -19,7 +19,7 @@
 [[http2-configuring]]
 === Configuring HTTP/2
 
-Enabling the HTTP/2 module in the Jetty server does not create an HTTP/2 specific connector, but rather it adds an HTTP/2 Connection factory to an
+Enabling the HTTP/2 module in the Jetty server does not create a HTTP/2 specific connector, but rather it adds a HTTP/2 Connection factory to an
 existing connector.
 Thus configuring HTTP/2 is a combination of configuring common properties on the connector and HTTP/2 specific properties on the connection factory.
 The modules and XML files involved can be seen with the following commands:

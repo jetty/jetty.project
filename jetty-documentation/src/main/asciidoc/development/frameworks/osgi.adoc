@@ -146,8 +146,8 @@ etc/jetty.xml,etc/jetty-http.xml,etc/jetty-deployer.xml
 +
 Note that the paths can either be relative or absolute, or a mixture.
 If the path is relative, it is resolved against either *jetty.home* or **jetty.home.bundle**, whichever was specified.
-You can use this ability to mix and match jetty configuration files to add functionality, such as adding in an https connector.
-Here's an example of adding an HTTPS connector, using the relevant files from the jetty-distribution:
+You can use this ability to mix and match jetty configuration files to add functionality, such as adding in a https connector.
+Here's an example of adding a HTTPS connector, using the relevant files from the jetty-distribution:
 +
 ....
 etc/jetty.xml, etc/jetty-http.xml, /opt/jetty/etc/jetty-ssl.xml, /opt/jetty/etc/jetty-https.xml, etc/jetty-deployer.xml
@@ -870,7 +870,7 @@ ____
 You may be able to deploy later versions or other providers of these specifications, however these particular versions are known to have correct manifests and have been tested and known to work with OSGi.
 ____
 
-Even if your webapp itself does not not use annotations, you may need to deploy these jars because your webapp depends on a Jetty module or a 3rd party library that uses an http://docs.oracle.com/javaee/6/api/javax/servlet/ServletContainerInitializer.html[javax.servlet.ServletContainerInitializer].
+Even if your webapp itself does not not use annotations, you may need to deploy these jars because your webapp depends on a Jetty module or a 3rd party library that uses a http://docs.oracle.com/javaee/6/api/javax/servlet/ServletContainerInitializer.html[javax.servlet.ServletContainerInitializer].
 This interface requires annotation support.
 It is implemented by providers of code that extend the capabilities of the container.
 An example of this is the Jetty JSR356 Websocket implementation, although it is being used increasingly commonly in popular libraries like link:http://projects.spring.io/spring-framework/[Spring], link:https://jersey.java.net/[Jersey] and JSP containers.

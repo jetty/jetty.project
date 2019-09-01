@@ -39,8 +39,8 @@ import org.eclipse.jetty.util.log.Logger;
  * </p>
  * <p>If used in combination with a {@link HttpConnectionFactory} as the
  * default protocol, this factory can support the non-standard direct
- * update mechanism, where an HTTP1 request of the form "PRI * HTTP/2.0"
- * is used to trigger a switch to an HTTP2 connection.    This approach
+ * update mechanism, where a HTTP1 request of the form "PRI * HTTP/2.0"
+ * is used to trigger a switch to a HTTP2 connection.    This approach
  * allows a single port to accept either HTTP/1 or HTTP/2 direct
  * connections.
  */

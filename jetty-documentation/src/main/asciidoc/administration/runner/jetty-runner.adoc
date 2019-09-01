@@ -194,7 +194,7 @@ You can control that by specifying the name or ip address of the particular inte
 
 ===== Configuring the Port for HTTP
 The default port number is 8080.
-To link:#how-to-configure-connectors[configure an https connector], use a Jetty xml config file instead.
+To link:#how-to-configure-connectors[configure a https connector], use a Jetty xml config file instead.
 
 [source, screen, subs="{sub-order}"]
 ....

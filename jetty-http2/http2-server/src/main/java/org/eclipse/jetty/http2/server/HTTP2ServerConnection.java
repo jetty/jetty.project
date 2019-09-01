@@ -64,7 +64,7 @@ import org.eclipse.jetty.util.TypeUtil;
 public class HTTP2ServerConnection extends HTTP2Connection implements Connection.UpgradeTo
 {
     /**
-     * @param protocol An HTTP2 protocol variant
+     * @param protocol A HTTP2 protocol variant
      * @return True if the protocol version is supported
      */
     public static boolean isSupportedProtocol(String protocol)

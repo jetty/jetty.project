@@ -196,7 +196,7 @@ public class RequestURITest
             // Read the response.
             String response = readResponse(client);
 
-            // TODO: is HTTP/1.1 response appropriate for an HTTP/1.0 request?
+            // TODO: is HTTP/1.1 response appropriate for a HTTP/1.0 request?
             assertThat(response, Matchers.containsString("HTTP/1.1 200 OK"));
             assertThat(response, Matchers.containsString("RequestURI: " + expectedReqUri));
             assertThat(response, Matchers.containsString("QueryString: " + expectedQuery));

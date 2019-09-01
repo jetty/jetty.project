@@ -294,7 +294,7 @@ The Apache JSP engine will find the JSTL tag definitions inside these jars durin
 As an efficiency enhancement, you can have jetty examine the JSTL jars to find the tags, and pre-feed them into the Apache JSP engine.
 This is more efficient, because jetty will only scan the jars you tell it to, whereas the Apache JSP engine will scan every jar, which can be time-consuming in applications with a lot of jars on the container classpath.
 
-To take advantage of this efficiency enhancement, set up the link:#container-include-jar-pattern[org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern] to include an http://docs.oracle.com/javase/7/docs/api/java/util/regex/Pattern.html[pattern] that will match the names of the JSTL jars.
+To take advantage of this efficiency enhancement, set up the link:#container-include-jar-pattern[org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern] to include a http://docs.oracle.com/javase/7/docs/api/java/util/regex/Pattern.html[pattern] that will match the names of the JSTL jars.
 The link:#embedded-examples[Embedded Examples] section includes a link:#embedded-webapp-jsp[worked code example] of how to do this.
 Below is a snippet from the example:
 

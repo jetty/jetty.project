@@ -806,7 +806,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
                 {
                     //an exact method name
                     if (!hasOmissions)
-                        //an http-method does not have http-method-omission to cover the other method names
+                        //a http-method does not have http-method-omission to cover the other method names
                         uncoveredPaths.add(path);
                 }
             }

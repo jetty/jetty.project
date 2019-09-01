@@ -35,7 +35,7 @@ import javax.servlet.http.Part;
 /**
  * ServletRequestHttpWrapper
  *
- * Class to tunnel a ServletRequest via an HttpServletRequest
+ * Class to tunnel a ServletRequest via a HttpServletRequest
  */
 public class ServletRequestHttpWrapper extends ServletRequestWrapper implements HttpServletRequest
 {

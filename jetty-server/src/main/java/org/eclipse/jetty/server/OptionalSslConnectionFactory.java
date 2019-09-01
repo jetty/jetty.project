@@ -95,7 +95,7 @@ public class OptionalSslConnectionFactory extends AbstractConnectionFactory
         int byte2 = buffer.get(1) & 0xFF;
         if (byte1 == 'G' && byte2 == 'E')
         {
-            // Plain text HTTP to an HTTPS port,
+            // Plain text HTTP to a HTTPS port,
             // write a minimal response.
             String body =
                 "<!DOCTYPE html>\r\n" +

@@ -489,7 +489,7 @@ public class DoSFilter implements Filter
     /**
      * Invoked when the request handling exceeds {@link #getMaxRequestMs()}.
      * <p>
-     * By default, an HTTP 503 response is returned and the handling thread is interrupted.
+     * By default, a HTTP 503 response is returned and the handling thread is interrupted.
      *
      * @param request the current request
      * @param response the current response

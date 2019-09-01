@@ -29,7 +29,7 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.util.Callback;
 
 /**
- * <p>{@link Response} represents an HTTP response and offers methods to retrieve status code, HTTP version
+ * <p>{@link Response} represents a HTTP response and offers methods to retrieve status code, HTTP version
  * and headers.</p>
  * <p>{@link Response} objects are passed as parameters to {@link Response.Listener} callbacks, or as
  * future result of {@link Request#send()}.</p>

@@ -29,7 +29,7 @@ import org.eclipse.jetty.util.log.Logger;
 
 /**
  * Pre encoded HttpField.
- * <p>An HttpField that will be cached and used many times can be created as
+ * <p>A HttpField that will be cached and used many times can be created as
  * a {@link PreEncodedHttpField}, which will use the {@link HttpFieldPreEncoder}
  * instances discovered by the {@link ServiceLoader} to pre-encode the header
  * for each version of HTTP in use.  This will save garbage

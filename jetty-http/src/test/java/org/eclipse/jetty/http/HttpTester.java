@@ -32,7 +32,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 /**
- * An HTTP Testing helper class.
+ * A HTTP Testing helper class.
  *
  * Example usage:
  * <pre>

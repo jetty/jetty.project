@@ -23,7 +23,7 @@ Jetty's HTTP client can be configured to use different transports to carry the s
 
 This means that the intention of a client to request resource `/index.html` using the `GET` method can be carried over the network in different formats.
 
-An HTTP client transport is the component that is in charge of converting a high-level, semantic, HTTP requests such as "GET resource /index.html" into the specific format understood by the server (for example, HTTP/2), and to convert the server response from the specific format (HTTP/2) into high-level, semantic objects that can be used by applications.
+A HTTP client transport is the component that is in charge of converting a high-level, semantic, HTTP requests such as "GET resource /index.html" into the specific format understood by the server (for example, HTTP/2), and to convert the server response from the specific format (HTTP/2) into high-level, semantic objects that can be used by applications.
 
 In this way, applications are not aware of the actual protocol being used.
 This allows them to write their logic against a high-level API that hides the details of the specific protocol being used over the network.

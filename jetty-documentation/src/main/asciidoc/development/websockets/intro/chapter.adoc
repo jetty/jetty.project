@@ -32,7 +32,7 @@ A WebSocket connection goes through some basic state changes:
 [width="50%",cols=",",options="header",]
 |=======================================================================
 |State |Description
-|CONNECTING |An HTTP Upgrade to WebSocket is in progress
+|CONNECTING |A HTTP Upgrade to WebSocket is in progress
 |OPEN |The HTTP Upgrade succeeded and the socket is now open and ready to read / write
 |CLOSING |A WebSocket Close Handshake has been started
 |CLOSED |WebSocket is now closed, no more read/write possible

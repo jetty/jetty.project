@@ -209,7 +209,7 @@ link:{JDURL}/org/eclipse/jetty/security/JDBCLoginService.html[JDBCLoginService]:
 link:{JDURL}/org/eclipse/jetty/plus/security/DataSourceLoginService.html[DataSourceLoginService]::
   Uses a JNDI defined   http://docs.oracle.com/javase/7/docs/api/javax/sql/DataSource.html[DataSource] for authentication
 link:{JDURL}/org/eclipse/jetty/jaas/JAASLoginService.html[JAASLoginService]::
-  Uses an http://en.wikipedia.org/wiki/Java_Authentication_and_Authorization_Service[JAAS] provider for authentication; see the section on
+  Uses a http://en.wikipedia.org/wiki/Java_Authentication_and_Authorization_Service[JAAS] provider for authentication; see the section on
   link:#jaas-support[JAAS support] for more information
 link:{JDURL}/org/eclipse/jetty/security/SpnegoLoginService.html[SpnegoLoginService]::
   http://en.wikipedia.org/wiki/SPNEGO[SPNEGO] Authentication; see the section on link:#spnego-support[SPNEGO support] for more information.

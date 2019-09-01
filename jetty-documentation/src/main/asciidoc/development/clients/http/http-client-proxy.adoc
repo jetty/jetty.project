@@ -21,7 +21,7 @@
 
 Jetty's HTTP client can be configured to use proxies to connect to destinations.
 
-Two types of proxies are available out of the box: an HTTP proxy (provided by class `org.eclipse.jetty.client.HttpProxy`) and a SOCKS 4 proxy (provided by class `org.eclipse.jetty.client.Socks4Proxy`).
+Two types of proxies are available out of the box: a HTTP proxy (provided by class `org.eclipse.jetty.client.HttpProxy`) and a SOCKS 4 proxy (provided by class `org.eclipse.jetty.client.Socks4Proxy`).
 Other implementations may be written by subclassing `ProxyConfiguration.Proxy`.
 
 The following is a typical configuration:

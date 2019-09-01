@@ -494,7 +494,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
             .scheme(scenario.getScheme())
             .onResponseBegin(response1 ->
             {
-                // Simulate an HTTP 1.0 response has been received.
+                // Simulate a HTTP 1.0 response has been received.
                 ((HttpResponse)response1).version(HttpVersion.HTTP_1_0);
             })
             .send();

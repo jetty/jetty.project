@@ -23,7 +23,7 @@ import java.util.Objects;
 import org.eclipse.jetty.util.StringUtil;
 
 /**
- * An HTTP Field
+ * A HTTP Field
  */
 public class HttpField
 {

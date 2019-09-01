@@ -97,7 +97,7 @@ import org.eclipse.jetty.util.log.Logger;
  *         // Wait for Jetty to be fully started.
  *         assertTrue(run1.awaitConsoleLogsFor("Started @", 20, TimeUnit.SECONDS));
  *
- *         // Make an HTTP request to the web application.
+ *         // Make a HTTP request to the web application.
  *         HttpClient client = new HttpClient();
  *         client.start();
  *         ContentResponse response = client.GET("http://localhost:" + port + "/test/index.jsp");

@@ -173,7 +173,7 @@ public class TestSecurityAnnotationConversions
     public void testMethodAnnotation() throws Exception
     {
         //ServletSecurity annotation with HttpConstraint of TransportGuarantee.CONFIDENTIAL, and a list of rolesAllowed, and
-        //an HttpMethodConstraint for GET method that permits all and has TransportGuarantee.NONE (ie is default)
+        //a HttpMethodConstraint for GET method that permits all and has TransportGuarantee.NONE (ie is default)
 
         WebAppContext wac = makeWebAppContext(Method1Servlet.class.getCanonicalName(), "method1Servlet", new String[]{
             "/foo/*", "*.foo"

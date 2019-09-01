@@ -869,7 +869,7 @@ public class HttpRequest implements Request
         }
         catch (URISyntaxException x)
         {
-            // The "path" of an HTTP request may not be a URI,
+            // The "path" of a HTTP request may not be a URI,
             // for example for CONNECT 127.0.0.1:8080.
             return null;
         }

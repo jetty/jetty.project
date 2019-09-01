@@ -275,7 +275,7 @@ public class WebSocketUpgradeFilter implements Filter, MappedWebSocketCreator, D
             // We are in some kind of funky non-http environment.
             if (LOG.isDebugEnabled())
             {
-                LOG.debug("Not an HttpServletRequest, skipping WebSocketUpgradeFilter");
+                LOG.debug("Not a HttpServletRequest, skipping WebSocketUpgradeFilter");
             }
         }
 

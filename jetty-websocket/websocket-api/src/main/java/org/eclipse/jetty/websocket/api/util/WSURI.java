@@ -25,7 +25,7 @@ import java.util.Objects;
 // @checkstyle-disable-check : AbbreviationAsWordInNameCheck
 
 /**
- * Utility methods for converting a {@link URI} between an HTTP(S) and WS(S) URI.
+ * Utility methods for converting a {@link URI} between a HTTP(S) and WS(S) URI.
  */
 public final class WSURI
 {

@@ -40,7 +40,7 @@ public enum ErrorCode
      */
     INTERNAL_ERROR(2),
     /**
-     * Indicates an HTTP/2 flow control violation.
+     * Indicates a HTTP/2 flow control violation.
      */
     FLOW_CONTROL_ERROR(3),
     /**
@@ -68,7 +68,7 @@ public enum ErrorCode
      */
     COMPRESSION_ERROR(9),
     /**
-     * Indicates that the connection established by an HTTP CONNECT was abnormally closed.
+     * Indicates that the connection established by a HTTP CONNECT was abnormally closed.
      */
     HTTP_CONNECT_ERROR(10),
     /**

@@ -39,7 +39,7 @@ import org.eclipse.jetty.util.log.Logger;
  *
  * When a user has been successfully authenticated with some types
  * of Authenticator, the Authenticator stashes a SessionAuthentication
- * into an HttpSession to remember that the user is authenticated.
+ * into a HttpSession to remember that the user is authenticated.
  */
 public class SessionAuthentication extends AbstractUserAuthentication
     implements Serializable, HttpSessionActivationListener, HttpSessionBindingListener

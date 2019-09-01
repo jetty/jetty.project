@@ -189,7 +189,7 @@ A list of Jetty plugin goal names that will cause the plugin to print an informa
 Useful if you want to prevent users from executing goals that you know cannot work with your project.
 
 [[maven-config-https]]
-===== Configuring an Https Connector
+===== Configuring a Https Connector
 
 In order to configure an HTTPS connector, you need to use jetty xml configuration files.
 This example uses files copied directly from the jetty distribution etc/ directory, although you can of course make up your own xml file or files.
@@ -264,7 +264,7 @@ ____
 Just as with an installed distribution of Jetty, the ordering of the xml files is significant.
 ____
 
-You can also use Jetty xml files to configure an http connector for the plugin to use.
+You can also use Jetty xml files to configure a http connector for the plugin to use.
 Here we use the same `jetty-http.xml` file from the Jetty distribution:
 
 [source, xml, subs="{sub-order}"]

@@ -40,7 +40,7 @@
     </Call>
 
     <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
-    <!-- To add an HTTPS SSL listener                                     -->
+    <!-- To add a HTTPS SSL listener                                     -->
     <!-- see jetty-ssl.xml to add an ssl connector. use                  -->
     <!-- java -jar start.jar etc/jetty-ssl.xml                           -->
     <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->

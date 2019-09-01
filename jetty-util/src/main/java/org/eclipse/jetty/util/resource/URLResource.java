@@ -151,7 +151,7 @@ public class URLResource extends Resource
     }
 
     /**
-     * Returns a URL representing the given resource
+     * Returns an URL representing the given resource
      */
     @Override
     public URL getURL()
