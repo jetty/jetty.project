@@ -25,7 +25,7 @@ import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.util.Callback;
 
 /**
- * <p>The SPI interface for implementing a HTTP/2 stream.</p>
+ * <p>The SPI interface for implementing an HTTP/2 stream.</p>
  * <p>This class extends {@link Stream} by adding the methods required to
  * implement the HTTP/2 stream functionalities.</p>
  */

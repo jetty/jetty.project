@@ -30,7 +30,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 
 /**
- * <p>The SPI interface for implementing a HTTP/2 session.</p>
+ * <p>The SPI interface for implementing an HTTP/2 session.</p>
  * <p>This class extends {@link Session} by adding the methods required to
  * implement the HTTP/2 session functionalities.</p>
  */
