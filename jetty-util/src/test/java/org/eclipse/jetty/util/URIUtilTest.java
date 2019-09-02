@@ -381,7 +381,8 @@ public class URIUtilTest
             Arguments.of("ABC", "abc"),
             // Encoding difference ("'" is "%27")
             Arguments.of("/barry's", "/barry%26s"),
-            // Never match on "%2f" differences
+            // Never match on "%2f" differences - only intested in filename / directory name differences
+            // This could be a directory called "foo" with a file called "bar" on the left, and just a file "foo%2fbar" on the right
             Arguments.of("/foo/bar", "/foo%2fbar"),
             // not actually encoded
             Arguments.of("/foo2fbar", "/foo/bar"),

@@ -48,7 +48,7 @@ public enum HttpMethod
      * @param bytes Array containing ISO-8859-1 characters
      * @param position The first valid index
      * @param limit The first non valid index
-     * @return A HttpMethod if a match or null if no easy match.
+     * @return An HttpMethod if a match or null if no easy match.
      */
     public static HttpMethod lookAheadGet(byte[] bytes, final int position, int limit)
     {
@@ -110,7 +110,7 @@ public enum HttpMethod
      * Optimized lookup to find a method name and trailing space in a byte array.
      *
      * @param buffer buffer containing ISO-8859-1 characters, it is not modified.
-     * @return A HttpMethod if a match or null if no easy match.
+     * @return An HttpMethod if a match or null if no easy match.
      */
     public static HttpMethod lookAheadGet(ByteBuffer buffer)
     {

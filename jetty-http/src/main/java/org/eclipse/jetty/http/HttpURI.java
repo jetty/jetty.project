@@ -31,7 +31,7 @@ import org.eclipse.jetty.util.UrlEncoded;
 
 /**
  * Http URI.
- * Parse a HTTP URI from a string or byte array.  Given a URI
+ * Parse an HTTP URI from a string or byte array.  Given a URI
  * <code>http://user@host:port/path/info;param?query#fragment</code>
  * this class will split it into the following undecoded optional elements:<ul>
  * <li>{@link #getScheme()} - http:</li>
