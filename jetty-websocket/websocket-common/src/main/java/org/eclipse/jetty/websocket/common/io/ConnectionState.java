@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.common.io;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -29,6 +30,7 @@ import java.util.concurrent.atomic.AtomicReference;
 public class ConnectionState
 {
     private final AtomicReference<State> state = new AtomicReference<>(State.HANDSHAKING);
+    private final AtomicBoolean wasOpened = new AtomicBoolean(false);
 
     /**
      * Test to see if state allows writing of WebSocket frames
@@ -53,6 +55,16 @@ public class ConnectionState
     }
 
     /**
+     * Tests to see if state got past the initial HANDSHAKING state
+     *
+     * @return true if the connection state was opened
+     */
+    public boolean wasOpened()
+    {
+        return wasOpened.get();
+    }
+
+    /**
      * Requests that the connection migrate to OPENING state
      *
      * @return true if OPENING state attained
@@ -67,9 +79,12 @@ public class ConnectionState
                 case HANDSHAKING:
                     if (state.compareAndSet(current, State.OPENING))
                     {
+                        wasOpened.set(true);
                         return true;
                     }
                     break;
+                case CLOSING: // Connection closed from WebSocketSession doStop before connection was opened)
+                    return false;
                 case DISCONNECTED:
                     return false;
                 default:
@@ -118,12 +133,8 @@ public class ConnectionState
             State current = state.get();
             switch (current)
             {
+                case HANDSHAKING:
                 case OPENING:
-                    if (state.compareAndSet(current, State.CLOSING))
-                    {
-                        return true;
-                    }
-                    break;
                 case OPENED:
                     if (state.compareAndSet(current, State.CLOSING))
                     {

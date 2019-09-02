@@ -49,6 +49,8 @@ import org.eclipse.jetty.websocket.api.util.WSURI;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.OpCode;
+import org.eclipse.jetty.websocket.common.WebSocketSession;
+import org.eclipse.jetty.websocket.common.WebSocketSessionListener;
 import org.eclipse.jetty.websocket.server.NativeWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
@@ -65,6 +67,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -348,6 +351,41 @@ public class ClientCloseTest
                 serverEndpoints.get(i).block.countDown();
             }
         }
+    }
+
+    @Test
+    public void testStopWhileOpening() throws Exception
+    {
+        client.setMaxIdleTimeout(3000);
+        URI wsUri = WSURI.toWebsocket(server.getURI().resolve("/ws"));
+
+        CountDownLatch created = new CountDownLatch(1);
+        client.addSessionListener(new WebSocketSessionListener()
+        {
+            @Override
+            public void onSessionCreated(WebSocketSession session)
+            {
+                created.countDown();
+                try
+                {
+                    Thread.sleep(2000);
+                }
+                catch (InterruptedException e)
+                {
+                    e.printStackTrace();
+                }
+            }
+        });
+
+        // Client Request Upgrade
+        CloseTrackingEndpoint clientSocket = new CloseTrackingEndpoint();
+        client.connect(clientSocket, wsUri);
+
+        // wait for session to be created so that the session is added to session tracker but not opened
+        assertTrue(created.await(5, SECONDS));
+
+        // client lifecycle stop
+        assertDoesNotThrow(() -> client.stop());
     }
 
     @Test

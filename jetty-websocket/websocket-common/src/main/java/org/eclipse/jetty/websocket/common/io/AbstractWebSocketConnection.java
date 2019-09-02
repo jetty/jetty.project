@@ -298,16 +298,20 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     {
         if (connectionState.disconnected())
         {
-            /* Use prior Fatal Close Info if present, otherwise
-             * because if could be from a failed close handshake where
-             * the local initiated, but the remote never responded.
-             */
-            CloseInfo closeInfo = fatalCloseInfo;
-            if (closeInfo == null)
+            if (connectionState.wasOpened())
             {
-                closeInfo = new CloseInfo(StatusCode.ABNORMAL, "Disconnected");
+                /* Use prior Fatal Close Info if present, otherwise
+                 * because if could be from a failed close handshake where
+                 * the local initiated, but the remote never responded.
+                 */
+                CloseInfo closeInfo = fatalCloseInfo;
+                if (closeInfo == null)
+                {
+                    closeInfo = new CloseInfo(StatusCode.ABNORMAL, "Disconnected");
+                }
+                session.callApplicationOnClose(closeInfo);
             }
-            session.callApplicationOnClose(closeInfo);
+
             if (LOG.isDebugEnabled())
             {
                 LOG.debug("{} disconnect()", policy.getBehavior());
