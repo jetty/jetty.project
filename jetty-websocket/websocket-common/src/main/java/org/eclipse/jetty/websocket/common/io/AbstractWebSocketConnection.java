@@ -43,6 +43,7 @@ import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.CloseException;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.SuspendToken;
+import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
@@ -310,6 +311,10 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
                     closeInfo = new CloseInfo(StatusCode.ABNORMAL, "Disconnected");
                 }
                 session.callApplicationOnClose(closeInfo);
+            }
+            else
+            {
+                session.callApplicationOnError(new WebSocketException("Shutdown"));
             }
 
             if (LOG.isDebugEnabled())

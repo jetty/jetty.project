@@ -42,6 +42,7 @@ import org.eclipse.jetty.websocket.api.CloseException;
 import org.eclipse.jetty.websocket.api.MessageTooLargeException;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
+import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketFrameListener;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
@@ -68,6 +69,7 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -386,6 +388,15 @@ public class ClientCloseTest
 
         // client lifecycle stop
         assertDoesNotThrow(() -> client.stop());
+
+        // received shutdown error notification
+        assertTrue(clientSocket.errorLatch.await(1, SECONDS));
+        Throwable error = clientSocket.error.get();
+        assertThat(error, instanceOf(WebSocketException.class));
+        assertThat(error.getMessage(), is("Shutdown"));
+
+        // onOpen was never called
+        assertFalse(clientSocket.openLatch.await(1, SECONDS));
     }
 
     @Test
