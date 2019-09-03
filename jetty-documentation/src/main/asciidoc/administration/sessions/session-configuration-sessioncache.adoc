@@ -34,6 +34,7 @@ Once the `session-cache-hash` module has been enabled, you can view a list of al
 #jetty.session.saveOnInactiveEvict=false
 #jetty.session.saveOnCreate=false
 #jetty.session.removeUnloadableSessions=false
+#jetty.session.flushOnCommit=false
 ----
 
 jetty.session.evictionPolicy::
@@ -63,6 +64,12 @@ jetty.session.removeUnloadableSessions::
 Boolean, default `false`.
 Controls whether a session that cannot be restored - for example because it is corrupted - from the `SessionDataStore` is deleted by the `SessionDataStore`.
 
+jetty.session.flushOnCommit::
+Boolean, default `false`.
+If true, if a session is "dirty" - ie its attributes have changed - it will be written to the backing store as the response is about to commit.
+This ensures that all subsequent requests whether to the same or different node will see the updated session data.
+If false, a dirty session will only be written to the backing store when the last simultaneous request for it leaves the session.
+
 For more general information on the uses of these configuration properties, see link:#sessions-details[Session Components].
 
 
@@ -72,4 +79,21 @@ The `NullSessionCache` is a trivial implementation of the `SessionCache` that do
 You may need to use it if your clustering setup does not have a sticky load balancer, or if you want absolutely minimal support for sessions.
 If you use this in conjunction with the `NullSessionDataStore`, then sessions will neither be retained in memory nor persisted.
 
-To enable the `NullSessionCache`, enable the `sesssion-cache-null` link:#startup-modules[module].
+To enable the `NullSessionCache`, enable the `sesssion-cache-null` link:#startup-modules[module]. 
+Configuration options are:
+
+jetty.session.saveOnCreate::
+Boolean, default `false`.
+Controls whether a session that is newly created will be immediately saved to the `SessionDataStore` or lazily saved as the last request for the session exits.
+
+jetty.session.removeUnloadableSessions::
+Boolean, default `false`.
+Controls whether a session that cannot be restored - for example because it is corrupted - from the `SessionDataStore` is deleted by the `SessionDataStore`.
+
+jetty.session.flushOnCommit::
+Boolean, default `false`.
+If true, if a session is "dirty" - ie its attributes have changed - it will be written to the backing store as the response is about to commit.
+This ensures that all subsequent requests whether to the same or different node will see the updated session data.
+If false, a dirty session will only be written to the backing store when the last simultaneous request for it leaves the session.
+
+For more general information on the uses of these configuration properties, see link:#sessions-details[Session Components].
