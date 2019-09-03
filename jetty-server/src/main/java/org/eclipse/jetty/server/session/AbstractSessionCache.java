@@ -91,6 +91,12 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
      * deleted from the SessionDataStore.
      */
     protected boolean _removeUnloadableSessions;
+    
+    /**
+     * If true, when a response is about to be committed back to the client,
+     * a dirty session will be flushed to the session store.
+     */
+    protected boolean _flushOnResponseCommit;
 
     /**
      * Create a new Session object from pre-existing session data
@@ -294,6 +300,18 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
     public void setRemoveUnloadableSessions(boolean removeUnloadableSessions)
     {
         _removeUnloadableSessions = removeUnloadableSessions;
+    }
+
+    @Override
+    public void setFlushOnResponseCommit(boolean flushOnResponse)
+    {
+        _flushOnResponseCommit = flushOnResponse;
+    }
+
+    @Override
+    public boolean isFlushOnResponseCommit()
+    {
+        return _flushOnResponseCommit;
     }
 
     /**
@@ -502,6 +520,48 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
     }
 
     /**
+     * A response that has accessed this session is about to
+     * be returned to the client. Pass the session to the store
+     * to persist, so that any changes will be visible to
+     * subsequent requests on the same node (if using NullSessionCache),
+     * or on other nodes.
+     */
+    @Override
+    public void commit(Session session) throws Exception
+    {
+        if (session == null)
+            return;
+
+        try (Lock lock = session.lock())
+        {
+            //only write the session out at this point if the attributes changed. If only
+            //the lastAccess/expiry time changed defer the write until the last request exits
+            if (session.getSessionData().isDirty() && _flushOnResponseCommit)
+            {
+                //save the session
+                if (!_sessionDataStore.isPassivating())
+                {
+                    _sessionDataStore.store(session.getId(), session.getSessionData());
+                }
+                else
+                {
+                    //A passivate listener might remove a non-serializable attribute that
+                    //the activate listener might put back in again, which would spuriously
+                    //set the dirty bit to true, causing another round of passivate/activate
+                    //when the request exits. The store clears the dirty bit if it does a
+                    //save, so ensure dirty flag is set to the value determined by the store,
+                    //not a passivation listener.
+                    session.willPassivate();
+                    _sessionDataStore.store(session.getId(), session.getSessionData());
+                    boolean dirty = session.getSessionData().isDirty();
+                    session.didActivate();
+                    session.getSessionData().setDirty(dirty);
+                }
+            }
+        }
+    }
+
+    /**
      * @deprecated
      */
     @Override
@@ -583,8 +643,11 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
                     }
                     else
                     {
-                        //reactivate the session
+                        //reactivate the session, ignoring any (non-serializable)
+                        //attributes set by the activate listener
+                        boolean dirty = session.getSessionData().isDirty();
                         session.didActivate();
+                        session.getSessionData().setDirty(dirty);
                         session.setResident(true);
                         doPutIfAbsent(id, session);//ensure it is in our map
                         if (LOG.isDebugEnabled())
@@ -739,6 +802,8 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
                         if (_sessionDataStore.isPassivating())
                             session.willPassivate();
 
+                        //Fake being dirty to force the write
+                        session.getSessionData().setDirty(true);
                         _sessionDataStore.store(session.getId(), session.getSessionData());
                     }
 
@@ -748,7 +813,6 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
                 catch (Exception e)
                 {
                     LOG.warn("Passivation of idle session {} failed", session.getId(), e);
-                    //session.updateInactivityTimer();
                 }
             }
         }

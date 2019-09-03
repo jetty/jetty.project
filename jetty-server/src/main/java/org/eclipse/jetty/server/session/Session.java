@@ -512,6 +512,10 @@ public class Session implements SessionHandler.SessionIf
         {
             _sessionData.setMaxInactiveMs((long)secs * 1000L);
             _sessionData.calcAndSetExpiry();
+            //dirty metadata writes can be skipped, but changing the
+            //maxinactiveinterval should write the session out because
+            //it may affect the session on other nodes, or on the same
+            //node in the case of the nullsessioncache
             _sessionData.setDirty(true);
 
             if (LOG.isDebugEnabled())

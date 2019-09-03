@@ -825,6 +825,8 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                 info = _response.newResponseMetaData();
             commit(info);
 
+            _request.onResponseCommit();
+
             // wrap callback to process 100 responses
             final int status = info.getStatus();
             final Callback committed = (status < HttpStatus.OK_200 && status >= HttpStatus.CONTINUE_100)

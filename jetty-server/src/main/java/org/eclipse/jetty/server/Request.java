@@ -402,6 +402,22 @@ public class Request implements HttpServletRequest
             LOG.debug("Request {} leaving session {}", this, session);
         session.getSessionHandler().complete(session);
     }
+    
+    /**
+     * A response is being committed for a session, 
+     * potentially write the session out before the
+     * client receives the response.
+     */
+    private void commitSession(HttpSession s)
+    {
+        if (s == null)
+            return;
+
+        Session session = (Session)s;
+        if (LOG.isDebugEnabled())
+            LOG.debug("Response {} committing for session {}", this, session);
+        session.getSessionHandler().commit(session);
+    }
 
     private MultiMap<String> getParameters()
     {
@@ -1523,6 +1539,19 @@ public class Request implements HttpServletRequest
         }
     }
     
+    /**
+     * Called when a response is about to be committed, ie sent
+     * back to the client
+     */
+    public void onResponseCommit()
+    {
+        if (_sessions != null && _sessions.size() > 0)
+        {
+            for (HttpSession s:_sessions)
+                commitSession(s);
+        }
+    }
+
     /**
      * Find a session that this request has already entered for the
      * given SessionHandler 
