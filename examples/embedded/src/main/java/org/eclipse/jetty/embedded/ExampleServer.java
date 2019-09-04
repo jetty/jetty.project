@@ -28,12 +28,12 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 
 public class ExampleServer
 {
-    public static void main(String[] args) throws Exception
+    public static Server createServer(int port)
     {
         Server server = new Server();
 
         ServerConnector connector = new ServerConnector(server);
-        connector.setPort(8080);
+        connector.setPort(port);
         server.setConnectors(new Connector[]{connector});
 
         ServletContextHandler context = new ServletContextHandler();
@@ -45,6 +45,12 @@ public class ExampleServer
         handlers.setHandlers(new Handler[]{context, new DefaultHandler()});
         server.setHandler(handlers);
 
+        return server;
+    }
+
+    public static void main(String[] args) throws Exception
+    {
+        Server server = createServer(8080);
         server.start();
         server.join();
     }

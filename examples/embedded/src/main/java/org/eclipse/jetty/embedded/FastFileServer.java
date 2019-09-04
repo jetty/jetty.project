@@ -58,17 +58,23 @@ import org.eclipse.jetty.util.resource.Resource;
  */
 public class FastFileServer
 {
-    public static void main(String[] args) throws Exception
+    public static Server createServer(int port, File resourceBase)
     {
-        Server server = new Server(8080);
+        Server server = new Server(port);
 
         HandlerList handlers = new HandlerList();
         handlers.setHandlers(new Handler[]{
-            new FastFileHandler(new File(System.getProperty("user.dir"))),
+            new FastFileHandler(resourceBase),
             new DefaultHandler()
         });
         server.setHandler(handlers);
+        return server;
+    }
 
+    public static void main(String[] args) throws Exception
+    {
+        File directory = new File(System.getProperty("user.dir"));
+        Server server = createServer(8080, directory);
         server.start();
         server.join();
     }

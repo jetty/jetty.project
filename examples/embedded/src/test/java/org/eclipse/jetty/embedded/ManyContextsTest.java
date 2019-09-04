@@ -21,10 +21,8 @@ package org.eclipse.jetty.embedded;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URI;
-import java.util.Map;
 
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.util.ajax.JSON;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,14 +31,14 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 
-public class ManyHandlersTest
+public class ManyContextsTest
 {
     private Server server;
 
     @BeforeEach
     public void startServer() throws Exception
     {
-        server = ManyHandlers.createServer(0);
+        server = ManyContexts.createServer(0);
         server.start();
     }
 
@@ -51,44 +49,60 @@ public class ManyHandlersTest
     }
 
     @Test
-    public void testGetParams() throws IOException
+    public void testGetRootHello() throws IOException
     {
-        URI uri = server.getURI().resolve("/params?a=b&foo=bar");
+        URI uri = server.getURI().resolve("/");
         HttpURLConnection http = (HttpURLConnection)uri.toURL().openConnection();
-        http.setRequestProperty("Accept-Encoding", "gzip");
         assertThat("HTTP Response Status", http.getResponseCode(), is(HttpURLConnection.HTTP_OK));
 
         // HttpUtil.dumpResponseHeaders(http);
 
-        // test gzip
-        HttpUtil.assertGzippedResponse(http);
-
         // test response content
-        String responseBody = HttpUtil.getGzippedResponseBody(http);
-        Object jsonObj = JSON.parse(responseBody);
-        Map jsonMap = (Map)jsonObj;
-        assertThat("Response JSON keys.size", jsonMap.keySet().size(), is(2));
+        String responseBody = HttpUtil.getResponseBody(http);
+        assertThat("Response Content", responseBody, containsString("Root Hello"));
     }
 
     @Test
-    public void testGetHello() throws IOException
+    public void testGetFrenchHello() throws IOException
     {
-        URI uri = server.getURI().resolve("/hello");
+        URI uri = server.getURI().resolve("/fr");
         HttpURLConnection http = (HttpURLConnection)uri.toURL().openConnection();
-        http.setRequestProperty("Accept-Encoding", "gzip");
         assertThat("HTTP Response Status", http.getResponseCode(), is(HttpURLConnection.HTTP_OK));
 
         // HttpUtil.dumpResponseHeaders(http);
 
-        // test gzip
-        HttpUtil.assertGzippedResponse(http);
+        // test response content
+        String responseBody = HttpUtil.getResponseBody(http);
+        assertThat("Response Content", responseBody, containsString("Bonjour"));
+    }
 
-        // test expected header from wrapper
-        String welcome = http.getHeaderField("X-Welcome");
-        assertThat("X-Welcome header", welcome, containsString("Greetings from WelcomeWrapHandler"));
+    @Test
+    public void testGetItalianGoodMorning() throws IOException
+    {
+        URI uri = server.getURI().resolve("/it");
+        HttpURLConnection http = (HttpURLConnection)uri.toURL().openConnection();
+        assertThat("HTTP Response Status", http.getResponseCode(), is(HttpURLConnection.HTTP_OK));
+
+        // HttpUtil.dumpResponseHeaders(http);
 
         // test response content
-        String responseBody = HttpUtil.getGzippedResponseBody(http);
-        assertThat("Response Content", responseBody, containsString("Hello"));
+        String responseBody = HttpUtil.getResponseBody(http);
+        assertThat("Response Content", responseBody, containsString("Buongiorno"));
+    }
+
+    @Test
+    public void testGetVirtualHostHello() throws IOException
+    {
+        int port = server.getURI().getPort();
+
+        URI uri = URI.create("http://127.0.0.2:" + port + "/");
+        HttpURLConnection http = (HttpURLConnection)uri.toURL().openConnection();
+        assertThat("HTTP Response Status", http.getResponseCode(), is(HttpURLConnection.HTTP_OK));
+
+        // HttpUtil.dumpResponseHeaders(http);
+
+        // test response content
+        String responseBody = HttpUtil.getResponseBody(http);
+        assertThat("Response Content", responseBody, containsString("Virtual Hello"));
     }
 }

@@ -7,7 +7,9 @@
       <Item>
         <New class="org.eclipse.jetty.server.ServerConnector">
           <Arg><Ref refid="ExampleServer"/></Arg>
-          <Set name="port">8080</Set>
+          <Set name="port">
+            <Property name="http.port" default="8080" />
+          </Set>
         </New>
       </Item>
     </Array>

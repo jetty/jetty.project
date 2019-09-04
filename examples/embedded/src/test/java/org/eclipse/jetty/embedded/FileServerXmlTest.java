@@ -18,29 +18,45 @@
 
 package org.eclipse.jetty.embedded;
 
+import java.io.BufferedWriter;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URI;
-import java.util.Map;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.util.ajax.JSON;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 
-public class ManyHandlersTest
+@ExtendWith(WorkDirExtension.class)
+public class FileServerXmlTest
 {
+    private static final String TEXT_CONTENT = "I am an old man and I have known a great " +
+        "many troubles, but most of them never happened. - Mark Twain";
+    public WorkDir workDir;
     private Server server;
 
     @BeforeEach
     public void startServer() throws Exception
     {
-        server = ManyHandlers.createServer(0);
+        Path baseDir = workDir.getEmptyPathDir();
+
+        Path textFile = baseDir.resolve("simple.txt");
+        try (BufferedWriter writer = Files.newBufferedWriter(textFile, UTF_8))
+        {
+            writer.write(TEXT_CONTENT);
+        }
+
+        server = FileServerXml.createServer(0, baseDir);
         server.start();
     }
 
@@ -51,44 +67,19 @@ public class ManyHandlersTest
     }
 
     @Test
-    public void testGetParams() throws IOException
+    public void testGetSimpleText() throws IOException
     {
-        URI uri = server.getURI().resolve("/params?a=b&foo=bar");
+        URI uri = server.getURI().resolve("/simple.txt");
         HttpURLConnection http = (HttpURLConnection)uri.toURL().openConnection();
-        http.setRequestProperty("Accept-Encoding", "gzip");
         assertThat("HTTP Response Status", http.getResponseCode(), is(HttpURLConnection.HTTP_OK));
 
         // HttpUtil.dumpResponseHeaders(http);
 
-        // test gzip
-        HttpUtil.assertGzippedResponse(http);
+        assertThat("Content-Type", http.getHeaderField("Content-Type"), is("text/plain"));
+        assertThat("Content-Length", http.getHeaderField("Content-Length"), is(Integer.toString(TEXT_CONTENT.length())));
 
         // test response content
-        String responseBody = HttpUtil.getGzippedResponseBody(http);
-        Object jsonObj = JSON.parse(responseBody);
-        Map jsonMap = (Map)jsonObj;
-        assertThat("Response JSON keys.size", jsonMap.keySet().size(), is(2));
-    }
-
-    @Test
-    public void testGetHello() throws IOException
-    {
-        URI uri = server.getURI().resolve("/hello");
-        HttpURLConnection http = (HttpURLConnection)uri.toURL().openConnection();
-        http.setRequestProperty("Accept-Encoding", "gzip");
-        assertThat("HTTP Response Status", http.getResponseCode(), is(HttpURLConnection.HTTP_OK));
-
-        // HttpUtil.dumpResponseHeaders(http);
-
-        // test gzip
-        HttpUtil.assertGzippedResponse(http);
-
-        // test expected header from wrapper
-        String welcome = http.getHeaderField("X-Welcome");
-        assertThat("X-Welcome header", welcome, containsString("Greetings from WelcomeWrapHandler"));
-
-        // test response content
-        String responseBody = HttpUtil.getGzippedResponseBody(http);
-        assertThat("Response Content", responseBody, containsString("Hello"));
+        String responseBody = HttpUtil.getResponseBody(http);
+        assertThat("Response body", responseBody, is(TEXT_CONTENT));
     }
 }

@@ -18,8 +18,9 @@
 
 package org.eclipse.jetty.embedded;
 
-import java.io.File;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -48,7 +49,7 @@ public class JettyDistribution
         {
             try
             {
-                Path working = new File(".").getAbsoluteFile().getCanonicalFile().toPath();
+                Path working = Paths.get(System.getProperty("user.dir"));
                 while (distro == null && working != null)
                 {
                     distro = asJettyDistribution(working.resolve("jetty-distribution/target/distribution").toString());
@@ -63,32 +64,43 @@ public class JettyDistribution
         DISTRIBUTION = distro;
     }
 
-    private static Path asJettyDistribution(String test)
+    private static Path asJettyDistribution(String jettyHome)
     {
         try
         {
-            if (StringUtil.isBlank(test))
+            if (jettyHome == null)
             {
-                LOG.info("asJettyDistribution {} is blank", test);
                 return null;
             }
 
-            File dir = new File(test);
-            if (!dir.exists() || !dir.isDirectory())
+            if (StringUtil.isBlank(jettyHome))
             {
-                LOG.info("asJettyDistribution {} is not a directory", test);
+                LOG.debug("asJettyDistribution {} is blank", jettyHome);
                 return null;
             }
 
-            File demoBase = new File(dir, "demo-base");
-            if (!demoBase.exists() || !demoBase.isDirectory())
+            Path dir = Paths.get(jettyHome);
+            if (!Files.exists(dir))
             {
-                LOG.info("asJettyDistribution {} has no demo-base", test);
+                LOG.debug("asJettyDistribution {} does not exist", jettyHome);
+                return null;
+            }
+
+            if (!Files.isDirectory(dir))
+            {
+                LOG.info("asJettyDistribution {} is not a directory", jettyHome);
+                return null;
+            }
+
+            Path demoBase = dir.resolve("demo-base");
+            if (!Files.exists(demoBase) || !Files.isDirectory(demoBase))
+            {
+                LOG.info("asJettyDistribution {} has no demo-base", jettyHome);
                 return null;
             }
 
             LOG.info("asJettyDistribution {}", dir);
-            return dir.getAbsoluteFile().getCanonicalFile().toPath();
+            return dir.toAbsolutePath();
         }
         catch (Exception e)
         {
