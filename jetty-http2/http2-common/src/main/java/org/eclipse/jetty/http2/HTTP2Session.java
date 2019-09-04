@@ -1332,13 +1332,6 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                     stream.updateClose(true, CloseState.Event.RECEIVED);
                     break;
                 }
-                case GO_AWAY:
-                {
-                    // We just sent a GO_AWAY, only shutdown the
-                    // output without closing yet, to allow reads.
-                    getEndPoint().shutdownOutput();
-                    break;
-                }
                 case WINDOW_UPDATE:
                 {
                     flowControl.windowUpdate(HTTP2Session.this, stream, (WindowUpdateFrame)frame);
