@@ -411,7 +411,7 @@ public class Response implements HttpServletResponse
 
     /**
      * Sends a 102-Processing response.
-     * If the connection is a HTTP connection, the version is 1.1 and the
+     * If the connection is an HTTP connection, the version is 1.1 and the
      * request has a Expect header starting with 102, then a 102 response is
      * sent. This indicates that the request still be processed and real response
      * can still be sent.   This method is called by sendError if it is passed 102.

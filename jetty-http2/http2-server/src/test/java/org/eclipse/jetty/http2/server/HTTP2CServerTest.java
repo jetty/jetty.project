@@ -188,7 +188,7 @@ public class HTTP2CServerTest extends AbstractServerTest
             assertThat(content, containsString("Hello from Jetty using HTTP/1.1"));
             assertThat(content, containsString("uri=/one"));
 
-            // Send a HTTP/2 request.
+            // Send an HTTP/2 request.
             headersRef.set(null);
             dataRef.set(null);
             latchRef.set(new CountDownLatch(2));
@@ -319,7 +319,7 @@ public class HTTP2CServerTest extends AbstractServerTest
         connector.setDefaultProtocol(connectionFactory.getProtocol());
         connector.start();
 
-        // Now send a HTTP/2 direct request, which
+        // Now send an HTTP/2 direct request, which
         // will have the PRI * HTTP/2.0 preface.
 
         byteBufferPool = new MappedByteBufferPool();
@@ -336,7 +336,7 @@ public class HTTP2CServerTest extends AbstractServerTest
                 output.write(BufferUtil.toArray(buffer));
             }
 
-            // We sent a HTTP/2 preface, but the server has no "h2c" connection
+            // We sent an HTTP/2 preface, but the server has no "h2c" connection
             // factory so it does not know how to handle this request.
 
             InputStream input = client.getInputStream();
