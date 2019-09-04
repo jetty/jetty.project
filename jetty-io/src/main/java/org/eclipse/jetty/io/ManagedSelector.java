@@ -107,7 +107,16 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
     protected void doStart() throws Exception
     {
         super.doStart();
+        startSelector();
 
+        // Set started only if we really are started
+        Start start = new Start();
+        submit(start);
+        start._started.await();
+    }
+
+    protected void startSelector() throws IOException, InterruptedException
+    {
         _selector = _selectorManager.newSelector();
 
         // The producer used by the strategies will never
@@ -116,16 +125,12 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         // The normal strategy obtains the produced task, schedules
         // a new thread to produce more, runs the task and then exits.
         _selectorManager.execute(_strategy::produce);
-
-        // Set started only if we really are started
-        Start start = new Start();
-        submit(start);
-        start._started.await();
     }
 
-    protected void onSelectFailed(Throwable cause) throws IOException
+    protected void onSelectFailed(Throwable cause) throws Exception
     {
         LOG.info("Restarting selector: " + toString(), cause);
+        startSelector();
     }
 
     private void notifySelectFailed(Throwable cause)
@@ -134,9 +139,9 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         {
             onSelectFailed(cause);
         }
-        catch (IOException e)
+        catch (Throwable x)
         {
-            LOG.info("Failure while calling onSelectFailed()", e);
+            LOG.info("Failure while calling onSelectFailed()", x);
         }
     }
 
@@ -515,7 +520,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                     LOG.warn(x.toString());
                     LOG.debug(x);
                 }
-                IO.close(_selector);
+                IO.close(selector);
             }
             return false;
         }
@@ -552,13 +557,13 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                     {
                         LOG.debug("Ignoring cancelled key for channel {}", key.channel());
                         if (attachment instanceof EndPoint)
-                            IO.close((Closeable)(EndPoint)attachment);
+                            IO.close((EndPoint)attachment);
                     }
                     catch (Throwable x)
                     {
                         LOG.warn("Could not process key for channel " + key.channel(), x);
                         if (attachment instanceof EndPoint)
-                            IO.close((Closeable)(EndPoint)attachment);
+                            IO.close((EndPoint)attachment);
                     }
                 }
                 else
@@ -567,7 +572,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                         LOG.debug("Selector loop ignoring invalid key for channel {}", key.channel());
                     Object attachment = key.attachment();
                     if (attachment instanceof EndPoint)
-                        IO.close((Closeable)(EndPoint)attachment);
+                        IO.close((EndPoint)attachment);
                 }
             }
             return null;
@@ -905,7 +910,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                 {
                     Object attachment = key.attachment();
                     if (attachment instanceof EndPoint)
-                        IO.close((Closeable)(EndPoint)attachment);
+                        IO.close((EndPoint)attachment);
                 }
             }
 

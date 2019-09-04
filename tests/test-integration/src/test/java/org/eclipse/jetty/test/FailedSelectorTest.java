@@ -231,18 +231,17 @@ public class FailedSelectorTest
         }
 
         @Override
-        protected void onSelectFailed(Throwable cause)
+        protected void onSelectFailed(Throwable cause) throws Exception
         {
             try
             {
                 LOG.debug("onSelectFailed()", cause);
-                // this.startSelector();
+                this.startSelector();
             }
-            catch (Exception ex)
+            finally
             {
-                LOG.warn(ex);
+                failedLatch.countDown();
             }
-            failedLatch.countDown();
         }
     }
 
