@@ -21,7 +21,6 @@ package org.eclipse.jetty.server.session;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -1044,7 +1043,7 @@ public class Session implements SessionHandler.SessionIf
                     do
                     {
                         keys = _sessionData.getKeys();
-                        for (String key : new HashSet<>(keys))
+                        for (String key : keys)
                         {
                             Object old = _sessionData.setAttribute(key, null);
                             // if same as remove attribute but attribute was

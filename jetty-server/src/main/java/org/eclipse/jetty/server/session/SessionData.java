@@ -21,6 +21,7 @@ package org.eclipse.jetty.server.session;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -248,7 +249,7 @@ public class SessionData implements Serializable
      */
     public Set<String> getKeys()
     {
-        return _attributes.keySet();
+        return Collections.unmodifiableSet(new HashSet<>(_attributes.keySet()));
     }
 
     public Object setAttribute(String name, Object value)
