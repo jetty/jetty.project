@@ -743,7 +743,7 @@ If you are using Conscrypt with Java 8, you must exclude `TLSv1.3` protocol as i
 
 ==== Configuring SNI
 
-From Java 8, the JVM contains support for the http://en.wikipedia.org/wiki/Server_Name_Indication[Server Name Indicator (SNI)] extension, which allows a SSL connection handshake to indicate one or more DNS names that it applies to.
+From Java 8, the JVM contains support for the http://en.wikipedia.org/wiki/Server_Name_Indication[Server Name Indicator (SNI)] extension, which allows an SSL connection handshake to indicate one or more DNS names that it applies to.
 
 To support this, the `SslContextFactory` is used.
 The `SslContextFactory` will look for multiple X509 certificates within the keystore, each of which may have multiple DNS names (including wildcards) associated with the http://en.wikipedia.org/wiki/SubjectAltName[Subject Alternate Name] extension.
