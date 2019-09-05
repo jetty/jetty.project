@@ -107,16 +107,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
     protected void doStart() throws Exception
     {
         super.doStart();
-        startSelector();
 
-        // Set started only if we really are started
-        Start start = new Start();
-        submit(start);
-        start._started.await();
-    }
-
-    protected void startSelector() throws IOException, InterruptedException
-    {
         _selector = _selectorManager.newSelector();
 
         // The producer used by the strategies will never
@@ -129,8 +120,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
 
     protected void onSelectFailed(Throwable cause) throws Exception
     {
-        LOG.info("Restarting selector: " + toString(), cause);
-        startSelector();
+        // override to change behavior
     }
 
     private void notifySelectFailed(Throwable cause)
@@ -512,7 +502,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                 Selector selector = _selector;
                 if (isRunning())
                 {
-                    LOG.warn(x);
+                    LOG.warn("Fatal select() failure", x);
                     notifySelectFailed(x);
                 }
                 else
