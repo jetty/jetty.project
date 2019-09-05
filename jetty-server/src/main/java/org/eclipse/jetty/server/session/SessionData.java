@@ -176,7 +176,14 @@ public class SessionData implements Serializable
         _lastAccessed = lastAccessed;
         _maxInactiveMs = maxInactiveMs;
         calcAndSetExpiry();
-        _attributes = attributes;
+        setAttributes(attributes);
+    }
+
+    private void setAttributes(Map<String, Object> attributes) {
+        if(attributes != null) {
+            boolean isConcurrentHashMap = (attributes instanceof ConcurrentHashMap);
+            _attributes = isConcurrentHashMap ? attributes : new ConcurrentHashMap<>(attributes);
+        }
     }
 
     /**
@@ -249,7 +256,7 @@ public class SessionData implements Serializable
      */
     public Set<String> getKeys()
     {
-        return Collections.unmodifiableSet(new HashSet<>(_attributes.keySet()));
+        return _attributes.keySet();
     }
 
     public Object setAttribute(String name, Object value)
