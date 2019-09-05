@@ -116,7 +116,7 @@ import org.eclipse.jetty.util.thread.ThreadPoolBudget;
  * {@link ConnectionFactory}s may also create temporary {@link org.eclipse.jetty.io.Connection} instances that will exchange bytes
  * over the connection to determine what is the next protocol to use.  For example the ALPN protocol is an extension
  * of SSL to allow a protocol to be specified during the SSL handshake. ALPN is used by the HTTP/2 protocol to
- * negotiate the protocol that the client and server will speak.  Thus to accept a HTTP/2 connection, the
+ * negotiate the protocol that the client and server will speak.  Thus to accept an HTTP/2 connection, the
  * connector will be configured with {@link ConnectionFactory}s for "SSL-ALPN", "h2", "http/1.1"
  * with the default protocol being "SSL-ALPN".  Thus a newly accepted connection uses "SSL-ALPN", which specifies a
  * SSLConnectionFactory with "ALPN" as the next protocol.  Thus an SSL connection instance is created chained to an ALPN

@@ -44,7 +44,7 @@ import org.eclipse.jetty.util.ProcessorUtils;
 /**
  * Specific implementation of {@link org.eclipse.jetty.proxy.AsyncProxyServlet.Transparent} for FastCGI.
  * <p>
- * This servlet accepts a HTTP request and transforms it into a FastCGI request
+ * This servlet accepts an HTTP request and transforms it into a FastCGI request
  * that is sent to the FastCGI server specified in the {@code proxyTo}
  * init-param.
  * <p>

@@ -187,7 +187,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     }
 
     /**
-     * Parses a HTTP response in the receivers buffer.
+     * Parses an HTTP response in the receivers buffer.
      *
      * @return true to indicate that parsing should be interrupted (and will be resumed by another thread).
      */
