@@ -61,7 +61,6 @@ import org.eclipse.jetty.util.Atomics;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.CountingCallback;
 import org.eclipse.jetty.util.Promise;
-import org.eclipse.jetty.util.Retainable;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -1508,7 +1507,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         }
     }
 
-    private class DataCallback extends Callback.Nested implements Retainable
+    private class DataCallback extends Callback.Nested
     {
         private final IStream stream;
         private final int flowControlLength;
@@ -1518,14 +1517,6 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
             super(callback);
             this.stream = stream;
             this.flowControlLength = flowControlLength;
-        }
-
-        @Override
-        public void retain()
-        {
-            Callback callback = getCallback();
-            if (callback instanceof Retainable)
-                ((Retainable)callback).retain();
         }
 
         @Override

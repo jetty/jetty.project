@@ -49,12 +49,10 @@ import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.IteratingCallback;
-import org.eclipse.jetty.util.Retainable;
 
 public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.Client
 {
-    private final ContentNotifier contentNotifier = new ContentNotifier();
+    private final ContentNotifier contentNotifier = new ContentNotifier(this);
 
     public HttpReceiverOverHTTP2(HttpChannel channel)
     {
@@ -65,6 +63,12 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
     protected HttpChannelOverHTTP2 getHttpChannel()
     {
         return (HttpChannelOverHTTP2)super.getHttpChannel();
+    }
+
+    @Override
+    protected void receive()
+    {
+        contentNotifier.process(true);
     }
 
     @Override
@@ -205,16 +209,33 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
 
     private void notifyContent(HttpExchange exchange, DataFrame frame, Callback callback)
     {
-        contentNotifier.offer(new DataInfo(exchange, frame, callback));
-        contentNotifier.iterate();
+        contentNotifier.offer(exchange, frame, callback);
     }
 
-    private class ContentNotifier extends IteratingCallback implements Retainable
+    private static class ContentNotifier
     {
         private final Queue<DataInfo> queue = new ArrayDeque<>();
+        private final HttpReceiverOverHTTP2 receiver;
         private DataInfo dataInfo;
+        private boolean active;
+        private boolean resume;
+        private boolean stalled;
 
-        private void offer(DataInfo dataInfo)
+        private ContentNotifier(HttpReceiverOverHTTP2 receiver)
+        {
+            this.receiver = receiver;
+        }
+
+        private void offer(HttpExchange exchange, DataFrame frame, Callback callback)
+        {
+            DataInfo dataInfo = new DataInfo(exchange, frame, callback);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Queueing content {}", dataInfo);
+            enqueue(dataInfo);
+            process(false);
+        }
+
+        private void enqueue(DataInfo dataInfo)
         {
             synchronized (this)
             {
@@ -222,73 +243,124 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
             }
         }
 
-        @Override
-        protected Action process()
+        private void process(boolean resume)
         {
-            if (dataInfo != null)
-            {
-                dataInfo.callback.succeeded();
-                if (dataInfo.frame.isEndStream())
-                    return Action.SUCCEEDED;
-            }
+            // Allow only one thread at a time.
+            if (!enter(resume))
+                return;
 
+            while (true)
+            {
+                if (dataInfo != null)
+                {
+                    if (dataInfo.frame.isEndStream())
+                    {
+                        receiver.responseSuccess(dataInfo.exchange);
+                        return;
+                    }
+                }
+
+                synchronized (this)
+                {
+                    dataInfo = queue.poll();
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Dequeued content {}", dataInfo);
+                    if (dataInfo == null)
+                    {
+                        active = false;
+                        return;
+                    }
+                }
+
+
+                ByteBuffer buffer = dataInfo.frame.getData();
+                Callback callback = dataInfo.callback;
+                if (buffer.hasRemaining())
+                {
+                    boolean proceed = receiver.responseContent(dataInfo.exchange, buffer, Callback.from(callback::succeeded, x -> fail(callback, x)));
+                    if (!proceed)
+                    {
+                        // Should stall, unless just resumed.
+                        if (stall())
+                            return;
+                    }
+                }
+                else
+                {
+                    callback.succeeded();
+                }
+            }
+        }
+
+        private boolean enter(boolean resume)
+        {
             synchronized (this)
             {
-                dataInfo = queue.poll();
+                if (active)
+                {
+                    if (resume)
+                        this.resume = true;
+                    return false;
+                }
+                if (stalled && !resume)
+                    return false;
+                active = true;
+                stalled = false;
+                return true;
+            }
+        }
+
+        private boolean stall()
+        {
+            synchronized (this)
+            {
+                if (resume)
+                {
+                    resume = false;
+                    return false;
+                }
+                active = false;
+                stalled = true;
+                return true;
+            }
+        }
+
+        private void reset()
+        {
+            dataInfo = null;
+            synchronized (this)
+            {
+                queue.clear();
+                active = false;
+                resume = false;
+                stalled = false;
+            }
+        }
+
+        private void fail(Callback callback, Throwable failure)
+        {
+            callback.failed(failure);
+            receiver.responseFailure(failure);
+        }
+
+        private static class DataInfo
+        {
+            private final HttpExchange exchange;
+            private final DataFrame frame;
+            private final Callback callback;
+
+            private DataInfo(HttpExchange exchange, DataFrame frame, Callback callback)
+            {
+                this.exchange = exchange;
+                this.frame = frame;
+                this.callback = callback;
             }
 
-            if (dataInfo == null)
-                return Action.IDLE;
-
-            ByteBuffer buffer = dataInfo.frame.getData();
-            if (buffer.hasRemaining())
-                responseContent(dataInfo.exchange, buffer, this);
-            else
-                succeeded();
-            return Action.SCHEDULED;
-        }
-
-        @Override
-        public void retain()
-        {
-            Callback callback = dataInfo.callback;
-            if (callback instanceof Retainable)
-                ((Retainable)callback).retain();
-        }
-
-        @Override
-        protected void onCompleteSuccess()
-        {
-            responseSuccess(dataInfo.exchange);
-        }
-
-        @Override
-        protected void onCompleteFailure(Throwable failure)
-        {
-            dataInfo.callback.failed(failure);
-            responseFailure(failure);
-        }
-
-        @Override
-        public boolean reset()
-        {
-            queue.clear();
-            dataInfo = null;
-            return super.reset();
-        }
-    }
-
-    private static class DataInfo
-    {
-        private final HttpExchange exchange;
-        private final DataFrame frame;
-        private final Callback callback;
-
-        private DataInfo(HttpExchange exchange, DataFrame frame, Callback callback)
-        {
-            this.exchange = exchange;
-            this.frame = frame;
-            this.callback = callback;
+            @Override
+            public String toString()
+            {
+                return String.format("%s@%x[%s]", getClass().getSimpleName(), hashCode(), frame);
+            }
         }
     }
 }

@@ -21,6 +21,8 @@ package org.eclipse.jetty.client.api;
 import java.nio.ByteBuffer;
 import java.util.EventListener;
 import java.util.List;
+import java.util.concurrent.Flow;
+import java.util.function.LongConsumer;
 
 import org.eclipse.jetty.client.util.BufferingResponseListener;
 import org.eclipse.jetty.http.HttpField;
@@ -133,14 +135,16 @@ public interface Response
     }
 
     /**
-     * Listener for the response content events.
+     * Synchronous listener for the response content events.
+     *
+     * @see AsyncContentListener
      */
     public interface ContentListener extends ResponseListener
     {
         /**
          * Callback method invoked when the response content has been received.
-         * This method may be invoked multiple times, and the {@code content} buffer must be consumed
-         * before returning from this method.
+         * This method may be invoked multiple times, and the {@code content} buffer
+         * must be consumed (or copied) before returning from this method.
          *
          * @param response the response containing the response line data and the headers
          * @param content the content bytes received
@@ -148,16 +152,43 @@ public interface Response
         public void onContent(Response response, ByteBuffer content);
     }
 
+    /**
+     * Asynchronous listener for the response content events.
+     *
+     * @see DemandedContentListener
+     */
     public interface AsyncContentListener extends ResponseListener
     {
         /**
-         * Callback method invoked asynchronously when the response content has been received.
+         * Callback method invoked when the response content has been received.
+         * The {@code callback} object should be succeeded to signal that the
+         * {@code content} buffer has been consumed and to demand more content.
          *
          * @param response the response containing the response line data and the headers
          * @param content the content bytes received
-         * @param callback the callback to call when the content is consumed.
+         * @param callback the callback to call when the content is consumed and to demand more content
          */
         public void onContent(Response response, ByteBuffer content, Callback callback);
+    }
+
+    /**
+     * Asynchronous listener for the response content events.
+     */
+    public interface DemandedContentListener extends ResponseListener
+    {
+        /**
+         * Callback method invoked when the response content has been received.
+         * The {@code callback} object should be succeeded to signal that the
+         * {@code content} buffer has been consumed.
+         * The {@code demand} object should be used to demand more content,
+         * similarly to {@link Flow.Subscription#request(long)}.
+         *
+         * @param response the response containing the response line data and the headers
+         * @param demand the object that allows to demand more content buffers
+         * @param content the content bytes received
+         * @param callback the callback to call when the content is consumed
+         */
+        public void onContent(Response response, LongConsumer demand, ByteBuffer content, Callback callback);
     }
 
     /**
@@ -212,7 +243,7 @@ public interface Response
     /**
      * Listener for all response events.
      */
-    public interface Listener extends BeginListener, HeaderListener, HeadersListener, ContentListener, AsyncContentListener, SuccessListener, FailureListener, CompleteListener
+    public interface Listener extends BeginListener, HeaderListener, HeadersListener, ContentListener, AsyncContentListener, DemandedContentListener, SuccessListener, FailureListener, CompleteListener
     {
         /**
          * An empty implementation of {@link Listener}
@@ -252,6 +283,16 @@ public interface Response
                 {
                     callback.failed(x);
                 }
+            }
+
+            @Override
+            public void onContent(Response response, LongConsumer demand, ByteBuffer content, Callback callback)
+            {
+                onContent(response, content, Callback.from(() ->
+                {
+                    callback.succeeded();
+                    demand.accept(1);
+                }, callback::failed));
             }
 
             @Override

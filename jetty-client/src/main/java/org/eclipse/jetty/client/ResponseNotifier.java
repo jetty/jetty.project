@@ -21,6 +21,9 @@ package org.eclipse.jetty.client;
 import java.nio.ByteBuffer;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.LongConsumer;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.client.api.ContentResponse;
@@ -30,6 +33,7 @@ import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.CountingCallback;
+import org.eclipse.jetty.util.MathUtils;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -103,36 +107,44 @@ public class ResponseNotifier
         }
     }
 
-    public void notifyContent(List<Response.ResponseListener> listeners, Response response, ByteBuffer buffer, Callback callback)
+    private void notifyContent(List<Response.ResponseListener> listeners, Response response, ByteBuffer buffer)
     {
-        List<Response.AsyncContentListener> contentListeners = listeners.stream()
-            .filter(Response.AsyncContentListener.class::isInstance)
-            .map(Response.AsyncContentListener.class::cast)
+        List<Response.DemandedContentListener> contentListeners = listeners.stream()
+            .filter(Response.DemandedContentListener.class::isInstance)
+            .map(Response.DemandedContentListener.class::cast)
             .collect(Collectors.toList());
-        notifyContent(response, buffer, callback, contentListeners);
+        notifyContent(response, value -> {}, buffer, Callback.NOOP, contentListeners);
     }
 
-    public void notifyContent(Response response, ByteBuffer buffer, Callback callback, List<Response.AsyncContentListener> contentListeners)
+    public void notifyContent(Response response, LongConsumer demand, ByteBuffer buffer, Callback callback, List<Response.DemandedContentListener> contentListeners)
     {
-        if (contentListeners.isEmpty())
+        int count = contentListeners.size();
+        if (count == 0)
         {
             callback.succeeded();
+            demand.accept(1);
+        }
+        else if (count == 1)
+        {
+            notifyContent(contentListeners.get(0), response, demand, buffer.slice(), callback);
         }
         else
         {
-            CountingCallback counter = new CountingCallback(callback, contentListeners.size());
-            for (Response.AsyncContentListener listener : contentListeners)
+            callback = new CountingCallback(callback, count);
+            CountingMinimumDemand flowControl = new CountingMinimumDemand(demand, count);
+            for (Response.DemandedContentListener listener : contentListeners)
             {
-                notifyContent(listener, response, buffer.slice(), counter);
+                LongConsumer consumer = value -> flowControl.accept(listener, value);
+                notifyContent(listener, response, consumer, buffer.slice(), callback);
             }
         }
     }
 
-    private void notifyContent(Response.AsyncContentListener listener, Response response, ByteBuffer buffer, Callback callback)
+    private void notifyContent(Response.DemandedContentListener listener, Response response, LongConsumer demand, ByteBuffer buffer, Callback callback)
     {
         try
         {
-            listener.onContent(response, buffer, callback);
+            listener.onContent(response, demand, buffer, callback);
         }
         catch (Throwable x)
         {
@@ -236,7 +248,7 @@ public class ResponseNotifier
         {
             byte[] content = ((ContentResponse)response).getContent();
             if (content != null && content.length > 0)
-                notifyContent(listeners, response, ByteBuffer.wrap(content), Callback.NOOP);
+                notifyContent(listeners, response, ByteBuffer.wrap(content));
         }
     }
 
@@ -244,5 +256,31 @@ public class ResponseNotifier
     {
         forwardFailure(listeners, response, responseFailure);
         notifyComplete(listeners, new Result(request, requestFailure, response, responseFailure));
+    }
+
+    private static class CountingMinimumDemand
+    {
+        private final Map<Object, Long> demands = new ConcurrentHashMap<>();
+        private final LongConsumer demand;
+        private final int count;
+
+        private CountingMinimumDemand(LongConsumer demand, int count)
+        {
+            this.demand = demand;
+            this.count = count;
+        }
+
+        private void accept(Object context, long value)
+        {
+            demands.merge(context, value, MathUtils::cappedAdd);
+            if (demands.size() == count)
+            {
+                long minDemand = demands.values().stream()
+                    .mapToLong(Long::longValue)
+                    .min()
+                    .orElse(1);
+                demand.accept(minDemand);
+            }
+        }
     }
 }

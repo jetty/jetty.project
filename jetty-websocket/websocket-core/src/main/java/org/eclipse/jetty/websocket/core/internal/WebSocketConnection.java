@@ -33,6 +33,7 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.MathUtils;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -286,14 +287,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
             if (demand < 0)
                 return;
 
-            try
-            {
-                demand = Math.addExact(demand, n);
-            }
-            catch (ArithmeticException e)
-            {
-                demand = Long.MAX_VALUE;
-            }
+            demand = MathUtils.cappedAdd(demand, n);
 
             if (!fillingAndParsing)
             {

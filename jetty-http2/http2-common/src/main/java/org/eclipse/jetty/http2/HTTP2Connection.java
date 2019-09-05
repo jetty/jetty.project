@@ -309,7 +309,7 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
             if (currentBuffer == null)
                 throw new IllegalStateException();
 
-            if (currentBuffer.getBuffer().hasRemaining())
+            if (currentBuffer.hasRemaining())
                 throw new IllegalStateException();
 
             currentBuffer.release();
