@@ -111,7 +111,7 @@ public class OptionalSslConnectionTest
             assertEquals(HttpStatus.OK_200, response.getStatus());
         }
 
-        // Then try a SSL connection.
+        // Then try an SSL connection.
         SslContextFactory sslContextFactory = new SslContextFactory.Client(true);
         sslContextFactory.start();
         try (Socket ssl = sslContextFactory.newSslSocket())
