@@ -688,7 +688,6 @@ public class HttpFieldsTest
         fields.add("Host", "localhost");
         HttpField namelessField = new HttpField(HttpHeader.CONNECTION, null, "bogus");
         fields.put(namelessField);
-        System.out.println(fields);
 
         assertFalse(fields.containsKey(keyName), "containsKey('" + keyName + "')");
     }

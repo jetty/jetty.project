@@ -38,13 +38,9 @@ public class HttpField
     {
         _header = header;
         if (_header != null && name == null)
-        {
             _name = _header.asString();
-        }
         else
-        {
             _name = Objects.requireNonNull(name);
-        }
         _value = value;
     }
 
