@@ -16,24 +16,31 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.http2.parser;
+package org.eclipse.jetty.util;
 
-/**
- * Controls rate of events via {@link #onEvent(Object)}.
- */
-public interface RateControl
+public class MathUtils
 {
-    public static final RateControl NO_RATE_CONTROL = event -> true;
+    private MathUtils()
+    {
+    }
 
     /**
-     * <p>Applications should call this method when they want to signal an
-     * event that is subject to rate control.</p>
-     * <p>Implementations should return true if the event does not exceed
-     * the desired rate, or false to signal that the event exceeded the
-     * desired rate.</p>
+     * Returns whether the sum of the arguments overflows an {@code int}.
      *
-     * @param event the event subject to rate control.
-     * @return true IFF the rate is within limits
+     * @param a the first value
+     * @param b the second value
+     * @return whether the sum of the arguments overflows an {@code int}
      */
-    public boolean onEvent(Object event);
+    public static boolean sumOverflows(int a, int b)
+    {
+        try
+        {
+            Math.addExact(a, b);
+            return false;
+        }
+        catch (ArithmeticException x)
+        {
+            return true;
+        }
+    }
 }

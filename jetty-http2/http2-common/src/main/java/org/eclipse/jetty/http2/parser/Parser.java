@@ -61,7 +61,7 @@ public class Parser
 
     public Parser(ByteBufferPool byteBufferPool, Listener listener, int maxDynamicTableSize, int maxHeaderSize)
     {
-        this (byteBufferPool, listener, maxDynamicTableSize, maxHeaderSize, RateControl.NO_RATE_CONTROL);
+        this(byteBufferPool, listener, maxDynamicTableSize, maxHeaderSize, RateControl.NO_RATE_CONTROL);
     }
 
     public Parser(ByteBufferPool byteBufferPool, Listener listener, int maxDynamicTableSize, int maxHeaderSize, RateControl rateControl)
@@ -76,7 +76,6 @@ public class Parser
     public void init(UnaryOperator<Listener> wrapper)
     {
         Listener listener = wrapper.apply(this.listener);
-        RateControl rateControl = getRateControl();
         unknownBodyParser = new UnknownBodyParser(headerParser, listener);
         HeaderBlockParser headerBlockParser = new HeaderBlockParser(headerParser, byteBufferPool, hpackDecoder, unknownBodyParser);
         HeaderBlockFragments headerBlockFragments = new HeaderBlockFragments();
@@ -238,11 +237,6 @@ public class Parser
     public void setMaxSettingsKeys(int maxSettingsKeys)
     {
         this.maxSettingsKeys = maxSettingsKeys;
-    }
-
-    public RateControl getRateControl()
-    {
-        return headerParser.getRateControl();
     }
 
     protected void notifyConnectionFailure(int error, String reason)

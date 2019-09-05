@@ -49,7 +49,6 @@ import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PingFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
-import org.eclipse.jetty.http2.parser.RateControl;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -75,7 +74,6 @@ public class MaxConcurrentStreamsTest extends AbstractTest
     {
         HTTP2ServerConnectionFactory http2 = new HTTP2ServerConnectionFactory(new HttpConfiguration());
         http2.setMaxConcurrentStreams(maxConcurrentStreams);
-        http2.setRateControl(RateControl.NO_RATE_CONTROL);
         prepareServer(http2);
         server.setHandler(handler);
         server.start();

@@ -27,7 +27,6 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -153,7 +152,7 @@ public class HTTP2Test extends AbstractTest
         start(new HttpServlet()
         {
             @Override
-            protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            protected void service(HttpServletRequest req, HttpServletResponse resp) throws IOException
             {
                 resp.getOutputStream().write(content);
             }
@@ -201,7 +200,7 @@ public class HTTP2Test extends AbstractTest
         start(new EmptyHttpServlet()
         {
             @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 IO.copy(request.getInputStream(), response.getOutputStream());
             }
@@ -245,7 +244,7 @@ public class HTTP2Test extends AbstractTest
         start(new HttpServlet()
         {
             @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 int download = request.getIntHeader(downloadBytes);
                 byte[] content = new byte[download];
@@ -288,7 +287,7 @@ public class HTTP2Test extends AbstractTest
         start(new HttpServlet()
         {
             @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void service(HttpServletRequest request, HttpServletResponse response)
             {
                 response.setStatus(status);
             }
@@ -323,7 +322,7 @@ public class HTTP2Test extends AbstractTest
         start(new HttpServlet()
         {
             @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void service(HttpServletRequest request, HttpServletResponse response)
             {
                 assertEquals(host, request.getServerName());
                 assertEquals(port, request.getServerPort());

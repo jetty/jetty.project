@@ -384,7 +384,7 @@ public class HpackDecoderTest
             mdb.emit(new HttpField(HttpHeader.C_SCHEME, "http"));
             mdb.emit(new HttpField(HttpHeader.C_AUTHORITY, "localhost:8080"));
             mdb.emit(new HttpField(HttpHeader.C_PATH, ""));
-            StreamException ex = assertThrows(StreamException.class, () -> mdb.build());
+            StreamException ex = assertThrows(StreamException.class, mdb::build);
             assertThat(ex.getMessage(), Matchers.containsString("No Path"));
         }
 
@@ -394,7 +394,7 @@ public class HpackDecoderTest
             mdb.emit(new HttpField(HttpHeader.C_SCHEME, "http"));
             mdb.emit(new HttpField(HttpHeader.C_AUTHORITY, "localhost:8080"));
             mdb.emit(new HttpField(HttpHeader.C_PATH, "/"));
-            StreamException ex = assertThrows(StreamException.class, () -> mdb.build());
+            StreamException ex = assertThrows(StreamException.class, mdb::build);
             assertThat(ex.getMessage(), Matchers.containsString("No Method"));
         }
 
@@ -404,7 +404,7 @@ public class HpackDecoderTest
             mdb.emit(new HttpField(HttpHeader.C_METHOD, "GET"));
             mdb.emit(new HttpField(HttpHeader.C_AUTHORITY, "localhost:8080"));
             mdb.emit(new HttpField(HttpHeader.C_PATH, "/"));
-            StreamException ex = assertThrows(StreamException.class, () -> mdb.build());
+            StreamException ex = assertThrows(StreamException.class, mdb::build);
             assertThat(ex.getMessage(), Matchers.containsString("No Scheme"));
         }
 
@@ -414,7 +414,7 @@ public class HpackDecoderTest
             mdb.emit(new HttpField(HttpHeader.C_METHOD, "GET"));
             mdb.emit(new HttpField(HttpHeader.C_SCHEME, "http"));
             mdb.emit(new HttpField(HttpHeader.C_AUTHORITY, "localhost:8080"));
-            StreamException ex = assertThrows(StreamException.class, () -> mdb.build());
+            StreamException ex = assertThrows(StreamException.class, mdb::build);
             assertThat(ex.getMessage(), Matchers.containsString("No Path"));
         }
 
@@ -426,7 +426,7 @@ public class HpackDecoderTest
             mdb.emit(new HttpField(HttpHeader.C_SCHEME, "http"));
             mdb.emit(new HttpField(HttpHeader.C_AUTHORITY, "localhost:8080"));
             mdb.emit(new HttpField(HttpHeader.C_PATH, "/"));
-            StreamException ex = assertThrows(StreamException.class, () -> mdb.build());
+            StreamException ex = assertThrows(StreamException.class, mdb::build);
             assertThat(ex.getMessage(), Matchers.containsString("Duplicate"));
         }
 
@@ -439,7 +439,7 @@ public class HpackDecoderTest
             mdb.emit(new HttpField(HttpHeader.C_AUTHORITY, "localhost:8080"));
             mdb.emit(new HttpField(HttpHeader.C_PATH, "/"));
 
-            StreamException ex = assertThrows(StreamException.class, () -> mdb.build());
+            StreamException ex = assertThrows(StreamException.class, mdb::build);
             assertThat(ex.getMessage(), Matchers.containsString("Duplicate"));
         }
     }
@@ -463,7 +463,7 @@ public class HpackDecoderTest
 
     /* 5.2.1: Sends a Huffman-encoded string literal representation with padding longer than 7 bits */
     @Test
-    public void testHuffmanEncodedExtraPadding() throws Exception
+    public void testHuffmanEncodedExtraPadding()
     {
         HpackDecoder decoder = new HpackDecoder(4096, 8192);
 
@@ -475,7 +475,7 @@ public class HpackDecoderTest
 
     /* 5.2.2: Sends a Huffman-encoded string literal representation padded by zero */
     @Test
-    public void testHuffmanEncodedZeroPadding() throws Exception
+    public void testHuffmanEncodedZeroPadding()
     {
         HpackDecoder decoder = new HpackDecoder(4096, 8192);
 
@@ -488,7 +488,7 @@ public class HpackDecoderTest
 
     /* 5.2.3: Sends a Huffman-encoded string literal representation containing the EOS symbol */
     @Test
-    public void testHuffmanEncodedWithEOS() throws Exception
+    public void testHuffmanEncodedWithEOS()
     {
         HpackDecoder decoder = new HpackDecoder(4096, 8192);
 
@@ -500,7 +500,7 @@ public class HpackDecoderTest
     }
 
     @Test
-    public void testHuffmanEncodedOneIncompleteOctet() throws Exception
+    public void testHuffmanEncodedOneIncompleteOctet()
     {
         HpackDecoder decoder = new HpackDecoder(4096, 8192);
 
@@ -512,7 +512,7 @@ public class HpackDecoderTest
     }
 
     @Test
-    public void testHuffmanEncodedTwoIncompleteOctet() throws Exception
+    public void testHuffmanEncodedTwoIncompleteOctet()
     {
         HpackDecoder decoder = new HpackDecoder(4096, 8192);
 
@@ -524,7 +524,7 @@ public class HpackDecoderTest
     }
 
     @Test
-    public void testZeroLengthName() throws Exception
+    public void testZeroLengthName()
     {
         HpackDecoder decoder = new HpackDecoder(4096, 8192);
 
@@ -547,7 +547,7 @@ public class HpackDecoderTest
     }
 
     @Test
-    public void testUpperCaseName() throws Exception
+    public void testUpperCaseName()
     {
         HpackDecoder decoder = new HpackDecoder(4096, 8192);
 
@@ -558,7 +558,7 @@ public class HpackDecoderTest
     }
 
     @Test
-    public void testWhiteSpaceName() throws Exception
+    public void testWhiteSpaceName()
     {
         HpackDecoder decoder = new HpackDecoder(4096, 8192);
 

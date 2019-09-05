@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.http2.client.http;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.ServerSocket;
@@ -38,7 +37,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.UnaryOperator;
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -188,7 +186,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
         start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             {
                 baseRequest.setHandled(true);
                 HttpVersion version = HttpVersion.fromString(request.getProtocol());
@@ -314,7 +312,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
         start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             {
                 baseRequest.setHandled(true);
                 assertEquals(path, request.getRequestURI());
@@ -338,7 +336,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
         start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             {
                 baseRequest.setHandled(true);
                 assertEquals(path, request.getRequestURI());

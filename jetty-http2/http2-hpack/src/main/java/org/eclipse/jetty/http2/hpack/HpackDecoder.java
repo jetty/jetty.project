@@ -176,16 +176,17 @@ public class HpackDecoder
                         name = Huffman.decode(buffer, length);
                     else
                         name = toASCIIString(buffer, length);
-                    check: for (int i = name.length(); i-- > 0;)
+                    check:
+                    for (int i = name.length(); i-- > 0;)
                     {
                         char c = name.charAt(i);
-                        if (c>0xff)
+                        if (c > 0xff)
                         {
                             _builder.streamException("Illegal header name %s", name);
-                            break check;
+                            break;
                         }
                         HttpTokens.Token token = HttpTokens.TOKENS[0xFF & c];
-                        switch(token.getType())
+                        switch (token.getType())
                         {
                             case ALPHA:
                                 if (c >= 'A' && c <= 'Z')

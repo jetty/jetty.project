@@ -73,8 +73,9 @@ public class SettingsBodyParser extends BodyParser
     @Override
     protected void emptyBody(ByteBuffer buffer)
     {
-        SettingsFrame frame = new SettingsFrame(Collections.emptyMap(), hasFlag(Flags.ACK));
-        if (!rateControlOnEvent(frame))
+        boolean isReply = hasFlag(Flags.ACK);
+        SettingsFrame frame = new SettingsFrame(Collections.emptyMap(), isReply);
+        if (!isReply && !rateControlOnEvent(frame))
             connectionFailure(buffer, ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, "invalid_settings_frame_rate");
         else
             onSettings(frame);

@@ -57,6 +57,7 @@ import org.eclipse.jetty.util.AtomicBiInteger;
 import org.eclipse.jetty.util.Atomics;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.CountingCallback;
+import org.eclipse.jetty.util.MathUtils;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.Retainable;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -464,7 +465,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
             if (stream != null)
             {
                 int streamSendWindow = stream.updateSendWindow(0);
-                if (sumOverflows(streamSendWindow, windowDelta))
+                if (MathUtils.sumOverflows(streamSendWindow, windowDelta))
                 {
                     reset(new ResetFrame(streamId, ErrorCode.FLOW_CONTROL_ERROR.code), Callback.NOOP);
                 }
@@ -483,7 +484,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         else
         {
             int sessionSendWindow = updateSendWindow(0);
-            if (sumOverflows(sessionSendWindow, windowDelta))
+            if (MathUtils.sumOverflows(sessionSendWindow, windowDelta))
                 onConnectionFailure(ErrorCode.FLOW_CONTROL_ERROR.code, "invalid_flow_control_window");
             else
                 onWindowUpdate(null, frame);
@@ -499,19 +500,6 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
             stream.process(new FailureFrame(error, reason), callback);
         else
             callback.succeeded();
-    }
-
-    private boolean sumOverflows(int a, int b)
-    {
-        try
-        {
-            Math.addExact(a, b);
-            return false;
-        }
-        catch (ArithmeticException x)
-        {
-            return true;
-        }
     }
 
     @Override

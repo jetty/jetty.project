@@ -33,13 +33,12 @@ public class HeaderParser
     private final RateControl rateControl;
     private State state = State.LENGTH;
     private int cursor;
-
     private int length;
     private int type;
     private int flags;
     private int streamId;
 
-    HeaderParser(RateControl rateControl)
+    public HeaderParser(RateControl rateControl)
     {
         this.rateControl = rateControl;
     }

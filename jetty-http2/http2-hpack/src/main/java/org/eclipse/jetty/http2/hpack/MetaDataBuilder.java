@@ -115,7 +115,7 @@ public class MetaDataBuilder
             {
                 case C_STATUS:
                     if (checkPseudoHeader(header, _status))
-                        _status = Integer.valueOf(field.getIntValue());
+                        _status = field.getIntValue();
                     _response = true;
                     break;
 
