@@ -61,6 +61,12 @@ public class JettyDistribution
                 LOG.warn(cause);
             }
         }
+
+        if (distro == null)
+        {
+            throw new RuntimeException("Unable to find built jetty-distribution, run the build and try again.");
+        }
+
         DISTRIBUTION = distro;
     }
 
