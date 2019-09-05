@@ -514,10 +514,16 @@ public class Server extends HandlerWrapper implements Attributes
         if (HttpMethod.OPTIONS.is(request.getMethod()) || "*".equals(target))
         {
             if (!HttpMethod.OPTIONS.is(request.getMethod()))
+            {
+                request.setHandled(true);
                 response.sendError(HttpStatus.BAD_REQUEST_400);
-            handleOptions(request, response);
-            if (!request.isHandled())
-                handle(target, request, request, response);
+            }
+            else
+            {
+                handleOptions(request, response);
+                if (!request.isHandled())
+                    handle(target, request, request, response);
+            }
         }
         else
             handle(target, request, request, response);

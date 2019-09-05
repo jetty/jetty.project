@@ -212,6 +212,34 @@ public class CookieCutterTest
         assertThat("Cookies.length", cookies.length, is(0));
     }
 
+    @Test
+    public void testMultipleCookies()
+    {
+        String rawCookie = "testcookie; server.id=abcd; server.detail=cfg";
+
+        // The first cookie "testcookie" should be ignored, per RFC6265, as it's missing the "=" sign.
+
+        Cookie[] cookies = parseCookieHeaders(CookieCompliance.RFC6265, rawCookie);
+
+        assertThat("Cookies.length", cookies.length, is(2));
+        assertCookie("Cookies[0]", cookies[0], "server.id", "abcd", 0, null);
+        assertCookie("Cookies[1]", cookies[1], "server.detail", "cfg", 0, null);
+    }
+
+    @Test
+    public void testExcessiveSemicolons()
+    {
+        char[] excessive = new char[65535];
+        Arrays.fill(excessive, ';');
+        String rawCookie = "foo=bar; " + excessive + "; xyz=pdq";
+
+        Cookie[] cookies = parseCookieHeaders(CookieCompliance.RFC6265, rawCookie);
+
+        assertThat("Cookies.length", cookies.length, is(2));
+        assertCookie("Cookies[0]", cookies[0], "foo", "bar", 0, null);
+        assertCookie("Cookies[1]", cookies[1], "xyz", "pdq", 0, null);
+    }
+
     static class Cookie
     {
         String name;
@@ -282,6 +310,4 @@ public class CookieCutterTest
             super.parseFields(Arrays.asList(fields));
         }
     }
-
-    ;
 }

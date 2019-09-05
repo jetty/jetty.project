@@ -423,7 +423,7 @@ public class ConstraintTest
         assertEquals(1, uncoveredPaths.size());
         assertThat("/user/*", is(in(uncoveredPaths)));
 
-        //Test an explicitly named method with a http-method-omission to cover all other methods
+        //Test an explicitly named method with an http-method-omission to cover all other methods
         Constraint constraint2a = new Constraint();
         constraint2a.setAuthenticate(true);
         constraint2a.setName("forbid constraint");
@@ -437,7 +437,7 @@ public class ConstraintTest
         assertNotNull(uncoveredPaths);
         assertEquals(0, uncoveredPaths.size());
 
-        //Test a http-method-omission only
+        //Test an http-method-omission only
         Constraint constraint3 = new Constraint();
         constraint3.setAuthenticate(true);
         constraint3.setName("omit constraint");

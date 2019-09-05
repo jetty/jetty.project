@@ -171,10 +171,11 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
         if (LOG.isDebugEnabled())
             LOG.debug("Stopping {}", this);
 
+        super.doStop();
+
         removeBean(_tryExecutor);
         _tryExecutor = TryExecutor.NO_TRY;
 
-        super.doStop();
 
         // Signal the Runner threads that we are stopping
         int threads = _counts.getAndSetHi(Integer.MIN_VALUE);

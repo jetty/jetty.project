@@ -554,7 +554,7 @@ public class SessionHandler extends ScopedHandler
     /**
      * @return same as SessionCookieConfig.getSecure(). If true, session
      * cookies are ALWAYS marked as secure. If false, a session cookie is
-     * ONLY marked as secure if _secureRequestOnly == true and it is a HTTPS request.
+     * ONLY marked as secure if _secureRequestOnly == true and it is an HTTPS request.
      */
     @ManagedAttribute("if true, secure cookie flag is set on session cookies")
     public boolean getSecureCookies()

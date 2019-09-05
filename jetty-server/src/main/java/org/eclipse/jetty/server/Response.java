@@ -18,19 +18,19 @@
 
 package org.eclipse.jetty.server;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.channels.IllegalSelectorException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
-import java.util.List;
+import java.util.Iterator;
 import java.util.ListIterator;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
-import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.ServletResponse;
 import javax.servlet.ServletResponseWrapper;
@@ -58,9 +58,8 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.RuntimeIOException;
-import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.server.session.SessionHandler;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -379,71 +378,40 @@ public class Response implements HttpServletResponse
         sendError(sc, null);
     }
 
+    /**
+     * Send an error response.
+     * <p>In addition to the servlet standard handling, this method supports some additional codes:</p>
+     * <dl>
+     * <dt>102</dt><dd>Send a partial PROCESSING response and allow additional responses</dd>
+     * <dt>-1</dt><dd>Abort the HttpChannel and close the connection/stream</dd>
+     * </dl>
+     * @param code The error code
+     * @param message The message
+     * @throws IOException If an IO problem occurred sending the error response.
+     */
     @Override
     public void sendError(int code, String message) throws IOException
     {
         if (isIncluding())
             return;
 
-        if (isCommitted())
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Aborting on sendError on committed response {} {}", code, message);
-            code = -1;
-        }
-        else
-            resetBuffer();
-
         switch (code)
         {
             case -1:
-                _channel.abort(new IOException());
-                return;
-            case 102:
+                _channel.abort(new IOException(message));
+                break;
+            case HttpStatus.PROCESSING_102:
                 sendProcessing();
-                return;
+                break;
             default:
+                _channel.getState().sendError(code, message);
                 break;
         }
-
-        _outputType = OutputType.NONE;
-        setContentType(null);
-        setCharacterEncoding(null);
-        setHeader(HttpHeader.EXPIRES, null);
-        setHeader(HttpHeader.LAST_MODIFIED, null);
-        setHeader(HttpHeader.CACHE_CONTROL, null);
-        setHeader(HttpHeader.CONTENT_TYPE, null);
-        setHeader(HttpHeader.CONTENT_LENGTH, null);
-
-        setStatus(code);
-
-        Request request = _channel.getRequest();
-        Throwable cause = (Throwable)request.getAttribute(Dispatcher.ERROR_EXCEPTION);
-        _reason = HttpStatus.getMessage(code);
-        if (message == null)
-            message = cause == null ? _reason : cause.toString();
-
-        // If we are allowed to have a body, then produce the error page.
-        if (code != SC_NO_CONTENT && code != SC_NOT_MODIFIED &&
-            code != SC_PARTIAL_CONTENT && code >= SC_OK)
-        {
-            ContextHandler.Context context = request.getContext();
-            ContextHandler contextHandler = context == null ? _channel.getState().getContextHandler() : context.getContextHandler();
-            request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE, code);
-            request.setAttribute(RequestDispatcher.ERROR_MESSAGE, message);
-            request.setAttribute(RequestDispatcher.ERROR_REQUEST_URI, request.getRequestURI());
-            request.setAttribute(RequestDispatcher.ERROR_SERVLET_NAME, request.getServletName());
-            ErrorHandler errorHandler = ErrorHandler.getErrorHandler(_channel.getServer(), contextHandler);
-            if (errorHandler != null)
-                errorHandler.handle(null, request, request, this);
-        }
-        if (!request.isAsyncStarted())
-            closeOutput();
     }
 
     /**
      * Sends a 102-Processing response.
-     * If the connection is a HTTP connection, the version is 1.1 and the
+     * If the connection is an HTTP connection, the version is 1.1 and the
      * request has a Expect header starting with 102, then a 102 response is
      * sent. This indicates that the request still be processed and real response
      * can still be sent.   This method is called by sendError if it is passed 102.
@@ -650,8 +618,11 @@ public class Response implements HttpServletResponse
             throw new IllegalArgumentException();
         if (!isIncluding())
         {
+            // Null the reason only if the status is different. This allows
+            // a specific reason to be sent with setStatusWithReason followed by sendError.
+            if (_status != sc)
+                _reason = null;
             _status = sc;
-            _reason = null;
         }
     }
 
@@ -712,6 +683,11 @@ public class Response implements HttpServletResponse
     public boolean isStreaming()
     {
         return _outputType == OutputType.STREAM;
+    }
+
+    public boolean isWritingOrStreaming()
+    {
+        return isWriting() || isStreaming();
     }
 
     @Override
@@ -822,21 +798,15 @@ public class Response implements HttpServletResponse
 
     public void closeOutput() throws IOException
     {
-        switch (_outputType)
-        {
-            case WRITER:
-                _writer.close();
-                if (!_out.isClosed())
-                    _out.close();
-                break;
-            case STREAM:
-                if (!_out.isClosed())
-                    getOutputStream().close();
-                break;
-            default:
-                if (!_out.isClosed())
-                    _out.close();
-        }
+        if (_outputType == OutputType.WRITER)
+            _writer.close();
+        if (!_out.isClosed())
+            _out.close();
+    }
+
+    public void closeOutput(Callback callback)
+    {
+        _out.close((_outputType == OutputType.WRITER) ? _writer : _out, callback);
     }
 
     public long getLongContentLength()
@@ -1029,19 +999,20 @@ public class Response implements HttpServletResponse
     @Override
     public void reset()
     {
-        reset(false);
-    }
-
-    public void reset(boolean preserveCookies)
-    {
-        resetForForward();
         _status = 200;
         _reason = null;
+        _out.resetBuffer();
+        _outputType = OutputType.NONE;
         _contentLength = -1;
+        _contentType = null;
+        _mimeType = null;
+        _characterEncoding = null;
+        _encodingFrom = EncodingFrom.NOT_SET;
 
-        List<HttpField> cookies = preserveCookies ? _fields.getFields(HttpHeader.SET_COOKIE) : null;
+        // Clear all response headers
         _fields.clear();
 
+        // recreate necessary connection related fields
         for (String value : _channel.getRequest().getHttpFields().getCSV(HttpHeader.CONNECTION, false))
         {
             HttpHeaderValue cb = HttpHeaderValue.CACHE.get(value);
@@ -1064,21 +1035,57 @@ public class Response implements HttpServletResponse
             }
         }
 
-        if (preserveCookies)
-            cookies.forEach(_fields::add);
-        else
+        // recreate session cookies
+        Request request = getHttpChannel().getRequest();
+        HttpSession session = request.getSession(false);
+        if (session != null && session.isNew())
         {
-            Request request = getHttpChannel().getRequest();
-            HttpSession session = request.getSession(false);
-            if (session != null && session.isNew())
+            SessionHandler sh = request.getSessionHandler();
+            if (sh != null)
             {
-                SessionHandler sh = request.getSessionHandler();
-                if (sh != null)
-                {
-                    HttpCookie c = sh.getSessionCookie(session, request.getContextPath(), request.isSecure());
-                    if (c != null)
-                        addCookie(c);
-                }
+                HttpCookie c = sh.getSessionCookie(session, request.getContextPath(), request.isSecure());
+                if (c != null)
+                    addCookie(c);
+            }
+        }
+    }
+
+    public void resetContent()
+    {
+        _out.resetBuffer();
+        _outputType = OutputType.NONE;
+        _contentLength = -1;
+        _contentType = null;
+        _mimeType = null;
+        _characterEncoding = null;
+        _encodingFrom = EncodingFrom.NOT_SET;
+
+        // remove the content related response headers and keep all others
+        for (Iterator<HttpField> i = getHttpFields().iterator(); i.hasNext(); )
+        {
+            HttpField field = i.next();
+            if (field.getHeader() == null)
+                continue;
+
+            switch (field.getHeader())
+            {
+                case CONTENT_TYPE:
+                case CONTENT_LENGTH:
+                case CONTENT_ENCODING:
+                case CONTENT_LANGUAGE:
+                case CONTENT_RANGE:
+                case CONTENT_MD5:
+                case CONTENT_LOCATION:
+                case TRANSFER_ENCODING:
+                case CACHE_CONTROL:
+                case LAST_MODIFIED:
+                case EXPIRES:
+                case ETAG:
+                case DATE:
+                case VARY:
+                    i.remove();
+                    continue;
+                default:
             }
         }
     }
@@ -1093,6 +1100,7 @@ public class Response implements HttpServletResponse
     public void resetBuffer()
     {
         _out.resetBuffer();
+        _out.reopen();
     }
 
     @Override
@@ -1143,6 +1151,9 @@ public class Response implements HttpServletResponse
     @Override
     public boolean isCommitted()
     {
+        // If we are in sendError state, we pretend to be committed
+        if (_channel.isSendError())
+            return true;
         return _channel.isCommitted();
     }
 

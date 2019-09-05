@@ -22,7 +22,6 @@ import java.util.Collections;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.http.HttpSession;
 import javax.servlet.http.HttpSessionActivationListener;
 import javax.servlet.http.HttpSessionEvent;
@@ -79,8 +78,8 @@ public class DefaultSessionCacheTest
         SessionDataStoreFactory storeFactory = new TestSessionDataStoreFactory();
         TestServer server = new TestServer(0, inactivePeriod, scavengePeriod, cacheFactory, storeFactory);
         ServletContextHandler contextHandler = server.addContext("/test");
-        TestContextScopeListener scopeListener = new TestContextScopeListener();
-        contextHandler.addEventListener(scopeListener);
+        TestHttpChannelCompleteListener scopeListener = new TestHttpChannelCompleteListener();
+        server.getServerConnector().addBean(scopeListener);
 
         TestHttpSessionListener listener = new TestHttpSessionListener();
         contextHandler.getSessionHandler().addEventListener(listener);

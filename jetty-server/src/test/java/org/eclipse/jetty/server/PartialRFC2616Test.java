@@ -317,7 +317,6 @@ public class PartialRFC2616Test
                 "Content-Length: 5\n" +
                 "\n" +
                 "123\r\n" +
-                "123\015\012" +
                 "GET /R2 HTTP/1.1\n" +
                 "Host: localhost\n" +
                 "Transfer-Encoding: other\n" +
