@@ -352,7 +352,7 @@ public class ForwardedRequestCustomizer implements Customizer
     }
 
     /**
-     * @return true if the presence of a SSL session or certificate header is sufficient
+     * @return true if the presence of an SSL session or certificate header is sufficient
      * to indicate a secure request (default is true)
      */
     public boolean isSslIsSecure()
@@ -361,7 +361,7 @@ public class ForwardedRequestCustomizer implements Customizer
     }
 
     /**
-     * @param sslIsSecure true if the presence of a SSL session or certificate header is sufficient
+     * @param sslIsSecure true if the presence of an SSL session or certificate header is sufficient
      * to indicate a secure request (default is true)
      */
     public void setSslIsSecure(boolean sslIsSecure)

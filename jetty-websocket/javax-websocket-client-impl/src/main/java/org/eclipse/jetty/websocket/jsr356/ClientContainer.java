@@ -115,6 +115,18 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
     }
 
     /**
+     * Create a {@link javax.websocket.WebSocketContainer} using the supplied
+     * {@link HttpClient} for environments where you want to configure
+     * SSL/TLS or Proxy behaviors.
+     *
+     * @param httpClient the HttpClient instance to use
+     */
+    public ClientContainer(final HttpClient httpClient)
+    {
+        this(new SimpleContainerScope(WebSocketPolicy.newClientPolicy()), httpClient);
+    }
+
+    /**
      * This is the entry point for ServerContainer, via ServletContext.getAttribute(ServerContainer.class.getName())
      *
      * @param scope the scope of the ServerContainer

@@ -45,11 +45,11 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 /**
- * @version $Rev$ $Date$
+ *
  */
 public class HolderTest
 {
@@ -59,44 +59,19 @@ public class HolderTest
     {
         ServletHolder holder = new ServletHolder(Source.JAVAX_API);
         ServletRegistration reg = holder.getRegistration();
-        try
-        {
-            reg.setInitParameter(null, "foo");
-            fail("null name accepted");
-        }
-        catch (IllegalArgumentException e)
-        {
-        }
-        try
-        {
-            reg.setInitParameter("foo", null);
-            fail("null value accepted");
-        }
-        catch (IllegalArgumentException e)
-        {
-        }
+
+        assertThrows(IllegalArgumentException.class,() ->  reg.setInitParameter(null, "foo"));
+
+        assertThrows(IllegalArgumentException.class,() -> reg.setInitParameter("foo", null));
+
         reg.setInitParameter("foo", "bar");
         assertFalse(reg.setInitParameter("foo", "foo"));
 
         Set<String> clash = reg.setInitParameters(Collections.singletonMap("foo", "bax"));
         assertTrue(clash != null && clash.size() == 1, "should be one clash");
 
-        try
-        {
-            reg.setInitParameters(Collections.singletonMap((String)null, "bax"));
-            fail("null name in map accepted");
-        }
-        catch (IllegalArgumentException e)
-        {
-        }
-        try
-        {
-            reg.setInitParameters(Collections.singletonMap("foo", (String)null));
-            fail("null value in map accepted");
-        }
-        catch (IllegalArgumentException e)
-        {
-        }
+        assertThrows(IllegalArgumentException.class,() ->  reg.setInitParameters(Collections.singletonMap((String)null, "bax")));
+        assertThrows(IllegalArgumentException.class,() ->  reg.setInitParameters(Collections.singletonMap("foo", (String)null)));
 
         Set<String> clash2 = reg.setInitParameters(Collections.singletonMap("FOO", "bax"));
         assertTrue(clash2.isEmpty(), "should be no clash");

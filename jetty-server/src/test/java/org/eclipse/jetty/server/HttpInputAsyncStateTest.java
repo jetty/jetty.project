@@ -95,7 +95,7 @@ public class HttpInputAsyncStateTest
     public void before()
     {
         _noReadInDataAvailable = false;
-        _in = new HttpInput(new HttpChannelState(new HttpChannel(null, new HttpConfiguration(), null, null)
+        _in = new HttpInput(new HttpChannelState(new HttpChannel(new MockConnector(), new HttpConfiguration(), null, null)
         {
             @Override
             public void onAsyncWaitForContent()
@@ -188,6 +188,10 @@ public class HttpInputAsyncStateTest
 
                 case COMPLETE:
                     __history.add("COMPLETE");
+                    break;
+
+                case READ_REGISTER:
+                    _state.getHttpChannel().onAsyncWaitForContent();
                     break;
 
                 default:

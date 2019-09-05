@@ -26,7 +26,7 @@ import javax.servlet.ServletResponseWrapper;
 /**
  * Continuation.
  * <p>
- * A continuation is a mechanism by which a HTTP Request can be suspended and
+ * A continuation is a mechanism by which an HTTP Request can be suspended and
  * restarted after a timeout or an asynchronous event has occurred.
  * <p>
  * The continuation mechanism is a portable mechanism that will work

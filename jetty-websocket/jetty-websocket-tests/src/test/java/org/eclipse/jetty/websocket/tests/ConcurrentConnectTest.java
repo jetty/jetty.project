@@ -63,7 +63,8 @@ public class ConcurrentConnectTest
         ServletContextHandler context = new ServletContextHandler();
         context.setContextPath("/");
 
-        WebSocketServlet servlet = new WebSocketServlet() {
+        WebSocketServlet servlet = new WebSocketServlet()
+        {
             @Override
             public void configure(WebSocketServletFactory factory)
             {

@@ -440,6 +440,7 @@ public class BufferUtil
      *
      * @param to Buffer is flush mode
      * @param b byte to append
+     * @throws BufferOverflowException if unable to append buffer due to space limits
      */
     public static void append(ByteBuffer to, byte b)
     {
@@ -1103,20 +1104,20 @@ public class BufferUtil
             for (int i = 0; i < buffer.position(); i++)
             {
                 appendContentChar(buf, buffer.get(i));
-                if (i == 16 && buffer.position() > 32)
+                if (i == 8 && buffer.position() > 16)
                 {
                     buf.append("...");
-                    i = buffer.position() - 16;
+                    i = buffer.position() - 8;
                 }
             }
             buf.append("<<<");
             for (int i = buffer.position(); i < buffer.limit(); i++)
             {
                 appendContentChar(buf, buffer.get(i));
-                if (i == buffer.position() + 16 && buffer.limit() > buffer.position() + 32)
+                if (i == buffer.position() + 24 && buffer.limit() > buffer.position() + 48)
                 {
                     buf.append("...");
-                    i = buffer.limit() - 16;
+                    i = buffer.limit() - 24;
                 }
             }
             buf.append(">>>");
@@ -1125,10 +1126,10 @@ public class BufferUtil
             for (int i = limit; i < buffer.capacity(); i++)
             {
                 appendContentChar(buf, buffer.get(i));
-                if (i == limit + 16 && buffer.capacity() > limit + 32)
+                if (i == limit + 8 && buffer.capacity() > limit + 16)
                 {
                     buf.append("...");
-                    i = buffer.capacity() - 16;
+                    i = buffer.capacity() - 8;
                 }
             }
             buffer.limit(limit);

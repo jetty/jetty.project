@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.servlet;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.util.Set;
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -66,8 +67,24 @@ public interface WebSocketServletFactory
 
     void stop() throws Exception;
 
+    /**
+     * Get the set of available Extensions by registered name.
+     *
+     * @return the set of available extensions by registered name.
+     */
+    Set<String> getAvailableExtensionNames();
+
     WebSocketCreator getCreator();
 
+    /**
+     * Get the registered extensions for this WebSocket factory.
+     *
+     * @return the ExtensionFactory
+     * @see #getAvailableExtensionNames()
+     * @deprecated this class is removed from Jetty 10.0.0+.  To remove specific extensions
+     * from negotiation use {@link WebSocketCreator} to remove then during handshake.
+     */
+    @Deprecated
     ExtensionFactory getExtensionFactory();
 
     /**

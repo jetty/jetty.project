@@ -20,6 +20,8 @@ package org.eclipse.jetty.rewrite.handler;
 
 import java.io.IOException;
 
+import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.server.Dispatcher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -59,7 +61,7 @@ public class ResponsePatternRuleTest extends AbstractRuleTestCase
             _rule.apply(null, _request, _response);
 
             assertEquals(i, _response.getStatus());
-            assertEquals(null, _response.getReason());
+            assertEquals("reason" + i, _response.getReason());
         }
     }
 
@@ -72,7 +74,7 @@ public class ResponsePatternRuleTest extends AbstractRuleTestCase
             _rule.apply(null, _request, _response);
 
             assertEquals(i, _response.getStatus());
-            assertEquals("", _response.getReason());
+            assertEquals(HttpStatus.getMessage(i), _request.getAttribute(Dispatcher.ERROR_MESSAGE));
             super.reset();
         }
     }
@@ -87,7 +89,7 @@ public class ResponsePatternRuleTest extends AbstractRuleTestCase
             _rule.apply(null, _request, _response);
 
             assertEquals(i, _response.getStatus());
-            assertEquals("reason-" + i, _response.getReason());
+            assertEquals("reason-" + i,  _request.getAttribute(Dispatcher.ERROR_MESSAGE));
             super.reset();
         }
     }

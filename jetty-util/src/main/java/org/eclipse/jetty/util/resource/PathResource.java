@@ -104,55 +104,9 @@ public class PathResource extends Resource
             {
                 Path real = abs.toRealPath(FOLLOW_LINKS);
 
-                /*
-                 * If the real path is not the same as the absolute path
-                 * then we know that the real path is the alias for the
-                 * provided path.
-                 *
-                 * For OS's that are case insensitive, this should
-                 * return the real (on-disk / case correct) version
-                 * of the path.
-                 *
-                 * We have to be careful on Windows and OSX.
-                 *
-                 * Assume we have the following scenario
-                 *   Path a = new File("foo").toPath();
-                 *   Files.createFile(a);
-                 *   Path b = new File("FOO").toPath();
-                 *
-                 * There now exists a file called "foo" on disk.
-                 * Using Windows or OSX, with a Path reference of
-                 * "FOO", "Foo", "fOO", etc.. means the following
-                 *
-                 *                        |  OSX    |  Windows   |  Linux
-                 * -----------------------+---------+------------+---------
-                 * Files.exists(a)        |  True   |  True      |  True
-                 * Files.exists(b)        |  True   |  True      |  False
-                 * Files.isSameFile(a,b)  |  True   |  True      |  False
-                 * a.equals(b)            |  False  |  True      |  False
-                 *
-                 * See the javadoc for Path.equals() for details about this FileSystem
-                 * behavior difference
-                 *
-                 * We also cannot rely on a.compareTo(b) as this is roughly equivalent
-                 * in implementation to a.equals(b)
-                 */
-
-                int absCount = abs.getNameCount();
-                int realCount = real.getNameCount();
-                if (absCount != realCount)
+                if (!isSameName(abs, real))
                 {
-                    // different number of segments
                     return real;
-                }
-
-                // compare each segment of path, backwards
-                for (int i = realCount - 1; i >= 0; i--)
-                {
-                    if (!abs.getName(i).toString().equals(real.getName(i).toString()))
-                    {
-                        return real;
-                    }
                 }
             }
         }
@@ -165,6 +119,82 @@ public class PathResource extends Resource
             LOG.warn("bad alias ({} {}) for {}", e.getClass().getName(), e.getMessage(), path);
         }
         return null;
+    }
+
+    /**
+     * Test if the paths are the same name.
+     *
+     * <p>
+     * If the real path is not the same as the absolute path
+     * then we know that the real path is the alias for the
+     * provided path.
+     * </p>
+     *
+     * <p>
+     * For OS's that are case insensitive, this should
+     * return the real (on-disk / case correct) version
+     * of the path.
+     * </p>
+     *
+     * <p>
+     * We have to be careful on Windows and OSX.
+     * </p>
+     *
+     * <p>
+     * Assume we have the following scenario:
+     * </p>
+     *
+     * <pre>
+     *   Path a = new File("foo").toPath();
+     *   Files.createFile(a);
+     *   Path b = new File("FOO").toPath();
+     * </pre>
+     *
+     * <p>
+     * There now exists a file called {@code foo} on disk.
+     * Using Windows or OSX, with a Path reference of
+     * {@code FOO}, {@code Foo}, {@code fOO}, etc.. means the following
+     * </p>
+     *
+     * <pre>
+     *                        |  OSX    |  Windows   |  Linux
+     * -----------------------+---------+------------+---------
+     * Files.exists(a)        |  True   |  True      |  True
+     * Files.exists(b)        |  True   |  True      |  False
+     * Files.isSameFile(a,b)  |  True   |  True      |  False
+     * a.equals(b)            |  False  |  True      |  False
+     * </pre>
+     *
+     * <p>
+     * See the javadoc for Path.equals() for details about this FileSystem
+     * behavior difference
+     * </p>
+     *
+     * <p>
+     * We also cannot rely on a.compareTo(b) as this is roughly equivalent
+     * in implementation to a.equals(b)
+     * </p>
+     */
+    public static boolean isSameName(Path pathA, Path pathB)
+    {
+        int aCount = pathA.getNameCount();
+        int bCount = pathB.getNameCount();
+        if (aCount != bCount)
+        {
+            // different number of segments
+            return false;
+        }
+        
+        // compare each segment of path, backwards
+        for (int i = bCount; i-- > 0; )
+        {
+            if (!pathA.getName(i).toString().equals(pathB.getName(i).toString()))
+            {
+                return false;
+            }
+        }
+        
+        return true;
     }
 
     /**

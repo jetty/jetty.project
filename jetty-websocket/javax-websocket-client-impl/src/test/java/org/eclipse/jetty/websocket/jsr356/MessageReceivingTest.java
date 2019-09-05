@@ -59,13 +59,13 @@ public class MessageReceivingTest
     private static EchoHandler handler;
     private static URI serverUri;
     private WebSocketContainer container;
-    private final String VERY_LONG_STRING;
+    private final String veryLongString;
 
     public MessageReceivingTest()
     {
         byte[] raw = new byte[1024 * 1024];
         Arrays.fill(raw, (byte)'x');
-        VERY_LONG_STRING = new String(raw, StandardCharsets.UTF_8);
+        veryLongString = new String(raw, StandardCharsets.UTF_8);
     }
 
     @BeforeAll
@@ -137,7 +137,7 @@ public class MessageReceivingTest
             LOG.debug("Client Connected: {}", session);
         session.getBasicRemote().sendText("");
         session.getBasicRemote().sendText("Echo");
-        session.getBasicRemote().sendText(VERY_LONG_STRING);
+        session.getBasicRemote().sendText(veryLongString);
         session.getBasicRemote().sendText("Echo");
         if (LOG.isDebugEnabled())
             LOG.debug("Client Message Sent");
@@ -232,7 +232,7 @@ public class MessageReceivingTest
     /**
      * Abstract message handler implementation, used for tests.
      */
-    private static abstract class AbstractHandler implements MessageHandler
+    private abstract static class AbstractHandler implements MessageHandler
     {
         /**
          * Message queue to put the result messages.

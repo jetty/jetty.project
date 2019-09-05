@@ -43,9 +43,7 @@ import static org.hamcrest.Matchers.is;
 
 public abstract class AbstractHttpTest
 {
-    private static final Set<String> __noBodyCodes = new HashSet<>(Arrays.asList(new String[]{
-        "100", "101", "102", "204", "304"
-    }));
+    private static final Set<String> __noBodyCodes = new HashSet<>(Arrays.asList("100", "101", "102", "204", "304"));
 
     protected static Server server;
     protected static ServerConnector connector;
@@ -86,11 +84,11 @@ public abstract class AbstractHttpTest
                 HttpTester.Input input = HttpTester.from(socket.getInputStream());
                 HttpTester.parseResponse(input, response);
 
-                if (httpVersion.is("HTTP/1.1")
-                    && response.isComplete()
-                    && response.get("content-length") == null
-                    && response.get("transfer-encoding") == null
-                    && !__noBodyCodes.contains(response.getStatus()))
+                if (httpVersion.is("HTTP/1.1") &&
+                    response.isComplete() &&
+                    response.get("content-length") == null &&
+                    response.get("transfer-encoding") == null &&
+                    !__noBodyCodes.contains(response.getStatus()))
                     assertThat("If HTTP/1.1 response doesn't contain transfer-encoding or content-length headers, " +
                         "it should contain connection:close", response.get("connection"), is("close"));
                 return response;

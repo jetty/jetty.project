@@ -56,7 +56,7 @@ public class HpackEncoderTest
                 new HttpField("fo8", "b8r"),
                 new HttpField("fo9", "b9r"),
                 new HttpField("foA", "bAr"),
-                };
+            };
 
         // Add 4 entries
         for (int i = 0; i <= 3; i++)

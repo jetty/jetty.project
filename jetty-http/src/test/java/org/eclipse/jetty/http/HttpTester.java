@@ -32,7 +32,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 /**
- * A HTTP Testing helper class.
+ * An HTTP Testing helper class.
  *
  * Example usage:
  * <pre>
@@ -493,7 +493,7 @@ public class HttpTester
             }
         }
 
-        abstract public MetaData getInfo();
+        public abstract MetaData getInfo();
 
         @Override
         public int getHeaderCacheSize()

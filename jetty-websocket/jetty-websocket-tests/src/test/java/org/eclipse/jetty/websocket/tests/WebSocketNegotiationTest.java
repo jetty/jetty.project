@@ -115,7 +115,7 @@ public class WebSocketNegotiationTest
         client.getOutputStream().write(upgradeRequest.getBytes(ISO_8859_1));
         String response = getUpgradeResponse(client.getInputStream());
 
-        assertThat(response, containsString("400 Missing request header 'Sec-WebSocket-Key'"));
+        assertThat(response, containsString("400 "));
     }
 
     protected static HttpFields newUpgradeRequest(String extensions)

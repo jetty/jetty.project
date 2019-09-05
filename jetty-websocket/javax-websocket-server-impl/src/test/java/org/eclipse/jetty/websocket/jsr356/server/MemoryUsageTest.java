@@ -121,7 +121,7 @@ public class MemoryUsageTest
         assertThat("heap used", heapUsed, lessThan(expected));
     }
 
-    private static abstract class EndpointAdapter extends Endpoint implements MessageHandler.Whole<String>
+    private abstract static class EndpointAdapter extends Endpoint implements MessageHandler.Whole<String>
     {
         @Override
         public void onOpen(Session session, EndpointConfig config)

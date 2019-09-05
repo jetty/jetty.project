@@ -77,9 +77,9 @@ public class MultiPartFormInputStreamTest
             "Content-Disposition: form-data; name=\"fileup\"; filename=\"test.upload\"\r\n" +
             "Content-Type: application/octet-stream\r\n\r\n" +
             "How now brown cow." +
-            "\r\n--" + boundary + "-\r\n"
-            + "Content-Disposition: form-data; name=\"fileup\"; filename=\"test.upload\"\r\n"
-            + "\r\n";
+            "\r\n--" + boundary + "-\r\n" +
+            "Content-Disposition: form-data; name=\"fileup\"; filename=\"test.upload\"\r\n" +
+            "\r\n";
 
         MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 50);
         MultiPartFormInputStream mpis = new MultiPartFormInputStream(new ByteArrayInputStream(str.getBytes()),
@@ -786,6 +786,8 @@ public class MultiPartFormInputStreamTest
         assertThat(stuff.getContentType(), is("text/plain"));
         assertThat(stuff.getHeader("Content-Type"), is("text/plain"));
         assertThat(stuff.getHeaders("content-type").size(), is(1));
+        assertNotNull(stuff.getHeaders("non existing part"));
+        assertThat(stuff.getHeaders("non existing part").size(), is(0));
         assertThat(stuff.getHeader("content-disposition"), is("form-data; name=\"stuff\"; filename=\"" + filename + "\""));
         assertThat(stuff.getHeaderNames().size(), is(2));
         assertThat(stuff.getSize(), is(51L));

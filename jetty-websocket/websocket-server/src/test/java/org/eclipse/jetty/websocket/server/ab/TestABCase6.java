@@ -48,7 +48,7 @@ public class TestABCase6 extends AbstractABCase
      * @param frames the frames
      * @param msg the message
      */
-    protected void fragmentText(List<WebSocketFrame> frames, byte msg[])
+    protected void fragmentText(List<WebSocketFrame> frames, byte[] msg)
     {
         int len = msg.length;
         boolean continuation = false;
@@ -282,9 +282,9 @@ public class TestABCase6 extends AbstractABCase
     @Test
     public void testCase6_4_1() throws Exception
     {
-        byte part1[] = StringUtil.getUtf8Bytes("\u03BA\u1F79\u03C3\u03BC\u03B5");
-        byte part2[] = Hex.asByteArray("F4908080"); // invalid
-        byte part3[] = StringUtil.getUtf8Bytes("edited");
+        byte[] part1 = StringUtil.getUtf8Bytes("\u03BA\u1F79\u03C3\u03BC\u03B5");
+        byte[] part2 = Hex.asByteArray("F4908080"); // invalid
+        byte[] part3 = StringUtil.getUtf8Bytes("edited");
 
         ByteBuffer b1 = ByteBuffer.wrap(part1);
         ByteBuffer b2 = ByteBuffer.wrap(part2);
@@ -322,9 +322,9 @@ public class TestABCase6 extends AbstractABCase
     @Test
     public void testCase6_4_2() throws Exception
     {
-        byte part1[] = Hex.asByteArray("CEBAE1BDB9CF83CEBCCEB5F4"); // split code point
-        byte part2[] = Hex.asByteArray("90"); // continue code point & invalid
-        byte part3[] = Hex.asByteArray("8080656469746564"); // continue code point & finish
+        byte[] part1 = Hex.asByteArray("CEBAE1BDB9CF83CEBCCEB5F4"); // split code point
+        byte[] part2 = Hex.asByteArray("90"); // continue code point & invalid
+        byte[] part3 = Hex.asByteArray("8080656469746564"); // continue code point & finish
 
         ByteBuffer b1 = ByteBuffer.wrap(part1);
         ByteBuffer b2 = ByteBuffer.wrap(part2);

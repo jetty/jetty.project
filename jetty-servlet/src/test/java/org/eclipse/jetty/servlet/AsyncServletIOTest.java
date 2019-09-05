@@ -52,6 +52,7 @@ import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -305,6 +306,7 @@ public class AsyncServletIOTest
             request.append(s).append("w=").append(w);
             s = '&';
         }
+        LOG.debug("process {} {}", request.toString(), BufferUtil.toDetailString(BufferUtil.toBuffer(content)));
 
         request.append(" HTTP/1.1\r\n")
             .append("Host: localhost\r\n")
@@ -816,13 +818,15 @@ public class AsyncServletIOTest
             // wait until server is ready
             _servletStolenAsyncRead.ready.await();
             final CountDownLatch wait = new CountDownLatch(1);
-
+            final CountDownLatch held = new CountDownLatch(1);
             // Stop any dispatches until we want them
+
             UnaryOperator<Runnable> old = _wQTP.wrapper.getAndSet(r ->
                 () ->
                 {
                     try
                     {
+                        held.countDown();
                         wait.await();
                         r.run();
                     }
@@ -836,7 +840,9 @@ public class AsyncServletIOTest
             // We are an unrelated thread, let's mess with the input stream
             ServletInputStream sin = _servletStolenAsyncRead.listener.in;
             sin.setReadListener(_servletStolenAsyncRead.listener);
+
             // thread should be dispatched to handle, but held by our wQTP wait.
+            assertTrue(held.await(10, TimeUnit.SECONDS));
 
             // Let's steal our read
             assertTrue(sin.isReady());

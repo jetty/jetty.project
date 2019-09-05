@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -113,15 +114,15 @@ public class TestOSGiUtil
         String mavenRepoPath = System.getProperty("mavenRepoPath");
         if (!StringUtil.isBlank(mavenRepoPath))
         {
-            res.add( systemProperty( "org.ops4j.pax.url.mvn.localRepository" ).value( mavenRepoPath ) );
-            res.add( systemProperty( "org.ops4j.pax.url.mvn.defaultRepositories" ).value( "file://" + mavenRepoPath + "@id=local.repo") );
-            res.add( systemProperty( "org.ops4j.pax.url.mvn.useFallbackRepositories").value( Boolean.FALSE.toString() ) );
-            res.add( systemProperty( "org.ops4j.pax.url.mvn.repositories").value( "+https://repo1.maven.org/maven2@id=maven.central.repo" ) );
+            res.add(systemProperty("org.ops4j.pax.url.mvn.localRepository").value(mavenRepoPath));
+            res.add(systemProperty("org.ops4j.pax.url.mvn.defaultRepositories").value("file://" + mavenRepoPath + "@id=local.repo"));
+            res.add(systemProperty("org.ops4j.pax.url.mvn.useFallbackRepositories").value(Boolean.FALSE.toString()));
+            res.add(systemProperty("org.ops4j.pax.url.mvn.repositories").value("+https://repo1.maven.org/maven2@id=maven.central.repo"));
         }
         String settingsFilePath = System.getProperty("settingsFilePath");
         if (!StringUtil.isBlank(settingsFilePath))
         {
-            res.add( systemProperty( "org.ops4j.pax.url.mvn.settings" ).value( System.getProperty( "settingsFilePath" ) ) );
+            res.add(systemProperty("org.ops4j.pax.url.mvn.settings").value(System.getProperty("settingsFilePath")));
         }
         res.add(mavenBundle().groupId("org.ow2.asm").artifactId("asm").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.ow2.asm").artifactId("asm-commons").versionAsInProject().start());
@@ -194,11 +195,11 @@ public class TestOSGiUtil
         for (Bundle b : bundleContext.getBundles())
         {
             Bundle prevBundle = _bundles.put(b.getSymbolicName(), b);
-            String err = prevBundle != null ? "2 versions of the bundle " + b.getSymbolicName()
-                + " "
-                + b.getHeaders().get("Bundle-Version")
-                + " and "
-                + prevBundle.getHeaders().get("Bundle-Version") : "";
+            String err = prevBundle != null ? "2 versions of the bundle " + b.getSymbolicName() +
+                    " " +
+                    b.getHeaders().get("Bundle-Version") +
+                    " and " +
+                    prevBundle.getHeaders().get("Bundle-Version") : "";
             assertNull(err, prevBundle);
         }
         return _bundles.get(symbolicName);
@@ -229,16 +230,16 @@ public class TestOSGiUtil
             {
                 diagnoseNonActiveOrNonResolvedBundle(b);
             }
-            assertTrue("Bundle: " + b
-                + " (state should be "
-                + "ACTIVE["
-                + Bundle.ACTIVE
-                + "] or RESOLVED["
-                + Bundle.RESOLVED
-                + "]"
-                + ", but was ["
-                + b.getState()
-                + "])", (b.getState() == Bundle.ACTIVE) || (b.getState() == Bundle.RESOLVED));
+            assertTrue("Bundle: " + b +
+                    " (state should be " +
+                    "ACTIVE[" +
+                    Bundle.ACTIVE +
+                    "] or RESOLVED[" +
+                    Bundle.RESOLVED +
+                    "]" +
+                    ", but was [" +
+                    b.getState() +
+                    "])", (b.getState() == Bundle.ACTIVE) || (b.getState() == Bundle.RESOLVED));
         }
     }
 

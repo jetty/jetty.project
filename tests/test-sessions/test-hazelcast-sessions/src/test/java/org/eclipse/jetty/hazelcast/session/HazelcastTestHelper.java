@@ -79,9 +79,9 @@ public class HazelcastTestHelper
             ClientConfig clientConfig = new ClientConfig()
                 .setNetworkConfig(clientNetworkConfig);
 
-            SerializerConfig sc = new SerializerConfig().
-                setImplementation(new SessionDataSerializer()).
-                setTypeClass(SessionData.class);
+            SerializerConfig sc = new SerializerConfig()
+                    .setImplementation(new SessionDataSerializer())
+                    .setTypeClass(SessionData.class);
             clientConfig.getSerializationConfig().addSerializerConfig(sc);
 
             factory.setHazelcastInstance(HazelcastClient.newHazelcastClient(clientConfig));

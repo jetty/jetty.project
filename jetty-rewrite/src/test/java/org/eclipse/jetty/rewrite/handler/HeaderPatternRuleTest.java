@@ -42,7 +42,7 @@ public class HeaderPatternRuleTest extends AbstractRuleTestCase
     public void testHeaderWithTextValues() throws IOException
     {
         // different keys
-        String headers[][] = {
+        String[][] headers = {
             {"hnum#1", "test1"},
             {"hnum#2", "2test2"},
             {"hnum#3", "test3"}
@@ -53,7 +53,7 @@ public class HeaderPatternRuleTest extends AbstractRuleTestCase
     @Test
     public void testHeaderWithNumberValues() throws IOException
     {
-        String headers[][] = {
+        String[][] headers = {
             {"hello", "1"},
             {"hello", "-1"},
             {"hello", "100"},
@@ -70,7 +70,7 @@ public class HeaderPatternRuleTest extends AbstractRuleTestCase
     @Test
     public void testHeaderOverwriteValues() throws IOException
     {
-        String headers[][] = {
+        String[][] headers = {
             {"size", "100"},
             {"size", "200"},
             {"size", "300"},
@@ -100,7 +100,7 @@ public class HeaderPatternRuleTest extends AbstractRuleTestCase
         assertEquals("abba1", _response.getHeader("title1"));
     }
 
-    private void assertHeaders(String headers[][]) throws IOException
+    private void assertHeaders(String[][] headers) throws IOException
     {
         for (String[] header : headers)
         {
