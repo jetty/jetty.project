@@ -44,7 +44,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 /**
- * A HttpChannel customized to be transported over the HTTP/1 protocol
+ * An HttpChannel customized to be transported over the HTTP/1 protocol
  */
 public class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandler, HttpParser.ComplianceHandler
 {
@@ -411,7 +411,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
     }
 
     /**
-     * <p>Attempts to perform a HTTP/1.1 upgrade.</p>
+     * <p>Attempts to perform an HTTP/1.1 upgrade.</p>
      * <p>The upgrade looks up a {@link ConnectionFactory.Upgrading} from the connector
      * matching the protocol specified in the {@code Upgrade} header.</p>
      * <p>The upgrade may succeed, be ignored (which can allow a later handler to implement)

@@ -30,6 +30,8 @@ import java.util.NoSuchElementException;
 import org.eclipse.jetty.util.BufferUtil;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -664,6 +666,41 @@ public class HttpFieldsTest
         assertFalse(header.contains(HttpHeader.AGE, "abc"));
 
         assertFalse(header.containsKey("n11"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"Host", "host", "HOST", "HoSt", "Connection", "CONNECTION", "connection", "CoNnEcTiOn"})
+    public void testContainsKeyTrue(String keyName)
+    {
+        HttpFields fields = new HttpFields();
+        fields.put("Host", "localhost");
+        HttpField namelessField = new HttpField(HttpHeader.CONNECTION, null, "bogus");
+        fields.put(namelessField);
+
+        assertTrue(fields.containsKey(keyName), "containsKey('" + keyName + "')");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"Content-Type", "Content-Length", "X-Bogus", ""})
+    public void testContainsKeyFalse(String keyName)
+    {
+        HttpFields fields = new HttpFields();
+        fields.add("Host", "localhost");
+        HttpField namelessField = new HttpField(HttpHeader.CONNECTION, null, "bogus");
+        fields.put(namelessField);
+
+        assertFalse(fields.containsKey(keyName), "containsKey('" + keyName + "')");
+    }
+
+    @Test
+    public void testPreventNullField()
+    {
+        HttpFields fields = new HttpFields();
+        assertThrows(NullPointerException.class, () ->
+        {
+            HttpField nullNullField = new HttpField(null, null, "bogus");
+            fields.put(nullNullField);
+        });
     }
 
     @Test
