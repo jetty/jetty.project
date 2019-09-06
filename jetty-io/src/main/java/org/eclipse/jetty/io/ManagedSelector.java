@@ -267,6 +267,16 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         }
     }
 
+    protected void endPointOpened(EndPoint endPoint)
+    {
+        _selectorManager.endPointOpened(endPoint);
+    }
+
+    protected void endPointClosed(EndPoint endPoint)
+    {
+        _selectorManager.endPointClosed(endPoint);
+    }
+
     private void createEndPoint(SelectableChannel channel, SelectionKey selectionKey) throws IOException
     {
         EndPoint endPoint = _selectorManager.newEndPoint(channel, this, selectionKey);
@@ -274,7 +284,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         endPoint.setConnection(connection);
         selectionKey.attach(endPoint);
         endPoint.onOpen();
-        _selectorManager.endPointOpened(endPoint);
+        endPointOpened(endPoint);
         _selectorManager.connectionOpened(connection);
         if (LOG.isDebugEnabled())
             LOG.debug("Created {}", endPoint);
@@ -967,7 +977,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             Connection connection = endPoint.getConnection();
             if (connection != null)
                 _selectorManager.connectionClosed(connection);
-            _selectorManager.endPointClosed(endPoint);
+            ManagedSelector.this.endPointClosed(endPoint);
         }
 
         @Override
