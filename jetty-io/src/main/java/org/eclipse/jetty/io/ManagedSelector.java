@@ -116,6 +116,11 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         // The normal strategy obtains the produced task, schedules
         // a new thread to produce more, runs the task and then exits.
         _selectorManager.execute(_strategy::produce);
+
+        // Set started only if we really are started
+        Start start = new Start();
+        submit(start);
+        start._started.await();
     }
 
     protected void onSelectFailed(Throwable cause) throws Exception
@@ -151,7 +156,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
     {
         // doStop might be called for a failed managedSelector,
         // We do not want to wait twice, so we only stop once for each start
-        if (_started.compareAndSet(true, false))
+        if (_started.compareAndSet(true, false) && _selector != null)
         {
             // Close connections, but only wait a single selector cycle for it to take effect
             CloseConnections closeConnections = new CloseConnections();
@@ -499,7 +504,9 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             }
             catch (Throwable x)
             {
-                Selector selector = _selector;
+                IO.close(_selector);
+                _selector = null;
+
                 if (isRunning())
                 {
                     LOG.warn("Fatal select() failure", x);
@@ -510,8 +517,6 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                     LOG.warn(x.toString());
                     LOG.debug(x);
                 }
-                _selector = null;
-                IO.close(selector);
             }
             return false;
         }
