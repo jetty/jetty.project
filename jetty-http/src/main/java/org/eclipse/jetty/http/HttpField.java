@@ -37,7 +37,10 @@ public class HttpField
     public HttpField(HttpHeader header, String name, String value)
     {
         _header = header;
-        _name = name;
+        if (_header != null && name == null)
+            _name = _header.asString();
+        else
+            _name = Objects.requireNonNull(name);
         _value = value;
     }
 
@@ -326,8 +329,6 @@ public class HttpField
         if (_header != field.getHeader())
             return false;
         if (!_name.equalsIgnoreCase(field.getName()))
-            return false;
-        if (_value == null && field.getValue() != null)
             return false;
         return Objects.equals(_value, field.getValue());
     }

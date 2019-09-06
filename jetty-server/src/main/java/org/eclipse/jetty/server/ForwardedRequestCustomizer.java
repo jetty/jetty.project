@@ -352,7 +352,7 @@ public class ForwardedRequestCustomizer implements Customizer
     }
 
     /**
-     * @return true if the presence of a SSL session or certificate header is sufficient
+     * @return true if the presence of an SSL session or certificate header is sufficient
      * to indicate a secure request (default is true)
      */
     public boolean isSslIsSecure()
@@ -361,7 +361,7 @@ public class ForwardedRequestCustomizer implements Customizer
     }
 
     /**
-     * @param sslIsSecure true if the presence of a SSL session or certificate header is sufficient
+     * @param sslIsSecure true if the presence of an SSL session or certificate header is sufficient
      * to indicate a secure request (default is true)
      */
     public void setSslIsSecure(boolean sslIsSecure)
@@ -628,16 +628,16 @@ public class ForwardedRequestCustomizer implements Customizer
             if (!getForwardedPortAsAuthority())
             {
                 if (_for == null)
-                    _for = new PortSetHostPort(_request.getRemoteHost(), field.getIntValue());
+                    _for = new PortSetHostPort(_request.getRemoteHost(), Integer.parseInt(getLeftMost(field.getValue())));
                 else if (_for instanceof PossiblyPartialHostPort && _for.getPort() <= 0)
-                    _for = new HostPort(HostPort.normalizeHost(_for.getHost()), field.getIntValue());
+                    _for = new HostPort(HostPort.normalizeHost(_for.getHost()), Integer.parseInt(getLeftMost(field.getValue())));
             }
             else
             {
                 if (_host == null)
-                    _host = new PortSetHostPort(_request.getServerName(), field.getIntValue());
+                    _host = new PortSetHostPort(_request.getServerName(), Integer.parseInt(getLeftMost(field.getValue())));
                 else if (_host instanceof PossiblyPartialHostPort && _host.getPort() <= 0)
-                    _host = new HostPort(HostPort.normalizeHost(_host.getHost()), field.getIntValue());
+                    _host = new HostPort(HostPort.normalizeHost(_host.getHost()), Integer.parseInt(getLeftMost(field.getValue())));
             }
         }
 
