@@ -91,7 +91,8 @@ public class OpenIdCredentials
 
                 claims = decodeJWT(idToken);
                 if (LOG.isDebugEnabled())
-                    LOG.debug("userClaims {}", claims);
+                    LOG.debug("claims {}", claims);
+                validateClaims();
             }
             finally
             {
@@ -101,27 +102,35 @@ public class OpenIdCredentials
         }
     }
 
-    public boolean validate()
+    private void validateClaims()
     {
-        if (authCode != null)
-            return false;
+        // Issuer Identifier for the OpenID Provider MUST exactly match the value of the iss (issuer) Claim.
+        if (!configuration.getIssuer().equals(claims.get("iss")))
+        {
+            LOG.warn("Invalid \"iss\" Claim: was {}, expected {}", claims.get("iss"), configuration.getIssuer());
+            throw new IllegalArgumentException("invalid iss claim");
+        }
 
         // The aud (audience) Claim MUST contain the client_id value.
-        String audience = (String)claims.get("aud");
-        if (!configuration.getClientId().equals(audience))
+        if (!configuration.getClientId().equals(claims.get("aud")))
         {
-            LOG.warn("Audience claim MUST contain the value of the Issuer Identifier for the OP");
-            return false;
+            LOG.warn("Audience Claim MUST contain the client_id value");
+            throw new IllegalArgumentException("invalid aud claim");
         }
 
-        // TODO: this does not work for microsoft
-        // Issuer Identifier for the OpenID Provider MUST exactly match the value of the iss (issuer) Claim.
-        String issuer = (String)claims.get("iss");
-        if (!configuration.getOpenIdProvider().equals(issuer))
+        // If an azp (authorized party) Claim is present, verify that its client_id is the Claim Value.
+        Object azp = claims.get("azp");
+        if (azp != null && !configuration.getClientId().equals(azp))
         {
-            //LOG.warn("");
-            //return false;
+            LOG.warn("Authorized party claim value should be the client_id");
+            throw new IllegalArgumentException("invalid azp claim");
         }
+    }
+
+    public boolean isExpired()
+    {
+        if (authCode != null || claims == null)
+            return true;
 
         // Check expiry
         long expiry = (Long)claims.get("exp");
@@ -130,10 +139,10 @@ public class OpenIdCredentials
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("OpenId Credentials expired {}", this);
-            return false;
+            return true;
         }
 
-        return true;
+        return false;
     }
 
     protected Map<String, Object> decodeJWT(String jwt) throws IOException

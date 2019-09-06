@@ -81,7 +81,7 @@ public class OpenIdAuthenticationDemo
             Principal userPrincipal = request.getUserPrincipal();
             if (userPrincipal != null)
             {
-                Map<String, Object> userInfo = (Map)request.getSession().getAttribute(OpenIdAuthenticator.__USER_CLAIMS);
+                Map<String, Object> userInfo = (Map)request.getSession().getAttribute(OpenIdAuthenticator.__CLAIMS);
                 response.getWriter().println("<p>Welcome: " + userInfo.get("name") + "</p>");
                 response.getWriter().println("<a href=\"/profile\">Profile</a><br>");
                 response.getWriter().println("<a href=\"/admin\">Admin</a><br>");
@@ -100,7 +100,7 @@ public class OpenIdAuthenticationDemo
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException
         {
             response.setContentType(MimeTypes.Type.TEXT_HTML.asString());
-            Map<String, Object> userInfo = (Map)request.getSession().getAttribute(OpenIdAuthenticator.__USER_CLAIMS);
+            Map<String, Object> userInfo = (Map)request.getSession().getAttribute(OpenIdAuthenticator.__CLAIMS);
 
             response.getWriter().println("<!-- Add icon library -->\n" +
                 "<div class=\"card\">\n" +
@@ -180,7 +180,7 @@ public class OpenIdAuthenticationDemo
         /*
         // Microsoft Authentication
         OpenIdConfiguration configuration = new OpenIdConfiguration(
-            "https://login.microsoftonline.com/common/v2.0",
+            "https://login.microsoftonline.com/9188040d-6c67-4c5b-b112-36a304b66dad/v2.0",
             "5f05dea8-2bd9-45de-b30f-cf5c102b8784",
             "IfhQJKi-5[vxhh_=ldqt0y4PkV3z_1ca");
          */
@@ -211,7 +211,7 @@ public class OpenIdAuthenticationDemo
         hashLoginService.setHotReload(true);
 
         // Configure OpenIdLoginService optionally providing a base LoginService to provide user roles
-        OpenIdLoginService loginService = new OpenIdLoginService(configuration, hashLoginService);
+        OpenIdLoginService loginService = new OpenIdLoginService(configuration);//, hashLoginService);
         securityHandler.setLoginService(loginService);
 
         Authenticator authenticator = new OpenIdAuthenticator(configuration, "/error");

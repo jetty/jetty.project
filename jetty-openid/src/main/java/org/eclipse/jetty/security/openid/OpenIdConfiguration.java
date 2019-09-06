@@ -26,12 +26,16 @@ import java.util.Map;
 
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.ajax.JSON;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 public class OpenIdConfiguration
 {
+    private static final Logger LOG = Log.getLogger(OpenIdConfiguration.class);
     private static String CONFIG_PATH = "/.well-known/openid-configuration";
 
     private final String openIdProvider;
+    private final String issuer;
     private final String authEndpoint;
     private final String tokenEndpoint;
     private final String clientId;
@@ -55,13 +59,16 @@ public class OpenIdConfiguration
             InputStream inputStream = providerUri.toURL().openConnection().getInputStream();
             String content = IO.toString(inputStream);
             discoveryDocument = (Map)JSON.parse(content);
+            if (LOG.isDebugEnabled())
+                LOG.debug("discovery document {}", discoveryDocument);
         }
         catch (Throwable e)
         {
             throw new IllegalArgumentException("invalid identity provider", e);
         }
 
-        if (discoveryDocument.get("issuer") == null)
+        issuer = (String)discoveryDocument.get("issuer");
+        if (issuer == null)
             throw new IllegalArgumentException();
 
         authEndpoint = (String)discoveryDocument.get("authorization_endpoint");
@@ -91,6 +98,11 @@ public class OpenIdConfiguration
     public String getClientSecret()
     {
         return clientSecret;
+    }
+
+    public String getIssuer()
+    {
+        return issuer;
     }
 
     public String getOpenIdProvider()

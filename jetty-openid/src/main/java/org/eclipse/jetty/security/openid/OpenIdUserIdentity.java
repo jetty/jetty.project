@@ -29,11 +29,6 @@ public class OpenIdUserIdentity implements UserIdentity
     private final Principal userPrincipal;
     private final UserIdentity userIdentity;
 
-    public OpenIdUserIdentity(Subject subject, Principal userPrincipal)
-    {
-        this(subject, userPrincipal, null);
-    }
-
     public OpenIdUserIdentity(Subject subject, Principal userPrincipal, UserIdentity userIdentity)
     {
         this.subject = subject;

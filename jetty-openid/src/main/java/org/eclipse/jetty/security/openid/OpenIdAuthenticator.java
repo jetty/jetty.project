@@ -61,8 +61,8 @@ public class OpenIdAuthenticator extends LoginAuthenticator
 {
     private static final Logger LOG = Log.getLogger(OpenIdAuthenticator.class);
 
-    public static final String __USER_CLAIMS = "org.eclipse.jetty.security.openid.user_claims";
-    public static final String __RESPONSE_JSON = "org.eclipse.jetty.security.openid.response";
+    public static final String __CLAIMS = "org.eclipse.jetty.security.openid.claims";
+    public static final String __RESPONSE = "org.eclipse.jetty.security.openid.response";
     public static final String __ERROR_PAGE = "org.eclipse.jetty.security.openid.error_page";
     public static final String __J_URI = "org.eclipse.jetty.security.openid.URI";
     public static final String __J_POST = "org.eclipse.jetty.security.openid.POST";
@@ -162,8 +162,8 @@ public class OpenIdAuthenticator extends LoginAuthenticator
             HttpSession session = ((HttpServletRequest)request).getSession();
             Authentication cached = new SessionAuthentication(getAuthMethod(), user, credentials);
             session.setAttribute(SessionAuthentication.__J_AUTHENTICATED, cached);
-            session.setAttribute(__USER_CLAIMS, ((OpenIdCredentials)credentials).getClaims());
-            session.setAttribute(__RESPONSE_JSON, ((OpenIdCredentials)credentials).getResponse());
+            session.setAttribute(__CLAIMS, ((OpenIdCredentials)credentials).getClaims());
+            session.setAttribute(__RESPONSE, ((OpenIdCredentials)credentials).getResponse());
         }
         return user;
     }
@@ -180,8 +180,8 @@ public class OpenIdAuthenticator extends LoginAuthenticator
 
         //clean up session
         session.removeAttribute(SessionAuthentication.__J_AUTHENTICATED);
-        session.removeAttribute(__USER_CLAIMS);
-        session.removeAttribute(__RESPONSE_JSON);
+        session.removeAttribute(__CLAIMS);
+        session.removeAttribute(__RESPONSE);
     }
 
     @Override
