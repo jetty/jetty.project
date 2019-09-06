@@ -222,7 +222,7 @@ public class Request implements HttpServletRequest
     private long _timeStamp;
     private MultiParts _multiParts; //if the request is a multi-part mime
     private AsyncContextState _async;
-    private List<HttpSession> _sessions; //list of sessions used during lifetime of request
+    private List<Session> _sessions; //list of sessions used during lifetime of request
 
     public Request(HttpChannel channel, HttpInput input)
     {
@@ -377,43 +377,36 @@ public class Request implements HttpServletRequest
      */
     public void enterSession(HttpSession s)
     {
-        if (s == null)
+        if (!(s instanceof Session))
             return;
 
         if (_sessions == null)
             _sessions = new ArrayList<>();
         if (LOG.isDebugEnabled())
             LOG.debug("Request {} entering session={}", this, s);
-        _sessions.add(s);
+        _sessions.add((Session)s);
     }
 
     /**
      * Complete this request's access to a session.
      *
-     * @param s the session
+     * @param session the session
      */
-    private void leaveSession(HttpSession s)
+    private void leaveSession(Session session)
     {
-        if (s == null)
-            return;
-        
-        Session session = (Session)s;
         if (LOG.isDebugEnabled())
             LOG.debug("Request {} leaving session {}", this, session);
         session.getSessionHandler().complete(session);
     }
-    
+
     /**
      * A response is being committed for a session, 
      * potentially write the session out before the
      * client receives the response.
+     * @param session the session
      */
-    private void commitSession(HttpSession s)
+    private void commitSession(Session session)
     {
-        if (s == null)
-            return;
-
-        Session session = (Session)s;
         if (LOG.isDebugEnabled())
             LOG.debug("Response {} committing for session {}", this, session);
         session.getSessionHandler().commit(session);
@@ -1532,9 +1525,9 @@ public class Request implements HttpServletRequest
      */
     public void onCompleted()
     {
-        if (_sessions != null && _sessions.size() > 0)
+        if (_sessions != null)
         {
-            for (HttpSession s:_sessions)
+            for (Session s:_sessions)
                 leaveSession(s);
         }
     }
@@ -1545,9 +1538,9 @@ public class Request implements HttpServletRequest
      */
     public void onResponseCommit()
     {
-        if (_sessions != null && _sessions.size() > 0)
+        if (_sessions != null)
         {
-            for (HttpSession s:_sessions)
+            for (Session s:_sessions)
                 commitSession(s);
         }
     }

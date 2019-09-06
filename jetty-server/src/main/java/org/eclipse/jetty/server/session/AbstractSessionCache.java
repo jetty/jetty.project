@@ -545,17 +545,9 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
                 }
                 else
                 {
-                    //A passivate listener might remove a non-serializable attribute that
-                    //the activate listener might put back in again, which would spuriously
-                    //set the dirty bit to true, causing another round of passivate/activate
-                    //when the request exits. The store clears the dirty bit if it does a
-                    //save, so ensure dirty flag is set to the value determined by the store,
-                    //not a passivation listener.
                     session.willPassivate();
                     _sessionDataStore.store(session.getId(), session.getSessionData());
-                    boolean dirty = session.getSessionData().isDirty();
                     session.didActivate();
-                    session.getSessionData().setDirty(dirty);
                 }
             }
         }

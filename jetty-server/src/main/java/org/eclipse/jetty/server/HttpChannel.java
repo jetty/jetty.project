@@ -824,16 +824,14 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             if (info == null)
                 info = _response.newResponseMetaData();
             commit(info);
-
+            _combinedListener.onResponseBegin(_request);
             _request.onResponseCommit();
-
+            
             // wrap callback to process 100 responses
             final int status = info.getStatus();
             final Callback committed = (status < HttpStatus.OK_200 && status >= HttpStatus.CONTINUE_100)
                 ? new Send100Callback(callback)
                 : new SendCallback(callback, content, true, complete);
-
-            _combinedListener.onResponseBegin(_request);
 
             // committing write
             _transport.send(info, _request.isHead(), content, complete, committed);
