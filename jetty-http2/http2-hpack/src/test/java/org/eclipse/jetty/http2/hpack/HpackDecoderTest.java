@@ -26,6 +26,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.hpack.HpackException.CompressionException;
+import org.eclipse.jetty.http2.hpack.HpackException.SessionException;
 import org.eclipse.jetty.http2.hpack.HpackException.StreamException;
 import org.eclipse.jetty.util.TypeUtil;
 import org.hamcrest.Matchers;
@@ -43,6 +44,21 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 public class HpackDecoderTest
 {
+    /*
+      0   1   2   3   4   5   6   7
+     +---+---+---+---+---+---+---+---+
+     | 0 | 0 | 0 | 0 |       0       |
+     +---+---+-----------------------+
+     | H |     Name Length (7+)      |
+     +---+---------------------------+
+     |  Name String (Length octets)  |
+     +---+---------------------------+
+     | H |     Value Length (7+)     |
+     +---+---------------------------+
+     | Value String (Length octets)  |
+     +-------------------------------+
+     */
+
     @Test
     public void testDecodeD_3() throws Exception
     {
@@ -253,14 +269,14 @@ public class HpackDecoderTest
             decoder.decode(buffer);
             fail();
         }
-        catch (HpackException.SessionException e)
+        catch (SessionException e)
         {
             assertThat(e.getMessage(), Matchers.startsWith("Unknown index"));
         }
     }
 
     /* 8.1.2.1. Pseudo-Header Fields */
-    @Test()
+    @Test
     public void test8_1_2_1_PsuedoHeaderFields() throws Exception
     {
         // 1:Sends a HEADERS frame that contains a unknown pseudo-header field
@@ -312,7 +328,7 @@ public class HpackDecoderTest
         }
     }
 
-    @Test()
+    @Test
     public void test8_1_2_2_ConnectionSpecificHeaderFields() throws Exception
     {
         MetaDataBuilder mdb;
@@ -349,7 +365,7 @@ public class HpackDecoderTest
         assertNotNull(mdb.build());
     }
 
-    @Test()
+    @Test
     public void test8_1_2_3_RequestPseudoHeaderFields() throws Exception
     {
         {
@@ -368,7 +384,7 @@ public class HpackDecoderTest
             mdb.emit(new HttpField(HttpHeader.C_SCHEME, "http"));
             mdb.emit(new HttpField(HttpHeader.C_AUTHORITY, "localhost:8080"));
             mdb.emit(new HttpField(HttpHeader.C_PATH, ""));
-            StreamException ex = assertThrows(StreamException.class, () -> mdb.build());
+            StreamException ex = assertThrows(StreamException.class, mdb::build);
             assertThat(ex.getMessage(), Matchers.containsString("No Path"));
         }
 
@@ -378,7 +394,7 @@ public class HpackDecoderTest
             mdb.emit(new HttpField(HttpHeader.C_SCHEME, "http"));
             mdb.emit(new HttpField(HttpHeader.C_AUTHORITY, "localhost:8080"));
             mdb.emit(new HttpField(HttpHeader.C_PATH, "/"));
-            StreamException ex = assertThrows(StreamException.class, () -> mdb.build());
+            StreamException ex = assertThrows(StreamException.class, mdb::build);
             assertThat(ex.getMessage(), Matchers.containsString("No Method"));
         }
 
@@ -388,7 +404,7 @@ public class HpackDecoderTest
             mdb.emit(new HttpField(HttpHeader.C_METHOD, "GET"));
             mdb.emit(new HttpField(HttpHeader.C_AUTHORITY, "localhost:8080"));
             mdb.emit(new HttpField(HttpHeader.C_PATH, "/"));
-            StreamException ex = assertThrows(StreamException.class, () -> mdb.build());
+            StreamException ex = assertThrows(StreamException.class, mdb::build);
             assertThat(ex.getMessage(), Matchers.containsString("No Scheme"));
         }
 
@@ -398,7 +414,7 @@ public class HpackDecoderTest
             mdb.emit(new HttpField(HttpHeader.C_METHOD, "GET"));
             mdb.emit(new HttpField(HttpHeader.C_SCHEME, "http"));
             mdb.emit(new HttpField(HttpHeader.C_AUTHORITY, "localhost:8080"));
-            StreamException ex = assertThrows(StreamException.class, () -> mdb.build());
+            StreamException ex = assertThrows(StreamException.class, mdb::build);
             assertThat(ex.getMessage(), Matchers.containsString("No Path"));
         }
 
@@ -410,7 +426,7 @@ public class HpackDecoderTest
             mdb.emit(new HttpField(HttpHeader.C_SCHEME, "http"));
             mdb.emit(new HttpField(HttpHeader.C_AUTHORITY, "localhost:8080"));
             mdb.emit(new HttpField(HttpHeader.C_PATH, "/"));
-            StreamException ex = assertThrows(StreamException.class, () -> mdb.build());
+            StreamException ex = assertThrows(StreamException.class, mdb::build);
             assertThat(ex.getMessage(), Matchers.containsString("Duplicate"));
         }
 
@@ -423,12 +439,12 @@ public class HpackDecoderTest
             mdb.emit(new HttpField(HttpHeader.C_AUTHORITY, "localhost:8080"));
             mdb.emit(new HttpField(HttpHeader.C_PATH, "/"));
 
-            StreamException ex = assertThrows(StreamException.class, () -> mdb.build());
+            StreamException ex = assertThrows(StreamException.class, mdb::build);
             assertThat(ex.getMessage(), Matchers.containsString("Duplicate"));
         }
     }
 
-    @Test()
+    @Test
     public void testHuffmanEncodedStandard() throws Exception
     {
         HpackDecoder decoder = new HpackDecoder(4096, 8192);
@@ -446,8 +462,8 @@ public class HpackDecoderTest
     }
 
     /* 5.2.1: Sends a Huffman-encoded string literal representation with padding longer than 7 bits */
-    @Test()
-    public void testHuffmanEncodedExtraPadding() throws Exception
+    @Test
+    public void testHuffmanEncodedExtraPadding()
     {
         HpackDecoder decoder = new HpackDecoder(4096, 8192);
 
@@ -458,8 +474,8 @@ public class HpackDecoderTest
     }
 
     /* 5.2.2: Sends a Huffman-encoded string literal representation padded by zero */
-    @Test()
-    public void testHuffmanEncodedZeroPadding() throws Exception
+    @Test
+    public void testHuffmanEncodedZeroPadding()
     {
         HpackDecoder decoder = new HpackDecoder(4096, 8192);
 
@@ -471,8 +487,8 @@ public class HpackDecoderTest
     }
 
     /* 5.2.3: Sends a Huffman-encoded string literal representation containing the EOS symbol */
-    @Test()
-    public void testHuffmanEncodedWithEOS() throws Exception
+    @Test
+    public void testHuffmanEncodedWithEOS()
     {
         HpackDecoder decoder = new HpackDecoder(4096, 8192);
 
@@ -483,8 +499,8 @@ public class HpackDecoderTest
         assertThat(ex.getMessage(), Matchers.containsString("EOS in content"));
     }
 
-    @Test()
-    public void testHuffmanEncodedOneIncompleteOctet() throws Exception
+    @Test
+    public void testHuffmanEncodedOneIncompleteOctet()
     {
         HpackDecoder decoder = new HpackDecoder(4096, 8192);
 
@@ -495,8 +511,8 @@ public class HpackDecoderTest
         assertThat(ex.getMessage(), Matchers.containsString("Bad termination"));
     }
 
-    @Test()
-    public void testHuffmanEncodedTwoIncompleteOctet() throws Exception
+    @Test
+    public void testHuffmanEncodedTwoIncompleteOctet()
     {
         HpackDecoder decoder = new HpackDecoder(4096, 8192);
 
@@ -505,5 +521,50 @@ public class HpackDecoderTest
 
         CompressionException ex = assertThrows(CompressionException.class, () -> decoder.decode(buffer));
         assertThat(ex.getMessage(), Matchers.containsString("Bad termination"));
+    }
+
+    @Test
+    public void testZeroLengthName()
+    {
+        HpackDecoder decoder = new HpackDecoder(4096, 8192);
+
+        String encoded = "00000130";
+        ByteBuffer buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
+        SessionException ex = assertThrows(SessionException.class, () -> decoder.decode(buffer));
+        assertThat(ex.getMessage(), Matchers.containsString("Header size 0"));
+    }
+
+    @Test
+    public void testZeroLengthValue() throws Exception
+    {
+        HpackDecoder decoder = new HpackDecoder(4096, 8192);
+
+        String encoded = "00016800";
+        ByteBuffer buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
+        MetaData metaData = decoder.decode(buffer);
+        assertThat(metaData.getFields().size(), is(1));
+        assertThat(metaData.getFields().get("h"), is(""));
+    }
+
+    @Test
+    public void testUpperCaseName()
+    {
+        HpackDecoder decoder = new HpackDecoder(4096, 8192);
+
+        String encoded = "0001480130";
+        ByteBuffer buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
+        StreamException ex = assertThrows(StreamException.class, () -> decoder.decode(buffer));
+        assertThat(ex.getMessage(), Matchers.containsString("Uppercase header"));
+    }
+
+    @Test
+    public void testWhiteSpaceName()
+    {
+        HpackDecoder decoder = new HpackDecoder(4096, 8192);
+
+        String encoded = "0001200130";
+        ByteBuffer buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
+        StreamException ex = assertThrows(StreamException.class, () -> decoder.decode(buffer));
+        assertThat(ex.getMessage(), Matchers.containsString("Illegal header"));
     }
 }
