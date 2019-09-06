@@ -19,6 +19,7 @@
 package org.eclipse.jetty.test;
 
 import java.io.IOException;
+import java.net.URI;
 import java.nio.channels.Selector;
 import java.util.Collection;
 import java.util.concurrent.CountDownLatch;
@@ -38,7 +39,9 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
@@ -66,6 +69,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class FailedSelectorTest
 {
+    private static final Logger LOG = Log.getLogger(FailedSelectorTest.class);
     private HttpClient client;
     private Server server;
     private AsyncCloseSelectorServlet asyncCloseSelectorServlet;
@@ -79,9 +83,11 @@ public class FailedSelectorTest
     @BeforeEach
     public void startClient() throws Exception
     {
-        client = new HttpClient();
-        client.setIdleTimeout(2000);
+        HttpClientTransport transport = new HttpClientTransportOverHTTP(1);
+        client = new HttpClient(transport, null);
+        client.setIdleTimeout(1000);
         client.setMaxConnectionsPerDestination(1);
+        client.setMaxRequestsQueuedPerDestination(1);
         client.start();
     }
 
@@ -94,6 +100,8 @@ public class FailedSelectorTest
     public void startServer(Function<Server, ServerConnector> customizeServerConsumer) throws Exception
     {
         server = new Server();
+        server.setStopTimeout(1000);
+        server.setStopAtShutdown(true);
 
         ServerConnector connector = customizeServerConsumer.apply(server);
         server.addConnector(connector);
@@ -126,8 +134,9 @@ public class FailedSelectorTest
 
         startServer((server) ->
         {
-            CustomServerConnector connector = new CustomServerConnector(server, failedLatch, 1, 1);
+            CustomServerConnector connector = new CustomServerConnector(server, 1, 1, new RestartServerTask(server, failedLatch));
             connector.setPort(0);
+            connector.setIdleTimeout(1000);
             return connector;
         });
 
@@ -139,6 +148,7 @@ public class FailedSelectorTest
 
         // Wait for selectors to close from action above
         assertTrue(failedLatch.await(2, TimeUnit.SECONDS));
+        LOG.info("Got failedLatch");
 
         // Request /hello
         assertRequestHello();
@@ -152,8 +162,9 @@ public class FailedSelectorTest
 
         startServer((server) ->
         {
-            CustomServerConnector connector = new CustomServerConnector(server, failedLatch, 1, 1);
+            CustomServerConnector connector = new CustomServerConnector(server, 1, 1, new RestartServerTask(server, failedLatch));
             connector.setPort(0);
+            connector.setIdleTimeout(1000);
             return connector;
         });
 
@@ -165,6 +176,7 @@ public class FailedSelectorTest
 
         // Wait for selectors to close from action above
         assertTrue(failedLatch.await(2, TimeUnit.SECONDS));
+        LOG.info("Got failedLatch");
 
         // Ensure that Async Listener onError was called
         assertTrue(asyncCloseSelectorServlet.onErrorLatch.await(2, TimeUnit.SECONDS));
@@ -175,7 +187,10 @@ public class FailedSelectorTest
 
     private void assertRequestSelectorClose(String path) throws InterruptedException, ExecutionException, TimeoutException
     {
-        ContentResponse response = client.newRequest(server.getURI().resolve(path))
+        URI dest = server.getURI().resolve(path);
+        LOG.info("Requesting GET on {}", dest);
+
+        ContentResponse response = client.newRequest(dest)
             .method(HttpMethod.GET)
             .header(HttpHeader.CONNECTION, "close")
             .send();
@@ -186,7 +201,9 @@ public class FailedSelectorTest
 
     private void assertRequestHello() throws InterruptedException, ExecutionException, TimeoutException
     {
-        ContentResponse response = client.newRequest(server.getURI().resolve("/hello"))
+        URI dest = server.getURI().resolve("/hello");
+        LOG.info("Requesting GET on {}", dest);
+        ContentResponse response = client.newRequest(dest)
             .method(HttpMethod.GET)
             .header(HttpHeader.CONNECTION, "close")
             .send();
@@ -195,14 +212,44 @@ public class FailedSelectorTest
         assertThat("/hello response", response.getContentAsString(), startsWith("Hello "));
     }
 
+    public static class RestartServerTask implements Runnable
+    {
+        private final Server server;
+        private final CountDownLatch latch;
+
+        public RestartServerTask(Server server, CountDownLatch latch)
+        {
+            this.server = server;
+            this.latch = latch;
+        }
+
+        @Override
+        public void run()
+        {
+            try
+            {
+                server.stop();
+                server.start();
+            }
+            catch (Exception e)
+            {
+                e.printStackTrace();
+            }
+            finally
+            {
+                latch.countDown();
+            }
+        }
+    }
+
     public static class CustomServerConnector extends ServerConnector
     {
-        private final CountDownLatch failedLatch;
+        private final Runnable onSelectFailureTask;
 
-        public CustomServerConnector(Server server, CountDownLatch failedLatch, int acceptors, int selectors)
+        public CustomServerConnector(Server server, int acceptors, int selectors, Runnable onSelectFailureTask)
         {
             super(server, acceptors, selectors);
-            this.failedLatch = failedLatch;
+            this.onSelectFailureTask = onSelectFailureTask;
         }
 
         @Override
@@ -213,7 +260,7 @@ public class FailedSelectorTest
                 @Override
                 protected ManagedSelector newSelector(int id)
                 {
-                    return new CustomManagedSelector(this, id, failedLatch);
+                    return new CustomManagedSelector(this, id, onSelectFailureTask);
                 }
             };
         }
@@ -221,27 +268,18 @@ public class FailedSelectorTest
 
     public static class CustomManagedSelector extends ManagedSelector
     {
-        private static final Logger LOG = Log.getLogger(CustomManagedSelector.class);
-        private final CountDownLatch failedLatch;
+        private final Runnable onSelectFailureTask;
 
-        public CustomManagedSelector(SelectorManager selectorManager, int id, CountDownLatch failedLatch)
+        public CustomManagedSelector(SelectorManager selectorManager, int id, Runnable onSelectFailureTask)
         {
             super(selectorManager, id);
-            this.failedLatch = failedLatch;
+            this.onSelectFailureTask = onSelectFailureTask;
         }
 
         @Override
-        protected void onSelectFailed(Throwable cause) throws Exception
+        protected void onSelectFailed(Throwable cause)
         {
-            try
-            {
-                LOG.debug("onSelectFailed()", cause);
-                this.startSelector();
-            }
-            finally
-            {
-                failedLatch.countDown();
-            }
+            new Thread(onSelectFailureTask, "onSelectFailedTask").start();
         }
     }
 
@@ -301,6 +339,7 @@ public class FailedSelectorTest
         {
             resp.setContentType("text/plain");
             resp.setCharacterEncoding("utf-8");
+            resp.setHeader("Connection", "close");
             resp.getWriter().printf("Closing selectors in %,d ms%n", DELAY_MS);
             scheduledExecutorService.schedule(new InterruptSelector(connector), DELAY_MS, TimeUnit.MILLISECONDS);
         }
