@@ -510,6 +510,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                     LOG.warn(x.toString());
                     LOG.debug(x);
                 }
+                _selector = null;
                 IO.close(selector);
             }
             return false;
