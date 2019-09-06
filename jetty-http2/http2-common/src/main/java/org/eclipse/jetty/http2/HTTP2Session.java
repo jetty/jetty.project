@@ -60,6 +60,7 @@ import org.eclipse.jetty.util.AtomicBiInteger;
 import org.eclipse.jetty.util.Atomics;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.CountingCallback;
+import org.eclipse.jetty.util.MathUtils;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -462,47 +463,33 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         int windowDelta = frame.getWindowDelta();
         if (streamId > 0)
         {
-            if (windowDelta == 0)
+            IStream stream = getStream(streamId);
+            if (stream != null)
             {
-                reset(new ResetFrame(streamId, ErrorCode.PROTOCOL_ERROR.code), Callback.NOOP);
-            }
-            else
-            {
-                IStream stream = getStream(streamId);
-                if (stream != null)
+                int streamSendWindow = stream.updateSendWindow(0);
+                if (MathUtils.sumOverflows(streamSendWindow, windowDelta))
                 {
-                    int streamSendWindow = stream.updateSendWindow(0);
-                    if (sumOverflows(streamSendWindow, windowDelta))
-                    {
-                        reset(new ResetFrame(streamId, ErrorCode.FLOW_CONTROL_ERROR.code), Callback.NOOP);
-                    }
-                    else
-                    {
-                        stream.process(frame, Callback.NOOP);
-                        onWindowUpdate(stream, frame);
-                    }
+                    reset(new ResetFrame(streamId, ErrorCode.FLOW_CONTROL_ERROR.code), Callback.NOOP);
                 }
                 else
                 {
-                    if (!isRemoteStreamClosed(streamId))
-                        onConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "unexpected_window_update_frame");
+                    stream.process(frame, Callback.NOOP);
+                    onWindowUpdate(stream, frame);
                 }
+            }
+            else
+            {
+                if (!isRemoteStreamClosed(streamId))
+                    onConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "unexpected_window_update_frame");
             }
         }
         else
         {
-            if (windowDelta == 0)
-            {
-                onConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "invalid_window_update_frame");
-            }
+            int sessionSendWindow = updateSendWindow(0);
+            if (MathUtils.sumOverflows(sessionSendWindow, windowDelta))
+                onConnectionFailure(ErrorCode.FLOW_CONTROL_ERROR.code, "invalid_flow_control_window");
             else
-            {
-                int sessionSendWindow = updateSendWindow(0);
-                if (sumOverflows(sessionSendWindow, windowDelta))
-                    onConnectionFailure(ErrorCode.FLOW_CONTROL_ERROR.code, "invalid_flow_control_window");
-                else
-                    onWindowUpdate(null, frame);
-            }
+                onWindowUpdate(null, frame);
         }
     }
 
@@ -530,19 +517,6 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
             stream.process(new FailureFrame(error, reason), callback);
         else
             callback.succeeded();
-    }
-
-    private boolean sumOverflows(int a, int b)
-    {
-        try
-        {
-            Math.addExact(a, b);
-            return false;
-        }
-        catch (ArithmeticException x)
-        {
-            return true;
-        }
     }
 
     @Override

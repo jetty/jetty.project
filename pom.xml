@@ -507,6 +507,7 @@
           <artifactId>maven-invoker-plugin</artifactId>
           <version>3.2.1-SNAPSHOT</version>
           <configuration>
+            <mergeUserSettings>true</mergeUserSettings>
             <writeJunitReport>true</writeJunitReport>
             <junitPackageName>org.eclipse.jetty.maven.its</junitPackageName>
             <debug>${it.debug}</debug>
@@ -669,7 +670,7 @@
         <plugin>
           <groupId>org.jacoco</groupId>
           <artifactId>jacoco-maven-plugin</artifactId>
-          <version>0.8.2</version>
+          <version>0.8.4</version>
         </plugin>
         <plugin>
           <groupId>com.agilejava.docbkx</groupId>
