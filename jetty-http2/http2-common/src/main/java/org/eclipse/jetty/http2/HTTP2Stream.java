@@ -44,6 +44,7 @@ import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.io.IdleTimeout;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.MathUtils;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
@@ -372,7 +373,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
         boolean proceed = false;
         synchronized (this)
         {
-            dataDemand = addDemand(dataDemand, n);
+            dataDemand = MathUtils.cappedAdd(dataDemand, n);
             if (!dataProcess)
                 dataProcess = proceed = !dataQueue.isEmpty();
             if (LOG.isDebugEnabled())
@@ -411,18 +412,6 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
         synchronized (this)
         {
             return dataDemand;
-        }
-    }
-
-    private static long addDemand(long x, long y)
-    {
-        try
-        {
-            return Math.addExact(x, y);
-        }
-        catch (ArithmeticException e)
-        {
-            return Long.MAX_VALUE;
         }
     }
 
