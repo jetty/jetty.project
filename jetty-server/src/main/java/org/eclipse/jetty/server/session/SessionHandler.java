@@ -381,9 +381,6 @@ public class SessionHandler extends ScopedHandler
      */
     public void commit(HttpSession session)
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("Commit called with session {}", session);
-
         if (session == null)
             return;
 

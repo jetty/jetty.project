@@ -303,9 +303,9 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
     }
 
     @Override
-    public void setFlushOnResponseCommit(boolean flushOnResponse)
+    public void setFlushOnResponseCommit(boolean flushOnResponseCommit)
     {
-        _flushOnResponseCommit = flushOnResponse;
+        _flushOnResponseCommit = flushOnResponseCommit;
     }
 
     @Override
@@ -538,6 +538,8 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
             //the lastAccess/expiry time changed defer the write until the last request exits
             if (session.getSessionData().isDirty() && _flushOnResponseCommit)
             {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Flush session {} on response commit", session);
                 //save the session
                 if (!_sessionDataStore.isPassivating())
                 {

@@ -22,4 +22,4 @@ etc/sessions/session-cache-hash.xml
 #jetty.session.saveOnInactiveEvict=false
 #jetty.session.saveOnCreate=false
 #jetty.session.removeUnloadableSessions=false
-#jetty.session.flushOnCommit=false
+#jetty.session.flushOnResponseCommit=false
