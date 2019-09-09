@@ -19,26 +19,19 @@
 package org.eclipse.jetty.embedded;
 
 import java.io.File;
-import java.lang.management.ManagementFactory;
 
-import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 public class OneWebApp
 {
-    public static void main(String[] args) throws Exception
+    public static Server createServer(int port)
     {
         // Create a basic jetty server object that will listen on port 8080.
         // Note that if you set this to port 0 then a randomly available port
         // will be assigned that you can either look in the logs for the port,
         // or programmatically obtain it for use in test cases.
-        Server server = new Server(8080);
-
-        // Setup JMX
-        MBeanContainer mbContainer = new MBeanContainer(
-            ManagementFactory.getPlatformMBeanServer());
-        server.addBean(mbContainer);
+        Server server = new Server(port);
 
         // The WebAppContext is the entity that controls the environment in
         // which a web application lives and breathes. In this example the
@@ -55,6 +48,12 @@ public class OneWebApp
         // A WebAppContext is a ContextHandler as well so it needs to be set to
         // the server so it is aware of where to send the appropriate requests.
         server.setHandler(webapp);
+        return server;
+    }
+
+    public static void main(String[] args) throws Exception
+    {
+        Server server = createServer(8080);
 
         // Start things up!
         server.start();
@@ -63,7 +62,6 @@ public class OneWebApp
 
         // The use of server.join() the will make the current thread join and
         // wait until the server is done executing.
-        // See http://docs.oracle.com/javase/7/docs/api/java/lang/Thread.html#join()
         server.join();
     }
 }

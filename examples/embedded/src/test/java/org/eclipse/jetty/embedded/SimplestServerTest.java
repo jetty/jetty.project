@@ -18,26 +18,39 @@
 
 package org.eclipse.jetty.embedded;
 
-import org.eclipse.jetty.server.Server;
+import java.net.HttpURLConnection;
+import java.net.URI;
 
-/**
- * The simplest possible Jetty server.
- */
-public class SimplestServer
+import org.eclipse.jetty.server.Server;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+
+public class SimplestServerTest
 {
-    public static Server createServer(int port)
+    private Server server;
+
+    @BeforeEach
+    public void startServer() throws Exception
     {
-        Server server = new Server(port);
-        // This has a connector listening on port specified
-        // and no handlers, meaning all requests will result
-        // in a 404 response
-        return server;
+        server = SimplestServer.createServer(0);
+        server.start();
     }
 
-    public static void main(String[] args) throws Exception
+    @AfterEach
+    public void stopServer() throws Exception
     {
-        Server server = createServer(8080);
-        server.start();
-        server.join();
+        server.stop();
+    }
+
+    @Test
+    public void testGetTest() throws Exception
+    {
+        URI destUri = server.getURI().resolve("/test");
+        HttpURLConnection http = (HttpURLConnection)destUri.toURL().openConnection();
+        assertThat("HTTP Response Status", http.getResponseCode(), is(HttpURLConnection.HTTP_NOT_FOUND));
     }
 }

@@ -18,26 +18,28 @@
 
 package org.eclipse.jetty.embedded;
 
+import java.util.Arrays;
+
 import org.eclipse.jetty.rewrite.RewriteCustomizer;
 import org.eclipse.jetty.rewrite.handler.CompactPathRule;
 import org.eclipse.jetty.rewrite.handler.RewriteRegexRule;
-import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 
 public class RewriteServer
 {
-    public static void main(String[] args) throws Exception
+    public static Server createServer(int port)
     {
-        Server server = new Server(8080);
-
-        HttpConfiguration config = server.getConnectors()[0].getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration();
+        Server server = new Server(port);
 
         RewriteCustomizer rewrite = new RewriteCustomizer();
-        config.addCustomizer(rewrite);
         rewrite.addRule(new CompactPathRule());
         rewrite.addRule(new RewriteRegexRule("(.*)foo(.*)", "$1FOO$2"));
+
+        Arrays.stream(server.getConnectors())
+            .forEach((connector) -> connector.getConnectionFactory(HttpConnectionFactory.class)
+                .getHttpConfiguration().addCustomizer(rewrite));
 
         ServletContextHandler context = new ServletContextHandler(
             ServletContextHandler.SESSIONS);
@@ -45,6 +47,13 @@ public class RewriteServer
         server.setHandler(context);
 
         context.addServlet(DumpServlet.class, "/*");
+
+        return server;
+    }
+
+    public static void main(String[] args) throws Exception
+    {
+        Server server = createServer(8080);
 
         server.start();
         server.join();

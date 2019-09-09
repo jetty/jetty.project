@@ -19,6 +19,9 @@
 package org.eclipse.jetty.embedded;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.net.URL;
+import javax.naming.NamingException;
 
 import org.eclipse.jetty.plus.jndi.EnvEntry;
 import org.eclipse.jetty.plus.jndi.NamingDump;
@@ -34,10 +37,10 @@ import org.eclipse.jetty.webapp.WebAppContext;
  */
 public class ServerWithAnnotations
 {
-    public static final void main(String[] args) throws Exception
+    public static Server createServer(int port) throws NamingException, FileNotFoundException
     {
         // Create the server
-        Server server = new Server(8080);
+        Server server = new Server(port);
 
         // Enable parsing of jndi-related parts of web.xml and jetty-env.xml
         Configuration.ClassList classlist = Configuration.ClassList
@@ -63,7 +66,7 @@ public class ServerWithAnnotations
         new Transaction(new com.acme.MockUserTransaction());
 
         // Define an env entry with webapp scope.
-        // THIS ENTRY IS OVERRIDEN BY THE ENTRY IN jetty-env.xml
+        // THIS ENTRY IS OVERRIDDEN BY THE ENTRY IN jetty-env.xml
         new EnvEntry(webapp, "maxAmount", 100d, true);
 
         // Register a mock DataSource scoped to the webapp
@@ -73,10 +76,21 @@ public class ServerWithAnnotations
         server.addBean(new NamingDump());
 
         // Configure a LoginService
+        ClassLoader classLoader = ServerWithAnnotations.class.getClassLoader();
+        URL realmProps = classLoader.getResource("realm.properties");
+        if (realmProps == null)
+            throw new FileNotFoundException("Unable to find realm.properties");
+
         HashLoginService loginService = new HashLoginService();
         loginService.setName("Test Realm");
-        loginService.setConfig("examples/embedded/src/test/resources/realm.properties");
+        loginService.setConfig(realmProps.toExternalForm());
         server.addBean(loginService);
+        return server;
+    }
+
+    public static void main(String[] args) throws Exception
+    {
+        Server server = createServer(8080);
 
         server.start();
         server.dumpStdErr();

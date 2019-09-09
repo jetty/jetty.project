@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.embedded;
 
+import javax.servlet.ServletException;
+import javax.websocket.DeploymentException;
 import javax.websocket.OnMessage;
 import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
@@ -47,9 +49,9 @@ public class WebSocketJsrServer
         }
     }
 
-    public static void main(String[] args) throws Exception
+    public static Server createServer(int port) throws DeploymentException, ServletException
     {
-        Server server = new Server(8080);
+        Server server = new Server(port);
 
         HandlerList handlers = new HandlerList();
 
@@ -68,8 +70,15 @@ public class WebSocketJsrServer
         handlers.addHandler(new DefaultHandler());
 
         server.setHandler(handlers);
+
+        return server;
+    }
+
+    public static void main(String[] args) throws Exception
+    {
+        Server server = createServer(8080);
+
         server.start();
-        context.dumpStdErr();
         server.join();
     }
 }
