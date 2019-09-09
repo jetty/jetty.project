@@ -34,7 +34,7 @@ Once the `session-cache-hash` module has been enabled, you can view a list of al
 #jetty.session.saveOnInactiveEvict=false
 #jetty.session.saveOnCreate=false
 #jetty.session.removeUnloadableSessions=false
-#jetty.session.flushOnCommit=false
+#jetty.session.flushOnResponseCommit=false
 ----
 
 jetty.session.evictionPolicy::
@@ -64,7 +64,7 @@ jetty.session.removeUnloadableSessions::
 Boolean, default `false`.
 Controls whether a session that cannot be restored - for example because it is corrupted - from the `SessionDataStore` is deleted by the `SessionDataStore`.
 
-jetty.session.flushOnCommit::
+jetty.session.flushOnResponseCommit::
 Boolean, default `false`.
 If true, if a session is "dirty" - ie its attributes have changed - it will be written to the backing store as the response is about to commit.
 This ensures that all subsequent requests whether to the same or different node will see the updated session data.
@@ -90,7 +90,7 @@ jetty.session.removeUnloadableSessions::
 Boolean, default `false`.
 Controls whether a session that cannot be restored - for example because it is corrupted - from the `SessionDataStore` is deleted by the `SessionDataStore`.
 
-jetty.session.flushOnCommit::
+jetty.session.flushOnResponseCommit::
 Boolean, default `false`.
 If true, if a session is "dirty" - ie its attributes have changed - it will be written to the backing store as the response is about to commit.
 This ensures that all subsequent requests whether to the same or different node will see the updated session data.
