@@ -20,8 +20,9 @@ package org.eclipse.jetty.http2.hpack;
 
 import java.nio.ByteBuffer;
 import java.util.EnumSet;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -33,9 +34,7 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http2.hpack.HpackContext.Entry;
 import org.eclipse.jetty.http2.hpack.HpackContext.StaticEntry;
-import org.eclipse.jetty.util.ArrayTrie;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.Trie;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -75,9 +74,8 @@ public class HpackEncoder
             HttpHeader.AUTHORIZATION,
             HttpHeader.SET_COOKIE,
             HttpHeader.SET_COOKIE2);
-    private static final PreEncodedHttpField CONNECTION_TE = new PreEncodedHttpField(HttpHeader.CONNECTION, "te");
-    private static final PreEncodedHttpField TE_TRAILERS = new PreEncodedHttpField(HttpHeader.TE, "trailers");
-    private static final Trie<Boolean> specialHopHeaders = new ArrayTrie<>(6);
+    private static final EnumSet<HttpHeader> HEADERS_TO_REMOVE = EnumSet.of(HttpHeader.CONNECTION, HttpHeader.KEEP_ALIVE,
+        HttpHeader.PROXY_CONNECTION, HttpHeader.TRANSFER_ENCODING, HttpHeader.UPGRADE);
 
     static
     {
@@ -85,8 +83,6 @@ public class HpackEncoder
         {
             __status[code.getCode()] = new PreEncodedHttpField(HttpHeader.C_STATUS, Integer.toString(code.getCode()));
         }
-        specialHopHeaders.put("close", true);
-        specialHopHeaders.put("te", true);
     }
 
     private final HpackContext _context;
@@ -180,26 +176,30 @@ public class HpackEncoder
             encode(buffer, status);
         }
 
-        // Add all non-connection fields.
+        // Remove fields as specified in RFC 7540, 8.1.2.2.
         HttpFields fields = metadata.getFields();
         if (fields != null)
         {
-            Set<String> hopHeaders = fields.getCSV(HttpHeader.CONNECTION, false).stream()
-                .filter(v -> specialHopHeaders.get(v) == Boolean.TRUE)
-                .map(StringUtil::asciiToLowerCase)
-                .collect(Collectors.toSet());
+            // For example: Connection: Close, TE, Upgrade, Custom.
+            List<String> values = fields.getCSV(HttpHeader.CONNECTION, false);
+            Set<String> hopHeaders = new HashSet<>();
+            for (String value : values)
+            {
+                // Keep TE as a special case.
+                if (!"TE".equalsIgnoreCase(value))
+                    hopHeaders.add(StringUtil.asciiToLowerCase(value));
+            }
             for (HttpField field : fields)
             {
-                if (field.getHeader() == HttpHeader.CONNECTION)
+                HttpHeader header = field.getHeader();
+                if (header != null && HEADERS_TO_REMOVE.contains(header))
                     continue;
-                if (!hopHeaders.isEmpty() && hopHeaders.contains(StringUtil.asciiToLowerCase(field.getName())))
+                if (hopHeaders.contains(StringUtil.asciiToLowerCase(field.getName())))
                     continue;
-                if (field.getHeader() == HttpHeader.TE)
+                if (header == HttpHeader.TE)
                 {
-                    if (!field.contains("trailers"))
+                    if (!"trailers".equalsIgnoreCase(field.getValue()))
                         continue;
-                    encode(buffer, CONNECTION_TE);
-                    encode(buffer, TE_TRAILERS);
                 }
                 encode(buffer, field);
             }
