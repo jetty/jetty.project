@@ -142,7 +142,7 @@ public class ThreadPoolBudget
         int maximum = pool.getMaxThreads();
         int actual = maximum - required;
 
-        if (actual < 0)
+        if (actual <= 0)
         {
             infoOnLeases();
             throw new IllegalStateException(String.format("Insufficient configured threads: required at least %d " +
