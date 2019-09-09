@@ -22,10 +22,10 @@ etc/jetty-openid.xml
 # jetty.openid.openIdProvider=https://accounts.google.com/
 
 ## The Client Identifier
-# jetty.openid.clientId=1051168419525-5nl60mkugb77p9j194mrh287p1e0ahfi.apps.googleusercontent.com
+# jetty.openid.clientId=test1234.apps.googleusercontent.com
 
 ## The Client Secret
-# jetty.openid.clientSecret=XT_MIsSv_aUCGollauCaJY8S
+# jetty.openid.clientSecret=XT_Mafv_aUCGheuCaKY8P
 
 ## Additional Scopes to Request
 # jetty.openid.scopes=email,profile

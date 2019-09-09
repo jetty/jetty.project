@@ -81,7 +81,7 @@ public class OpenIdAuthenticationDemo
             Principal userPrincipal = request.getUserPrincipal();
             if (userPrincipal != null)
             {
-                Map<String, Object> userInfo = (Map)request.getSession().getAttribute(OpenIdAuthenticator.__CLAIMS);
+                Map<String, Object> userInfo = (Map)request.getSession().getAttribute(OpenIdAuthenticator.CLAIMS);
                 response.getWriter().println("<p>Welcome: " + userInfo.get("name") + "</p>");
                 response.getWriter().println("<a href=\"/profile\">Profile</a><br>");
                 response.getWriter().println("<a href=\"/admin\">Admin</a><br>");
@@ -100,7 +100,7 @@ public class OpenIdAuthenticationDemo
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException
         {
             response.setContentType(MimeTypes.Type.TEXT_HTML.asString());
-            Map<String, Object> userInfo = (Map)request.getSession().getAttribute(OpenIdAuthenticator.__CLAIMS);
+            Map<String, Object> userInfo = (Map)request.getSession().getAttribute(OpenIdAuthenticator.CLAIMS);
 
             response.getWriter().println("<!-- Add icon library -->\n" +
                 "<div class=\"card\">\n" +

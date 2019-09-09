@@ -18,12 +18,10 @@
 
 package org.eclipse.jetty.security.openid;
 
-import java.io.Serializable;
 import java.security.Principal;
 
-public class OpenIdUserPrincipal implements Principal, Serializable
+public class OpenIdUserPrincipal implements Principal
 {
-    private static final long serialVersionUID = -6226920753748399662L;
     private final OpenIdCredentials _credentials;
 
     public OpenIdUserPrincipal(OpenIdCredentials credentials)

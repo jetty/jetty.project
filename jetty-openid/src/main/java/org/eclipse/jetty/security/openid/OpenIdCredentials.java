@@ -28,6 +28,7 @@ import java.util.Base64;
 import java.util.Map;
 
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.UrlEncoded;
 import org.eclipse.jetty.util.ajax.JSON;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -116,25 +117,16 @@ public class OpenIdCredentials
     {
         // Issuer Identifier for the OpenID Provider MUST exactly match the value of the iss (issuer) Claim.
         if (!configuration.getIssuer().equals(claims.get("iss")))
-        {
-            LOG.warn("Invalid \"iss\" Claim: was {}, expected {}", claims.get("iss"), configuration.getIssuer());
-            throw new IllegalArgumentException("invalid iss claim");
-        }
+            throw new IllegalArgumentException("Issuer Identifier MUST exactly match the iss Claim");
 
         // The aud (audience) Claim MUST contain the client_id value.
         if (!configuration.getClientId().equals(claims.get("aud")))
-        {
-            LOG.warn("Audience Claim MUST contain the client_id value");
-            throw new IllegalArgumentException("invalid aud claim");
-        }
+            throw new IllegalArgumentException("Audience Claim MUST contain the client_id value");
 
         // If an azp (authorized party) Claim is present, verify that its client_id is the Claim Value.
         Object azp = claims.get("azp");
         if (azp != null && !configuration.getClientId().equals(azp))
-        {
-            LOG.warn("Authorized party claim value should be the client_id");
-            throw new IllegalArgumentException("invalid azp claim");
-        }
+            throw new IllegalArgumentException("Authorized party claim value should be the client_id");
     }
 
     public boolean isExpired()
@@ -187,9 +179,9 @@ public class OpenIdCredentials
 
         // Use the authorization code to get the id_token from the OpenID Provider
         String urlParameters = "code=" + authCode +
-            "&client_id=" + configuration.getClientId() +
-            "&client_secret=" + configuration.getClientSecret() +
-            "&redirect_uri=" + redirectUri +
+            "&client_id=" + UrlEncoded.encodeString(configuration.getClientId(), StandardCharsets.UTF_8) +
+            "&client_secret=" + UrlEncoded.encodeString(configuration.getClientSecret(), StandardCharsets.UTF_8) +
+            "&redirect_uri=" + UrlEncoded.encodeString(redirectUri, StandardCharsets.UTF_8) +
             "&grant_type=authorization_code";
 
         URL url = new URL(configuration.getTokenEndpoint());
@@ -198,14 +190,18 @@ public class OpenIdCredentials
         connection.setRequestMethod("POST");
         connection.setRequestProperty("Host", configuration.getOpenIdProvider());
         connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
-        connection.setRequestProperty("charset", "utf-8");
 
         try (DataOutputStream wr = new DataOutputStream(connection.getOutputStream()))
         {
             wr.write(urlParameters.getBytes(StandardCharsets.UTF_8));
         }
 
-        InputStream content = (InputStream)connection.getContent();
-        return (Map)JSON.parse(IO.toString(content));
+        Map result;
+        try (InputStream content = (InputStream)connection.getContent())
+        {
+            result = (Map)JSON.parse(IO.toString(content));
+        }
+
+        return result;
     }
 }
