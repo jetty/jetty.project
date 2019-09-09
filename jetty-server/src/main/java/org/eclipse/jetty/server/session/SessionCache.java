@@ -128,9 +128,9 @@ public interface SessionCache extends LifeCycle
      * @throws Exception if any error occurred
      * @deprecated @see release
      */
+    @Deprecated
     void put(String id, Session session) throws Exception;
-    
-    
+
     /**
      * Finish using a Session. This is called by the SessionHandler
      * once a request is finished with a Session. SessionCache
@@ -142,8 +142,7 @@ public interface SessionCache extends LifeCycle
      * @throws Exception if any error occurred
      */
     void release(String id, Session session) throws Exception;
-    
-    
+
     /**
      * Check to see if a Session is in the cache. Does NOT consult
      * the SessionDataStore.

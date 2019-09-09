@@ -22,8 +22,8 @@ import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.ExecutionStrategy;
-import org.eclipse.jetty.util.thread.Locker;
 
 /**
  * <p>A strategy where the caller thread iterates over task production, submitting each
@@ -33,7 +33,7 @@ public class ProduceConsume implements ExecutionStrategy, Runnable
 {
     private static final Logger LOG = Log.getLogger(ExecuteProduceConsume.class);
 
-    private final Locker _locker = new Locker();
+    private final AutoLock _lock = new AutoLock();
     private final Producer _producer;
     private final Executor _executor;
     private State _state = State.IDLE;
@@ -47,7 +47,7 @@ public class ProduceConsume implements ExecutionStrategy, Runnable
     @Override
     public void produce()
     {
-        try (Locker.Lock lock = _locker.lock())
+        try (AutoLock lock = _lock.lock())
         {
             switch (_state)
             {
@@ -73,7 +73,7 @@ public class ProduceConsume implements ExecutionStrategy, Runnable
 
             if (task == null)
             {
-                try (Locker.Lock lock = _locker.lock())
+                try (AutoLock lock = _lock.lock())
                 {
                     switch (_state)
                     {

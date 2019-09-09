@@ -57,7 +57,7 @@ import org.eclipse.jetty.util.component.AttributeContainerMap;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.thread.Locker;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ShutdownThread;
 import org.eclipse.jetty.util.thread.ThreadPool;
@@ -83,8 +83,7 @@ public class Server extends HandlerWrapper implements Attributes
     private boolean _dumpBeforeStop = false;
     private ErrorHandler _errorHandler;
     private RequestLog _requestLog;
-
-    private final Locker _dateLocker = new Locker();
+    private final AutoLock _dateLock = new AutoLock();
     private volatile DateField _dateField;
 
     public Server()
@@ -315,7 +314,7 @@ public class Server extends HandlerWrapper implements Attributes
 
         if (df == null || df._seconds != seconds)
         {
-            try (Locker.Lock lock = _dateLocker.lock())
+            try (AutoLock lock = _dateLock.lock())
             {
                 df = _dateField;
                 if (df == null || df._seconds != seconds)
