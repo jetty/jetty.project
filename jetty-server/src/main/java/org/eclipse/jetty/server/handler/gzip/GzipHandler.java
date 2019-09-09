@@ -458,12 +458,6 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         }
 
         // check the accept encoding header
-        if (!httpFields.contains(HttpHeader.ACCEPT_ENCODING))
-        {
-            LOG.debug("{} excluded !accept {}", this, request);
-            return null;
-        }
-
         if (!httpFields.contains(HttpHeader.ACCEPT_ENCODING, "gzip"))
         {
             LOG.debug("{} excluded not gzip accept {}", this, request);
