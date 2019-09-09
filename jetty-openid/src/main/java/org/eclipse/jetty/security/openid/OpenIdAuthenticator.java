@@ -50,14 +50,17 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.security.Constraint;
 
 /**
- * OpenId Connect Authenticator.
+ * <p>Implements authentication using OpenId Connect on top of OAuth 2.0.
  *
- * <p>This authenticator implements authentication using OpenId Connect on top of OAuth 2.0.
- *
- * <p>The authenticator redirects unauthenticated requests to the identity providers authorization endpoint
- * which will eventually redirect back to the redirectUri with an authorization code which will be exchanged with
- * the token_endpoint for an id_token. The request is then restored back to the original uri requested.
- * {@link SessionAuthentication} is then used to wrap Authentication results so that they are associated with the session.</p>
+ * <p>The OpenIdAuthenticator redirects unauthenticated requests to the OpenID Connect Provider. The End-User is
+ * eventually redirected back with an Authorization Code to the /j_security_check URI within the context.
+ * The Authorization Code is then used to authenticate the user through the {@link OpenIdCredentials} and {@link OpenIdLoginService}.
+ * </p>
+ * <p>
+ * Once a user is authenticated the OpenID Claims can be retrieved through an attribute on the session with the key {@link #CLAIMS}.
+ * The full response containing the OAuth 2.0 Access Token can be obtained with the session attribute {@link #RESPONSE}.
+ * </p>
+ * <p>{@link SessionAuthentication} is then used to wrap Authentication results so that they are associated with the session.</p>
  */
 public class OpenIdAuthenticator extends LoginAuthenticator
 {
