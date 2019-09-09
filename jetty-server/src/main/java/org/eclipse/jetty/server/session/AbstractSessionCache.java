@@ -637,11 +637,8 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
                     }
                     else
                     {
-                        //reactivate the session, ignoring any (non-serializable)
-                        //attributes set by the activate listener
-                        boolean dirty = session.getSessionData().isDirty();
+                        //reactivate the session
                         session.didActivate();
-                        session.getSessionData().setDirty(dirty);
                         session.setResident(true);
                         doPutIfAbsent(id, session);//ensure it is in our map
                         if (LOG.isDebugEnabled())
