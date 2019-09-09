@@ -145,7 +145,8 @@ public class ThreadPoolBudget
         if (actual < 0)
         {
             infoOnLeases();
-            throw new IllegalStateException(String.format("Insufficient configured threads: max=%d < required=%d for %s", required, maximum, pool));
+            throw new IllegalStateException(String.format("Insufficient configured threads: required at least %d " +
+                    "threads, but thread pool max is %d for %s", required, maximum, pool));
         }
 
         if (actual < warnAt)
