@@ -29,6 +29,12 @@ import org.eclipse.jetty.util.ajax.JSON;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
+/**
+ * Holds the configuration for an OpenID Connect service.
+ *
+ * This uses the OpenID Provider URL with the path {@link #CONFIG_PATH} to discover
+ * the required information about the OIDC service.
+ */
 public class OpenIdConfiguration
 {
     private static final Logger LOG = Log.getLogger(OpenIdConfiguration.class);
@@ -44,6 +50,12 @@ public class OpenIdConfiguration
 
     private List<String> scopes = new ArrayList<>();
 
+    /**
+     * Create an OpenID configuration for a specific OIDC provider.
+     * @param provider The URL of the OpenID provider.
+     * @param clientId OAuth 2.0 Client Identifier valid at the Authorization Server.
+     * @param clientSecret The client secret known only by the Client and the Authorization Server.
+     */
     public OpenIdConfiguration(String provider, String clientId, String clientSecret)
     {
         this.openIdProvider = provider;

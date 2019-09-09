@@ -29,6 +29,13 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
+/**
+ * The implementation of {@link LoginService} required to use OpenID Connect.
+ *
+ * <p>
+ * Can contain an optional wrapped {@link LoginService} which is used to store role information about users.
+ * </p>
+ */
 public class OpenIdLoginService extends ContainerLifeCycle implements LoginService
 {
     private static final Logger LOG = Log.getLogger(OpenIdLoginService.class);
@@ -43,6 +50,13 @@ public class OpenIdLoginService extends ContainerLifeCycle implements LoginServi
         this(configuration, null);
     }
 
+    /**
+     * Use a wrapped {@link LoginService} to store information about user roles.
+     * Users in the wrapped loginService must be stored with their username as
+     * the value of the sub (subject) Claim, and a credentials value of the empty string.
+     * @param configuration the OpenID configuration to use.
+     * @param loginService the wrapped LoginService to defer to for user roles.
+     */
     public OpenIdLoginService(OpenIdConfiguration configuration, LoginService loginService)
     {
         _configuration = configuration;
@@ -101,6 +115,15 @@ public class OpenIdLoginService extends ContainerLifeCycle implements LoginServi
         return identityService.newUserIdentity(subject, userPrincipal, new String[0]);
     }
 
+    /**
+     * This setting is only meaningful if a wrapped {@link LoginService} has been set.
+     * <p>
+     * If set to true, any users not found by the wrapped {@link LoginService} will still
+     * be authenticated but with no roles, if set to false users will not be
+     * authenticated unless they are discovered by the wrapped {@link LoginService}.
+     * </p>
+     * @param authenticateNewUsers
+     */
     public void authenticateNewUsers(boolean authenticateNewUsers)
     {
         this.authenticateNewUsers = authenticateNewUsers;

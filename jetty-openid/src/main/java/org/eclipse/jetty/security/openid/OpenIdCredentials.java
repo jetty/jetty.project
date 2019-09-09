@@ -32,6 +32,16 @@ import org.eclipse.jetty.util.ajax.JSON;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
+/**
+ * <p>The credentials of an user to be authenticated with OpenID Connect. This will contain
+ * the OpenID ID Token and the OAuth 2.0 Access Token.</p>
+ *
+ * <p>
+ * This is constructed with an authorization code from the authentication request. This authorization code
+ * is then exchanged using {@link #redeemAuthCode()} for a response containing the ID Token and Access Token.
+ * The response is then validated against the {@link OpenIdConfiguration}.
+ * </p>
+ */
 public class OpenIdCredentials
 {
     private static final Logger LOG = Log.getLogger(OpenIdCredentials.class);
