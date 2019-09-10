@@ -217,14 +217,13 @@ public class JettyEmbedder extends AbstractLifeCycle
     {
         if (webAppProperties != null)
             webAppProperties.clear();
-        
+
         if (props != null)
         {
             if (webAppProperties == null)
-            {
                 webAppProperties = new Properties();
-                webAppProperties.putAll(props);
-            }
+
+            webAppProperties.putAll(props);
         }
     }
     
@@ -261,7 +260,6 @@ public class JettyEmbedder extends AbstractLifeCycle
         //regenerate config properties
         applyWebAppProperties();
 
-        System.err.println("WEbapp is stopped: "+webApp.isStopped());
         webApp.start();
     }
     
@@ -332,10 +330,9 @@ public class JettyEmbedder extends AbstractLifeCycle
         if (contextXml != null)
         {
             if (webAppProperties == null)
-            {
                 webAppProperties = new Properties();
-                webAppProperties.put("context.xml", contextXml);
-            }
+
+            webAppProperties.put("context.xml", contextXml);
         }
         WebAppPropertyConverter.fromProperties(webApp, webAppProperties, server, jettyProperties);    
     }

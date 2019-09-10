@@ -161,10 +161,8 @@ public class JettyForkedChild extends AbstractLifeCycle
                         {
                             //stop the webapp
                             jetty.getWebApp().stop();
-                            System.err.println("STopped the webapp");
                             //reload the props
                             jetty.setWebAppProperties(loadWebAppProps());
-                            System.err.println("Reset the webapp properties");
                             jetty.setWebApp(jetty.getWebApp());
                             //restart the webapp
                             jetty.redeployWebApp();

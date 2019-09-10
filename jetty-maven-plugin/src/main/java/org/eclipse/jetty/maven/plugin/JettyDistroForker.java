@@ -233,8 +233,6 @@ public class JettyDistroForker extends AbstractForker
         if (!env.isEmpty())
             builder.environment().putAll(env);
 
-        System.err.println("COMMAND: "+builder.command());
-
         if (waitForChild)
             builder.inheritIO();
         else
@@ -415,8 +413,6 @@ public class JettyDistroForker extends AbstractForker
             int i = name.lastIndexOf('.');
             name = (i>0?name.substring(0, i):"distro");             
             jettyHome = new File (baseDir, name);
-            
-            System.err.println("JETTY HOME = "+jettyHome);
         }
     }
 }

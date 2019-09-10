@@ -217,17 +217,13 @@ public abstract class AbstractForker extends AbstractLifeCycle
         ProcessBuilder command = createCommand();
         Process process = command.start();
         
-        System.err.println("Started command");
-
         if (waitForChild)
         {
             //keep executing until the child dies
-            System.err.println("Waiting for child");
             process.waitFor();
         }
         else
         {
-            System.err.println("NOT WAITING FOR CHILD");
             //just wait until the child has started successfully
             int attempts = maxChildChecks;
             while (!tokenFile.exists() && attempts > 0)
