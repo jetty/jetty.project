@@ -191,6 +191,18 @@ public class QuickStartConfiguration extends AbstractConfiguration
         }
     }
 
+    @Override
+    public void postConfigure(WebAppContext context) throws Exception
+    {
+        super.postConfigure(context);
+        ServletContainerInitializersStarter starter = (ServletContainerInitializersStarter)context.getAttribute(AnnotationConfiguration.CONTAINER_INITIALIZER_STARTER);
+        if (starter != null)
+        {
+            context.removeBean(starter);
+            context.removeAttribute(AnnotationConfiguration.CONTAINER_INITIALIZER_STARTER);
+        }
+    }
+
     protected void quickStart(WebAppContext context)
         throws Exception
     {
