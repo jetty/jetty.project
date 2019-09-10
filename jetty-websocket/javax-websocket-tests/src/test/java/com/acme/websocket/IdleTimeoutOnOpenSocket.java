@@ -16,14 +16,35 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.javax.server;
+package com.acme.websocket;
 
-import org.eclipse.jetty.websocket.servlet.WebSocketMapping;
+import javax.websocket.OnError;
+import javax.websocket.OnMessage;
+import javax.websocket.OnOpen;
+import javax.websocket.Session;
+import javax.websocket.server.ServerEndpoint;
 
-public class DummyServerContainer extends JavaxWebSocketServerContainer
+import org.eclipse.jetty.websocket.core.WebSocketTimeoutException;
+
+@ServerEndpoint(value = "/idle-onopen-socket")
+public class IdleTimeoutOnOpenSocket
 {
-    public DummyServerContainer()
+    @OnOpen
+    public void onOpen(Session session)
     {
-        super(new WebSocketMapping());
+        session.setMaxIdleTimeout(500);
+    }
+
+    @OnMessage
+    public String onMessage(String msg)
+    {
+        return msg;
+    }
+
+    @OnError
+    public void onError(Throwable cause)
+    {
+        if (!(cause instanceof WebSocketTimeoutException))
+            throw new RuntimeException(cause);
     }
 }

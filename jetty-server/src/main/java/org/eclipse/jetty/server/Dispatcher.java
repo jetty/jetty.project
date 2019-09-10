@@ -33,6 +33,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.server.handler.DebugHandler;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.log.Log;
@@ -41,8 +42,6 @@ import org.eclipse.jetty.util.log.Logger;
 public class Dispatcher implements RequestDispatcher
 {
     private static final Logger LOG = Log.getLogger(Dispatcher.class);
-
-    public static final String __ERROR_DISPATCH = "org.eclipse.jetty.server.Dispatcher.ERROR";
 
     /**
      * Dispatch include attribute names
@@ -77,15 +76,7 @@ public class Dispatcher implements RequestDispatcher
 
     public void error(ServletRequest request, ServletResponse response) throws ServletException, IOException
     {
-        try
-        {
-            request.setAttribute(__ERROR_DISPATCH, Boolean.TRUE);
-            forward(request, response, DispatcherType.ERROR);
-        }
-        finally
-        {
-            request.setAttribute(__ERROR_DISPATCH, null);
-        }
+        forward(request, response, DispatcherType.ERROR);
     }
 
     @Override

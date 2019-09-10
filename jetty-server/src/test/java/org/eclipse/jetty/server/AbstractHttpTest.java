@@ -84,11 +84,11 @@ public abstract class AbstractHttpTest
                 HttpTester.Input input = HttpTester.from(socket.getInputStream());
                 HttpTester.parseResponse(input, response);
 
-                if (httpVersion.is("HTTP/1.1")
-                    && response.isComplete()
-                    && response.get("content-length") == null
-                    && response.get("transfer-encoding") == null
-                    && !__noBodyCodes.contains(response.getStatus()))
+                if (httpVersion.is("HTTP/1.1") &&
+                    response.isComplete() &&
+                    response.get("content-length") == null &&
+                    response.get("transfer-encoding") == null &&
+                    !__noBodyCodes.contains(response.getStatus()))
                     assertThat("If HTTP/1.1 response doesn't contain transfer-encoding or content-length headers, " +
                         "it should contain connection:close", response.get("connection"), is("close"));
                 return response;

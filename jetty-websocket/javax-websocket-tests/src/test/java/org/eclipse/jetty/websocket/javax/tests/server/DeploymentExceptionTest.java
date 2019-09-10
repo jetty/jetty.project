@@ -30,7 +30,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.websocket.javax.common.util.InvalidSignatureException;
-import org.eclipse.jetty.websocket.javax.server.JavaxWebSocketServletContainerInitializer;
+import org.eclipse.jetty.websocket.javax.server.config.JavaxWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.javax.tests.server.sockets.InvalidCloseIntSocket;
 import org.eclipse.jetty.websocket.javax.tests.server.sockets.InvalidErrorErrorSocket;
 import org.eclipse.jetty.websocket.javax.tests.server.sockets.InvalidErrorIntSocket;

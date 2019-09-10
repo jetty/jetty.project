@@ -21,6 +21,9 @@ package org.eclipse.jetty.websocket.javax.tests.server;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
+import com.acme.websocket.IdleTimeoutContextListener;
+import com.acme.websocket.IdleTimeoutOnOpenEndpoint;
+import com.acme.websocket.IdleTimeoutOnOpenSocket;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.webapp.WebAppContext;
@@ -29,8 +32,6 @@ import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.javax.tests.Fuzzer;
 import org.eclipse.jetty.websocket.javax.tests.WSServer;
-import org.eclipse.jetty.websocket.javax.tests.server.sockets.IdleTimeoutOnOpenEndpoint;
-import org.eclipse.jetty.websocket.javax.tests.server.sockets.IdleTimeoutOnOpenSocket;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -59,7 +60,6 @@ public class IdleTimeoutTest
 
         WebAppContext webapp = server.createWebAppContext();
         server.deployWebapp(webapp);
-        // wsb.dump();
     }
 
     @AfterAll

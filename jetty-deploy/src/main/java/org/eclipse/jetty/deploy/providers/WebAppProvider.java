@@ -206,6 +206,7 @@ public class WebAppProvider extends ScanningAppProvider
      */
     public void setConfigurationManager(ConfigurationManager configurationManager)
     {
+        updateBean(_configurationManager, configurationManager);
         _configurationManager = configurationManager;
     }
 

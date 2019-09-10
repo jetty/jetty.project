@@ -20,11 +20,15 @@ package org.eclipse.jetty.quickstart;
 
 import java.util.Locale;
 
+import org.eclipse.jetty.annotations.AnnotationConfiguration;
+import org.eclipse.jetty.plus.webapp.EnvConfiguration;
+import org.eclipse.jetty.plus.webapp.PlusConfiguration;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.JarResource;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.xml.XmlConfiguration;
 
 public class PreconfigureQuickStartWar
@@ -98,7 +102,13 @@ public class PreconfigureQuickStartWar
 
         final Server server = new Server();
 
-        QuickStartWebApp webapp = new QuickStartWebApp();
+        WebAppContext webapp = new WebAppContext();
+        webapp.addConfiguration(new QuickStartConfiguration(),
+                                new EnvConfiguration(),
+                                new PlusConfiguration(),
+                                new AnnotationConfiguration());
+        webapp.setAttribute(QuickStartConfiguration.MODE, QuickStartConfiguration.Mode.GENERATE);
+        webapp.setAttribute(QuickStartConfiguration.ORIGIN_ATTRIBUTE, "");
 
         if (xml != null)
         {
@@ -108,10 +118,21 @@ public class PreconfigureQuickStartWar
             xmlConfiguration.configure(webapp);
         }
         webapp.setResourceBase(dir.getFile().getAbsolutePath());
-        webapp.setMode(QuickStartConfiguration.Mode.GENERATE);
         server.setHandler(webapp);
-        server.start();
-        server.stop();
+        try
+        {
+            server.setDryRun(true);
+            server.start();
+        }
+        catch (Exception e)
+        {
+            throw e;
+        }
+        finally
+        {
+            if (!server.isStopped())
+                server.stop();
+        }
     }
 
     private static void error(String message)

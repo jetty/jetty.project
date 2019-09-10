@@ -122,14 +122,7 @@ public class ExecutionStrategyTest
             {
                 if (tasks-- > 0)
                 {
-                    return new Runnable()
-                    {
-                        @Override
-                        public void run()
-                        {
-                            latch.countDown();
-                        }
-                    };
+                    return () -> latch.countDown();
                 }
 
                 return null;
@@ -175,15 +168,7 @@ public class ExecutionStrategyTest
                         try
                         {
                             final CountDownLatch latch = q.take();
-                            return new Runnable()
-                            {
-                                @Override
-                                public void run()
-                                {
-                                    // System.err.println("RUN "+id);
-                                    latch.countDown();
-                                }
-                            };
+                            return () -> latch.countDown();
                         }
                         catch (InterruptedException e)
                         {

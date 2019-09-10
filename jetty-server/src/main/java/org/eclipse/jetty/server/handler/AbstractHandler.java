@@ -123,7 +123,7 @@ public abstract class AbstractHandler extends ContainerLifeCycle implements Hand
         if (_server == server)
             return;
         if (isStarted())
-            throw new IllegalStateException(STARTED);
+            throw new IllegalStateException(getState());
         _server = server;
     }
 

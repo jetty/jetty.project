@@ -25,6 +25,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.eclipse.jetty.annotations.AnnotationConfiguration;
+import org.eclipse.jetty.quickstart.QuickStartConfiguration;
+import org.eclipse.jetty.quickstart.QuickStartConfiguration.Mode;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -140,19 +142,12 @@ public class JettyForker extends AbstractForker
             webApp = new JettyWebAppContext();
         
         //set the webapp up to do very little other than generate the quickstart-web.xml
+        webApp.addConfiguration(new MavenQuickStartConfiguration());
+        webApp.setAttribute(QuickStartConfiguration.MODE, Mode.GENERATE);
+        webApp.setAttribute(QuickStartConfiguration.QUICKSTART_WEB_XML, Resource.newResource(forkWebXml));
         webApp.setCopyWebDir(false);
         webApp.setCopyWebInf(false);
-        webApp.setGenerateQuickStart(true);
 
-        if (webApp.getQuickStartWebDescriptor() == null)
-        {
-            if (!forkWebXml.getParentFile().exists())
-                forkWebXml.getParentFile().mkdirs();
-            if (!forkWebXml.exists())
-                forkWebXml.createNewFile();
-
-            webApp.setQuickStartWebDescriptor(Resource.newResource(forkWebXml));
-        }
         
         //add webapp to our fake server instance
         ServerSupport.addWebApplication(server, webApp);

@@ -79,7 +79,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
      * Section 8.2.3.1: A message compressed using 1 compressed DEFLATE block
      */
     @Test
-    public void testDraft21_Hello_UnCompressedBlock()
+    public void testDraft21HelloUnCompressedBlock()
     {
         ExtensionTool.Tester tester = clientExtensions.newTester("permessage-deflate");
 
@@ -100,7 +100,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
      * Section 8.2.3.1: A message compressed using 1 compressed DEFLATE block (with fragmentation)
      */
     @Test
-    public void testDraft21_Hello_UnCompressedBlock_Fragmented()
+    public void testDraft21HelloUnCompressedBlockFragmented()
     {
         ExtensionTool.Tester tester = clientExtensions.newTester("permessage-deflate");
 
@@ -123,7 +123,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
      * Section 8.2.3.2: Sharing LZ77 Sliding Window
      */
     @Test
-    public void testDraft21_SharingL77SlidingWindow_ContextTakeover()
+    public void testDraft21SharingL77SlidingWindowContextTakeover()
     {
         ExtensionTool.Tester tester = clientExtensions.newTester("permessage-deflate");
 
@@ -146,7 +146,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
      * Section 8.2.3.2: Sharing LZ77 Sliding Window
      */
     @Test
-    public void testDraft21_SharingL77SlidingWindow_NoContextTakeover()
+    public void testDraft21SharingL77SlidingWindowNoContextTakeover()
     {
         ExtensionTool.Tester tester = clientExtensions.newTester("permessage-deflate");
 
@@ -170,7 +170,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
      * Section 8.2.3.3: Using a DEFLATE Block with No Compression
      */
     @Test
-    public void testDraft21_DeflateBlockWithNoCompression()
+    public void testDraft21DeflateBlockWithNoCompression()
     {
         ExtensionTool.Tester tester = clientExtensions.newTester("permessage-deflate");
 
@@ -189,7 +189,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
      * Section 8.2.3.4: Using a DEFLATE Block with BFINAL Set to 1
      */
     @Test
-    public void testDraft21_DeflateBlockWithBFinal1()
+    public void testDraft21DeflateBlockWithBFinal1()
     {
         ExtensionTool.Tester tester = clientExtensions.newTester("permessage-deflate");
 
@@ -209,7 +209,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
      * Section 8.2.3.5: Two DEFLATE Blocks in 1 Message
      */
     @Test
-    public void testDraft21_TwoDeflateBlocksOneMessage()
+    public void testDraft21TwoDeflateBlocksOneMessage()
     {
         ExtensionTool.Tester tester = clientExtensions.newTester("permessage-deflate");
 
@@ -227,7 +227,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
      * Decode fragmented message (3 parts: TEXT, CONTINUATION, CONTINUATION)
      */
     @Test
-    public void testParseFragmentedMessage_Good()
+    public void testParseFragmentedMessageGood()
     {
         ExtensionTool.Tester tester = clientExtensions.newTester("permessage-deflate");
 
@@ -256,7 +256,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
      * </p>
      */
     @Test
-    public void testParseFragmentedMessage_BadRsv1()
+    public void testParseFragmentedMessageBadRsv1()
     {
         ExtensionTool.Tester tester = clientExtensions.newTester("permessage-deflate");
 
@@ -489,7 +489,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
     }
 
     @Test
-    public void testPyWebSocket_Client_NoContextTakeover_ThreeOra()
+    public void testPyWebSocketClientNoContextTakeoverThreeOra()
     {
         ExtensionTool.Tester tester = clientExtensions.newTester("permessage-deflate; client_max_window_bits; client_no_context_takeover");
 
@@ -497,7 +497,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
 
         // Captured from Pywebsocket (r790) - 3 messages with similar parts.
 
-        tester.parseIncomingHex( // context takeover (3 messages)
+        tester.parseIncomingHex(// context takeover (3 messages)
             "c1 09 0a c9 2f 4a 0c 01  62 00 00", // ToraTora
             "c1 0b 72 2c c9 2f 4a 74  cb 01 12 00 00", // AtoraFlora
             "c1 0b 0a c8 c8 c9 2f 4a  0c 01 62 00 00" // PhloraTora
@@ -507,7 +507,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
     }
 
     @Test
-    public void testPyWebSocket_Client_ToraToraTora()
+    public void testPyWebSocketClientToraToraTora()
     {
         ExtensionTool.Tester tester = clientExtensions.newTester("permessage-deflate; client_max_window_bits");
 
@@ -525,7 +525,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
     }
 
     @Test
-    public void testPyWebSocket_Server_NoContextTakeover_ThreeOra()
+    public void testPyWebSocketServerNoContextTakeoverThreeOra()
     {
         ExtensionTool.Tester tester = serverExtensions.newTester("permessage-deflate; client_max_window_bits; client_no_context_takeover");
 
@@ -533,7 +533,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
 
         // Captured from Pywebsocket (r790) - 3 messages with similar parts.
 
-        tester.parseIncomingHex( // context takeover (3 messages)
+        tester.parseIncomingHex(// context takeover (3 messages)
             "c1 89 88 bc 1b b1 82 75  34 fb 84 bd 79 b1 88", // ToraTora
             "c1 8b 50 86 88 b2 22 aa  41 9d 1a f2 43 b3 42 86 88", // AtoraFlora
             "c1 8b e2 3e 05 53 e8 f6  cd 9a cd 74 09 52 80 3e 05" // PhloraTora
@@ -543,7 +543,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
     }
 
     @Test
-    public void testPyWebSocket_Server_ToraToraTora()
+    public void testPyWebSocketServerToraToraTora()
     {
         ExtensionTool.Tester tester = serverExtensions.newTester("permessage-deflate; client_max_window_bits");
 
@@ -551,7 +551,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
 
         // Captured from Pywebsocket (r790) - "tora" sent 3 times.
 
-        tester.parseIncomingHex( // context takeover (3 messages)
+        tester.parseIncomingHex(// context takeover (3 messages)
             "c1 86 69 39 fe 91 43 f0  d1 db 6d 39", // tora 1
             "c1 85 2d f3 eb 96 07 f2  89 96 2d", // tora 2
             "c1 84 53 ad a5 34 51 cc  a5 34" // tora 3

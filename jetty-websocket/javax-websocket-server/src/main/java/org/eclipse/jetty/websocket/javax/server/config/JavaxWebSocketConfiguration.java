@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.javax.server;
+package org.eclipse.jetty.websocket.javax.server.config;
 
 import org.eclipse.jetty.webapp.AbstractConfiguration;
 import org.eclipse.jetty.webapp.FragmentConfiguration;
@@ -38,6 +38,7 @@ public class JavaxWebSocketConfiguration extends AbstractConfiguration
         addDependencies(WebXmlConfiguration.class, MetaInfConfiguration.class, WebInfConfiguration.class, FragmentConfiguration.class);
         addDependents("org.eclipse.jetty.annotations.AnnotationConfiguration", WebAppConfiguration.class.getName());
         protectAndExpose("org.eclipse.jetty.websocket.servlet."); // For WebSocketUpgradeFilter
-        protectAndExpose("org.eclipse.jetty.websocket.javax."); // TODO Do we need all classes?
+        protectAndExpose("org.eclipse.jetty.websocket.javax.server.config.");
+        hide("org.eclipse.jetty.websocket.javax.server.internal");
     }
 }

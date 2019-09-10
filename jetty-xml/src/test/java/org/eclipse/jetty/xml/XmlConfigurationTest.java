@@ -56,6 +56,7 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -105,8 +106,8 @@ public class XmlConfigurationTest
             assertEquals(2, tc.get("TestInt"), "Put type");
 
             assertEquals("PutValue", tc.get("Trim"), "Trim");
-            assertEquals(null, tc.get("Null"), "Null");
-            assertEquals(null, tc.get("NullTrim"), "NullTrim");
+            assertNull(tc.get("Null"), "Null");
+            assertNull(tc.get("NullTrim"), "NullTrim");
 
             assertEquals(1.2345, tc.get("ObjectTrim"), "ObjectTrim");
             assertEquals("-1String", tc.get("Objects"), "Objects");
@@ -130,7 +131,7 @@ public class XmlConfigurationTest
             assertEquals("Blah", tc.oa[0], "oa[0]");
             assertEquals("1.2.3.4:5678", tc.oa[1], "oa[1]");
             assertEquals(1.2345, tc.oa[2], "oa[2]");
-            assertEquals(null, tc.oa[3], "oa[3]");
+            assertNull(tc.oa[3], "oa[3]");
 
             assertEquals(1, tc.ia[0], "ia[0]");
             assertEquals(2, tc.ia[1], "ia[1]");
@@ -138,10 +139,10 @@ public class XmlConfigurationTest
             assertEquals(0, tc.ia[3], "ia[3]");
 
             TestConfiguration tc2 = tc.nested;
-            assertTrue(tc2 != null);
+            assertNotNull(tc2);
             assertEquals(true, tc2.get("Arg"), "Called(bool)");
 
-            assertEquals(null, tc.get("Arg"), "nested config");
+            assertNull(tc.get("Arg"), "nested config");
             assertEquals(true, tc2.get("Arg"), "nested config");
 
             assertEquals("Call1", tc2.testObject, "nested config");
@@ -200,8 +201,8 @@ public class XmlConfigurationTest
             assertEquals(2, tc.get("TestInt"), "Put type");
 
             assertEquals("PutValue", tc.get("Trim"), "Trim");
-            assertEquals(null, tc.get("Null"), "Null");
-            assertEquals(null, tc.get("NullTrim"), "NullTrim");
+            assertNull(tc.get("Null"), "Null");
+            assertNull(tc.get("NullTrim"), "NullTrim");
 
             assertEquals(1.2345, tc.get("ObjectTrim"), "ObjectTrim");
             assertEquals("-1String", tc.get("Objects"), "Objects");
@@ -223,7 +224,7 @@ public class XmlConfigurationTest
             assertEquals("Blah", tc.oa[0], "oa[0]");
             assertEquals("1.2.3.4:5678", tc.oa[1], "oa[1]");
             assertEquals(1.2345, tc.oa[2], "oa[2]");
-            assertEquals(null, tc.oa[3], "oa[3]");
+            assertNull(tc.oa[3], "oa[3]");
 
             assertEquals(1, tc.ia[0], "ia[0]");
             assertEquals(2, tc.ia[1], "ia[1]");
@@ -231,10 +232,10 @@ public class XmlConfigurationTest
             assertEquals(0, tc.ia[3], "ia[3]");
 
             TestConfiguration tc2 = tc.nested;
-            assertTrue(tc2 != null);
+            assertNotNull(tc2);
             assertEquals(true, tc2.get("Arg"), "Called(bool)");
 
-            assertEquals(null, tc.get("Arg"), "nested config");
+            assertNull(tc.get("Arg"), "nested config");
             assertEquals(true, tc2.get("Arg"), "nested config");
 
             assertEquals("Call1", tc2.testObject, "nested config");
@@ -347,9 +348,9 @@ public class XmlConfigurationTest
     @Test
     public void testListConstructorArg() throws Exception
     {
-        XmlConfiguration xmlConfiguration = asXmlConfiguration("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\">"
-            + "<Set name=\"constructorArgTestClass\"><New class=\"org.eclipse.jetty.xml.ConstructorArgTestClass\"><Arg type=\"List\">"
-            + STRING_ARRAY_XML + "</Arg></New></Set></Configure>");
+        XmlConfiguration xmlConfiguration = asXmlConfiguration("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\">" +
+            "<Set name=\"constructorArgTestClass\"><New class=\"org.eclipse.jetty.xml.ConstructorArgTestClass\"><Arg type=\"List\">" +
+            STRING_ARRAY_XML + "</Arg></New></Set></Configure>");
         TestConfiguration tc = new TestConfiguration();
         assertThat("tc.getList() returns null as it's not configured yet", tc.getList(), is(nullValue()));
         xmlConfiguration.configure(tc);
@@ -360,11 +361,11 @@ public class XmlConfigurationTest
     @Test
     public void testTwoArgumentListConstructorArg() throws Exception
     {
-        XmlConfiguration xmlConfiguration = asXmlConfiguration("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\">"
-            + "<Set name=\"constructorArgTestClass\"><New class=\"org.eclipse.jetty.xml.ConstructorArgTestClass\">"
-            + "<Arg type=\"List\">" + STRING_ARRAY_XML + "</Arg>"
-            + "<Arg type=\"List\">" + STRING_ARRAY_XML + "</Arg>"
-            + "</New></Set></Configure>");
+        XmlConfiguration xmlConfiguration = asXmlConfiguration("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\">" +
+            "<Set name=\"constructorArgTestClass\"><New class=\"org.eclipse.jetty.xml.ConstructorArgTestClass\">" +
+            "<Arg type=\"List\">" + STRING_ARRAY_XML + "</Arg>" +
+            "<Arg type=\"List\">" + STRING_ARRAY_XML + "</Arg>" +
+            "</New></Set></Configure>");
         TestConfiguration tc = new TestConfiguration();
         assertThat("tc.getList() returns null as it's not configured yet", tc.getList(), is(nullValue()));
         xmlConfiguration.configure(tc);
@@ -375,8 +376,8 @@ public class XmlConfigurationTest
     @Test
     public void testListNotContainingArray() throws Exception
     {
-        XmlConfiguration xmlConfiguration = asXmlConfiguration("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\">"
-            + "<New class=\"org.eclipse.jetty.xml.ConstructorArgTestClass\"><Arg type=\"List\">Some String</Arg></New></Configure>");
+        XmlConfiguration xmlConfiguration = asXmlConfiguration("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\">" +
+            "<New class=\"org.eclipse.jetty.xml.ConstructorArgTestClass\"><Arg type=\"List\">Some String</Arg></New></Configure>");
         TestConfiguration tc = new TestConfiguration();
 
         assertThrows(IllegalArgumentException.class, () ->
@@ -388,9 +389,9 @@ public class XmlConfigurationTest
     @Test
     public void testSetConstructorArg() throws Exception
     {
-        XmlConfiguration xmlConfiguration = asXmlConfiguration("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\">"
-            + "<Set name=\"constructorArgTestClass\"><New class=\"org.eclipse.jetty.xml.ConstructorArgTestClass\"><Arg type=\"Set\">"
-            + STRING_ARRAY_XML + "</Arg></New></Set></Configure>");
+        XmlConfiguration xmlConfiguration = asXmlConfiguration("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\">" +
+            "<Set name=\"constructorArgTestClass\"><New class=\"org.eclipse.jetty.xml.ConstructorArgTestClass\"><Arg type=\"Set\">" +
+            STRING_ARRAY_XML + "</Arg></New></Set></Configure>");
         TestConfiguration tc = new TestConfiguration();
         assertThat("tc.getList() returns null as it's not configured yet", tc.getSet(), is(nullValue()));
         xmlConfiguration.configure(tc);
@@ -401,8 +402,8 @@ public class XmlConfigurationTest
     @Test
     public void testSetNotContainingArray() throws Exception
     {
-        XmlConfiguration xmlConfiguration = asXmlConfiguration("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\">"
-            + "<New class=\"org.eclipse.jetty.xml.ConstructorArgTestClass\"><Arg type=\"Set\">Some String</Arg></New></Configure>");
+        XmlConfiguration xmlConfiguration = asXmlConfiguration("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\">" +
+            "<New class=\"org.eclipse.jetty.xml.ConstructorArgTestClass\"><Arg type=\"Set\">Some String</Arg></New></Configure>");
         TestConfiguration tc = new TestConfiguration();
         assertThrows(IllegalArgumentException.class, () ->
         {
@@ -413,8 +414,8 @@ public class XmlConfigurationTest
     @Test
     public void testListSetterWithStringArray() throws Exception
     {
-        XmlConfiguration xmlConfiguration = asXmlConfiguration("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\"><Set name=\"List\">"
-            + STRING_ARRAY_XML + "</Set></Configure>");
+        XmlConfiguration xmlConfiguration = asXmlConfiguration("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\"><Set name=\"List\">" +
+            STRING_ARRAY_XML + "</Set></Configure>");
         TestConfiguration tc = new TestConfiguration();
         assertThat("tc.getList() returns null as it's not configured yet", tc.getList(), is(nullValue()));
         xmlConfiguration.configure(tc);
@@ -424,8 +425,8 @@ public class XmlConfigurationTest
     @Test
     public void testListSetterWithPrimitiveArray() throws Exception
     {
-        XmlConfiguration xmlConfiguration = asXmlConfiguration("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\"><Set name=\"List\">"
-            + INT_ARRAY_XML + "</Set></Configure>");
+        XmlConfiguration xmlConfiguration = asXmlConfiguration("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\"><Set name=\"List\">" +
+            INT_ARRAY_XML + "</Set></Configure>");
         TestConfiguration tc = new TestConfiguration();
         assertThat("tc.getList() returns null as it's not configured yet", tc.getList(), is(nullValue()));
         xmlConfiguration.configure(tc);
@@ -435,8 +436,8 @@ public class XmlConfigurationTest
     @Test
     public void testNotSupportedLinkedListSetter() throws Exception
     {
-        XmlConfiguration xmlConfiguration = asXmlConfiguration("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\"><Set name=\"LinkedList\">"
-            + INT_ARRAY_XML + "</Set></Configure>");
+        XmlConfiguration xmlConfiguration = asXmlConfiguration("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\"><Set name=\"LinkedList\">" +
+            INT_ARRAY_XML + "</Set></Configure>");
         TestConfiguration tc = new TestConfiguration();
         assertThat("tc.getSet() returns null as it's not configured yet", tc.getList(), is(nullValue()));
         assertThrows(NoSuchMethodException.class, () ->
@@ -448,8 +449,8 @@ public class XmlConfigurationTest
     @Test
     public void testArrayListSetter() throws Exception
     {
-        XmlConfiguration xmlConfiguration = asXmlConfiguration("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\"><Set name=\"ArrayList\">"
-            + INT_ARRAY_XML + "</Set></Configure>");
+        XmlConfiguration xmlConfiguration = asXmlConfiguration("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\"><Set name=\"ArrayList\">" +
+            INT_ARRAY_XML + "</Set></Configure>");
         TestConfiguration tc = new TestConfiguration();
         assertThat("tc.getSet() returns null as it's not configured yet", tc.getList(), is(nullValue()));
         xmlConfiguration.configure(tc);
@@ -459,8 +460,8 @@ public class XmlConfigurationTest
     @Test
     public void testSetSetter() throws Exception
     {
-        XmlConfiguration xmlConfiguration = asXmlConfiguration("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\"><Set name=\"Set\">"
-            + STRING_ARRAY_XML + "</Set></Configure>");
+        XmlConfiguration xmlConfiguration = asXmlConfiguration("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\"><Set name=\"Set\">" +
+            STRING_ARRAY_XML + "</Set></Configure>");
         TestConfiguration tc = new TestConfiguration();
         assertThat("tc.getSet() returns null as it's not configured yet", tc.getSet(), is(nullValue()));
         xmlConfiguration.configure(tc);
@@ -470,8 +471,8 @@ public class XmlConfigurationTest
     @Test
     public void testSetSetterWithPrimitiveArray() throws Exception
     {
-        XmlConfiguration xmlConfiguration = asXmlConfiguration("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\"><Set name=\"Set\">"
-            + INT_ARRAY_XML + "</Set></Configure>");
+        XmlConfiguration xmlConfiguration = asXmlConfiguration("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\"><Set name=\"Set\">" +
+            INT_ARRAY_XML + "</Set></Configure>");
         TestConfiguration tc = new TestConfiguration();
         assertThat("tc.getSet() returns null as it's not configured yet", tc.getSet(), is(nullValue()));
         xmlConfiguration.configure(tc);
@@ -1053,7 +1054,7 @@ public class XmlConfigurationTest
     }
 
     @Test
-    public void testJettyStandardIdsAndProperties_JettyHome_JettyBase() throws Exception
+    public void testJettyStandardIdsAndPropertiesAndJettyHomeAndJettyBase() throws Exception
     {
         String[] propNames = new String[]
             {
@@ -1082,7 +1083,7 @@ public class XmlConfigurationTest
     }
 
     @Test
-    public void testJettyStandardIdsAndProperties_JettyHomeUri_JettyBaseUri() throws Exception
+    public void testJettyStandardIdsAndPropertiesAndJettyHomeUriAndJettyBaseUri() throws Exception
     {
         String[] propNames = new String[]
             {
@@ -1156,7 +1157,7 @@ public class XmlConfigurationTest
 
         if (logBytes != null)
         {
-            String[] lines = logBytes.toString("UTF-8").split(System.lineSeparator());
+            String[] lines = logBytes.toString(UTF_8.name()).split(System.lineSeparator());
             List<String> warnings = Arrays.stream(lines)
                 .filter(line -> line.contains(":WARN:"))
                 .filter(line -> line.contains(testClass.getSimpleName()))

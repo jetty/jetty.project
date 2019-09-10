@@ -1397,6 +1397,7 @@ public class SslBytesServerTest extends SslBytesTest
             {
                 case APPLICATION:
                     fail("application data not allows after renegotiate");
+                    return; // this is just to avoid checkstyle warning
                 case ALERT:
                     break loop;
                 default:
@@ -1802,7 +1803,7 @@ public class SslBytesServerTest extends SslBytesTest
 
         assertTrue(latch.await(idleTimeout * 2, TimeUnit.MILLISECONDS));
 
-        // Be sure that the server sent a SSL close alert
+        // Be sure that the server sent an SSL close alert
         TLSRecord record = proxy.readFromServer();
         assertNotNull(record);
         assertEquals(TLSRecord.Type.ALERT, record.getType());

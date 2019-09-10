@@ -33,7 +33,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 
 /**
- * <p>A {@link Session} represents the client-side endpoint of a HTTP/2 connection to a single origin server.</p>
+ * <p>A {@link Session} represents the client-side endpoint of an HTTP/2 connection to a single origin server.</p>
  * <p>Once a {@link Session} has been obtained, it can be used to open HTTP/2 streams:</p>
  * <pre>
  * Session session = ...;
@@ -140,7 +140,7 @@ public interface Session
 
     /**
      * <p>A {@link Listener} is the passive counterpart of a {@link Session} and
-     * receives events happening on a HTTP/2 connection.</p>
+     * receives events happening on an HTTP/2 connection.</p>
      *
      * @see Session
      */
@@ -164,9 +164,9 @@ public interface Session
 
         /**
          * <p>Callback method invoked when a new stream is being created upon
-         * receiving a HEADERS frame representing a HTTP request.</p>
+         * receiving a HEADERS frame representing an HTTP request.</p>
          * <p>Applications should implement this method to process HTTP requests,
-         * typically providing a HTTP response via
+         * typically providing an HTTP response via
          * {@link Stream#headers(HeadersFrame, Callback)}.</p>
          * <p>Applications can detect whether request DATA frames will be arriving
          * by testing {@link HeadersFrame#isEndStream()}. If the application is

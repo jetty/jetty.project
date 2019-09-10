@@ -33,7 +33,7 @@ import static org.hamcrest.Matchers.nullValue;
 
 public abstract class AbstractCloseEndpoint extends WebSocketAdapter
 {
-    public final Logger LOG;
+    public final Logger log;
     public CountDownLatch closeLatch = new CountDownLatch(1);
     public String closeReason = null;
     public int closeStatusCode = -1;
@@ -41,13 +41,13 @@ public abstract class AbstractCloseEndpoint extends WebSocketAdapter
 
     public AbstractCloseEndpoint()
     {
-        this.LOG = Log.getLogger(this.getClass().getName());
+        this.log = Log.getLogger(this.getClass().getName());
     }
 
     @Override
     public void onWebSocketClose(int statusCode, String reason)
     {
-        LOG.debug("onWebSocketClose({}, {})", statusCode, reason);
+        log.debug("onWebSocketClose({}, {})", statusCode, reason);
         this.closeStatusCode = statusCode;
         this.closeReason = reason;
         closeLatch.countDown();
@@ -56,7 +56,7 @@ public abstract class AbstractCloseEndpoint extends WebSocketAdapter
     @Override
     public void onWebSocketError(Throwable cause)
     {
-        LOG.debug("onWebSocketError({})", cause.getClass().getSimpleName());
+        log.debug("onWebSocketError({})", cause.getClass().getSimpleName());
         errors.offer(cause);
     }
 

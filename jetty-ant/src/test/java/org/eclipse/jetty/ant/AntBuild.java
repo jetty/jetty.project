@@ -171,7 +171,8 @@ public class AntBuild
                 Matcher mat = pat.getMatcher(line);
                 if (mat.find())
                 {
-                    int num = 0, count = mat.groupCount();
+                    int num = 0;
+                    int count = mat.groupCount();
                     String[] match = new String[count];
                     while (num++ < count)
                     {

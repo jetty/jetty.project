@@ -74,7 +74,7 @@ public class HandlerWrapper extends AbstractHandlerContainer
     public void setHandler(Handler handler)
     {
         if (isStarted())
-            throw new IllegalStateException(STARTED);
+            throw new IllegalStateException(getState());
 
         // check for loops
         if (handler == this || (handler instanceof HandlerContainer &&

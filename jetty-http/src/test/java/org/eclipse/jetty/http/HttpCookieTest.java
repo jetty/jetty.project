@@ -25,6 +25,9 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 public class HttpCookieTest
@@ -89,6 +92,16 @@ public class HttpCookieTest
 
         httpCookie = new HttpCookie("everything", "value", "domain", "path", 0, true, true, null, -1);
         assertEquals("everything=value; Path=path; Domain=domain; Expires=Thu, 01-Jan-1970 00:00:00 GMT; Max-Age=0; Secure; HttpOnly", httpCookie.getRFC6265SetCookie());
+
+
+        httpCookie = new HttpCookie("everything", "value", "domain", "path", 0, true, true, null, -1, HttpCookie.SameSite.NONE);
+        assertEquals("everything=value; Path=path; Domain=domain; Expires=Thu, 01-Jan-1970 00:00:00 GMT; Max-Age=0; Secure; HttpOnly; SameSite=None", httpCookie.getRFC6265SetCookie());
+
+        httpCookie = new HttpCookie("everything", "value", "domain", "path", 0, true, true, null, -1, HttpCookie.SameSite.LAX);
+        assertEquals("everything=value; Path=path; Domain=domain; Expires=Thu, 01-Jan-1970 00:00:00 GMT; Max-Age=0; Secure; HttpOnly; SameSite=Lax", httpCookie.getRFC6265SetCookie());
+
+        httpCookie = new HttpCookie("everything", "value", "domain", "path", 0, true, true, null, -1, HttpCookie.SameSite.STRICT);
+        assertEquals("everything=value; Path=path; Domain=domain; Expires=Thu, 01-Jan-1970 00:00:00 GMT; Max-Age=0; Secure; HttpOnly; SameSite=Strict", httpCookie.getRFC6265SetCookie());
 
         String[] badNameExamples = {
             "\"name\"",
@@ -178,5 +191,31 @@ public class HttpCookieTest
             httpCookie = new HttpCookie("name", goodValueExample, null, "/", 1, true, true, null, -1);
             // should not throw an exception
         }
+    }
+
+    @Test
+    public void testGetHttpOnlyFromComment()
+    {
+        assertTrue(HttpCookie.isHttpOnlyInComment("__HTTP_ONLY__"));
+        assertTrue(HttpCookie.isHttpOnlyInComment("__HTTP_ONLY__comment"));
+        assertFalse(HttpCookie.isHttpOnlyInComment("comment"));
+    }
+
+    @Test
+    public void testGetSameSiteFromComment()
+    {
+        assertEquals(HttpCookie.getSameSiteFromComment("__SAME_SITE_NONE__"), HttpCookie.SameSite.NONE);
+        assertEquals(HttpCookie.getSameSiteFromComment("__SAME_SITE_LAX__"), HttpCookie.SameSite.LAX);
+        assertEquals(HttpCookie.getSameSiteFromComment("__SAME_SITE_STRICT__"), HttpCookie.SameSite.STRICT);
+        assertEquals(HttpCookie.getSameSiteFromComment("__SAME_SITE_NONE____SAME_SITE_STRICT__"), HttpCookie.SameSite.NONE);
+        assertNull(HttpCookie.getSameSiteFromComment("comment"));
+    }
+
+    @Test
+    public void getCommentWithoutAttributes()
+    {
+        assertEquals(HttpCookie.getCommentWithoutAttributes("comment__SAME_SITE_NONE__"), "comment");
+        assertEquals(HttpCookie.getCommentWithoutAttributes("comment__HTTP_ONLY____SAME_SITE_NONE__"), "comment");
+        assertNull(HttpCookie.getCommentWithoutAttributes("__SAME_SITE_LAX__"));
     }
 }

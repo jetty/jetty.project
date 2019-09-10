@@ -100,6 +100,8 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
         {
             for (Bean b : _beans)
             {
+                if (!isStarting())
+                    break;
                 if (b._bean instanceof LifeCycle)
                 {
                     LifeCycle l = (LifeCycle)b._bean;
@@ -127,8 +129,6 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
                     }
                 }
             }
-
-            super.doStart();
         }
         catch (Throwable th)
         {
@@ -193,6 +193,8 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
         MultiException mex = new MultiException();
         for (Bean b : reverse)
         {
+            if (!isStopping())
+                break;
             if (b._managed == Managed.MANAGED && b._bean instanceof LifeCycle)
             {
                 LifeCycle l = (LifeCycle)b._bean;

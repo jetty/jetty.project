@@ -115,10 +115,10 @@ public class SharedBlockingCallbackTest
             }
             fail("Should have thrown IOException");
         }
-        catch (IOException ee)
+        catch (IOException e)
         {
             start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
-            assertEquals(ex, ee.getCause());
+            assertEquals(ex, e.getCause());
         }
         assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start, lessThan(100L));
         assertEquals(0, notComplete.get());
@@ -160,9 +160,9 @@ public class SharedBlockingCallbackTest
             }
             fail("Should have thrown IOException");
         }
-        catch (IOException ee)
+        catch (IOException e)
         {
-            assertEquals(ex, ee.getCause());
+            assertEquals(ex, e.getCause());
         }
         assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start, greaterThan(10L));
         assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start, lessThan(1000L));

@@ -24,6 +24,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
+import org.eclipse.jetty.quickstart.QuickStartConfiguration;
+import org.eclipse.jetty.quickstart.QuickStartConfiguration.Mode;
 import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Server;
@@ -312,7 +314,12 @@ public class JettyEmbedder extends AbstractLifeCycle
         {
             File qs = new File (webApp.getTempDirectory(), "quickstart-web.xml");
             if (qs.exists() && qs.isFile())
-                webApp.setQuickStartWebDescriptor(Resource.newResource(qs));
+            {
+                webApp.setAttribute(QuickStartConfiguration.QUICKSTART_WEB_XML, Resource.newResource(qs));
+                webApp.addConfiguration(new MavenQuickStartConfiguration());
+                webApp.setAttribute(QuickStartConfiguration.MODE, Mode.QUICKSTART);
+            }
+
         }
 
         //add the webapp to the server

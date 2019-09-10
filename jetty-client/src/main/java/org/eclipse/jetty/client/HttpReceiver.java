@@ -50,7 +50,7 @@ import org.eclipse.jetty.util.log.Logger;
  * <ol>
  * <li>{@link #responseBegin(HttpExchange)}, when the HTTP response data containing the HTTP status code
  * is available</li>
- * <li>{@link #responseHeader(HttpExchange, HttpField)}, when a HTTP field is available</li>
+ * <li>{@link #responseHeader(HttpExchange, HttpField)}, when an HTTP field is available</li>
  * <li>{@link #responseHeaders(HttpExchange)}, when all HTTP headers are available</li>
  * <li>{@link #responseContent(HttpExchange, ByteBuffer, Callback)}, when HTTP content is available</li>
  * <li>{@link #responseSuccess(HttpExchange)}, when the response is successful</li>

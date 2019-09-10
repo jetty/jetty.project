@@ -89,7 +89,6 @@ pipeline {
   }
 }
 
-
 def slackNotif() {
   script {
     try {
@@ -107,7 +106,6 @@ def slackNotif() {
     }
   }
 }
-
 
 /**
  * To other developers, if you are using this method above, please use the following syntax.
@@ -134,5 +132,6 @@ def mavenBuild(jdk, cmdline, mvnName, junitPublishDisabled) {
     sh "mvn -Pci -V -B -T3 -e -fae -Dmaven.test.failure.ignore=true -Djetty.testtracker.log=true $cmdline -Dunix.socket.tmp=" + env.JENKINS_HOME
   }
 }
+
 
 // vim: et:ts=2:sw=2:ft=groovy

@@ -50,7 +50,7 @@ public class CDITests extends AbstractDistributionTest
                 Path jettyWebXml = d.getJettyBase().resolve("webapps/demo/WEB-INF/jetty-web.xml");
                 Files.move(jettyWebOwbXml, jettyWebXml);
             }
-            catch(IOException e)
+            catch (IOException e)
             {
                 throw new RuntimeException(e);
             }
@@ -86,7 +86,7 @@ public class CDITests extends AbstractDistributionTest
         String[] args1 = {
             "--create-startd",
             "--approve-all-licenses",
-            "--add-to-start=http,deploy,annotations,jsp" + (integration==null?"":(","+integration))
+            "--add-to-start=http,deploy,annotations,jsp" + (integration == null ? "" : ("," + integration))
         };
         try (DistributionTester.Run run1 = distribution.start(args1))
         {
@@ -101,7 +101,7 @@ public class CDITests extends AbstractDistributionTest
             int port = distribution.freePort();
             try (DistributionTester.Run run2 = distribution.start("jetty.http.port=" + port))
             {
-                assertTrue(run2.awaitConsoleLogsFor("Started @", 10, TimeUnit.SECONDS));
+                assertTrue(run2.awaitConsoleLogsFor("Started Server@", 10, TimeUnit.SECONDS));
 
                 startHttpClient();
                 ContentResponse response = client.GET("http://localhost:" + port + "/demo/greetings");

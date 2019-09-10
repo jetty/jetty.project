@@ -29,7 +29,7 @@ import org.eclipse.jetty.util.log.Logger;
 
 public class TestMessageHandler extends MessageHandler
 {
-    protected final Logger LOG = Log.getLogger(TestMessageHandler.class);
+    protected static final Logger LOG = Log.getLogger(TestMessageHandler.class);
 
     public CoreSession coreSession;
     public BlockingQueue<String> textMessages = new BlockingArrayQueue<>();

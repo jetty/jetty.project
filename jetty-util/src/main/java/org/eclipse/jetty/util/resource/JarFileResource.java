@@ -29,7 +29,6 @@ import java.util.List;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -111,6 +110,7 @@ public class JarFileResource extends JarResource
         _jarFile = null;
         _list = null;
 
+        // Work with encoded URL path (_urlString is assumed to be encoded)
         int sep = _urlString.lastIndexOf("!/");
         _jarUrl = _urlString.substring(0, sep + 2);
         _path = URIUtil.decodePath(_urlString.substring(sep + 2));
@@ -124,7 +124,6 @@ public class JarFileResource extends JarResource
      * Returns true if the represented resource exists.
      */
     @Override
-
     public boolean exists()
     {
         if (_exists)
@@ -311,11 +310,12 @@ public class JarFileResource extends JarResource
         }
 
         Enumeration<JarEntry> e = jarFile.entries();
-        String dir = _urlString.substring(_urlString.lastIndexOf("!/") + 2);
+        String encodedDir = _urlString.substring(_urlString.lastIndexOf("!/") + 2);
+        String dir = URIUtil.decodePath(encodedDir);
         while (e.hasMoreElements())
         {
             JarEntry entry = e.nextElement();
-            String name = StringUtil.replace(entry.getName(), '\\', '/');
+            String name = entry.getName();
             if (!name.startsWith(dir) || name.length() == dir.length())
             {
                 continue;

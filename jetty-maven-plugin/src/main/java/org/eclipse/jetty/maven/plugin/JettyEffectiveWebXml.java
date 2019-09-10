@@ -28,8 +28,9 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.eclipse.jetty.annotations.AnnotationConfiguration;
+import org.eclipse.jetty.quickstart.QuickStartConfiguration;
+import org.eclipse.jetty.quickstart.QuickStartConfiguration.Mode;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
@@ -92,30 +93,23 @@ public class JettyEffectiveWebXml extends JettyRunMojo
             configureWebApplication();
 
             //set the webapp up to do very little other than generate the quickstart-web.xml
+            if (effectiveWebXml == null)
+            {
+                deleteOnExit = true;
+                effectiveWebXml = new File(target, "effective-web.xml");
+                effectiveWebXml.deleteOnExit();
+            }
+            Resource descriptor = Resource.newResource(effectiveWebXml);
+            if (!effectiveWebXml.getParentFile().exists())
+                effectiveWebXml.getParentFile().mkdirs();
+            if (!effectiveWebXml.exists())
+                effectiveWebXml.createNewFile();
+
             webApp.setCopyWebDir(false);
             webApp.setCopyWebInf(false);
-            webApp.setGenerateQuickStart(true);
-
-            //if the user didn't nominate a file to generate into, pick the name and
-            //make sure that it is deleted on exit
-            if (webApp.getQuickStartWebDescriptor() == null)
-            {
-                if (effectiveWebXml == null)
-                {
-                    deleteOnExit = true;
-                    effectiveWebXml = new File(target, "effective-web.xml");
-                    effectiveWebXml.deleteOnExit();
-                }
-
-                Resource descriptor = Resource.newResource(effectiveWebXml);
-
-                if (!effectiveWebXml.getParentFile().exists())
-                    effectiveWebXml.getParentFile().mkdirs();
-                if (!effectiveWebXml.exists())
-                    effectiveWebXml.createNewFile();
-
-                webApp.setQuickStartWebDescriptor(descriptor);
-            }
+            webApp.addConfiguration(new QuickStartConfiguration());
+            webApp.setAttribute(QuickStartConfiguration.MODE, Mode.GENERATE);
+            webApp.setAttribute(QuickStartConfiguration.QUICKSTART_WEB_XML, descriptor);
 
             ServerSupport.addWebApplication(server, webApp);
 
@@ -158,7 +152,7 @@ public class JettyEffectiveWebXml extends JettyRunMojo
             try
             {
                 //just show the result in the log
-                getLog().info(IO.toString(webApp.getQuickStartWebDescriptor().getInputStream()));
+                getLog().info(IO.toString(((Resource)webApp.getAttribute(QuickStartConfiguration.QUICKSTART_WEB_XML)).getInputStream()));
             }
             catch (Exception e)
             {
