@@ -123,21 +123,9 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         start._started.await();
     }
 
-    protected void onSelectFailed(Throwable cause) throws Exception
+    protected void onSelectFailed(Throwable cause)
     {
         // override to change behavior
-    }
-
-    private void notifySelectFailed(Throwable cause)
-    {
-        try
-        {
-            onSelectFailed(cause);
-        }
-        catch (Throwable x)
-        {
-            LOG.info("Failure while calling onSelectFailed()", x);
-        }
     }
 
     public int size()
@@ -520,7 +508,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                 if (isRunning())
                 {
                     LOG.warn("Fatal select() failure", x);
-                    notifySelectFailed(x);
+                    onSelectFailed(x);
                 }
                 else
                 {
