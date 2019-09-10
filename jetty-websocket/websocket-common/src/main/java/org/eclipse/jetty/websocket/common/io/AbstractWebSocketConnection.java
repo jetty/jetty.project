@@ -43,6 +43,7 @@ import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.CloseException;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.SuspendToken;
+import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
@@ -298,16 +299,24 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     {
         if (connectionState.disconnected())
         {
-            /* Use prior Fatal Close Info if present, otherwise
-             * because if could be from a failed close handshake where
-             * the local initiated, but the remote never responded.
-             */
-            CloseInfo closeInfo = fatalCloseInfo;
-            if (closeInfo == null)
+            if (connectionState.wasOpened())
             {
-                closeInfo = new CloseInfo(StatusCode.ABNORMAL, "Disconnected");
+                /* Use prior Fatal Close Info if present, otherwise
+                 * because if could be from a failed close handshake where
+                 * the local initiated, but the remote never responded.
+                 */
+                CloseInfo closeInfo = fatalCloseInfo;
+                if (closeInfo == null)
+                {
+                    closeInfo = new CloseInfo(StatusCode.ABNORMAL, "Disconnected");
+                }
+                session.callApplicationOnClose(closeInfo);
             }
-            session.callApplicationOnClose(closeInfo);
+            else
+            {
+                session.callApplicationOnError(new WebSocketException("Shutdown"));
+            }
+
             if (LOG.isDebugEnabled())
             {
                 LOG.debug("{} disconnect()", policy.getBehavior());

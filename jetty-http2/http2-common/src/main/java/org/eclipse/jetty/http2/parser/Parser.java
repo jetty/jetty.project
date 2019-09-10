@@ -54,18 +54,22 @@ public class Parser
     private final HpackDecoder hpackDecoder;
     private final BodyParser[] bodyParsers;
     private UnknownBodyParser unknownBodyParser;
-    private int maxFrameLength;
+    private int maxFrameLength = Frame.DEFAULT_MAX_LENGTH;
     private int maxSettingsKeys = SettingsFrame.DEFAULT_MAX_KEYS;
     private boolean continuation;
     private State state = State.HEADER;
 
     public Parser(ByteBufferPool byteBufferPool, Listener listener, int maxDynamicTableSize, int maxHeaderSize)
     {
+        this(byteBufferPool, listener, maxDynamicTableSize, maxHeaderSize, RateControl.NO_RATE_CONTROL);
+    }
+
+    public Parser(ByteBufferPool byteBufferPool, Listener listener, int maxDynamicTableSize, int maxHeaderSize, RateControl rateControl)
+    {
         this.byteBufferPool = byteBufferPool;
         this.listener = listener;
-        this.headerParser = new HeaderParser();
+        this.headerParser = new HeaderParser(rateControl == null ? RateControl.NO_RATE_CONTROL : rateControl);
         this.hpackDecoder = new HpackDecoder(maxDynamicTableSize, maxHeaderSize);
-        this.maxFrameLength = Frame.DEFAULT_MAX_LENGTH;
         this.bodyParsers = new BodyParser[FrameType.values().length];
     }
 

@@ -163,11 +163,6 @@ public class SessionData implements Serializable
 
     public SessionData(String id, String cpath, String vhost, long created, long accessed, long lastAccessed, long maxInactiveMs)
     {
-        this(id, cpath, vhost, created, accessed, lastAccessed, maxInactiveMs, new ConcurrentHashMap<String,Object>());
-    }
-
-    public SessionData(String id, String cpath, String vhost, long created, long accessed, long lastAccessed, long maxInactiveMs, Map<String, Object> attributes)
-    {
         _id = id;
         setContextPath(cpath);
         setVhost(vhost);
@@ -176,7 +171,13 @@ public class SessionData implements Serializable
         _lastAccessed = lastAccessed;
         _maxInactiveMs = maxInactiveMs;
         calcAndSetExpiry();
-        _attributes = attributes;
+        _attributes = new ConcurrentHashMap<>();
+    }
+
+    public SessionData(String id, String cpath, String vhost, long created, long accessed, long lastAccessed, long maxInactiveMs, Map<String, Object> attributes)
+    {
+        this(id, cpath, vhost, created, accessed, lastAccessed, maxInactiveMs);
+        putAllAttributes(attributes);
     }
 
     /**

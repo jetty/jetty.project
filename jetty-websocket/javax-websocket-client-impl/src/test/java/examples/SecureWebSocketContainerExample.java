@@ -34,18 +34,11 @@ public class SecureWebSocketContainerExample
 {
     public static void main(String[] args)
     {
-        String destUri = "wss://echo.websocket.org";
-        if (args.length > 0)
-        {
-            destUri = args[0];
-        }
-
         WebSocketContainer client = null;
         try
         {
+            URI echoUri = URI.create("wss://echo.websocket.org");
             client = getConfiguredWebSocketContainer();
-            URI echoUri = new URI(destUri);
-
             ClientEndpointConfig clientEndpointConfig = ClientEndpointConfig.Builder.create()
                 .configurator(new OriginServerConfigurator("https://websocket.org"))
                 .build();

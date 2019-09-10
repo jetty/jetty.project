@@ -29,6 +29,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.Executor;
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
@@ -450,6 +451,13 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         return eventDriverFactory;
     }
 
+    @Override
+    public Set<String> getAvailableExtensionNames()
+    {
+        return Collections.unmodifiableSet(extensionFactory.getExtensionNames());
+    }
+
+    @Deprecated
     @Override
     public ExtensionFactory getExtensionFactory()
     {

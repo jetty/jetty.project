@@ -127,7 +127,7 @@ public class TooFastClientTest
     }
 
     /**
-     * Test where were a client sends a HTTP Upgrade to websocket AND enough websocket frame(s)
+     * Test where were a client sends an HTTP Upgrade to websocket AND enough websocket frame(s)
      * to completely overfill the {@link org.eclipse.jetty.io.AbstractConnection#getInputBufferSize()}
      * to test a situation where the WebSocket connection opens with prefill that exceeds
      * the normal input buffer sizes.

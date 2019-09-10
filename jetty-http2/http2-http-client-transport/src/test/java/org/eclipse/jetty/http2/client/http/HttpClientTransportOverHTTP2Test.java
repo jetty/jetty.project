@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.http2.client.http;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.ServerSocket;
@@ -38,7 +37,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.UnaryOperator;
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -63,6 +61,7 @@ import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.generator.Generator;
+import org.eclipse.jetty.http2.parser.RateControl;
 import org.eclipse.jetty.http2.parser.ServerParser;
 import org.eclipse.jetty.http2.server.RawHTTP2ServerConnectionFactory;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -187,7 +186,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
         start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             {
                 baseRequest.setHandled(true);
                 HttpVersion version = HttpVersion.fromString(request.getProtocol());
@@ -199,7 +198,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
             .onRequestBegin(request ->
             {
                 if (request.getVersion() != HttpVersion.HTTP_2)
-                    request.abort(new Exception("Not a HTTP/2 request"));
+                    request.abort(new Exception("Not an HTTP/2 request"));
             })
             .send();
 
@@ -313,7 +312,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
         start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             {
                 baseRequest.setHandled(true);
                 assertEquals(path, request.getRequestURI());
@@ -337,7 +336,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
         start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             {
                 baseRequest.setHandled(true);
                 assertEquals(path, request.getRequestURI());
@@ -501,7 +500,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
                             x.printStackTrace();
                         }
                     }
-                }, 4096, 8192);
+                }, 4096, 8192, RateControl.NO_RATE_CONTROL);
                 parser.init(UnaryOperator.identity());
 
                 byte[] bytes = new byte[1024];

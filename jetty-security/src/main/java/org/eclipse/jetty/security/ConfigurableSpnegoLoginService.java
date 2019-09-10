@@ -51,7 +51,7 @@ import org.ietf.jgss.Oid;
  * of the {@link #getServiceName() service name} and the {@link #getHostName() host name},
  * for example {@code HTTP/wonder.com}, using a {@code keyTab} file as the service principal
  * credentials.</p>
- * <p>Upon receiving a HTTP request, the server tries to authenticate the client
+ * <p>Upon receiving an HTTP request, the server tries to authenticate the client
  * calling {@link #login(String, Object, ServletRequest)} where the GSS APIs are used to
  * verify client tokens and (perhaps after a few round-trips) a {@code GSSContext} is
  * established.</p>

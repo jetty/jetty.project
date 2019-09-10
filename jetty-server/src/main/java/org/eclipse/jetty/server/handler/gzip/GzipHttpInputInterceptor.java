@@ -27,7 +27,7 @@ import org.eclipse.jetty.server.HttpInput.Content;
 import org.eclipse.jetty.util.component.Destroyable;
 
 /**
- * A HttpInput Interceptor that inflates GZIP encoded request content.
+ * An HttpInput Interceptor that inflates GZIP encoded request content.
  */
 public class GzipHttpInputInterceptor implements HttpInput.Interceptor, Destroyable
 {
