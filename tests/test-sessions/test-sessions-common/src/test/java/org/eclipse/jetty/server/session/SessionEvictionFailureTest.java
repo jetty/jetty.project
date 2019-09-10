@@ -37,6 +37,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * SessionEvictionFailureTest
@@ -192,6 +193,7 @@ public class SessionEvictionFailureTest
 
                 // Make another request to see if the session is still in the cache and can be used,
                 //allow it to be saved this time
+                assertTrue(context.getSessionHandler().getSessionCache().contains(TestServer.extractSessionId(sessionCookie)));
                 Request request = client.newRequest(url + "?action=test");
                 response = request.send();
                 assertEquals(HttpServletResponse.SC_OK, response.getStatus());
