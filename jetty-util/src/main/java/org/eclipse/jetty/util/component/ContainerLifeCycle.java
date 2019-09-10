@@ -84,17 +84,9 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
 {
     private static final Logger LOG = Log.getLogger(ContainerLifeCycle.class);
     private final List<Bean> _beans = new CopyOnWriteArrayList<>();
-    private final List<EventListener> _eventListenerBeans = new ArrayList<>();
-    private final List<EventListener> _eventListenerBeansUnmodifiable = Collections.unmodifiableList(_eventListenerBeans);
     private final List<Container.Listener> _listeners = new CopyOnWriteArrayList<>();
     private boolean _doStarted;
     private boolean _destroyed;
-
-    @Override
-    public List<EventListener> getEventListeners()
-    {
-        return _eventListenerBeansUnmodifiable;
-    }
 
     /**
      * Starts the managed lifecycle beans in the order they were added.
@@ -358,9 +350,9 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
         for (Container.Listener l : _listeners)
             l.beanAdded(this, o);
 
-        // if the bean is a Listener.  Note we check the _eventListenerBeans here
-        // to avoid calling extended version of addEventListener before detecting it is already added.
-        if (o instanceof EventListener && !_eventListenerBeans.contains(o))
+        // if the bean is an EventListener, then add it. Because we have already added it as a bean above, then
+        // addBean will not be called back.
+        if (o instanceof EventListener)
             addEventListener((EventListener)o);
 
         try
@@ -458,50 +450,47 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
     }
 
     @Override
-    public void addEventListener(EventListener listener)
+    public boolean addEventListener(EventListener listener)
     {
         // Has it already been added as a listener?
-        if (_eventListenerBeans.contains(listener))
-            // yes - nothing to do
-            return;
-
-        super.addEventListener(listener);
-        _eventListenerBeans.add(listener);
-
-        // If it is not yet a bean,
-        if (!contains(listener))
-            // add it as a bean first, we wont be called back because we've already added it to the _eventListenerBeans list
-            // but we've not added it to the _listeners list, so it won't be told about itself!
-            addBean(listener);
-
-        if (listener instanceof Container.Listener)
+        if (super.addEventListener(listener))
         {
-            Container.Listener cl = (Container.Listener)listener;
-            _listeners.add(cl);
+            // If it is not yet a bean,
+            if (!contains(listener))
+                // add it as a bean, we will be called back to add it as an event listener, but it will have
+                // already been added, so we will not enter this branch.
+                addBean(listener);
 
-            // tell it about existing beans
-            for (Bean b : _beans)
+            if (listener instanceof Container.Listener)
             {
-                cl.beanAdded(this, b._bean);
+                Container.Listener cl = (Container.Listener)listener;
+                _listeners.add(cl);
 
-                // handle inheritance
-                if (listener instanceof InheritedListener && b.isManaged() && b._bean instanceof Container)
+                // tell it about existing beans
+                for (Bean b : _beans)
                 {
-                    if (b._bean instanceof ContainerLifeCycle)
-                        ((ContainerLifeCycle)b._bean).addBean(listener, false);
-                    else
-                        ((Container)b._bean).addBean(listener);
+                    cl.beanAdded(this, b._bean);
+
+                    // handle inheritance
+                    if (listener instanceof InheritedListener && b.isManaged() && b._bean instanceof Container)
+                    {
+                        if (b._bean instanceof ContainerLifeCycle)
+                            ((ContainerLifeCycle)b._bean).addBean(listener, false);
+                        else
+                            ((Container)b._bean).addBean(listener);
+                    }
                 }
             }
+            return true;
         }
+        return false;
     }
 
     @Override
-    public void removeEventListener(EventListener listener)
+    public boolean removeEventListener(EventListener listener)
     {
-        if (_eventListenerBeans.remove(listener))
+        if (super.removeEventListener(listener))
         {
-            super.removeEventListener(listener);
             removeBean(listener);
             if (_listeners.remove(listener))
             {
@@ -514,7 +503,9 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
                         ((Container)b._bean).removeBean(listener);
                 }
             }
+            return true;
         }
+        return false;
     }
 
     /**
@@ -684,7 +675,7 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
             }
 
             // Remove event listeners, checking list here to avoid calling extended removeEventListener if already removed.
-            if (bean._bean instanceof EventListener && _eventListenerBeans.contains(bean._bean))
+            if (bean._bean instanceof EventListener && getEventListeners().contains(bean._bean))
                 removeEventListener((EventListener)bean._bean);
 
             // stop managed beans

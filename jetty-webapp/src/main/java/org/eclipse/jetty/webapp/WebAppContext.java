@@ -1056,18 +1056,22 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     }
 
     @Override
-    public void removeEventListener(EventListener listener)
+    public boolean removeEventListener(EventListener listener)
     {
-        super.removeEventListener(listener);
-        if ((listener instanceof HttpSessionActivationListener) ||
-            (listener instanceof HttpSessionAttributeListener) ||
-            (listener instanceof HttpSessionBindingListener) ||
-            (listener instanceof HttpSessionListener) ||
-            (listener instanceof HttpSessionIdListener))
+        if (super.removeEventListener(listener))
         {
-            if (_sessionHandler != null)
-                _sessionHandler.removeEventListener(listener);
+            if ((listener instanceof HttpSessionActivationListener) ||
+                (listener instanceof HttpSessionAttributeListener) ||
+                (listener instanceof HttpSessionBindingListener) ||
+                (listener instanceof HttpSessionListener) ||
+                (listener instanceof HttpSessionIdListener))
+            {
+                if (_sessionHandler != null)
+                    _sessionHandler.removeEventListener(listener);
+            }
+            return true;
         }
+        return false;
     }
 
     /**

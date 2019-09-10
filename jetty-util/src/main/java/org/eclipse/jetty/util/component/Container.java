@@ -94,19 +94,21 @@ public interface Container
      * Add an event listener.
      *
      * @param listener the listener to add
+     * @return true if the listener was added
      * @see Container.Listener
      * @see LifeCycle.Listener
      * @see Container#addBean(Object)
      */
-    void addEventListener(EventListener listener);
+    boolean addEventListener(EventListener listener);
 
     /**
      * Remove an event listener.
      *
      * @param listener the listener to remove
+     * @return true if the listener was removed
      * @see Container#removeBean(Object)
      */
-    void removeEventListener(EventListener listener);
+    boolean removeEventListener(EventListener listener);
 
     /**
      * Unmanages a bean already contained by this aggregate, so that it is not started/stopped/destroyed with this

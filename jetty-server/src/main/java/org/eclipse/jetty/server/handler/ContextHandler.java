@@ -604,73 +604,68 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         return _displayName;
     }
 
-    @Override
-    public List<EventListener> getEventListeners()
-    {
-        return super.getEventListeners();
-    }
-
     /**
      * Add a context event listeners.
      *
      * @param listener the event listener to add
+     * @return true if the listener was added
      * @see ContextScopeListener
      * @see ServletContextListener
      * @see ServletContextAttributeListener
      * @see ServletRequestListener
      * @see ServletRequestAttributeListener
      */
-    public void addEventListener(EventListener listener)
+    @Override
+    public boolean addEventListener(EventListener listener)
     {
-        super.addEventListener(listener);
-
-        if (listener instanceof ContextScopeListener)
+        if (super.addEventListener(listener))
         {
-            _contextListeners.add((ContextScopeListener)listener);
-            if (__context.get() != null)
-                ((ContextScopeListener)listener).enterScope(__context.get(), null, "Listener registered");
+            if (listener instanceof ContextScopeListener)
+            {
+                _contextListeners.add((ContextScopeListener)listener);
+                if (__context.get() != null)
+                    ((ContextScopeListener)listener).enterScope(__context.get(), null, "Listener registered");
+            }
+
+            if (listener instanceof ServletContextListener)
+                _servletContextListeners.add((ServletContextListener)listener);
+
+            if (listener instanceof ServletContextAttributeListener)
+                _servletContextAttributeListeners.add((ServletContextAttributeListener)listener);
+
+            if (listener instanceof ServletRequestListener)
+                _servletRequestListeners.add((ServletRequestListener)listener);
+
+            if (listener instanceof ServletRequestAttributeListener)
+                _servletRequestAttributeListeners.add((ServletRequestAttributeListener)listener);
+
+            return true;
         }
-
-        if (listener instanceof ServletContextListener)
-            _servletContextListeners.add((ServletContextListener)listener);
-
-        if (listener instanceof ServletContextAttributeListener)
-            _servletContextAttributeListeners.add((ServletContextAttributeListener)listener);
-
-        if (listener instanceof ServletRequestListener)
-            _servletRequestListeners.add((ServletRequestListener)listener);
-
-        if (listener instanceof ServletRequestAttributeListener)
-            _servletRequestAttributeListeners.add((ServletRequestAttributeListener)listener);
+        return false;
     }
 
-    /**
-     * Remove a context event listeners.
-     *
-     * @param listener the event listener to remove
-     * @see ServletContextListener
-     * @see ServletContextAttributeListener
-     * @see ServletRequestListener
-     * @see ServletRequestAttributeListener
-     */
-    public void removeEventListener(EventListener listener)
+    @Override
+    public boolean removeEventListener(EventListener listener)
     {
-        super.removeEventListener(listener);
+        if (super.removeEventListener(listener))
+        {
+            if (listener instanceof ContextScopeListener)
+                _contextListeners.remove(listener);
 
-        if (listener instanceof ContextScopeListener)
-            _contextListeners.remove(listener);
+            if (listener instanceof ServletContextListener)
+                _servletContextListeners.remove(listener);
 
-        if (listener instanceof ServletContextListener)
-            _servletContextListeners.remove(listener);
+            if (listener instanceof ServletContextAttributeListener)
+                _servletContextAttributeListeners.remove(listener);
 
-        if (listener instanceof ServletContextAttributeListener)
-            _servletContextAttributeListeners.remove(listener);
+            if (listener instanceof ServletRequestListener)
+                _servletRequestListeners.remove(listener);
 
-        if (listener instanceof ServletRequestListener)
-            _servletRequestListeners.remove(listener);
-
-        if (listener instanceof ServletRequestAttributeListener)
-            _servletRequestAttributeListeners.remove(listener);
+            if (listener instanceof ServletRequestAttributeListener)
+                _servletRequestAttributeListeners.remove(listener);
+            return true;
+        }
+        return false;
     }
 
     /**
@@ -690,7 +685,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     
     public boolean isDurableListener(EventListener listener)
     {
-        return _durableListeners.contains(listener);
+        if (isStarted())
+            return _durableListeners.contains(listener);
+        return getEventListeners().contains(listener);
     }
 
     /**
@@ -939,11 +936,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             stopContext();
 
             // retain only durable listeners
-            for (EventListener listener : new ArrayList<>(getEventListeners()))
-            {
-                if (!_durableListeners.contains(listener))
-                    removeEventListener(listener);
-            }
+            setEventListeners(_durableListeners);
             _durableListeners.clear();
 
             if (_errorHandler != null)

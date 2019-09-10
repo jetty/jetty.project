@@ -18,7 +18,9 @@
 
 package org.eclipse.jetty.util.component;
 
+import java.util.Collection;
 import java.util.EventListener;
+import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.eclipse.jetty.util.Uptime;
@@ -42,7 +44,7 @@ public abstract class AbstractLifeCycle implements LifeCycle
     public static final String STOPPING = "STOPPING";
     public static final String RUNNING = "RUNNING";
 
-    private final CopyOnWriteArrayList<LifeCycle.Listener> _listeners = new CopyOnWriteArrayList<LifeCycle.Listener>();
+    private final List<EventListener> _eventListener = new CopyOnWriteArrayList<>();
     private final Object _lock = new Object();
     private static final int STATE_FAILED = -1;
     private static final int STATE_STOPPED = 0;
@@ -140,17 +142,39 @@ public abstract class AbstractLifeCycle implements LifeCycle
         return _state == STATE_FAILED;
     }
 
-    @Override
-    public void addEventListener(EventListener listener)
+    public List<EventListener> getEventListeners()
     {
-        if (listener instanceof Listener)
-            _listeners.add((Listener)listener);
+        return _eventListener;
+    }
+
+    public void setEventListeners(Collection<EventListener> eventListeners)
+    {
+        for (EventListener l : _eventListener)
+        {
+            if (!eventListeners.contains(l))
+                removeEventListener(l);
+        }
+
+        for (EventListener l : eventListeners)
+        {
+            if (!_eventListener.contains(l))
+                addEventListener(l);
+        }
     }
 
     @Override
-    public void removeEventListener(EventListener listener)
+    public boolean addEventListener(EventListener listener)
     {
-        _listeners.remove(listener);
+        if (_eventListener.contains(listener))
+            return false;
+        _eventListener.add(listener);
+        return true;
+    }
+
+    @Override
+    public boolean removeEventListener(EventListener listener)
+    {
+        return _eventListener.remove(listener);
     }
 
     @ManagedAttribute(value = "Lifecycle State for this instance", readonly = true)
@@ -191,9 +215,10 @@ public abstract class AbstractLifeCycle implements LifeCycle
         _state = STATE_STARTED;
         if (LOG.isDebugEnabled())
             LOG.debug(STARTED + " @{}ms {}", Uptime.getUptime(), this);
-        for (Listener listener : _listeners)
+        for (EventListener listener : _eventListener)
         {
-            listener.lifeCycleStarted(this);
+            if (listener instanceof Listener)
+                ((Listener)listener).lifeCycleStarted(this);
         }
     }
 
@@ -202,9 +227,10 @@ public abstract class AbstractLifeCycle implements LifeCycle
         if (LOG.isDebugEnabled())
             LOG.debug("starting {}", this);
         _state = STATE_STARTING;
-        for (Listener listener : _listeners)
+        for (EventListener listener : _eventListener)
         {
-            listener.lifeCycleStarting(this);
+            if (listener instanceof Listener)
+                ((Listener)listener).lifeCycleStarting(this);
         }
     }
 
@@ -213,9 +239,10 @@ public abstract class AbstractLifeCycle implements LifeCycle
         if (LOG.isDebugEnabled())
             LOG.debug("stopping {}", this);
         _state = STATE_STOPPING;
-        for (Listener listener : _listeners)
+        for (EventListener listener : _eventListener)
         {
-            listener.lifeCycleStopping(this);
+            if (listener instanceof Listener)
+                ((Listener)listener).lifeCycleStopping(this);
         }
     }
 
@@ -224,9 +251,10 @@ public abstract class AbstractLifeCycle implements LifeCycle
         _state = STATE_STOPPED;
         if (LOG.isDebugEnabled())
             LOG.debug("{} {}", STOPPED, this);
-        for (Listener listener : _listeners)
+        for (EventListener listener : _eventListener)
         {
-            listener.lifeCycleStopped(this);
+            if (listener instanceof Listener)
+                ((Listener)listener).lifeCycleStopped(this);
         }
     }
 
@@ -235,9 +263,10 @@ public abstract class AbstractLifeCycle implements LifeCycle
         _state = STATE_FAILED;
         if (LOG.isDebugEnabled())
             LOG.warn(FAILED + " " + this + ": " + th, th);
-        for (Listener listener : _listeners)
+        for (EventListener listener : _eventListener)
         {
-            listener.lifeCycleFailure(this, th);
+            if (listener instanceof Listener)
+                ((Listener)listener).lifeCycleFailure(this, th);
         }
     }
 

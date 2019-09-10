@@ -395,22 +395,32 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
      * @see AcceptListener
      * @see Container#addEventListener(EventListener)
      */
-    public void addEventListener(EventListener listener)
+    @Override
+    public boolean addEventListener(EventListener listener)
     {
         if (isRunning())
             throw new IllegalStateException(this.toString());
-        super.addEventListener(listener);
-        if (listener instanceof AcceptListener)
-            _acceptListeners.add((AcceptListener)listener);
+        if (super.addEventListener(listener))
+        {
+            if (listener instanceof AcceptListener)
+                _acceptListeners.add((AcceptListener)listener);
+            return true;
+        }
+        return false;
     }
 
-    public void removeEventListener(EventListener listener)
+    @Override
+    public boolean removeEventListener(EventListener listener)
     {
         if (isRunning())
             throw new IllegalStateException(this.toString());
-        super.removeEventListener(listener);
-        if (listener instanceof AcceptListener)
-            _acceptListeners.remove(listener);
+        if (super.removeEventListener(listener))
+        {
+            if (listener instanceof AcceptListener)
+                _acceptListeners.remove(listener);
+            return true;
+        }
+        return false;
     }
 
     protected void onAccepting(SelectableChannel channel)

@@ -198,10 +198,9 @@ public class ServletContextHandler extends ContextHandler
 
     /**
      * Add EventListener
-     * Adds an EventListener to the list. @see org.eclipse.jetty.server.handler.ContextHandler#addEventListener().
-     * Also adds any listeners that are session related to the SessionHandler.
      *
      * @param listener the listener to add
+     * @return true if the listener was added
      * @see HttpSessionAttributeListener
      * @see HttpSessionActivationListener
      * @see HttpSessionBindingListener
@@ -210,18 +209,22 @@ public class ServletContextHandler extends ContextHandler
      * @see ContextHandler#addEventListener(EventListener)
      */
     @Override
-    public void addEventListener(EventListener listener)
+    public boolean addEventListener(EventListener listener)
     {
-        super.addEventListener(listener);
-        if ((listener instanceof HttpSessionActivationListener) ||
-            (listener instanceof HttpSessionAttributeListener) ||
-            (listener instanceof HttpSessionBindingListener) ||
-            (listener instanceof HttpSessionListener) ||
-            (listener instanceof HttpSessionIdListener))
+        if (super.addEventListener(listener))
         {
-            if (_sessionHandler != null)
-                _sessionHandler.addEventListener(listener);
+            if ((listener instanceof HttpSessionActivationListener) ||
+                (listener instanceof HttpSessionAttributeListener) ||
+                (listener instanceof HttpSessionBindingListener) ||
+                (listener instanceof HttpSessionListener) ||
+                (listener instanceof HttpSessionIdListener))
+            {
+                if (_sessionHandler != null)
+                    _sessionHandler.addEventListener(listener);
+            }
+            return true;
         }
+        return false;
     }
 
     @Override
