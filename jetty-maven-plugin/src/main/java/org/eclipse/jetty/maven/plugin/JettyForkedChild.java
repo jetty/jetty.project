@@ -72,7 +72,6 @@ public class JettyForkedChild extends AbstractLifeCycle
             if ("--stop-port".equals(args[i]))
             {
                 jetty.setStopPort(Integer.parseInt(args[++i]));
-                System.err.println("STOP PORT"+jetty.getStopPort());
                 continue;
             }
 
@@ -80,7 +79,6 @@ public class JettyForkedChild extends AbstractLifeCycle
             if ("--stop-key".equals(args[i]))
             {
                 jetty.setStopKey(args[++i]);
-                System.err.println ("STOP KEY="+jetty.getStopKey());
                 continue;
             }
 
@@ -94,7 +92,6 @@ public class JettyForkedChild extends AbstractLifeCycle
                     jettyXmls.add(new File(names[j].trim()));
                 }
                 jetty.setJettyXmlFiles(jettyXmls);
-                System.err.println("JETTY XMLS="+jetty.getJettyXmlFiles());
                 continue;
             }
             //--webprops
@@ -102,7 +99,6 @@ public class JettyForkedChild extends AbstractLifeCycle
             {
                 webAppPropsFile = new File(args[++i].trim());
                 jetty.setWebAppProperties(loadWebAppProps());
-                System.err.println("WEBPROPS="+webAppPropsFile);
                 continue;
             }
             
@@ -110,7 +106,6 @@ public class JettyForkedChild extends AbstractLifeCycle
             if ("--token".equals(args[i]))
             {
                 tokenFile = new File(args[++i].trim()); 
-                System.err.println("TOKEN FILE="+tokenFile);
                 continue;
             }
             
@@ -119,7 +114,6 @@ public class JettyForkedChild extends AbstractLifeCycle
             String[] tmp = args[i].trim().split("=");
             if (tmp.length == 2)
             {
-                System.err.println("Setting jetty property "+tmp[0]+"="+tmp[1]);
                 jettyProperties.put(tmp[0], tmp[1]);
             }
         }
@@ -167,9 +161,10 @@ public class JettyForkedChild extends AbstractLifeCycle
                         {
                             //stop the webapp
                             jetty.getWebApp().stop();
-
+                            System.err.println("STopped the webapp");
                             //reload the props
                             jetty.setWebAppProperties(loadWebAppProps());
+                            System.err.println("Reset the webapp properties");
                             jetty.setWebApp(jetty.getWebApp());
                             //restart the webapp
                             jetty.redeployWebApp();
@@ -189,14 +184,12 @@ public class JettyForkedChild extends AbstractLifeCycle
         if (!Objects.isNull(webAppPropsFile))
             scanner.watch(webAppPropsFile.toPath());
 
-
         scanner.start();
 
         //wait for jetty to finish
         jetty.join();
     }
-    
-    
+
 
     /**
      * @param args

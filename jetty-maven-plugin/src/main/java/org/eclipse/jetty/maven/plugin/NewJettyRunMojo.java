@@ -31,7 +31,6 @@ import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
-import org.eclipse.jetty.maven.plugin.ConsoleReader;
 import org.eclipse.jetty.util.PathWatcher;
 import org.eclipse.jetty.util.PathWatcher.PathWatchEvent;
 import org.eclipse.jetty.util.resource.Resource;
@@ -119,17 +118,12 @@ public class NewJettyRunMojo extends AbstractWebAppMojo
         webApp.setBaseResource(originalBaseResource);
 
         if (classesDirectory != null)
-        {
             webApp.setClasses (classesDirectory);
-            System.err.println("Classes dir="+classesDirectory);
-        }
-        else
-            System.err.println("NO CLASSES DIR");
+
         if (useTestScope && (testClassesDirectory != null))
             webApp.setTestClasses (testClassesDirectory);
 
         webApp.setWebInfLib(getProjectDependencyFiles());
-
 
         //if we have not already set web.xml location, need to set one up
         if (webApp.getDescriptor() == null)
@@ -201,7 +195,6 @@ public class NewJettyRunMojo extends AbstractWebAppMojo
     {
         try
         {
-            System.err.println("STARTING JETTY FORKED, WAITING FOR CHILD");
             forker = newJettyForker();
             forker.setWaitForChild(true); //we run at the command line, echo child output and wait for it
 

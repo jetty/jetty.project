@@ -168,6 +168,7 @@ public class JettyForker extends AbstractForker
     {
         //regenerating the quickstart will be noticed by the JettyForkedChild process
         //which will redeploy the webapp
+        System.err.println("Redeploying webapp");
         generateQuickStart();
     }
     
@@ -195,6 +196,7 @@ public class JettyForker extends AbstractForker
 
             //save config of the webapp BEFORE we stop
             WebAppPropertyConverter.toProperties(webApp, webAppPropsFile, contextXml);
+            System.err.println("Generated Quickstart");
         }
         finally
         {
