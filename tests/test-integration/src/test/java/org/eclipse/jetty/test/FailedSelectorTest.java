@@ -56,6 +56,7 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.junit.jupiter.api.AfterEach;
@@ -72,12 +73,14 @@ public class FailedSelectorTest
     private static final Logger LOG = Log.getLogger(FailedSelectorTest.class);
     private HttpClient client;
     private Server server;
+    private StacklessLogging stacklessManagedSelector;
 
     @AfterEach
     public void stopServerAndClient() throws Exception
     {
         server.stop();
         client.stop();
+        stacklessManagedSelector.close();
     }
 
     @BeforeEach
@@ -98,6 +101,8 @@ public class FailedSelectorTest
 
     public void startServer(Function<Server, ServerConnector> customizeServerConsumer) throws Exception
     {
+        stacklessManagedSelector = new StacklessLogging(ManagedSelector.class);
+
         server = new Server();
         server.setStopTimeout(1000);
         server.setStopAtShutdown(true);
@@ -138,7 +143,7 @@ public class FailedSelectorTest
         assertRequestHello();
 
         // Request /selector/close
-        assertRequestSelectorClose("/selector/close");
+        assertRequestSelectorClose();
 
         // Wait for selectors to close from action above
         assertTrue(failedLatch.await(2, TimeUnit.SECONDS));
@@ -164,7 +169,7 @@ public class FailedSelectorTest
         assertRequestHello();
 
         // Request /selector/close
-        assertRequestSelectorClose("/selector/close");
+        assertRequestSelectorClose();
 
         // Wait for selectors to close from action above
         assertTrue(failedLatch.await(2, TimeUnit.SECONDS));
@@ -173,9 +178,9 @@ public class FailedSelectorTest
         assertRequestHello();
     }
 
-    private void assertRequestSelectorClose(String path) throws InterruptedException, ExecutionException, TimeoutException
+    private void assertRequestSelectorClose() throws InterruptedException, ExecutionException, TimeoutException
     {
-        URI dest = server.getURI().resolve(path);
+        URI dest = server.getURI().resolve("/selector/close");
         LOG.info("Requesting GET on {}", dest);
 
         ContentResponse response = client.newRequest(dest)
@@ -183,8 +188,8 @@ public class FailedSelectorTest
             .header(HttpHeader.CONNECTION, "close")
             .send();
 
-        assertThat("/selector/close status", response.getStatus(), is(HttpStatus.OK_200));
-        assertThat("/selector/close response", response.getContentAsString(), startsWith("Closing selectors "));
+        assertThat(dest + " status", response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(dest + " response", response.getContentAsString(), startsWith("Closing selectors "));
     }
 
     private void assertRequestHello() throws InterruptedException, ExecutionException, TimeoutException
@@ -196,8 +201,8 @@ public class FailedSelectorTest
             .header(HttpHeader.CONNECTION, "close")
             .send();
 
-        assertThat("/hello status", response.getStatus(), is(HttpStatus.OK_200));
-        assertThat("/hello response", response.getContentAsString(), startsWith("Hello "));
+        assertThat(dest + " status", response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(dest + " response", response.getContentAsString(), startsWith("Hello "));
     }
 
     public static class HelloServlet extends HttpServlet
@@ -230,7 +235,7 @@ public class FailedSelectorTest
             resp.setCharacterEncoding("utf-8");
             resp.setHeader("Connection", "close");
             resp.getWriter().printf("Closing selectors in %,d ms%n", DELAY_MS);
-            scheduledExecutorService.schedule(new InterruptSelectorTask(connector), DELAY_MS, TimeUnit.MILLISECONDS);
+            scheduledExecutorService.schedule(new ForceCloseSelectorTask(connector), DELAY_MS, TimeUnit.MILLISECONDS);
         }
     }
 
@@ -360,12 +365,12 @@ public class FailedSelectorTest
         }
     }
 
-    private static class InterruptSelectorTask implements Runnable
+    private static class ForceCloseSelectorTask implements Runnable
     {
-        private static final Logger LOG = Log.getLogger(InterruptSelectorTask.class);
+        private static final Logger LOG = Log.getLogger(ForceCloseSelectorTask.class);
         private final ServerConnector connector;
 
-        public InterruptSelectorTask(ServerConnector connector)
+        public ForceCloseSelectorTask(ServerConnector connector)
         {
             this.connector = connector;
         }
