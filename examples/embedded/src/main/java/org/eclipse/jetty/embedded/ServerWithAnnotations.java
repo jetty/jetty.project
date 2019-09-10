@@ -76,10 +76,11 @@ public class ServerWithAnnotations
         server.addBean(new NamingDump());
 
         // Configure a LoginService
+        String realmResourceName = "etc/realm.properties";
         ClassLoader classLoader = ServerWithAnnotations.class.getClassLoader();
-        URL realmProps = classLoader.getResource("realm.properties");
+        URL realmProps = classLoader.getResource(realmResourceName);
         if (realmProps == null)
-            throw new FileNotFoundException("Unable to find realm.properties");
+            throw new FileNotFoundException("Unable to find " + realmResourceName);
 
         HashLoginService loginService = new HashLoginService();
         loginService.setName("Test Realm");

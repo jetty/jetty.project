@@ -89,9 +89,11 @@ public class OneWebAppWithJsp
         // its own we register it as a bean with the Jetty server object so it
         // can be started and stopped according to the lifecycle of the server
         // itself.
-        URL realmProps = OneWebAppWithJsp.class.getClassLoader().getResource("realm.properties");
+        String realmResourceName = "etc/realm.properties";
+        ClassLoader classLoader = OneWebAppWithJsp.class.getClassLoader();
+        URL realmProps = classLoader.getResource(realmResourceName);
         if (realmProps == null)
-            throw new FileNotFoundException("Unable to find realm.properties");
+            throw new FileNotFoundException("Unable to find " + realmResourceName);
 
         HashLoginService loginService = new HashLoginService();
         loginService.setName("Test Realm");

@@ -48,10 +48,11 @@ public class SecuredHelloHandler
         // started and stopped according to the lifecycle of the server itself.
         // In this example the name can be whatever you like since we are not
         // dealing with webapp realms.
+        String realmResourceName = "etc/realm.properties";
         ClassLoader classLoader = SecuredHelloHandler.class.getClassLoader();
-        URL realmProps = classLoader.getResource("realm.properties");
+        URL realmProps = classLoader.getResource(realmResourceName);
         if (realmProps == null)
-            throw new FileNotFoundException("Unable to find realm.properties");
+            throw new FileNotFoundException("Unable to find " + realmResourceName);
 
         LoginService loginService = new HashLoginService("MyRealm",
             realmProps.toExternalForm());
