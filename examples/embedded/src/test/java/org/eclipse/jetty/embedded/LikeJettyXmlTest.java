@@ -25,6 +25,7 @@ import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -59,7 +60,7 @@ public class LikeJettyXmlTest extends AbstractEmbeddedTest
     @AfterEach
     public void stopServer() throws Exception
     {
-        server.stop();
+        LifeCycle.stop(server);
     }
 
     @Test
