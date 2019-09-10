@@ -21,6 +21,7 @@ package org.eclipse.jetty.security.openid;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.Serializable;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -43,9 +44,10 @@ import org.eclipse.jetty.util.log.Logger;
  * The response is then validated against the {@link OpenIdConfiguration}.
  * </p>
  */
-public class OpenIdCredentials
+public class OpenIdCredentials implements Serializable
 {
     private static final Logger LOG = Log.getLogger(OpenIdCredentials.class);
+    private static final long serialVersionUID = 4766053233370044796L;
 
     private final String redirectUri;
     private final OpenIdConfiguration configuration;

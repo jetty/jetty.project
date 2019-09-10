@@ -319,8 +319,7 @@ public class OpenIdAuthenticator extends LoginAuthenticator
             if (authentication != null)
             {
                 // Has authentication been revoked?
-                if (authentication instanceof Authentication.User &&
-                    _loginService != null &&
+                if (authentication instanceof Authentication.User && _loginService != null &&
                     !_loginService.validate(((Authentication.User)authentication).getUserIdentity()))
                 {
                     LOG.debug("auth revoked {}", authentication);

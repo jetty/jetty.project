@@ -19,6 +19,7 @@
 package org.eclipse.jetty.security.openid;
 
 import java.io.InputStream;
+import java.io.Serializable;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
@@ -35,10 +36,11 @@ import org.eclipse.jetty.util.log.Logger;
  * This uses the OpenID Provider URL with the path {@link #CONFIG_PATH} to discover
  * the required information about the OIDC service.
  */
-public class OpenIdConfiguration
+public class OpenIdConfiguration implements Serializable
 {
     private static final Logger LOG = Log.getLogger(OpenIdConfiguration.class);
-    private static String CONFIG_PATH = "/.well-known/openid-configuration";
+    private static final long serialVersionUID = 2227941990601349102L;
+    private static final String CONFIG_PATH = "/.well-known/openid-configuration";
 
     private final String openIdProvider;
     private final String issuer;
