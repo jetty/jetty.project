@@ -42,19 +42,25 @@ public class JettyDistribution
     static
     {
         Path distro = asJettyDistribution(System.getProperty("jetty.home"));
+        LOG.debug("JettyDistribution(prop(jetty.home)) = " + distro);
         if (distro == null)
+        {
             distro = asJettyDistribution(System.getenv().get("JETTY_HOME"));
+            LOG.debug("JettyDistribution(env(JETTY_HOME)) = " + distro);
+        }
 
         if (distro == null)
         {
             try
             {
                 Path working = Paths.get(System.getProperty("user.dir"));
+                LOG.debug("JettyDistribution(prop(user.dir)) = " + working);
                 while (distro == null && working != null)
                 {
                     distro = asJettyDistribution(working.resolve("jetty-distribution/target/distribution").toString());
                     working = working.getParent();
                 }
+                LOG.debug("JettyDistribution(working.resolve(...)) = " + distro);
             }
             catch (Throwable cause)
             {
@@ -64,9 +70,11 @@ public class JettyDistribution
 
         if (distro == null)
         {
+            LOG.info("JettyDistribution() = FAILURE");
             throw new RuntimeException("Unable to find built jetty-distribution, run the build and try again.");
         }
 
+        LOG.debug("JettyDistribution() FOUND = " + distro);
         DISTRIBUTION = distro;
     }
 
@@ -94,18 +102,18 @@ public class JettyDistribution
 
             if (!Files.isDirectory(dir))
             {
-                LOG.info("asJettyDistribution {} is not a directory", jettyHome);
+                LOG.debug("asJettyDistribution {} is not a directory", jettyHome);
                 return null;
             }
 
             Path demoBase = dir.resolve("demo-base");
             if (!Files.exists(demoBase) || !Files.isDirectory(demoBase))
             {
-                LOG.info("asJettyDistribution {} has no demo-base", jettyHome);
+                LOG.debug("asJettyDistribution {} has no demo-base", jettyHome);
                 return null;
             }
 
-            LOG.info("asJettyDistribution {}", dir);
+            LOG.debug("asJettyDistribution {}", dir);
             return dir.toAbsolutePath();
         }
         catch (Exception e)
