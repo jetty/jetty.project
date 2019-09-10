@@ -70,11 +70,12 @@ public class JettyDistribution
 
         if (distro == null)
         {
-            LOG.info("JettyDistribution() = FAILURE");
-            throw new RuntimeException("Unable to find built jetty-distribution, run the build and try again.");
+            LOG.info("JettyDistribution() FAILURE: NOT FOUND");
         }
-
-        LOG.debug("JettyDistribution() FOUND = " + distro);
+        else
+        {
+            LOG.debug("JettyDistribution() FOUND = " + distro);
+        }
         DISTRIBUTION = distro;
     }
 
@@ -125,6 +126,8 @@ public class JettyDistribution
 
     public static Path resolve(String path)
     {
+        if (DISTRIBUTION == null)
+            throw new RuntimeException("jetty-distribution not found");
         return DISTRIBUTION.resolve(path);
     }
 

@@ -32,6 +32,7 @@ import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 public class ServerWithJNDITest extends AbstractEmbeddedTest
 {
@@ -40,6 +41,8 @@ public class ServerWithJNDITest extends AbstractEmbeddedTest
     @BeforeEach
     public void startServer() throws Exception
     {
+        assumeTrue(JettyDistribution.DISTRIBUTION != null, "jetty-distribution not found");
+
         server = ServerWithJNDI.createServer(0);
         server.start();
     }
