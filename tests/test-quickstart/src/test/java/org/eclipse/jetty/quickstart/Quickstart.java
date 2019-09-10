@@ -18,8 +18,12 @@
 
 package org.eclipse.jetty.quickstart;
 
+import org.eclipse.jetty.annotations.AnnotationConfiguration;
+import org.eclipse.jetty.plus.webapp.EnvConfiguration;
+import org.eclipse.jetty.plus.webapp.PlusConfiguration;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.xml.XmlConfiguration;
 
 public class Quickstart
@@ -40,8 +44,12 @@ public class Quickstart
 
         Server server = new Server(8080);
 
-        QuickStartWebApp webapp = new QuickStartWebApp();
-        webapp.setMode(QuickStartConfiguration.Mode.AUTO);
+        WebAppContext webapp = new WebAppContext();
+        webapp.addConfiguration(new QuickStartConfiguration(),
+                                    new EnvConfiguration(),
+                                    new PlusConfiguration(),
+                                    new AnnotationConfiguration());
+        webapp.setAttribute(QuickStartConfiguration.MODE, QuickStartConfiguration.Mode.QUICKSTART);
         webapp.setWar(war);
         webapp.setContextPath("/");
 

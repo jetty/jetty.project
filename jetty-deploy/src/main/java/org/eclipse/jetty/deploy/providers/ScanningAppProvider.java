@@ -36,7 +36,7 @@ import org.eclipse.jetty.util.Scanner;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
-import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
@@ -45,7 +45,7 @@ import org.eclipse.jetty.util.resource.Resource;
  *
  */
 @ManagedObject("Abstract Provider for loading webapps")
-public abstract class ScanningAppProvider extends AbstractLifeCycle implements AppProvider
+public abstract class ScanningAppProvider extends ContainerLifeCycle implements AppProvider
 {
     private static final Logger LOG = Log.getLogger(ScanningAppProvider.class);
 
@@ -81,11 +81,13 @@ public abstract class ScanningAppProvider extends AbstractLifeCycle implements A
 
     protected ScanningAppProvider()
     {
+        this(null);
     }
 
     protected ScanningAppProvider(FilenameFilter filter)
     {
         _filenameFilter = filter;
+        addBean(_appMap);
     }
 
     protected void setFilenameFilter(FilenameFilter filter)
@@ -142,15 +144,19 @@ public abstract class ScanningAppProvider extends AbstractLifeCycle implements A
         _scanner.setFilenameFilter(_filenameFilter);
         _scanner.setReportDirs(true);
         _scanner.addListener(_scannerListener);
-        _scanner.start();
+
+        addBean(_scanner);
+
+        super.doStart();
     }
 
     @Override
     protected void doStop() throws Exception
     {
+        super.doStop();
         if (_scanner != null)
         {
-            _scanner.stop();
+            removeBean(_scanner);
             _scanner.removeListener(_scannerListener);
             _scanner = null;
         }
@@ -306,5 +312,11 @@ public abstract class ScanningAppProvider extends AbstractLifeCycle implements A
                 .collect(Collectors.joining(", ", "[", "]"))
         );
         _scanner.scan();
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%x%s", this.getClass(), hashCode(), _monitored);
     }
 }
