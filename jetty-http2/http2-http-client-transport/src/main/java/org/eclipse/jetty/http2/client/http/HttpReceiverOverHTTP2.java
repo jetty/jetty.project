@@ -246,7 +246,7 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
         private void process(boolean resume)
         {
             // Allow only one thread at a time.
-            if (!enter(resume))
+            if (active(resume))
                 return;
 
             while (true)
@@ -292,7 +292,7 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
             }
         }
 
-        private boolean enter(boolean resume)
+        private boolean active(boolean resume)
         {
             synchronized (this)
             {
@@ -300,13 +300,13 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
                 {
                     if (resume)
                         this.resume = true;
-                    return false;
+                    return true;
                 }
                 if (stalled && !resume)
-                    return false;
+                    return true;
                 active = true;
                 stalled = false;
-                return true;
+                return false;
             }
         }
 
