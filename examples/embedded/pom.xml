@@ -146,6 +146,13 @@
       <classifier>tests</classifier>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-distribution</artifactId>
+      <version>${project.version}</version>
+      <type>tar.gz</type>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <profiles>
