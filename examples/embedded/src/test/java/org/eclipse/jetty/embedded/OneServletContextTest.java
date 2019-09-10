@@ -19,12 +19,13 @@
 package org.eclipse.jetty.embedded;
 
 import java.io.BufferedWriter;
-import java.io.IOException;
-import java.net.HttpURLConnection;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
@@ -41,7 +42,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 
 @ExtendWith(WorkDirExtension.class)
-public class OneServletContextTest
+public class OneServletContextTest extends AbstractEmbeddedTest
 {
     private static final String TEXT_CONTENT = "The secret of getting ahead is getting started. - Mark Twain";
     public WorkDir workDir;
@@ -69,30 +70,34 @@ public class OneServletContextTest
     }
 
     @Test
-    public void testGetHello() throws IOException
+    public void testGetHello() throws Exception
     {
         URI uri = server.getURI().resolve("/hello/there");
-        HttpURLConnection http = (HttpURLConnection)uri.toURL().openConnection();
-        assertThat("HTTP Response Status", http.getResponseCode(), is(HttpURLConnection.HTTP_OK));
+        ContentResponse response = client.newRequest(uri)
+            .method(HttpMethod.GET)
+            .send();
+        assertThat("HTTP Response Status", response.getStatus(), is(HttpStatus.OK_200));
 
-        // HttpUtil.dumpResponseHeaders(http);
+        // dumpResponseHeaders(response);
 
         // test response content
-        String responseBody = HttpUtil.getResponseBody(http);
+        String responseBody = response.getContentAsString();
         assertThat("Response Content", responseBody, containsString("Hello"));
     }
 
     @Test
-    public void testGetDumpViaPathInfo() throws IOException
+    public void testGetDumpViaPathInfo() throws Exception
     {
         URI uri = server.getURI().resolve("/dump/something");
-        HttpURLConnection http = (HttpURLConnection)uri.toURL().openConnection();
-        assertThat("HTTP Response Status", http.getResponseCode(), is(HttpURLConnection.HTTP_OK));
+        ContentResponse response = client.newRequest(uri)
+            .method(HttpMethod.GET)
+            .send();
+        assertThat("HTTP Response Status", response.getStatus(), is(HttpStatus.OK_200));
 
-        // HttpUtil.dumpResponseHeaders(http);
+        // dumpResponseHeaders(response);
 
         // test response content
-        String responseBody = HttpUtil.getResponseBody(http);
+        String responseBody = response.getContentAsString();
         assertThat("Response Content", responseBody,
             allOf(
                 containsString("DumpServlet"),
@@ -103,16 +108,18 @@ public class OneServletContextTest
     }
 
     @Test
-    public void testGetDumpSuffix() throws IOException
+    public void testGetDumpSuffix() throws Exception
     {
         URI uri = server.getURI().resolve("/another.dump");
-        HttpURLConnection http = (HttpURLConnection)uri.toURL().openConnection();
-        assertThat("HTTP Response Status", http.getResponseCode(), is(HttpURLConnection.HTTP_OK));
+        ContentResponse response = client.newRequest(uri)
+            .method(HttpMethod.GET)
+            .send();
+        assertThat("HTTP Response Status", response.getStatus(), is(HttpStatus.OK_200));
 
-        // HttpUtil.dumpResponseHeaders(http);
+        // dumpResponseHeaders(response);
 
         // test response content
-        String responseBody = HttpUtil.getResponseBody(http);
+        String responseBody = response.getContentAsString();
         assertThat("Response Content", responseBody,
             allOf(
                 containsString("DumpServlet"),
@@ -123,19 +130,21 @@ public class OneServletContextTest
     }
 
     @Test
-    public void testGetTestDumpSuffix() throws IOException
+    public void testGetTestDumpSuffix() throws Exception
     {
         URI uri = server.getURI().resolve("/test/another.dump");
-        HttpURLConnection http = (HttpURLConnection)uri.toURL().openConnection();
-        assertThat("HTTP Response Status", http.getResponseCode(), is(HttpURLConnection.HTTP_OK));
+        ContentResponse response = client.newRequest(uri)
+            .method(HttpMethod.GET)
+            .send();
+        assertThat("HTTP Response Status", response.getStatus(), is(HttpStatus.OK_200));
 
-        // HttpUtil.dumpResponseHeaders(http);
+        // dumpResponseHeaders(response);
 
-        String filterResponeHeader = http.getHeaderField("X-TestFilter");
-        assertThat("X-TestFilter header", filterResponeHeader, is("true"));
+        String filterResponseHeader = response.getHeaders().get("X-TestFilter");
+        assertThat("X-TestFilter header", filterResponseHeader, is("true"));
 
         // test response content
-        String responseBody = HttpUtil.getResponseBody(http);
+        String responseBody = response.getContentAsString();
         assertThat("Response Content", responseBody,
             allOf(
                 containsString("DumpServlet"),

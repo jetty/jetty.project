@@ -18,10 +18,11 @@
 
 package org.eclipse.jetty.embedded;
 
-import java.io.IOException;
-import java.net.HttpURLConnection;
 import java.net.URI;
 
+import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Server;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -31,7 +32,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 
-public class RewriteServerTest
+public class RewriteServerTest extends AbstractEmbeddedTest
 {
     private Server server;
 
@@ -49,30 +50,34 @@ public class RewriteServerTest
     }
 
     @Test
-    public void testGetRewriteFooInName() throws IOException
+    public void testGetRewriteFooInName() throws Exception
     {
-        URI destUri = server.getURI().resolve("/do-be-foo-be-do");
-        HttpURLConnection http = (HttpURLConnection)destUri.toURL().openConnection();
-        assertThat("HTTP Response Status", http.getResponseCode(), is(HttpURLConnection.HTTP_OK));
+        URI uri = server.getURI().resolve("/do-be-foo-be-do");
+        ContentResponse response = client.newRequest(uri)
+            .method(HttpMethod.GET)
+            .send();
+        assertThat("HTTP Response Status", response.getStatus(), is(HttpStatus.OK_200));
 
-        // HttpUtil.dumpResponseHeaders(http);
+        // dumpResponseHeaders(response);
 
         // test response content
-        String responseBody = HttpUtil.getResponseBody(http);
+        String responseBody = response.getContentAsString();
         assertThat("Response Content", responseBody, containsString("requestURI=/do-be-FOO-be-do"));
     }
 
     @Test
-    public void testGetRewriteFooInPath() throws IOException
+    public void testGetRewriteFooInPath() throws Exception
     {
-        URI destUri = server.getURI().resolve("/do/be/foo/be/do.it");
-        HttpURLConnection http = (HttpURLConnection)destUri.toURL().openConnection();
-        assertThat("HTTP Response Status", http.getResponseCode(), is(HttpURLConnection.HTTP_OK));
+        URI uri = server.getURI().resolve("/do/be/foo/be/do.it");
+        ContentResponse response = client.newRequest(uri)
+            .method(HttpMethod.GET)
+            .send();
+        assertThat("HTTP Response Status", response.getStatus(), is(HttpStatus.OK_200));
 
-        // HttpUtil.dumpResponseHeaders(http);
+        // dumpResponseHeaders(response);
 
         // test response content
-        String responseBody = HttpUtil.getResponseBody(http);
+        String responseBody = response.getContentAsString();
         assertThat("Response Content", responseBody, containsString("requestURI=/do/be/FOO/be/do.it"));
     }
 }

@@ -18,11 +18,12 @@
 
 package org.eclipse.jetty.embedded;
 
-import java.io.IOException;
-import java.net.HttpURLConnection;
 import java.net.URI;
 import java.util.Map;
 
+import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Server;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,7 +33,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 
-public class LikeJettyXmlTest
+public class LikeJettyXmlTest extends AbstractEmbeddedTest
 {
     private Server server;
     private URI serverPlainUri;
@@ -43,8 +44,6 @@ public class LikeJettyXmlTest
     {
         server = LikeJettyXml.createServer(0, 0, false);
         server.start();
-
-        System.err.println("Server URI is " + server.getURI());
 
         Map<String, Integer> ports = ServerUtil.fixDynamicPortConfigurations(server);
 
@@ -61,16 +60,34 @@ public class LikeJettyXmlTest
     }
 
     @Test
-    public void testGetTest() throws IOException
+    public void testGetTest() throws Exception
     {
         URI uri = serverPlainUri.resolve("/test/");
-        HttpURLConnection http = (HttpURLConnection)uri.toURL().openConnection();
-        assertThat("HTTP Response Status", http.getResponseCode(), is(HttpURLConnection.HTTP_OK));
+        ContentResponse response = client.newRequest(uri)
+            .method(HttpMethod.GET)
+            .send();
+        assertThat("HTTP Response Status", response.getStatus(), is(HttpStatus.OK_200));
 
-        // HttpUtil.dumpResponseHeaders(http);
+        // dumpResponseHeaders(response);
 
         // test response content
-        String responseBody = HttpUtil.getResponseBody(http);
+        String responseBody = response.getContentAsString();
+        assertThat("Response Content", responseBody, containsString("Hello"));
+    }
+
+    @Test
+    public void testGetTestSsl() throws Exception
+    {
+        URI uri = serverSslUri.resolve("/test/");
+        ContentResponse response = client.newRequest(uri)
+            .method(HttpMethod.GET)
+            .send();
+        assertThat("HTTP Response Status", response.getStatus(), is(HttpStatus.OK_200));
+
+        // dumpResponseHeaders(response);
+
+        // test response content
+        String responseBody = response.getContentAsString();
         assertThat("Response Content", responseBody, containsString("Hello"));
     }
 }

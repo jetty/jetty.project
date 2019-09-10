@@ -18,12 +18,12 @@
 
 package org.eclipse.jetty.embedded;
 
-import java.io.IOException;
-import java.net.HttpURLConnection;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
@@ -35,7 +35,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 
-public class SplitFileServerTest
+public class SplitFileServerTest extends AbstractEmbeddedTest
 {
     private Server server;
 
@@ -58,38 +58,38 @@ public class SplitFileServerTest
     }
 
     @Test
-    public void testGetTest0() throws IOException
+    public void testGetTest0() throws Exception
     {
         URI uri = server.getURI().resolve("/test0.txt");
-        HttpURLConnection http = (HttpURLConnection)uri.toURL().openConnection();
-        assertThat("HTTP Response Status", http.getResponseCode(), is(HttpURLConnection.HTTP_OK));
+        ContentResponse response = client.GET(uri);
+        assertThat("HTTP Response Status", response.getStatus(), is(HttpStatus.OK_200));
 
-        // HttpUtil.dumpResponseHeaders(http);
+        // dumpResponseHeaders(response);
 
         // test response content
-        String responseBody = HttpUtil.getResponseBody(http);
+        String responseBody = response.getContentAsString();
         assertThat("Response Content", responseBody, containsString("test0"));
     }
 
     @Test
-    public void testGetTest1() throws IOException
+    public void testGetTest1() throws Exception
     {
         URI uri = server.getURI().resolve("/test1.txt");
-        HttpURLConnection http = (HttpURLConnection)uri.toURL().openConnection();
-        assertThat("HTTP Response Status", http.getResponseCode(), is(HttpURLConnection.HTTP_OK));
+        ContentResponse response = client.GET(uri);
+        assertThat("HTTP Response Status", response.getStatus(), is(HttpStatus.OK_200));
 
-        // HttpUtil.dumpResponseHeaders(http);
+        // dumpResponseHeaders(response);
 
         // test response content
-        String responseBody = HttpUtil.getResponseBody(http);
+        String responseBody = response.getContentAsString();
         assertThat("Response Content", responseBody, containsString("test1"));
     }
 
     @Test
-    public void testGetTest2() throws IOException
+    public void testGetTest2() throws Exception
     {
         URI uri = server.getURI().resolve("/test2.txt");
-        HttpURLConnection http = (HttpURLConnection)uri.toURL().openConnection();
-        assertThat("HTTP Response Status", http.getResponseCode(), is(HttpURLConnection.HTTP_NOT_FOUND));
+        ContentResponse response = client.GET(uri);
+        assertThat("HTTP Response Status", response.getStatus(), is(HttpStatus.NOT_FOUND_404));
     }
 }

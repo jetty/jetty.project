@@ -18,12 +18,12 @@
 
 package org.eclipse.jetty.embedded;
 
-import java.io.IOException;
-import java.net.HttpURLConnection;
 import java.net.URI;
 import java.util.Map;
-import javax.net.ssl.HttpsURLConnection;
 
+import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Server;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,7 +33,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 
-public class ManyConnectorsTest
+public class ManyConnectorsTest extends AbstractEmbeddedTest
 {
     private Server server;
     private URI serverPlainUri;
@@ -44,8 +44,6 @@ public class ManyConnectorsTest
     {
         server = ManyConnectors.createServer(0, 0);
         server.start();
-
-        System.err.println("Server URI is " + server.getURI());
 
         Map<String, Integer> ports = ServerUtil.fixDynamicPortConfigurations(server);
 
@@ -62,33 +60,36 @@ public class ManyConnectorsTest
     }
 
     @Test
-    public void testPlainGetHello() throws IOException
+    public void testPlainGetHello() throws Exception
     {
-        URI helloUri = serverPlainUri.resolve("/hello");
+        URI uri = serverPlainUri.resolve("/hello");
 
-        HttpURLConnection http = (HttpURLConnection)helloUri.toURL().openConnection();
-        assertThat("HTTP Response Status", http.getResponseCode(), is(HttpURLConnection.HTTP_OK));
+        ContentResponse response = client.newRequest(uri)
+            .method(HttpMethod.GET)
+            .send();
+        assertThat("HTTP Response Status", response.getStatus(), is(HttpStatus.OK_200));
 
-        // HttpUtil.dumpResponseHeaders(http);
+        // dumpResponseHeaders(response);
 
         // test response content
-        String responseBody = HttpUtil.getResponseBody(http);
+        String responseBody = response.getContentAsString();
         assertThat("Response Content", responseBody, containsString("Hello"));
     }
 
     @Test
     public void testSecureGetHello() throws Exception
     {
-        HttpUtil.disableSecureConnectionVerification();
-        URI helloUri = serverSslUri.resolve("/hello");
+        URI uri = serverSslUri.resolve("/hello");
 
-        HttpsURLConnection https = (HttpsURLConnection)helloUri.toURL().openConnection();
-        assertThat("HTTPS Response Status", https.getResponseCode(), is(HttpURLConnection.HTTP_OK));
+        ContentResponse response = client.newRequest(uri)
+            .method(HttpMethod.GET)
+            .send();
+        assertThat("HTTP Response Status", response.getStatus(), is(HttpStatus.OK_200));
 
-        // HttpUtil.dumpResponseHeaders(http);
+        // dumpResponseHeaders(response);
 
         // test response content
-        String responseBody = HttpUtil.getResponseBody(https);
+        String responseBody = response.getContentAsString();
         assertThat("Response Content", responseBody, containsString("Hello"));
     }
 }

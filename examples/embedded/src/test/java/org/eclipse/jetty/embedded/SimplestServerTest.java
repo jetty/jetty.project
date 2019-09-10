@@ -18,9 +18,10 @@
 
 package org.eclipse.jetty.embedded;
 
-import java.net.HttpURLConnection;
 import java.net.URI;
 
+import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Server;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,7 +30,7 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
-public class SimplestServerTest
+public class SimplestServerTest extends AbstractEmbeddedTest
 {
     private Server server;
 
@@ -49,8 +50,8 @@ public class SimplestServerTest
     @Test
     public void testGetTest() throws Exception
     {
-        URI destUri = server.getURI().resolve("/test");
-        HttpURLConnection http = (HttpURLConnection)destUri.toURL().openConnection();
-        assertThat("HTTP Response Status", http.getResponseCode(), is(HttpURLConnection.HTTP_NOT_FOUND));
+        URI uri = server.getURI().resolve("/test");
+        ContentResponse response = client.GET(uri);
+        assertThat("HTTP Response Status", response.getStatus(), is(HttpStatus.NOT_FOUND_404));
     }
 }

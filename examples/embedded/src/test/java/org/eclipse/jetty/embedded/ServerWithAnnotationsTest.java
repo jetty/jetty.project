@@ -18,10 +18,10 @@
 
 package org.eclipse.jetty.embedded;
 
-import java.io.IOException;
-import java.net.HttpURLConnection;
 import java.net.URI;
 
+import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Server;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,7 +32,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 
-public class ServerWithAnnotationsTest
+public class ServerWithAnnotationsTest extends AbstractEmbeddedTest
 {
     private Server server;
 
@@ -50,16 +50,16 @@ public class ServerWithAnnotationsTest
     }
 
     @Test
-    public void testGetTest() throws IOException
+    public void testGetTest() throws Exception
     {
-        URI destUri = server.getURI().resolve("/test");
-        HttpURLConnection http = (HttpURLConnection)destUri.toURL().openConnection();
-        assertThat("HTTP Response Status", http.getResponseCode(), is(HttpURLConnection.HTTP_OK));
+        URI uri = server.getURI().resolve("/test");
+        ContentResponse response = client.GET(uri);
+        assertThat("HTTP Response Status", response.getStatus(), is(HttpStatus.OK_200));
 
-        // HttpUtil.dumpResponseHeaders(http);
+        // dumpResponseHeaders(response);
 
         // test response content
-        String responseBody = HttpUtil.getResponseBody(http);
+        String responseBody = response.getContentAsString();
         assertThat("Response Content", responseBody, containsString("maxAmount=55.0"));
         assertThat("Response Content", responseBody, not(containsString("<span class=\"fail\">")));
     }

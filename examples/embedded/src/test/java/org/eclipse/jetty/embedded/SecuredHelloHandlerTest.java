@@ -18,11 +18,13 @@
 
 package org.eclipse.jetty.embedded;
 
-import java.io.IOException;
-import java.net.HttpURLConnection;
 import java.net.URI;
 import java.util.Base64;
 
+import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Server;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,7 +35,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 
-public class SecuredHelloHandlerTest
+public class SecuredHelloHandlerTest extends AbstractEmbeddedTest
 {
     private Server server;
 
@@ -51,28 +53,33 @@ public class SecuredHelloHandlerTest
     }
 
     @Test
-    public void testGetWithoutAuth() throws IOException
+    public void testGetWithoutAuth() throws Exception
     {
-        URI destUri = server.getURI().resolve("/hello");
-        HttpURLConnection http = (HttpURLConnection)destUri.toURL().openConnection();
-        assertThat("HTTP Response Status", http.getResponseCode(), is(HttpURLConnection.HTTP_UNAUTHORIZED));
+        URI uri = server.getURI().resolve("/hello");
+        ContentResponse response = client.newRequest(uri)
+            .method(HttpMethod.GET)
+            .send();
+        assertThat("HTTP Response Status", response.getStatus(), is(HttpStatus.UNAUTHORIZED_401));
 
-        // HttpUtil.dumpResponseHeaders(http);
+        // dumpResponseHeaders(response);
     }
 
     @Test
-    public void testGetWithAuth() throws IOException
+    public void testGetWithAuth() throws Exception
     {
-        URI destUri = server.getURI().resolve("/hello");
-        HttpURLConnection http = (HttpURLConnection)destUri.toURL().openConnection();
-        String authEncoded = Base64.getEncoder().encodeToString("user:password".getBytes(UTF_8));
-        http.setRequestProperty("Authorization", "Basic " + authEncoded);
-        assertThat("HTTP Response Status", http.getResponseCode(), is(HttpURLConnection.HTTP_OK));
+        URI uri = server.getURI().resolve("/hello");
 
-        // HttpUtil.dumpResponseHeaders(http);
+        String authEncoded = Base64.getEncoder().encodeToString("user:password".getBytes(UTF_8));
+        ContentResponse response = client.newRequest(uri)
+            .method(HttpMethod.GET)
+            .header(HttpHeader.AUTHORIZATION, "Basic " + authEncoded)
+            .send();
+        assertThat("HTTP Response Status", response.getStatus(), is(HttpStatus.OK_200));
+
+        // dumpResponseHeaders(response);
 
         // test response content
-        String responseBody = HttpUtil.getResponseBody(http);
+        String responseBody = response.getContentAsString();
         assertThat("Response Content", responseBody, containsString("<h1>Hello World</h1>"));
     }
 }

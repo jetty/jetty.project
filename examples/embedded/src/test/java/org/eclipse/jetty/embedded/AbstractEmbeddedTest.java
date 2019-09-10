@@ -18,14 +18,33 @@
 
 package org.eclipse.jetty.embedded;
 
-import org.eclipse.jetty.xml.XmlConfiguration;
+import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 
-public class TestXml
+public abstract class AbstractEmbeddedTest
 {
-    public static void main(String[] args) throws Exception
+    public HttpClient client;
+
+    @BeforeEach
+    public void startClient() throws Exception
     {
-        System.setProperty("jetty.home", "../jetty-distribution/target/distribution");
-        XmlConfiguration.main("../jetty-jmx/src/main/config/etc/jetty-jmx.xml",
-            "../jetty-server/src/main/config/etc/jetty.xml");
+        SslContextFactory ssl = new SslContextFactory.Client(true);
+        client = new HttpClient(ssl);
+        client.start();
+    }
+
+    @AfterEach
+    public void stopClient() throws Exception
+    {
+        client.stop();
+    }
+
+    protected void dumpResponseHeaders(ContentResponse response)
+    {
+        System.out.printf("%s %s %s%n", response.getVersion(), response.getStatus(), response.getReason());
+        System.out.println(response.getHeaders());
     }
 }

@@ -18,10 +18,11 @@
 
 package org.eclipse.jetty.embedded;
 
-import java.io.IOException;
-import java.net.HttpURLConnection;
 import java.net.URI;
 
+import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Server;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -31,7 +32,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 
-public class OneWebAppWithJspTest
+public class OneWebAppWithJspTest extends AbstractEmbeddedTest
 {
     private Server server;
     private URI serverLocalUri;
@@ -53,46 +54,51 @@ public class OneWebAppWithJspTest
     }
 
     @Test
-    public void testGetDumpInfo() throws IOException
+    public void testGetDumpInfo() throws Exception
     {
         URI uri = serverLocalUri.resolve("/dump/info");
-        HttpURLConnection http = (HttpURLConnection)uri.toURL().openConnection();
-        assertThat("HTTP Response Status", http.getResponseCode(), is(HttpURLConnection.HTTP_OK));
+        ContentResponse response = client.newRequest(uri)
+            .method(HttpMethod.GET)
+            .send();
+        assertThat("HTTP Response Status", response.getStatus(), is(HttpStatus.OK_200));
 
-        HttpUtil.dumpResponseHeaders(http);
+        // dumpResponseHeaders(response);
 
         // test response content
-        String responseBody = HttpUtil.getResponseBody(http);
+        String responseBody = response.getContentAsString();
         assertThat("Response Content", responseBody, containsString("getProtocol:&nbsp;</th><td>HTTP/1.1"));
     }
 
     @Test
-    public void testGetJspExpr() throws IOException
+    public void testGetJspExpr() throws Exception
     {
         URI uri = serverLocalUri.resolve("/jsp/expr.jsp?A=1");
-        HttpURLConnection http = (HttpURLConnection)uri.toURL().openConnection();
-        String userAgent = OneWebAppWithJspTest.class.getSimpleName();
-        http.setRequestProperty("User-Agent", userAgent);
-        assertThat("HTTP Response Status", http.getResponseCode(), is(HttpURLConnection.HTTP_OK));
+        ContentResponse response = client.newRequest(uri)
+            .method(HttpMethod.GET)
+            .send();
+        assertThat("HTTP Response Status", response.getStatus(), is(HttpStatus.OK_200));
 
-        // HttpUtil.dumpResponseHeaders(http);
+        // dumpResponseHeaders(response);
 
         // test response content
-        String responseBody = HttpUtil.getResponseBody(http);
+        String responseBody = response.getContentAsString();
+        String userAgent = client.getUserAgentField().getValue();
         assertThat("Response Content", responseBody, containsString("<td>" + userAgent + "</td>"));
     }
 
     @Test
-    public void testGetJstlExpr() throws IOException
+    public void testGetJstlExpr() throws Exception
     {
         URI uri = serverLocalUri.resolve("/jsp/jstl.jsp");
-        HttpURLConnection http = (HttpURLConnection)uri.toURL().openConnection();
-        assertThat("HTTP Response Status", http.getResponseCode(), is(HttpURLConnection.HTTP_OK));
+        ContentResponse response = client.newRequest(uri)
+            .method(HttpMethod.GET)
+            .send();
+        assertThat("HTTP Response Status", response.getStatus(), is(HttpStatus.OK_200));
 
-        // HttpUtil.dumpResponseHeaders(http);
+        // dumpResponseHeaders(response);
 
         // test response content
-        String responseBody = HttpUtil.getResponseBody(http);
+        String responseBody = response.getContentAsString();
         assertThat("Response Content", responseBody, containsString("<h1>JSTL Example</h1>"));
         for (int i = 1; i <= 10; i++)
         {

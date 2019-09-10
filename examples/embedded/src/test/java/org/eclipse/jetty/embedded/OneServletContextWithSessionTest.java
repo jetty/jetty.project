@@ -19,12 +19,14 @@
 package org.eclipse.jetty.embedded;
 
 import java.io.BufferedWriter;
-import java.io.IOException;
-import java.net.HttpURLConnection;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
@@ -41,7 +43,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 
 @ExtendWith(WorkDirExtension.class)
-public class OneServletContextWithSessionTest
+public class OneServletContextWithSessionTest extends AbstractEmbeddedTest
 {
     private static final String TEXT_CONTENT = "Do the right thing. It will gratify some people and astonish the rest. - Mark Twain";
     public WorkDir workDir;
@@ -69,18 +71,20 @@ public class OneServletContextWithSessionTest
     }
 
     @Test
-    public void testGetHello() throws IOException
+    public void testGetHello() throws Exception
     {
         URI uri = server.getURI().resolve("/");
-        HttpURLConnection http = (HttpURLConnection)uri.toURL().openConnection();
-        assertThat("HTTP Response Status", http.getResponseCode(), is(HttpURLConnection.HTTP_OK));
+        ContentResponse response = client.newRequest(uri)
+            .method(HttpMethod.GET)
+            .send();
+        assertThat("HTTP Response Status", response.getStatus(), is(HttpStatus.OK_200));
 
-        // HttpUtil.dumpResponseHeaders(http);
-        String setCookieValue = http.getHeaderField("Set-Cookie");
+        // dumpResponseHeaders(response);
+        String setCookieValue = response.getHeaders().get(HttpHeader.SET_COOKIE);
         assertThat("Set-Cookie value", setCookieValue, containsString("JSESSIONID="));
 
         // test response content
-        String responseBody = HttpUtil.getResponseBody(http);
+        String responseBody = response.getContentAsString();
         assertThat("Response Content", responseBody,
             allOf(
                 containsString("session.getId() = "),

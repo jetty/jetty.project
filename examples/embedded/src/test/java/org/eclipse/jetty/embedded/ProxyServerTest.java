@@ -18,12 +18,12 @@
 
 package org.eclipse.jetty.embedded;
 
-import java.io.IOException;
-import java.net.HttpURLConnection;
-import java.net.InetSocketAddress;
-import java.net.Proxy;
 import java.net.URI;
 
+import org.eclipse.jetty.client.HttpProxy;
+import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Server;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,10 +33,9 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 
-public class ProxyServerTest
+public class ProxyServerTest extends AbstractEmbeddedTest
 {
     private Server server;
-    private Proxy javaHttpProxy;
 
     @BeforeEach
     public void startServer() throws Exception
@@ -45,7 +44,7 @@ public class ProxyServerTest
         server.start();
 
         URI uri = server.getURI();
-        javaHttpProxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(uri.getHost(), uri.getPort()));
+        client.getProxyConfiguration().getProxies().add(new HttpProxy("localhost", uri.getPort()));
     }
 
     @AfterEach
@@ -55,16 +54,19 @@ public class ProxyServerTest
     }
 
     @Test
-    public void testGetProxiedRFC() throws IOException
+    public void testGetProxiedRFC() throws Exception
     {
         URI uri = URI.create("https://tools.ietf.org/rfc/rfc7230.txt");
-        HttpURLConnection http = (HttpURLConnection)uri.toURL().openConnection(javaHttpProxy);
-        assertThat("HTTP Response Status", http.getResponseCode(), is(HttpURLConnection.HTTP_OK));
 
-        // HttpUtil.dumpResponseHeaders(http);
+        ContentResponse response = client.newRequest(uri)
+            .method(HttpMethod.GET)
+            .send();
+        assertThat("HTTP Response Status", response.getStatus(), is(HttpStatus.OK_200));
+
+        // dumpResponseHeaders(response);
 
         // test response content
-        String responseBody = HttpUtil.getResponseBody(http);
+        String responseBody = response.getContentAsString();
         assertThat("Response Content", responseBody, containsString("Hypertext Transfer Protocol (HTTP/1.1): Message Syntax and Routing"));
     }
 }

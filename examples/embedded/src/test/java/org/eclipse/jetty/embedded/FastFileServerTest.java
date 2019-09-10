@@ -19,12 +19,14 @@
 package org.eclipse.jetty.embedded;
 
 import java.io.BufferedWriter;
-import java.io.IOException;
-import java.net.HttpURLConnection;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
@@ -38,7 +40,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
 @ExtendWith(WorkDirExtension.class)
-public class FastFileServerTest
+public class FastFileServerTest extends AbstractEmbeddedTest
 {
     private static final String TEXT_CONTENT = "I am an old man and I have known a great " +
         "many troubles, but most of them never happened. - Mark Twain";
@@ -67,19 +69,24 @@ public class FastFileServerTest
     }
 
     @Test
-    public void testGetSimpleText() throws IOException
+    public void testGetSimpleText() throws Exception
     {
         URI uri = server.getURI().resolve("/simple.txt");
-        HttpURLConnection http = (HttpURLConnection)uri.toURL().openConnection();
-        assertThat("HTTP Response Status", http.getResponseCode(), is(HttpURLConnection.HTTP_OK));
+        ContentResponse response = client.newRequest(uri)
+            .method(HttpMethod.GET)
+            .send();
+        assertThat("HTTP Response Status", response.getStatus(), is(HttpStatus.OK_200));
 
-        // HttpUtil.dumpResponseHeaders(http);
+        // dumpResponseHeaders(response);
 
-        assertThat("Content-Type", http.getHeaderField("Content-Type"), is("text/plain"));
-        assertThat("Content-Length", http.getHeaderField("Content-Length"), is(Integer.toString(TEXT_CONTENT.length())));
+        HttpFields responseHeaders = response.getHeaders();
+
+        assertThat("Content-Type", responseHeaders.get("Content-Type"), is("text/plain"));
+        assertThat("Content-Length", responseHeaders.getLongField("Content-Length"),
+            is((long)TEXT_CONTENT.length()));
 
         // test response content
-        String responseBody = HttpUtil.getResponseBody(http);
+        String responseBody = response.getContentAsString();
         assertThat("Response body", responseBody, is(TEXT_CONTENT));
     }
 }

@@ -31,7 +31,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class ServerWithJMXTest
+public class ServerWithJMXTest extends AbstractEmbeddedTest
 {
     private Server server;
 
