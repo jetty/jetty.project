@@ -80,9 +80,10 @@ public class OneServletContext
 
     public static void main(String[] args) throws Exception
     {
+        int port = ExampleUtil.getPort(args, "jetty.http.port", 8080);
         Path tempDir = Paths.get(System.getProperty("java.io.tmpdir"));
 
-        Server server = createServer(8080, new PathResource(tempDir));
+        Server server = createServer(port, new PathResource(tempDir));
 
         server.start();
         server.dumpStdErr();

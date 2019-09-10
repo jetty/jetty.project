@@ -62,10 +62,11 @@ public class FileServer
 
     public static void main(String[] args) throws Exception
     {
+        int port = ExampleUtil.getPort(args, "jetty.http.port", 8080);
         Path userDir = Paths.get(System.getProperty("user.dir"));
         PathResource pathResource = new PathResource(userDir);
 
-        Server server = createServer(8080, pathResource);
+        Server server = createServer(port, pathResource);
 
         // Start things up! By using the server.join() the server thread will join with the current thread.
         // See "http://docs.oracle.com/javase/1.5.0/docs/api/java/lang/Thread.html#join()" for more details.

@@ -56,7 +56,8 @@ public class MinimalServlets
     public static void main(String[] args) throws Exception
     {
         // Create a basic jetty server object that will listen on port 8080.
-        Server server = createServer(8080);
+        int port = ExampleUtil.getPort(args, "jetty.http.port", 8080);
+        Server server = createServer(port);
 
         // Start things up!
         server.start();

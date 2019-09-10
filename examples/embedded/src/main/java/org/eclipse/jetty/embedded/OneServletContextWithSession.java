@@ -65,9 +65,10 @@ public class OneServletContextWithSession
 
     public static void main(String[] args) throws Exception
     {
+        int port = ExampleUtil.getPort(args, "jetty.http.port", 8080);
         Path dir = Paths.get(System.getProperty("user.dir"));
         PathResource baseResource = new PathResource(dir);
-        Server server = createServer(8080, baseResource);
+        Server server = createServer(port, baseResource);
 
         server.start();
         server.dumpStdErr();

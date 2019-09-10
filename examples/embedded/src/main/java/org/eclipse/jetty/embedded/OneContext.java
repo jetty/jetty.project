@@ -40,7 +40,8 @@ public class OneContext
 
     public static void main(String[] args) throws Exception
     {
-        Server server = createServer(8080);
+        int port = ExampleUtil.getPort(args, "jetty.http.port", 8080);
+        Server server = createServer(port);
 
         // Start the server
         server.start();

@@ -47,8 +47,9 @@ public class FileServerXml
 
     public static void main(String[] args) throws Exception
     {
+        int port = ExampleUtil.getPort(args, "jetty.http.port", 8080);
         Path userDir = Paths.get(System.getProperty("user.dir"));
-        Server server = createServer(8080, userDir);
+        Server server = createServer(port, userDir);
         server.start();
         server.join();
     }

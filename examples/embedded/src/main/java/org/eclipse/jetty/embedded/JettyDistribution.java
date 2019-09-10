@@ -124,11 +124,16 @@ public class JettyDistribution
         return null;
     }
 
-    public static Path resolve(String path)
+    public static Path get()
     {
         if (DISTRIBUTION == null)
             throw new RuntimeException("jetty-distribution not found");
-        return DISTRIBUTION.resolve(path);
+        return DISTRIBUTION;
+    }
+
+    public static Path resolve(String path)
+    {
+        return get().resolve(path);
     }
 
     public static void main(String... arg)

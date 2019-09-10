@@ -129,7 +129,9 @@ public class ManyConnectors
 
     public static void main(String[] args) throws Exception
     {
-        Server server = createServer(8080, 8443);
+        int port = ExampleUtil.getPort(args, "jetty.http.port", 8080);
+        int securePort = ExampleUtil.getPort(args, "jetty.https.port", 8443);
+        Server server = createServer(port, securePort);
         // Start the server
         server.start();
         server.dumpStdErr();

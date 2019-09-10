@@ -73,8 +73,9 @@ public class FastFileServer
 
     public static void main(String[] args) throws Exception
     {
+        int port = ExampleUtil.getPort(args, "jetty.http.port", 8080);
         File directory = new File(System.getProperty("user.dir"));
-        Server server = createServer(8080, directory);
+        Server server = createServer(port, directory);
         server.start();
         server.join();
     }
