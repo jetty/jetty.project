@@ -26,7 +26,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.LongConsumer;
 import java.util.function.LongUnaryOperator;
 import java.util.stream.Collectors;
 
@@ -73,7 +75,7 @@ public abstract class HttpReceiver
 
     private final AtomicReference<ResponseState> responseState = new AtomicReference<>(ResponseState.IDLE);
     private final HttpChannel channel;
-    private List<Response.DemandedContentListener> contentListeners;
+    private ContentListeners contentListeners;
     private Decoder decoder;
     private Throwable failure;
     private long demand;
@@ -82,8 +84,6 @@ public abstract class HttpReceiver
     protected HttpReceiver(HttpChannel channel)
     {
         this.channel = channel;
-        // Deliver the first response content buffer.
-        this.demand = 1;
     }
 
     protected HttpChannel getHttpChannel()
@@ -106,7 +106,7 @@ public abstract class HttpReceiver
                 resume = true;
             }
             if (LOG.isDebugEnabled())
-                LOG.debug("Response demand={}/{}, async={}", n, demand, resume);
+                LOG.debug("Response demand={}/{}, resume={}", n, demand, resume);
         }
 
         if (resume)
@@ -320,22 +320,23 @@ public abstract class HttpReceiver
         ResponseNotifier notifier = getHttpDestination().getResponseNotifier();
         List<Response.ResponseListener> responseListeners = exchange.getConversation().getResponseListeners();
         notifier.notifyHeaders(responseListeners, response);
-        contentListeners = responseListeners.stream()
-            .filter(Response.DemandedContentListener.class::isInstance)
-            .map(Response.DemandedContentListener.class::cast)
-            .collect(Collectors.toList());
+        contentListeners = new ContentListeners(responseListeners);
+        contentListeners.notifyBeforeContent(response);
 
-        List<String> contentEncodings = response.getHeaders().getCSV(HttpHeader.CONTENT_ENCODING.asString(), false);
-        if (contentEncodings != null && !contentEncodings.isEmpty())
+        if (!contentListeners.isEmpty())
         {
-            for (ContentDecoder.Factory factory : getHttpDestination().getHttpClient().getContentDecoderFactories())
+            List<String> contentEncodings = response.getHeaders().getCSV(HttpHeader.CONTENT_ENCODING.asString(), false);
+            if (contentEncodings != null && !contentEncodings.isEmpty())
             {
-                for (String encoding : contentEncodings)
+                for (ContentDecoder.Factory factory : getHttpDestination().getHttpClient().getContentDecoderFactories())
                 {
-                    if (factory.getEncoding().equalsIgnoreCase(encoding))
+                    for (String encoding : contentEncodings)
                     {
-                        decoder = new Decoder(response, factory.newContentDecoder());
-                        break;
+                        if (factory.getEncoding().equalsIgnoreCase(encoding))
+                        {
+                            decoder = new Decoder(response, factory.newContentDecoder());
+                            break;
+                        }
                     }
                 }
             }
@@ -396,12 +397,10 @@ public abstract class HttpReceiver
         }
         else
         {
-            ResponseNotifier notifier = getHttpDestination().getResponseNotifier();
             Decoder decoder = this.decoder;
             if (decoder == null)
             {
-                demand(demand -> demand - 1);
-                notifier.notifyContent(response, this::demand, buffer, callback, contentListeners);
+                contentListeners.notifyContent(response, buffer, callback);
             }
             else
             {
@@ -547,7 +546,7 @@ public abstract class HttpReceiver
         if (decoder != null)
             decoder.destroy();
         decoder = null;
-        demand = 1;
+        demand = 0;
         stalled = false;
     }
 
@@ -649,6 +648,78 @@ public abstract class HttpReceiver
         FAILURE
     }
 
+    private class ContentListeners
+    {
+        private final Map<Object, Long> demands = new ConcurrentHashMap<>();
+        private final LongConsumer demand = HttpReceiver.this::demand;
+        private final List<Response.DemandedContentListener> listeners;
+
+        private ContentListeners(List<Response.ResponseListener> responseListeners)
+        {
+            listeners = responseListeners.stream()
+                .filter(Response.DemandedContentListener.class::isInstance)
+                .map(Response.DemandedContentListener.class::cast)
+                .collect(Collectors.toList());
+        }
+
+        private boolean isEmpty()
+        {
+            return listeners.isEmpty();
+        }
+
+        private void notifyBeforeContent(HttpResponse response)
+        {
+            if (isEmpty())
+            {
+                // If no listeners, we want to proceed and consume any content.
+                demand.accept(1);
+            }
+            else
+            {
+                ResponseNotifier notifier = getHttpDestination().getResponseNotifier();
+                notifier.notifyBeforeContent(response, this::demand, listeners);
+            }
+        }
+
+        private void notifyContent(HttpResponse response, ByteBuffer buffer, Callback callback)
+        {
+            if (hasManyListeners())
+                demands.replaceAll((k, v) -> v - 1);
+            HttpReceiver.this.demand(d -> d - 1);
+            ResponseNotifier notifier = getHttpDestination().getResponseNotifier();
+            notifier.notifyContent(response, this::demand, buffer, callback, listeners);
+        }
+
+        private void demand(Object context, long value)
+        {
+            if (hasManyListeners())
+                accept(context, value);
+            else
+                demand.accept(value);
+        }
+
+        private boolean hasManyListeners()
+        {
+            return listeners.size() > 1;
+        }
+
+        private void accept(Object context, long value)
+        {
+            demands.merge(context, value, MathUtils::cappedAdd);
+            if (demands.size() == listeners.size())
+            {
+                long minDemand = Long.MAX_VALUE;
+                for (Long demand : demands.values())
+                {
+                    if (demand < minDemand)
+                        minDemand = demand;
+                }
+                if (minDemand > 0)
+                    demand.accept(minDemand);
+            }
+        }
+    }
+
     private class Decoder implements Destroyable
     {
         private final HttpResponse response;
@@ -662,7 +733,7 @@ public abstract class HttpReceiver
             this.decoder = Objects.requireNonNull(decoder);
         }
 
-        public boolean decode(ByteBuffer encoded, Callback callback)
+        private boolean decode(ByteBuffer encoded, Callback callback)
         {
             try
             {
@@ -684,9 +755,7 @@ public abstract class HttpReceiver
                     if (LOG.isDebugEnabled())
                         LOG.debug("Response content decoded ({}) {}{}{}", decoder, response, System.lineSeparator(), BufferUtil.toDetailString(decoded));
 
-                    demand(demand -> demand - 1);
-                    ResponseNotifier notifier = getHttpDestination().getResponseNotifier();
-                    notifier.notifyContent(response, HttpReceiver.this::demand, decoded, Callback.from(() -> decoder.release(decoded), callback::failed), contentListeners);
+                    contentListeners.notifyContent(response, decoded, Callback.from(() -> decoder.release(decoded), callback::failed));
 
                     synchronized (this)
                     {

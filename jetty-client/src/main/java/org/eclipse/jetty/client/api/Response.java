@@ -111,7 +111,7 @@ public interface Response
     public interface HeaderListener extends ResponseListener
     {
         /**
-         * Callback method invoked when a response header has been received,
+         * Callback method invoked when a response header has been received and parsed,
          * returning whether the header should be processed or not.
          *
          * @param response the response containing the response line data and the headers so far
@@ -127,7 +127,7 @@ public interface Response
     public interface HeadersListener extends ResponseListener
     {
         /**
-         * Callback method invoked when the response headers have been received and parsed.
+         * Callback method invoked when all the response headers have been received and parsed.
          *
          * @param response the response containing the response line data and the headers
          */
@@ -142,7 +142,7 @@ public interface Response
     public interface ContentListener extends ResponseListener
     {
         /**
-         * Callback method invoked when the response content has been received.
+         * Callback method invoked when the response content has been received, parsed and there is demand.
          * This method may be invoked multiple times, and the {@code content} buffer
          * must be consumed (or copied) before returning from this method.
          *
@@ -160,7 +160,7 @@ public interface Response
     public interface AsyncContentListener extends ResponseListener
     {
         /**
-         * Callback method invoked when the response content has been received.
+         * Callback method invoked when the response content has been received, parsed and there is demand.
          * The {@code callback} object should be succeeded to signal that the
          * {@code content} buffer has been consumed and to demand more content.
          *
@@ -177,6 +177,21 @@ public interface Response
     public interface DemandedContentListener extends ResponseListener
     {
         /**
+         * Callback method invoked before response content events.
+         * The {@code demand} object should be used to demand content, otherwise
+         * the demand remains at zero (no demand) and
+         * {@link #onContent(Response, LongConsumer, ByteBuffer, Callback)} will
+         * not be invoked even if content has been received and parsed.
+         *
+         * @param response the response containing the response line data and the headers
+         * @param demand the object that allows to demand content buffers
+         */
+        default void onBeforeContent(Response response, LongConsumer demand)
+        {
+            demand.accept(1);
+        }
+
+        /**
          * Callback method invoked when the response content has been received.
          * The {@code callback} object should be succeeded to signal that the
          * {@code content} buffer has been consumed.
@@ -184,7 +199,7 @@ public interface Response
          * similarly to {@link Flow.Subscription#request(long)}.
          *
          * @param response the response containing the response line data and the headers
-         * @param demand the object that allows to demand more content buffers
+         * @param demand the object that allows to demand content buffers
          * @param content the content bytes received
          * @param callback the callback to call when the content is consumed
          */

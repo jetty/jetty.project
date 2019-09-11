@@ -21,9 +21,8 @@ package org.eclipse.jetty.client;
 import java.nio.ByteBuffer;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.LongConsumer;
+import java.util.function.ObjLongConsumer;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.client.api.ContentResponse;
@@ -33,7 +32,6 @@ import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.CountingCallback;
-import org.eclipse.jetty.util.MathUtils;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -107,35 +105,45 @@ public class ResponseNotifier
         }
     }
 
-    private void notifyContent(List<Response.ResponseListener> listeners, Response response, ByteBuffer buffer)
+    public void notifyBeforeContent(Response response, ObjLongConsumer<Object> demand, List<Response.DemandedContentListener> contentListeners)
     {
-        List<Response.DemandedContentListener> contentListeners = listeners.stream()
-            .filter(Response.DemandedContentListener.class::isInstance)
-            .map(Response.DemandedContentListener.class::cast)
-            .collect(Collectors.toList());
-        notifyContent(response, value -> {}, buffer, Callback.NOOP, contentListeners);
+        for (Response.DemandedContentListener listener : contentListeners)
+        {
+            notifyBeforeContent(listener, response, d -> demand.accept(listener, d));
+        }
     }
 
-    public void notifyContent(Response response, LongConsumer demand, ByteBuffer buffer, Callback callback, List<Response.DemandedContentListener> contentListeners)
+    private void notifyBeforeContent(Response.DemandedContentListener listener, Response response, LongConsumer demand)
+    {
+        try
+        {
+            listener.onBeforeContent(response, demand);
+        }
+        catch (Throwable x)
+        {
+            LOG.info("Exception while notifying listener " + listener, x);
+        }
+    }
+
+    public void notifyContent(Response response, ObjLongConsumer<Object> demand, ByteBuffer buffer, Callback callback, List<Response.DemandedContentListener> contentListeners)
     {
         int count = contentListeners.size();
         if (count == 0)
         {
             callback.succeeded();
-            demand.accept(1);
+            demand.accept(null, 1);
         }
         else if (count == 1)
         {
-            notifyContent(contentListeners.get(0), response, demand, buffer.slice(), callback);
+            Response.DemandedContentListener listener = contentListeners.get(0);
+            notifyContent(listener, response, d -> demand.accept(listener, d), buffer.slice(), callback);
         }
         else
         {
             callback = new CountingCallback(callback, count);
-            CountingMinimumDemand flowControl = new CountingMinimumDemand(demand, count);
             for (Response.DemandedContentListener listener : contentListeners)
             {
-                LongConsumer consumer = value -> flowControl.accept(listener, value);
-                notifyContent(listener, response, consumer, buffer.slice(), callback);
+                notifyContent(listener, response, d -> demand.accept(listener, d), buffer.slice(), callback);
             }
         }
     }
@@ -248,7 +256,15 @@ public class ResponseNotifier
         {
             byte[] content = ((ContentResponse)response).getContent();
             if (content != null && content.length > 0)
-                notifyContent(listeners, response, ByteBuffer.wrap(content));
+            {
+                List<Response.DemandedContentListener> contentListeners = listeners.stream()
+                    .filter(Response.DemandedContentListener.class::isInstance)
+                    .map(Response.DemandedContentListener.class::cast)
+                    .collect(Collectors.toList());
+                ObjLongConsumer<Object> demand = (context, value) -> {};
+                notifyBeforeContent(response, demand, contentListeners);
+                notifyContent(response, demand, ByteBuffer.wrap(content), Callback.NOOP, contentListeners);
+            }
         }
     }
 
@@ -256,31 +272,5 @@ public class ResponseNotifier
     {
         forwardFailure(listeners, response, responseFailure);
         notifyComplete(listeners, new Result(request, requestFailure, response, responseFailure));
-    }
-
-    private static class CountingMinimumDemand
-    {
-        private final Map<Object, Long> demands = new ConcurrentHashMap<>();
-        private final LongConsumer demand;
-        private final int count;
-
-        private CountingMinimumDemand(LongConsumer demand, int count)
-        {
-            this.demand = demand;
-            this.count = count;
-        }
-
-        private void accept(Object context, long value)
-        {
-            demands.merge(context, value, MathUtils::cappedAdd);
-            if (demands.size() == count)
-            {
-                long minDemand = demands.values().stream()
-                    .mapToLong(Long::longValue)
-                    .min()
-                    .orElse(1);
-                demand.accept(minDemand);
-            }
-        }
     }
 }

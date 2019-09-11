@@ -256,6 +256,7 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
                     if (dataInfo.frame.isEndStream())
                     {
                         receiver.responseSuccess(dataInfo.exchange);
+                        // Return even if active, as reset() will be called later.
                         return;
                     }
                 }

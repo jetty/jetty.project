@@ -23,8 +23,10 @@ import java.io.InterruptedIOException;
 import java.nio.ByteBuffer;
 import java.util.Queue;
 import java.util.Random;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -41,6 +43,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.log.Log;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
@@ -48,6 +51,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpClientDemandTest extends AbstractTest<TransportScenario>
@@ -278,6 +282,96 @@ public class HttpClientDemandTest extends AbstractTest<TransportScenario>
 
         assertTrue(clientContentLatch.await(5, TimeUnit.SECONDS));
         demandRef.get().accept(1);
+        assertTrue(resultLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(TransportProvider.class)
+    public void testTwoListenersWithDifferentDemand(Transport transport) throws Exception
+    {
+        init(transport);
+
+        int bufferSize = 512;
+        byte[] content = new byte[10 * bufferSize];
+        new Random().nextBytes(content);
+        scenario.startServer(new EmptyServerHandler()
+        {
+            @Override
+            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                response.setContentLength(content.length);
+                response.getOutputStream().write(content);
+            }
+        });
+        scenario.startClient(client ->
+        {
+            client.setByteBufferPool(new MappedByteBufferPool(bufferSize));
+            client.setResponseBufferSize(bufferSize);
+        });
+
+        var listener1 = new Response.DemandedContentListener()
+        {
+            private final AtomicInteger chunks = new AtomicInteger();
+
+            @Override
+            public void onContent(Response response, LongConsumer demand, ByteBuffer content, Callback callback)
+            {
+                callback.succeeded();
+                // The first time, demand infinitely.
+                if (chunks.incrementAndGet() == 1)
+                    demand.accept(Long.MAX_VALUE);
+            }
+        };
+        var listener2 = new Response.DemandedContentListener()
+        {
+            private final BlockingQueue<ByteBuffer> contentQueue = new LinkedBlockingQueue<>();
+            private final AtomicReference<LongConsumer> demandRef = new AtomicReference<>();
+            private final AtomicReference<CountDownLatch> demandLatch = new AtomicReference<>(new CountDownLatch(1));
+
+            @Override
+            public void onContent(Response response, LongConsumer demand, ByteBuffer content, Callback callback)
+            {
+                Log.getLogger(HttpClientDemandTest.class).info("SIMON2");
+                contentQueue.offer(content);
+                demandRef.set(demand);
+                demandLatch.get().countDown();
+            }
+        };
+
+        CountDownLatch resultLatch = new CountDownLatch(1);
+        scenario.client.newRequest(scenario.newURI())
+            .onResponseContentDemanded(listener1)
+            .onResponseContentDemanded(listener2)
+            .send(result ->
+            {
+                assertFalse(result.isFailed(), String.valueOf(result.getFailure()));
+                Response response = result.getResponse();
+                assertEquals(HttpStatus.OK_200, response.getStatus());
+                resultLatch.countDown();
+            });
+
+        assertTrue(listener2.demandLatch.get().await(5, TimeUnit.SECONDS));
+        LongConsumer demand = listener2.demandRef.get();
+        assertNotNull(demand);
+        BlockingQueue<ByteBuffer> contentQueue = listener2.contentQueue;
+        assertEquals(1, contentQueue.size());
+        assertNotNull(contentQueue.poll());
+
+        // Must not get additional content because listener2 did not demand.
+        assertNull(contentQueue.poll(1, TimeUnit.SECONDS));
+
+        // Now demand, we should get content in both listeners.
+        listener2.demandLatch.set(new CountDownLatch(1));
+        demand.accept(1);
+
+        assertNotNull(contentQueue.poll(5, TimeUnit.SECONDS));
+        assertEquals(2, listener1.chunks.get());
+
+        // Demand the rest and verify the result.
+        assertTrue(listener2.demandLatch.get().await(5, TimeUnit.SECONDS));
+        demand = listener2.demandRef.get();
+        assertNotNull(demand);
+        demand.accept(Long.MAX_VALUE);
         assertTrue(resultLatch.await(5, TimeUnit.SECONDS));
     }
 }
