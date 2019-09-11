@@ -34,11 +34,13 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.StacklessLogging;
-import org.eclipse.jetty.util.thread.Locker.Lock;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -94,7 +96,7 @@ public class IdleSessionTest
             ContentResponse response = client.GET(url + "?action=init");
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
             String sessionCookie = response.getHeaders().get("Set-Cookie");
-            assertTrue(sessionCookie != null);
+            assertNotNull(sessionCookie);
             
             //ensure request has finished being handled
             synchronizer.await(5, TimeUnit.SECONDS);
@@ -148,7 +150,7 @@ public class IdleSessionTest
             response = client.GET(url + "?action=init");
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
             sessionCookie = response.getHeaders().get("Set-Cookie");
-            assertTrue(sessionCookie != null);
+            assertNotNull(sessionCookie);
             id = TestServer.extractSessionId(sessionCookie);
             
             //ensure request has finished being handled
@@ -220,7 +222,7 @@ public class IdleSessionTest
             ContentResponse response = client.GET(url + "?action=init");
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
             String sessionCookie = response.getHeaders().get("Set-Cookie");
-            assertTrue(sessionCookie != null);
+            assertNotNull(sessionCookie);
             
             //ensure request has finished being handled
             synchronizer.await(5, TimeUnit.SECONDS);
@@ -265,7 +267,7 @@ public class IdleSessionTest
             response = client.GET(url + "?action=init");
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
             sessionCookie = response.getHeaders().get("Set-Cookie");
-            assertTrue(sessionCookie != null);
+            assertNotNull(sessionCookie);
             id = TestServer.extractSessionId(sessionCookie);
             
             //ensure request has finished being handled
@@ -317,7 +319,7 @@ public class IdleSessionTest
                 session.setAttribute("value", 1);
                 originalId = session.getId();
                 Session s = (Session)session;
-                try (Lock lock = s.lock())
+                try (AutoLock lock = s.lock())
                 {
                     assertTrue(s.isResident());
                 }
@@ -326,21 +328,21 @@ public class IdleSessionTest
             else if ("test".equals(action))
             {
                 HttpSession session = request.getSession(false);
-                assertTrue(session != null);
-                assertTrue(originalId.equals(session.getId()));
+                assertNotNull(session);
+                assertEquals(originalId, session.getId());
                 Session s = (Session)session;
-                try (Lock lock = s.lock();)
+                try (AutoLock lock = s.lock())
                 {
                     assertTrue(s.isResident());
                 }
                 Integer v = (Integer)session.getAttribute("value");
-                session.setAttribute("value", v.intValue() + 1);
+                session.setAttribute("value", v + 1);
                 _session = session;
             }
             else if ("testfail".equals(action))
             {
                 HttpSession session = request.getSession(false);
-                assertTrue(session == null);
+                assertNull(session);
                 _session = session;
             }
         }

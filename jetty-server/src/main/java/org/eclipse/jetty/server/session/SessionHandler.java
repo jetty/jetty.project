@@ -29,7 +29,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.ServletException;
 import javax.servlet.SessionCookieConfig;
@@ -59,7 +58,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
 import org.eclipse.jetty.util.statistic.SampleStatistic;
-import org.eclipse.jetty.util.thread.Locker.Lock;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
 
@@ -1285,7 +1284,7 @@ public class SessionHandler extends ScopedHandler
         //1. valid
         //2. expired
         //3. idle
-        try (Lock lock = session.lock())
+        try (AutoLock lock = session.lock())
         {
             if (session.getRequests() > 0)
                 return; //session can't expire or be idle if there is a request in it

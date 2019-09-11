@@ -22,37 +22,27 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
- * <p>Convenience auto closeable {@link java.util.concurrent.locks.ReentrantLock} wrapper.</p>
- *
+ * Reentrant lock that can be used in a try-with-resources statement.
  * <pre>
- * try (Locker.Lock lock = locker.lock())
+ * try (AutoLock lock = this.lock.lock())
  * {
- *   // something
+ *     // Something
  * }
  * </pre>
  */
-public class Locker
+public class AutoLock implements AutoCloseable
 {
     private final ReentrantLock _lock = new ReentrantLock();
-    private final Lock _unlock = new Lock();
 
     /**
      * <p>Acquires the lock.</p>
      *
-     * @return the lock to unlock
+     * @return this AutoLock for unlocking
      */
-    public Lock lock()
+    public AutoLock lock()
     {
         _lock.lock();
-        return _unlock;
-    }
-
-    /**
-     * @return whether this lock has been acquired
-     */
-    public boolean isLocked()
-    {
-        return _lock.isLocked();
+        return this;
     }
 
     /**
@@ -63,15 +53,15 @@ public class Locker
         return _lock.newCondition();
     }
 
-    /**
-     * <p>The unlocker object that unlocks when it is closed.</p>
-     */
-    public class Lock implements AutoCloseable
+    // Package-private for testing only.
+    boolean isLocked()
     {
-        @Override
-        public void close()
-        {
-            _lock.unlock();
-        }
+        return _lock.isLocked();
+    }
+
+    @Override
+    public void close()
+    {
+        _lock.unlock();
     }
 }
