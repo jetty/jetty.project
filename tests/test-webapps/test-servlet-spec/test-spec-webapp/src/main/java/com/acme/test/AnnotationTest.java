@@ -295,19 +295,19 @@ public class AnnotationTest extends HttpServlet
             out.println("private Double minAmount;");
             out.println("</pre>");
             if (maxAmount == null)
-                out.println("<p><b>Result: " + envResult + ":  <span class=\"fail\">FAIL");
+                out.println("<p><b>Result: " + envResult + ":  <span class=\"fail\">FAIL</span>");
             else
                 out.println("<p><b>Result: " + envResult + ": " + (maxAmount.compareTo(55D) == 0 ? " <span class=\"pass\">PASS" : " <span class=\"fail\">FAIL") + "</span></b>");
             out.println("<br/><b>JNDI Lookup Result: " + envLookupResult + "</b>");
 
             if (minAmount == null)
-                out.println("<p><b>Result: " + envResult2 + ":  <span class=\"fail\">FAIL");
+                out.println("<p><b>Result: " + envResult2 + ":  <span class=\"fail\">FAIL</span>");
             else
                 out.println("<br/><b>Result: " + envResult2 + ": " + (minAmount.compareTo(0.99D) == 0 ? " <span class=\"pass\">PASS" : " <span class=\"fail\">FAIL") + "</span></b>");
             out.println("<br/><b>JNDI Lookup Result: " + envLookupResult2 + "</b>");
 
             if (avgAmount == null)
-                out.println("<p><b>Result: " + envResult3 + ":  <span class=\"fail\">FAIL");
+                out.println("<p><b>Result: " + envResult3 + ":  <span class=\"fail\">FAIL</span>");
             else
                 out.println("<br/><b>Result: " + envResult3 + ": " + (avgAmount.compareTo(1.25D) == 0 ? " <span class=\"pass\">PASS" : " <span class=\"fail\">FAIL") + "</span></b>");
             out.println("<br/><b>JNDI Lookup Result: " + envLookupResult3 + "</b></p>");

@@ -18,9 +18,12 @@
 
 package org.eclipse.jetty.embedded;
 
-import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.EnumSet;
@@ -56,12 +59,15 @@ import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlets.PushCacheFilter;
+import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 public class Http2Server
 {
     public static void main(String... args) throws Exception
     {
+        int port = ExampleUtil.getPort(args, "jetty.http.port", 8080);
+        int securePort = ExampleUtil.getPort(args, "jetty.https.port", 8443);
         Server server = new Server();
 
         MBeanContainer mbContainer = new MBeanContainer(
@@ -69,10 +75,11 @@ public class Http2Server
         server.addBean(mbContainer);
 
         ServletContextHandler context = new ServletContextHandler(server, "/", ServletContextHandler.SESSIONS);
-        String docroot = "src/main/resources/docroot";
-        if (!new File(docroot).exists())
-            docroot = "examples/embedded/src/main/resources/docroot";
-        context.setResourceBase(docroot);
+        Path docroot = Paths.get("src/main/resources/docroot");
+        if (!Files.exists(docroot))
+            throw new FileNotFoundException(docroot.toString());
+
+        context.setBaseResource(new PathResource(docroot));
         context.addFilter(PushCacheFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
         // context.addFilter(PushSessionCacheFilter.class,"/*",EnumSet.of(DispatcherType.REQUEST));
         context.addFilter(PushedTilesFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
@@ -83,21 +90,21 @@ public class Http2Server
         // HTTP Configuration
         HttpConfiguration httpConfig = new HttpConfiguration();
         httpConfig.setSecureScheme("https");
-        httpConfig.setSecurePort(8443);
+        httpConfig.setSecurePort(securePort);
         httpConfig.setSendXPoweredBy(true);
         httpConfig.setSendServerVersion(true);
 
         // HTTP Connector
         ServerConnector http = new ServerConnector(server, new HttpConnectionFactory(httpConfig), new HTTP2CServerConnectionFactory(httpConfig));
-        http.setPort(8080);
+        http.setPort(port);
         server.addConnector(http);
 
         // SSL Context Factory for HTTPS and HTTP/2
-        String jettyDistro = System.getProperty("jetty.distro", "../../jetty-distribution/target/distribution");
-        if (!new File(jettyDistro).exists())
-            jettyDistro = "jetty-distribution/target/distribution";
+        Path keystorePath = Paths.get("src/main/resources/etc/keystore").toAbsolutePath();
+        if (!Files.exists(keystorePath))
+            throw new FileNotFoundException(keystorePath.toString());
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-        sslContextFactory.setKeyStorePath(jettyDistro + "/demo-base/etc/keystore");
+        sslContextFactory.setKeyStorePath(keystorePath.toString());
         sslContextFactory.setKeyStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
         sslContextFactory.setKeyManagerPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");
         sslContextFactory.setCipherComparator(HTTP2Cipher.COMPARATOR);
@@ -119,7 +126,7 @@ public class Http2Server
         // HTTP/2 Connector
         ServerConnector http2Connector =
             new ServerConnector(server, ssl, alpn, h2, new HttpConnectionFactory(httpsConfig));
-        http2Connector.setPort(8443);
+        http2Connector.setPort(securePort);
         server.addConnector(http2Connector);
 
         server.start();
