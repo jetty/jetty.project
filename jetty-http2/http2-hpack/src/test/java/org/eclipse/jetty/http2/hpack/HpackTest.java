@@ -106,7 +106,7 @@ public class HpackTest
 
         HttpFields fields0 = new HttpFields();
         fields0.add("1234567890", "1234567890123456789012345678901234567890");
-        fields0.add("Cookie", "abcdeffhijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQR");
+        fields0.add("Cookie", "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQR");
         MetaData original0 = new MetaData(HttpVersion.HTTP_2, fields0);
 
         BufferUtil.clearToFill(buffer);
@@ -118,7 +118,7 @@ public class HpackTest
 
         HttpFields fields1 = new HttpFields();
         fields1.add("1234567890", "1234567890123456789012345678901234567890");
-        fields1.add("Cookie", "abcdeffhijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQR");
+        fields1.add("Cookie", "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQR");
         fields1.add("x", "y");
         MetaData original1 = new MetaData(HttpVersion.HTTP_2, fields1);
 
@@ -143,9 +143,11 @@ public class HpackTest
         HpackDecoder decoder = new HpackDecoder(200, 1024);
         ByteBuffer buffer = BufferUtil.allocateDirect(16 * 1024);
 
+        String longEnoughToBeEvicted = "012345678901234567890123456789012345678901234567890";
+
         HttpFields fields0 = new HttpFields();
-        fields0.add("123456789012345678901234567890123456788901234567890", "value");
-        fields0.add("foo", "abcdeffhijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQR");
+        fields0.add(longEnoughToBeEvicted, "value");
+        fields0.add("foo", "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ");
         MetaData original0 = new MetaData(HttpVersion.HTTP_2, fields0);
 
         BufferUtil.clearToFill(buffer);
@@ -155,13 +157,13 @@ public class HpackTest
 
         assertEquals(2, encoder.getHpackContext().size());
         assertEquals(2, decoder.getHpackContext().size());
-        assertEquals("123456789012345678901234567890123456788901234567890", encoder.getHpackContext().get(HpackContext.STATIC_TABLE.length + 1).getHttpField().getName());
+        assertEquals(longEnoughToBeEvicted, encoder.getHpackContext().get(HpackContext.STATIC_TABLE.length + 1).getHttpField().getName());
         assertEquals("foo", encoder.getHpackContext().get(HpackContext.STATIC_TABLE.length).getHttpField().getName());
 
         assertMetaDataSame(original0, decoded0);
 
         HttpFields fields1 = new HttpFields();
-        fields1.add("123456789012345678901234567890123456788901234567890", "other_value");
+        fields1.add(longEnoughToBeEvicted, "other_value");
         fields1.add("x", "y");
         MetaData original1 = new MetaData(HttpVersion.HTTP_2, fields1);
 
@@ -189,7 +191,7 @@ public class HpackTest
         input.put("Custom", "Pizza");
         input.put(HttpHeader.KEEP_ALIVE, "true");
         input.put(HttpHeader.PROXY_CONNECTION, "foo");
-        input.put(HttpHeader.TE, "1234567890abcedf");
+        input.put(HttpHeader.TE, "1234567890abcdef");
         input.put(HttpHeader.TRANSFER_ENCODING, "chunked");
         input.put(HttpHeader.UPGRADE, "gold");
 

@@ -21,7 +21,6 @@ package org.eclipse.jetty.http2.hpack;
 import java.nio.ByteBuffer;
 import java.util.EnumSet;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 import org.eclipse.jetty.http.HttpField;
@@ -41,15 +40,15 @@ import org.eclipse.jetty.util.log.Logger;
 
 public class HpackEncoder
 {
-    public static final Logger LOG = Log.getLogger(HpackEncoder.class);
-    private static final HttpField[] __status = new HttpField[599];
-    static final EnumSet<HttpHeader> __DO_NOT_HUFFMAN =
+    private static final Logger LOG = Log.getLogger(HpackEncoder.class);
+    private static final HttpField[] STATUSES = new HttpField[599];
+    static final EnumSet<HttpHeader> DO_NOT_HUFFMAN =
         EnumSet.of(
             HttpHeader.AUTHORIZATION,
             HttpHeader.CONTENT_MD5,
             HttpHeader.PROXY_AUTHENTICATE,
             HttpHeader.PROXY_AUTHORIZATION);
-    static final EnumSet<HttpHeader> __DO_NOT_INDEX =
+    static final EnumSet<HttpHeader> DO_NOT_INDEX =
         EnumSet.of(
             // HttpHeader.C_PATH,  // TODO more data needed
             // HttpHeader.DATE,    // TODO more data needed
@@ -69,19 +68,20 @@ public class HpackEncoder
             HttpHeader.LAST_MODIFIED,
             HttpHeader.SET_COOKIE,
             HttpHeader.SET_COOKIE2);
-    static final EnumSet<HttpHeader> __NEVER_INDEX =
+    static final EnumSet<HttpHeader> NEVER_INDEX =
         EnumSet.of(
             HttpHeader.AUTHORIZATION,
             HttpHeader.SET_COOKIE,
             HttpHeader.SET_COOKIE2);
-    private static final EnumSet<HttpHeader> HEADERS_TO_REMOVE = EnumSet.of(HttpHeader.CONNECTION, HttpHeader.KEEP_ALIVE,
+    private static final EnumSet<HttpHeader> IGNORED_HEADERS = EnumSet.of(HttpHeader.CONNECTION, HttpHeader.KEEP_ALIVE,
         HttpHeader.PROXY_CONNECTION, HttpHeader.TRANSFER_ENCODING, HttpHeader.UPGRADE);
+    private static final PreEncodedHttpField TE_TRAILERS = new PreEncodedHttpField(HttpHeader.TE, "trailers");
 
     static
     {
         for (HttpStatus.Code code : HttpStatus.Code.values())
         {
-            __status[code.getCode()] = new PreEncodedHttpField(HttpHeader.C_STATUS, Integer.toString(code.getCode()));
+            STATUSES[code.getCode()] = new PreEncodedHttpField(HttpHeader.C_STATUS, Integer.toString(code.getCode()));
         }
     }
 
@@ -170,7 +170,7 @@ public class HpackEncoder
         {
             MetaData.Response response = (MetaData.Response)metadata;
             int code = response.getStatus();
-            HttpField status = code < __status.length ? __status[code] : null;
+            HttpField status = code < STATUSES.length ? STATUSES[code] : null;
             if (status == null)
                 status = new HttpField.IntValueHttpField(HttpHeader.C_STATUS, code);
             encode(buffer, status);
@@ -181,26 +181,26 @@ public class HpackEncoder
         if (fields != null)
         {
             // For example: Connection: Close, TE, Upgrade, Custom.
-            List<String> values = fields.getCSV(HttpHeader.CONNECTION, false);
-            Set<String> hopHeaders = new HashSet<>();
-            for (String value : values)
+            Set<String> hopHeaders = null;
+            for (String value : fields.getCSV(HttpHeader.CONNECTION, false))
             {
-                // Keep TE as a special case.
-                if (!"TE".equalsIgnoreCase(value))
-                    hopHeaders.add(StringUtil.asciiToLowerCase(value));
+                if (hopHeaders == null)
+                    hopHeaders = new HashSet<>();
+                hopHeaders.add(StringUtil.asciiToLowerCase(value));
             }
             for (HttpField field : fields)
             {
                 HttpHeader header = field.getHeader();
-                if (header != null && HEADERS_TO_REMOVE.contains(header))
-                    continue;
-                if (hopHeaders.contains(StringUtil.asciiToLowerCase(field.getName())))
+                if (header != null && IGNORED_HEADERS.contains(header))
                     continue;
                 if (header == HttpHeader.TE)
                 {
-                    if (!"trailers".equalsIgnoreCase(field.getValue()))
-                        continue;
+                    if (field.contains("trailers"))
+                        encode(buffer, TE_TRAILERS);
+                    continue;
                 }
+                if (hopHeaders != null && hopHeaders.contains(StringUtil.asciiToLowerCase(field.getName())))
+                    continue;
                 encode(buffer, field);
             }
         }
@@ -319,12 +319,12 @@ public class HpackEncoder
                     if (_debug)
                         encoding = indexed ? "PreEncodedIdx" : "PreEncoded";
                 }
-                else if (__DO_NOT_INDEX.contains(header))
+                else if (DO_NOT_INDEX.contains(header))
                 {
                     // Non indexed field
                     indexed = false;
-                    boolean neverIndex = __NEVER_INDEX.contains(header);
-                    boolean huffman = !__DO_NOT_HUFFMAN.contains(header);
+                    boolean neverIndex = NEVER_INDEX.contains(header);
+                    boolean huffman = !DO_NOT_HUFFMAN.contains(header);
                     encodeName(buffer, neverIndex ? (byte)0x10 : (byte)0x00, 4, header.asString(), name);
                     encodeValue(buffer, huffman, field.getValue());
 
@@ -347,7 +347,7 @@ public class HpackEncoder
                 {
                     // indexed
                     indexed = true;
-                    boolean huffman = !__DO_NOT_HUFFMAN.contains(header);
+                    boolean huffman = !DO_NOT_HUFFMAN.contains(header);
                     encodeName(buffer, (byte)0x40, 6, header.asString(), name);
                     encodeValue(buffer, huffman, field.getValue());
                     if (_debug)
