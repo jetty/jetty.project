@@ -126,11 +126,11 @@ public interface SessionCache extends LifeCycle
      * @param id the session id
      * @param session the current session object
      * @throws Exception if any error occurred
-     * @deprecated @see release
+     * @deprecated use {@link #release(String, Session)} instead
      */
+    @Deprecated
     void put(String id, Session session) throws Exception;
-    
-    
+
     /**
      * Finish using a Session. This is called by the SessionHandler
      * once a request is finished with a Session. SessionCache
