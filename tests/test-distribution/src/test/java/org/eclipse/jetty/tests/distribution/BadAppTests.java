@@ -103,13 +103,13 @@ public class BadAppTests extends AbstractDistributionTest
             int port = distribution.freePort();
             try (DistributionTester.Run run2 = distribution.start("jetty.http.port=" + port))
             {
-                assertTrue(run2.awaitConsoleLogsFor("Started @", 10, TimeUnit.SECONDS));
+                assertTrue(run2.awaitConsoleLogsFor("Started Server@", 10, TimeUnit.SECONDS));
 
                 startHttpClient();
                 ContentResponse response = client.GET("http://localhost:" + port + "/badapp/");
                 assertEquals(HttpStatus.SERVICE_UNAVAILABLE_503, response.getStatus());
-                assertThat(response.getContentAsString(), containsString("Unavailable"));
-                assertThat(response.getContentAsString(), containsString("Problem accessing /badapp/"));
+                assertThat(response.getContentAsString(), containsString("<h2>HTTP ERROR 503 Service Unavailable</h2>"));
+                assertThat(response.getContentAsString(), containsString("<tr><th>URI:</th><td>/badapp/</td></tr>"));
             }
         }
     }
@@ -143,13 +143,13 @@ public class BadAppTests extends AbstractDistributionTest
             int port = distribution.freePort();
             try (DistributionTester.Run run2 = distribution.start("jetty.http.port=" + port))
             {
-                assertTrue(run2.awaitConsoleLogsFor("Started @", 10, TimeUnit.SECONDS));
+                assertTrue(run2.awaitConsoleLogsFor("Started Server@", 10, TimeUnit.SECONDS));
 
                 startHttpClient();
                 ContentResponse response = client.GET("http://localhost:" + port + "/badapp/");
                 assertEquals(HttpStatus.SERVICE_UNAVAILABLE_503, response.getStatus());
-                assertThat(response.getContentAsString(), containsString("Unavailable"));
-                assertThat(response.getContentAsString(), containsString("Problem accessing /badapp/"));
+                assertThat(response.getContentAsString(), containsString("<h2>HTTP ERROR 503 Service Unavailable</h2>"));
+                assertThat(response.getContentAsString(), containsString("<tr><th>URI:</th><td>/badapp/</td></tr>"));
             }
         }
     }

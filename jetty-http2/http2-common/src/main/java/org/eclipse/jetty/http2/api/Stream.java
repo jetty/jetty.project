@@ -29,8 +29,8 @@ import org.eclipse.jetty.util.Promise;
  * <p>A {@link Stream} represents a bidirectional exchange of data on top of a {@link Session}.</p>
  * <p>Differently from socket streams, where the input and output streams are permanently associated
  * with the socket (and hence with the connection that the socket represents), there can be multiple
- * HTTP/2 streams present concurrent for a HTTP/2 session.</p>
- * <p>A {@link Stream} maps to a HTTP request/response cycle, and after the request/response cycle is
+ * HTTP/2 streams present concurrent for an HTTP/2 session.</p>
+ * <p>A {@link Stream} maps to an HTTP request/response cycle, and after the request/response cycle is
  * completed, the stream is closed and removed from the session.</p>
  * <p>Like {@link Session}, {@link Stream} is the active part and by calling its API applications
  * can generate events on the stream; conversely, {@link Stream.Listener} is the passive part, and
@@ -51,7 +51,7 @@ public interface Stream
     public Session getSession();
 
     /**
-     * <p>Sends the given HEADERS {@code frame} representing a HTTP response.</p>
+     * <p>Sends the given HEADERS {@code frame} representing an HTTP response.</p>
      *
      * @param frame the HEADERS frame to send
      * @param callback the callback that gets notified when the frame has been sent
@@ -131,7 +131,7 @@ public interface Stream
 
     /**
      * <p>A {@link Stream.Listener} is the passive counterpart of a {@link Stream} and receives
-     * events happening on a HTTP/2 stream.</p>
+     * events happening on an HTTP/2 stream.</p>
      *
      * @see Stream
      */

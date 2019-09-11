@@ -24,7 +24,6 @@ import java.io.OutputStream;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
@@ -54,12 +53,14 @@ import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.ResourceContentFactory;
 import org.eclipse.jetty.server.ResourceService;
+import org.eclipse.jetty.server.SameFileAliasChecker;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AllowSymLinkAliasChecker;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
@@ -73,6 +74,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.eclipse.jetty.http.tools.matchers.HttpFieldsMatchers.containsHeader;
 import static org.eclipse.jetty.http.tools.matchers.HttpFieldsMatchers.containsHeaderValue;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -2010,6 +2012,76 @@ public class DefaultServletTest
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.PRECONDITION_FAILED_412));
     }
 
+    @Test
+    public void testGetUtf8NfcFile() throws Exception
+    {
+        FS.ensureEmpty(docRoot);
+
+        context.addServlet(DefaultServlet.class, "/");
+        context.addAliasCheck(new SameFileAliasChecker());
+
+        // UTF-8 NFC format
+        String filename = "swedish-" + new String(TypeUtil.fromHexString("C3A5"), UTF_8) + ".txt";
+        createFile(docRoot.resolve(filename), "hi a-with-circle");
+
+        String rawResponse;
+        HttpTester.Response response;
+
+        // Request as UTF-8 NFC
+        rawResponse = connector.getResponse("GET /context/swedish-%C3%A5.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\n\r\n");
+        response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response.getContent(), is("hi a-with-circle"));
+
+        // Request as UTF-8 NFD
+        rawResponse = connector.getResponse("GET /context/swedish-a%CC%8A.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\n\r\n");
+        response = HttpTester.parseResponse(rawResponse);
+        if (OS.MAC.isCurrentOs())
+        {
+            assertThat(response.getStatus(), is(HttpStatus.OK_200));
+            assertThat(response.getContent(), is("hi a-with-circle"));
+        }
+        else
+        {
+            assertThat(response.getStatus(), is(HttpStatus.NOT_FOUND_404));
+        }
+    }
+
+    @Test
+    public void testGetUtf8NfdFile() throws Exception
+    {
+        FS.ensureEmpty(docRoot);
+
+        context.addServlet(DefaultServlet.class, "/");
+        context.addAliasCheck(new SameFileAliasChecker());
+
+        // UTF-8 NFD format
+        String filename = "swedish-" + new String(TypeUtil.fromHexString("61CC8A"), UTF_8) + ".txt";
+        createFile(docRoot.resolve(filename), "hi a-with-circle");
+
+        String rawResponse;
+        HttpTester.Response response;
+
+        // Request as UTF-8 NFD
+        rawResponse = connector.getResponse("GET /context/swedish-a%CC%8A.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\n\r\n");
+        response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response.getContent(), is("hi a-with-circle"));
+
+        // Request as UTF-8 NFC
+        rawResponse = connector.getResponse("GET /context/swedish-%C3%A5.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\n\r\n");
+        response = HttpTester.parseResponse(rawResponse);
+        if (OS.MAC.isCurrentOs())
+        {
+            assertThat(response.getStatus(), is(HttpStatus.OK_200));
+            assertThat(response.getContent(), is("hi a-with-circle"));
+        }
+        else
+        {
+            assertThat(response.getStatus(), is(HttpStatus.NOT_FOUND_404));
+        }
+    }
+
     public static class OutputFilter implements Filter
     {
         @Override
@@ -2055,7 +2127,7 @@ public class DefaultServletTest
     {
         try (OutputStream out = Files.newOutputStream(path))
         {
-            out.write(str.getBytes(StandardCharsets.UTF_8));
+            out.write(str.getBytes(UTF_8));
             out.flush();
         }
     }
@@ -2120,6 +2192,7 @@ public class DefaultServletTest
         }
         catch (InvalidPathException | IOException ignore)
         {
+            // ignore
         }
 
         assumeTrue(ret != null, "Directory creation not supported on OS: " + path + File.separator + subpath);

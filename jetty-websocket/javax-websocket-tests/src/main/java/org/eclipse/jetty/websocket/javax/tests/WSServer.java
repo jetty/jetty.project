@@ -39,7 +39,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.webapp.WebAppContext;
-import org.eclipse.jetty.websocket.javax.server.JavaxWebSocketConfiguration;
+import org.eclipse.jetty.websocket.javax.server.config.JavaxWebSocketConfiguration;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;

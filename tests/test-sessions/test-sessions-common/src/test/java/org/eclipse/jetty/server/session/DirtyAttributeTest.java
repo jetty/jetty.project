@@ -94,8 +94,8 @@ public class DirtyAttributeTest
         ServletContextHandler ctxA = server.addContext("/mod");
         ctxA.addServlet(TestDirtyServlet.class, "/test");
 
-        TestContextScopeListener scopeListener = new TestContextScopeListener();
-        ctxA.addEventListener(scopeListener);
+        TestHttpChannelCompleteListener scopeListener = new TestHttpChannelCompleteListener();
+        server.getServerConnector().addBean(scopeListener);
 
         server.start();
         int port = server.getPort();
@@ -106,21 +106,26 @@ public class DirtyAttributeTest
             try
             {
                 // Perform a request to create a session
+                CountDownLatch latch = new CountDownLatch(1);
+                scopeListener.setExitSynchronizer(latch);
                 ContentResponse response = client.GET("http://localhost:" + port + "/mod/test?action=create");
 
                 assertEquals(HttpServletResponse.SC_OK, response.getStatus());
                 String sessionCookie = response.getHeaders().get("Set-Cookie");
                 assertTrue(sessionCookie != null);
+                
+                //ensure request finished
+                latch.await(5, TimeUnit.SECONDS);
 
                 //do another request to change the session attribute
-                CountDownLatch latch = new CountDownLatch(1);
+                latch = new CountDownLatch(1);
                 scopeListener.setExitSynchronizer(latch);
                 Request request = client.newRequest("http://localhost:" + port + "/mod/test?action=setA");
                 response = request.send();
                 assertEquals(HttpServletResponse.SC_OK, response.getStatus());
 
                 //ensure request fully finished processing
-                latch.await(5, TimeUnit.SECONDS);
+                assertTrue(latch.await(5, TimeUnit.SECONDS));
 
                 A_VALUE.assertPassivatesEquals(1);
                 A_VALUE.assertActivatesEquals(1);

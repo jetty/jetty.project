@@ -45,13 +45,14 @@ import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.component.Container;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.eclipse.jetty.util.thread.Locker;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.ThreadPoolBudget;
@@ -115,7 +116,7 @@ import org.eclipse.jetty.util.thread.ThreadPoolBudget;
  * {@link ConnectionFactory}s may also create temporary {@link org.eclipse.jetty.io.Connection} instances that will exchange bytes
  * over the connection to determine what is the next protocol to use.  For example the ALPN protocol is an extension
  * of SSL to allow a protocol to be specified during the SSL handshake. ALPN is used by the HTTP/2 protocol to
- * negotiate the protocol that the client and server will speak.  Thus to accept a HTTP/2 connection, the
+ * negotiate the protocol that the client and server will speak.  Thus to accept an HTTP/2 connection, the
  * connector will be configured with {@link ConnectionFactory}s for "SSL-ALPN", "h2", "http/1.1"
  * with the default protocol being "SSL-ALPN".  Thus a newly accepted connection uses "SSL-ALPN", which specifies a
  * SSLConnectionFactory with "ALPN" as the next protocol.  Thus an SSL connection instance is created chained to an ALPN
@@ -143,8 +144,8 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
 {
     protected static final Logger LOG = Log.getLogger(AbstractConnector.class);
 
-    private final Locker _locker = new Locker();
-    private final Condition _setAccepting = _locker.newCondition();
+    private final AutoLock _lock = new AutoLock();
+    private final Condition _setAccepting = _lock.newCondition();
     private final Map<String, ConnectionFactory> _factories = new LinkedHashMap<>(); // Order is important on server side, so we use a LinkedHashMap
     private final Server _server;
     private final Executor _executor;
@@ -154,6 +155,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     private final Set<EndPoint> _endpoints = Collections.newSetFromMap(new ConcurrentHashMap<>());
     private final Set<EndPoint> _immutableEndPoints = Collections.unmodifiableSet(_endpoints);
     private final Graceful.Shutdown _shutdown = new Graceful.Shutdown();
+    private HttpChannel.Listener _httpChannelListeners = HttpChannel.NOOP_LISTENER;
     private CountDownLatch _stopping;
     private long _idleTimeout = 30000;
     private String _defaultProtocol;
@@ -188,6 +190,23 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
             pool = _server.getBean(ByteBufferPool.class);
         _byteBufferPool = pool != null ? pool : new ArrayByteBufferPool();
 
+        addEventListener(new Container.Listener()
+        {
+            @Override
+            public void beanAdded(Container parent, Object bean)
+            {
+                if (bean instanceof HttpChannel.Listener)
+                    _httpChannelListeners = new HttpChannelListeners(getBeans(HttpChannel.Listener.class));
+            }
+
+            @Override
+            public void beanRemoved(Container parent, Object bean)
+            {
+                if (bean instanceof HttpChannel.Listener)
+                    _httpChannelListeners = new HttpChannelListeners(getBeans(HttpChannel.Listener.class));
+            }
+        });
+
         addBean(_server, false);
         addBean(_executor);
         if (executor == null)
@@ -206,6 +225,24 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
         if (acceptors > cores)
             LOG.warn("Acceptors should be <= availableProcessors: " + this);
         _acceptors = new Thread[acceptors];
+    }
+
+    /**
+     * Get the {@link HttpChannel.Listener}s added to the connector
+     * as a single combined Listener.
+     * This is equivalent to a listener that iterates over the individual
+     * listeners returned from {@code getBeans(HttpChannel.Listener.class);},
+     * except that: <ul>
+     *     <li>The result is precomputed, so it is more efficient</li>
+     *     <li>The result is ordered by the order added.</li>
+     *     <li>The result is immutable.</li>
+     * </ul>
+     * @see #getBeans(Class)
+     * @return An unmodifiable list of EventListener beans
+     */
+    public HttpChannel.Listener getHttpChannelListeners()
+    {
+        return _httpChannelListeners;
     }
 
     @Override
@@ -295,7 +332,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
 
     protected void interruptAcceptors()
     {
-        try (Locker.Lock lock = _locker.lock())
+        try (AutoLock lock = _lock.lock())
         {
             for (Thread thread : _acceptors)
             {
@@ -350,7 +387,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
 
     public void join(long timeout) throws InterruptedException
     {
-        try (Locker.Lock lock = _locker.lock())
+        try (AutoLock lock = _lock.lock())
         {
             for (Thread thread : _acceptors)
             {
@@ -367,7 +404,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
      */
     public boolean isAccepting()
     {
-        try (Locker.Lock lock = _locker.lock())
+        try (AutoLock lock = _lock.lock())
         {
             return _accepting;
         }
@@ -375,7 +412,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
 
     public void setAccepting(boolean accepting)
     {
-        try (Locker.Lock lock = _locker.lock())
+        try (AutoLock lock = _lock.lock())
         {
             _accepting = accepting;
             _setAccepting.signalAll();
@@ -385,7 +422,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     @Override
     public ConnectionFactory getConnectionFactory(String protocol)
     {
-        try (Locker.Lock lock = _locker.lock())
+        try (AutoLock lock = _lock.lock())
         {
             return _factories.get(StringUtil.asciiToLowerCase(protocol));
         }
@@ -394,7 +431,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     @Override
     public <T> T getConnectionFactory(Class<T> factoryType)
     {
-        try (Locker.Lock lock = _locker.lock())
+        try (AutoLock lock = _lock.lock())
         {
             for (ConnectionFactory f : _factories.values())
             {
@@ -646,7 +683,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
             {
                 while (isRunning())
                 {
-                    try (Locker.Lock lock = _locker.lock())
+                    try (AutoLock lock = _lock.lock())
                     {
                         if (!_accepting && isRunning())
                         {

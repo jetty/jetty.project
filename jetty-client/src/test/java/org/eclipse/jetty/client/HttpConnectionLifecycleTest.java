@@ -485,7 +485,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
         ContentResponse response = request
             .onResponseBegin(response1 ->
             {
-                // Simulate a HTTP 1.0 response has been received.
+                // Simulate an HTTP 1.0 response has been received.
                 ((HttpResponse)response1).version(HttpVersion.HTTP_1_0);
             })
             .send();

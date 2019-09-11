@@ -56,7 +56,7 @@ public class DemoBaseTests extends AbstractDistributionTest
 
         try (DistributionTester.Run run1 = distribution.start(args))
         {
-            assertTrue(run1.awaitConsoleLogsFor("Started @", 20, TimeUnit.SECONDS));
+            assertTrue(run1.awaitConsoleLogsFor("Started Server@", 20, TimeUnit.SECONDS));
 
             startHttpClient();
             ContentResponse response = client.GET("http://localhost:" + httpPort + "/test/jsp/dump.jsp");
@@ -88,7 +88,7 @@ public class DemoBaseTests extends AbstractDistributionTest
 
         try (DistributionTester.Run run1 = distribution.start(args))
         {
-            assertTrue(run1.awaitConsoleLogsFor("Started @", 20, TimeUnit.SECONDS));
+            assertTrue(run1.awaitConsoleLogsFor("Started Server@", 20, TimeUnit.SECONDS));
 
             startHttpClient();
             ContentResponse response;
@@ -133,7 +133,7 @@ public class DemoBaseTests extends AbstractDistributionTest
 
         try (DistributionTester.Run run1 = distribution.start(args))
         {
-            assertTrue(run1.awaitConsoleLogsFor("Started @", 20, TimeUnit.SECONDS));
+            assertTrue(run1.awaitConsoleLogsFor("Started Server@", 20, TimeUnit.SECONDS));
 
             startHttpClient();
             ContentResponse response = client.POST("http://localhost:" + httpPort + "/test-spec/asy/xx").send();

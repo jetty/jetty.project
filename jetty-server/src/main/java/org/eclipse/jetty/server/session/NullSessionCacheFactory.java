@@ -18,57 +18,51 @@
 
 package org.eclipse.jetty.server.session;
 
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+
 /**
  * NullSessionCacheFactory
  *
  * Factory for NullSessionCaches.
  */
-public class NullSessionCacheFactory implements SessionCacheFactory
+public class NullSessionCacheFactory extends AbstractSessionCacheFactory
 {
-    boolean _saveOnCreate;
-    boolean _removeUnloadableSessions;
-
-    /**
-     * @return the saveOnCreate
-     */
-    public boolean isSaveOnCreate()
+    private static final Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
+    
+    @Override
+    public int getEvictionPolicy()
     {
-        return _saveOnCreate;
+        return SessionCache.EVICT_ON_SESSION_EXIT; //never actually stored
     }
 
-    /**
-     * @param saveOnCreate the saveOnCreate to set
-     */
-    public void setSaveOnCreate(boolean saveOnCreate)
+    @Override
+    public void setEvictionPolicy(int evictionPolicy)
     {
-        _saveOnCreate = saveOnCreate;
+        if (LOG.isDebugEnabled())
+            LOG.debug("Ignoring eviction policy setting for NullSessionCaches");
     }
 
-    /**
-     * @return the removeUnloadableSessions
-     */
-    public boolean isRemoveUnloadableSessions()
+    @Override
+    public boolean isSaveOnInactiveEvict()
     {
-        return _removeUnloadableSessions;
+        return false; //never kept in cache
     }
 
-    /**
-     * @param removeUnloadableSessions the removeUnloadableSessions to set
-     */
-    public void setRemoveUnloadableSessions(boolean removeUnloadableSessions)
+    @Override
+    public void setSaveOnInactiveEvict(boolean saveOnInactiveEvict)
     {
-        _removeUnloadableSessions = removeUnloadableSessions;
+        if (LOG.isDebugEnabled())
+            LOG.debug("Ignoring eviction policy setting for NullSessionCaches");
     }
 
-    /**
-     * @see org.eclipse.jetty.server.session.SessionCacheFactory#getSessionCache(org.eclipse.jetty.server.session.SessionHandler)
-     */
     @Override
     public SessionCache getSessionCache(SessionHandler handler)
     {
         NullSessionCache cache = new NullSessionCache(handler);
         cache.setSaveOnCreate(isSaveOnCreate());
         cache.setRemoveUnloadableSessions(isRemoveUnloadableSessions());
+        cache.setFlushOnResponseCommit(isFlushOnResponseCommit());
         return cache;
     }
 }

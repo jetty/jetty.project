@@ -120,7 +120,9 @@ public class ValidUrlRuleTest extends AbstractRuleTestCase
         // space
         assertTrue(_rule.isValidChar("\u0020".charAt(0)));
         // form feed
+        //@checkstyle-disable-check : IllegalTokenText
         assertFalse(_rule.isValidChar("\u000c".charAt(0)));
+        //@checkstyle-enable-check : IllegalTokenText
     }
 }
 

@@ -20,7 +20,7 @@ package org.eclipse.jetty.util;
 
 import java.io.IOException;
 
-import org.eclipse.jetty.util.thread.Locker;
+import org.eclipse.jetty.util.thread.AutoLock;
 
 /**
  * This specialized callback implements a pattern that allows
@@ -125,7 +125,7 @@ public abstract class IteratingCallback implements Callback
         SUCCEEDED
     }
 
-    private Locker _locker = new Locker();
+    private final AutoLock _lock = new AutoLock();
     private State _state;
     private boolean _iterate;
 
@@ -188,35 +188,31 @@ public abstract class IteratingCallback implements Callback
     {
         boolean process = false;
 
-        loop:
-        while (true)
+        try (AutoLock lock = _lock.lock())
         {
-            try (Locker.Lock lock = _locker.lock())
+            switch (_state)
             {
-                switch (_state)
-                {
-                    case PENDING:
-                    case CALLED:
-                        // process will be called when callback is handled
-                        break loop;
+                case PENDING:
+                case CALLED:
+                    // process will be called when callback is handled
+                    break;
 
-                    case IDLE:
-                        _state = State.PROCESSING;
-                        process = true;
-                        break loop;
+                case IDLE:
+                    _state = State.PROCESSING;
+                    process = true;
+                    break;
 
-                    case PROCESSING:
-                        _iterate = true;
-                        break loop;
+                case PROCESSING:
+                    _iterate = true;
+                    break;
 
-                    case FAILED:
-                    case SUCCEEDED:
-                        break loop;
+                case FAILED:
+                case SUCCEEDED:
+                    break;
 
-                    case CLOSED:
-                    default:
-                        throw new IllegalStateException(toString());
-                }
+                case CLOSED:
+                default:
+                    throw new IllegalStateException(toString());
             }
         }
         if (process)
@@ -243,11 +239,11 @@ public abstract class IteratingCallback implements Callback
             catch (Throwable x)
             {
                 failed(x);
-                break processing;
+                break;
             }
 
             // acted on the action we have just received
-            try (Locker.Lock lock = _locker.lock())
+            try (AutoLock lock = _lock.lock())
             {
                 switch (_state)
                 {
@@ -295,18 +291,11 @@ public abstract class IteratingCallback implements Callback
 
                     case CALLED:
                     {
-                        switch (action)
-                        {
-                            case SCHEDULED:
-                            {
-                                // we lost the race, so we have to keep processing
-                                _state = State.PROCESSING;
-                                continue processing;
-                            }
-
-                            default:
-                                throw new IllegalStateException(String.format("%s[action=%s]", this, action));
-                        }
+                        if (action != Action.SCHEDULED)
+                            throw new IllegalStateException(String.format("%s[action=%s]", this, action));
+                        // we lost the race, so we have to keep processing
+                        _state = State.PROCESSING;
+                        continue processing;
                     }
 
                     case SUCCEEDED:
@@ -335,7 +324,7 @@ public abstract class IteratingCallback implements Callback
     public void succeeded()
     {
         boolean process = false;
-        try (Locker.Lock lock = _locker.lock())
+        try (AutoLock lock = _lock.lock())
         {
             switch (_state)
             {
@@ -375,7 +364,7 @@ public abstract class IteratingCallback implements Callback
     public void failed(Throwable x)
     {
         boolean failure = false;
-        try (Locker.Lock lock = _locker.lock())
+        try (AutoLock lock = _lock.lock())
         {
             switch (_state)
             {
@@ -405,7 +394,7 @@ public abstract class IteratingCallback implements Callback
     public void close()
     {
         String failure = null;
-        try (Locker.Lock lock = _locker.lock())
+        try (AutoLock lock = _lock.lock())
         {
             switch (_state)
             {
@@ -434,7 +423,7 @@ public abstract class IteratingCallback implements Callback
      */
     boolean isIdle()
     {
-        try (Locker.Lock lock = _locker.lock())
+        try (AutoLock lock = _lock.lock())
         {
             return _state == State.IDLE;
         }
@@ -442,7 +431,7 @@ public abstract class IteratingCallback implements Callback
 
     public boolean isClosed()
     {
-        try (Locker.Lock lock = _locker.lock())
+        try (AutoLock lock = _lock.lock())
         {
             return _state == State.CLOSED;
         }
@@ -453,7 +442,7 @@ public abstract class IteratingCallback implements Callback
      */
     public boolean isFailed()
     {
-        try (Locker.Lock lock = _locker.lock())
+        try (AutoLock lock = _lock.lock())
         {
             return _state == State.FAILED;
         }
@@ -464,7 +453,7 @@ public abstract class IteratingCallback implements Callback
      */
     public boolean isSucceeded()
     {
-        try (Locker.Lock lock = _locker.lock())
+        try (AutoLock lock = _lock.lock())
         {
             return _state == State.SUCCEEDED;
         }
@@ -481,7 +470,7 @@ public abstract class IteratingCallback implements Callback
      */
     public boolean reset()
     {
-        try (Locker.Lock lock = _locker.lock())
+        try (AutoLock lock = _lock.lock())
         {
             switch (_state)
             {

@@ -45,7 +45,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 public class NotAcceptingTest
 {
-    private final long IDLE_TIMEOUT = 2000;
+    private final long idleTimeout = 2000;
     Server server;
     LocalConnector localConnector;
     ServerConnector blockingConnector;
@@ -57,18 +57,18 @@ public class NotAcceptingTest
         server = new Server();
 
         localConnector = new LocalConnector(server);
-        localConnector.setIdleTimeout(IDLE_TIMEOUT);
+        localConnector.setIdleTimeout(idleTimeout);
         server.addConnector(localConnector);
 
         blockingConnector = new ServerConnector(server, 1, 1);
         blockingConnector.setPort(0);
-        blockingConnector.setIdleTimeout(IDLE_TIMEOUT);
+        blockingConnector.setIdleTimeout(idleTimeout);
         blockingConnector.setAcceptQueueSize(10);
         server.addConnector(blockingConnector);
 
         asyncConnector = new ServerConnector(server, 0, 1);
         asyncConnector.setPort(0);
-        asyncConnector.setIdleTimeout(IDLE_TIMEOUT);
+        asyncConnector.setIdleTimeout(idleTimeout);
         asyncConnector.setAcceptQueueSize(10);
         server.addConnector(asyncConnector);
     }
@@ -128,7 +128,7 @@ public class NotAcceptingTest
 
                     try
                     {
-                        uri = handler.exchange.exchange("delayed connection", IDLE_TIMEOUT, TimeUnit.MILLISECONDS);
+                        uri = handler.exchange.exchange("delayed connection", idleTimeout, TimeUnit.MILLISECONDS);
                         fail("Failed near URI: " + uri); // this displays last URI, not current (obviously)
                     }
                     catch (TimeoutException e)
@@ -177,7 +177,7 @@ public class NotAcceptingTest
                     {
                         local[i] = client;
                         client.addInputAndExecute(BufferUtil.toBuffer("GET /three HTTP/1.1\r\nHost:localhost\r\n\r\n"));
-                        response = HttpTester.parseResponse(client.getResponse(false, IDLE_TIMEOUT, TimeUnit.MILLISECONDS));
+                        response = HttpTester.parseResponse(client.getResponse(false, idleTimeout, TimeUnit.MILLISECONDS));
 
                         // A few local connections may succeed
                         if (i == local.length - 1)
@@ -245,7 +245,7 @@ public class NotAcceptingTest
 
                 try
                 {
-                    uri = handler.exchange.exchange("delayed connection", IDLE_TIMEOUT, TimeUnit.MILLISECONDS);
+                    uri = handler.exchange.exchange("delayed connection", idleTimeout, TimeUnit.MILLISECONDS);
                     fail(uri);
                 }
                 catch (TimeoutException e)
@@ -415,9 +415,9 @@ public class NotAcceptingTest
             }
         }
 
-        waitFor(localConnector::isAccepting, is(true), 2 * IDLE_TIMEOUT, TimeUnit.MILLISECONDS);
-        waitFor(blockingConnector::isAccepting, is(true), 2 * IDLE_TIMEOUT, TimeUnit.MILLISECONDS);
-        waitFor(asyncConnector::isAccepting, is(true), 2 * IDLE_TIMEOUT, TimeUnit.MILLISECONDS);
+        waitFor(localConnector::isAccepting, is(true), 2 * idleTimeout, TimeUnit.MILLISECONDS);
+        waitFor(blockingConnector::isAccepting, is(true), 2 * idleTimeout, TimeUnit.MILLISECONDS);
+        waitFor(asyncConnector::isAccepting, is(true), 2 * idleTimeout, TimeUnit.MILLISECONDS);
     }
 
     public static class HelloHandler extends AbstractHandler
@@ -459,6 +459,7 @@ public class NotAcceptingTest
             }
             catch (InterruptedException e)
             {
+                // no op
             }
         }
     }

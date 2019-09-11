@@ -18,12 +18,14 @@
 
 package org.eclipse.jetty.embedded;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.util.Properties;
+import javax.naming.NamingException;
 
 import org.eclipse.jetty.plus.webapp.EnvConfiguration;
 import org.eclipse.jetty.plus.webapp.PlusConfiguration;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 /**
@@ -31,18 +33,16 @@ import org.eclipse.jetty.webapp.WebAppContext;
  */
 public class ServerWithJNDI
 {
-    public static void main(String[] args) throws Exception
+    public static Server createServer(int port) throws NamingException
     {
-
         // Create the server
-        Server server = new Server(8080);
+        Server server = new Server(port);
 
         // Create a WebApp
         WebAppContext webapp = new WebAppContext();
         webapp.setContextPath("/");
-        File warFile = new File(
-            "../../jetty-distribution/target/distribution/demo-base/webapps/test-jndi.war");
-        webapp.setWar(warFile.getAbsolutePath());
+        Path testJndiWar = JettyDistribution.resolve("demo-base/webapps/test-jndi.war");
+        webapp.setWarResource(new PathResource(testJndiWar));
         server.setHandler(webapp);
 
         // Enable parsing of jndi-related parts of web.xml and jetty-env.xml
@@ -74,7 +74,7 @@ public class ServerWithJNDI
         // Note that the last arg of "true" means that this definition for
         // "wiggle" would override an entry of the
         // same name in web.xml
-        new org.eclipse.jetty.plus.jndi.EnvEntry(webapp, "wiggle", 100D, true);
+        new org.eclipse.jetty.plus.jndi.EnvEntry(webapp, "wiggle", 100d, true);
 
         // Register a reference to a mail service scoped to the webapp.
         // This must be linked to the webapp by an entry in web.xml:
@@ -84,7 +84,8 @@ public class ServerWithJNDI
         // <res-auth>Container</res-auth>
         // </resource-ref>
         // At runtime the webapp accesses this as java:comp/env/mail/Session
-        org.eclipse.jetty.jndi.factories.MailSessionReference mailref = new org.eclipse.jetty.jndi.factories.MailSessionReference();
+        org.eclipse.jetty.jndi.factories.MailSessionReference mailref =
+            new org.eclipse.jetty.jndi.factories.MailSessionReference();
         mailref.setUser("CHANGE-ME");
         mailref.setPassword("CHANGE-ME");
         Properties props = new Properties();
@@ -106,6 +107,13 @@ public class ServerWithJNDI
         // java:comp/env/jdbc/mydatasource
         new org.eclipse.jetty.plus.jndi.Resource(
             webapp, "jdbc/mydatasource", new com.acme.MockDataSource());
+        return server;
+    }
+
+    public static void main(String[] args) throws Exception
+    {
+        int port = ExampleUtil.getPort(args, "jetty.http.port", 8080);
+        Server server = createServer(port);
 
         server.start();
         server.join();

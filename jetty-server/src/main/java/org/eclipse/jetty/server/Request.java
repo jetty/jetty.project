@@ -212,6 +212,7 @@ public class Request implements HttpServletRequest
     private String _contentType;
     private String _characterEncoding;
     private ContextHandler.Context _context;
+    private ContextHandler.Context _errorContext;
     private Cookies _cookies;
     private DispatcherType _dispatcherType;
     private int _inputState = INPUT_NONE;
@@ -229,6 +230,7 @@ public class Request implements HttpServletRequest
     private long _timeStamp;
     private MultiParts _multiParts; //if the request is a multi-part mime
     private AsyncContextState _async;
+    private List<Session> _sessions; //list of sessions used during lifetime of request
 
     public Request(HttpChannel channel, HttpInput input)
     {
@@ -352,6 +354,48 @@ public class Request implements HttpServletRequest
             _requestAttributeListeners.add((ServletRequestAttributeListener)listener);
         if (listener instanceof AsyncListener)
             throw new IllegalArgumentException(listener.getClass().toString());
+    }
+    
+    /**
+     * Remember a session that this request has just entered.
+     * 
+     * @param s the session
+     */
+    public void enterSession(HttpSession s)
+    {
+        if (!(s instanceof Session))
+            return;
+
+        if (_sessions == null)
+            _sessions = new ArrayList<>();
+        if (LOG.isDebugEnabled())
+            LOG.debug("Request {} entering session={}", this, s);
+        _sessions.add((Session)s);
+    }
+
+    /**
+     * Complete this request's access to a session.
+     *
+     * @param session the session
+     */
+    private void leaveSession(Session session)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Request {} leaving session {}", this, session);
+        session.getSessionHandler().complete(session);
+    }
+
+    /**
+     * A response is being committed for a session, 
+     * potentially write the session out before the
+     * client receives the response.
+     * @param session the session
+     */
+    private void commitSession(Session session)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Response {} committing for session {}", this, session);
+        session.getSessionHandler().commit(session);
     }
 
     private MultiMap<String> getParameters()
@@ -723,6 +767,22 @@ public class Request implements HttpServletRequest
     public Context getContext()
     {
         return _context;
+    }
+
+    /**
+     * @return The current {@link Context context} used for this error handling for this request.  If the request is asynchronous,
+     * then it is the context that called async. Otherwise it is the last non-null context passed to #setContext
+     */
+    public Context getErrorContext()
+    {
+        if (isAsyncStarted())
+        {
+            ContextHandler handler = _channel.getState().getContextHandler();
+            if (handler != null)
+                return handler.getServletContext();
+        }
+
+        return _errorContext;
     }
 
     /*
@@ -1432,6 +1492,59 @@ public class Request implements HttpServletRequest
         return session.getId();
     }
 
+    /**
+     * Called when the request is fully finished being handled.
+     * For every session in any context that the session has
+     * accessed, ensure that the session is completed.
+     */
+    public void onCompleted()
+    {
+        if (_sessions != null)
+        {
+            for (Session s:_sessions)
+                leaveSession(s);
+        }
+    }
+    
+    /**
+     * Called when a response is about to be committed, ie sent
+     * back to the client
+     */
+    public void onResponseCommit()
+    {
+        if (_sessions != null)
+        {
+            for (Session s:_sessions)
+                commitSession(s);
+        }
+    }
+
+    /**
+     * Find a session that this request has already entered for the
+     * given SessionHandler 
+     *
+     * @param sessionHandler the SessionHandler (ie context) to check
+     * @return
+     */
+    public HttpSession getSession(SessionHandler sessionHandler)
+    {
+        if (_sessions == null || _sessions.size() == 0 || sessionHandler == null)
+            return null;
+        
+        HttpSession session = null;
+        
+        for (HttpSession s:_sessions)
+        {
+            Session ss =  Session.class.cast(s);
+            if (sessionHandler == ss.getSessionHandler())
+            {
+                session = s;
+                break;
+            }
+        }
+        return session;
+    }
+    
     /*
      * @see javax.servlet.http.HttpServletRequest#getSession()
      */
@@ -1770,7 +1883,9 @@ public class Request implements HttpServletRequest
         _inputState = INPUT_NONE;
         _multiParts = null;
         _remote = null;
+        _sessions = null;
         _input.recycle();
+        _requestAttributeListeners.clear();
     }
 
     /*
@@ -1908,6 +2023,7 @@ public class Request implements HttpServletRequest
         else
         {
             _context = context;
+            _errorContext = context;
         }
     }
 

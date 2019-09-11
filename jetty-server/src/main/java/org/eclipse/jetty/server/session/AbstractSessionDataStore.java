@@ -80,6 +80,9 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
     @Override
     public SessionData load(String id) throws Exception
     {
+        if (!isStarted())
+            throw new IllegalStateException ("Not started");
+
         final AtomicReference<SessionData> reference = new AtomicReference<SessionData>();
         final AtomicReference<Exception> exception = new AtomicReference<Exception>();
 
@@ -109,6 +112,9 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
     @Override
     public void store(String id, SessionData data) throws Exception
     {
+        if (!isStarted())
+            throw new IllegalStateException("Not started");
+        
         if (data == null)
             return;
 
@@ -123,10 +129,14 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
                 long savePeriodMs = (_savePeriodSec <= 0 ? 0 : TimeUnit.SECONDS.toMillis(_savePeriodSec));
 
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Store: id={}, dirty={}, lsave={}, period={}, elapsed={}", id, data.isDirty(), data.getLastSaved(), savePeriodMs, (System.currentTimeMillis() - lastSave));
+                {
+                    LOG.debug("Store: id={}, mdirty={}, dirty={}, lsave={}, period={}, elapsed={}", id, data.isMetaDataDirty(),
+                        data.isDirty(), data.getLastSaved(), savePeriodMs, (System.currentTimeMillis() - lastSave));
+                }
 
-                //save session if attribute changed or never been saved or time between saves exceeds threshold
-                if (data.isDirty() || (lastSave <= 0) || ((System.currentTimeMillis() - lastSave) > savePeriodMs))
+                //save session if attribute changed, never been saved or metadata changed (eg expiry time) and save interval exceeded
+                if (data.isDirty() || (lastSave <= 0) ||
+                    (data.isMetaDataDirty() && ((System.currentTimeMillis() - lastSave) >= savePeriodMs)))
                 {
                     //set the last saved time to now
                     data.setLastSaved(System.currentTimeMillis());
@@ -134,7 +144,7 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
                     {
                         //call the specific store method, passing in previous save time
                         doStore(id, data, lastSave);
-                        data.setDirty(false); //only undo the dirty setting if we saved it
+                        data.clean(); //unset all dirty flags
                     }
                     catch (Exception e)
                     {
@@ -156,6 +166,9 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
     @Override
     public Set<String> getExpired(Set<String> candidates)
     {
+        if (!isStarted())
+            throw new IllegalStateException ("Not started");
+        
         try
         {
             return doGetExpired(candidates);

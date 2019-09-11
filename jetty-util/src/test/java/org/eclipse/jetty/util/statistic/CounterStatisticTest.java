@@ -89,10 +89,7 @@ public class CounterStatisticTest
         for (int i = N; i-- > 0; )
         {
             threads[i] = (i >= N / 2)
-                ? new Thread()
-            {
-                @Override
-                public void run()
+                ? new Thread(() ->
                 {
                     try
                     {
@@ -110,12 +107,9 @@ public class CounterStatisticTest
                         if (random.nextInt(5) == 0)
                             Thread.yield();
                     }
-                }
-            }
-                : new Thread()
-            {
-                @Override
-                public void run()
+                })
+
+                : new Thread(() ->
                 {
                     try
                     {
@@ -134,8 +128,7 @@ public class CounterStatisticTest
                         if (random.nextInt(5) == 0)
                             Thread.yield();
                     }
-                }
-            };
+                });
             threads[i].start();
         }
 

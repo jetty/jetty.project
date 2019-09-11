@@ -322,7 +322,7 @@ public class HttpTransportOverHTTP2 implements HttpTransport
         return transportCallback.onIdleTimeout(failure);
     }
 
-    void prepareUpgrade()
+    boolean prepareUpgrade()
     {
         HttpChannelOverHTTP2 channel = (HttpChannelOverHTTP2)stream.getAttachment();
         Request request = channel.getRequest();
@@ -331,7 +331,8 @@ public class HttpTransportOverHTTP2 implements HttpTransport
         endPoint.upgrade(connection);
         stream.setAttachment(endPoint);
         if (request.getHttpInput().hasContent())
-            channel.sendErrorOrAbort("Unexpected content in CONNECT request");
+            return channel.sendErrorOrAbort("Unexpected content in CONNECT request");
+        return false;
     }
 
     @Override

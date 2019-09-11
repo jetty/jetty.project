@@ -20,6 +20,8 @@ package org.eclipse.jetty.embedded;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.Collections;
+import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -45,11 +47,27 @@ public class DumpServlet extends HttpServlet
         out.println("pathInfo=" + request.getPathInfo());
         out.println("session=" + request.getSession(true).getId());
 
+        ServletContext servletContext = getServletContext();
+
         String r = request.getParameter("resource");
         if (r != null)
         {
-            out.println("resource(" + r + ")=" + getServletContext().getResource(r));
+            out.println("resource(" + r + ")=" + servletContext.getResource(r));
         }
+
+        Collections.list(request.getAttributeNames())
+            .stream()
+            .filter((name) -> name.startsWith("X-"))
+            .sorted()
+            .forEach((name) ->
+                out.println("request.attribute[" + name + "]=" + request.getAttribute(name)));
+
+        Collections.list(servletContext.getAttributeNames())
+            .stream()
+            .filter((name) -> name.startsWith("X-"))
+            .sorted()
+            .forEach((name) ->
+                out.println("servletContext.attribute[" + name + "]=" + servletContext.getAttribute(name)));
 
         out.println("</pre>");
     }

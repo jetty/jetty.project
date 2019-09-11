@@ -126,7 +126,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     public static final int DEFAULT_LISTENER_TYPE_INDEX = 1;
     public static final int EXTENDED_LISTENER_TYPE_INDEX = 0;
 
-    private static final String __unimplmented = "Unimplemented - use org.eclipse.jetty.servlet.ServletContextHandler";
+    private static final String UNIMPLEMENTED_USE_SERVLET_CONTEXT_HANDLER = "Unimplemented {} - use org.eclipse.jetty.servlet.ServletContextHandler";
 
     private static final Logger LOG = Log.getLogger(ContextHandler.class);
 
@@ -864,7 +864,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
      * insert additional handling (Eg configuration) before the call to super.doStart by this method will start contained handlers.
      *
      * @throws Exception if unable to start the context
-     * @see org.eclipse.jetty.server.handler.ContextHandler.Context
+     * @see ContextHandler.Context
      */
     protected void startContext() throws Exception
     {
@@ -1103,7 +1103,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             case UNAVAILABLE:
                 baseRequest.setHandled(true);
                 response.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
-                return true;
+                return false;
             default:
                 if ((DispatcherType.REQUEST.equals(dispatch) && baseRequest.isHandled()))
                     return false;
@@ -1138,8 +1138,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         if (oldContext != _scontext)
         {
             // check the target.
-            if (DispatcherType.REQUEST.equals(dispatch) || DispatcherType.ASYNC.equals(dispatch) ||
-                DispatcherType.ERROR.equals(dispatch) && baseRequest.getHttpChannelState().isAsync())
+            if (DispatcherType.REQUEST.equals(dispatch) || DispatcherType.ASYNC.equals(dispatch))
             {
                 if (_compactPath)
                     target = URIUtil.compactPath(target);
@@ -1276,29 +1275,11 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             if (new_context)
                 requestInitialized(baseRequest, request);
 
-            switch (dispatch)
+            if (dispatch == DispatcherType.REQUEST && isProtectedTarget(target))
             {
-                case REQUEST:
-                    if (isProtectedTarget(target))
-                    {
-                        response.sendError(HttpServletResponse.SC_NOT_FOUND);
-                        baseRequest.setHandled(true);
-                        return;
-                    }
-                    break;
-
-                case ERROR:
-                    // If this is already a dispatch to an error page, proceed normally
-                    if (Boolean.TRUE.equals(baseRequest.getAttribute(Dispatcher.__ERROR_DISPATCH)))
-                        break;
-
-                    // We can just call doError here. If there is no error page, then one will
-                    // be generated. If there is an error page, then a RequestDispatcher will be
-                    // used to route the request through appropriate filters etc.
-                    doError(target, baseRequest, request, response);
-                    return;
-                default:
-                    break;
+                baseRequest.setHandled(true);
+                response.sendError(HttpServletResponse.SC_NOT_FOUND);
+                return;
             }
 
             nextHandle(target, baseRequest, request, response);
@@ -2250,7 +2231,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         @Override
         public void log(String message, Throwable throwable)
         {
-            _logger.warn(message, throwable);
+            if (throwable == null)
+                _logger.warn(message);
+            else
+                _logger.warn(message, throwable);
         }
 
         /*
@@ -2510,7 +2494,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         @Override
         public JspConfigDescriptor getJspConfigDescriptor()
         {
-            LOG.warn(__unimplmented);
+            LOG.warn(UNIMPLEMENTED_USE_SERVLET_CONTEXT_HANDLER, "getJspConfigDescriptor()");
             return null;
         }
 
@@ -2703,138 +2687,141 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         @Override
         public Dynamic addFilter(String filterName, Class<? extends Filter> filterClass)
         {
-            LOG.warn(__unimplmented);
+            LOG.warn(UNIMPLEMENTED_USE_SERVLET_CONTEXT_HANDLER, "addFilter(String, Class)");
             return null;
         }
 
         @Override
         public Dynamic addFilter(String filterName, Filter filter)
         {
-            LOG.warn(__unimplmented);
+            LOG.warn(UNIMPLEMENTED_USE_SERVLET_CONTEXT_HANDLER, "addFilter(String, Filter)");
             return null;
         }
 
         @Override
         public Dynamic addFilter(String filterName, String className)
         {
-            LOG.warn(__unimplmented);
+            LOG.warn(UNIMPLEMENTED_USE_SERVLET_CONTEXT_HANDLER, "addFilter(String, String)");
             return null;
         }
 
         @Override
         public javax.servlet.ServletRegistration.Dynamic addServlet(String servletName, Class<? extends Servlet> servletClass)
         {
-            LOG.warn(__unimplmented);
+            LOG.warn(UNIMPLEMENTED_USE_SERVLET_CONTEXT_HANDLER, "addServlet(String, Class)");
             return null;
         }
 
         @Override
         public javax.servlet.ServletRegistration.Dynamic addServlet(String servletName, Servlet servlet)
         {
-            LOG.warn(__unimplmented);
+            LOG.warn(UNIMPLEMENTED_USE_SERVLET_CONTEXT_HANDLER, "addServlet(String, Servlet)");
             return null;
         }
 
         @Override
         public javax.servlet.ServletRegistration.Dynamic addServlet(String servletName, String className)
         {
-            LOG.warn(__unimplmented);
+            LOG.warn(UNIMPLEMENTED_USE_SERVLET_CONTEXT_HANDLER, "addServlet(String, String)");
             return null;
         }
 
+        /**
+         * @since Servlet 4.0
+         */
         @Override
         public ServletRegistration.Dynamic addJspFile(String servletName, String jspFile)
         {
             // TODO new in 4.0
-            LOG.warn(__unimplmented);
+            LOG.warn(UNIMPLEMENTED_USE_SERVLET_CONTEXT_HANDLER, "addJspFile(String, String)");
             return null;
         }
 
         @Override
         public <T extends Filter> T createFilter(Class<T> c) throws ServletException
         {
-            LOG.warn(__unimplmented);
+            LOG.warn(UNIMPLEMENTED_USE_SERVLET_CONTEXT_HANDLER, "createFilter(Class)");
             return null;
         }
 
         @Override
         public <T extends Servlet> T createServlet(Class<T> c) throws ServletException
         {
-            LOG.warn(__unimplmented);
+            LOG.warn(UNIMPLEMENTED_USE_SERVLET_CONTEXT_HANDLER, "createServlet(Class)");
             return null;
         }
 
         @Override
         public Set<SessionTrackingMode> getDefaultSessionTrackingModes()
         {
-            LOG.warn(__unimplmented);
+            LOG.warn(UNIMPLEMENTED_USE_SERVLET_CONTEXT_HANDLER, "getDefaultSessionTrackingModes()");
             return null;
         }
 
         @Override
         public Set<SessionTrackingMode> getEffectiveSessionTrackingModes()
         {
-            LOG.warn(__unimplmented);
+            LOG.warn(UNIMPLEMENTED_USE_SERVLET_CONTEXT_HANDLER, "getEffectiveSessionTrackingModes()");
             return null;
         }
 
         @Override
         public FilterRegistration getFilterRegistration(String filterName)
         {
-            LOG.warn(__unimplmented);
+            LOG.warn(UNIMPLEMENTED_USE_SERVLET_CONTEXT_HANDLER, "getFilterRegistration(String)");
             return null;
         }
 
         @Override
         public Map<String, ? extends FilterRegistration> getFilterRegistrations()
         {
-            LOG.warn(__unimplmented);
+            LOG.warn(UNIMPLEMENTED_USE_SERVLET_CONTEXT_HANDLER, "getFilterRegistrations()");
             return null;
         }
 
         @Override
         public ServletRegistration getServletRegistration(String servletName)
         {
-            LOG.warn(__unimplmented);
+            LOG.warn(UNIMPLEMENTED_USE_SERVLET_CONTEXT_HANDLER, "getServletRegistration(String)");
             return null;
         }
 
         @Override
         public Map<String, ? extends ServletRegistration> getServletRegistrations()
         {
-            LOG.warn(__unimplmented);
+            LOG.warn(UNIMPLEMENTED_USE_SERVLET_CONTEXT_HANDLER, "getServletRegistrations()");
             return null;
         }
 
         @Override
         public SessionCookieConfig getSessionCookieConfig()
         {
-            LOG.warn(__unimplmented);
+            LOG.warn(UNIMPLEMENTED_USE_SERVLET_CONTEXT_HANDLER, "getSessionCookieConfig()");
             return null;
         }
 
         @Override
         public void setSessionTrackingModes(Set<SessionTrackingMode> sessionTrackingModes)
         {
-            LOG.warn(__unimplmented);
+            LOG.warn(UNIMPLEMENTED_USE_SERVLET_CONTEXT_HANDLER, "setSessionTrackingModes(Set<SessionTrackingMode>)");
         }
 
         @Override
         public void addListener(String className)
         {
-            LOG.warn(__unimplmented);
+            LOG.warn(UNIMPLEMENTED_USE_SERVLET_CONTEXT_HANDLER, "addListener(String)");
         }
 
         @Override
         public <T extends EventListener> void addListener(T t)
         {
-            LOG.warn(__unimplmented);
+            LOG.warn(UNIMPLEMENTED_USE_SERVLET_CONTEXT_HANDLER, "addListener(T)");
         }
 
         @Override
         public void addListener(Class<? extends EventListener> listenerClass)
         {
-            LOG.warn(__unimplmented);
+            LOG.warn(UNIMPLEMENTED_USE_SERVLET_CONTEXT_HANDLER, "addListener(Class)");
         }
 
         @Override
@@ -2881,14 +2868,14 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         @Override
         public JspConfigDescriptor getJspConfigDescriptor()
         {
-            LOG.warn(__unimplmented);
+            LOG.warn(UNIMPLEMENTED_USE_SERVLET_CONTEXT_HANDLER, "getJspConfigDescriptor()");
             return null;
         }
 
         @Override
         public void declareRoles(String... roleNames)
         {
-            LOG.warn(__unimplmented);
+            LOG.warn(UNIMPLEMENTED_USE_SERVLET_CONTEXT_HANDLER, "declareRoles(String...)");
         }
 
         @Override
@@ -2897,49 +2884,67 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             return null;
         }
 
+        /**
+         * @since Servlet 4.0
+         */
         @Override
         public int getSessionTimeout()
         {
             // TODO new in 4.0
-            LOG.warn(__unimplmented);
+            LOG.warn(UNIMPLEMENTED_USE_SERVLET_CONTEXT_HANDLER, "getSessionTimeout()");
             return 0;
         }
 
+        /**
+         * @since Servlet 4.0
+         */
         @Override
         public void setSessionTimeout(int sessionTimeout)
         {
             // TODO new in 4.0
-            LOG.warn(__unimplmented);
+            LOG.warn(UNIMPLEMENTED_USE_SERVLET_CONTEXT_HANDLER, "setSessionTimeout(int)");
         }
 
+        /**
+         * @since Servlet 4.0
+         */
         @Override
         public String getRequestCharacterEncoding()
         {
             // TODO new in 4.0
-            LOG.warn(__unimplmented);
+            LOG.warn(UNIMPLEMENTED_USE_SERVLET_CONTEXT_HANDLER, "getRequestCharacterEncoding()");
             return null;
         }
 
+        /**
+         * @since Servlet 4.0
+         */
         @Override
         public void setRequestCharacterEncoding(String encoding)
         {
             // TODO new in 4.0
-            LOG.warn(__unimplmented);
+            LOG.warn(UNIMPLEMENTED_USE_SERVLET_CONTEXT_HANDLER, "setRequestCharacterEncoding(String)");
         }
 
+        /**
+         * @since Servlet 4.0
+         */
         @Override
         public String getResponseCharacterEncoding()
         {
             // TODO new in 4.0
-            LOG.warn(__unimplmented);
+            LOG.warn(UNIMPLEMENTED_USE_SERVLET_CONTEXT_HANDLER, "getResponseCharacterEncoding()");
             return null;
         }
 
+        /**
+         * @since Servlet 4.0
+         */
         @Override
         public void setResponseCharacterEncoding(String encoding)
         {
             // TODO new in 4.0
-            LOG.warn(__unimplmented);
+            LOG.warn(UNIMPLEMENTED_USE_SERVLET_CONTEXT_HANDLER, "setResponseCharacterEncoding(String)");
         }
     }
 

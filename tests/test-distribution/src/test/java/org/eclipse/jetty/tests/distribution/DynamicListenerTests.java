@@ -18,19 +18,20 @@
 
 package org.eclipse.jetty.tests.distribution;
 
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.util.IO;
-import org.junit.jupiter.api.Test;
-
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.util.IO;
+import org.junit.jupiter.api.Test;
+
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -40,7 +41,7 @@ public class DynamicListenerTests
     @Test
     public void testSimpleWebAppWithJSP() throws Exception
     {
-        Path jettyBase = Files.createTempDirectory( "jetty_base");
+        Path jettyBase = Files.createTempDirectory("jetty_base");
         String jettyVersion = System.getProperty("jettyVersion");
         DistributionTester distribution = DistributionTester.Builder.newInstance()
             .jettyBase(jettyBase)
@@ -58,11 +59,11 @@ public class DynamicListenerTests
             assertTrue(run1.awaitFor(5, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
 
-            File war = distribution.resolveArtifact( "org.eclipse.jetty:test-jetty-webapp:war:" + jettyVersion);
+            File war = distribution.resolveArtifact("org.eclipse.jetty:test-jetty-webapp:war:" + jettyVersion);
             distribution.installWarFile(war, "test");
 
             Path etc = Paths.get(jettyBase.toString(),"etc");
-            if(!Files.exists(etc))
+            if (!Files.exists(etc))
             {
                 Files.createDirectory(etc);
             }
@@ -77,7 +78,7 @@ public class DynamicListenerTests
             int port = distribution.freePort();
             try (DistributionTester.Run run2 = distribution.start("jetty.http.port=" + port))
             {
-                assertTrue(run2.awaitConsoleLogsFor("Started @", 10, TimeUnit.SECONDS));
+                assertTrue(run2.awaitConsoleLogsFor("Started Server@", 10, TimeUnit.SECONDS));
 
                 startHttpClient();
                 ContentResponse response = client.GET("http://localhost:" + port + "/test/testservlet/foo");
@@ -89,7 +90,8 @@ public class DynamicListenerTests
                 assertThat(content, containsString("requestInitialized"));
                 assertThat(content, not(containsString("<%")));
             }
-        } finally
+        }
+        finally
         {
             IO.delete(jettyBase.toFile());
         }

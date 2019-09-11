@@ -27,7 +27,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.function.Supplier;
+import java.util.function.Function;
 import javax.websocket.ClientEndpoint;
 import javax.websocket.ClientEndpointConfig;
 import javax.websocket.DeploymentException;
@@ -56,7 +56,7 @@ import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketFrameHandlerFactor
 public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer implements javax.websocket.WebSocketContainer
 {
     protected WebSocketCoreClient coreClient;
-    protected Supplier<WebSocketCoreClient> coreClientFactory;
+    protected Function<WebSocketComponents, WebSocketCoreClient> coreClientFactory;
     private final JavaxWebSocketClientFrameHandlerFactory frameHandlerFactory;
 
     public JavaxWebSocketClientContainer()
@@ -64,17 +64,34 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
         this(new WebSocketComponents());
     }
 
-    public JavaxWebSocketClientContainer(WebSocketComponents components)
+    /**
+     * Create a {@link javax.websocket.WebSocketContainer} using the supplied
+     * {@link HttpClient} for environments where you want to configure
+     * SSL/TLS or Proxy behaviors.
+     *
+     * @param httpClient the HttpClient instance to use
+     */
+    public JavaxWebSocketClientContainer(final HttpClient httpClient)
     {
-        this(components, () ->
+        this(new WebSocketComponents(), (wsComponents) ->
         {
-            WebSocketCoreClient coreClient = new WebSocketCoreClient(components);
+            WebSocketCoreClient coreClient = new WebSocketCoreClient(httpClient, wsComponents);
             coreClient.getHttpClient().setName("Javax-WebSocketClient@" + Integer.toHexString(coreClient.getHttpClient().hashCode()));
             return coreClient;
         });
     }
 
-    public JavaxWebSocketClientContainer(WebSocketComponents components, Supplier<WebSocketCoreClient> coreClientFactory)
+    public JavaxWebSocketClientContainer(WebSocketComponents components)
+    {
+        this(components, (wsComponents) ->
+        {
+            WebSocketCoreClient coreClient = new WebSocketCoreClient(wsComponents);
+            coreClient.getHttpClient().setName("Javax-WebSocketClient@" + Integer.toHexString(coreClient.getHttpClient().hashCode()));
+            return coreClient;
+        });
+    }
+
+    public JavaxWebSocketClientContainer(WebSocketComponents components, Function<WebSocketComponents, WebSocketCoreClient> coreClientFactory)
     {
         super(components);
         this.coreClientFactory = coreClientFactory;
@@ -90,7 +107,7 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
     {
         if (coreClient == null)
         {
-            coreClient = coreClientFactory.get();
+            coreClient = coreClientFactory.apply(components);
             addManaged(coreClient);
         }
 

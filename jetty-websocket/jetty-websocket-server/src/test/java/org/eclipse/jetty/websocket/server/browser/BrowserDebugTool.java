@@ -93,6 +93,12 @@ public class BrowserDebugTool
     public void prepare(int port)
     {
         server = new Server();
+
+        // Setup JMX
+        // MBeanContainer mbContainer = new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
+        // server.addBean(mbContainer, true);
+
+        // Setup Connector
         connector = new ServerConnector(server);
         connector.setPort(port);
         server.addConnector(connector);

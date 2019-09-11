@@ -96,6 +96,16 @@ public interface SessionCache extends LifeCycle
      * @throws Exception if any error occurred
      */
     Session renewSessionId(String oldId, String newId, String oldExtendedId, String newExtendedId) throws Exception;
+    
+    /**
+     * Adds a new Session, with a never-before-used id,
+     *  to the cache.
+     * 
+     * @param id
+     * @param session
+     * @throws Exception
+     */
+    void add(String id, Session session) throws Exception;
 
     /**
      * Get an existing Session. If necessary, the cache will load the data for
@@ -116,9 +126,34 @@ public interface SessionCache extends LifeCycle
      * @param id the session id
      * @param session the current session object
      * @throws Exception if any error occurred
+     * @deprecated use {@link #release(String, Session)} instead
      */
+    @Deprecated
     void put(String id, Session session) throws Exception;
 
+    /**
+     * Finish using a Session. This is called by the SessionHandler
+     * once a request is finished with a Session. SessionCache
+     * implementations may want to delay writing out Session contents
+     * until the last request exits a Session.
+     *
+     * @param id the session id
+     * @param session the current session object
+     * @throws Exception if any error occurred
+     */
+    void release(String id, Session session) throws Exception;
+
+    /**
+     * Called when a response is about to be committed. The
+     * cache can write the session to ensure that the 
+     * SessionDataStore contains changes to the session
+     * that occurred during the lifetime of the request. This
+     * can help ensure that if a subsequent request goes to a
+     * different server, it will be able to see the session
+     * changes via the shared store.
+     */
+    void commit(Session session) throws Exception;
+    
     /**
      * Check to see if a Session is in the cache. Does NOT consult
      * the SessionDataStore.
@@ -241,4 +276,18 @@ public interface SessionCache extends LifeCycle
      * @return if <code>true</code> unloadable session will be deleted
      */
     boolean isRemoveUnloadableSessions();
+    
+    /**
+     * If true, a dirty session will be written to the SessionDataStore
+     * just before a response is returned to the client. This ensures
+     * that subsequent requests to either the same node or a different
+     * node see the changed session data.
+     */
+    void setFlushOnResponseCommit(boolean flushOnResponse);
+    
+    /**
+     * @return <code>true</code> if dirty sessions should be written
+     * before the response is committed.
+     */
+    boolean isFlushOnResponseCommit();
 }

@@ -34,7 +34,6 @@ import org.eclipse.jetty.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.plus.webapp.EnvConfiguration;
 import org.eclipse.jetty.plus.webapp.PlusConfiguration;
 import org.eclipse.jetty.quickstart.QuickStartConfiguration;
-import org.eclipse.jetty.quickstart.QuickStartConfiguration.Mode;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.FilterMapping;
 import org.eclipse.jetty.servlet.ServletHolder;
@@ -105,8 +104,6 @@ public class JettyWebAppContext extends WebAppContext
      */
     private boolean _baseAppFirst = true;
 
-    private boolean _isGenerateQuickStart;
-
     public JettyWebAppContext() throws Exception
     {
         super();
@@ -117,6 +114,8 @@ public class JettyWebAppContext extends WebAppContext
         addConfiguration(new EnvConfiguration());
         addConfiguration(new PlusConfiguration());
         addConfiguration(new AnnotationConfiguration());
+
+        setAttribute(QuickStartConfiguration.ORIGIN_ATTRIBUTE, "origin");
     }
 
     public void setContainerIncludeJarPattern(String pattern)
@@ -210,27 +209,6 @@ public class JettyWebAppContext extends WebAppContext
         return attr == null ? null : attr.toString();
     }
 
-    /**
-     * Toggle whether or not the origin attribute will be generated into the
-     * xml.
-     *
-     * @param generateOrigin if true then the origin of each xml element is
-     * added, otherwise it is omitted.
-     */
-    public void setGenerateOrigin(boolean generateOrigin)
-    {
-        setAttribute(QuickStartConfiguration.GENERATE_ORIGIN, generateOrigin);
-    }
-
-    /**
-     * @return true if the origin attribute will be generated, false otherwise
-     */
-    public boolean isGenerateOrigin()
-    {
-        Object attr = getAttribute(QuickStartConfiguration.GENERATE_ORIGIN);
-        return attr == null ? false : Boolean.valueOf(attr.toString());
-    }
-
     public List<Overlay> getOverlays()
     {
         return _overlays;
@@ -244,35 +222,6 @@ public class JettyWebAppContext extends WebAppContext
     public boolean getBaseAppFirst()
     {
         return _baseAppFirst;
-    }
-
-    /**
-     * Set the file to use into which to generate the quickstart output.
-     *
-     * @param quickStartWebXml the full path to the file to use
-     */
-    public void setQuickStartWebDescriptor(String quickStartWebXml) throws Exception
-    {
-        setQuickStartWebDescriptor(Resource.newResource(quickStartWebXml));
-    }
-
-    /**
-     * Set the Resource to use into which to generate the quickstart output.
-     */
-    protected void setQuickStartWebDescriptor(Resource quickStartWebXml)
-    {
-        setAttribute(QuickStartConfiguration.QUICKSTART_WEB_XML, quickStartWebXml.toString());
-    }
-
-    public Resource getQuickStartWebDescriptor() throws Exception
-    {
-        Object o = getAttribute(QuickStartConfiguration.QUICKSTART_WEB_XML);
-        if (o == null)
-            return null;
-        else if (o instanceof Resource)
-            return (Resource)o;
-        else
-            return Resource.newResource((String)o);
     }
 
     /**
@@ -307,41 +256,9 @@ public class JettyWebAppContext extends WebAppContext
         return _webInfClasses;
     }
 
-    /**
-     * If true, a quickstart for the webapp is generated.
-     *
-     * @param quickStart if true the quickstart is generated, false otherwise
-     */
-    public void setGenerateQuickStart(boolean quickStart)
-    {
-        _isGenerateQuickStart = quickStart;
-    }
-
-    public boolean isGenerateQuickStart()
-    {
-        return _isGenerateQuickStart;
-    }
-
     @Override
     public void doStart() throws Exception
     {
-
-        // choose if this will be a quickstart or normal start
-        if (!isGenerateQuickStart() && getQuickStartWebDescriptor() != null)
-        {
-            MavenQuickStartConfiguration quickStart = new MavenQuickStartConfiguration();
-            quickStart.setMode(Mode.QUICKSTART);
-            quickStart.setQuickStartWebXml(getQuickStartWebDescriptor());
-            addConfiguration(quickStart);
-        }
-        else if (isGenerateQuickStart())
-        {
-            MavenQuickStartConfiguration quickStart = new MavenQuickStartConfiguration();
-            quickStart.setMode(Mode.GENERATE);
-            quickStart.setQuickStartWebXml(getQuickStartWebDescriptor());
-            addConfiguration(quickStart);
-        }
-
         // Set up the pattern that tells us where the jars are that need
         // scanning
 

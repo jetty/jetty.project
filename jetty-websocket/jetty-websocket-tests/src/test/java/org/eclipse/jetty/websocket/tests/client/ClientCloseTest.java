@@ -53,7 +53,6 @@ import org.eclipse.jetty.websocket.server.JettyWebSocketServlet;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServletFactory;
 import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.tests.CloseTrackingEndpoint;
-import org.eclipse.jetty.websocket.tests.util.FutureWriteCallback;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -84,11 +83,7 @@ public class ClientCloseTest
         {
             // Send message from client to server
             final String echoMsg = "echo-test";
-            FutureWriteCallback testFut = new FutureWriteCallback();
-            clientSocket.getRemote().sendString(echoMsg, testFut);
-
-            // Wait for send future
-            testFut.get(5, SECONDS);
+            clientSocket.getRemote().sendString(echoMsg);
 
             // Verify received message
             String recvMsg = clientSocket.messageQueue.poll(5, SECONDS);
@@ -176,27 +171,24 @@ public class ClientCloseTest
         CloseTrackingEndpoint clientSocket = new CloseTrackingEndpoint();
         Future<Session> clientConnectFuture = client.connect(clientSocket, wsUri);
 
-        try (Session session = confirmConnection(clientSocket, clientConnectFuture))
-        {
-            // client confirms connection via echo
+        // client confirms connection via echo
+        confirmConnection(clientSocket, clientConnectFuture);
 
-            // client sends close frame (code 1000, normal)
-            final String origCloseReason = "send-more-frames";
-            clientSocket.getSession().close(StatusCode.NORMAL, origCloseReason);
+        // client sends close frame (code 1000, normal)
+        final String origCloseReason = "send-more-frames";
+        clientSocket.getSession().close(StatusCode.NORMAL, origCloseReason);
 
-            // Verify received messages
-            String recvMsg = clientSocket.messageQueue.poll(5, SECONDS);
-            assertThat("Received message 1", recvMsg, is("Hello"));
-            recvMsg = clientSocket.messageQueue.poll(5, SECONDS);
-            assertThat("Received message 2", recvMsg, is("World"));
+        // Verify received messages
+        String recvMsg = clientSocket.messageQueue.poll(5, SECONDS);
+        assertThat("Received message 1", recvMsg, is("Hello"));
+        recvMsg = clientSocket.messageQueue.poll(5, SECONDS);
+        assertThat("Received message 2", recvMsg, is("World"));
 
-            // Verify that there are no errors
-            assertThat("Error events", clientSocket.error.get(), nullValue());
+        // Verify that there are no errors
+        assertThat("Error events", clientSocket.error.get(), nullValue());
 
-            // client close event on ws-endpoint
-            clientSocket.assertReceivedCloseEvent(timeout, is(StatusCode.NORMAL), containsString(""));
-        }
-
+        // client close event on ws-endpoint
+        clientSocket.assertReceivedCloseEvent(timeout, is(StatusCode.NORMAL), containsString(""));
         clientSessionTracker.assertClosedProperly(client);
     }
 
@@ -215,18 +207,15 @@ public class ClientCloseTest
         CloseTrackingEndpoint clientSocket = new CloseTrackingEndpoint();
         Future<Session> clientConnectFuture = client.connect(clientSocket, wsUri);
 
-        try (Session session = confirmConnection(clientSocket, clientConnectFuture))
-        {
-            // client confirms connection via echo
+        // client confirms connection via echo
+        confirmConnection(clientSocket, clientConnectFuture);
 
-            session.getRemote().sendString("too-large-message");
+        clientSocket.getSession().getRemote().sendString("too-large-message");
+        clientSocket.assertReceivedCloseEvent(timeout, is(StatusCode.MESSAGE_TOO_LARGE), containsString("exceeds maximum size"));
 
-            clientSocket.assertReceivedCloseEvent(timeout, is(StatusCode.MESSAGE_TOO_LARGE), containsString("exceeds maximum size"));
-
-            // client should have noticed the error
-            assertThat("OnError Latch", clientSocket.errorLatch.await(2, SECONDS), is(true));
-            assertThat("OnError", clientSocket.error.get(), instanceOf(MessageTooLargeException.class));
-        }
+        // client should have noticed the error
+        assertThat("OnError Latch", clientSocket.errorLatch.await(2, SECONDS), is(true));
+        assertThat("OnError", clientSocket.error.get(), instanceOf(MessageTooLargeException.class));
 
         // client triggers close event on client ws-endpoint
         clientSessionTracker.assertClosedProperly(client);
@@ -278,24 +267,21 @@ public class ClientCloseTest
         CloseTrackingEndpoint clientSocket = new CloseTrackingEndpoint();
         Future<Session> clientConnectFuture = client.connect(clientSocket, wsUri);
 
-        try (Session ignored = confirmConnection(clientSocket, clientConnectFuture))
-        {
-            // client confirms connection via echo
+        // client confirms connection via echo
+        confirmConnection(clientSocket, clientConnectFuture);
 
-            // client sends close frame
-            final String origCloseReason = "sleep|2500";
-            clientSocket.getSession().close(StatusCode.NORMAL, origCloseReason);
+        // client sends close frame
+        final String origCloseReason = "sleep|2500";
+        clientSocket.getSession().close(StatusCode.NORMAL, origCloseReason);
 
-            // client close should occur
-            clientSocket.assertReceivedCloseEvent(clientTimeout * 2,
-                is(StatusCode.SHUTDOWN),
-                containsString("Timeout"));
+        // client close should occur
+        clientSocket.assertReceivedCloseEvent(clientTimeout * 2,
+            is(StatusCode.SHUTDOWN),
+            containsString("Timeout"));
 
-            // client idle timeout triggers close event on client ws-endpoint
-            assertThat("OnError Latch", clientSocket.errorLatch.await(2, SECONDS), is(true));
-            assertThat("OnError", clientSocket.error.get(), instanceOf(WebSocketTimeoutException.class));
-        }
-
+        // client idle timeout triggers close event on client ws-endpoint
+        assertThat("OnError Latch", clientSocket.errorLatch.await(2, SECONDS), is(true));
+        assertThat("OnError", clientSocket.error.get(), instanceOf(WebSocketTimeoutException.class));
         clientSessionTracker.assertClosedProperly(client);
     }
 

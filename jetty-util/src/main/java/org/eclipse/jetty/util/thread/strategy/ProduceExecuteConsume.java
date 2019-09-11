@@ -22,11 +22,10 @@ import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.ExecutionStrategy;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.Invocable.InvocationType;
-import org.eclipse.jetty.util.thread.Locker;
-import org.eclipse.jetty.util.thread.Locker.Lock;
 
 /**
  * <p>A strategy where the caller thread iterates over task production, submitting each
@@ -36,7 +35,7 @@ public class ProduceExecuteConsume implements ExecutionStrategy
 {
     private static final Logger LOG = Log.getLogger(ProduceExecuteConsume.class);
 
-    private final Locker _locker = new Locker();
+    private final AutoLock _lock = new AutoLock();
     private final Producer _producer;
     private final Executor _executor;
     private State _state = State.IDLE;
@@ -50,7 +49,7 @@ public class ProduceExecuteConsume implements ExecutionStrategy
     @Override
     public void produce()
     {
-        try (Lock locked = _locker.lock())
+        try (AutoLock lock = _lock.lock())
         {
             switch (_state)
             {
@@ -77,7 +76,7 @@ public class ProduceExecuteConsume implements ExecutionStrategy
 
             if (task == null)
             {
-                try (Lock locked = _locker.lock())
+                try (AutoLock lock = _lock.lock())
                 {
                     switch (_state)
                     {
@@ -106,7 +105,7 @@ public class ProduceExecuteConsume implements ExecutionStrategy
     @Override
     public void dispatch()
     {
-        _executor.execute(() -> produce());
+        _executor.execute(this::produce);
     }
 
     private enum State

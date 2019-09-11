@@ -1,7 +1,7 @@
 DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
 
 [description]
-Adds a HTTP protocol support to the Unix Domain Socket connector.
+Adds an HTTP protocol support to the Unix Domain Socket connector.
 It should be used when a proxy is forwarding either HTTP or decrypted
 HTTPS traffic to the connector and may be used with the 
 unix-socket-http2c modules to upgrade to HTTP/2.

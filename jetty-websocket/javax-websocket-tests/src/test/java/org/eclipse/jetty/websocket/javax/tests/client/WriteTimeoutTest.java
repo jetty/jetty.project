@@ -107,18 +107,18 @@ public class WriteTimeoutTest
     @ServerEndpoint("/logSocket")
     public static class LoggingSocket
     {
-        private final Logger LOG = Log.getLogger(LoggingSocket.class);
+        private final Logger log = Log.getLogger(LoggingSocket.class);
 
         @OnMessage
         public void onMessage(String msg)
         {
-            LOG.debug("onMessage(): {}", msg);
+            log.debug("onMessage(): {}", msg);
         }
 
         @OnError
         public void onError(Throwable t)
         {
-            LOG.debug("onError(): {}", t);
+            log.debug("onError(): {}", t);
         }
     }
 }

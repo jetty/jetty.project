@@ -34,6 +34,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
@@ -422,7 +423,8 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     @Override
     public Deflater getDeflater(Request request, long contentLength)
     {
-        String ua = request.getHttpFields().get(HttpHeader.USER_AGENT);
+        HttpFields httpFields = request.getHttpFields();
+        String ua = httpFields.get(HttpHeader.USER_AGENT);
         if (ua != null && !isAgentGzipable(ua))
         {
             LOG.debug("{} excluded user agent {}", this, request);
@@ -436,16 +438,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         }
 
         // check the accept encoding header
-        HttpField accept = request.getHttpFields().getField(HttpHeader.ACCEPT_ENCODING);
-
-        if (accept == null)
-        {
-            LOG.debug("{} excluded !accept {}", this, request);
-            return null;
-        }
-        boolean gzip = accept.contains("gzip");
-
-        if (!gzip)
+        if (!httpFields.contains(HttpHeader.ACCEPT_ENCODING, "gzip"))
         {
             LOG.debug("{} excluded not gzip accept {}", this, request);
             return null;

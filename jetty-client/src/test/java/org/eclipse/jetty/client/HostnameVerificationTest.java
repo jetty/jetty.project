@@ -106,7 +106,7 @@ public class HostnameVerificationTest
     /**
      * This test is supposed to verify that hostname verification works as described in:
      * http://www.ietf.org/rfc/rfc2818.txt section 3.1. It uses a certificate with a common name different to localhost
-     * and sends a request to localhost. This should fail with a SSLHandshakeException.
+     * and sends a request to localhost. This should fail with an SSLHandshakeException.
      *
      * @throws Exception on test failure
      */

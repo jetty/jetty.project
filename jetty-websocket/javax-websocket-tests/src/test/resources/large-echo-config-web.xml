@@ -7,6 +7,6 @@
   version="3.0">
 
   <listener>
-    <listener-class>org.eclipse.jetty.websocket.javax.tests.server.LargeContainerTest$LargeEchoContextListener</listener-class>
+    <listener-class>com.acme.websocket.LargeEchoContextListener</listener-class>
   </listener>
 </web-app>

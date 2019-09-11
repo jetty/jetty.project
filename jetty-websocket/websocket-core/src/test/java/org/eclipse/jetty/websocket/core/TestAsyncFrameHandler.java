@@ -76,7 +76,7 @@ public class TestAsyncFrameHandler implements FrameHandler
     @Override
     public void onError(Throwable cause, Callback callback)
     {
-        LOG.info("[{}] onError {} ", name, cause == null?null:cause.toString());
+        LOG.info("[{}] onError {} ", name, cause == null ? null : cause.toString());
         error = cause;
         errorLatch.countDown();
         callback.succeeded();
