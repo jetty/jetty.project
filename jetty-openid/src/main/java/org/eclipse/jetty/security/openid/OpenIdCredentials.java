@@ -158,8 +158,9 @@ public class OpenIdCredentials implements Serializable
         if (sections.length != 3)
             throw new IllegalArgumentException("JWT does not contain 3 sections");
 
-        String jwtHeaderString = new String(Base64.getDecoder().decode(sections[0]), StandardCharsets.UTF_8);
-        String jwtClaimString = new String(Base64.getDecoder().decode(sections[1]), StandardCharsets.UTF_8);
+        Base64.Decoder decoder = Base64.getDecoder();
+        String jwtHeaderString = new String(decoder.decode(sections[0]), StandardCharsets.UTF_8);
+        String jwtClaimString = new String(decoder.decode(sections[1]), StandardCharsets.UTF_8);
         String jwtSignature = sections[2];
 
         Map<String, Object> jwtHeader = (Map)JSON.parse(jwtHeaderString);
