@@ -16,7 +16,6 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.maven.plugin;
 
 import java.io.File;
@@ -47,8 +46,7 @@ import org.eclipse.jetty.util.resource.Resource;
 public class JettyEmbedder extends AbstractLifeCycle
 {
     private static final Logger LOG = Log.getLogger(JettyEmbedder.class);
-    
-    
+
     protected ContextHandler[] contextHandlers;
     
     protected LoginService[] loginServices;
@@ -77,10 +75,7 @@ public class JettyEmbedder extends AbstractLifeCycle
 
     private String contextXml;
 
-
     private Properties webAppProperties;
-
-   
 
     public ContextHandler[] getContextHandlers()
     {
@@ -207,13 +202,12 @@ public class JettyEmbedder extends AbstractLifeCycle
         this.stopKey = stopKey;
     }
     
-    public void setWebApp (JettyWebAppContext app)
-    throws Exception
+    public void setWebApp(JettyWebAppContext app) throws Exception
     {
         webApp = app;
     }
     
-    public void setWebAppProperties (Properties props)
+    public void setWebAppProperties(Properties props)
     {
         if (webAppProperties != null)
             webAppProperties.clear();
@@ -237,8 +231,7 @@ public class JettyEmbedder extends AbstractLifeCycle
         this.contextXml = contextXml;
     }
     
-    public void doStart()
-    throws Exception
+    public void doStart() throws Exception
     {
         super.doStart();
         
@@ -251,8 +244,7 @@ public class JettyEmbedder extends AbstractLifeCycle
         server.start();
     }
     
-    protected void redeployWebApp()
-    throws Exception
+    protected void redeployWebApp() throws Exception
     {
         if (!webApp.isStopped())
             webApp.stop();
@@ -263,8 +255,7 @@ public class JettyEmbedder extends AbstractLifeCycle
         webApp.start();
     }
     
-    protected void join()
-    throws InterruptedException
+    protected void join() throws InterruptedException
     {
         server.join();
     }
@@ -274,8 +265,7 @@ public class JettyEmbedder extends AbstractLifeCycle
      * Configure the server and the webapp
      * @throws Exception
      */
-    private void configure ()
-    throws Exception
+    private void configure() throws Exception
     {
         /* Configure the server */
         //apply any configs from jetty.xml files first 
@@ -310,7 +300,7 @@ public class JettyEmbedder extends AbstractLifeCycle
         //TODO- this might be duplicating WebAppPropertyConverter. make it a quickstart if the quickstart-web.xml file exists
         if (webApp.getTempDirectory() != null)
         {
-            File qs = new File (webApp.getTempDirectory(), "quickstart-web.xml");
+            File qs = new File(webApp.getTempDirectory(), "quickstart-web.xml");
             if (qs.exists() && qs.isFile())
             {
                 webApp.setAttribute(QuickStartConfiguration.QUICKSTART_WEB_XML, Resource.newResource(qs));
@@ -324,7 +314,7 @@ public class JettyEmbedder extends AbstractLifeCycle
         ServerSupport.addWebApplication(server, webApp);
     }
     
-    private void applyWebAppProperties () throws Exception
+    private void applyWebAppProperties() throws Exception
     {
         //apply properties to the webapp if there are any
         if (contextXml != null)
@@ -337,9 +327,9 @@ public class JettyEmbedder extends AbstractLifeCycle
         WebAppPropertyConverter.fromProperties(webApp, webAppProperties, server, jettyProperties);    
     }
     
-    private void configureShutdownMonitor ()
+    private void configureShutdownMonitor()
     {
-        if(stopPort>0 && stopKey!=null)
+        if (stopPort > 0 && stopKey != null)
         {
             ShutdownMonitor monitor = ShutdownMonitor.getInstance();
             monitor.setPort(stopPort);

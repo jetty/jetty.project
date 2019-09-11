@@ -54,7 +54,7 @@ public class ConsoleReader implements Runnable
         String line ="";
         while (true && line != null)
         {
-            line = console.readLine("Hit <enter> to redeploy:");
+            line = console.readLine("%nHit <enter> to redeploy:%n%n");
             if (line != null)
                 signalEvent(line);
         }

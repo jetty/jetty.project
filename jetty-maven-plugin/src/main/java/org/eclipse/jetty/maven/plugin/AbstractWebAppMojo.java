@@ -936,7 +936,6 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
         {
             for (Map.Entry<String, String> e:systemProperties.entrySet())
             {
-                System.err.println(e.getKey() + " " + e.getValue());
                 System.setProperty(e.getKey(), e.getValue());
             }
         }

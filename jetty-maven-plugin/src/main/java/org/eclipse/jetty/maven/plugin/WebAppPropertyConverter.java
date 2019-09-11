@@ -94,8 +94,12 @@ public class WebAppPropertyConverter
         Resource baseResource = webApp.getBaseResource();
         if (baseResource instanceof ResourceCollection)
             props.put("base.dirs", toCSV(((ResourceCollection)webApp.getBaseResource()).getResources()));
-        else
+        else if (baseResource instanceof Resource)
             props.put("base.dirs", webApp.getBaseResource().toString());
+        
+        //if there is a war file, use that
+        if (webApp.getWar() != null)
+            props.put("war.file", webApp.getWar());
 
         //web-inf classes
         if (webApp.getClasses() != null)
@@ -204,6 +208,12 @@ public class WebAppPropertyConverter
             webApp.setBaseResource(bases);
         }
 
+        str = webAppProperties.getProperty("war.file");
+        if (!StringUtil.isBlank(str))
+        {
+            webApp.setWar(str);
+        }
+        
         // - the equivalent of web-inf classes
         str = webAppProperties.getProperty("classes.dir");
         if (!StringUtil.isBlank(str))
