@@ -392,18 +392,18 @@ public class HpackEncoder
         if (huffman)
         {
             // huffman literal value
-            buffer.put((byte)0x80).mark();
+            buffer.put((byte)0x80);
 
-            try
+            int needed = Huffman.octetsNeeded(value);
+            if (needed >= 0)
             {
-                NBitInteger.encode(buffer,7,Huffman.octetsNeeded(value));
-                Huffman.encode(buffer,value);
+                NBitInteger.encode(buffer, 7, needed);
+                Huffman.encode(buffer, value);
             }
-            catch(Throwable th)
+            else
             {
-                LOG.ignore(th);
+                // Not iso_8859_1
                 byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
-
                 NBitInteger.encode(buffer,7,Huffman.octetsNeeded(bytes));
                 Huffman.encode(buffer,bytes);
             }
@@ -418,7 +418,7 @@ public class HpackEncoder
                 char c = value.charAt(i);
                 if (c < ' ' || c > 127)
                 {
-                    // Not iso_8859_1, so re-encode remaining as UTF-8
+                    // Not iso_8859_1, so re-encode as UTF-8
                     buffer.reset();
                     byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
                     NBitInteger.encode(buffer,7,bytes.length);

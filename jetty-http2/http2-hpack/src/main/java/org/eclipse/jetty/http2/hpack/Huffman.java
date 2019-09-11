@@ -360,7 +360,7 @@ public class Huffman
 
     public static String decode(ByteBuffer buffer,int length) throws HpackException.CompressionException
     {        
-        Utf8StringBuilder utf8 = new Utf8StringBuilder(length*2);
+        Utf8StringBuilder utf8 = new Utf8StringBuilder(length * 2);
         int node = 0;
         int current = 0;
         int bits = 0;
@@ -380,7 +380,7 @@ public class Huffman
                         throw new HpackException.CompressionException("EOS in content");
 
                     // terminal node
-                    utf8.append((byte)(0xFF&rowsym[node]));
+                    utf8.append((byte)(0xFF & rowsym[node]));
                     bits -= rowbits[node];
                     node = 0;
                 }
@@ -413,7 +413,7 @@ public class Huffman
                 break;
             }
 
-            utf8.append((byte)(0xFF&rowsym[node]));
+            utf8.append((byte)(0xFF & rowsym[node]));
             bits -= rowbits[node];
             node = 0;
         }
@@ -462,7 +462,7 @@ public class Huffman
         {
             char c = s.charAt(i);
             if (c >= 128 || c < ' ')
-                throw new IllegalArgumentException();
+                return -1;
             needed += table[c][1];
         }
 
@@ -470,17 +470,23 @@ public class Huffman
     }
 
     private static int octetsNeeded(final int[][] table,byte[] b)
-    {   
-        int needed=0;
+    {
+        int needed = 0;
         int len = b.length;
-        for (int i=0;i<len;i++)
+        for (int i = 0; i < len; i++)
         {
-            int c=0xFF&b[i];
+            int c = 0xFF & b[i];
             needed += table[c][1];
         }
-        return (needed+7) / 8;
+        return (needed + 7) / 8;
     }
 
+    /**
+     * @param table The table to encode by
+     * @param buffer The buffer to encode to
+     * @param s The string to encode
+     * @return True if the string could be encoded, false otherwise (and the buffer may have been modified).
+     */
     private static void encode(final int[][] table, ByteBuffer buffer, String s)
     {
         long current = 0;
@@ -512,18 +518,19 @@ public class Huffman
             buffer.put((byte)(current));
         }
     }
+
     private static void encode(final int[][] table,ByteBuffer buffer,byte[] b)
     {
         long current = 0;
         int n = 0;
 
         byte[] array = buffer.array();
-        int p=buffer.arrayOffset()+buffer.position();
+        int p = buffer.arrayOffset() + buffer.position();
 
         int len = b.length;
-        for (int i=0;i<len;i++)
+        for (int i = 0; i < len; i++)
         {
-            int c=0xFF&b[i];
+            int c = 0xFF & b[i];
             int code = table[c][0];
             int bits = table[c][1];
 
@@ -531,20 +538,20 @@ public class Huffman
             current |= code;
             n += bits;
 
-            while (n >= 8) 
+            while (n >= 8)
             {
                 n -= 8;
-                array[p++]=(byte)(current >> n);
+                array[p++] = (byte)(current >> n);
             }
         }
 
-        if (n > 0) 
+        if (n > 0)
         {
-          current <<= (8 - n);
-          current |= (0xFF >>> n); 
-          array[p++]=(byte)current;
+            current <<= (8 - n);
+            current |= (0xFF >>> n);
+            array[p++] = (byte)current;
         }
-        
-        buffer.position(p-buffer.arrayOffset());
+
+        buffer.position(p - buffer.arrayOffset());
     }
 }
