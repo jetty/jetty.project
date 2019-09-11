@@ -58,6 +58,7 @@ public class SessionData implements Serializable
     protected Map<String, Object> _attributes;
     protected boolean _dirty;
     protected long _lastSaved; //time in msec since last save
+    protected boolean _metaDataDirty; //non-attribute data has changed
 
     /**
      * Serialize the attribute map of the session.
@@ -241,6 +242,22 @@ public class SessionData implements Serializable
     }
 
     /**
+     * @return the metaDataDirty
+     */
+    public boolean isMetaDataDirty()
+    {
+        return _metaDataDirty;
+    }
+
+    /**
+     * @param metaDataDirty true means non-attribute data has changed
+     */
+    public void setMetaDataDirty(boolean metaDataDirty)
+    {
+        _metaDataDirty = metaDataDirty;
+    }
+
+    /**
      * @param name the name of the attribute
      * @return the value of the attribute named
      */
@@ -265,6 +282,15 @@ public class SessionData implements Serializable
 
         setDirty(name);
         return old;
+    }
+
+    /**
+     * Clear all dirty flags.
+     */
+    public void clean()
+    {
+        setDirty(false);
+        setMetaDataDirty(false);
     }
 
     public void putAllAttributes(Map<String, Object> attributes)
@@ -366,11 +392,13 @@ public class SessionData implements Serializable
     public void calcAndSetExpiry(long time)
     {
         setExpiry(calcExpiry(time));
+        setMetaDataDirty(true);
     }
 
     public void calcAndSetExpiry()
     {
         setExpiry(calcExpiry());
+        setMetaDataDirty(true);
     }
 
     public long getCreated()

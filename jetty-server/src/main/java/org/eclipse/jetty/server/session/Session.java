@@ -372,15 +372,30 @@ public class Session implements SessionHandler.SessionIf
      */
     public void didActivate()
     {
-        HttpSessionEvent event = new HttpSessionEvent(this);
-        for (Iterator<String> iter = _sessionData.getKeys().iterator(); iter.hasNext();)
+        //A passivate listener might remove a non-serializable attribute that
+        //the activate listener might put back in again, which would spuriously
+        //set the dirty bit to true, causing another round of passivate/activate
+        //when the request exits. The store clears the dirty bit if it does a
+        //save, so ensure dirty flag is set to the value determined by the store,
+        //not a passivation listener.
+        boolean dirty = getSessionData().isDirty();
+        
+        try 
         {
-            Object value = _sessionData.getAttribute(iter.next());
-            if (value instanceof HttpSessionActivationListener)
+            HttpSessionEvent event = new HttpSessionEvent(this);
+            for (Iterator<String> iter = _sessionData.getKeys().iterator(); iter.hasNext();)
             {
-                HttpSessionActivationListener listener = (HttpSessionActivationListener)value;
-                listener.sessionDidActivate(event);
+                Object value = _sessionData.getAttribute(iter.next());
+                if (value instanceof HttpSessionActivationListener)
+                {
+                    HttpSessionActivationListener listener = (HttpSessionActivationListener)value;
+                    listener.sessionDidActivate(event);
+                }
             }
+        }
+        finally
+        {
+            getSessionData().setDirty(dirty);
         }
     }
 
@@ -505,6 +520,10 @@ public class Session implements SessionHandler.SessionIf
         {
             _sessionData.setMaxInactiveMs((long)secs * 1000L);
             _sessionData.calcAndSetExpiry();
+            //dirty metadata writes can be skipped, but changing the
+            //maxinactiveinterval should write the session out because
+            //it may affect the session on other nodes, or on the same
+            //node in the case of the nullsessioncache
             _sessionData.setDirty(true);
 
             if (LOG.isDebugEnabled())
