@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -112,7 +112,9 @@ public class Socks4Proxy extends ProxyConfiguration.Proxy
                 ByteBuffer buffer = ByteBuffer.allocate(9);
                 buffer.put((byte)4).put((byte)1).putShort(port);
                 for (int i = 1; i <= 4; ++i)
+                {
                     buffer.put((byte)Integer.parseInt(matcher.group(i)));
+                }
                 buffer.put((byte)0);
                 buffer.flip();
                 getEndPoint().write(this, buffer);

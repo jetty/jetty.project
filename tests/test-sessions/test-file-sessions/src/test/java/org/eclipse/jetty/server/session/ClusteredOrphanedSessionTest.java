@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -30,17 +30,16 @@ public class ClusteredOrphanedSessionTest extends AbstractClusteredOrphanedSessi
     @BeforeEach
     public void before() throws Exception
     {
-       FileTestHelper.setup();
+        FileTestHelper.setup();
     }
-    
+
     @AfterEach
     public void after()
     {
-       FileTestHelper.teardown();
+        FileTestHelper.teardown();
     }
- 
 
-    /** 
+    /**
      * @see org.eclipse.jetty.server.session.AbstractTestBase#createSessionDataStoreFactory()
      */
     @Override
@@ -48,7 +47,7 @@ public class ClusteredOrphanedSessionTest extends AbstractClusteredOrphanedSessi
     {
         return FileTestHelper.newSessionDataStoreFactory();
     }
-    
+
     @Test
     @Override
     public void testOrphanedSession() throws Exception

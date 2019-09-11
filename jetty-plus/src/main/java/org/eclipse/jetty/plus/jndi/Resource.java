@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -25,15 +25,15 @@ import javax.naming.NamingException;
  */
 public class Resource extends NamingEntry
 {
-    public  Resource (Object scope, String jndiName, Object objToBind)
-    throws NamingException
+    public Resource(Object scope, String jndiName, Object objToBind)
+        throws NamingException
     {
         super(scope, jndiName);
         save(objToBind);
     }
-    
-    public Resource (String jndiName, Object objToBind)
-    throws NamingException
+
+    public Resource(String jndiName, Object objToBind)
+        throws NamingException
     {
         super(jndiName);
         save(objToBind);

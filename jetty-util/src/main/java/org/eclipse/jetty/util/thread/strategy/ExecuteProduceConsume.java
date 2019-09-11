@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -54,13 +54,12 @@ public class ExecuteProduceConsume implements ExecutionStrategy, Runnable
     private boolean _producing;
     private boolean _pending;
 
-
     public ExecuteProduceConsume(Producer producer, Executor executor)
     {
         this._producer = producer;
         _executor = executor;
     }
-    
+
     @Override
     public void produce()
     {
@@ -174,7 +173,7 @@ public class ExecuteProduceConsume implements ExecutionStrategy, Runnable
                 if (!_pending)
                 {
                     // dispatch one
-                    dispatch = _pending = Invocable.getInvocationType(task)!=InvocationType.NON_BLOCKING;
+                    dispatch = _pending = Invocable.getInvocationType(task) != InvocationType.NON_BLOCKING;
                 }
 
                 _execute = false;

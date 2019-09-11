@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -28,12 +28,12 @@ import org.eclipse.jetty.websocket.common.test.Timeouts;
 public class EventCapture extends LinkedBlockingQueue<String>
 {
     private static final Logger LOG = Log.getLogger(EventCapture.class);
-    
+
     public void offer(String format, Object... args)
     {
-        String msg = String.format(format,args);
+        String msg = String.format(format, args);
         if (LOG.isDebugEnabled())
-            LOG.debug("EVENT: {}",msg);
+            LOG.debug("EVENT: {}", msg);
         super.offer(msg);
     }
 

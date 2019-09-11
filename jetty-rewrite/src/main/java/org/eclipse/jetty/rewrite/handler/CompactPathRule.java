@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,7 +19,6 @@
 package org.eclipse.jetty.rewrite.handler;
 
 import java.io.IOException;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -27,7 +26,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.URIUtil;
 
 /**
- * Rewrite the URI by compacting to remove // 
+ * Rewrite the URI by compacting to remove //
  */
 public class CompactPathRule extends Rule implements Rule.ApplyURI
 {

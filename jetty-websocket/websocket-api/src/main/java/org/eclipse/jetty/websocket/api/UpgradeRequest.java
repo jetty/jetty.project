@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -26,7 +26,7 @@ import java.util.Map;
 
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 
-/**        
+/**
  * The HTTP Upgrade to WebSocket Request
  */
 public interface UpgradeRequest
@@ -53,6 +53,7 @@ public interface UpgradeRequest
 
     /**
      * Remove all headers from request.
+     *
      * @deprecated (no longer supported, as this can undo the required upgrade request headers)
      */
     @Deprecated
@@ -232,6 +233,7 @@ public interface UpgradeRequest
 
     /**
      * Set the list of WebSocket Extension configurations on the request.
+     *
      * @param configs the list of extension configurations
      */
     void setExtensions(List<ExtensionConfig> configs);
@@ -319,5 +321,4 @@ public interface UpgradeRequest
      * @param protocols the offered sub-protocol list
      */
     void setSubProtocols(String... protocols);
-
 }

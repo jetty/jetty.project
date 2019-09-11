@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -16,24 +16,21 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.quickstart;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.isIn;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Collection;
 import java.util.Set;
-
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 import javax.servlet.ServletRegistration;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.in;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  * FooContextListener
- *
- *
  */
 public class FooContextListener implements ServletContextListener
 {
@@ -42,12 +39,12 @@ public class FooContextListener implements ServletContextListener
     {
         ServletRegistration defaultRego = sce.getServletContext().getServletRegistration("default");
         Collection<String> mappings = defaultRego.getMappings();
-        assertThat("/", isIn(mappings));
-        
+        assertThat("/", is(in(mappings)));
+
         Set<String> otherMappings = sce.getServletContext().getServletRegistration("foo").addMapping("/");
         assertTrue(otherMappings.isEmpty());
         Collection<String> fooMappings = sce.getServletContext().getServletRegistration("foo").getMappings();
-        assertThat("/", isIn(fooMappings));
+        assertThat("/", is(in(fooMappings)));
     }
 
     @Override

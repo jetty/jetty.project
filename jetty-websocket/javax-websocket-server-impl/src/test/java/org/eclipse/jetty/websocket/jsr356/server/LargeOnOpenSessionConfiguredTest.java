@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -38,7 +38,6 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-
 /**
  * Test Echo of Large messages, targeting the use of {@link javax.websocket.Session#setMaxTextMessageBufferSize(int)}
  * from within the {@code @OnOpen} method call functionality.
@@ -52,7 +51,7 @@ public class LargeOnOpenSessionConfiguredTest
     {
         Path testDir = MavenTestingUtils.getTargetTestingPath(LargeOnOpenSessionConfiguredTest.class.getSimpleName());
 
-        server = new WSServer(testDir,"app");
+        server = new WSServer(testDir, "app");
         server.createWebInf();
         server.copyEndpoint(LargeEchoConfiguredSocket.class);
 
@@ -81,17 +80,17 @@ public class LargeOnOpenSessionConfiguredTest
             client.getPolicy().setMaxTextMessageSize(128 * 1024);
             client.start();
             JettyEchoSocket clientEcho = new JettyEchoSocket();
-            Future<Session> foo = client.connect(clientEcho,uri.resolve("echo/large"));
+            Future<Session> foo = client.connect(clientEcho, uri.resolve("echo/large"));
 
             // wait for connect
-            foo.get(1,TimeUnit.SECONDS);
+            foo.get(1, TimeUnit.SECONDS);
             // The message size should be bigger than default, but smaller than the limit that LargeEchoSocket specifies
-            byte txt[] = new byte[100 * 1024];
-            Arrays.fill(txt,(byte)'o');
-            String msg = new String(txt,StandardCharsets.UTF_8);
+            byte[] txt = new byte[100 * 1024];
+            Arrays.fill(txt, (byte)'o');
+            String msg = new String(txt, StandardCharsets.UTF_8);
             clientEcho.sendMessage(msg);
             LinkedBlockingQueue<String> msgs = clientEcho.incomingMessages;
-            assertEquals(msg,msgs.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT),"Expected message");
+            assertEquals(msg, msgs.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT), "Expected message");
         }
         finally
         {

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -99,9 +99,8 @@ public class EventDriverFactory
 
     /**
      * Wrap the given WebSocket object instance in a suitable EventDriver
-     * 
-     * @param websocket
-     *            the websocket instance to wrap. Must either implement {@link WebSocketListener} or be annotated with {@link WebSocket &#064;WebSocket}
+     *
+     * @param websocket the websocket instance to wrap. Must either implement {@link WebSocketListener} or be annotated with {@link WebSocket &#064;WebSocket}
      * @return appropriate EventDriver for this websocket instance.
      */
     public EventDriver wrap(Object websocket)
@@ -117,11 +116,11 @@ public class EventDriverFactory
             {
                 try
                 {
-                    return impl.create(websocket,containerScope.getPolicy().clonePolicy());
+                    return impl.create(websocket, containerScope.getPolicy().clonePolicy());
                 }
                 catch (Throwable e)
                 {
-                    throw new InvalidWebSocketException("Unable to create websocket",e);
+                    throw new InvalidWebSocketException("Unable to create websocket", e);
                 }
             }
         }

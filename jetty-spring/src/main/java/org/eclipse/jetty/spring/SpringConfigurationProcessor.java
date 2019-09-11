@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -15,7 +15,6 @@
 //  You may elect to redistribute this code under either of these licenses.
 //  ========================================================================
 //
-
 
 package org.eclipse.jetty.spring;
 
@@ -69,18 +68,32 @@ public class SpringConfigurationProcessor implements ConfigurationProcessor
     private String _main;
 
     @Override
-    public void init(URL url, XmlParser.Node config, XmlConfiguration configuration)
+    public void init(URL url, XmlParser.Node root, XmlConfiguration configuration)
+    {
+        // Moving back and forth between URL and File/FileSystem/Path/Resource is known to cause escaping issues.
+        init(org.eclipse.jetty.util.resource.Resource.newResource(url), root, configuration);
+    }
+
+    @Override
+    public void init(org.eclipse.jetty.util.resource.Resource jettyResource, XmlParser.Node config, XmlConfiguration configuration)
     {
         try
         {
             _configuration = configuration;
 
-            Resource resource = url != null
-                    ? new UrlResource(url)
-                    : new ByteArrayResource(("" +
+            Resource springResource;
+
+            if (jettyResource != null)
+            {
+                springResource = new UrlResource(jettyResource.getURI());
+            }
+            else
+            {
+                springResource = new ByteArrayResource((
                     "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
-                    "<!DOCTYPE beans PUBLIC \"-//SPRING//DTD BEAN//EN\" \"http://www.springframework.org/dtd/spring-beans.dtd\">" +
-                    config).getBytes(StandardCharsets.UTF_8));
+                        "<!DOCTYPE beans PUBLIC \"-//SPRING//DTD BEAN//EN\" \"http://www.springframework.org/dtd/spring-beans.dtd\">" +
+                        config).getBytes(StandardCharsets.UTF_8));
+            }
 
             _beanFactory = new DefaultListableBeanFactory()
             {
@@ -92,7 +105,7 @@ public class SpringConfigurationProcessor implements ConfigurationProcessor
                 }
             };
 
-            new XmlBeanDefinitionReader(_beanFactory).loadBeanDefinitions(resource);
+            new XmlBeanDefinitionReader(_beanFactory).loadBeanDefinitions(springResource);
         }
         catch (Exception e)
         {
@@ -158,6 +171,8 @@ public class SpringConfigurationProcessor implements ConfigurationProcessor
 
         // Extract id's for next time.
         for (String id : _beanFactory.getSingletonNames())
+        {
             idMap.put(id, _beanFactory.getBean(id));
+        }
     }
 }

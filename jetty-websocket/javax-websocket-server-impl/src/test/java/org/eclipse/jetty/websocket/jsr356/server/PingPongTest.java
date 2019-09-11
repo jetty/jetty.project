@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,13 +18,9 @@
 
 package org.eclipse.jetty.websocket.jsr356.server;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-
 import java.io.File;
 import java.net.URI;
 import java.util.concurrent.TimeUnit;
-
 import javax.websocket.ContainerProvider;
 import javax.websocket.WebSocketContainer;
 
@@ -38,6 +34,9 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+
 public class PingPongTest
 {
     private static WSServer server;
@@ -48,7 +47,7 @@ public class PingPongTest
     public static void startServer() throws Exception
     {
         File testdir = MavenTestingUtils.getTargetTestingDir(PingPongTest.class.getName());
-        server = new WSServer(testdir,"app");
+        server = new WSServer(testdir, "app");
         server.copyWebInf("pong-config-web.xml");
 
         server.copyClass(PongContextListener.class);
@@ -83,8 +82,8 @@ public class PingPongTest
         try
         {
             // Connect
-            client.connectToServer(socket,toUri);
-            socket.waitForConnected(1,TimeUnit.SECONDS);
+            client.connectToServer(socket, toUri);
+            socket.waitForConnected(1, TimeUnit.SECONDS);
 
             // Send Ping
             String msg = "hello";
@@ -92,7 +91,7 @@ public class PingPongTest
 
             // Validate Responses
             String actual = socket.eventQueue.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
-            assertThat("Received Ping Response",actual,containsString("PongMessage[/ping]:" + msg));
+            assertThat("Received Ping Response", actual, containsString("PongMessage[/ping]:" + msg));
         }
         finally
         {
@@ -100,7 +99,7 @@ public class PingPongTest
             socket.close();
         }
     }
-    
+
     @Test
     public void testPongEndpoint() throws Exception
     {
@@ -110,8 +109,8 @@ public class PingPongTest
         try
         {
             // Connect
-            client.connectToServer(socket,toUri);
-            socket.waitForConnected(1,TimeUnit.SECONDS);
+            client.connectToServer(socket, toUri);
+            socket.waitForConnected(1, TimeUnit.SECONDS);
 
             // Send Ping
             String msg = "hello";
@@ -119,7 +118,7 @@ public class PingPongTest
 
             // Validate Responses
             String received = socket.eventQueue.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
-            assertThat("Received Ping Responses",received,containsString("PongMessage[/pong]:" + msg));
+            assertThat("Received Ping Responses", received, containsString("PongMessage[/pong]:" + msg));
         }
         finally
         {
@@ -127,7 +126,7 @@ public class PingPongTest
             socket.close();
         }
     }
-    
+
     @Test
     public void testPingSocket() throws Exception
     {
@@ -137,8 +136,8 @@ public class PingPongTest
         try
         {
             // Connect
-            client.connectToServer(socket,toUri);
-            socket.waitForConnected(1,TimeUnit.SECONDS);
+            client.connectToServer(socket, toUri);
+            socket.waitForConnected(1, TimeUnit.SECONDS);
 
             // Send Ping
             String msg = "hello";
@@ -146,7 +145,7 @@ public class PingPongTest
 
             // Validate Responses
             String actual = socket.eventQueue.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
-            assertThat("Received Ping Response",actual,containsString("@OnMessage(PongMessage)[/ping-socket]:" + msg));
+            assertThat("Received Ping Response", actual, containsString("@OnMessage(PongMessage)[/ping-socket]:" + msg));
         }
         finally
         {
@@ -154,7 +153,7 @@ public class PingPongTest
             socket.close();
         }
     }
-    
+
     @Test
     public void testPongSocket() throws Exception
     {
@@ -164,8 +163,8 @@ public class PingPongTest
         try
         {
             // Connect
-            client.connectToServer(socket,toUri);
-            socket.waitForConnected(1,TimeUnit.SECONDS);
+            client.connectToServer(socket, toUri);
+            socket.waitForConnected(1, TimeUnit.SECONDS);
 
             // Send Ping
             String msg = "hello";
@@ -173,7 +172,7 @@ public class PingPongTest
 
             // Validate Responses
             String received = socket.eventQueue.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
-            assertThat("Received Ping Responses",received,containsString("@OnMessage(PongMessage)[/pong-socket]:" + msg));
+            assertThat("Received Ping Responses", received, containsString("@OnMessage(PongMessage)[/pong-socket]:" + msg));
         }
         finally
         {
@@ -181,5 +180,4 @@ public class PingPongTest
             socket.close();
         }
     }
-
 }

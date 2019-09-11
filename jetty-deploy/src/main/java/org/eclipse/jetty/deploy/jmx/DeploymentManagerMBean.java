@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -24,11 +24,11 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.deploy.App;
-import org.eclipse.jetty.deploy.AppProvider;
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.deploy.graph.Node;
 import org.eclipse.jetty.jmx.ObjectMBean;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.annotation.Name;
@@ -42,10 +42,10 @@ public class DeploymentManagerMBean extends ObjectMBean
     public DeploymentManagerMBean(Object managedObject)
     {
         super(managedObject);
-        _manager = (DeploymentManager) managedObject;
+        _manager = (DeploymentManager)managedObject;
     }
 
-    @ManagedOperation(value = "list apps being tracked", impact = "INFO")
+    @ManagedAttribute(value = "list apps being tracked")
     public Collection<String> getApps()
     {
         List<String> ret = new ArrayList<>();
@@ -91,13 +91,16 @@ public class DeploymentManagerMBean extends ObjectMBean
     {
         List<ContextHandler> apps = new ArrayList<ContextHandler>();
         for (App app : _manager.getApps())
+        {
             apps.add(app.getContextHandler());
+        }
         return apps;
     }
 
-    public Collection<AppProvider> getAppProviders()
+    @ManagedAttribute("Registered AppProviders")
+    public List<String> getAppProviders()
     {
-        return _manager.getAppProviders();
+        return _manager.getAppProviders().stream().map(String::valueOf).collect(Collectors.toList());
     }
 
     public void requestAppGoal(String appId, String nodeName)

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,15 +18,10 @@
 
 package org.eclipse.jetty.websocket.jsr356.server;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
-
 import java.net.URI;
 import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import javax.websocket.ClientEndpointConfig;
 import javax.websocket.ContainerProvider;
 import javax.websocket.Endpoint;
@@ -56,28 +51,32 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
+
 public class ExtensionStackProcessingTest
 {
     private Server server;
     private ServerConnector connector;
     private WebSocketContainer client;
     private ServletContextHandler servletContextHandler;
-    
+
     @BeforeEach
     public void prepare() throws Exception
     {
         server = new Server();
         connector = new ServerConnector(server);
         server.addConnector(connector);
-    
+
         servletContextHandler = new ServletContextHandler(server, "/", true, false);
         ServerContainer container = WebSocketServerContainerInitializer.configureContext(servletContextHandler);
-        
+
         ServerEndpointConfig config = ServerEndpointConfig.Builder.create(BasicEchoEndpoint.class, "/").build();
         container.addEndpoint(config);
 
         client = ContainerProvider.getWebSocketContainer();
-        
+
         server.start();
     }
 
@@ -86,11 +85,11 @@ public class ExtensionStackProcessingTest
     {
         server.stop();
     }
-    
+
     private void assumeDeflateFrameAvailable()
     {
-        NativeWebSocketConfiguration configuration = (NativeWebSocketConfiguration) servletContextHandler
-                .getServletContext().getAttribute(NativeWebSocketConfiguration.class.getName());
+        NativeWebSocketConfiguration configuration = (NativeWebSocketConfiguration)servletContextHandler
+            .getServletContext().getAttribute(NativeWebSocketConfiguration.class.getName());
         ExtensionFactory serverExtensionFactory = configuration.getFactory().getExtensionFactory();
         assumeTrue(serverExtensionFactory.isAvailable("permessage-deflate"), "Server has permessage-deflate extension registered");
     }
@@ -99,10 +98,10 @@ public class ExtensionStackProcessingTest
     public void testDeflateFrameExtension() throws Exception
     {
         assumeDeflateFrameAvailable();
-        
+
         ClientEndpointConfig config = ClientEndpointConfig.Builder.create()
-                .extensions(Arrays.<Extension>asList(new JsrExtension("deflate-frame")))
-                .build();
+            .extensions(Arrays.asList(new JsrExtension("deflate-frame")))
+            .build();
 
         final String content = "deflate_me";
         final CountDownLatch messageLatch = new CountDownLatch(1);
@@ -130,14 +129,7 @@ public class ExtensionStackProcessingTest
         assertTrue(thirdOut instanceof WebSocketClientConnection);
 
         final CountDownLatch latch = new CountDownLatch(1);
-        session.getAsyncRemote().sendText(content, new SendHandler()
-        {
-            @Override
-            public void onResult(SendResult result)
-            {
-                latch.countDown();
-            }
-        });
+        session.getAsyncRemote().sendText(content, result -> latch.countDown());
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
         assertTrue(messageLatch.await(5, TimeUnit.SECONDS));
@@ -147,10 +139,10 @@ public class ExtensionStackProcessingTest
     public void testPerMessageDeflateExtension() throws Exception
     {
         assumeDeflateFrameAvailable();
-        
+
         ClientEndpointConfig config = ClientEndpointConfig.Builder.create()
-                .extensions(Arrays.<Extension>asList(new JsrExtension("permessage-deflate")))
-                .build();
+            .extensions(Arrays.asList(new JsrExtension("permessage-deflate")))
+            .build();
 
         final String content = "deflate_me";
         final CountDownLatch messageLatch = new CountDownLatch(1);
@@ -166,20 +158,13 @@ public class ExtensionStackProcessingTest
         }, config, uri);
 
         final CountDownLatch latch = new CountDownLatch(1);
-        session.getAsyncRemote().sendText(content, new SendHandler()
-        {
-            @Override
-            public void onResult(SendResult result)
-            {
-                latch.countDown();
-            }
-        });
+        session.getAsyncRemote().sendText(content, result -> latch.countDown());
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
         assertTrue(messageLatch.await(5, TimeUnit.SECONDS));
     }
 
-    private static abstract class EndpointAdapter extends Endpoint implements MessageHandler.Whole<String>
+    private abstract static class EndpointAdapter extends Endpoint implements MessageHandler.Whole<String>
     {
         @Override
         public void onOpen(Session session, EndpointConfig config)

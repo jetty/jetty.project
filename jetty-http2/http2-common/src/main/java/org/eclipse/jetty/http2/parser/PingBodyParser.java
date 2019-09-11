@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -66,7 +66,7 @@ public class PingBodyParser extends BodyParser
                     if (buffer.remaining() >= 8)
                     {
                         buffer.get(payload);
-                        return onPing(payload);
+                        return onPing(buffer, payload);
                     }
                     else
                     {
@@ -80,7 +80,7 @@ public class PingBodyParser extends BodyParser
                     payload[8 - cursor] = buffer.get();
                     --cursor;
                     if (cursor == 0)
-                        return onPing(payload);
+                        return onPing(buffer, payload);
                     break;
                 }
                 default:
@@ -92,9 +92,11 @@ public class PingBodyParser extends BodyParser
         return false;
     }
 
-    private boolean onPing(byte[] payload)
+    private boolean onPing(ByteBuffer buffer, byte[] payload)
     {
         PingFrame frame = new PingFrame(payload, hasFlag(Flags.ACK));
+        if (!rateControlOnEvent(frame))
+            return connectionFailure(buffer, ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, "invalid_ping_frame_rate");
         reset();
         notifyPing(frame);
         return true;

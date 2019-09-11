@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,8 +20,7 @@ package org.eclipse.jetty.websocket.common;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
-
-import org.eclipse.jetty.util.B64Code;
+import java.util.Base64;
 
 /**
  * Logic for working with the <code>Sec-WebSocket-Key</code> and <code>Sec-WebSocket-Accept</code> headers.
@@ -35,13 +34,12 @@ public class AcceptHash
      * <p>
      * See <a href="https://tools.ietf.org/html/rfc6455#section-1.3">Opening Handshake (Section 1.3)</a>
      */
-    private final static byte[] MAGIC = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11".getBytes(StandardCharsets.ISO_8859_1);
+    private static final byte[] MAGIC = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11".getBytes(StandardCharsets.ISO_8859_1);
 
     /**
      * Concatenate the provided key with the Magic GUID and return the Base64 encoded form.
-     * 
-     * @param key
-     *            the key to hash
+     *
+     * @param key the key to hash
      * @return the <code>Sec-WebSocket-Accept</code> header response (per opening handshake spec)
      */
     public static String hashKey(String key)
@@ -51,7 +49,7 @@ public class AcceptHash
             MessageDigest md = MessageDigest.getInstance("SHA1");
             md.update(key.getBytes(StandardCharsets.UTF_8));
             md.update(MAGIC);
-            return new String(B64Code.encode(md.digest()));
+            return Base64.getEncoder().encodeToString(md.digest());
         }
         catch (Exception e)
         {

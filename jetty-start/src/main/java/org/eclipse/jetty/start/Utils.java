@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -29,7 +29,7 @@ public final class Utils
             return "";
         }
 
-        return join(arr,0,arr.length,delim);
+        return join(arr, 0, arr.length, delim);
     }
 
     public static String join(Object[] arr, int start, int end, String delim)
@@ -72,9 +72,8 @@ public final class Utils
 
     /**
      * Is String null, empty, or consisting of only whitespace.
-     * 
-     * @param value
-     *            the value to test
+     *
+     * @param value the value to test
      * @return true if null, empty, or consisting of only whitespace
      */
     public static boolean isBlank(String value)
@@ -97,9 +96,8 @@ public final class Utils
 
     /**
      * Is String valid and has something other than whitespace
-     * 
-     * @param value
-     *            the value to test
+     *
+     * @param value the value to test
      * @return true if String has something other than whitespace
      */
     public static boolean isNotBlank(String value)

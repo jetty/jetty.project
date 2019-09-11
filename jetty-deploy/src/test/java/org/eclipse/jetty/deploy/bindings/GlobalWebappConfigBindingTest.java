@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,13 +18,6 @@
 
 package org.eclipse.jetty.deploy.bindings;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.isIn;
-import static org.hamcrest.Matchers.not;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-
 import java.io.File;
 import java.util.List;
 
@@ -40,6 +33,14 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.in;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * Tests {@link ScanningAppProvider} as it starts up for the first time.
@@ -58,9 +59,8 @@ public class GlobalWebappConfigBindingTest
         jetty.addConfiguration("jetty-http.xml");
 
         // Setup initial context
-        jetty.copyWebapp("foo.xml","foo.xml");
-        jetty.copyWebapp("foo-webapp-1.war","foo.war");
-
+        jetty.copyWebapp("foo.xml", "foo.xml");
+        jetty.copyWebapp("foo-webapp-1.war", "foo.war");
     }
 
     @AfterEach
@@ -74,10 +74,10 @@ public class GlobalWebappConfigBindingTest
     public void testServerAndSystemClassesOverride() throws Exception
     {
         File srcXml = MavenTestingUtils.getTestResourceFile("context-binding-test-1.xml");
-        File destXml = new File(jetty.getJettyHome(),"context-binding-test-1.xml");
-        IO.copy(srcXml,destXml);
+        File destXml = new File(jetty.getJettyHome(), "context-binding-test-1.xml");
+        IO.copy(srcXml, destXml);
 
-        PathAssert.assertFileExists("Context Binding XML",destXml);
+        PathAssert.assertFileExists("Context Binding XML", destXml);
 
         jetty.addConfiguration("binding-test-contexts-1.xml");
         jetty.load();
@@ -89,12 +89,12 @@ public class GlobalWebappConfigBindingTest
         WebAppContext context = contexts.get(0);
 
         assertNotNull(context, "Context should not be null");
-        String defaultClasses[] = context.getDefaultServerClasses();
-        String currentClasses[] = context.getServerClasses();
+        String[] defaultClasses = context.getDefaultServerClasses();
+        String[] currentClasses = context.getServerClasses();
 
         String addedClass = "org.eclipse.foo."; // What was added by the binding
-        assertThat("Default Server Classes",addedClass,not(isIn(defaultClasses)));
-        assertThat("Current Server Classes",addedClass,isIn(currentClasses));
+        assertThat("Default Server Classes", addedClass, not(is(in(defaultClasses))));
+        assertThat("Current Server Classes", addedClass, is(in(currentClasses)));
 
         //  boolean jndiPackage = false;
 

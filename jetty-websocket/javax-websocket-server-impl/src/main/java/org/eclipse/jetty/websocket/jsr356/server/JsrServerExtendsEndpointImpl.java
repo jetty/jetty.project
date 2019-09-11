@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -33,12 +33,12 @@ public class JsrServerExtendsEndpointImpl implements EventDriverImpl
     {
         if (!(websocket instanceof EndpointInstance))
         {
-            throw new IllegalStateException(String.format("Websocket %s must be an %s",websocket.getClass().getName(),EndpointInstance.class.getName()));
+            throw new IllegalStateException(String.format("Websocket %s must be an %s", websocket.getClass().getName(), EndpointInstance.class.getName()));
         }
-        
+
         EndpointInstance ei = (EndpointInstance)websocket;
         JsrEndpointEventDriver driver = new JsrEndpointEventDriver(policy, ei);
-        
+
         ServerEndpointConfig config = (ServerEndpointConfig)ei.getConfig();
         if (config instanceof PathParamServerEndpointConfig)
         {

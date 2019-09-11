@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -25,6 +25,7 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.common.util.TextUtil;
@@ -40,13 +41,13 @@ public class ABSocket
     private Session session;
 
     @OnWebSocketMessage
-    public void onBinary(byte buf[], int offset, int len)
+    public void onBinary(byte[] buf, int offset, int len)
     {
-        LOG.debug("onBinary(byte[{}],{},{})",buf.length,offset,len);
+        LOG.debug("onBinary(byte[{}],{},{})", buf.length, offset, len);
 
         // echo the message back.
-        ByteBuffer data = ByteBuffer.wrap(buf,offset,len);
-        this.session.getRemote().sendBytes(data,null);
+        ByteBuffer data = ByteBuffer.wrap(buf, offset, len);
+        this.session.getRemote().sendBytes(data, null);
     }
 
     @OnWebSocketConnect
@@ -66,18 +67,27 @@ public class ABSocket
             }
             else
             {
-                LOG.debug("onText() size={}, msg={}",message.length(),TextUtil.hint(message));
+                LOG.debug("onText() size={}, msg={}", message.length(), TextUtil.hint(message));
             }
         }
 
         try
         {
             // echo the message back.
-            this.session.getRemote().sendString(message,null);
+            this.session.getRemote().sendString(message, null);
         }
         catch (WebSocketException e)
         {
-            LOG.warn("Unable to echo TEXT message",e);
+            LOG.warn("Unable to echo TEXT message", e);
+        }
+    }
+
+    @OnWebSocketError
+    public void onError(Throwable cause)
+    {
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("onError", cause);
         }
     }
 }

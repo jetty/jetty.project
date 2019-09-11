@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,7 +19,6 @@
 package org.eclipse.jetty.websocket.server;
 
 import java.io.IOException;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -53,7 +52,7 @@ public abstract class WebSocketHandler extends HandlerWrapper
             factory.register(websocketPojo);
         }
     }
-    
+
     private final ByteBufferPool bufferPool;
     private WebSocketServletFactory webSocketFactory;
 
@@ -61,7 +60,7 @@ public abstract class WebSocketHandler extends HandlerWrapper
     {
         this(new MappedByteBufferPool());
     }
-    
+
     public WebSocketHandler(ByteBufferPool bufferPool)
     {
         this.bufferPool = bufferPool;
@@ -84,7 +83,7 @@ public abstract class WebSocketHandler extends HandlerWrapper
         configure(webSocketFactory);
         super.doStart();
     }
-    
+
     public WebSocketServletFactory getWebSocketFactory()
     {
         if (!isRunning())
@@ -95,10 +94,10 @@ public abstract class WebSocketHandler extends HandlerWrapper
     @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
-        if (webSocketFactory.isUpgradeRequest(request,response))
+        if (webSocketFactory.isUpgradeRequest(request, response))
         {
             // We have an upgrade request
-            if (webSocketFactory.acceptWebSocket(request,response))
+            if (webSocketFactory.acceptWebSocket(request, response))
             {
                 // We have a socket instance created
                 baseRequest.setHandled(true);
@@ -113,6 +112,6 @@ public abstract class WebSocketHandler extends HandlerWrapper
                 return;
             }
         }
-        super.handle(target,baseRequest,request,response);
+        super.handle(target, baseRequest, request, response);
     }
 }

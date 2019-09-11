@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -27,10 +27,10 @@ import java.nio.file.Path;
 public class JettyHomeConfigSource extends DirConfigSource
 {
     // Standard weight for ${jetty.home}, so that it comes after everything else
-    private final static int WEIGHT = 9999999;
+    private static final int WEIGHT = 9999999;
 
     public JettyHomeConfigSource(Path dir) throws IOException
     {
-        super("${jetty.home}",dir,WEIGHT,false);
+        super("${jetty.home}", dir, WEIGHT, false);
     }
 }

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -28,7 +28,7 @@ import org.eclipse.jetty.io.ClientConnectionFactory;
  * in order to plug-in a different transport for {@link HttpClient}.
  * <p>
  * While the {@link HttpClient} APIs define the HTTP semantic (request, response, headers, etc.)
- * <em>how</em> a HTTP exchange is carried over the network depends on implementations of this class.
+ * <em>how</em> an HTTP exchange is carried over the network depends on implementations of this class.
  * <p>
  * The default implementation uses the HTTP protocol to carry over the network the HTTP exchange,
  * but the HTTP exchange may also be carried using the FCGI protocol, the HTTP/2 protocol or,
@@ -36,8 +36,8 @@ import org.eclipse.jetty.io.ClientConnectionFactory;
  */
 public interface HttpClientTransport extends ClientConnectionFactory
 {
-    public static final String HTTP_DESTINATION_CONTEXT_KEY = "http.destination";
-    public static final String HTTP_CONNECTION_PROMISE_CONTEXT_KEY = "http.connection.promise";
+    String HTTP_DESTINATION_CONTEXT_KEY = "http.destination";
+    String HTTP_CONNECTION_PROMISE_CONTEXT_KEY = "http.connection.promise";
 
     /**
      * Sets the {@link HttpClient} instance on this transport.
@@ -48,7 +48,7 @@ public interface HttpClientTransport extends ClientConnectionFactory
      *
      * @param client the {@link HttpClient} that uses this transport.
      */
-    public void setHttpClient(HttpClient client);
+    void setHttpClient(HttpClient client);
 
     /**
      * Creates a new, transport-specific, {@link HttpDestination} object.
@@ -59,23 +59,23 @@ public interface HttpClientTransport extends ClientConnectionFactory
      * @param origin the destination origin
      * @return a new, transport-specific, {@link HttpDestination} object
      */
-    public HttpDestination newHttpDestination(Origin origin);
+    HttpDestination newHttpDestination(Origin origin);
 
     /**
      * Establishes a physical connection to the given {@code address}.
      *
-     *  @param address the address to connect to
+     * @param address the address to connect to
      * @param context the context information to establish the connection
      */
-    public void connect(InetSocketAddress address, Map<String, Object> context);
+    void connect(InetSocketAddress address, Map<String, Object> context);
 
     /**
      * @return the factory for ConnectionPool instances
      */
-    public ConnectionPool.Factory getConnectionPoolFactory();
+    ConnectionPool.Factory getConnectionPoolFactory();
 
     /**
      * @param factory the factory for ConnectionPool instances
      */
-    public void setConnectionPoolFactory(ConnectionPool.Factory factory);
+    void setConnectionPoolFactory(ConnectionPool.Factory factory);
 }

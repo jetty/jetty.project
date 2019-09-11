@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,20 +18,18 @@
 
 package org.eclipse.jetty.jmx;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.lang.management.ManagementFactory;
 import java.util.Set;
-
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class MBeanContainerLifeCycleTest
 {

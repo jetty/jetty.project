@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -25,15 +25,18 @@ import com.google.gwt.user.server.rpc.RemoteServiceServlet;
  */
 @SuppressWarnings("serial")
 public class GreetingServiceImpl extends RemoteServiceServlet implements
-        GreetingService {
+    GreetingService
+{
 
-    public GreetingResponse greetServer(String input) throws IllegalArgumentException {
+    public GreetingResponse greetServer(String input) throws IllegalArgumentException
+    {
         // Verify that the input is valid.
-        if (!FieldVerifier.isValidName(input)) {
+        if (!FieldVerifier.isValidName(input))
+        {
             // If the input is not valid, throw an IllegalArgumentException back to
             // the client.
             throw new IllegalArgumentException(
-                    "Name must be at least 4 characters long");
+                "Name must be at least 4 characters long");
         }
 
         GreetingResponse response = new GreetingResponse();

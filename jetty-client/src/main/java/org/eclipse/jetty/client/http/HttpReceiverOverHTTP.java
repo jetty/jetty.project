@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -161,7 +161,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     }
 
     /**
-     * Parses a HTTP response in the receivers buffer.
+     * Parses an HTTP response in the receivers buffer.
      *
      * @return true to indicate that parsing should be interrupted (and will be resumed by another thread).
      */
@@ -230,7 +230,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
 
         String method = exchange.getRequest().getMethod();
         parser.setHeadResponse(HttpMethod.HEAD.is(method) ||
-                (HttpMethod.CONNECT.is(method) && status == HttpStatus.OK_200));
+            (HttpMethod.CONNECT.is(method) && status == HttpStatus.OK_200));
         exchange.getResponse().version(version).status(status).reason(reason);
 
         return !responseBegin(exchange);
@@ -320,11 +320,8 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         if (status == HttpStatus.SWITCHING_PROTOCOLS_101)
             return true;
 
-        if (HttpMethod.CONNECT.is(exchange.getRequest().getMethod()) &&
-                status == HttpStatus.OK_200)
-            return true;
-
-        return false;
+        return HttpMethod.CONNECT.is(exchange.getRequest().getMethod()) &&
+            status == HttpStatus.OK_200;
     }
 
     @Override
@@ -346,7 +343,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         {
             HttpResponse response = exchange.getResponse();
             response.status(failure.getCode()).reason(failure.getReason());
-            failAndClose(new HttpResponseException("HTTP protocol violation: bad response on " + getHttpConnection(), response));
+            failAndClose(new HttpResponseException("HTTP protocol violation: bad response on " + getHttpConnection(), response, failure));
         }
     }
 

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -24,26 +24,21 @@ import java.lang.reflect.Method;
 
 /**
  * ProxiableSessionAttributeObjectInvocationHandler
- *
- *
  */
 public class FooInvocationHandler implements InvocationHandler, Serializable
 {
     private static final long serialVersionUID = -4009478822490178554L;
-    
+
     private Foo foo;
-    
-    public FooInvocationHandler (Foo f)
+
+    public FooInvocationHandler(Foo f)
     {
         foo = f;
     }
-    
- 
-    
+
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable
     {
         return method.invoke(foo, args);
     }
-
 }

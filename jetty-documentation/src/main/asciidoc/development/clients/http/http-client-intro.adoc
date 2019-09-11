@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ========================================================================
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -75,13 +75,13 @@ There are several reasons for having multiple `HttpClient` instances including, 
 
 When you create a `HttpClient` instance using the parameterless constructor, you will only be able to perform plain HTTP requests and you will not be able to perform HTTPS requests.
 
-In order to perform HTTPS requests, you should create first a link:{JDURL}/org/eclipse/jetty/util/ssl/SslContextFactory.html[`SslContextFactory`], configure it, and pass it to the `HttpClient` constructor.
+In order to perform HTTPS requests, you should create first a link:{JDURL}/org/eclipse/jetty/util/ssl/SslContextFactory.Client.html[`SslContextFactory.Client`], configure it, and pass it to the `HttpClient` constructor.
 When created with a `SslContextFactory`, the `HttpClient` will be able to perform both HTTP and HTTPS requests to any domain.
 
 [source, java, subs="{sub-order}"]
 ----
 // Instantiate and configure the SslContextFactory
-SslContextFactory sslContextFactory = new SslContextFactory();
+SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
 
 // Instantiate HttpClient with the SslContextFactory
 HttpClient httpClient = new HttpClient(sslContextFactory);

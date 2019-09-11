@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,7 +20,7 @@ package org.eclipse.jetty.jaas.callback;
 
 import javax.security.auth.callback.Callback;
 
-/** 
+/**
  * ObjectCallback
  * <p>
  * Can be used as a LoginModule Callback to
@@ -31,18 +31,18 @@ import javax.security.auth.callback.Callback;
 public class ObjectCallback implements Callback
 {
     protected Object _object;
-    
+
     public void setObject(Object o)
     {
         _object = o;
     }
 
-    public Object getObject ()
+    public Object getObject()
     {
         return _object;
     }
 
-    public void clearObject ()
+    public void clearObject()
     {
         _object = null;
     }

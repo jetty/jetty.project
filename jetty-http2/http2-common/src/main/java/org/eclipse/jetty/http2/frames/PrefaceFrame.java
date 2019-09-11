@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -27,7 +27,7 @@ public class PrefaceFrame extends Frame
      * request, used in the direct upgrade.
      */
     public static final byte[] PREFACE_PREAMBLE_BYTES = (
-            "PRI * HTTP/2.0\r\n" +
+        "PRI * HTTP/2.0\r\n" +
             "\r\n"
     ).getBytes(StandardCharsets.US_ASCII);
 
@@ -35,7 +35,7 @@ public class PrefaceFrame extends Frame
      * The HTTP/2 preface bytes.
      */
     public static final byte[] PREFACE_BYTES = (
-            "PRI * HTTP/2.0\r\n" +
+        "PRI * HTTP/2.0\r\n" +
             "\r\n" +
             "SM\r\n" +
             "\r\n"

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,7 +20,6 @@ package org.eclipse.jetty.websocket.jsr356.encoders;
 
 import java.io.IOException;
 import java.io.OutputStream;
-
 import javax.websocket.EncodeException;
 import javax.websocket.Encoder;
 import javax.websocket.EndpointConfig;
@@ -44,7 +43,7 @@ public class ValidDualEncoder implements Encoder.Text<Integer>, Encoder.BinarySt
     @Override
     public void encode(Long object, OutputStream os) throws EncodeException, IOException
     {
-        byte b[] = new byte[8];
+        byte[] b = new byte[8];
         long v = object;
         b[0] = (byte)(v >>> 56);
         b[1] = (byte)(v >>> 48);
@@ -54,7 +53,7 @@ public class ValidDualEncoder implements Encoder.Text<Integer>, Encoder.BinarySt
         b[5] = (byte)(v >>> 16);
         b[6] = (byte)(v >>> 8);
         b[7] = (byte)(v >>> 0);
-        os.write(b,0,8);
+        os.write(b, 0, 8);
     }
 
     @Override

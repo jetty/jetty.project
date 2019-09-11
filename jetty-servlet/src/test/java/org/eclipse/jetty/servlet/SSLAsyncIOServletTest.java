@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.servlet;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -29,7 +26,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Random;
 import java.util.stream.Stream;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
@@ -47,6 +43,9 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class SSLAsyncIOServletTest
 {
@@ -80,7 +79,9 @@ public class SSLAsyncIOServletTest
         String chars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
         final byte[] content = new byte[50000];
         for (int i = 0; i < content.length; ++i)
+        {
             content[i] = (byte)chars.charAt(random.nextInt(chars.length()));
+        }
 
         prepare(scenario, new HttpServlet()
         {
@@ -134,15 +135,15 @@ public class SSLAsyncIOServletTest
 
         try (Socket client = scenario.newClient())
         {
-            String request = "" +
-                    "GET " + scenario.getServletPath() + " HTTP/1.1\r\n" +
+            String request =
+                "GET " + scenario.getServletPath() + " HTTP/1.1\r\n" +
                     "Host: localhost\r\n" +
                     "Connection: close\r\n" +
                     "\r\n";
             OutputStream output = client.getOutputStream();
             output.write(request.getBytes("UTF-8"));
             output.flush();
-    
+
             InputStream inputStream = client.getInputStream();
             HttpTester.Response response = HttpTester.parseResponse(inputStream);
             assertEquals(200, response.getStatus());
@@ -221,8 +222,7 @@ public class SSLAsyncIOServletTest
             Path keystorePath = MavenTestingUtils.getTestResourcePath("keystore.jks");
             Path truststorePath = MavenTestingUtils.getTestResourcePath("truststore.jks");
 
-            sslContextFactory = new SslContextFactory();
-            sslContextFactory.setEndpointIdentificationAlgorithm("");
+            sslContextFactory = new SslContextFactory.Server();
             sslContextFactory.setKeyStorePath(keystorePath.toString());
             sslContextFactory.setKeyStorePassword("storepwd");
             sslContextFactory.setTrustStorePath(truststorePath.toString());

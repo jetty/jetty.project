@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -30,14 +30,15 @@ public class BadBinarySignatureSocket
 {
     /**
      * Declaring a non-void return type
-     * @param session  the session
+     *
+     * @param session the session
      * @param buf the buffer
      * @param offset the offset
      * @param len the length
      * @return the response boolean
      */
     @OnWebSocketMessage
-    public boolean onBinary(Session session, byte buf[], int offset, int len)
+    public boolean onBinary(Session session, byte[] buf, int offset, int len)
     {
         return false;
     }

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -29,39 +29,37 @@ import java.util.concurrent.ThreadLocalRandom;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.TryExecutor;
 
-
 public class TestServer implements Executor, TryExecutor
 {
-    private final ConcurrentMap<String,Map<String,String>> _sessions= new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, Map<String, String>> _sessions = new ConcurrentHashMap<>();
     private final QueuedThreadPool _threadpool = new QueuedThreadPool(200);
     private final File _docroot;
 
     TestServer(File docroot)
     {
         _threadpool.setReservedThreads(20);
-        _docroot=docroot;
+        _docroot = docroot;
     }
-    
+
     TestServer()
     {
-        this(new File("/tmp/"));
+        this(new File(System.getProperty("java.io.tmpdir")));
     }
-    
-    
-    public Map<String,String> getSession(String sessionid)
+
+    public Map<String, String> getSession(String sessionid)
     {
-        Map<String,String> session = _sessions.get(sessionid);
-        if (session==null)
+        Map<String, String> session = _sessions.get(sessionid);
+        if (session == null)
         {
             session = new HashMap<>();
-            session.put("id",sessionid);
-            Map<String,String> s =_sessions.putIfAbsent(sessionid,session);
-            if (s!=null)
-                session=s;
+            session.put("id", sessionid);
+            Map<String, String> s = _sessions.putIfAbsent(sessionid, session);
+            if (s != null)
+                session = s;
         }
         return session;
     }
-    
+
     public int getRandom(int max)
     {
         return ThreadLocalRandom.current().nextInt(max);
@@ -78,7 +76,7 @@ public class TestServer implements Executor, TryExecutor
     {
         return _threadpool.tryExecute(task);
     }
-    
+
     public void start() throws Exception
     {
         _threadpool.start();
@@ -88,10 +86,9 @@ public class TestServer implements Executor, TryExecutor
     {
         _threadpool.stop();
     }
-    
+
     public File getFile(String path)
     {
-        return new File(_docroot,path);
+        return new File(_docroot, path);
     }
-
 }

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -23,7 +23,6 @@ import java.util.ArrayDeque;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -92,21 +91,21 @@ public class PushSessionCacheFilter implements Filter
                 if (referer != null)
                 {
                     // Is the referer from this contexts?
-                    HttpURI referer_uri = new HttpURI(referer);
-                    if (request.getServerName().equals(referer_uri.getHost()))
+                    HttpURI refererUri = new HttpURI(referer);
+                    if (request.getServerName().equals(refererUri.getHost()))
                     {
-                        Target referer_target = _cache.get(referer_uri.getPath());
-                        if (referer_target != null)
+                        Target refererTarget = _cache.get(refererUri.getPath());
+                        if (refererTarget != null)
                         {
                             HttpSession session = request.getSession();
                             ConcurrentHashMap<String, Long> timestamps = (ConcurrentHashMap<String, Long>)session.getAttribute(TIMESTAMP_ATTR);
-                            Long last = timestamps.get(referer_target._path);
+                            Long last = timestamps.get(refererTarget._path);
                             if (last != null && (System.currentTimeMillis() - last) < _associateDelay)
                             {
-                                if (referer_target._associated.putIfAbsent(target._path, target) == null)
+                                if (refererTarget._associated.putIfAbsent(target._path, target) == null)
                                 {
                                     if (LOG.isDebugEnabled())
-                                        LOG.debug("ASSOCIATE {}->{}", referer_target._path, target._path);
+                                        LOG.debug("ASSOCIATE {}->{}", refererTarget._path, target._path);
                                 }
                             }
                         }

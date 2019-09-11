@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -30,13 +30,11 @@ public interface PayloadProcessor
 {
     /**
      * Used to process payloads for in the spec.
-     * 
-     * @param payload
-     *            the payload to process
-     * @throws BadPayloadException
-     *             the exception when the payload fails to validate properly
+     *
+     * @param payload the payload to process
+     * @throws BadPayloadException the exception when the payload fails to validate properly
      */
-    public void process(ByteBuffer payload);
+    void process(ByteBuffer payload);
 
-    public void reset(Frame frame);
+    void reset(Frame frame);
 }

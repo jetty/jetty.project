@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.websocket.common.ab;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.websocket.api.ProtocolException;
@@ -32,6 +30,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 /**
  * Test various invalid frame situations
  */
@@ -40,19 +40,19 @@ public class TestABCase3
     public static Stream<Arguments> badFrames()
     {
         return Stream.of(
-                new PingFrame().setFin(false),
-                new PingFrame().setRsv1(true),
-                new PingFrame().setRsv2(true),
-                new PingFrame().setRsv3(true),
-                new PongFrame().setFin(false),
-                new PingFrame().setRsv1(true),
-                new PongFrame().setRsv2(true),
-                new PongFrame().setRsv3(true),
-                new CloseInfo().asFrame().setFin(false),
-                new CloseInfo().asFrame().setRsv1(true),
-                new CloseInfo().asFrame().setRsv2(true),
-                new CloseInfo().asFrame().setRsv3(true))
-                .map(Arguments::of);
+            new PingFrame().setFin(false),
+            new PingFrame().setRsv1(true),
+            new PingFrame().setRsv2(true),
+            new PingFrame().setRsv3(true),
+            new PongFrame().setFin(false),
+            new PingFrame().setRsv1(true),
+            new PongFrame().setRsv2(true),
+            new PongFrame().setRsv3(true),
+            new CloseInfo().asFrame().setFin(false),
+            new CloseInfo().asFrame().setRsv1(true),
+            new CloseInfo().asFrame().setRsv2(true),
+            new CloseInfo().asFrame().setRsv3(true))
+            .map(Arguments::of);
     }
 
     @ParameterizedTest

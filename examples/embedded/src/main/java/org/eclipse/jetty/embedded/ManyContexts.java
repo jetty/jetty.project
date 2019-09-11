@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -25,7 +25,7 @@ import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 
 public class ManyContexts
 {
-    public static void main( String[] args ) throws Exception
+    public static void main(String[] args) throws Exception
     {
         Server server = new Server(8080);
 
@@ -40,16 +40,19 @@ public class ManyContexts
         contextIT.setHandler(new HelloHandler("Bongiorno"));
 
         ContextHandler contextV = new ContextHandler("/");
-        contextV.setVirtualHosts(new String[] { "127.0.0.2" });
+        contextV.setVirtualHosts(new String[]{"127.0.0.2"});
         contextV.setHandler(new HelloHandler("Virtual Hello"));
 
         ContextHandlerCollection contexts = new ContextHandlerCollection();
-        contexts.setHandlers(new Handler[] { context, contextFR, contextIT,
-                contextV });
+        contexts.setHandlers(new Handler[]{
+            context, contextFR, contextIT,
+            contextV
+        });
 
         server.setHandler(contexts);
 
         server.start();
+        server.dumpStdErr();
         server.join();
     }
 }

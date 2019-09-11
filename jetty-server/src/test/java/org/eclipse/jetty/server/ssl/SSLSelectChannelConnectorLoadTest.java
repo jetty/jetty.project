@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.server.ssl;
 
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-
 import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -36,7 +33,6 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.TrustManagerFactory;
@@ -53,6 +49,9 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+
 public class SSLSelectChannelConnectorLoadTest
 {
     private static Server server;
@@ -63,7 +62,7 @@ public class SSLSelectChannelConnectorLoadTest
     public static void startServer() throws Exception
     {
         String keystorePath = System.getProperty("basedir", ".") + "/src/test/resources/keystore";
-        SslContextFactory sslContextFactory = new SslContextFactory();
+        SslContextFactory sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setKeyStorePath(keystorePath);
         sslContextFactory.setKeyStorePassword("storepwd");
         sslContextFactory.setKeyManagerPassword("keypwd");
@@ -95,7 +94,7 @@ public class SSLSelectChannelConnectorLoadTest
         server.stop();
         server.join();
     }
-    
+
     @Test
     public void testGetURI()
     {
@@ -130,7 +129,9 @@ public class SSLSelectChannelConnectorLoadTest
             Thread.sleep(1000);
             boolean done = true;
             for (Future task : tasks)
+            {
                 done &= task.isDone();
+            }
             //System.err.print("\rIterations: " + Worker.totalIterations.get() + "/" + clients * iterations);
             if (done)
                 break;
@@ -140,13 +141,17 @@ public class SSLSelectChannelConnectorLoadTest
         //System.err.println("Elapsed time: " + TimeUnit.MILLISECONDS.toSeconds(end - start) + "s");
 
         for (Worker worker : workers)
+        {
             worker.close();
+        }
 
         threadPool.shutdown();
 
         // Throw exceptions if any
         for (Future task : tasks)
+        {
             task.get();
+        }
 
         // Keep the JVM running
 //        new CountDownLatch(1).await();
@@ -176,7 +181,9 @@ public class SSLSelectChannelConnectorLoadTest
             Thread.sleep(1000);
             boolean done = true;
             for (Future task : tasks)
+            {
                 done &= task.isDone();
+            }
             // System.err.print("\rIterations: " + Worker.totalIterations.get() + "/" + clients * iterations);
             if (done)
                 break;
@@ -189,7 +196,9 @@ public class SSLSelectChannelConnectorLoadTest
 
         // Throw exceptions if any
         for (Future task : tasks)
+        {
             task.get();
+        }
 
         // Keep the JVM running
 //        new CountDownLatch(1).await();
@@ -293,7 +302,9 @@ public class SSLSelectChannelConnectorLoadTest
                     if (responseLength > 0)
                     {
                         for (int j = 0; j < responseLength; ++j)
+                        {
                             builder.append((char)reader.read());
+                        }
                     }
                     else
                     {
@@ -332,7 +343,9 @@ public class SSLSelectChannelConnectorLoadTest
             byte[] b = new byte[1024 * 1024];
             int read;
             while ((read = in.read(b)) >= 0)
+            {
                 total += read;
+            }
 //            System.err.println("Read " + total + " request bytes");
             httpResponse.getOutputStream().write(String.valueOf(total).getBytes());
         }

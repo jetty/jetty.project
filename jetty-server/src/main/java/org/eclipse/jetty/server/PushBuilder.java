@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,17 +19,16 @@
 package org.eclipse.jetty.server;
 
 import java.util.Set;
-
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
-
-/** Build a request to be pushed.
+/**
+ * Build a request to be pushed.
  *
  * <p>A PushBuilder is obtained by calling {@link
- * Request#getPushBuilder()} (<code>Eventually HttpServletRequest.getPushBuilder()</code>).  
+ * Request#getPushBuilder()} (<code>Eventually HttpServletRequest.getPushBuilder()</code>).
  * Each call to this method will
  * return a new instance of a PushBuilder based off the current {@code
  * HttpServletRequest}.  Any mutations to the returned PushBuilder are
@@ -45,16 +44,16 @@ import javax.servlet.http.HttpSession;
  * are added to the builder, except for:
  *
  * <ul>
- *   <li>Conditional headers (eg. If-Modified-Since)
- *   <li>Range headers
- *   <li>Expect headers
- *   <li>Authorization headers
- *   <li>Referrer headers
+ * <li>Conditional headers (eg. If-Modified-Since)
+ * <li>Range headers
+ * <li>Expect headers
+ * <li>Authorization headers
+ * <li>Referrer headers
  * </ul>
  *
  * </li>
  *
- * <li>If the request was authenticated, an Authorization header will 
+ * <li>If the request was authenticated, an Authorization header will
  * be set with a container generated token that will result in equivalent
  * Authorization for the pushed request.</li>
  *
@@ -76,15 +75,15 @@ import javax.servlet.http.HttpSession;
  *
  * <li>If this request has has the conditional headers If-Modified-Since
  * or If-None-Match, then the {@link #isConditional()} header is set to
- * true.</li> 
+ * true.</li>
  *
- * </ul> 
+ * </ul>
  *
  * <p>The {@link #path} method must be called on the {@code PushBuilder}
  * instance before the call to {@link #push}.  Failure to do so must
  * cause an exception to be thrown from {@link
  * #push}, as specified in that method.</p>
- * 
+ *
  * <p>A PushBuilder can be customized by chained calls to mutator
  * methods before the {@link #push()} method is called to initiate an
  * asynchronous push request with the current state of the builder.
@@ -99,52 +98,58 @@ import javax.servlet.http.HttpSession;
  */
 public interface PushBuilder
 {
-    /** 
+    /**
      * <p>Set the method to be used for the push.</p>
-     * 
+     *
      * <p>Any non-empty String may be used for the method.</p>
      *
-     * @param method the method to be used for the push.  
+     * @param method the method to be used for the push.
      * @return this builder.
      * @throws NullPointerException if the argument is {@code null}
      * @throws IllegalArgumentException if the argument is the empty String
      */
-    public abstract PushBuilder method(String method);
-    
-    /** Set the query string to be used for the push.  
+    PushBuilder method(String method);
+
+    /**
+     * Set the query string to be used for the push.
      *
      * Will be appended to any query String included in a call to {@link
      * #path(String)}.  Any duplicate parameters must be preserved. This
      * method should be used instead of a query in {@link #path(String)}
      * when multiple {@link #push()} calls are to be made with the same
      * query string.
-     * @param  queryString the query string to be used for the push. 
+     *
+     * @param queryString the query string to be used for the push.
      * @return this builder.
      */
-    public abstract PushBuilder queryString(String queryString);
-    
-    /** Set the SessionID to be used for the push.
+    PushBuilder queryString(String queryString);
+
+    /**
+     * Set the SessionID to be used for the push.
      * The session ID will be set in the same way it was on the associated request (ie
      * as a cookie if the associated request used a cookie, or as a url parameter if
      * the associated request used a url parameter).
      * Defaults to the requested session ID or any newly assigned session id from
      * a newly created session.
+     *
      * @param sessionId the SessionID to be used for the push.
      * @return this builder.
      */
-    public abstract PushBuilder sessionId(String sessionId);
-    
-    /** Set if the request is to be conditional.
-     * If the request is conditional, any available values from {@link #etag(String)} or 
+    PushBuilder sessionId(String sessionId);
+
+    /**
+     * Set if the request is to be conditional.
+     * If the request is conditional, any available values from {@link #etag(String)} or
      * {@link #lastModified(String)} will be set in the appropriate headers. If the request
-     * is not conditional, then etag and lastModified values are ignored.  
+     * is not conditional, then etag and lastModified values are ignored.
      * Defaults to true if the associated request was conditional.
-     * @param  conditional true if the push request is conditional
+     *
+     * @param conditional true if the push request is conditional
      * @return this builder.
      */
-    public abstract PushBuilder conditional(boolean conditional);
-    
-    /** 
+    PushBuilder conditional(boolean conditional);
+
+    /**
      * <p>Set a header to be used for the push.  If the builder has an
      * existing header with the same name, its value is overwritten.</p>
      *
@@ -152,30 +157,27 @@ public interface PushBuilder
      * @param value The header value to set
      * @return this builder.
      */
-    public abstract PushBuilder setHeader(String name, String value);
+    PushBuilder setHeader(String name, String value);
 
-    
-    /** 
+    /**
      * <p>Add a header to be used for the push.</p>
+     *
      * @param name The header name to add
      * @param value The header value to add
      * @return this builder.
      */
-    public abstract PushBuilder addHeader(String name, String value);
+    PushBuilder addHeader(String name, String value);
 
-
-    /** 
+    /**
      * <p>Remove the named header.  If the header does not exist, take
      * no action.</p>
      *
      * @param name The name of the header to remove
      * @return this builder.
      */
-    public abstract PushBuilder removeHeader(String name);
+    PushBuilder removeHeader(String name);
 
-    
-    
-    /** 
+    /**
      * Set the URI path to be used for the push.  The path may start
      * with "/" in which case it is treated as an absolute path,
      * otherwise it is relative to the context path of the associated
@@ -189,32 +191,34 @@ public interface PushBuilder
      * query string.
      * @return this builder.
      */
-    public abstract PushBuilder path(String path);
-    
-    /** 
-     * Set the etag to be used for conditional pushes.  
+    PushBuilder path(String path);
+
+    /**
+     * Set the etag to be used for conditional pushes.
      * The etag will be used only if {@link #isConditional()} is true.
-     * Defaults to no etag.  The value is nulled after every call to 
+     * Defaults to no etag.  The value is nulled after every call to
      * {@link #push()}
+     *
      * @param etag the etag to be used for the push.
      * @return this builder.
      */
-    public abstract PushBuilder etag(String etag);
+    PushBuilder etag(String etag);
 
-    /** 
+    /**
      * Set the last modified date to be used for conditional pushes.
      * The last modified date will be used only if {@link
      * #isConditional()} is true.  Defaults to no date.  The value is
      * nulled after every call to {@link #push()}
+     *
      * @param lastModified the last modified date to be used for the push.
      * @return this builder.
      */
-    public abstract PushBuilder lastModified(String lastModified);
+    PushBuilder lastModified(String lastModified);
 
-
-    /** Push a resource given the current state of the builder,
+    /**
+     * Push a resource given the current state of the builder,
      * returning immediately without blocking.
-     * 
+     *
      * <p>Push a resource based on the current state of the PushBuilder.
      * If {@link #isConditional()} is true and an etag or lastModified
      * value is provided, then an appropriate conditional header will be
@@ -231,21 +235,28 @@ public interface PushBuilder
      *
      * @throws IllegalArgumentException if the method set expects a
      * request body (eg POST)
-     *
      * @throws IllegalStateException if there was no call to {@link
      * #path} on this instance either between its instantiation or the
      * last call to {@code push()} that did not throw an
      * IllegalStateException.
      */
-    public abstract void push();
-    
-    public abstract String getMethod();
-    public abstract String getQueryString();
-    public abstract String getSessionId();
-    public abstract boolean isConditional();
-    public abstract Set<String> getHeaderNames();
-    public abstract String getHeader(String name);
-    public abstract String getPath();
-    public abstract String getEtag();
-    public abstract String getLastModified();
+    void push();
+
+    String getMethod();
+
+    String getQueryString();
+
+    String getSessionId();
+
+    boolean isConditional();
+
+    Set<String> getHeaderNames();
+
+    String getHeader(String name);
+
+    String getPath();
+
+    String getEtag();
+
+    String getLastModified();
 }

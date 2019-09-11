@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -37,48 +37,48 @@ public class FileDestroyable implements Destroyable
     public FileDestroyable()
     {
     }
-    
+
     public FileDestroyable(String file) throws IOException
     {
         _files.add(Resource.newResource(file).getFile());
     }
-    
+
     public FileDestroyable(File file)
     {
         _files.add(file);
     }
-    
+
     public void addFile(String file) throws IOException
     {
-        try(Resource r = Resource.newResource(file);)
+        try (Resource r = Resource.newResource(file))
         {
             _files.add(r.getFile());
         }
     }
-    
+
     public void addFile(File file)
     {
         _files.add(file);
     }
-    
+
     public void addFiles(Collection<File> files)
     {
         _files.addAll(files);
     }
-    
+
     public void removeFile(String file) throws IOException
     {
-        try(Resource r = Resource.newResource(file);)
+        try (Resource r = Resource.newResource(file))
         {
             _files.remove(r.getFile());
         }
     }
-    
+
     public void removeFile(File file)
     {
         _files.remove(file);
     }
-    
+
     @Override
     public void destroy()
     {
@@ -87,10 +87,9 @@ public class FileDestroyable implements Destroyable
             if (file.exists())
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Destroy {}",file);
+                    LOG.debug("Destroy {}", file);
                 IO.delete(file);
             }
         }
     }
-
 }

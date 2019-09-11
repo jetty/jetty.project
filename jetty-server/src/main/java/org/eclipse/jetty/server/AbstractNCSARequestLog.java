@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,7 +20,6 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.util.Locale;
-
 import javax.servlet.http.Cookie;
 
 import org.eclipse.jetty.http.HttpHeader;
@@ -28,7 +27,7 @@ import org.eclipse.jetty.http.pathmap.PathMappings;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.util.DateCache;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
-import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -37,20 +36,17 @@ import org.eclipse.jetty.util.log.Logger;
  * Configuration options allow a choice between the standard Common Log Format (as used in the 3 log format) and the
  * Combined Log Format (single log format). This log format can be output by most web servers, and almost all web log
  * analysis software can understand these formats.
+ *
+ * @deprecated use {@link CustomRequestLog} given format string {@link CustomRequestLog#EXTENDED_NCSA_FORMAT} with a {@link RequestLog.Writer}
  */
-public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implements RequestLog
+@Deprecated
+public class AbstractNCSARequestLog extends ContainerLifeCycle implements RequestLog
 {
     protected static final Logger LOG = Log.getLogger(AbstractNCSARequestLog.class);
 
-    private static ThreadLocal<StringBuilder> _buffers = new ThreadLocal<StringBuilder>()
-    {
-        @Override
-        protected StringBuilder initialValue()
-        {
-            return new StringBuilder(256);
-        }
-    };
+    private static ThreadLocal<StringBuilder> _buffers = ThreadLocal.withInitial(() -> new StringBuilder(256));
 
+    protected final RequestLog.Writer _requestLogWriter;
 
     private String[] _ignorePaths;
     private boolean _extended;
@@ -64,28 +60,36 @@ public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implement
     private Locale _logLocale = Locale.getDefault();
     private String _logTimeZone = "GMT";
 
-    /* ------------------------------------------------------------ */
+    public AbstractNCSARequestLog(RequestLog.Writer requestLogWriter)
+    {
+        this._requestLogWriter = requestLogWriter;
+        addBean(_requestLogWriter);
+    }
 
     /**
      * Is logging enabled
+     *
      * @return true if logging is enabled
      */
-    protected abstract boolean isEnabled();
-
-    /* ------------------------------------------------------------ */
+    protected boolean isEnabled()
+    {
+        return true;
+    }
 
     /**
      * Write requestEntry out. (to disk or slf4j log)
+     *
      * @param requestEntry the request entry
      * @throws IOException if unable to write the entry
      */
-    public abstract void write(String requestEntry) throws IOException;
-
-    /* ------------------------------------------------------------ */
-
-    private void append(StringBuilder buf,String s)
+    public void write(String requestEntry) throws IOException
     {
-        if (s==null || s.length()==0)
+        _requestLogWriter.write(requestEntry);
+    }
+
+    private void append(StringBuilder buf, String s)
+    {
+        if (s == null || s.length() == 0)
             buf.append('-');
         else
             buf.append(s);
@@ -112,7 +116,7 @@ public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implement
 
             if (_logServer)
             {
-                append(buf,request.getServerName());
+                append(buf, request.getServerName());
                 buf.append(' ');
             }
 
@@ -127,9 +131,9 @@ public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implement
 
             buf.append(addr);
             buf.append(" - ");
-            
+
             String auth = getAuthentication(request);
-            append(buf,auth==null?"-":auth);
+            append(buf, auth == null ? "-" : auth);
 
             buf.append(" [");
             if (_logDateCache != null)
@@ -138,15 +142,15 @@ public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implement
                 buf.append(request.getTimeStamp());
 
             buf.append("] \"");
-            append(buf,request.getMethod());
+            append(buf, request.getMethod());
             buf.append(' ');
-            append(buf,request.getOriginalURI());
+            append(buf, request.getOriginalURI());
             buf.append(' ');
-            append(buf,request.getProtocol());
+            append(buf, request.getProtocol());
             buf.append("\" ");
 
             int status = response.getCommittedMetaData().getStatus();
-            if (status >=0)
+            if (status >= 0)
             {
                 buf.append((char)('0' + ((status / 100) % 10)));
                 buf.append((char)('0' + ((status / 10) % 10)));
@@ -177,7 +181,6 @@ public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implement
             }
             else
                 buf.append(" - ");
-
 
             if (_extended)
                 logExtended(buf, request, response);
@@ -221,29 +224,30 @@ public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implement
             LOG.warn(e);
         }
     }
-    
+
     /**
      * Extract the user authentication
+     *
      * @param request The request to extract from
      * @return The string to log for authenticated user.
      */
     protected String getAuthentication(Request request)
     {
         Authentication authentication = request.getAuthentication();
-        
+
         if (authentication instanceof Authentication.User)
             return ((Authentication.User)authentication).getUserIdentity().getUserPrincipal().getName();
-        
+
         // TODO extract the user name if it is Authentication.Deferred and return as '?username'
-        
+
         return null;
     }
 
     /**
      * Writes extended request and response information to the output stream.
      *
-     * @param b        StringBuilder to write to
-     * @param request  request object
+     * @param b StringBuilder to write to
+     * @param request request object
      * @param response response object
      * @throws IOException if unable to log the extended information
      */
@@ -294,7 +298,7 @@ public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implement
      * Controls logging of the request cookies.
      *
      * @param logCookies true - values of request cookies will be logged, false - values of request cookies will not be
-     *                   logged
+     * logged
      */
     public void setLogCookies(boolean logCookies)
     {
@@ -335,7 +339,7 @@ public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implement
      * Controls logging of request processing time.
      *
      * @param logLatency true - request processing time will be logged false - request processing time will not be
-     *                   logged
+     * logged
      */
     public void setLogLatency(boolean logLatency)
     {
@@ -376,7 +380,7 @@ public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implement
      * be logged.
      *
      * @param preferProxiedForAddress true - IP address from header will be logged, false - IP address from the
-     *                                connection will be logged
+     * connection will be logged
      */
     public void setPreferProxiedForAddress(boolean preferProxiedForAddress)
     {
@@ -424,14 +428,16 @@ public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implement
     {
         if (_logDateFormat != null)
         {
-            _logDateCache = new DateCache(_logDateFormat, _logLocale ,_logTimeZone);
+            _logDateCache = new DateCache(_logDateFormat, _logLocale, _logTimeZone);
         }
 
         if (_ignorePaths != null && _ignorePaths.length > 0)
         {
             _ignorePathMap = new PathMappings<>();
             for (int i = 0; i < _ignorePaths.length; i++)
+            {
                 _ignorePathMap.put(_ignorePaths[i], _ignorePaths[i]);
+            }
         }
         else
             _ignorePathMap = null;

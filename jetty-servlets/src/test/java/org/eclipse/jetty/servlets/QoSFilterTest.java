@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.servlets;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -32,7 +28,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
@@ -49,10 +44,13 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class QoSFilterTest
 {
@@ -60,9 +58,9 @@ public class QoSFilterTest
 
     private ServletTester _tester;
     private LocalConnector[] _connectors;
-    private final int NUM_CONNECTIONS = 8;
-    private final int NUM_LOOPS = 6;
-    private final int MAX_QOS = 4;
+    private final int numConnections = 8;
+    private final int numLoops = 6;
+    private final int maxQos = 4;
 
     @BeforeEach
     public void setUp() throws Exception
@@ -73,9 +71,11 @@ public class QoSFilterTest
         TestServlet.__maxSleepers = 0;
         TestServlet.__sleepers = 0;
 
-        _connectors = new LocalConnector[NUM_CONNECTIONS];
+        _connectors = new LocalConnector[numConnections];
         for (int i = 0; i < _connectors.length; ++i)
+        {
             _connectors[i] = _tester.createLocalConnector();
+        }
 
         _tester.start();
     }
@@ -90,20 +90,20 @@ public class QoSFilterTest
     public void testNoFilter() throws Exception
     {
         List<Worker> workers = new ArrayList<>();
-        for (int i = 0; i < NUM_CONNECTIONS; ++i)
+        for (int i = 0; i < numConnections; ++i)
         {
             workers.add(new Worker(i));
         }
 
-        ExecutorService executor = Executors.newFixedThreadPool(NUM_CONNECTIONS);
+        ExecutorService executor = Executors.newFixedThreadPool(numConnections);
         List<Future<Void>> futures = executor.invokeAll(workers, 10, TimeUnit.SECONDS);
 
         rethrowExceptions(futures);
 
-        if (TestServlet.__maxSleepers <= MAX_QOS)
+        if (TestServlet.__maxSleepers <= maxQos)
             LOG.warn("TEST WAS NOT PARALLEL ENOUGH!");
         else
-            assertThat(TestServlet.__maxSleepers, Matchers.lessThanOrEqualTo(NUM_CONNECTIONS));
+            assertThat(TestServlet.__maxSleepers, Matchers.lessThanOrEqualTo(numConnections));
     }
 
     @Disabled("Issue #2627")
@@ -112,24 +112,24 @@ public class QoSFilterTest
     {
         FilterHolder holder = new FilterHolder(QoSFilter2.class);
         holder.setAsyncSupported(true);
-        holder.setInitParameter(QoSFilter.MAX_REQUESTS_INIT_PARAM, "" + MAX_QOS);
+        holder.setInitParameter(QoSFilter.MAX_REQUESTS_INIT_PARAM, "" + maxQos);
         _tester.getContext().getServletHandler().addFilterWithMapping(holder, "/*", EnumSet.of(DispatcherType.REQUEST, DispatcherType.ASYNC));
 
         List<Worker> workers = new ArrayList<>();
-        for (int i = 0; i < NUM_CONNECTIONS; ++i)
+        for (int i = 0; i < numConnections; ++i)
         {
             workers.add(new Worker(i));
         }
 
-        ExecutorService executor = Executors.newFixedThreadPool(NUM_CONNECTIONS);
+        ExecutorService executor = Executors.newFixedThreadPool(numConnections);
         List<Future<Void>> futures = executor.invokeAll(workers, 10, TimeUnit.SECONDS);
 
         rethrowExceptions(futures);
 
-        if (TestServlet.__maxSleepers < MAX_QOS)
+        if (TestServlet.__maxSleepers < maxQos)
             LOG.warn("TEST WAS NOT PARALLEL ENOUGH!");
         else
-            assertEquals(TestServlet.__maxSleepers, MAX_QOS);
+            assertEquals(TestServlet.__maxSleepers, maxQos);
     }
 
     @Test
@@ -137,24 +137,24 @@ public class QoSFilterTest
     {
         FilterHolder holder = new FilterHolder(QoSFilter2.class);
         holder.setAsyncSupported(true);
-        holder.setInitParameter(QoSFilter.MAX_REQUESTS_INIT_PARAM, String.valueOf(MAX_QOS));
+        holder.setInitParameter(QoSFilter.MAX_REQUESTS_INIT_PARAM, String.valueOf(maxQos));
         _tester.getContext().getServletHandler().addFilterWithMapping(holder, "/*", EnumSet.of(DispatcherType.REQUEST, DispatcherType.ASYNC));
 
         List<Worker2> workers = new ArrayList<>();
-        for (int i = 0; i < NUM_CONNECTIONS; ++i)
+        for (int i = 0; i < numConnections; ++i)
         {
             workers.add(new Worker2(i));
         }
 
-        ExecutorService executor = Executors.newFixedThreadPool(NUM_CONNECTIONS);
+        ExecutorService executor = Executors.newFixedThreadPool(numConnections);
         List<Future<Void>> futures = executor.invokeAll(workers, 20, TimeUnit.SECONDS);
 
         rethrowExceptions(futures);
 
-        if (TestServlet.__maxSleepers < MAX_QOS)
+        if (TestServlet.__maxSleepers < maxQos)
             LOG.warn("TEST WAS NOT PARALLEL ENOUGH!");
         else
-            assertEquals(TestServlet.__maxSleepers, MAX_QOS);
+            assertEquals(TestServlet.__maxSleepers, maxQos);
     }
 
     private void rethrowExceptions(List<Future<Void>> futures) throws Exception
@@ -177,13 +177,13 @@ public class QoSFilterTest
         @Override
         public Void call() throws Exception
         {
-            for (int i = 0; i < NUM_LOOPS; i++)
+            for (int i = 0; i < numLoops; i++)
             {
                 HttpTester.Request request = HttpTester.newRequest();
 
                 request.setMethod("GET");
                 request.setHeader("host", "tester");
-                request.setURI("/context/test?priority=" + (_num % QoSFilter.__DEFAULT_MAX_PRIORITY));
+                request.setURI("/context/test?priority=" + (_num % QoSFilter.DEFAULT_MAX_PRIORITY));
                 request.setHeader("num", _num + "");
 
                 String responseString = _connectors[_num].getResponse(BufferUtil.toString(request.generate()));
@@ -211,9 +211,9 @@ public class QoSFilterTest
             try
             {
                 String addr = _tester.createConnector(true);
-                for (int i = 0; i < NUM_LOOPS; i++)
+                for (int i = 0; i < numLoops; i++)
                 {
-                    url = new URL(addr + "/context/test?priority=" + (_num % QoSFilter.__DEFAULT_MAX_PRIORITY) + "&n=" + _num + "&l=" + i);
+                    url = new URL(addr + "/context/test?priority=" + (_num % QoSFilter.DEFAULT_MAX_PRIORITY) + "&n=" + _num + "&l=" + i);
                     url.getContent();
                 }
             }

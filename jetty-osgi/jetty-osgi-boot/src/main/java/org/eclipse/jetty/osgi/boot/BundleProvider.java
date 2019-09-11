@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -27,7 +27,7 @@ import org.osgi.framework.Bundle;
  */
 public interface BundleProvider
 {
-    public boolean bundleAdded (Bundle bundle) throws Exception;
-    
-    public boolean bundleRemoved (Bundle bundle) throws Exception;
+    boolean bundleAdded(Bundle bundle) throws Exception;
+
+    boolean bundleRemoved(Bundle bundle) throws Exception;
 }

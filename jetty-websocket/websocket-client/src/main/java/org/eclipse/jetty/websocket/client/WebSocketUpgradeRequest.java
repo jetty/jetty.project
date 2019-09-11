@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -24,6 +24,8 @@ import java.nio.charset.StandardCharsets;
 import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -49,8 +51,8 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.UrlEncoded;
@@ -73,28 +75,28 @@ import org.eclipse.jetty.websocket.common.extensions.ExtensionStack;
 public class WebSocketUpgradeRequest extends HttpRequest implements CompleteListener, HttpConnectionUpgrader
 {
     private static final Logger LOG = Log.getLogger(WebSocketUpgradeRequest.class);
-    
+
     private class ClientUpgradeRequestFacade implements UpgradeRequest
     {
         private List<ExtensionConfig> extensions;
         private List<String> subProtocols;
         private Object session;
-        
+
         public ClientUpgradeRequestFacade()
         {
             this.extensions = new ArrayList<>();
             this.subProtocols = new ArrayList<>();
         }
-        
+
         public void init(ClientUpgradeRequest request)
         {
             this.extensions = new ArrayList<>(request.getExtensions());
             this.subProtocols = new ArrayList<>(request.getSubProtocols());
-    
+
             request.getHeaders().forEach((name, values) ->
                 values.forEach((value) -> header(name, value))
             );
-            
+
             for (HttpCookie cookie : request.getCookies())
             {
                 cookie(cookie);
@@ -112,7 +114,7 @@ public class WebSocketUpgradeRequest extends HttpRequest implements CompleteList
         {
             return subProtocols;
         }
-        
+
         @Override
         public void addExtensions(ExtensionConfig... configs)
         {
@@ -146,7 +148,8 @@ public class WebSocketUpgradeRequest extends HttpRequest implements CompleteList
         public int getHeaderInt(String name)
         {
             String value = getHttpFields().get(name);
-            if(value == null) {
+            if (value == null)
+            {
                 return -1;
             }
             return Integer.parseInt(value);
@@ -173,14 +176,14 @@ public class WebSocketUpgradeRequest extends HttpRequest implements CompleteList
         @Override
         public Map<String, List<String>> getParameterMap()
         {
-            Map<String,List<String>> paramMap = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-            
+            Map<String, List<String>> paramMap = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+
             String query = getQueryString();
             MultiMap<String> multimap = new MultiMap<>();
-            UrlEncoded.decodeTo(query,multimap,StandardCharsets.UTF_8);
-            
+            UrlEncoded.decodeTo(query, multimap, StandardCharsets.UTF_8);
+
             paramMap.putAll(multimap);
-                    
+
             return paramMap;
         }
 
@@ -242,8 +245,10 @@ public class WebSocketUpgradeRequest extends HttpRequest implements CompleteList
         @Override
         public void setCookies(List<HttpCookie> cookies)
         {
-            for(HttpCookie cookie: cookies)
+            for (HttpCookie cookie : cookies)
+            {
                 cookie(cookie);
+            }
         }
 
         @Override
@@ -259,20 +264,20 @@ public class WebSocketUpgradeRequest extends HttpRequest implements CompleteList
             headers.remove(HttpHeader.SEC_WEBSOCKET_EXTENSIONS);
             for (ExtensionConfig config : extensions)
             {
-                headers.add(HttpHeader.SEC_WEBSOCKET_EXTENSIONS,config.getParameterizedName());
+                headers.add(HttpHeader.SEC_WEBSOCKET_EXTENSIONS, config.getParameterizedName());
             }
         }
 
         @Override
         public void setHeader(String name, List<String> values)
         {
-            getHttpFields().put(name,values);
+            getHttpFields().put(name, values);
         }
 
         @Override
         public void setHeader(String name, String value)
         {
-            getHttpFields().put(name,value);
+            getHttpFields().put(name, value);
         }
 
         @Override
@@ -280,7 +285,7 @@ public class WebSocketUpgradeRequest extends HttpRequest implements CompleteList
         {
             for (Map.Entry<String, List<String>> entry : headers.entrySet())
             {
-                getHttpFields().put(entry.getKey(),entry.getValue());
+                getHttpFields().put(entry.getKey(), entry.getValue());
             }
         }
 
@@ -332,9 +337,9 @@ public class WebSocketUpgradeRequest extends HttpRequest implements CompleteList
         {
             Map<String, List<String>> headersMap = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
             HttpFields fields = getHttpFields();
-            for(String name: fields.getFieldNamesCollection())
+            for (String name : fields.getFieldNamesCollection())
             {
-                headersMap.put(name,fields.getValuesList(name));
+                headersMap.put(name, fields.getValuesList(name));
             }
             return headersMap;
         }
@@ -355,7 +360,9 @@ public class WebSocketUpgradeRequest extends HttpRequest implements CompleteList
     private final WebSocketClient wsClient;
     private final EventDriver localEndpoint;
     private final CompletableFuture<Session> fut;
-    /** WebSocket API UpgradeRequest Facade to HttpClient HttpRequest */
+    /**
+     * WebSocket API UpgradeRequest Facade to HttpClient HttpRequest
+     */
     private final ClientUpgradeRequestFacade apiRequestFacade;
     private UpgradeListener upgradeListener;
 
@@ -370,7 +377,7 @@ public class WebSocketUpgradeRequest extends HttpRequest implements CompleteList
      */
     protected WebSocketUpgradeRequest(WebSocketClient wsClient, HttpClient httpClient, ClientUpgradeRequest request)
     {
-        this(wsClient, httpClient,request.getRequestURI(),request.getLocalEndpoint());
+        this(wsClient, httpClient, request.getRequestURI(), request.getLocalEndpoint());
         apiRequestFacade.init(request);
     }
 
@@ -385,8 +392,8 @@ public class WebSocketUpgradeRequest extends HttpRequest implements CompleteList
      */
     public WebSocketUpgradeRequest(WebSocketClient wsClient, HttpClient httpClient, URI wsURI, Object localEndpoint)
     {
-        super(httpClient,new HttpConversation(),wsURI);
-        
+        super(httpClient, new HttpConversation(), wsURI);
+
         apiRequestFacade = new ClientUpgradeRequestFacade();
 
         if (!wsURI.isAbsolute())
@@ -415,13 +422,15 @@ public class WebSocketUpgradeRequest extends HttpRequest implements CompleteList
         this.localEndpoint = this.wsClient.getEventDriverFactory().wrap(localEndpoint);
 
         this.fut = new CompletableFuture<Session>();
+
+        getConversation().setAttribute(HttpConnectionUpgrader.class.getName(), this);
     }
 
     private final String genRandomKey()
     {
         byte[] bytes = new byte[16];
         ThreadLocalRandom.current().nextBytes(bytes);
-        return new String(B64Code.encode(bytes));
+        return Base64.getEncoder().encodeToString(bytes);
     }
 
     private ExtensionFactory getExtensionFactory()
@@ -440,26 +449,26 @@ public class WebSocketUpgradeRequest extends HttpRequest implements CompleteList
         version(HttpVersion.HTTP_1_1);
 
         // The Upgrade Headers
-        header(HttpHeader.UPGRADE,"websocket");
-        header(HttpHeader.CONNECTION,"Upgrade");
+        header(HttpHeader.UPGRADE, "websocket");
+        header(HttpHeader.CONNECTION, "Upgrade");
 
         // The WebSocket Headers
-        header(HttpHeader.SEC_WEBSOCKET_KEY,genRandomKey());
-        header(HttpHeader.SEC_WEBSOCKET_VERSION,"13");
+        header(HttpHeader.SEC_WEBSOCKET_KEY, genRandomKey());
+        header(HttpHeader.SEC_WEBSOCKET_VERSION, "13");
 
         // (Per the hybi list): Add no-cache headers to avoid compatibility issue.
         // There are some proxies that rewrite "Connection: upgrade"
         // to "Connection: close" in the response if a request doesn't contain
         // these headers.
-        header(HttpHeader.PRAGMA,"no-cache");
-        header(HttpHeader.CACHE_CONTROL,"no-cache");
+        header(HttpHeader.PRAGMA, "no-cache");
+        header(HttpHeader.CACHE_CONTROL, "no-cache");
 
         // handle "Sec-WebSocket-Extensions"
         if (!apiRequestFacade.getExtensions().isEmpty())
         {
             for (ExtensionConfig ext : apiRequestFacade.getExtensions())
             {
-                header(HttpHeader.SEC_WEBSOCKET_EXTENSIONS,ext.getParameterizedName());
+                header(HttpHeader.SEC_WEBSOCKET_EXTENSIONS, ext.getParameterizedName());
             }
         }
 
@@ -468,10 +477,10 @@ public class WebSocketUpgradeRequest extends HttpRequest implements CompleteList
         {
             for (String protocol : apiRequestFacade.getSubProtocols())
             {
-                header(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL,protocol);
+                header(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL, protocol);
             }
         }
-        
+
         if (upgradeListener != null)
         {
             upgradeListener.onHandshakeRequest(apiRequestFacade);
@@ -483,7 +492,7 @@ public class WebSocketUpgradeRequest extends HttpRequest implements CompleteList
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("onComplete() - {}",result);
+            LOG.debug("onComplete() - {}", result);
         }
 
         URI requestURI = result.getRequest().getURI();
@@ -504,7 +513,7 @@ public class WebSocketUpgradeRequest extends HttpRequest implements CompleteList
             }
 
             Throwable failure = result.getFailure();
-            if ((failure instanceof java.net.ConnectException) || (failure instanceof UpgradeException))
+            if ((failure instanceof java.io.IOException) || (failure instanceof UpgradeException))
             {
                 // handle as-is
                 handleException(failure);
@@ -512,20 +521,21 @@ public class WebSocketUpgradeRequest extends HttpRequest implements CompleteList
             else
             {
                 // wrap in UpgradeException 
-                handleException(new UpgradeException(requestURI,responseStatusCode,responseLine,failure));
+                handleException(new UpgradeException(requestURI, responseStatusCode, responseLine, failure));
             }
+            return;
         }
 
         if (responseStatusCode != HttpStatus.SWITCHING_PROTOCOLS_101)
         {
             // Failed to upgrade (other reason)
-            handleException(new UpgradeException(requestURI,responseStatusCode,responseLine));
+            handleException(new UpgradeException(requestURI, responseStatusCode, "Failed to upgrade to websocket: Unexpected HTTP Response Status Code: " + responseLine));
         }
     }
 
     private void handleException(Throwable failure)
     {
-        localEndpoint.incomingError(failure);
+        localEndpoint.onError(failure);
         fut.completeExceptionally(failure);
     }
 
@@ -554,7 +564,7 @@ public class WebSocketUpgradeRequest extends HttpRequest implements CompleteList
         if (!this.getHeaders().get(HttpHeader.UPGRADE).equalsIgnoreCase("websocket"))
         {
             // Not my upgrade
-            throw new HttpResponseException("Not WebSocket Upgrade",response);
+            throw new HttpResponseException("Not WebSocket Upgrade", response);
         }
 
         // Check the Accept hash
@@ -564,18 +574,29 @@ public class WebSocketUpgradeRequest extends HttpRequest implements CompleteList
 
         if (expectedHash.equalsIgnoreCase(respHash) == false)
         {
-            throw new HttpResponseException("Invalid Sec-WebSocket-Accept hash",response);
+            throw new HttpResponseException("Invalid Sec-WebSocket-Accept hash", response);
         }
 
         // We can upgrade
         EndPoint endp = oldConn.getEndPoint();
 
-        WebSocketClientConnection connection = new WebSocketClientConnection(endp,wsClient.getExecutor(),wsClient.getScheduler(),localEndpoint.getPolicy(),
-                wsClient.getBufferPool());
+        WebSocketClientConnection connection = new WebSocketClientConnection(endp, wsClient.getExecutor(), wsClient.getScheduler(), localEndpoint.getPolicy(),
+            wsClient.getBufferPool());
+
+        Collection<Connection.Listener> connectionListeners = wsClient.getBeans(Connection.Listener.class);
+
+        if (connectionListeners != null)
+        {
+            connectionListeners.forEach((listener) ->
+            {
+                if (!(listener instanceof WebSocketSession))
+                    connection.addListener(listener);
+            });
+        }
 
         URI requestURI = this.getURI();
 
-        WebSocketSession session = getSessionFactory().createSession(requestURI,localEndpoint,connection);
+        WebSocketSession session = getSessionFactory().createSession(requestURI, localEndpoint, connection);
         session.setUpgradeRequest(new ClientUpgradeRequest(this));
         session.setUpgradeResponse(new ClientUpgradeResponse(response));
         connection.addListener(session);
@@ -590,7 +611,7 @@ public class WebSocketUpgradeRequest extends HttpRequest implements CompleteList
             {
                 for (String extVal : extValues)
                 {
-                    QuotedStringTokenizer tok = new QuotedStringTokenizer(extVal,",");
+                    QuotedStringTokenizer tok = new QuotedStringTokenizer(extVal, ",");
                     while (tok.hasMoreTokens())
                     {
                         extensions.add(ExtensionConfig.parse(tok.nextToken()));
@@ -613,8 +634,7 @@ public class WebSocketUpgradeRequest extends HttpRequest implements CompleteList
 
         session.addManaged(extensionStack);
         session.setFuture(fut);
-        wsClient.addManaged(session);
-    
+
         if (upgradeListener != null)
         {
             upgradeListener.onHandshakeResponse(new ClientUpgradeResponse(response));

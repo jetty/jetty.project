@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,9 +19,7 @@
 package org.eclipse.jetty.security.authentication;
 
 import java.security.Principal;
-
 import javax.security.auth.Subject;
-
 
 /**
  * This is similar to the jaspi PasswordValidationCallback but includes user
@@ -31,25 +29,23 @@ import javax.security.auth.Subject;
  */
 public interface LoginCallback
 {
-    public Subject getSubject();
+    Subject getSubject();
 
-    public String getUserName();
+    String getUserName();
 
-    public Object getCredential();
+    Object getCredential();
 
-    public boolean isSuccess();
+    boolean isSuccess();
 
-    public void setSuccess(boolean success);
+    void setSuccess(boolean success);
 
-    public Principal getUserPrincipal();
+    Principal getUserPrincipal();
 
-    public void setUserPrincipal(Principal userPrincipal);
+    void setUserPrincipal(Principal userPrincipal);
 
-    public String[] getRoles();
+    String[] getRoles();
 
-    public void setRoles(String[] roles);
+    void setRoles(String[] roles);
 
-    public void clearPassword();
-
-
+    void clearPassword();
 }

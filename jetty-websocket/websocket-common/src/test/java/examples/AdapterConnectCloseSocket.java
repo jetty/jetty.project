@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -29,12 +29,12 @@ public class AdapterConnectCloseSocket extends WebSocketAdapter
     @Override
     public void onWebSocketClose(int statusCode, String reason)
     {
-        capture.offer("onWebSocketClose(%d, %s)",statusCode,capture.q(reason));
+        capture.offer("onWebSocketClose(%d, %s)", statusCode, capture.q(reason));
     }
 
     @Override
     public void onWebSocketConnect(Session sess)
     {
-        capture.offer("onWebSocketConnect(%s)",sess);
+        capture.offer("onWebSocketConnect(%s)", sess);
     }
 }

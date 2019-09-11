@@ -3,7 +3,7 @@
   <parent>
     <artifactId>jetty-project</artifactId>
     <groupId>org.eclipse.jetty</groupId>
-    <version>9.4.13-SNAPSHOT</version>
+    <version>9.4.21-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-home</artifactId>
@@ -324,7 +324,7 @@
             </goals>
             <configuration>
               <includeGroupIds>javax.annotation,org.eclipse.jetty.orbit,org.ow2.asm</includeGroupIds>
-              <includeArtifactIds>javax.annotation-api,asm,asm-commons</includeArtifactIds>
+              <includeArtifactIds>javax.annotation-api,asm,asm-commons,asm-tree,asm-analysis</includeArtifactIds>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${assembly-directory}/lib/annotations</outputDirectory>
             </configuration>
@@ -337,7 +337,7 @@
             </goals>
             <configuration>
               <includeGroupIds>javax.annotation,org.eclipse.jetty.orbit,org.ow2.asm</includeGroupIds>
-              <includeArtifactIds>javax.annotation-api,asm,asm-commons</includeArtifactIds>
+              <includeArtifactIds>javax.annotation-api,asm,asm-commons,asm-tree,asm-analysis</includeArtifactIds>
               <includeTypes>jar</includeTypes>
               <classifier>sources</classifier>
               <outputDirectory>${source-assembly-directory}/lib/annotations</outputDirectory>
@@ -440,8 +440,37 @@
             </goals>
             <configuration>
               <includeGroupIds>org.eclipse.jetty,org.eclipse.jetty.websocket</includeGroupIds>
+              <excludeArtifactIds>infinispan-embedded,infinispan-remote,jetty-test-helper,alpn-api,javax.security.auth.message,javax.activation</excludeArtifactIds>
               <classifier>config</classifier>
               <failOnMissingClassifierArtifact>false</failOnMissingClassifierArtifact>
+              <excludes>META-INF/**</excludes>
+              <outputDirectory>${assembly-directory}</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>unpack-infinispan-config</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>unpack</goal>
+            </goals>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>org.eclipse.jetty</groupId>
+                  <artifactId>infinispan-embedded</artifactId>
+                  <version>${project.version}</version>
+                  <classifier>config</classifier>
+                  <type>jar</type>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>org.eclipse.jetty</groupId>
+                  <artifactId>infinispan-remote</artifactId>
+                  <version>${project.version}</version>
+                  <classifier>config</classifier>
+                  <type>jar</type>
+                </artifactItem>
+              </artifactItems>
+              <failOnMissingClassifierArtifact>true</failOnMissingClassifierArtifact>
               <excludes>META-INF/**</excludes>
               <outputDirectory>${assembly-directory}</outputDirectory>
             </configuration>
@@ -547,6 +576,14 @@
       <groupId>org.ow2.asm</groupId>
       <artifactId>asm-commons</artifactId>
     </dependency>
+    <dependency>
+      <groupId>org.ow2.asm</groupId>
+      <artifactId>asm-tree</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.ow2.asm</groupId>
+      <artifactId>asm-analysis</artifactId>
+    </dependency>
 
     <!-- jetty deps -->
     <dependency>
@@ -636,13 +673,12 @@
       <version>${project.version}</version>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.cdi</groupId>
-      <artifactId>cdi-servlet</artifactId>
-      <version>${project.version}</version>
+      <groupId>org.jboss.logging</groupId>
+      <artifactId>jboss-logging</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.cdi</groupId>
-      <artifactId>cdi-2</artifactId>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-cdi</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
@@ -687,7 +723,24 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-infinispan</artifactId>
+      <artifactId>infinispan-embedded</artifactId>
+      <version>${project.version}</version>
+      <type>pom</type>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>infinispan-embedded-query</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>infinispan-remote</artifactId>
+      <version>${project.version}</version>
+      <type>pom</type>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>infinispan-remote-query</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>

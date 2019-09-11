@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,11 +18,6 @@
 
 package org.eclipse.jetty.server.handler;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.not;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
@@ -37,6 +32,11 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 public class DefaultHandlerTest
 {
     private Server server;
@@ -49,23 +49,22 @@ public class DefaultHandlerTest
         server = new Server();
         connector = new ServerConnector(server);
         server.addConnector(connector);
-        
-        
+
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         handler = new DefaultHandler();
         HandlerCollection handlers = new HandlerCollection();
-        handlers.setHandlers(new Handler[] { contexts, handler });
+        handlers.setHandlers(new Handler[]{contexts, handler});
         server.setHandler(handlers);
 
         handler.setServeIcon(true);
         handler.setShowContexts(true);
-        
+
         contexts.addHandler(new ContextHandler("/foo"));
         contexts.addHandler(new ContextHandler("/bar"));
-        
+
         server.start();
     }
-    
+
     @AfterEach
     public void after() throws Exception
     {
@@ -77,10 +76,10 @@ public class DefaultHandlerTest
     {
         try (Socket socket = new Socket("localhost", connector.getLocalPort()))
         {
-            String request = "" +
+            String request =
                 "GET / HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "\r\n";
+                    "Host: localhost\r\n" +
+                    "\r\n";
             OutputStream output = socket.getOutputStream();
             output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
@@ -89,24 +88,24 @@ public class DefaultHandlerTest
             HttpTester.Response response = HttpTester.parseResponse(input);
 
             assertEquals(HttpStatus.NOT_FOUND_404, response.getStatus());
-            assertEquals("text/html;charset=ISO-8859-1", response.get(HttpHeader.CONTENT_TYPE));
+            assertEquals("text/html;charset=UTF-8", response.get(HttpHeader.CONTENT_TYPE));
 
-            String content = new String(response.getContentBytes(),StandardCharsets.ISO_8859_1);
-            assertThat(content,containsString("Contexts known to this server are:"));
-            assertThat(content,containsString("/foo"));
-            assertThat(content,containsString("/bar"));
+            String content = new String(response.getContentBytes(), StandardCharsets.UTF_8);
+            assertThat(content, containsString("Contexts known to this server are:"));
+            assertThat(content, containsString("/foo"));
+            assertThat(content, containsString("/bar"));
         }
     }
-    
+
     @Test
     public void testSomePath() throws Exception
     {
         try (Socket socket = new Socket("localhost", connector.getLocalPort()))
         {
-            String request = "" +
+            String request =
                 "GET /some/path HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "\r\n";
+                    "Host: localhost\r\n" +
+                    "\r\n";
             OutputStream output = socket.getOutputStream();
             output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
@@ -117,22 +116,22 @@ public class DefaultHandlerTest
             assertEquals(HttpStatus.NOT_FOUND_404, response.getStatus());
             assertEquals("text/html;charset=ISO-8859-1", response.get(HttpHeader.CONTENT_TYPE));
 
-            String content = new String(response.getContentBytes(),StandardCharsets.ISO_8859_1);
-            assertThat(content,not(containsString("Contexts known to this server are:")));
-            assertThat(content,not(containsString("/foo")));
-            assertThat(content,not(containsString("/bar")));
+            String content = new String(response.getContentBytes(), StandardCharsets.ISO_8859_1);
+            assertThat(content, not(containsString("Contexts known to this server are:")));
+            assertThat(content, not(containsString("/foo")));
+            assertThat(content, not(containsString("/bar")));
         }
     }
-    
+
     @Test
     public void testFavIcon() throws Exception
     {
         try (Socket socket = new Socket("localhost", connector.getLocalPort()))
         {
-            String request = "" +
+            String request =
                 "GET /favicon.ico HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "\r\n";
+                    "Host: localhost\r\n" +
+                    "\r\n";
             OutputStream output = socket.getOutputStream();
             output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
@@ -144,5 +143,4 @@ public class DefaultHandlerTest
             assertEquals("image/x-icon", response.get(HttpHeader.CONTENT_TYPE));
         }
     }
-
 }

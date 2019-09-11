@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,7 +20,6 @@ package org.eclipse.jetty.websocket.jsr356.metadata;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import javax.websocket.Decoder;
 
 import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
@@ -37,23 +36,23 @@ public class DecoderMetadataSet extends CoderMetadataSet<Decoder, DecoderMetadat
 
         if (Decoder.Binary.class.isAssignableFrom(decoder))
         {
-            Class<?> objType = getDecoderType(decoder,Decoder.Binary.class);
-            metadatas.add(new DecoderMetadata(decoder,objType,MessageType.BINARY,false));
+            Class<?> objType = getDecoderType(decoder, Decoder.Binary.class);
+            metadatas.add(new DecoderMetadata(decoder, objType, MessageType.BINARY, false));
         }
         if (Decoder.BinaryStream.class.isAssignableFrom(decoder))
         {
-            Class<?> objType = getDecoderType(decoder,Decoder.BinaryStream.class);
-            metadatas.add(new DecoderMetadata(decoder,objType,MessageType.BINARY,true));
+            Class<?> objType = getDecoderType(decoder, Decoder.BinaryStream.class);
+            metadatas.add(new DecoderMetadata(decoder, objType, MessageType.BINARY, true));
         }
         if (Decoder.Text.class.isAssignableFrom(decoder))
         {
-            Class<?> objType = getDecoderType(decoder,Decoder.Text.class);
-            metadatas.add(new DecoderMetadata(decoder,objType,MessageType.TEXT,false));
+            Class<?> objType = getDecoderType(decoder, Decoder.Text.class);
+            metadatas.add(new DecoderMetadata(decoder, objType, MessageType.TEXT, false));
         }
         if (Decoder.TextStream.class.isAssignableFrom(decoder))
         {
-            Class<?> objType = getDecoderType(decoder,Decoder.TextStream.class);
-            metadatas.add(new DecoderMetadata(decoder,objType,MessageType.TEXT,true));
+            Class<?> objType = getDecoderType(decoder, Decoder.TextStream.class);
+            metadatas.add(new DecoderMetadata(decoder, objType, MessageType.TEXT, true));
         }
 
         if (!ReflectUtils.isDefaultConstructable(decoder))
@@ -71,7 +70,7 @@ public class DecoderMetadataSet extends CoderMetadataSet<Decoder, DecoderMetadat
 
     private Class<?> getDecoderType(Class<? extends Decoder> decoder, Class<?> interfaceClass)
     {
-        Class<?> decoderClass = ReflectUtils.findGenericClassFor(decoder,interfaceClass);
+        Class<?> decoderClass = ReflectUtils.findGenericClassFor(decoder, interfaceClass);
         if (decoderClass == null)
         {
             StringBuilder err = new StringBuilder();
@@ -86,7 +85,7 @@ public class DecoderMetadataSet extends CoderMetadataSet<Decoder, DecoderMetadat
 
     protected final void register(Class<?> type, Class<? extends Decoder> decoder, MessageType msgType, boolean streamed)
     {
-        DecoderMetadata metadata = new DecoderMetadata(decoder,type,msgType,streamed);
+        DecoderMetadata metadata = new DecoderMetadata(decoder, type, msgType, streamed);
         trackMetadata(metadata);
     }
 }

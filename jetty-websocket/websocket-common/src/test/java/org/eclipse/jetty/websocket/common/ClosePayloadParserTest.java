@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.websocket.common;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
@@ -30,8 +27,10 @@ import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.common.test.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.common.test.UnitParser;
 import org.eclipse.jetty.websocket.common.util.MaskedByteBuffer;
-
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 public class ClosePayloadParserTest
 {
@@ -40,17 +39,17 @@ public class ClosePayloadParserTest
     {
         String expectedReason = "Game Over";
 
-        byte utf[] = expectedReason.getBytes(StandardCharsets.UTF_8);
+        byte[] utf = expectedReason.getBytes(StandardCharsets.UTF_8);
         ByteBuffer payload = ByteBuffer.allocate(utf.length + 2);
         payload.putChar((char)StatusCode.NORMAL);
-        payload.put(utf,0,utf.length);
+        payload.put(utf, 0, utf.length);
         payload.flip();
 
         ByteBuffer buf = ByteBuffer.allocate(24);
         buf.put((byte)(0x80 | OpCode.CLOSE)); // fin + close
         buf.put((byte)(0x80 | payload.remaining()));
         MaskedByteBuffer.putMask(buf);
-        MaskedByteBuffer.putPayload(buf,payload);
+        MaskedByteBuffer.putPayload(buf, payload);
         buf.flip();
 
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
@@ -59,10 +58,9 @@ public class ClosePayloadParserTest
         parser.setIncomingFramesHandler(capture);
         parser.parse(buf);
 
-        capture.assertNoErrors();
-        capture.assertHasFrame(OpCode.CLOSE,1);
+        capture.assertHasFrame(OpCode.CLOSE, 1);
         CloseInfo close = new CloseInfo(capture.getFrames().poll());
-        assertThat("CloseFrame.statusCode",close.getStatusCode(),is(StatusCode.NORMAL));
-        assertThat("CloseFrame.data",close.getReason(),is(expectedReason));
+        assertThat("CloseFrame.statusCode", close.getStatusCode(), is(StatusCode.NORMAL));
+        assertThat("CloseFrame.data", close.getReason(), is(expectedReason));
     }
 }

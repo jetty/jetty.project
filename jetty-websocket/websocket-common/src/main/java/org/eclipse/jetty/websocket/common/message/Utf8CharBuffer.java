@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -33,12 +33,11 @@ public class Utf8CharBuffer extends Utf8Appendable
     // TODO this class does not correctly implement the Appendable contract.
     // The length is currently the capacity, but it should be the number of characters
     // appended!  It also violates the jetty standard of leaving buffers in flush mode.
-    
+
     /**
      * Convenience method to wrap a ByteBuffer with a {@link Utf8CharBuffer}
-     * 
-     * @param buffer
-     *            the buffer to wrap
+     *
+     * @param buffer the buffer to wrap
      * @return the Utf8ByteBuffer for the provided ByteBuffer
      */
     public static Utf8CharBuffer wrap(ByteBuffer buffer)
@@ -56,15 +55,15 @@ public class Utf8CharBuffer extends Utf8Appendable
 
     public void append(char[] cbuf, int offset, int size)
     {
-        append(BufferUtil.toDirectBuffer(new String(cbuf,offset,size),StandardCharsets.UTF_8));
+        append(BufferUtil.toDirectBuffer(new String(cbuf, offset, size), StandardCharsets.UTF_8));
     }
 
     public void append(int c)
     {
         buffer.append((char)c);
     }
-    
-    @Override 
+
+    @Override
     public void reset()
     {
         clear();
@@ -107,7 +106,6 @@ public class Utf8CharBuffer extends Utf8Appendable
     {
         return buffer.remaining();
     }
-    
 
     @Override
     public String getPartialString()
@@ -127,5 +125,4 @@ public class Utf8CharBuffer extends Utf8Appendable
         str.append("]");
         return str.toString();
     }
-
 }

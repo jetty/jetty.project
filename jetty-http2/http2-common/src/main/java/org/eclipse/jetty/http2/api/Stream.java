@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -29,8 +29,8 @@ import org.eclipse.jetty.util.Promise;
  * <p>A {@link Stream} represents a bidirectional exchange of data on top of a {@link Session}.</p>
  * <p>Differently from socket streams, where the input and output streams are permanently associated
  * with the socket (and hence with the connection that the socket represents), there can be multiple
- * HTTP/2 streams present concurrent for a HTTP/2 session.</p>
- * <p>A {@link Stream} maps to a HTTP request/response cycle, and after the request/response cycle is
+ * HTTP/2 streams present concurrent for an HTTP/2 session.</p>
+ * <p>A {@link Stream} maps to an HTTP request/response cycle, and after the request/response cycle is
  * completed, the stream is closed and removed from the session.</p>
  * <p>Like {@link Session}, {@link Stream} is the active part and by calling its API applications
  * can generate events on the stream; conversely, {@link Stream.Listener} is the passive part, and
@@ -43,45 +43,45 @@ public interface Stream
     /**
      * @return the stream unique id
      */
-    public int getId();
+    int getId();
 
     /**
      * @return the session this stream is associated to
      */
-    public Session getSession();
+    Session getSession();
 
     /**
-     * <p>Sends the given HEADERS {@code frame} representing a HTTP response.</p>
+     * <p>Sends the given HEADERS {@code frame} representing an HTTP response.</p>
      *
-     * @param frame    the HEADERS frame to send
+     * @param frame the HEADERS frame to send
      * @param callback the callback that gets notified when the frame has been sent
      */
-    public void headers(HeadersFrame frame, Callback callback);
+    void headers(HeadersFrame frame, Callback callback);
 
     /**
      * <p>Sends the given PUSH_PROMISE {@code frame}.</p>
      *
-     * @param frame   the PUSH_PROMISE frame to send
+     * @param frame the PUSH_PROMISE frame to send
      * @param promise the promise that gets notified of the pushed stream creation
      * @param listener the listener that gets notified of stream events
      */
-    public void push(PushPromiseFrame frame, Promise<Stream> promise, Listener listener);
+    void push(PushPromiseFrame frame, Promise<Stream> promise, Listener listener);
 
     /**
      * <p>Sends the given DATA {@code frame}.</p>
      *
-     * @param frame    the DATA frame to send
+     * @param frame the DATA frame to send
      * @param callback the callback that gets notified when the frame has been sent
      */
-    public void data(DataFrame frame, Callback callback);
+    void data(DataFrame frame, Callback callback);
 
     /**
      * <p>Sends the given RST_STREAM {@code frame}.</p>
      *
-     * @param frame    the RST_FRAME to send
+     * @param frame the RST_FRAME to send
      * @param callback the callback that gets notified when the frame has been sent
      */
-    public void reset(ResetFrame frame, Callback callback);
+    void reset(ResetFrame frame, Callback callback);
 
     /**
      * @param key the attribute key
@@ -89,81 +89,88 @@ public interface Stream
      * or null if no object can be found for the given key.
      * @see #setAttribute(String, Object)
      */
-    public Object getAttribute(String key);
+    Object getAttribute(String key);
 
     /**
-     * @param key   the attribute key
+     * @param key the attribute key
      * @param value an arbitrary object to associate with the given key to this stream
      * @see #getAttribute(String)
      * @see #removeAttribute(String)
      */
-    public void setAttribute(String key, Object value);
+    void setAttribute(String key, Object value);
 
     /**
      * @param key the attribute key
      * @return the arbitrary object associated with the given key to this stream
      * @see #setAttribute(String, Object)
      */
-    public Object removeAttribute(String key);
+    Object removeAttribute(String key);
 
     /**
      * @return whether this stream has been reset
      */
-    public boolean isReset();
+    boolean isReset();
 
     /**
      * @return whether this stream is closed, both locally and remotely.
      */
-    public boolean isClosed();
+    boolean isClosed();
 
     /**
      * @return the stream idle timeout
      * @see #setIdleTimeout(long)
      */
-    public long getIdleTimeout();
+    long getIdleTimeout();
 
     /**
      * @param idleTimeout the stream idle timeout
      * @see #getIdleTimeout()
      * @see Stream.Listener#onIdleTimeout(Stream, Throwable)
      */
-    public void setIdleTimeout(long idleTimeout);
+    void setIdleTimeout(long idleTimeout);
 
     /**
      * <p>A {@link Stream.Listener} is the passive counterpart of a {@link Stream} and receives
-     * events happening on a HTTP/2 stream.</p>
+     * events happening on an HTTP/2 stream.</p>
      *
      * @see Stream
      */
-    public interface Listener
+    interface Listener
     {
         /**
          * <p>Callback method invoked when a HEADERS frame representing the HTTP response has been received.</p>
          *
          * @param stream the stream
-         * @param frame  the HEADERS frame received
+         * @param frame the HEADERS frame received
          */
-        public void onHeaders(Stream stream, HeadersFrame frame);
+        void onHeaders(Stream stream, HeadersFrame frame);
 
         /**
          * <p>Callback method invoked when a PUSH_PROMISE frame has been received.</p>
          *
          * @param stream the stream
-         * @param frame  the PUSH_PROMISE frame received
+         * @param frame the PUSH_PROMISE frame received
          * @return a Stream.Listener that will be notified of pushed stream events
          */
-        public Listener onPush(Stream stream, PushPromiseFrame frame);
+        Listener onPush(Stream stream, PushPromiseFrame frame);
 
         /**
          * <p>Callback method invoked when a DATA frame has been received.</p>
          *
-         * @param stream   the stream
-         * @param frame    the DATA frame received
+         * @param stream the stream
+         * @param frame the DATA frame received
          * @param callback the callback to complete when the bytes of the DATA frame have been consumed
          */
-        public void onData(Stream stream, DataFrame frame, Callback callback);
+        void onData(Stream stream, DataFrame frame, Callback callback);
 
-        public default void onReset(Stream stream, ResetFrame frame, Callback callback)
+        /**
+         * <p>Callback method invoked when a RST_STREAM frame has been received for this stream.</p>
+         *
+         * @param stream the stream
+         * @param frame the RST_FRAME received
+         * @param callback the callback to complete when the reset has been handled
+         */
+        default void onReset(Stream stream, ResetFrame frame, Callback callback)
         {
             try
             {
@@ -180,10 +187,10 @@ public interface Stream
          * <p>Callback method invoked when a RST_STREAM frame has been received for this stream.</p>
          *
          * @param stream the stream
-         * @param frame  the RST_FRAME received
+         * @param frame the RST_FRAME received
          * @see Session.Listener#onReset(Session, ResetFrame)
          */
-        public default void onReset(Stream stream, ResetFrame frame)
+        default void onReset(Stream stream, ResetFrame frame)
         {
         }
 
@@ -191,12 +198,12 @@ public interface Stream
          * <p>Callback method invoked when the stream exceeds its idle timeout.</p>
          *
          * @param stream the stream
-         * @param x      the timeout failure
+         * @param x the timeout failure
          * @see #getIdleTimeout()
          * @deprecated use {@link #onIdleTimeout(Stream, Throwable)} instead
          */
         @Deprecated
-        public default void onTimeout(Stream stream, Throwable x)
+        default void onTimeout(Stream stream, Throwable x)
         {
         }
 
@@ -204,25 +211,42 @@ public interface Stream
          * <p>Callback method invoked when the stream exceeds its idle timeout.</p>
          *
          * @param stream the stream
-         * @param x      the timeout failure
-         * @see #getIdleTimeout()
+         * @param x the timeout failure
          * @return true to reset the stream, false to ignore the idle timeout
+         * @see #getIdleTimeout()
          */
-        public default boolean onIdleTimeout(Stream stream, Throwable x)
+        default boolean onIdleTimeout(Stream stream, Throwable x)
         {
             onTimeout(stream, x);
             return true;
         }
 
-        public default void onFailure(Stream stream, int error, String reason, Callback callback)
+        /**
+         * <p>Callback method invoked when the stream failed.</p>
+         *
+         * @param stream the stream
+         * @param error the error code
+         * @param reason the error reason, or null
+         * @param callback the callback to complete when the failure has been handled
+         */
+        default void onFailure(Stream stream, int error, String reason, Callback callback)
         {
             callback.succeeded();
         }
 
         /**
+         * <p>Callback method invoked after the stream has been closed.</p>
+         *
+         * @param stream the stream
+         */
+        default void onClosed(Stream stream)
+        {
+        }
+
+        /**
          * <p>Empty implementation of {@link Listener}</p>
          */
-        public static class Adapter implements Listener
+        class Adapter implements Listener
         {
             @Override
             public void onHeaders(Stream stream, HeadersFrame frame)

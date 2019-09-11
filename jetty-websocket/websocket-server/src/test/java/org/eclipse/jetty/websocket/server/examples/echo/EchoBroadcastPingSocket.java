@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -43,12 +43,12 @@ public class EchoBroadcastPingSocket extends EchoBroadcastSocket
         {
             try
             {
-                while (!latch.await(10,TimeUnit.SECONDS))
+                while (!latch.await(10, TimeUnit.SECONDS))
                 {
                     System.err.println("Ping");
                     ByteBuffer data = ByteBuffer.allocate(3);
                     data.put(new byte[]
-                    { (byte)1, (byte)2, (byte)3 });
+                        {(byte)1, (byte)2, (byte)3});
                     data.flip();
                     session.getRemote().sendPing(data);
                 }
@@ -85,7 +85,7 @@ public class EchoBroadcastPingSocket extends EchoBroadcastSocket
     public void onClose(int statusCode, String reason)
     {
         keepAlive.shutdown();
-        super.onClose(statusCode,reason);
+        super.onClose(statusCode, reason);
     }
 
     @Override

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.isIn;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Reader;
@@ -31,7 +27,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
-
 import javax.websocket.ClientEndpoint;
 import javax.websocket.CloseReason;
 import javax.websocket.ContainerProvider;
@@ -59,6 +54,11 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.in;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 @Disabled("Not working atm")
 public class DecoderReaderManySmallTest
@@ -96,7 +96,7 @@ public class DecoderReaderManySmallTest
         }
     }
 
-    @ClientEndpoint(decoders = { EventIdDecoder.class })
+    @ClientEndpoint(decoders = {EventIdDecoder.class})
     public static class EventIdSocket
     {
         public LinkedBlockingQueue<EventId> messageQueue = new LinkedBlockingQueue<>();
@@ -116,7 +116,7 @@ public class DecoderReaderManySmallTest
 
         public void awaitClose() throws InterruptedException
         {
-            closeLatch.await(4,TimeUnit.SECONDS);
+            closeLatch.await(4, TimeUnit.SECONDS);
         }
     }
 
@@ -130,7 +130,7 @@ public class DecoderReaderManySmallTest
     {
         client = ContainerProvider.getWebSocketContainer();
     }
-    
+
     @AfterEach
     public void stopClient() throws Exception
     {
@@ -158,7 +158,7 @@ public class DecoderReaderManySmallTest
         server.addConnectFuture(serverConnFut);
 
         EventIdSocket ids = new EventIdSocket();
-        client.connectToServer(ids,server.getWsUri());
+        client.connectToServer(ids, server.getWsUri());
 
         final int from = 1000;
         final int to = 2000;
@@ -168,7 +168,7 @@ public class DecoderReaderManySmallTest
             // Setup echo of frames on server side
             serverConn.setIncomingFrameConsumer((frame) ->
             {
-                WebSocketFrame wsFrame = (WebSocketFrame) frame;
+                WebSocketFrame wsFrame = (WebSocketFrame)frame;
                 if (wsFrame.getOpCode() == OpCode.TEXT)
                 {
                     String msg = wsFrame.getPayloadAsUTF8();
@@ -200,7 +200,7 @@ public class DecoderReaderManySmallTest
             // validate that all expected ids have been seen (order is irrelevant here)
             for (int expected = from; expected < to; expected++)
             {
-                assertThat("Has expected id:" + expected, expected, isIn(seen));
+                assertThat("Has expected id:" + expected, expected, is(in(seen)));
             }
         }
     }

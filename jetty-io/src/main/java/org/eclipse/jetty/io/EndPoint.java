@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -31,7 +31,6 @@ import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.thread.Invocable;
 
 /**
- *
  * A transport EndPoint
  *
  * <h3>Asynchronous Methods</h3>
@@ -95,29 +94,26 @@ import org.eclipse.jetty.util.thread.Invocable;
  * </pre></blockquote>
  */
 public interface EndPoint extends Closeable
-{    
-    /* ------------------------------------------------------------ */
+{
+
     /**
      * @return The local Inet address to which this <code>EndPoint</code> is bound, or <code>null</code>
      * if this <code>EndPoint</code> does not represent a network connection.
      */
     InetSocketAddress getLocalAddress();
 
-    /* ------------------------------------------------------------ */
     /**
      * @return The remote Inet address to which this <code>EndPoint</code> is bound, or <code>null</code>
      * if this <code>EndPoint</code> does not represent a network connection.
      */
     InetSocketAddress getRemoteAddress();
 
-    /* ------------------------------------------------------------ */
     boolean isOpen();
 
-    /* ------------------------------------------------------------ */
     long getCreatedTimeStamp();
 
-    /* ------------------------------------------------------------ */
-    /** Shutdown the output.
+    /**
+     * Shutdown the output.
      * <p>This call indicates that no more data will be sent on this endpoint that
      * that the remote end should read an EOF once all previously sent data has been
      * consumed. Shutdown may be done either at the TCP/IP level, as a protocol exchange (Eg
@@ -128,20 +124,22 @@ public interface EndPoint extends Closeable
      */
     void shutdownOutput();
 
-    /* ------------------------------------------------------------ */
-    /** Test if output is shutdown.
+    /**
+     * Test if output is shutdown.
      * The output is shutdown by a call to {@link #shutdownOutput()}
      * or {@link #close()}.
+     *
      * @return true if the output is shutdown or the endpoint is closed.
      */
     boolean isOutputShutdown();
 
-    /* ------------------------------------------------------------ */
-    /** Test if the input is shutdown.
+    /**
+     * Test if the input is shutdown.
      * The input is shutdown if an EOF has been read while doing
      * a {@link #fill(ByteBuffer)}.   Once the input is shutdown, all calls to
      * {@link #fill(ByteBuffer)} will  return -1, until such time as the
      * end point is close, when they will return {@link EofException}.
+     *
      * @return True if the input is shutdown or the endpoint is closed.
      */
     boolean isInputShutdown();
@@ -165,11 +163,11 @@ public interface EndPoint extends Closeable
      */
     int fill(ByteBuffer buffer) throws IOException;
 
-
     /**
      * Flush data from the passed header/buffer to this endpoint.  As many bytes as can be consumed
      * are taken from the header/buffer position up until the buffer limit.  The header/buffers position
      * is updated to indicate how many bytes have been consumed.
+     *
      * @param buffer the buffers to flush
      * @return True IFF all the buffers have been consumed and the endpoint has flushed the data to its
      * destination (ie is not buffering any data).
@@ -177,32 +175,32 @@ public interface EndPoint extends Closeable
      */
     boolean flush(ByteBuffer... buffer) throws IOException;
 
-    /* ------------------------------------------------------------ */
     /**
      * @return The underlying transport object (socket, channel, etc.)
      */
     Object getTransport();
 
-    /* ------------------------------------------------------------ */
-    /** Get the max idle time in ms.
+    /**
+     * Get the max idle time in ms.
      * <p>The max idle time is the time the endpoint can be idle before
      * extraordinary handling takes place.
+     *
      * @return the max idle time in ms or if ms &lt;= 0 implies an infinite timeout
      */
     long getIdleTimeout();
 
-    /* ------------------------------------------------------------ */
-    /** Set the idle timeout.
+    /**
+     * Set the idle timeout.
+     *
      * @param idleTimeout the idle timeout in MS. Timeout &lt;= 0 implies an infinite timeout
      */
     void setIdleTimeout(long idleTimeout);
-
 
     /**
      * <p>Requests callback methods to be invoked when a call to {@link #fill(ByteBuffer)} would return data or EOF.</p>
      *
      * @param callback the callback to call when an error occurs or we are readable.  The callback may implement the {@link Invocable} interface to
-     * self declare its blocking status. Non-blocking callbacks may be called more efficiently without dispatch delays. 
+     * self declare its blocking status. Non-blocking callbacks may be called more efficiently without dispatch delays.
      * @throws ReadPendingException if another read operation is concurrent.
      */
     void fillInterested(Callback callback) throws ReadPendingException;
@@ -248,28 +246,33 @@ public interface EndPoint extends Closeable
 
     /**
      * <p>Callback method invoked when this {@link EndPoint} is opened.</p>
+     *
      * @see #onClose()
      */
     void onOpen();
 
     /**
      * <p>Callback method invoked when this {@link EndPoint} is close.</p>
+     *
      * @see #onOpen()
      */
     void onClose();
 
-    /** Is the endpoint optimized for DirectBuffer usage
+    /**
+     * Is the endpoint optimized for DirectBuffer usage
+     *
      * @return True if direct buffers can be used optimally.
      */
     boolean isOptimizedForDirectBuffers();
 
-
-    /** Upgrade connections.
+    /**
+     * Upgrade connections.
      * Close the old connection, update the endpoint and open the new connection.
      * If the oldConnection is an instance of {@link Connection.UpgradeFrom} then
      * a prefilled buffer is requested and passed to the newConnection if it is an instance
      * of {@link Connection.UpgradeTo}
+     *
      * @param newConnection The connection to upgrade to
      */
-    public void upgrade(Connection newConnection);
+    void upgrade(Connection newConnection);
 }

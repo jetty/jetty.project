@@ -1,0 +1,38 @@
+<?xml version="1.0"?><!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+    <Call name="insertHandler">
+        <Arg>
+            <New id="InetAccessHandler" class="org.eclipse.jetty.server.handler.InetAccessHandler">
+                <Call name="include">
+                    <Arg>
+                        <Call class="org.eclipse.jetty.util.StringUtil" name="csvSplit">
+                            <Arg><Property name="jetty.inetaccess.include" default=""/></Arg>
+                        </Call>
+                    </Arg>
+                </Call>
+                <Call name="exclude">
+                    <Arg>
+                        <Call class="org.eclipse.jetty.util.StringUtil" name="csvSplit">
+                            <Arg><Property name="jetty.inetaccess.exclude" default=""/></Arg>
+                        </Call>
+                    </Arg>
+                </Call>
+                <Call name="includeConnectors">
+                    <Arg>
+                        <Call class="org.eclipse.jetty.util.StringUtil" name="csvSplit">
+                            <Arg><Property name="jetty.inetaccess.includeConnectors" default=""/></Arg>
+                        </Call>
+                    </Arg>
+                </Call>
+                <Call name="excludeConnectors">
+                    <Arg>
+                        <Call class="org.eclipse.jetty.util.StringUtil" name="csvSplit">
+                            <Arg><Property name="jetty.inetaccess.excludeConnectors" default=""/></Arg>
+                        </Call>
+                    </Arg>
+                </Call>
+            </New>
+        </Arg>
+    </Call>
+</Configure>

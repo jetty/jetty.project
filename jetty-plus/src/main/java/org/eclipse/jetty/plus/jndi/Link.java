@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,26 +20,24 @@ package org.eclipse.jetty.plus.jndi;
 
 import javax.naming.NamingException;
 
-
-
 public class Link extends NamingEntry
 {
     private final String _link;
-    
+
     public Link(Object scope, String jndiName, String link) throws NamingException
     {
         //jndiName is the name according to the web.xml
         //objectToBind is the name in the environment
         super(scope, jndiName);
         save(link);
-        _link=link;
+        _link = link;
     }
 
-    public Link (String jndiName, String link) throws NamingException
+    public Link(String jndiName, String link) throws NamingException
     {
         super(jndiName);
         save(link);
-        _link=link;
+        _link = link;
     }
 
     @Override
@@ -47,8 +45,14 @@ public class Link extends NamingEntry
     {
         throw new UnsupportedOperationException("Method not supported for Link objects");
     }
-    
+
     public String getLink()
+    {
+        return _link;
+    }
+
+    @Override
+    protected String toStringMetaData()
     {
         return _link;
     }

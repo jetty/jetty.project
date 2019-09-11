@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -23,21 +23,21 @@ public class FileArg
     public final String moduleName;
     public final String uri;
     public final String location;
-    
+
     public FileArg(final Module module, final String uriLocation)
     {
-        this(module == null?(String)null:module.getName(),uriLocation);
+        this(module == null ? null : module.getName(), uriLocation);
     }
-    
+
     public FileArg(final String uriLocation)
     {
-        this((String)null,uriLocation);
+        this((String)null, uriLocation);
     }
-    
+
     private FileArg(final String moduleName, final String uriLocation)
     {
         this.moduleName = moduleName;
-        String parts[] = uriLocation.split("\\|",3);
+        String[] parts = uriLocation.split("\\|", 3);
         if (parts.length > 2)
         {
             StringBuilder err = new StringBuilder();
@@ -68,7 +68,7 @@ public class FileArg
             this.location = uriLocation;
         }
     }
-    
+
     @Override
     public boolean equals(Object obj)
     {
@@ -98,16 +98,10 @@ public class FileArg
         }
         if (location == null)
         {
-            if (other.location != null)
-            {
-                return false;
-            }
+            return other.location == null;
         }
-        else if (!location.equals(other.location))
-        {
-            return false;
-        }
-        return true;
+        else
+            return location.equals(other.location);
     }
 
     @Override
@@ -115,8 +109,8 @@ public class FileArg
     {
         final int prime = 31;
         int result = 1;
-        result = (prime * result) + ((uri == null)?0:uri.hashCode());
-        result = (prime * result) + ((location == null)?0:location.hashCode());
+        result = (prime * result) + ((uri == null) ? 0 : uri.hashCode());
+        result = (prime * result) + ((location == null) ? 0 : location.hashCode());
         return result;
     }
 

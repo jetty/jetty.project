@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -33,7 +30,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
-
 import javax.websocket.ClientEndpoint;
 import javax.websocket.CloseReason;
 import javax.websocket.ContainerProvider;
@@ -57,10 +53,12 @@ import org.eclipse.jetty.websocket.common.test.BlockheadServer;
 import org.eclipse.jetty.websocket.common.test.Timeouts;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
-
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 public class DecoderReaderTest
 {
@@ -126,7 +124,7 @@ public class DecoderReaderTest
         }
     }
 
-    @ClientEndpoint(decoders = { QuotesDecoder.class })
+    @ClientEndpoint(decoders = {QuotesDecoder.class})
     public static class QuotesSocket
     {
         private static final Logger LOG = Log.getLogger(QuotesSocket.class);
@@ -143,7 +141,7 @@ public class DecoderReaderTest
         public synchronized void onMessage(Quotes msg)
         {
             messageQueue.offer(msg);
-            if(LOG.isDebugEnabled())
+            if (LOG.isDebugEnabled())
             {
                 String hashcode = Integer.toHexString(Objects.hashCode(this));
                 LOG.debug("{}: Quotes from: {}", hashcode, msg.author);
@@ -156,7 +154,7 @@ public class DecoderReaderTest
 
         public void awaitClose() throws InterruptedException
         {
-            closeLatch.await(4,TimeUnit.SECONDS);
+            closeLatch.await(4, TimeUnit.SECONDS);
         }
     }
 
@@ -168,13 +166,13 @@ public class DecoderReaderTest
     {
         client = ContainerProvider.getWebSocketContainer();
     }
-    
+
     @AfterEach
     public void stopClient() throws Exception
     {
         ((LifeCycle)client).stop();
     }
-    
+
     @BeforeAll
     public static void startServer() throws Exception
     {
@@ -196,7 +194,7 @@ public class DecoderReaderTest
         server.addConnectFuture(serverConnFut);
 
         QuotesSocket quoter = new QuotesSocket();
-        client.connectToServer(quoter,server.getWsUri());
+        client.connectToServer(quoter, server.getWsUri());
 
         try (BlockheadConnection serverConn = serverConnFut.get(Timeouts.CONNECT, Timeouts.CONNECT_UNIT))
         {
@@ -211,11 +209,10 @@ public class DecoderReaderTest
     /**
      * Test that multiple quotes can go through decoder without issue.
      * <p>
-     *     Since this decoder is Reader based, this is a useful test to ensure
-     *     that the Reader creation / dispatch / hand off to the user endpoint
-     *     works properly.
+     * Since this decoder is Reader based, this is a useful test to ensure
+     * that the Reader creation / dispatch / hand off to the user endpoint
+     * works properly.
      * </p>
-     * @throws Exception
      */
     @Test
     public void testTwoQuotes() throws Exception
@@ -225,16 +222,16 @@ public class DecoderReaderTest
         server.addConnectFuture(serverConnFut);
 
         QuotesSocket quoter = new QuotesSocket();
-        client.connectToServer(quoter,server.getWsUri());
+        client.connectToServer(quoter, server.getWsUri());
 
         try (BlockheadConnection serverConn = serverConnFut.get(Timeouts.CONNECT, Timeouts.CONNECT_UNIT))
         {
-            writeQuotes( serverConn,"quotes-ben.txt");
+            writeQuotes(serverConn, "quotes-ben.txt");
             Quotes quotes = quoter.messageQueue.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
             assertThat("Quotes Author", quotes.author, is("Benjamin Franklin"));
             assertThat("Quotes Count", quotes.quotes.size(), is(3));
 
-            writeQuotes( serverConn,"quotes-twain.txt");
+            writeQuotes(serverConn, "quotes-twain.txt");
             quotes = quoter.messageQueue.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
             assertThat("Quotes Author", quotes.author, is("Mark Twain"));
         }
@@ -245,7 +242,8 @@ public class DecoderReaderTest
         // read file
         File qfile = MavenTestingUtils.getTestResourceFile(filename);
         List<String> lines = new ArrayList<>();
-        try (FileReader reader = new FileReader(qfile); BufferedReader buf = new BufferedReader(reader))
+        try (FileReader reader = new FileReader(qfile);
+             BufferedReader buf = new BufferedReader(reader))
         {
             String line;
             while ((line = buf.readLine()) != null)

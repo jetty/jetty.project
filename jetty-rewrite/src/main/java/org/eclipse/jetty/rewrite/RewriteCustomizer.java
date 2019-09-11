@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -27,7 +27,7 @@ import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConfiguration.Customizer;
 import org.eclipse.jetty.server.Request;
 
-public class RewriteCustomizer extends RuleContainer implements Customizer 
+public class RewriteCustomizer extends RuleContainer implements Customizer
 {
     @Override
     public void customize(Connector connector, HttpConfiguration channelConfig, Request request)

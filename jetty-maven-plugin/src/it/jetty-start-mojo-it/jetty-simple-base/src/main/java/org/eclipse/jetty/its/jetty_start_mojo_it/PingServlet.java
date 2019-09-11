@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -16,26 +16,24 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.its.jetty_start_mojo_it;
 
+import java.io.IOException;
 import javax.servlet.ServletException;
-import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
 
 public class PingServlet
     extends HttpServlet
 {
 
     @Override
-    protected void doGet( HttpServletRequest req, HttpServletResponse resp )
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp)
         throws ServletException, IOException
     {
-        String who = req.getParameter( "name" );
+        String who = req.getParameter("name");
 
-        resp.getWriter().write( "pong " + (who == null ? "unknown" : who) );
+        resp.getWriter().write("pong " + (who == null ? "unknown" : who));
     }
 }

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -24,7 +24,6 @@ import java.net.URISyntaxException;
 import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import javax.websocket.ClientEndpoint;
 import javax.websocket.CloseReason;
 import javax.websocket.ContainerProvider;
@@ -54,14 +53,14 @@ public class ExampleClient
         @OnMessage
         public void onMessage(String msg)
         {
-            System.out.printf("Received: %s%n",Objects.toString(msg));
+            System.out.printf("Received: %s%n", Objects.toString(msg));
             this.messageLatch.countDown();
         }
 
         @OnClose
         public void onClose(CloseReason close)
         {
-            System.out.printf("Closed: %d, %s%n",close.getCloseCode().getCode(),Objects.toString(close.getReasonPhrase()));
+            System.out.printf("Closed: %d, %s%n", close.getCloseCode().getCode(), Objects.toString(close.getReasonPhrase()));
             this.closeLatch.countDown();
         }
     }
@@ -82,18 +81,18 @@ public class ExampleClient
     {
         WebSocketContainer container = ContainerProvider.getWebSocketContainer();
 
-        System.out.printf("WebSocketContainer Impl: %s%n",container.getClass().getName());
+        System.out.printf("WebSocketContainer Impl: %s%n", container.getClass().getName());
 
         ExampleSocket socket = new ExampleSocket();
         URI uri = new URI("ws://echo.websocket.org/");
-        Session session = container.connectToServer(socket,uri);
+        Session session = container.connectToServer(socket, uri);
         RemoteEndpoint.Basic remote = session.getBasicRemote();
         String msg = "Hello world";
-        System.out.printf("Sending: %s%n",Objects.toString(msg));
+        System.out.printf("Sending: %s%n", Objects.toString(msg));
         remote.sendText(msg);
-        socket.messageLatch.await(1,TimeUnit.SECONDS); // give remote 1 second to respond
+        socket.messageLatch.await(1, TimeUnit.SECONDS); // give remote 1 second to respond
         session.close();
-        socket.closeLatch.await(1,TimeUnit.SECONDS); // give remote 1 second to acknowledge response
+        socket.closeLatch.await(1, TimeUnit.SECONDS); // give remote 1 second to acknowledge response
         System.out.println("Socket is closed");
     }
 }

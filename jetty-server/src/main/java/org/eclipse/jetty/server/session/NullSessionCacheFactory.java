@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -16,7 +16,6 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.server.session;
 
 /**
@@ -25,10 +24,26 @@ package org.eclipse.jetty.server.session;
  * Factory for NullSessionCaches.
  */
 public class NullSessionCacheFactory implements SessionCacheFactory
-{    
+{
     boolean _saveOnCreate;
     boolean _removeUnloadableSessions;
-    
+    NullSessionCache.WriteThroughMode _writeThroughMode;
+
+    /**
+     * @return the writeThroughMode
+     */
+    public NullSessionCache.WriteThroughMode getWriteThroughMode()
+    {
+        return _writeThroughMode;
+    }
+
+    /**
+     * @param writeThroughMode the writeThroughMode to set
+     */
+    public void setWriteThroughMode(NullSessionCache.WriteThroughMode writeThroughMode)
+    {
+        _writeThroughMode = writeThroughMode;
+    }
 
     /**
      * @return the saveOnCreate
@@ -38,8 +53,6 @@ public class NullSessionCacheFactory implements SessionCacheFactory
         return _saveOnCreate;
     }
 
-
-
     /**
      * @param saveOnCreate the saveOnCreate to set
      */
@@ -47,8 +60,6 @@ public class NullSessionCacheFactory implements SessionCacheFactory
     {
         _saveOnCreate = saveOnCreate;
     }
-
-
 
     /**
      * @return the removeUnloadableSessions
@@ -58,8 +69,6 @@ public class NullSessionCacheFactory implements SessionCacheFactory
         return _removeUnloadableSessions;
     }
 
-
-
     /**
      * @param removeUnloadableSessions the removeUnloadableSessions to set
      */
@@ -68,9 +77,7 @@ public class NullSessionCacheFactory implements SessionCacheFactory
         _removeUnloadableSessions = removeUnloadableSessions;
     }
 
-
-
-    /** 
+    /**
      * @see org.eclipse.jetty.server.session.SessionCacheFactory#getSessionCache(org.eclipse.jetty.server.session.SessionHandler)
      */
     @Override
@@ -79,8 +86,7 @@ public class NullSessionCacheFactory implements SessionCacheFactory
         NullSessionCache cache = new NullSessionCache(handler);
         cache.setSaveOnCreate(isSaveOnCreate());
         cache.setRemoveUnloadableSessions(isRemoveUnloadableSessions());
+        cache.setWriteThroughMode(_writeThroughMode);
         return cache;
-        
     }
-
 }

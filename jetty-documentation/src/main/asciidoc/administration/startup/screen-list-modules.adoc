@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ========================================================================
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -55,19 +55,6 @@ Modules for tag '*':
            : Enables the apache version of JSTL
         LIB: lib/apache-jstl/*.jar
     Enabled: transitive provider of apache-jstl for jstl
-
-     Module: cdi
-           : Experimental CDI/Weld integration
-     Depend: cdi1
-
-     Module: cdi1
-           : Experimental CDI/Weld integration
-           : Deprecated in favour of cdi2 module.
-     Depend: deploy, annotations, plus, jsp
-        LIB: lib/cdi/*.jar
-        LIB: lib/cdi-core-${jetty.version}.jar
-        LIB: lib/cdi-servlet-${jetty.version}.jar
-        XML: etc/jetty-cdi.xml
 
      Module: cdi2
            : Jetty setup to support Weld/CDI2 with WELD inside the webapp

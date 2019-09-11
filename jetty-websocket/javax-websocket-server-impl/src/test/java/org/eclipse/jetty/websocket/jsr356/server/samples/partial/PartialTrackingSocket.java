@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,7 +19,6 @@
 package org.eclipse.jetty.websocket.jsr356.server.samples.partial;
 
 import java.io.IOException;
-
 import javax.websocket.OnMessage;
 import javax.websocket.server.ServerEndpoint;
 
@@ -31,6 +30,6 @@ public class PartialTrackingSocket extends TrackingSocket
     @OnMessage
     public void onPartial(String msg, boolean fin) throws IOException
     {
-        addEvent("onPartial(\"%s\",%b)",msg,fin);
+        addEvent("onPartial(\"%s\",%b)", msg, fin);
     }
 }

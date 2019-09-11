@@ -14,8 +14,10 @@ As they can be long to run, the tests do not run per default. So to run them you
 
 Running single test
 --------------------
-You can run single or set of test as well using the command line argument: ```-Dinvoker.test=jetty-run-mojo-it,jetty-run-war*-it,!jetty-run-distro*```
+You can run single or set of test as well using the command line argument: ```-Dinvoker.test=it-parent-pom,jetty-run-mojo-it,jetty-run-war*-it,!jetty-run-distro*```
 The parameter supports pattern and exclusion with !
+
+Due to [files  filtering](http://maven.apache.org/plugins/maven-invoker-plugin/examples/filtering.html), ```it-parent-pom``` must be included - otherwise tests will fail during execution. 
 
 Running Logs
 --------------------

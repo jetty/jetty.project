@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -29,7 +29,7 @@ public class Param
     /**
      * The various roles of the known parameters.
      */
-    public static enum Role
+    public enum Role
     {
         SESSION,
         ENDPOINT_CONFIG,
@@ -48,7 +48,7 @@ public class Param
         static
         {
             messageRoles = new Role[]
-            { MESSAGE_TEXT, MESSAGE_TEXT_STREAM, MESSAGE_BINARY, MESSAGE_BINARY_STREAM, MESSAGE_PONG, };
+                {MESSAGE_TEXT, MESSAGE_TEXT_STREAM, MESSAGE_BINARY, MESSAGE_BINARY_STREAM, MESSAGE_PONG,};
         }
 
         public static Role[] getMessageRoles()
@@ -76,7 +76,7 @@ public class Param
             this.annotations = new HashMap<>();
             for (Annotation anno : annos)
             {
-                this.annotations.put(anno.annotationType(),anno);
+                this.annotations.put(anno.annotationType(), anno);
             }
         }
     }

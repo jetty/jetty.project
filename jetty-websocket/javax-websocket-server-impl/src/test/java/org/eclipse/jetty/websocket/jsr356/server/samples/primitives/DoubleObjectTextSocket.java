@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,7 +20,6 @@ package org.eclipse.jetty.websocket.jsr356.server.samples.primitives;
 
 import java.io.IOException;
 import java.util.Locale;
-
 import javax.websocket.OnError;
 import javax.websocket.OnMessage;
 import javax.websocket.OnOpen;
@@ -53,7 +52,7 @@ public class DoubleObjectTextSocket
         }
         else
         {
-            String msg = String.format(Locale.US, "%.4f",d);
+            String msg = String.format(Locale.US, "%.4f", d);
             session.getAsyncRemote().sendText(msg);
         }
     }
@@ -61,7 +60,7 @@ public class DoubleObjectTextSocket
     @OnError
     public void onError(Throwable cause) throws IOException
     {
-        LOG.warn("Error",cause);
+        LOG.warn("Error", cause);
         session.getBasicRemote().sendText("Exception: " + StackUtil.toString(cause));
     }
 }

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,12 +18,8 @@
 
 package org.eclipse.jetty.fcgi.server.proxy;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.IOException;
 import java.util.EnumSet;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -41,6 +37,9 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 public class TryFilesFilterTest
 {
     private Server server;
@@ -55,13 +54,10 @@ public class TryFilesFilterTest
         connector = new ServerConnector(server);
         server.addConnector(connector);
 
-        SslContextFactory sslContextFactory = new SslContextFactory();
-        sslContextFactory.setEndpointIdentificationAlgorithm("");
-        sslContextFactory.setKeyStorePath("src/test/resources/keystore.jks");
-        sslContextFactory.setKeyStorePassword("storepwd");
-        sslContextFactory.setTrustStorePath("src/test/resources/truststore.jks");
-        sslContextFactory.setTrustStorePassword("storepwd");
-        sslConnector = new ServerConnector(server, sslContextFactory);
+        SslContextFactory.Server serverSslContextFactory = new SslContextFactory.Server();
+        serverSslContextFactory.setKeyStorePath("src/test/resources/keystore.jks");
+        serverSslContextFactory.setKeyStorePassword("storepwd");
+        sslConnector = new ServerConnector(server, serverSslContextFactory);
         server.addConnector(sslConnector);
 
         ServletContextHandler context = new ServletContextHandler(server, "/");
@@ -72,7 +68,13 @@ public class TryFilesFilterTest
 
         context.addServlet(new ServletHolder(servlet), "/*");
 
-        client = new HttpClient(sslContextFactory);
+        SslContextFactory.Client clientSslContextFactory = new SslContextFactory.Client();
+        clientSslContextFactory.setEndpointIdentificationAlgorithm(null);
+        clientSslContextFactory.setKeyStorePath("src/test/resources/keystore.jks");
+        clientSslContextFactory.setKeyStorePassword("storepwd");
+        clientSslContextFactory.setTrustStorePath("src/test/resources/truststore.jks");
+        clientSslContextFactory.setTrustStorePassword("storepwd");
+        client = new HttpClient(clientSslContextFactory);
         server.addBean(client);
 
         server.start();
@@ -101,9 +103,9 @@ public class TryFilesFilterTest
         });
 
         ContentResponse response = client.newRequest("localhost", sslConnector.getLocalPort())
-                .scheme("https")
-                .path(path)
-                .send();
+            .scheme("https")
+            .path(path)
+            .send();
 
         assertEquals(200, response.getStatus());
     }

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -29,7 +29,6 @@ import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.thread.Invocable.InvocationType;
 
 /**
  * A {@link ContentProvider} that provides content asynchronously through an {@link OutputStream}
@@ -84,7 +83,7 @@ public class OutputStreamContentProvider implements AsyncContentProvider, Callba
     {
         return deferred.getInvocationType();
     }
-    
+
     @Override
     public long getLength()
     {

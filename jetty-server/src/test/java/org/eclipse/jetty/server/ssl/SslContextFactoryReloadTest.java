@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.server.ssl;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -29,7 +25,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
@@ -56,8 +51,11 @@ import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
-
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class SslContextFactoryReloadTest
 {
@@ -72,7 +70,7 @@ public class SslContextFactoryReloadTest
     {
         server = new Server();
 
-        sslContextFactory = new SslContextFactory();
+        sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setKeyStorePath(KEYSTORE_1);
         sslContextFactory.setKeyStorePassword("storepwd");
         sslContextFactory.setKeyStoreType("JKS");
@@ -81,8 +79,8 @@ public class SslContextFactoryReloadTest
         HttpConfiguration httpsConfig = new HttpConfiguration();
         httpsConfig.addCustomizer(new SecureRequestCustomizer());
         connector = new ServerConnector(server,
-                new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString()),
-                new HttpConnectionFactory(httpsConfig));
+            new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString()),
+            new HttpConnectionFactory(httpsConfig));
         server.addConnector(connector);
 
         server.setHandler(handler);
@@ -110,8 +108,8 @@ public class SslContextFactoryReloadTest
             String serverDN1 = client1.getSession().getPeerPrincipal().getName();
             assertThat(serverDN1, Matchers.startsWith("CN=localhost1"));
 
-            String request = "" +
-                    "GET / HTTP/1.1\r\n" +
+            String request =
+                "GET / HTTP/1.1\r\n" +
                     "Host: localhost\r\n" +
                     "\r\n";
 
@@ -217,8 +215,8 @@ public class SslContextFactoryReloadTest
                     // use session resumption and fallback to the normal TLS handshake.
                     client.getSession().invalidate();
 
-                    String request1 = "" +
-                            "POST / HTTP/1.1\r\n" +
+                    String request1 =
+                        "POST / HTTP/1.1\r\n" +
                             "Host: localhost\r\n" +
                             "Content-Length: " + content.length + "\r\n" +
                             "\r\n";
@@ -232,8 +230,8 @@ public class SslContextFactoryReloadTest
                     assertNotNull(response1);
                     assertThat(response1.getStatus(), Matchers.equalTo(HttpStatus.OK_200));
 
-                    String request2 = "" +
-                            "GET / HTTP/1.1\r\n" +
+                    String request2 =
+                        "GET / HTTP/1.1\r\n" +
                             "Host: localhost\r\n" +
                             "Connection: close\r\n" +
                             "\r\n";

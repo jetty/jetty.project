@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,7 +19,6 @@
 package org.eclipse.jetty.websocket.jsr356;
 
 import java.lang.reflect.Method;
-
 import javax.websocket.ContainerProvider;
 import javax.websocket.WebSocketContainer;
 
@@ -40,13 +39,13 @@ import org.eclipse.jetty.websocket.common.scopes.SimpleContainerScope;
 public class JettyClientContainerProvider extends ContainerProvider
 {
     private static final Logger LOG = Log.getLogger(JettyClientContainerProvider.class);
-    
+
     private static boolean useSingleton = false;
     private static boolean useServerContainer = false;
     private static WebSocketContainer INSTANCE;
 
     private static Object lock = new Object();
-    
+
     /**
      * Change calls to {@link ContainerProvider#getWebSocketContainer()} to always
      * return a singleton instance of the same {@link WebSocketContainer}
@@ -59,7 +58,7 @@ public class JettyClientContainerProvider extends ContainerProvider
     {
         JettyClientContainerProvider.useSingleton = flag;
     }
-    
+
     /**
      * Test if {@link ContainerProvider#getWebSocketContainer()} will always
      * return a singleton instance of the same {@link WebSocketContainer}
@@ -72,7 +71,7 @@ public class JettyClientContainerProvider extends ContainerProvider
     {
         return useSingleton;
     }
-    
+
     /**
      * Add ability of calls to {@link ContainerProvider#getWebSocketContainer()} to
      * find and return the {@code javax.websocket.server.ServerContainer} from the
@@ -91,7 +90,7 @@ public class JettyClientContainerProvider extends ContainerProvider
     {
         JettyClientContainerProvider.useServerContainer = flag;
     }
-    
+
     /**
      * Test if {@link ContainerProvider#getWebSocketContainer()} has the ability to
      * find and return the {@code javax.websocket.server.ServerContainer} from the
@@ -108,7 +107,7 @@ public class JettyClientContainerProvider extends ContainerProvider
     {
         return useServerContainer;
     }
-    
+
     public Object getContextHandler()
     {
         try
@@ -119,7 +118,7 @@ public class JettyClientContainerProvider extends ContainerProvider
             Object objContext = methodGetContext.invoke(null);
             if (objContext == null)
                 return null;
-            
+
             // Equiv of: ContextHandler handler = ContextHandler.getContextHandler(context);
             Class<?> clazzServletContext = Class.forName("javax.servlet.ServletContext");
             Method methodGetContextHandler = clazzContextHandler.getMethod("getContextHandler", clazzServletContext);
@@ -131,7 +130,7 @@ public class JettyClientContainerProvider extends ContainerProvider
             return null;
         }
     }
-    
+
     /**
      * Used by {@link ContainerProvider#getWebSocketContainer()} to get a new instance
      * of the Client {@link WebSocketContainer}.
@@ -143,7 +142,7 @@ public class JettyClientContainerProvider extends ContainerProvider
         {
             WebSocketContainer webSocketContainer = null;
             Object contextHandler = getContextHandler();
-            
+
             if (useServerContainer && contextHandler != null)
             {
                 try
@@ -157,10 +156,9 @@ public class JettyClientContainerProvider extends ContainerProvider
                         Object objServerContainer = methodGetAttribute.invoke(objServletContext, "javax.websocket.server.ServerContainer");
                         if (objServerContainer != null && objServerContainer instanceof WebSocketContainer)
                         {
-                            webSocketContainer = (WebSocketContainer) objServerContainer;
+                            webSocketContainer = (WebSocketContainer)objServerContainer;
                         }
                     }
-                    
                 }
                 catch (Throwable ignore)
                 {
@@ -168,23 +166,23 @@ public class JettyClientContainerProvider extends ContainerProvider
                     // continue, without server container
                 }
             }
-            
+
             if (useSingleton && INSTANCE != null)
             {
                 return INSTANCE;
             }
-            
+
             // Still no instance?
             if (webSocketContainer == null)
             {
                 SimpleContainerScope containerScope = new SimpleContainerScope(WebSocketPolicy.newClientPolicy());
                 ClientContainer clientContainer = new ClientContainer(containerScope);
-                
+
                 if (contextHandler != null && contextHandler instanceof ContainerLifeCycle)
                 {
                     // Add as bean to contextHandler
                     // Allow startup to follow Jetty lifecycle
-                    ((ContainerLifeCycle) contextHandler).addManaged(clientContainer);
+                    ((ContainerLifeCycle)contextHandler).addManaged(clientContainer);
                 }
                 else
                 {
@@ -192,7 +190,7 @@ public class JettyClientContainerProvider extends ContainerProvider
                     // register JVM wide shutdown thread
                     ShutdownThread.register(clientContainer);
                 }
-                
+
                 if (!clientContainer.isStarted())
                 {
                     try
@@ -204,15 +202,15 @@ public class JettyClientContainerProvider extends ContainerProvider
                         throw new RuntimeException("Unable to start Client Container", e);
                     }
                 }
-                
+
                 webSocketContainer = clientContainer;
             }
-            
+
             if (useSingleton)
             {
                 INSTANCE = webSocketContainer;
             }
-            
+
             return webSocketContainer;
         }
     }

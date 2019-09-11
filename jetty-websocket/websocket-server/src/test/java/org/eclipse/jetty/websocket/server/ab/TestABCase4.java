@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -40,6 +40,7 @@ public class TestABCase4 extends AbstractABCase
 {
     /**
      * Send opcode 3 (reserved)
+     *
      * @throws Exception on test failure
      */
     @Test
@@ -51,7 +52,8 @@ public class TestABCase4 extends AbstractABCase
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
 
-        try (Fuzzer fuzzer = new Fuzzer(this); StacklessLogging logging = new StacklessLogging(Parser.class))
+        try (Fuzzer fuzzer = new Fuzzer(this);
+             StacklessLogging logging = new StacklessLogging(Parser.class))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
@@ -62,12 +64,13 @@ public class TestABCase4 extends AbstractABCase
 
     /**
      * Send opcode 4 (reserved), with payload
+     *
      * @throws Exception on test failure
      */
     @Test
     public void testCase4_1_2() throws Exception
     {
-        byte payload[] = StringUtil.getUtf8Bytes("reserved payload");
+        byte[] payload = StringUtil.getUtf8Bytes("reserved payload");
         ByteBuffer buf = ByteBuffer.wrap(payload);
 
         List<WebSocketFrame> send = new ArrayList<>();
@@ -76,7 +79,8 @@ public class TestABCase4 extends AbstractABCase
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
 
-        try (Fuzzer fuzzer = new Fuzzer(this); StacklessLogging logging = new StacklessLogging(Parser.class))
+        try (Fuzzer fuzzer = new Fuzzer(this);
+             StacklessLogging logging = new StacklessLogging(Parser.class))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
@@ -87,6 +91,7 @@ public class TestABCase4 extends AbstractABCase
 
     /**
      * Send small text, then frame with opcode 5 (reserved), then ping
+     *
      * @throws Exception on test failure
      */
     @Test
@@ -101,7 +106,8 @@ public class TestABCase4 extends AbstractABCase
         expect.add(new TextFrame().setPayload("hello")); // echo
         expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
 
-        try (Fuzzer fuzzer = new Fuzzer(this); StacklessLogging logging = new StacklessLogging(Parser.class))
+        try (Fuzzer fuzzer = new Fuzzer(this);
+             StacklessLogging logging = new StacklessLogging(Parser.class))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
@@ -112,6 +118,7 @@ public class TestABCase4 extends AbstractABCase
 
     /**
      * Send small text, then frame with opcode 6 (reserved) w/payload, then ping
+     *
      * @throws Exception on test failure
      */
     @Test
@@ -128,7 +135,8 @@ public class TestABCase4 extends AbstractABCase
         expect.add(new TextFrame().setPayload("hello")); // echo
         expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
 
-        try (Fuzzer fuzzer = new Fuzzer(this); StacklessLogging logging = new StacklessLogging(Parser.class))
+        try (Fuzzer fuzzer = new Fuzzer(this);
+             StacklessLogging logging = new StacklessLogging(Parser.class))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
@@ -139,6 +147,7 @@ public class TestABCase4 extends AbstractABCase
 
     /**
      * Send small text, then frame with opcode 7 (reserved) w/payload, then ping
+     *
      * @throws Exception on test failure
      */
     @Test
@@ -155,7 +164,8 @@ public class TestABCase4 extends AbstractABCase
         expect.add(new TextFrame().setPayload("hello")); // echo
         expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
 
-        try (Fuzzer fuzzer = new Fuzzer(this); StacklessLogging logging = new StacklessLogging(Parser.class))
+        try (Fuzzer fuzzer = new Fuzzer(this);
+             StacklessLogging logging = new StacklessLogging(Parser.class))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
@@ -166,6 +176,7 @@ public class TestABCase4 extends AbstractABCase
 
     /**
      * Send opcode 11 (reserved)
+     *
      * @throws Exception on test failure
      */
     @Test
@@ -177,7 +188,8 @@ public class TestABCase4 extends AbstractABCase
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
 
-        try (Fuzzer fuzzer = new Fuzzer(this); StacklessLogging logging = new StacklessLogging(Parser.class))
+        try (Fuzzer fuzzer = new Fuzzer(this);
+             StacklessLogging logging = new StacklessLogging(Parser.class))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
@@ -188,6 +200,7 @@ public class TestABCase4 extends AbstractABCase
 
     /**
      * Send opcode 12 (reserved)
+     *
      * @throws Exception on test failure
      */
     @Test
@@ -201,7 +214,8 @@ public class TestABCase4 extends AbstractABCase
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
 
-        try (Fuzzer fuzzer = new Fuzzer(this); StacklessLogging logging = new StacklessLogging(Parser.class))
+        try (Fuzzer fuzzer = new Fuzzer(this);
+             StacklessLogging logging = new StacklessLogging(Parser.class))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
@@ -212,6 +226,7 @@ public class TestABCase4 extends AbstractABCase
 
     /**
      * Send small text, then frame with opcode 13 (reserved), then ping
+     *
      * @throws Exception on test failure
      */
     @Test
@@ -226,7 +241,8 @@ public class TestABCase4 extends AbstractABCase
         expect.add(new TextFrame().setPayload("hello")); // echo
         expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
 
-        try (Fuzzer fuzzer = new Fuzzer(this); StacklessLogging logging = new StacklessLogging(Parser.class))
+        try (Fuzzer fuzzer = new Fuzzer(this);
+             StacklessLogging logging = new StacklessLogging(Parser.class))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
@@ -237,6 +253,7 @@ public class TestABCase4 extends AbstractABCase
 
     /**
      * Send small text, then frame with opcode 14 (reserved), then ping
+     *
      * @throws Exception on test failure
      */
     @Test
@@ -253,7 +270,8 @@ public class TestABCase4 extends AbstractABCase
         expect.add(new TextFrame().setPayload("hello")); // echo
         expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
 
-        try (Fuzzer fuzzer = new Fuzzer(this); StacklessLogging logging = new StacklessLogging(Parser.class))
+        try (Fuzzer fuzzer = new Fuzzer(this);
+             StacklessLogging logging = new StacklessLogging(Parser.class))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
@@ -264,6 +282,7 @@ public class TestABCase4 extends AbstractABCase
 
     /**
      * Send small text, then frame with opcode 15 (reserved), then ping
+     *
      * @throws Exception on test failure
      */
     @Test
@@ -280,7 +299,8 @@ public class TestABCase4 extends AbstractABCase
         expect.add(new TextFrame().setPayload("hello")); // echo
         expect.add(new CloseInfo(StatusCode.PROTOCOL).asFrame());
 
-        try (Fuzzer fuzzer = new Fuzzer(this); StacklessLogging logging = new StacklessLogging(Parser.class))
+        try (Fuzzer fuzzer = new Fuzzer(this);
+             StacklessLogging logging = new StacklessLogging(Parser.class))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);

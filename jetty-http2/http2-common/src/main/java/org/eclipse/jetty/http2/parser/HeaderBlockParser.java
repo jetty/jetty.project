@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -53,7 +53,7 @@ public class HeaderBlockParser
     /**
      * Parses @{code blockLength} HPACK bytes from the given {@code buffer}.
      *
-     * @param buffer      the buffer to parse
+     * @param buffer the buffer to parse
      * @param blockLength the length of the HPACK block
      * @return null, if the buffer contains less than {@code blockLength} bytes;
      * {@link #STREAM_FAILURE} if parsing the HPACK block produced a stream failure;

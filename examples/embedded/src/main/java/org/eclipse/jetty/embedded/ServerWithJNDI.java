@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -30,7 +30,7 @@ import org.eclipse.jetty.webapp.WebAppContext;
  */
 public class ServerWithJNDI
 {
-    public static void main( String[] args ) throws Exception
+    public static void main(String[] args) throws Exception
     {
 
         // Create the server
@@ -38,23 +38,23 @@ public class ServerWithJNDI
 
         // Enable parsing of jndi-related parts of web.xml and jetty-env.xml
         Configuration.ClassList classlist = Configuration.ClassList
-                .setServerDefault(server);
+            .setServerDefault(server);
         classlist.addAfter("org.eclipse.jetty.webapp.FragmentConfiguration",
-                "org.eclipse.jetty.plus.webapp.EnvConfiguration",
-                "org.eclipse.jetty.plus.webapp.PlusConfiguration");
+            "org.eclipse.jetty.plus.webapp.EnvConfiguration",
+            "org.eclipse.jetty.plus.webapp.PlusConfiguration");
 
         // Create a WebApp
         WebAppContext webapp = new WebAppContext();
         webapp.setContextPath("/");
         File warFile = new File(
-                "../../jetty-distribution/target/distribution/demo-base/webapps/test-jndi.war");
+            "../../jetty-distribution/target/distribution/demo-base/webapps/test-jndi.war");
         webapp.setWar(warFile.getAbsolutePath());
         server.setHandler(webapp);
 
         // Register new transaction manager in JNDI
         // At runtime, the webapp accesses this as java:comp/UserTransaction
         new org.eclipse.jetty.plus.jndi.Transaction(
-                new com.acme.MockUserTransaction());
+            new com.acme.MockUserTransaction());
 
         // Define an env entry with Server scope.
         // At runtime, the webapp accesses this as java:comp/env/woggle
@@ -108,7 +108,7 @@ public class ServerWithJNDI
         // At runtime the webapp accesses this as
         // java:comp/env/jdbc/mydatasource
         new org.eclipse.jetty.plus.jndi.Resource(
-                webapp, "jdbc/mydatasource", new com.acme.MockDataSource());
+            webapp, "jdbc/mydatasource", new com.acme.MockDataSource());
 
         server.start();
         server.join();

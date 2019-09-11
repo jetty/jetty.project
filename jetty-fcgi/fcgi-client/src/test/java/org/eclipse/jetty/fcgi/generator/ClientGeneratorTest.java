@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.fcgi.generator;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -31,8 +28,10 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
-
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 public class ClientGeneratorTest
 {
@@ -76,7 +75,9 @@ public class ClientGeneratorTest
         final int[] primes = new int[]{2, 3, 5, 7, 11};
         int value = 1;
         for (int prime : primes)
+        {
             value *= prime;
+        }
 
         final AtomicInteger params = new AtomicInteger(1);
         ServerParser parser = new ServerParser(new ServerParser.Listener.Adapter()
@@ -129,7 +130,9 @@ public class ClientGeneratorTest
         {
             buffer.flip();
             while (buffer.hasRemaining())
+            {
                 parser.parse(ByteBuffer.wrap(new byte[]{buffer.get()}));
+            }
             assertFalse(buffer.hasRemaining());
         }
 
@@ -187,7 +190,9 @@ public class ClientGeneratorTest
         {
             buffer.flip();
             while (buffer.hasRemaining())
+            {
                 parser.parse(ByteBuffer.wrap(new byte[]{buffer.get()}));
+            }
             assertFalse(buffer.hasRemaining());
         }
     }

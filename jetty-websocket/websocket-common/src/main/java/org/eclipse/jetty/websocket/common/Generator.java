@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -31,7 +31,7 @@ import org.eclipse.jetty.websocket.api.extensions.Frame;
 
 /**
  * Generating a frame in WebSocket land.
- * 
+ *
  * <pre>
  *    0                   1                   2                   3
  *    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
@@ -68,7 +68,7 @@ public class Generator
     /**
      * Are any flags in use
      * <p>
-     * 
+     *
      * <pre>
      *   0100_0000 (0x40) = rsv1
      *   0010_0000 (0x20) = rsv2
@@ -79,43 +79,34 @@ public class Generator
 
     /**
      * Construct Generator with provided policy and bufferPool
-     * 
-     * @param policy
-     *            the policy to use
-     * @param bufferPool
-     *            the buffer pool to use
+     *
+     * @param policy the policy to use
+     * @param bufferPool the buffer pool to use
      */
     public Generator(WebSocketPolicy policy, ByteBufferPool bufferPool)
     {
-        this(policy,bufferPool,true,false);
+        this(policy, bufferPool, true, false);
     }
 
     /**
      * Construct Generator with provided policy and bufferPool
-     * 
-     * @param policy
-     *            the policy to use
-     * @param bufferPool
-     *            the buffer pool to use
-     * @param validating
-     *            true to enable RFC frame validation
+     *
+     * @param policy the policy to use
+     * @param bufferPool the buffer pool to use
+     * @param validating true to enable RFC frame validation
      */
     public Generator(WebSocketPolicy policy, ByteBufferPool bufferPool, boolean validating)
     {
-        this(policy,bufferPool,validating,false);
+        this(policy, bufferPool, validating, false);
     }
 
     /**
      * Construct Generator with provided policy and bufferPool
-     * 
-     * @param policy
-     *            the policy to use
-     * @param bufferPool
-     *            the buffer pool to use
-     * @param validating
-     *            true to enable RFC frame validation
-     * @param readOnly
-     *            true if generator is to treat frames as read-only and not modify them. Useful for debugging purposes, but not generally for runtime use.
+     *
+     * @param policy the policy to use
+     * @param bufferPool the buffer pool to use
+     * @param validating true to enable RFC frame validation
+     * @param readOnly true if generator is to treat frames as read-only and not modify them. Useful for debugging purposes, but not generally for runtime use.
      */
     public Generator(WebSocketPolicy policy, ByteBufferPool bufferPool, boolean validating, boolean readOnly)
     {
@@ -134,7 +125,7 @@ public class Generator
 
         /*
          * RFC 6455 Section 5.2
-         * 
+         *
          * MUST be 0 unless an extension is negotiated that defines meanings for non-zero values. If a nonzero value is received and none of the negotiated
          * extensions defines the meaning of such a nonzero value, the receiving endpoint MUST _Fail the WebSocket Connection_.
          */
@@ -157,7 +148,7 @@ public class Generator
         {
             /*
              * RFC 6455 Section 5.5
-             * 
+             *
              * All control frames MUST have a payload length of 125 bytes or less and MUST NOT be fragmented.
              */
             if (frame.getPayloadLength() > 125)
@@ -172,7 +163,7 @@ public class Generator
 
             /*
              * RFC 6455 Section 5.5.1
-             * 
+             *
              * close frame payload is specially formatted which is checked in CloseInfo
              */
             if (frame.getOpCode() == OpCode.CLOSE)
@@ -181,7 +172,7 @@ public class Generator
                 ByteBuffer payload = frame.getPayload();
                 if (payload != null)
                 {
-                    new CloseInfo(payload,true);
+                    new CloseInfo(payload, true);
                 }
             }
         }
@@ -212,8 +203,8 @@ public class Generator
 
     public ByteBuffer generateHeaderBytes(Frame frame)
     {
-        ByteBuffer buffer = bufferPool.acquire(MAX_HEADER_LENGTH,true);
-        generateHeaderBytes(frame,buffer);
+        ByteBuffer buffer = bufferPool.acquire(MAX_HEADER_LENGTH, true);
+        generateHeaderBytes(frame, buffer);
         return buffer;
     }
 
@@ -263,7 +254,7 @@ public class Generator
         buffer.put(b);
 
         // is masked
-        b = (frame.isMasked()?(byte)0x80:(byte)0x00);
+        b = (frame.isMasked() ? (byte)0x80 : (byte)0x00);
 
         // payload lengths
         int payloadLength = frame.getPayloadLength();
@@ -311,7 +302,9 @@ public class Generator
             buffer.put(mask);
             int maskInt = 0;
             for (byte maskByte : mask)
+            {
                 maskInt = (maskInt << 8) + (maskByte & 0xFF);
+            }
 
             // perform data masking here
             ByteBuffer payload = frame.getPayload();
@@ -325,12 +318,12 @@ public class Generator
                 {
                     if (remaining >= 4)
                     {
-                        payload.putInt(start,payload.getInt(start) ^ maskInt);
+                        payload.putInt(start, payload.getInt(start) ^ maskInt);
                         start += 4;
                     }
                     else
                     {
-                        payload.put(start,(byte)(payload.get(start) ^ mask[maskOffset & 3]));
+                        payload.put(start, (byte)(payload.get(start) ^ mask[maskOffset & 3]));
                         ++start;
                         ++maskOffset;
                     }
@@ -338,18 +331,16 @@ public class Generator
             }
         }
 
-        BufferUtil.flipToFlush(buffer,p);
+        BufferUtil.flipToFlush(buffer, p);
     }
 
     /**
      * Generate the whole frame (header + payload copy) into a single ByteBuffer.
      * <p>
      * Note: This is slow, moves lots of memory around. Only use this if you must (such as in unit testing).
-     * 
-     * @param frame
-     *            the frame to generate
-     * @param buf
-     *            the buffer to output the generated frame to
+     *
+     * @param frame the frame to generate
+     * @param buf the buffer to output the generated frame to
      */
     public void generateWholeFrame(Frame frame, ByteBuffer buf)
     {
@@ -378,7 +369,7 @@ public class Generator
         {
             throw new RuntimeException("Not allowed to modify read-only frame");
         }
-        flagsInUse = (byte)((flagsInUse & 0xBF) | (rsv1InUse?0x40:0x00));
+        flagsInUse = (byte)((flagsInUse & 0xBF) | (rsv1InUse ? 0x40 : 0x00));
     }
 
     public void setRsv2InUse(boolean rsv2InUse)
@@ -387,7 +378,7 @@ public class Generator
         {
             throw new RuntimeException("Not allowed to modify read-only frame");
         }
-        flagsInUse = (byte)((flagsInUse & 0xDF) | (rsv2InUse?0x20:0x00));
+        flagsInUse = (byte)((flagsInUse & 0xDF) | (rsv2InUse ? 0x20 : 0x00));
     }
 
     public void setRsv3InUse(boolean rsv3InUse)
@@ -396,7 +387,7 @@ public class Generator
         {
             throw new RuntimeException("Not allowed to modify read-only frame");
         }
-        flagsInUse = (byte)((flagsInUse & 0xEF) | (rsv3InUse?0x10:0x00));
+        flagsInUse = (byte)((flagsInUse & 0xEF) | (rsv3InUse ? 0x10 : 0x00));
     }
 
     public boolean isRsv1InUse()

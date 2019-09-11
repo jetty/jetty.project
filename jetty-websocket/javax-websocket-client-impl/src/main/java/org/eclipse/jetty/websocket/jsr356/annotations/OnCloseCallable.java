@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,10 +19,8 @@
 package org.eclipse.jetty.websocket.jsr356.annotations;
 
 import java.lang.reflect.Method;
-
 import javax.websocket.CloseReason;
 import javax.websocket.CloseReason.CloseCodes;
-import javax.websocket.OnClose;
 
 import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.jsr356.JsrSession;
@@ -37,7 +35,7 @@ public class OnCloseCallable extends JsrCallable
 
     public OnCloseCallable(Class<?> pojo, Method method)
     {
-        super(pojo,method);
+        super(pojo, method);
     }
 
     public OnCloseCallable(OnCloseCallable copy)
@@ -48,7 +46,7 @@ public class OnCloseCallable extends JsrCallable
 
     public void call(Object endpoint, CloseInfo close)
     {
-        this.call(endpoint,close.getStatusCode(),close.getReason());
+        this.call(endpoint, close.getStatusCode(), close.getReason());
     }
 
     public void call(Object endpoint, CloseReason closeReason)
@@ -59,7 +57,7 @@ public class OnCloseCallable extends JsrCallable
             // convert to javax.websocket.CloseReason
             super.args[idxCloseReason] = closeReason;
         }
-        super.call(endpoint,super.args);
+        super.call(endpoint, super.args);
     }
 
     public void call(Object endpoint, int statusCode, String reason)
@@ -68,10 +66,10 @@ public class OnCloseCallable extends JsrCallable
         if (idxCloseReason >= 0)
         {
             // convert to javax.websocket.CloseReason
-            CloseReason jsrclose = new CloseReason(CloseCodes.getCloseCode(statusCode),reason);
+            CloseReason jsrclose = new CloseReason(CloseCodes.getCloseCode(statusCode), reason);
             super.args[idxCloseReason] = jsrclose;
         }
-        super.call(endpoint,super.args);
+        super.call(endpoint, super.args);
     }
 
     @Override

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,7 +19,6 @@
 package org.eclipse.jetty.websocket.jsr356.annotations;
 
 import java.lang.reflect.Method;
-
 import javax.websocket.Decoder;
 import javax.websocket.Encoder;
 
@@ -41,7 +40,7 @@ public class OnMessageCallable extends JsrCallable
 
     public OnMessageCallable(Class<?> pojo, Method method)
     {
-        super(pojo,method);
+        super(pojo, method);
         this.returnType = method.getReturnType();
     }
 
@@ -66,7 +65,7 @@ public class OnMessageCallable extends JsrCallable
             Param param = params[idxMessageObject];
             err.append(param.index);
             err.append(" [").append(param.type).append("] in method: ");
-            err.append(ReflectUtils.toString(pojo,method));
+            err.append(ReflectUtils.toString(pojo, method));
             throw new InvalidSignatureException(err.toString());
         }
     }
@@ -102,7 +101,7 @@ public class OnMessageCallable extends JsrCallable
             {
                 StringBuilder err = new StringBuilder();
                 err.append("A message type must be specified [TEXT, BINARY, DECODER, or PONG] : ");
-                err.append(ReflectUtils.toString(pojo,method));
+                err.append(ReflectUtils.toString(pojo, method));
                 throw new InvalidSignatureException(err.toString());
             }
         }

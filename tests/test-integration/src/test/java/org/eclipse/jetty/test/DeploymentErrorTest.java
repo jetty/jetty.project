@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -17,12 +17,6 @@
 //
 
 package org.eclipse.jetty.test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
-import static org.hamcrest.core.Is.is;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.io.File;
 import java.io.IOException;
@@ -66,6 +60,12 @@ import org.eclipse.jetty.webapp.WebAppContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.core.Is.is;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @ExtendWith(WorkDirExtension.class)
 public class DeploymentErrorTest
@@ -113,23 +113,23 @@ public class DeploymentErrorTest
         // Server handlers
         HandlerCollection handlers = new HandlerCollection();
         handlers.setHandlers(new Handler[]
-                {contexts, new DefaultHandler()});
+            {contexts, new DefaultHandler()});
         server.setHandler(handlers);
 
         // Setup Configurations
         Configuration.ClassList classlist = Configuration.ClassList
-                .setServerDefault(server);
+            .setServerDefault(server);
         classlist.addAfter(
-                "org.eclipse.jetty.webapp.FragmentConfiguration",
-                "org.eclipse.jetty.plus.webapp.EnvConfiguration",
-                "org.eclipse.jetty.plus.webapp.PlusConfiguration");
+            "org.eclipse.jetty.webapp.FragmentConfiguration",
+            "org.eclipse.jetty.plus.webapp.EnvConfiguration",
+            "org.eclipse.jetty.plus.webapp.PlusConfiguration");
         classlist.addBefore(
-                "org.eclipse.jetty.webapp.JettyWebXmlConfiguration",
-                "org.eclipse.jetty.annotations.AnnotationConfiguration");
+            "org.eclipse.jetty.webapp.JettyWebXmlConfiguration",
+            "org.eclipse.jetty.annotations.AnnotationConfiguration");
 
         // Tracking Config
         classlist.addBefore("org.eclipse.jetty.webapp.WebInfConfiguration",
-                TrackedConfiguration.class.getName());
+            TrackedConfiguration.class.getName());
 
         server.start();
         return docroots;
@@ -168,7 +168,8 @@ public class DeploymentErrorTest
     @Test
     public void testInitial_BadApp_UnavailableTrue()
     {
-        assertThrows(NoClassDefFoundError.class, ()-> {
+        assertThrows(NoClassDefFoundError.class, () ->
+        {
             startServer(docroots -> copyBadApp("badapp.xml", docroots));
         });
 
@@ -195,12 +196,12 @@ public class DeploymentErrorTest
         assertThat("ContextHandler.isStarted", context.isStarted(), is(true));
         assertThat("ContextHandler.isFailed", context.isFailed(), is(false));
         assertThat("ContextHandler.isAvailable", context.isAvailable(), is(false));
-        WebAppContext webapp = (WebAppContext) context;
+        WebAppContext webapp = (WebAppContext)context;
         TrackedConfiguration trackedConfiguration = null;
         for (Configuration webappConfig : webapp.getConfigurations())
         {
             if (webappConfig instanceof TrackedConfiguration)
-                trackedConfiguration = (TrackedConfiguration) webappConfig;
+                trackedConfiguration = (TrackedConfiguration)webappConfig;
         }
         assertThat("webapp TrackedConfiguration exists", trackedConfiguration, notNullValue());
         assertThat("trackedConfig.preConfigureCount", trackedConfiguration.preConfigureCounts.get(contextPath), is(1));
@@ -241,12 +242,12 @@ public class DeploymentErrorTest
         assertThat("ContextHandler.isStarted", context.isStarted(), is(false));
         assertThat("ContextHandler.isFailed", context.isFailed(), is(true));
         assertThat("ContextHandler.isAvailable", context.isAvailable(), is(false));
-        WebAppContext webapp = (WebAppContext) context;
+        WebAppContext webapp = (WebAppContext)context;
         TrackedConfiguration trackedConfiguration = null;
         for (Configuration webappConfig : webapp.getConfigurations())
         {
             if (webappConfig instanceof TrackedConfiguration)
-                trackedConfiguration = (TrackedConfiguration) webappConfig;
+                trackedConfiguration = (TrackedConfiguration)webappConfig;
         }
         assertThat("webapp TrackedConfiguration exists", trackedConfiguration, notNullValue());
         assertThat("trackedConfig.preConfigureCount", trackedConfiguration.preConfigureCounts.get(contextPath), is(1));
@@ -287,12 +288,12 @@ public class DeploymentErrorTest
         assertThat("ContextHandler.isStarted", context.isStarted(), is(true));
         assertThat("ContextHandler.isFailed", context.isFailed(), is(false));
         assertThat("ContextHandler.isAvailable", context.isAvailable(), is(false));
-        WebAppContext webapp = (WebAppContext) context;
+        WebAppContext webapp = (WebAppContext)context;
         TrackedConfiguration trackedConfiguration = null;
         for (Configuration webappConfig : webapp.getConfigurations())
         {
             if (webappConfig instanceof TrackedConfiguration)
-                trackedConfiguration = (TrackedConfiguration) webappConfig;
+                trackedConfiguration = (TrackedConfiguration)webappConfig;
         }
         assertThat("webapp TrackedConfiguration exists", trackedConfiguration, notNullValue());
         assertThat("trackedConfig.preConfigureCount", trackedConfiguration.preConfigureCounts.get(contextPath), is(1));

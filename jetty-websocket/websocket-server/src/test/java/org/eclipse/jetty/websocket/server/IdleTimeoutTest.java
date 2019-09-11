@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -17,10 +17,6 @@
 //
 
 package org.eclipse.jetty.websocket.server;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
 
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -42,6 +38,10 @@ import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
 
 public class IdleTimeoutTest
 {
@@ -93,6 +93,7 @@ public class IdleTimeoutTest
 
     /**
      * Test IdleTimeout on server.
+     *
      * @throws Exception on test failure
      */
     @Test
@@ -120,10 +121,10 @@ public class IdleTimeoutTest
             // Expect server to have closed due to its own timeout
             LinkedBlockingQueue<WebSocketFrame> frames = clientConn.getFrameQueue();
             WebSocketFrame frame = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
-            assertThat("frame opcode",frame.getOpCode(),is(OpCode.CLOSE));
+            assertThat("frame opcode", frame.getOpCode(), is(OpCode.CLOSE));
             CloseInfo close = new CloseInfo(frame);
-            assertThat("close code",close.getStatusCode(),is(StatusCode.SHUTDOWN));
-            assertThat("close reason",close.getReason(),containsString("Timeout"));
+            assertThat("close code", close.getStatusCode(), is(StatusCode.SHUTDOWN));
+            assertThat("close reason", close.getReason(), containsString("timeout"));
         }
     }
 }

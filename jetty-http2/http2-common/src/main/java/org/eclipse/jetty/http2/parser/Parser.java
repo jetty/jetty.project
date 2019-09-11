@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -54,18 +54,22 @@ public class Parser
     private final HpackDecoder hpackDecoder;
     private final BodyParser[] bodyParsers;
     private UnknownBodyParser unknownBodyParser;
-    private int maxFrameLength;
+    private int maxFrameLength = Frame.DEFAULT_MAX_LENGTH;
     private int maxSettingsKeys = SettingsFrame.DEFAULT_MAX_KEYS;
     private boolean continuation;
     private State state = State.HEADER;
 
     public Parser(ByteBufferPool byteBufferPool, Listener listener, int maxDynamicTableSize, int maxHeaderSize)
     {
+        this(byteBufferPool, listener, maxDynamicTableSize, maxHeaderSize, RateControl.NO_RATE_CONTROL);
+    }
+
+    public Parser(ByteBufferPool byteBufferPool, Listener listener, int maxDynamicTableSize, int maxHeaderSize, RateControl rateControl)
+    {
         this.byteBufferPool = byteBufferPool;
         this.listener = listener;
-        this.headerParser = new HeaderParser();
+        this.headerParser = new HeaderParser(rateControl == null ? RateControl.NO_RATE_CONTROL : rateControl);
         this.hpackDecoder = new HpackDecoder(maxDynamicTableSize, maxHeaderSize);
-        this.maxFrameLength = Frame.DEFAULT_MAX_LENGTH;
         this.bodyParsers = new BodyParser[FrameType.values().length];
     }
 
@@ -249,29 +253,29 @@ public class Parser
 
     public interface Listener
     {
-        public void onData(DataFrame frame);
+        void onData(DataFrame frame);
 
-        public void onHeaders(HeadersFrame frame);
+        void onHeaders(HeadersFrame frame);
 
-        public void onPriority(PriorityFrame frame);
+        void onPriority(PriorityFrame frame);
 
-        public void onReset(ResetFrame frame);
+        void onReset(ResetFrame frame);
 
-        public void onSettings(SettingsFrame frame);
+        void onSettings(SettingsFrame frame);
 
-        public void onPushPromise(PushPromiseFrame frame);
+        void onPushPromise(PushPromiseFrame frame);
 
-        public void onPing(PingFrame frame);
+        void onPing(PingFrame frame);
 
-        public void onGoAway(GoAwayFrame frame);
+        void onGoAway(GoAwayFrame frame);
 
-        public void onWindowUpdate(WindowUpdateFrame frame);
+        void onWindowUpdate(WindowUpdateFrame frame);
 
-        public void onStreamFailure(int streamId, int error, String reason);
+        void onStreamFailure(int streamId, int error, String reason);
 
-        public void onConnectionFailure(int error, String reason);
+        void onConnectionFailure(int error, String reason);
 
-        public static class Adapter implements Listener
+        class Adapter implements Listener
         {
             @Override
             public void onData(DataFrame frame)
@@ -330,7 +334,7 @@ public class Parser
             }
         }
 
-        public static class Wrapper implements Listener
+        class Wrapper implements Listener
         {
             private final Parser.Listener listener;
 

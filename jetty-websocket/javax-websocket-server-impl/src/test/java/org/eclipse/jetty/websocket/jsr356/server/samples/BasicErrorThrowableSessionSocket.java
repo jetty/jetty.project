@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -24,13 +24,13 @@ import javax.websocket.server.ServerEndpoint;
 
 import org.eclipse.jetty.websocket.jsr356.server.TrackingSocket;
 
-@ServerEndpoint(value="/basic")
+@ServerEndpoint(value = "/basic")
 public class BasicErrorThrowableSessionSocket extends TrackingSocket
 {
     @OnError
     public void onError(Throwable t, Session session)
     {
-        addEvent("onError(%s,%s)",t,session);
+        addEvent("onError(%s,%s)", t, session);
         addError(t);
     }
 }

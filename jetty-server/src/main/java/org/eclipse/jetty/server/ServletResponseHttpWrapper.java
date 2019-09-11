@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,18 +20,15 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.util.Collection;
-
 import javax.servlet.ServletResponse;
 import javax.servlet.ServletResponseWrapper;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;
 
-
-/* ------------------------------------------------------------ */
-/** 
+/**
  * ServletResponseHttpWrapper
- * 
- * Wrapper to tunnel a ServletResponse via a HttpServletResponse
+ *
+ * Wrapper to tunnel a ServletResponse via an HttpServletResponse
  */
 public class ServletResponseHttpWrapper extends ServletResponseWrapper implements HttpServletResponse
 {
@@ -165,5 +162,4 @@ public class ServletResponseHttpWrapper extends ServletResponseWrapper implement
     {
         return 0;
     }
-
 }

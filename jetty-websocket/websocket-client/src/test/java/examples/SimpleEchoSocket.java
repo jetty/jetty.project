@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -26,6 +26,7 @@ import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 
@@ -46,13 +47,13 @@ public class SimpleEchoSocket
 
     public boolean awaitClose(int duration, TimeUnit unit) throws InterruptedException
     {
-        return this.closeLatch.await(duration,unit);
+        return this.closeLatch.await(duration, unit);
     }
 
     @OnWebSocketClose
     public void onClose(int statusCode, String reason)
     {
-        System.out.printf("Connection closed: %d - %s%n",statusCode,reason);
+        System.out.printf("Connection closed: %d - %s%n", statusCode, reason);
         this.session = null;
         this.closeLatch.countDown(); // trigger latch
     }
@@ -60,18 +61,16 @@ public class SimpleEchoSocket
     @OnWebSocketConnect
     public void onConnect(Session session)
     {
-        System.out.printf("Got connect: %s%n",session);
+        System.out.printf("Got connect: %s%n", session);
         this.session = session;
         try
         {
             Future<Void> fut;
             fut = session.getRemote().sendStringByFuture("Hello");
-            fut.get(2,TimeUnit.SECONDS); // wait for send to complete.
+            fut.get(2, TimeUnit.SECONDS); // wait for send to complete.
 
             fut = session.getRemote().sendStringByFuture("Thanks for the conversation.");
-            fut.get(2,TimeUnit.SECONDS); // wait for send to complete.
-
-            session.close(StatusCode.NORMAL,"I'm done");
+            fut.get(2, TimeUnit.SECONDS); // wait for send to complete.
         }
         catch (Throwable t)
         {
@@ -82,6 +81,17 @@ public class SimpleEchoSocket
     @OnWebSocketMessage
     public void onMessage(String msg)
     {
-        System.out.printf("Got msg: %s%n",msg);
+        System.out.printf("Got msg: %s%n", msg);
+        if (msg.contains("Thanks"))
+        {
+            session.close(StatusCode.NORMAL, "I'm done");
+        }
+    }
+
+    @OnWebSocketError
+    public void onError(Throwable cause)
+    {
+        System.out.print("WebSocket Error: ");
+        cause.printStackTrace(System.out);
     }
 }

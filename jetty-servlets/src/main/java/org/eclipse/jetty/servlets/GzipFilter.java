@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,7 +19,6 @@
 package org.eclipse.jetty.servlets;
 
 import java.io.IOException;
-
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -30,8 +29,8 @@ import javax.servlet.ServletResponse;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-/* ------------------------------------------------------------ */
-/** 
+/**
+ *
  */
 
 @Deprecated
@@ -41,19 +40,18 @@ public class GzipFilter implements Filter
 
     @Override
     public void init(FilterConfig filterConfig) throws ServletException
-    {        
+    {
         LOG.warn("GzipFilter is deprecated. Use GzipHandler");
     }
 
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
     {
-        chain.doFilter(request,response);
+        chain.doFilter(request, response);
     }
 
     @Override
     public void destroy()
-    {        
+    {
     }
-    
 }

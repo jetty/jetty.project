@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -37,20 +37,14 @@ public class DummyIncomingFrames implements IncomingFrames
     }
 
     @Override
-    public void incomingError(Throwable e)
-    {
-        LOG.debug("incomingError()",e);
-    }
-
-    @Override
     public void incomingFrame(Frame frame)
     {
-        LOG.debug("incomingFrame({})",frame);
+        LOG.debug("incomingFrame({})", frame);
     }
 
     @Override
     public String toString()
     {
-        return String.format("%s@%x[%s]",this.getClass().getSimpleName(),hashCode(),id);
+        return String.format("%s@%x[%s]", this.getClass().getSimpleName(), hashCode(), id);
     }
 }

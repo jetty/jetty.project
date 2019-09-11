@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,7 +20,6 @@ package org.eclipse.jetty.websocket.jsr356;
 
 import java.net.URI;
 import java.util.concurrent.TimeUnit;
-
 import javax.websocket.ContainerProvider;
 import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
@@ -62,7 +61,7 @@ public class AnnotatedEchoTest
             host = "localhost";
         }
         int port = connector.getLocalPort();
-        serverUri = new URI(String.format("ws://%s:%d/",host,port));
+        serverUri = new URI(String.format("ws://%s:%d/", host, port));
     }
 
     @AfterAll
@@ -84,8 +83,8 @@ public class AnnotatedEchoTest
         WebSocketContainer container = ContainerProvider.getWebSocketContainer();
         server.addBean(container); // allow to shutdown with server
         AnnotatedEchoClient echoer = new AnnotatedEchoClient();
-        Session session = container.connectToServer(echoer,serverUri);
+        Session session = container.connectToServer(echoer, serverUri);
         session.getBasicRemote().sendText("Echo");
-        echoer.messageQueue.awaitMessages(1,1000,TimeUnit.MILLISECONDS);
+        echoer.messageQueue.awaitMessages(1, 1000, TimeUnit.MILLISECONDS);
     }
 }

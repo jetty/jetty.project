@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -17,8 +17,6 @@
 //
 
 package org.eclipse.jetty.client.ssl;
-
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.EOFException;
 import java.io.IOException;
@@ -38,6 +36,7 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public abstract class SslBytesTest
 {
@@ -149,7 +148,7 @@ public abstract class SslBytesTest
             {
                 logger.info(x.getClass() + ": " + x.getMessage());
 
-                if(logger.isDebugEnabled())
+                if (logger.isDebugEnabled())
                     logger.debug(x);
             }
         }

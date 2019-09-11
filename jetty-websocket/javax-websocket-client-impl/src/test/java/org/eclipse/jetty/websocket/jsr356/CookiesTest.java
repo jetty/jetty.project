@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,19 +18,11 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.net.HttpCookie;
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
 import javax.websocket.ClientEndpointConfig;
 import javax.websocket.ContainerProvider;
 import javax.websocket.Endpoint;
@@ -46,8 +38,14 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
 import org.junit.jupiter.api.AfterEach;
-
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class CookiesTest
 {
@@ -73,14 +71,14 @@ public class CookiesTest
     {
         server.stop();
     }
-    
+
     @Test
     public void testCookiesAreSentToServer() throws Exception
     {
         final String cookieName = "name";
         final String cookieValue = "value";
         final String cookieString = cookieName + "=" + cookieValue;
-        
+
         startServer(new EchoHandler()
         {
             @Override

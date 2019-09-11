@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -16,13 +16,11 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.security.authentication;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.Serializable;
-
 import javax.servlet.http.HttpSession;
 import javax.servlet.http.HttpSessionActivationListener;
 import javax.servlet.http.HttpSessionBindingEvent;
@@ -33,19 +31,24 @@ import org.eclipse.jetty.security.AbstractUserAuthentication;
 import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.server.UserIdentity;
-import org.eclipse.jetty.server.session.Session;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-public class SessionAuthentication extends AbstractUserAuthentication implements Serializable, HttpSessionActivationListener, HttpSessionBindingListener
+/**
+ * SessionAuthentication
+ *
+ * When a user has been successfully authenticated with some types
+ * of Authenticator, the Authenticator stashes a SessionAuthentication
+ * into an HttpSession to remember that the user is authenticated.
+ */
+public class SessionAuthentication extends AbstractUserAuthentication
+    implements Serializable, HttpSessionActivationListener, HttpSessionBindingListener
 {
     private static final Logger LOG = Log.getLogger(SessionAuthentication.class);
 
     private static final long serialVersionUID = -4643200685888258706L;
 
-
-
-    public final static String __J_AUTHENTICATED="org.eclipse.jetty.security.UserIdentity";
+    public static final String __J_AUTHENTICATED = "org.eclipse.jetty.security.UserIdentity";
 
     private final String _name;
     private final Object _credentials;
@@ -54,79 +57,78 @@ public class SessionAuthentication extends AbstractUserAuthentication implements
     public SessionAuthentication(String method, UserIdentity userIdentity, Object credentials)
     {
         super(method, userIdentity);
-        _name=userIdentity.getUserPrincipal().getName();
-        _credentials=credentials;
+        _name = userIdentity.getUserPrincipal().getName();
+        _credentials = credentials;
     }
 
+    @Override
+    public UserIdentity getUserIdentity()
+    {
+        if (_userIdentity == null)
+            throw new IllegalStateException("!UserIdentity");
+        return super.getUserIdentity();
+    }
 
     private void readObject(ObjectInputStream stream)
         throws IOException, ClassNotFoundException
     {
         stream.defaultReadObject();
 
-        SecurityHandler security=SecurityHandler.getCurrentSecurityHandler();
-        if (security==null)
-            throw new IllegalStateException("!SecurityHandler");
-        LoginService login_service=security.getLoginService();
-        if (login_service==null)
-            throw new IllegalStateException("!LoginService");
+        SecurityHandler security = SecurityHandler.getCurrentSecurityHandler();
+        if (security == null)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("!SecurityHandler");
+            return;
+        }
 
-        _userIdentity=login_service.login(_name,_credentials, null);
-        LOG.debug("Deserialized and relogged in {}",this);
+        LoginService loginService = security.getLoginService();
+        if (loginService == null)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("!LoginService");
+            return;
+        }
+
+        _userIdentity = loginService.login(_name, _credentials, null);
+        LOG.debug("Deserialized and relogged in {}", this);
     }
 
     @Override
+    @Deprecated
     public void logout()
     {
-        if (_session!=null && _session.getAttribute(__J_AUTHENTICATED)!=null)
-            _session.removeAttribute(__J_AUTHENTICATED);
-
-        doLogout();
-    }
-
-    private void doLogout()
-    {
-        SecurityHandler security=SecurityHandler.getCurrentSecurityHandler();
-        if (security!=null)
-            security.logout(this);
-        if (_session!=null)
-            _session.removeAttribute(Session.SESSION_CREATED_SECURE);
     }
 
     @Override
     public String toString()
     {
-        return String.format("%s@%x{%s,%s}",this.getClass().getSimpleName(),hashCode(),_session==null?"-":_session.getId(),_userIdentity);
+        return String.format("%s@%x{%s,%s}", this.getClass().getSimpleName(), hashCode(), _session == null ? "-" : _session.getId(), _userIdentity);
     }
 
     @Override
     public void sessionWillPassivate(HttpSessionEvent se)
     {
-       
     }
 
     @Override
     public void sessionDidActivate(HttpSessionEvent se)
     {
-        if (_session==null)
+        if (_session == null)
         {
-            _session=se.getSession();
+            _session = se.getSession();
         }
     }
 
     @Override
+    @Deprecated
     public void valueBound(HttpSessionBindingEvent event)
     {
-        if (_session==null)
-        {
-            _session=event.getSession();
-        }
     }
 
     @Override
+    @Deprecated
     public void valueUnbound(HttpSessionBindingEvent event)
     {
-        doLogout();
     }
-
 }

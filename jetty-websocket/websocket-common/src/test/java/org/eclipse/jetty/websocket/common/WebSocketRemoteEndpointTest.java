@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,11 +18,6 @@
 
 package org.eclipse.jetty.websocket.common;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -37,6 +32,11 @@ import org.eclipse.jetty.websocket.common.test.OutgoingFramesCapture;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 public class WebSocketRemoteEndpointTest
 {
     public ByteBufferPool bufferPool = new MappedByteBufferPool();
@@ -45,46 +45,47 @@ public class WebSocketRemoteEndpointTest
     public void testTextBinaryText(TestInfo testinfo) throws IOException
     {
         String id = testinfo.getDisplayName();
-        LocalWebSocketConnection conn = new LocalWebSocketConnection(id,bufferPool);
+        LocalWebSocketConnection conn = new LocalWebSocketConnection(id, bufferPool);
         OutgoingFramesCapture outgoing = new OutgoingFramesCapture();
-        WebSocketRemoteEndpoint remote = new WebSocketRemoteEndpoint(conn,outgoing);
-        conn.connect();
-        conn.open();
+        WebSocketRemoteEndpoint remote = new WebSocketRemoteEndpoint(conn, outgoing);
+        conn.opening();
+        conn.opened();
 
         // Start text message
-        remote.sendPartialString("Hello ",false);
+        remote.sendPartialString("Hello ", false);
 
-        IllegalStateException e = assertThrows(IllegalStateException.class, ()->{
+        IllegalStateException e = assertThrows(IllegalStateException.class, () ->
+        {
             // Attempt to start Binary Message
             ByteBuffer bytes = ByteBuffer.wrap(new byte[]
-                    { 0, 1, 2 });
-            remote.sendPartialBytes(bytes,false);
+                {0, 1, 2});
+            remote.sendPartialBytes(bytes, false);
         });
-        assertThat("Exception",e.getMessage(),containsString("Cannot send"));
+        assertThat("Exception", e.getMessage(), containsString("Cannot send"));
 
         // End text message
-        remote.sendPartialString("World!",true);
+        remote.sendPartialString("World!", true);
     }
 
     @Test
     public void testTextPingText(TestInfo testinfo) throws IOException
     {
         String id = testinfo.getDisplayName();
-        LocalWebSocketConnection conn = new LocalWebSocketConnection(id,bufferPool);
+        LocalWebSocketConnection conn = new LocalWebSocketConnection(id, bufferPool);
         OutgoingFramesCapture outgoing = new OutgoingFramesCapture();
-        WebSocketRemoteEndpoint remote = new WebSocketRemoteEndpoint(conn,outgoing);
-        conn.connect();
-        conn.open();
+        WebSocketRemoteEndpoint remote = new WebSocketRemoteEndpoint(conn, outgoing);
+        conn.opening();
+        conn.opened();
 
         // Start text message
-        remote.sendPartialString("Hello ",false);
+        remote.sendPartialString("Hello ", false);
 
         // Attempt to send Ping Message
         remote.sendPing(ByteBuffer.wrap(new byte[]
-                { 0 }));
+            {0}));
 
         // End text message
-        remote.sendPartialString("World!",true);
+        remote.sendPartialString("World!", true);
     }
 
     /**
@@ -98,12 +99,12 @@ public class WebSocketRemoteEndpointTest
         LocalWebSocketConnection conn = new LocalWebSocketConnection(testInfo.getDisplayName(), bufferPool);
         OutgoingFrames orderingAssert = new SaneFrameOrderingAssertion();
         WebSocketRemoteEndpoint remote = new WebSocketRemoteEndpoint(conn, orderingAssert);
-        conn.connect();
-        conn.open();
+        conn.opening();
+        conn.opened();
 
         int largeMessageSize = 60000;
-        byte buf[] = new byte[largeMessageSize];
-        Arrays.fill(buf, (byte) 'x');
+        byte[] buf = new byte[largeMessageSize];
+        Arrays.fill(buf, (byte)'x');
         String largeMessage = new String(buf, UTF_8);
 
         int messageCount = 10000;
@@ -118,5 +119,4 @@ public class WebSocketRemoteEndpointTest
             fut.get();
         }
     }
-
 }

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -34,11 +34,10 @@ public class WebServletAnnotationHandler extends AbstractDiscoverableAnnotationH
 {
     private static final Logger LOG = Log.getLogger(WebServletAnnotationHandler.class);
 
-    public WebServletAnnotationHandler (WebAppContext context)
+    public WebServletAnnotationHandler(WebAppContext context)
     {
         super(context);
     }
-
 
     /**
      * Handle discovering a WebServlet annotation.
@@ -48,8 +47,8 @@ public class WebServletAnnotationHandler extends AbstractDiscoverableAnnotationH
     {
         if (annotationName == null || !"javax.servlet.annotation.WebServlet".equals(annotationName))
             return;
-        
-        WebServletAnnotation annotation = new WebServletAnnotation (_context, info.getClassName(), info.getContainingResource());
+
+        WebServletAnnotation annotation = new WebServletAnnotation(_context, info.getClassName(), info.getContainingResource());
         addAnnotation(annotation);
     }
 
@@ -58,8 +57,8 @@ public class WebServletAnnotationHandler extends AbstractDiscoverableAnnotationH
     {
         if (annotationName == null || !"javax.servlet.annotation.WebServlet".equals(annotationName))
             return;
-        
-        LOG.warn ("@WebServlet annotation not supported for fields");
+
+        LOG.warn("@WebServlet annotation not supported for fields");
     }
 
     @Override
@@ -67,7 +66,7 @@ public class WebServletAnnotationHandler extends AbstractDiscoverableAnnotationH
     {
         if (annotationName == null || !"javax.servlet.annotation.WebServlet".equals(annotationName))
             return;
-        
-        LOG.warn ("@WebServlet annotation not supported for methods");
+
+        LOG.warn("@WebServlet annotation not supported for methods");
     }
 }

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -94,6 +94,11 @@ public abstract class BodyParser
     protected int getBodyLength()
     {
         return headerParser.getLength();
+    }
+
+    protected int getFrameType()
+    {
+        return headerParser.getFrameType();
     }
 
     protected void notifyData(DataFrame frame)
@@ -223,9 +228,10 @@ public abstract class BodyParser
         }
     }
 
-    protected void streamFailure(int streamId, int error, String reason)
+    protected boolean streamFailure(int streamId, int error, String reason)
     {
         notifyStreamFailure(streamId, error, reason);
+        return false;
     }
 
     private void notifyStreamFailure(int streamId, int error, String reason)
@@ -238,5 +244,10 @@ public abstract class BodyParser
         {
             LOG.info("Failure while notifying listener " + listener, x);
         }
+    }
+
+    protected boolean rateControlOnEvent(Object o)
+    {
+        return headerParser.getRateControl().onEvent(o);
     }
 }

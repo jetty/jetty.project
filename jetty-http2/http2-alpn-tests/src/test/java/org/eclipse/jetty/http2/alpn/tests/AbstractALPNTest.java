@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -48,8 +48,8 @@ public class AbstractALPNTest
         HTTP2ServerConnectionFactory h2 = new HTTP2ServerConnectionFactory(httpConfiguration);
         ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory();
         alpn.setDefaultProtocol(h1.getProtocol());
-        
-        connector = new ServerConnector(server, newSslContextFactory(), alpn, h1, h2);
+
+        connector = new ServerConnector(server, newServerSslContextFactory(), alpn, h1, h2);
         connector.setPort(0);
         connector.setIdleTimeout(30000);
         server.addConnector(connector);
@@ -60,9 +60,22 @@ public class AbstractALPNTest
         return new InetSocketAddress("localhost", connector.getLocalPort());
     }
 
-    protected SslContextFactory newSslContextFactory()
+    protected SslContextFactory.Server newServerSslContextFactory()
     {
-        SslContextFactory sslContextFactory = new SslContextFactory();
+        SslContextFactory.Server result = new SslContextFactory.Server();
+        configureSslContextFactory(result);
+        return result;
+    }
+
+    protected SslContextFactory.Client newClientSslContextFactory()
+    {
+        SslContextFactory.Client result = new SslContextFactory.Client();
+        configureSslContextFactory(result);
+        return result;
+    }
+
+    private void configureSslContextFactory(SslContextFactory sslContextFactory)
+    {
         sslContextFactory.setKeyStorePath("src/test/resources/keystore.jks");
         sslContextFactory.setKeyStorePassword("storepwd");
         sslContextFactory.setTrustStorePath("src/test/resources/truststore.jks");
@@ -70,7 +83,6 @@ public class AbstractALPNTest
         sslContextFactory.setIncludeProtocols("TLSv1.2");
         // The mandatory HTTP/2 cipher.
         sslContextFactory.setIncludeCipherSuites("TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256");
-        return sslContextFactory;
     }
 
     @AfterEach

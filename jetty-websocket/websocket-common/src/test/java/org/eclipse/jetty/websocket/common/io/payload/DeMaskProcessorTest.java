@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.websocket.common.io.payload;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
@@ -33,8 +30,10 @@ import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.test.ByteBufferAssert;
 import org.eclipse.jetty.websocket.common.test.UnitGenerator;
 import org.eclipse.jetty.websocket.common.util.Hex;
-
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 public class DeMaskProcessorTest
 {
@@ -50,16 +49,16 @@ public class DeMaskProcessorTest
         frame.setMask(TypeUtil.fromHexString("11223344"));
 
         ByteBuffer buf = UnitGenerator.generate(frame);
-        LOG.debug("Buf: {}",BufferUtil.toDetailString(buf));
+        LOG.debug("Buf: {}", BufferUtil.toDetailString(buf));
         ByteBuffer payload = buf.slice();
         payload.position(6); // where payload starts
-        LOG.debug("Payload: {}",BufferUtil.toDetailString(payload));
+        LOG.debug("Payload: {}", BufferUtil.toDetailString(payload));
 
         DeMaskProcessor demask = new DeMaskProcessor();
         demask.reset(frame);
         demask.process(payload);
 
-        ByteBufferAssert.assertEquals("DeMasked Text Payload",message,payload);
+        ByteBufferAssert.assertEquals("DeMasked Text Payload", message, payload);
     }
 
     @Test
@@ -68,20 +67,20 @@ public class DeMaskProcessorTest
         final byte msgChar = '*';
         final int messageSize = 25;
 
-        byte message[] = new byte[messageSize];
-        Arrays.fill(message,msgChar);
+        byte[] message = new byte[messageSize];
+        Arrays.fill(message, msgChar);
 
         TextFrame frame = new TextFrame();
         frame.setPayload(ByteBuffer.wrap(message));
         frame.setMask(Hex.asByteArray("11223344"));
 
         ByteBuffer buf = UnitGenerator.generate(frame);
-        LOG.debug("Buf: {}",BufferUtil.toDetailString(buf));
+        LOG.debug("Buf: {}", BufferUtil.toDetailString(buf));
         ByteBuffer payload = buf.slice();
         payload.position(6); // where payload starts
-        
-        LOG.debug("Payload: {}",BufferUtil.toDetailString(payload));
-        LOG.debug("Pre-Processed: {}",Hex.asHex(payload));
+
+        LOG.debug("Payload: {}", BufferUtil.toDetailString(payload));
+        LOG.debug("Pre-Processed: {}", Hex.asHex(payload));
 
         DeMaskProcessor demask = new DeMaskProcessor();
         demask.reset(frame);
@@ -94,17 +93,17 @@ public class DeMaskProcessorTest
         slice1.limit(slicePoint);
         slice2.position(slicePoint);
 
-        assertThat("Slices are setup right",slice1.remaining() + slice2.remaining(),is(messageSize));
+        assertThat("Slices are setup right", slice1.remaining() + slice2.remaining(), is(messageSize));
 
         demask.process(slice1);
         demask.process(slice2);
-        
-        LOG.debug("Post-Processed: {}",Hex.asHex(payload));
 
-        assertThat("Payload.remaining",payload.remaining(),is(messageSize));
+        LOG.debug("Post-Processed: {}", Hex.asHex(payload));
+
+        assertThat("Payload.remaining", payload.remaining(), is(messageSize));
         for (int i = payload.position(); i < payload.limit(); i++)
         {
-            assertThat("payload[" + i + "]",payload.get(i),is(msgChar));
+            assertThat("payload[" + i + "]", payload.get(i), is(msgChar));
         }
     }
 }

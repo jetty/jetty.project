@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -57,7 +57,7 @@ public class ProxyConfiguration
         return null;
     }
 
-    public static abstract class Proxy
+    public abstract static class Proxy
     {
         // TO use IPAddress Map
         private final Set<String> included = new HashSet<>();
@@ -154,7 +154,7 @@ public class ProxyConfiguration
             HostPort hostPort = new HostPort(pattern);
             String host = hostPort.getHost();
             int port = hostPort.getPort();
-            return host.equals(address.getHost())  && ( port<=0 || port==address.getPort() ); 
+            return host.equals(address.getHost()) && (port <= 0 || port == address.getPort());
         }
 
         /**
@@ -169,5 +169,4 @@ public class ProxyConfiguration
             return address.toString();
         }
     }
-
 }

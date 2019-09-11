@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -58,8 +58,8 @@ public class HttpTransportOverFCGI implements HttpTransport
     @Override
     public void send(MetaData.Response info, boolean head, ByteBuffer content, boolean lastContent, Callback callback)
     {
-        if (info!=null)
-            commit(info,head,content,lastContent,callback);
+        if (info != null)
+            commit(info, head, content, lastContent, callback);
         else
         {
             if (head)
@@ -101,7 +101,7 @@ public class HttpTransportOverFCGI implements HttpTransport
     private void commit(MetaData.Response info, boolean head, ByteBuffer content, boolean lastContent, Callback callback)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("commit {} {} l={}",this,info,lastContent);
+            LOG.debug("commit {} {} l={}", this, info, lastContent);
         boolean shutdown = this.shutdown = info.getFields().contains(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString());
 
         if (head)
@@ -143,7 +143,7 @@ public class HttpTransportOverFCGI implements HttpTransport
     public void abort(Throwable failure)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("abort {} {}",this,failure);
+            LOG.debug("abort {} {}", this, failure);
         aborted = true;
         flusher.shutdown();
     }

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -28,7 +28,7 @@ import java.util.Set;
  * Use of other logging implementation cause no effect when using this class
  * <p>
  * Example:
- * 
+ *
  * <pre>
  * try (StacklessLogging scope = new StacklessLogging(EventDriver.class,Noisy.class))
  * {
@@ -44,11 +44,11 @@ public class StacklessLogging implements AutoCloseable
     {
         for (Class<?> clazz : classesToSquelch)
         {
-            Logger log = Log.getLogger(clazz); 
+            Logger log = Log.getLogger(clazz);
             // only operate on loggers that are of type StdErrLog
             if (log instanceof StdErrLog && !log.isDebugEnabled())
             {
-                StdErrLog stdErrLog=((StdErrLog)log);
+                StdErrLog stdErrLog = ((StdErrLog)log);
                 if (!stdErrLog.isHideStacks())
                 {
                     stdErrLog.setHideStacks(true);
@@ -65,7 +65,7 @@ public class StacklessLogging implements AutoCloseable
             // only operate on loggers that are of type StdErrLog
             if (log instanceof StdErrLog && !log.isDebugEnabled())
             {
-                StdErrLog stdErrLog=((StdErrLog)log);
+                StdErrLog stdErrLog = ((StdErrLog)log);
                 if (!stdErrLog.isHideStacks())
                 {
                     stdErrLog.setHideStacks(true);
@@ -79,6 +79,8 @@ public class StacklessLogging implements AutoCloseable
     public void close()
     {
         for (StdErrLog log : squelched)
+        {
             log.setHideStacks(false);
+        }
     }
 }

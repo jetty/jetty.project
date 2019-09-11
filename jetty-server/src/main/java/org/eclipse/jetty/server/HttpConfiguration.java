@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -31,14 +31,16 @@ import org.eclipse.jetty.util.TreeTrie;
 import org.eclipse.jetty.util.Trie;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.component.Dumpable;
+import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 /**
  * HTTP Configuration.
- * <p>This class is a holder of HTTP configuration for use by the 
- * {@link HttpChannel} class.  Typically a HTTPConfiguration instance
- * is instantiated and passed to a {@link ConnectionFactory} that can 
+ * <p>This class is a holder of HTTP configuration for use by the
+ * {@link HttpChannel} class.  Typically an HTTPConfiguration instance
+ * is instantiated and passed to a {@link ConnectionFactory} that can
  * create HTTP channels (e.g. HTTP, AJP or FCGI).</p>
  * <p>The configuration held by this class is not for the wire protocol,
  * but for the interpretation and handling of HTTP requests that could
@@ -46,21 +48,21 @@ import org.eclipse.jetty.util.log.Logger;
  * </p>
  */
 @ManagedObject("HTTP Configuration")
-public class HttpConfiguration
+public class HttpConfiguration implements Dumpable
 {
     private static final Logger LOG = Log.getLogger(HttpConfiguration.class);
 
     public static final String SERVER_VERSION = "Jetty(" + Jetty.VERSION + ")";
-    private final List<Customizer> _customizers=new CopyOnWriteArrayList<>();
+    private final List<Customizer> _customizers = new CopyOnWriteArrayList<>();
     private final Trie<Boolean> _formEncodedMethods = new TreeTrie<>();
-    private int _outputBufferSize=32*1024;
-    private int _outputAggregationSize=_outputBufferSize/4;
-    private int _requestHeaderSize=8*1024;
-    private int _responseHeaderSize=8*1024;
-    private int _headerCacheSize=4*1024;
+    private int _outputBufferSize = 32 * 1024;
+    private int _outputAggregationSize = _outputBufferSize / 4;
+    private int _requestHeaderSize = 8 * 1024;
+    private int _responseHeaderSize = 8 * 1024;
+    private int _headerCacheSize = 4 * 1024;
     private int _securePort;
-    private long _idleTimeout=-1;
-    private long _blockingTimeout=-1;
+    private long _idleTimeout = -1;
+    private long _blockingTimeout = -1;
     private String _secureScheme = HttpScheme.HTTPS.asString();
     private boolean _sendServerVersion = true;
     private boolean _sendXPoweredBy = false;
@@ -70,42 +72,43 @@ public class HttpConfiguration
     private int _maxErrorDispatches = 10;
     private long _minRequestDataRate;
     private long _minResponseDataRate;
-    private CookieCompliance _cookieCompliance = CookieCompliance.RFC6265;
+    private CookieCompliance _requestCookieCompliance = CookieCompliance.RFC6265;
+    private CookieCompliance _responseCookieCompliance = CookieCompliance.RFC6265;
     private MultiPartFormDataCompliance _multiPartCompliance = MultiPartFormDataCompliance.LEGACY; // TODO change default in jetty-10
     private boolean _notifyRemoteAsyncErrors = true;
 
     /**
-     * <p>An interface that allows a request object to be customized 
+     * <p>An interface that allows a request object to be customized
      * for a particular HTTP connector configuration.  Unlike Filters, customizer are
-     * applied before the request is submitted for processing and can be specific to the 
+     * applied before the request is submitted for processing and can be specific to the
      * connector on which the request was received.</p>
-     * 
+     *
      * <p>Typically Customizers perform tasks such as:</p>
      * <ul>
-     *  <li>process header fields that may be injected by a proxy or load balancer.
-     *  <li>setup attributes that may come from the connection/connector such as SSL Session IDs
-     *  <li>Allow a request to be marked as secure or authenticated if those have been offloaded
-     *  and communicated by header, cookie or other out-of-band mechanism
-     *  <li>Set request attributes/fields that are determined by the connector on which the
-     *  request was received
+     * <li>process header fields that may be injected by a proxy or load balancer.
+     * <li>setup attributes that may come from the connection/connector such as SSL Session IDs
+     * <li>Allow a request to be marked as secure or authenticated if those have been offloaded
+     * and communicated by header, cookie or other out-of-band mechanism
+     * <li>Set request attributes/fields that are determined by the connector on which the
+     * request was received
      * </ul>
      */
     public interface Customizer
     {
-        public void customize(Connector connector, HttpConfiguration channelConfig, Request request);
+        void customize(Connector connector, HttpConfiguration channelConfig, Request request);
     }
-    
+
     public interface ConnectionFactory
     {
         HttpConfiguration getHttpConfiguration();
     }
-    
+
     public HttpConfiguration()
     {
-        _formEncodedMethods.put(HttpMethod.POST.asString(),Boolean.TRUE);
-        _formEncodedMethods.put(HttpMethod.PUT.asString(),Boolean.TRUE);
+        _formEncodedMethods.put(HttpMethod.POST.asString(), Boolean.TRUE);
+        _formEncodedMethods.put(HttpMethod.PUT.asString(), Boolean.TRUE);
     }
-    
+
     /**
      * Creates a configuration from another.
      *
@@ -114,41 +117,46 @@ public class HttpConfiguration
     public HttpConfiguration(HttpConfiguration config)
     {
         _customizers.addAll(config._customizers);
-        for (String s:config._formEncodedMethods.keySet())
-            _formEncodedMethods.put(s,Boolean.TRUE);
-        _outputBufferSize=config._outputBufferSize;
-        _outputAggregationSize=config._outputAggregationSize;
-        _requestHeaderSize=config._requestHeaderSize;
-        _responseHeaderSize=config._responseHeaderSize;
-        _headerCacheSize=config._headerCacheSize;
-        _secureScheme=config._secureScheme;
-        _securePort=config._securePort;
-        _idleTimeout=config._idleTimeout;
-        _blockingTimeout=config._blockingTimeout;
-        _sendDateHeader=config._sendDateHeader;
-        _sendServerVersion=config._sendServerVersion;
-        _sendXPoweredBy=config._sendXPoweredBy;
-        _delayDispatchUntilContent=config._delayDispatchUntilContent;
-        _persistentConnectionsEnabled=config._persistentConnectionsEnabled;
-        _maxErrorDispatches=config._maxErrorDispatches;
-        _minRequestDataRate=config._minRequestDataRate;
-        _minResponseDataRate=config._minResponseDataRate;
-        _cookieCompliance=config._cookieCompliance;
-        _notifyRemoteAsyncErrors=config._notifyRemoteAsyncErrors;
+        for (String s : config._formEncodedMethods.keySet())
+        {
+            _formEncodedMethods.put(s, Boolean.TRUE);
+        }
+        _outputBufferSize = config._outputBufferSize;
+        _outputAggregationSize = config._outputAggregationSize;
+        _requestHeaderSize = config._requestHeaderSize;
+        _responseHeaderSize = config._responseHeaderSize;
+        _headerCacheSize = config._headerCacheSize;
+        _secureScheme = config._secureScheme;
+        _securePort = config._securePort;
+        _idleTimeout = config._idleTimeout;
+        _blockingTimeout = config._blockingTimeout;
+        _sendDateHeader = config._sendDateHeader;
+        _sendServerVersion = config._sendServerVersion;
+        _sendXPoweredBy = config._sendXPoweredBy;
+        _delayDispatchUntilContent = config._delayDispatchUntilContent;
+        _persistentConnectionsEnabled = config._persistentConnectionsEnabled;
+        _maxErrorDispatches = config._maxErrorDispatches;
+        _minRequestDataRate = config._minRequestDataRate;
+        _minResponseDataRate = config._minResponseDataRate;
+        _requestCookieCompliance = config._requestCookieCompliance;
+        _responseCookieCompliance = config._responseCookieCompliance;
+        _multiPartCompliance = config._multiPartCompliance;
+        _notifyRemoteAsyncErrors = config._notifyRemoteAsyncErrors;
     }
-    
+
     /**
      * <p>Adds a {@link Customizer} that is invoked for every
      * request received.</p>
      * <p>Customizers are often used to interpret optional headers (eg {@link ForwardedRequestCustomizer}) or
-     * optional protocol semantics (eg {@link SecureRequestCustomizer}). 
+     * optional protocol semantics (eg {@link SecureRequestCustomizer}).
+     *
      * @param customizer A request customizer
      */
     public void addCustomizer(Customizer customizer)
     {
         _customizers.add(customizer);
     }
-    
+
     public List<Customizer> getCustomizers()
     {
         return _customizers;
@@ -157,8 +165,10 @@ public class HttpConfiguration
     public <T> T getCustomizer(Class<T> type)
     {
         for (Customizer c : _customizers)
+        {
             if (type.isAssignableFrom(c.getClass()))
                 return (T)c;
+        }
         return null;
     }
 
@@ -174,19 +184,19 @@ public class HttpConfiguration
         return _outputAggregationSize;
     }
 
-    @ManagedAttribute("The maximum allowed size in bytes for a HTTP request header")
+    @ManagedAttribute("The maximum allowed size in bytes for an HTTP request header")
     public int getRequestHeaderSize()
     {
         return _requestHeaderSize;
     }
 
-    @ManagedAttribute("The maximum allowed size in bytes for a HTTP response header")
+    @ManagedAttribute("The maximum allowed size in bytes for an HTTP response header")
     public int getResponseHeaderSize()
     {
         return _responseHeaderSize;
     }
 
-    @ManagedAttribute("The maximum allowed size in bytes for a HTTP header field cache")
+    @ManagedAttribute("The maximum allowed size in bytes for an HTTP header field cache")
     public int getHeaderCacheSize()
     {
         return _headerCacheSize;
@@ -211,37 +221,37 @@ public class HttpConfiguration
     }
 
     /**
-     * <p>The max idle time is applied to a HTTP request for IO operations and
+     * <p>The max idle time is applied to an HTTP request for IO operations and
      * delayed dispatch.</p>
      *
-     * @return the max idle time in ms or if == 0 implies an infinite timeout, &lt;0 
+     * @return the max idle time in ms or if == 0 implies an infinite timeout, &lt;0
      * implies no HTTP channel timeout and the connection timeout is used instead.
      */
-    @ManagedAttribute("The idle timeout in ms for I/O operations during the handling of a HTTP request")
+    @ManagedAttribute("The idle timeout in ms for I/O operations during the handling of an HTTP request")
     public long getIdleTimeout()
     {
         return _idleTimeout;
     }
 
     /**
-     * <p>The max idle time is applied to a HTTP request for IO operations and
+     * <p>The max idle time is applied to an HTTP request for IO operations and
      * delayed dispatch.</p>
      *
-     * @param timeoutMs the max idle time in ms or if == 0 implies an infinite timeout, &lt;0 
+     * @param timeoutMs the max idle time in ms or if == 0 implies an infinite timeout, &lt;0
      * implies no HTTP channel timeout and the connection timeout is used instead.
      */
     public void setIdleTimeout(long timeoutMs)
     {
-        _idleTimeout=timeoutMs;
+        _idleTimeout = timeoutMs;
     }
 
     /**
      * <p>This timeout is in addition to the {@link Connector#getIdleTimeout()}, and applies
-     * to the total operation (as opposed to the idle timeout that applies to the time no 
+     * to the total operation (as opposed to the idle timeout that applies to the time no
      * data is being sent). This applies only to blocking operations and does not affect
      * asynchronous read and write.</p>
      *
-     * @return -1, for no blocking timeout (default), 0 for a blocking timeout equal to the 
+     * @return -1, for no blocking timeout (default), 0 for a blocking timeout equal to the
      * idle timeout; &gt;0 for a timeout in ms applied to the total blocking operation.
      * @deprecated Replaced by {@link #getMinResponseDataRate()} and {@link #getMinRequestDataRate()}
      */
@@ -254,18 +264,18 @@ public class HttpConfiguration
 
     /**
      * <p>This timeout is in addition to the {@link Connector#getIdleTimeout()}, and applies
-     * to the total operation (as opposed to the idle timeout that applies to the time no 
+     * to the total operation (as opposed to the idle timeout that applies to the time no
      * data is being sent).This applies only to blocking operations and does not affect
      * asynchronous read and write.</p>
      *
-     * @param blockingTimeout -1, for no blocking timeout (default), 0 for a blocking timeout equal to the 
+     * @param blockingTimeout -1, for no blocking timeout (default), 0 for a blocking timeout equal to the
      * idle timeout; &gt;0 for a timeout in ms applied to the total blocking operation.
      * @deprecated Replaced by {@link #setMinResponseDataRate(long)} and {@link #setMinRequestDataRate(long)}
      */
     @Deprecated
     public void setBlockingTimeout(long blockingTimeout)
     {
-        if (blockingTimeout>0)
+        if (blockingTimeout > 0)
             LOG.warn("HttpConfiguration.setBlockingTimeout is deprecated!");
         _blockingTimeout = blockingTimeout;
     }
@@ -275,7 +285,7 @@ public class HttpConfiguration
         _persistentConnectionsEnabled = persistentConnectionsEnabled;
     }
 
-    public void setSendServerVersion (boolean sendServerVersion)
+    public void setSendServerVersion(boolean sendServerVersion)
     {
         _sendServerVersion = sendServerVersion;
     }
@@ -286,21 +296,21 @@ public class HttpConfiguration
         return _sendServerVersion;
     }
 
-    public void writePoweredBy(Appendable out,String preamble,String postamble) throws IOException
+    public void writePoweredBy(Appendable out, String preamble, String postamble) throws IOException
     {
         if (getSendServerVersion())
         {
-            if (preamble!=null)
+            if (preamble != null)
                 out.append(preamble);
             out.append(Jetty.POWERED_BY);
-            if (postamble!=null)
+            if (postamble != null)
                 out.append(postamble);
         }
     }
-    
-    public void setSendXPoweredBy (boolean sendXPoweredBy)
+
+    public void setSendXPoweredBy(boolean sendXPoweredBy)
     {
-        _sendXPoweredBy=sendXPoweredBy;
+        _sendXPoweredBy = sendXPoweredBy;
     }
 
     @ManagedAttribute("Whether to send the X-Powered-By header in responses")
@@ -309,11 +319,23 @@ public class HttpConfiguration
         return _sendXPoweredBy;
     }
 
+    /**
+     * Indicates if the {@code Date} header should be sent in responses.
+     *
+     * @param sendDateHeader true if the {@code Date} header should be sent in responses
+     * @see <a href="https://tools.ietf.org/html/rfc7231#section-7.1.1.2">HTTP/1.1 Standard Header: Date</a>
+     * @see #getSendDateHeader()
+     */
     public void setSendDateHeader(boolean sendDateHeader)
     {
         _sendDateHeader = sendDateHeader;
     }
 
+    /**
+     * Indicates if the {@code Date} header will be sent in responses.
+     *
+     * @return true by default
+     */
     @ManagedAttribute("Whether to send the Date header in responses")
     public boolean getSendDateHeader()
     {
@@ -361,7 +383,7 @@ public class HttpConfiguration
         _outputBufferSize = outputBufferSize;
         setOutputAggregationSize(outputBufferSize / 4);
     }
-    
+
     /**
      * Set the max size of the response content write that is copied into the aggregate buffer.
      * Writes that are smaller of this size are copied into the aggregate buffer, while
@@ -376,7 +398,7 @@ public class HttpConfiguration
     }
 
     /**
-     * <p>Larger headers will allow for more and/or larger cookies plus larger form content encoded 
+     * <p>Larger headers will allow for more and/or larger cookies plus larger form content encoded
      * in a URL. However, larger headers consume more memory and can make a server more vulnerable to denial of service
      * attacks.</p>
      *
@@ -431,15 +453,17 @@ public class HttpConfiguration
      *
      * @param methods the HTTP methods of requests that can be decoded as
      * {@code x-www-form-urlencoded} content to be made available via the
-     * {@link Request#getParameter(String)} and associated APIs 
+     * {@link Request#getParameter(String)} and associated APIs
      */
     public void setFormEncodedMethods(String... methods)
     {
         _formEncodedMethods.clear();
-        for (String method:methods)
+        for (String method : methods)
+        {
             addFormEncodedMethod(method);
+        }
     }
-    
+
     /**
      * @return the set of HTTP methods of requests that can be decoded as
      * {@code x-www-form-urlencoded} content to be made available via the
@@ -459,12 +483,12 @@ public class HttpConfiguration
      */
     public void addFormEncodedMethod(String method)
     {
-        _formEncodedMethods.put(method,Boolean.TRUE);
+        _formEncodedMethods.put(method, Boolean.TRUE);
     }
-    
+
     /**
      * Tests whether the HTTP method supports {@code x-www-form-urlencoded} content
-     * 
+     *
      * @param method the HTTP method
      * @return true if requests with this method can be
      * decoded as {@code x-www-form-urlencoded} content to be made available via the
@@ -489,7 +513,7 @@ public class HttpConfiguration
      */
     public void setMaxErrorDispatches(int max)
     {
-        _maxErrorDispatches=max;
+        _maxErrorDispatches = max;
     }
 
     /**
@@ -506,7 +530,7 @@ public class HttpConfiguration
      */
     public void setMinRequestDataRate(long bytesPerSecond)
     {
-        _minRequestDataRate=bytesPerSecond;
+        _minRequestDataRate = bytesPerSecond;
     }
 
     /**
@@ -531,37 +555,76 @@ public class HttpConfiguration
         _minResponseDataRate = bytesPerSecond;
     }
 
-    public CookieCompliance getCookieCompliance()
+    /**
+     * @return The CookieCompliance used for parsing request <code>Cookie</code> headers.
+     * @see #getResponseCookieCompliance()
+     */
+    public CookieCompliance getRequestCookieCompliance()
     {
-        return _cookieCompliance;
-    }
-    
-    public void setCookieCompliance(CookieCompliance cookieCompliance)
-    {
-        _cookieCompliance = cookieCompliance==null?CookieCompliance.RFC6265:cookieCompliance;
+        return _requestCookieCompliance;
     }
 
+    /**
+     * @return The CookieCompliance used for generating response <code>Set-Cookie</code> headers
+     * @see #getRequestCookieCompliance()
+     */
+    public CookieCompliance getResponseCookieCompliance()
+    {
+        return _responseCookieCompliance;
+    }
+
+    /**
+     * @param cookieCompliance The CookieCompliance to use for parsing request <code>Cookie</code> headers.
+     * @see #setRequestCookieCompliance(CookieCompliance)
+     */
+    public void setRequestCookieCompliance(CookieCompliance cookieCompliance)
+    {
+        _requestCookieCompliance = cookieCompliance == null ? CookieCompliance.RFC6265 : cookieCompliance;
+    }
+
+    /**
+     * @param cookieCompliance The CookieCompliance to use for generating response <code>Set-Cookie</code> headers
+     * @see #setResponseCookieCompliance(CookieCompliance)
+     */
+    public void setResponseCookieCompliance(CookieCompliance cookieCompliance)
+    {
+        _responseCookieCompliance = cookieCompliance == null ? CookieCompliance.RFC6265 : cookieCompliance;
+    }
+
+    @Deprecated
+    public void setCookieCompliance(CookieCompliance compliance)
+    {
+        setRequestCookieCompliance(compliance);
+    }
+
+    @Deprecated
+    public CookieCompliance getCookieCompliance()
+    {
+        return getRequestCookieCompliance();
+    }
+
+    @Deprecated
     public boolean isCookieCompliance(CookieCompliance compliance)
     {
-        return _cookieCompliance.equals(compliance);
+        return _requestCookieCompliance.equals(compliance);
     }
 
     /**
      * Sets the compliance level for multipart/form-data handling.
-     * 
+     *
      * @param multiPartCompliance The multipart/form-data compliance level.
      */
     public void setMultiPartFormDataCompliance(MultiPartFormDataCompliance multiPartCompliance)
     {
         // TODO change default in jetty-10 
-        _multiPartCompliance = multiPartCompliance==null?MultiPartFormDataCompliance.LEGACY:multiPartCompliance;
+        _multiPartCompliance = multiPartCompliance == null ? MultiPartFormDataCompliance.LEGACY : multiPartCompliance;
     }
 
     public MultiPartFormDataCompliance getMultipartFormDataCompliance()
     {
         return _multiPartCompliance;
     }
-    
+
     /**
      * @param notifyRemoteAsyncErrors whether remote errors, when detected, are notified to async applications
      */
@@ -580,14 +643,52 @@ public class HttpConfiguration
     }
 
     @Override
+    public String dump()
+    {
+        return Dumpable.dump(this);
+    }
+
+    @Override
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        Dumpable.dumpObjects(out, indent, this,
+            new DumpableCollection("customizers", _customizers),
+            new DumpableCollection("formEncodedMethods", _formEncodedMethods.keySet()),
+            "outputBufferSize=" + _outputBufferSize,
+            "outputAggregationSize=" + _outputAggregationSize,
+            "requestHeaderSize=" + _requestHeaderSize,
+            "responseHeaderSize=" + _responseHeaderSize,
+            "headerCacheSize=" + _headerCacheSize,
+            "secureScheme=" + _secureScheme,
+            "securePort=" + _securePort,
+            "idleTimeout=" + _idleTimeout,
+            "blockingTimeout=" + _blockingTimeout,
+            "sendDateHeader=" + _sendDateHeader,
+            "sendServerVersion=" + _sendServerVersion,
+            "sendXPoweredBy=" + _sendXPoweredBy,
+            "delayDispatchUntilContent=" + _delayDispatchUntilContent,
+            "persistentConnectionsEnabled=" + _persistentConnectionsEnabled,
+            "maxErrorDispatches=" + _maxErrorDispatches,
+            "minRequestDataRate=" + _minRequestDataRate,
+            "minResponseDataRate=" + _minResponseDataRate,
+            "cookieCompliance=" + _requestCookieCompliance,
+            "setRequestCookieCompliance=" + _responseCookieCompliance,
+            "notifyRemoteAsyncErrors=" + _notifyRemoteAsyncErrors
+        );
+    }
+
+    @Override
     public String toString()
     {
         return String.format("%s@%x{%d/%d,%d/%d,%s://:%d,%s}",
-                this.getClass().getSimpleName(),
-                hashCode(),
-                _outputBufferSize, _outputAggregationSize,
-                _requestHeaderSize,_responseHeaderSize,
-                _secureScheme,_securePort,
-                _customizers);
+            this.getClass().getSimpleName(),
+            hashCode(),
+            _outputBufferSize,
+            _outputAggregationSize,
+            _requestHeaderSize,
+            _responseHeaderSize,
+            _secureScheme,
+            _securePort,
+            _customizers);
     }
 }

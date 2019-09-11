@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -92,7 +92,9 @@ public class ServerGenerator extends Generator
         BufferUtil.clearToFill(buffer);
 
         for (int i = 0; i < bytes.size(); i += 2)
+        {
             buffer.put(bytes.get(i)).put(COLON).put(bytes.get(i + 1)).put(EOL);
+        }
         buffer.put(EOL);
 
         BufferUtil.flipToFlush(buffer, 0);

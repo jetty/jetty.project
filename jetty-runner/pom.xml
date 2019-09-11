@@ -2,17 +2,17 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>9.4.13-SNAPSHOT</version>
+    <version>9.4.21-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-runner</artifactId>
   <name>Jetty :: Runner</name>
 
- <properties>
+  <properties>
     <assembly-directory>target/distribution</assembly-directory>
     <bundle-symbolic-name>${project.groupId}.runner</bundle-symbolic-name>
   </properties>
-  <url>http://www.eclipse.org/jetty</url>
+
   <build>
     <plugins>
       <plugin>
@@ -36,20 +36,26 @@
         </executions>
       </plugin>
       <plugin>
-          <groupId>org.apache.felix</groupId>
-          <artifactId>maven-bundle-plugin</artifactId>
-          <configuration>
-            <!-- jetty-runner is not an OSGi component -->
-            <skip>true</skip>
-          </configuration>
-        </plugin>
-      <plugin>
         <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-jar-plugin</artifactId>
+        <artifactId>maven-invoker-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>integration-test</id>
+            <phase>integration-test</phase>
+            <goals>
+              <goal>install</goal>
+              <goal>integration-test</goal>
+              <goal>verify</goal>
+            </goals>
+          </execution>
+        </executions>
         <configuration>
-         <archive>
-            <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
-         </archive>
+          <scriptVariables>
+            <maven.dependency.plugin.version>${maven.dependency.plugin.version}</maven.dependency.plugin.version>
+          </scriptVariables>
+          <goals>
+            <goal>clean</goal>
+          </goals>
         </configuration>
       </plugin>
     </plugins>
@@ -61,6 +67,28 @@
           <configuration>
             <!-- Clirr fails with "org.apache.tools.ant.Task not found" on this project -->
             <skip>true</skip>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.felix</groupId>
+          <artifactId>maven-bundle-plugin</artifactId>
+          <configuration>
+            <!-- jetty-runner is not an OSGi component -->
+            <skip>true</skip>
+            <!-- there is no way to skip MANIFEST creation by the plugin so just configure dummy location -->
+            <manifestLocation>${project.build.directory}/NON_USED_MANIFEST</manifestLocation>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-jar-plugin</artifactId>
+          <configuration>
+            <archive>
+              <manifestFile>src/main/resources/MANIFEST.MF</manifestFile>
+              <manifest>
+                <mainClass>org.eclipse.jetty.runner.Runner</mainClass>
+              </manifest>
+            </archive>
           </configuration>
         </plugin>
       </plugins>
@@ -93,15 +121,15 @@
       <artifactId>jetty-jndi</artifactId>
       <version>${project.version}</version>
     </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>apache-jsp</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>apache-jstl</artifactId>
-        <version>${project.version}</version>
-      </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>apache-jsp</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>apache-jstl</artifactId>
+      <version>${project.version}</version>
+    </dependency>
   </dependencies>
 </project>

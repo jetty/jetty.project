@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -27,7 +27,7 @@ import org.eclipse.jetty.server.HttpInput.Content;
 import org.eclipse.jetty.util.component.Destroyable;
 
 /**
- * A HttpInput Interceptor that inflates GZIP encoded request content.
+ * An HttpInput Interceptor that inflates GZIP encoded request content.
  */
 public class GzipHttpInputInterceptor implements HttpInput.Interceptor, Destroyable
 {

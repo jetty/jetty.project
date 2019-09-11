@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -55,11 +55,10 @@ import org.osgi.service.packageadmin.PackageAdmin;
 public abstract class AbstractWebAppProvider extends AbstractLifeCycle implements AppProvider
 {
     private static final Logger LOG = Log.getLogger(AbstractWebAppProvider.class);
-    
-    /* ------------------------------------------------------------ */
+
     /**
      * Check if we should be enabling annotation processing
-     * 
+     *
      * @return true if the jetty-annotations.jar is present, false otherwise
      */
     private static boolean annotationsAvailable()
@@ -67,7 +66,7 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
         boolean result = false;
         try
         {
-            Loader.loadClass(AbstractWebAppProvider.class,"org.eclipse.jetty.annotations.AnnotationConfiguration");
+            Loader.loadClass(AbstractWebAppProvider.class, "org.eclipse.jetty.annotations.AnnotationConfiguration");
             result = true;
             LOG.debug("Annotation support detected");
         }
@@ -79,11 +78,10 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
 
         return result;
     }
-    
-    /* ------------------------------------------------------------ */
+
     /**
      * Check if jndi is support is present.
-     * 
+     *
      * @return true if the jetty-jndi.jar is present, false otherwise
      */
     private static boolean jndiAvailable()
@@ -101,7 +99,6 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
             return false;
         }
     }
-    
 
     private boolean _parentLoaderPriority;
 
@@ -110,16 +107,13 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
     private boolean _extractWars = true; //See WebAppContext.extractWars
 
     private String _tldBundles;
-    
+
     private DeploymentManager _deploymentManager;
-    
+
     private String[] _configurationClasses;
-    
+
     private ServerInstanceWrapper _serverWrapper;
-    
-    
-    
-    /* ------------------------------------------------------------ */
+
     /**
      * OSGiApp
      *
@@ -135,13 +129,13 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
         {
             super(manager, provider, bundle, originId);
         }
-        
+
         public OSGiApp(DeploymentManager manager, AppProvider provider, Bundle bundle, Dictionary properties, String originId)
         {
             super(manager, provider, bundle, properties, originId);
         }
-     
-        public void setWebAppContext (WebAppContext webApp)
+
+        public void setWebAppContext(WebAppContext webApp)
         {
             _webApp = webApp;
         }
@@ -166,31 +160,28 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
         {
             this._webAppPath = path;
         }
-        
-        
+
         public ContextHandler createContextHandler()
-        throws Exception
+            throws Exception
         {
             if (_webApp != null)
             {
                 configureWebApp();
                 return _webApp;
             }
-            
+
             createWebApp();
             return _webApp;
         }
-        
-      
-        
-        protected void createWebApp ()
-        throws Exception
+
+        protected void createWebApp()
+            throws Exception
         {
             _webApp = newWebApp();
             configureWebApp();
         }
-        
-        protected WebAppContext newWebApp ()
+
+        protected WebAppContext newWebApp()
         {
             WebAppContext webApp = new WebAppContext();
             webApp.setAttribute(OSGiWebappConstants.WATERMARK, OSGiWebappConstants.WATERMARK);
@@ -200,7 +191,7 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
             String[] updatedTargets = null;
             if (targets != null)
             {
-                updatedTargets = new String[targets.length+OSGiWebappConstants.DEFAULT_PROTECTED_OSGI_TARGETS.length];
+                updatedTargets = new String[targets.length + OSGiWebappConstants.DEFAULT_PROTECTED_OSGI_TARGETS.length];
                 System.arraycopy(targets, 0, updatedTargets, 0, targets.length);
             }
             else
@@ -208,40 +199,39 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
             System.arraycopy(OSGiWebappConstants.DEFAULT_PROTECTED_OSGI_TARGETS, 0, updatedTargets, targets.length, OSGiWebappConstants.DEFAULT_PROTECTED_OSGI_TARGETS.length);
             webApp.setProtectedTargets(updatedTargets);
 
-           return webApp;
+            return webApp;
         }
 
-
-        public void configureWebApp() 
-        throws Exception
-        {                     
+        public void configureWebApp()
+            throws Exception
+        {
             //TODO turn this around and let any context.xml file get applied first, and have the properties override
             _webApp.setContextPath(_contextPath);
-            
+
             //osgi Enterprise Spec r4 p.427
             _webApp.setAttribute(OSGiWebappConstants.OSGI_BUNDLECONTEXT, _bundle.getBundleContext());
 
             String overrideBundleInstallLocation = (String)_properties.get(OSGiWebappConstants.JETTY_BUNDLE_INSTALL_LOCATION_OVERRIDE);
-            File bundleInstallLocation = 
-                (overrideBundleInstallLocation == null 
-                        ? BundleFileLocatorHelperFactory.getFactory().getHelper().getBundleInstallLocation(_bundle) 
-                        : new File(overrideBundleInstallLocation));
-            
+            File bundleInstallLocation =
+                (overrideBundleInstallLocation == null
+                    ? BundleFileLocatorHelperFactory.getFactory().getHelper().getBundleInstallLocation(_bundle)
+                    : new File(overrideBundleInstallLocation));
+
             if (LOG.isDebugEnabled())
             {
                 LOG.debug("Bundle location is {}, install location: {}", _bundle.getLocation(), bundleInstallLocation);
             }
-            
+
             URL url = null;
             Resource rootResource = Resource.newResource(BundleFileLocatorHelperFactory.getFactory().getHelper().getLocalURL(bundleInstallLocation.toURI().toURL()));
             //try and make sure the rootResource is useable - if its a jar then make it a jar file url
-            if (rootResource.exists()&& !rootResource.isDirectory() && !rootResource.toString().startsWith("jar:"))
+            if (rootResource.exists() && !rootResource.isDirectory() && !rootResource.toString().startsWith("jar:"))
             {
-               Resource jarResource = JarResource.newJarResource(rootResource);
-               if (jarResource.exists() && jarResource.isDirectory())
-                   rootResource = jarResource;
+                Resource jarResource = JarResource.newJarResource(rootResource);
+                if (jarResource.exists() && jarResource.isDirectory())
+                    rootResource = jarResource;
             }
-            
+
             //if the path wasn't set or it was ., then it is the root of the bundle's installed location
             if (_webAppPath == null || _webAppPath.length() == 0 || ".".equals(_webAppPath))
             {
@@ -277,10 +267,10 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
             }
 
             if (url == null)
-            { 
-                throw new IllegalArgumentException("Unable to locate " + _webAppPath
-                                                   + " in "
-                                                   + (bundleInstallLocation != null ? bundleInstallLocation.getAbsolutePath() : "unlocated bundle '" + _bundle.getSymbolicName()+ "'"));
+            {
+                throw new IllegalArgumentException(String.format("Unable to locate %s in %s",
+                    _webAppPath,
+                    (bundleInstallLocation != null ? bundleInstallLocation.getAbsolutePath() : "missing bundle '" + _bundle.getSymbolicName() + "'")));
             }
 
             //Sets the location of the war file
@@ -291,7 +281,6 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
             _webApp.setParentLoaderPriority(isParentLoaderPriority());
             _webApp.setExtractWAR(isExtract());
             _webApp.setConfigurationClasses(getConfigurationClasses());
-
 
             if (getDefaultsDescriptor() != null)
                 _webApp.setDefaultsDescriptor(getDefaultsDescriptor());
@@ -306,7 +295,7 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
             tmp = (String)_properties.get(OSGiWebappConstants.JETTY_WEB_XML_PATH);
             if (tmp != null && tmp.trim().length() != 0)
             {
-                File webXml = getFile (tmp, bundleInstallLocation);
+                File webXml = getFile(tmp, bundleInstallLocation);
                 if (webXml != null && webXml.exists())
                     _webApp.setDescriptor(webXml.getAbsolutePath());
             }
@@ -315,13 +304,13 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
             tmp = (String)_properties.get(OSGiWebappConstants.JETTY_DEFAULT_WEB_XML_PATH);
             if (tmp != null)
             {
-                File defaultWebXml = getFile (tmp, bundleInstallLocation);
+                File defaultWebXml = getFile(tmp, bundleInstallLocation);
                 if (defaultWebXml != null)
                 {
                     if (defaultWebXml.exists())
                         _webApp.setDefaultsDescriptor(defaultWebXml.getAbsolutePath());
                     else
-                        LOG.warn(defaultWebXml.getAbsolutePath()+" does not exist");
+                        LOG.warn(defaultWebXml.getAbsolutePath() + " does not exist");
                 }
             }
 
@@ -331,7 +320,6 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
             String requireTldBundles = (String)_properties.get(OSGiWebappConstants.REQUIRE_TLD_BUNDLE);
             String pathsToTldBundles = getPathsToRequiredBundles(requireTldBundles);
 
-
             // make sure we provide access to all the jetty bundles by going
             // through this bundle.
             OSGiWebappClassLoader webAppLoader = new OSGiWebappClassLoader(_serverWrapper.getParentClassLoaderForWebapps(), _webApp, _bundle);
@@ -339,7 +327,6 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
             if (pathsToTldBundles != null)
                 webAppLoader.addClassPath(pathsToTldBundles);
             _webApp.setClassLoader(webAppLoader);
-
 
             // apply any META-INF/context.xml file that is found to configure
             // the webapp first
@@ -364,58 +351,59 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
             _webApp.setAttribute(OSGiWebappConstants.JETTY_OSGI_BUNDLE, _bundle);
         }
 
-        protected String getPathsToRequiredBundles (String requireTldBundles)
-        throws Exception
+        protected String getPathsToRequiredBundles(String requireTldBundles)
+            throws Exception
         {
-            if (requireTldBundles == null) return null;
+            if (requireTldBundles == null)
+                return null;
 
             ServiceReference ref = _bundle.getBundleContext().getServiceReference(org.osgi.service.packageadmin.PackageAdmin.class.getName());
             PackageAdmin packageAdmin = (ref == null) ? null : (PackageAdmin)_bundle.getBundleContext().getService(ref);
             if (packageAdmin == null)
                 throw new IllegalStateException("Unable to get PackageAdmin reference to locate required Tld bundles");
 
-            StringBuilder paths = new StringBuilder();         
+            StringBuilder paths = new StringBuilder();
             String[] symbNames = requireTldBundles.split("[, ]");
 
             for (String symbName : symbNames)
             {
                 Bundle[] bs = packageAdmin.getBundles(symbName, null);
-                if (bs == null || bs.length == 0) 
-                { 
-                    throw new IllegalArgumentException("Unable to locate the bundle '" + symbName
-                                                       + "' specified by "
-                                                       + OSGiWebappConstants.REQUIRE_TLD_BUNDLE
-                                                       + " in manifest of "
-                                                       + (_bundle == null ? "unknown" : _bundle.getSymbolicName())); 
+                if (bs == null || bs.length == 0)
+                {
+                    throw new IllegalArgumentException("Unable to locate the bundle '" + symbName +
+                        "' specified by " + OSGiWebappConstants.REQUIRE_TLD_BUNDLE + " in manifest of " +
+                        (_bundle == null ? "unknown" : _bundle.getSymbolicName()));
                 }
 
                 File f = BundleFileLocatorHelperFactory.getFactory().getHelper().getBundleInstallLocation(bs[0]);
-                if (paths.length() > 0) paths.append(", ");
+                if (paths.length() > 0)
+                    paths.append(", ");
                 paths.append(f.toURI().toURL().toString());
                 LOG.debug("getPathsToRequiredBundles: bundle path=" + bs[0].getLocation() + " uri=" + f.toURI());
             }
 
             return paths.toString();
         }
-        
-        
+
         protected void applyMetaInfContextXml(Resource rootResource, String overrideBundleInstallLocation)
-        throws Exception
+            throws Exception
         {
-            if (_bundle == null) return;
-            if (_webApp == null) return;
+            if (_bundle == null)
+                return;
+            if (_webApp == null)
+                return;
 
             ClassLoader cl = Thread.currentThread().getContextClassLoader();
             LOG.debug("Context classloader = " + cl);
             try
             {
-               
+
                 Thread.currentThread().setContextClassLoader(_webApp.getClassLoader());
 
                 //TODO replace this with getting the InputStream so we don't cache in URL
                 //Try looking for a context xml file in META-INF with a specific name
                 URL contextXmlUrl = _bundle.getEntry("/META-INF/jetty-webapp-context.xml");
-                
+
                 if (contextXmlUrl == null)
                 {
                     //Didn't find specially named file, try looking for a property that names a context xml file to use
@@ -430,7 +418,7 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
                                 String filename = filenames[0]; //should only be 1 filename in this usage
                                 String jettyHome = (String)getServerInstanceWrapper().getServer().getAttribute(OSGiServerConstants.JETTY_HOME);
                                 if (jettyHome == null)
-                                    jettyHome =  System.getProperty(OSGiServerConstants.JETTY_HOME);
+                                    jettyHome = System.getProperty(OSGiServerConstants.JETTY_HOME);
                                 Resource res = findFile(filename, jettyHome, overrideBundleInstallLocation, _bundle);
                                 if (res != null)
                                     contextXmlUrl = res.getURL();
@@ -438,17 +426,17 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
                         }
                     }
                 }
-                if (contextXmlUrl == null) 
+                if (contextXmlUrl == null)
                     return;
 
                 // Apply it just as the standard jetty ContextProvider would do
                 LOG.info("Applying " + contextXmlUrl + " to " + _webApp);
 
                 XmlConfiguration xmlConfiguration = new XmlConfiguration(contextXmlUrl);
-                WebAppClassLoader.runWithServerClassAccess(()->
+                WebAppClassLoader.runWithServerClassAccess(() ->
                 {
-                    HashMap<String,String> properties = new HashMap<>();
-                    xmlConfiguration.getIdMap().put("Server",getDeploymentManager().getServer());
+                    HashMap<String, String> properties = new HashMap<>();
+                    xmlConfiguration.getIdMap().put("Server", getDeploymentManager().getServer());
                     properties.put(OSGiWebappConstants.JETTY_BUNDLE_ROOT, rootResource.toString());
                     properties.put(OSGiServerConstants.JETTY_HOME, (String)getDeploymentManager().getServer().getAttribute(OSGiServerConstants.JETTY_HOME));
                     xmlConfiguration.getProperties().putAll(properties);
@@ -461,8 +449,8 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
                 Thread.currentThread().setContextClassLoader(cl);
             }
         }
-        
-        private File getFile (String file, File bundleInstall)
+
+        private File getFile(String file, File bundleInstall)
         {
             if (file == null)
                 return null;
@@ -473,29 +461,26 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
             {
                 //relative location
                 //try inside the bundle first
-                File f = new File (bundleInstall, file);
-                if (f.exists()) return f;
+                File f = new File(bundleInstall, file);
+                if (f.exists())
+                    return f;
                 String jettyHome = (String)getDeploymentManager().getServer().getAttribute(OSGiServerConstants.JETTY_HOME);
                 if (jettyHome != null)
                     return new File(jettyHome, file);
             }
-            
+
             return null;
         }
     }
-   
-    /* ------------------------------------------------------------ */
-    public AbstractWebAppProvider (ServerInstanceWrapper wrapper)
+
+    public AbstractWebAppProvider(ServerInstanceWrapper wrapper)
     {
         _serverWrapper = wrapper;
     }
-    
-    
-    
-    /* ------------------------------------------------------------ */
+
     /**
      * Get the parentLoaderPriority.
-     * 
+     *
      * @return the parentLoaderPriority
      */
     public boolean isParentLoaderPriority()
@@ -503,10 +488,9 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
         return _parentLoaderPriority;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Set the parentLoaderPriority.
-     * 
+     *
      * @param parentLoaderPriority the parentLoaderPriority to set
      */
     public void setParentLoaderPriority(boolean parentLoaderPriority)
@@ -514,10 +498,9 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
         _parentLoaderPriority = parentLoaderPriority;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Get the defaultsDescriptor.
-     * 
+     *
      * @return the defaultsDescriptor
      */
     public String getDefaultsDescriptor()
@@ -525,63 +508,52 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
         return _defaultsDescriptor;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Set the defaultsDescriptor.
-     * 
+     *
      * @param defaultsDescriptor the defaultsDescriptor to set
      */
     public void setDefaultsDescriptor(String defaultsDescriptor)
     {
         _defaultsDescriptor = defaultsDescriptor;
     }
-    
-    
-    /* ------------------------------------------------------------ */
+
     public boolean isExtract()
     {
         return _extractWars;
     }
-    
-    
-    /* ------------------------------------------------------------ */
+
     public void setExtract(boolean extract)
     {
         _extractWars = extract;
     }
-    
-    
-    /* ------------------------------------------------------------ */
+
     /**
      * @param tldBundles Comma separated list of bundles that contain tld jars
-     *            that should be setup on the jetty instances created here.
+     * that should be setup on the jetty instances created here.
      */
     public void setTldBundles(String tldBundles)
     {
         _tldBundles = tldBundles;
     }
-    
-    
-    /* ------------------------------------------------------------ */
+
     /**
      * @return The list of bundles that contain tld jars that should be setup on
-     *         the jetty instances created here.
+     * the jetty instances created here.
      */
     public String getTldBundles()
     {
         return _tldBundles;
     }
-    
-    /* ------------------------------------------------------------ */
+
     /**
      * @param configurations The configuration class names.
      */
     public void setConfigurationClasses(String[] configurations)
     {
-        _configurationClasses = configurations == null ? null : (String[]) configurations.clone();
+        _configurationClasses = configurations == null ? null : configurations.clone();
     }
 
-    /* ------------------------------------------------------------ */
     public String[] getConfigurationClasses()
     {
         if (_configurationClasses != null)
@@ -591,25 +563,23 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
 
         //add before JettyWebXmlConfiguration
         if (annotationsAvailable() && !defaults.contains("org.eclipse.jetty.osgi.annotations.AnnotationConfiguration"))
-            defaults.addBefore("org.eclipse.jetty.webapp.JettyWebXmlConfiguration", 
-                               "org.eclipse.jetty.osgi.annotations.AnnotationConfiguration");
+            defaults.addBefore("org.eclipse.jetty.webapp.JettyWebXmlConfiguration",
+                "org.eclipse.jetty.osgi.annotations.AnnotationConfiguration");
 
         //add in EnvConfiguration and PlusConfiguration just after FragmentConfiguration
         if (jndiAvailable())
         {
             if (!defaults.contains("org.eclipse.jetty.plus.webapp.EnvConfiguration"))
                 defaults.addAfter("org.eclipse.jetty.webapp.FragmentConfiguration",
-                                  "org.eclipse.jetty.plus.webapp.EnvConfiguration");
+                    "org.eclipse.jetty.plus.webapp.EnvConfiguration");
             if (!defaults.contains("org.eclipse.jetty.plus.webapp.PlusConfiguration"))
                 defaults.addAfter("org.eclipse.jetty.plus.webapp.EnvConfiguration", "org.eclipse.jetty.plus.webapp.PlusConfiguration");
         }
 
-       String[] asArray = new String[defaults.size()];
-       return defaults.toArray(asArray);
+        String[] asArray = new String[defaults.size()];
+        return defaults.toArray(asArray);
     }
-    
 
-    /* ------------------------------------------------------------ */
     public void setServerInstanceWrapper(ServerInstanceWrapper wrapper)
     {
         _serverWrapper = wrapper;
@@ -620,14 +590,12 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
         return _serverWrapper;
     }
 
-    /* ------------------------------------------------------------ */
     public DeploymentManager getDeploymentManager()
     {
         return _deploymentManager;
     }
 
-    /* ------------------------------------------------------------ */
-    /** 
+    /**
      * @see org.eclipse.jetty.deploy.AppProvider#setDeploymentManager(org.eclipse.jetty.deploy.DeploymentManager)
      */
     @Override
@@ -635,27 +603,22 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
     {
         _deploymentManager = deploymentManager;
     }
-    
-    
-    /* ------------------------------------------------------------ */
+
     @Override
     public ContextHandler createContextHandler(App app) throws Exception
     {
         if (app == null)
             return null;
         if (!(app instanceof OSGiApp))
-            throw new IllegalStateException(app+" is not a BundleApp");
+            throw new IllegalStateException(app + " is not a BundleApp");
 
         //Create a WebAppContext suitable to deploy in OSGi
         ContextHandler ch = ((OSGiApp)app).createContextHandler();
         return ch;
     }
 
-    
-    /* ------------------------------------------------------------ */
     public static String getOriginId(Bundle contributor, String path)
     {
         return contributor.getSymbolicName() + "-" + contributor.getVersion().toString() + (path.startsWith("/") ? path : "/" + path);
     }
-    
 }

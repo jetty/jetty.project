@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,6 +19,7 @@
 package org.eclipse.jetty.client;
 
 import java.nio.file.Path;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
@@ -30,6 +31,8 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.SocketAddressResolver;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
+import org.eclipse.jetty.util.thread.Scheduler;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.params.provider.Arguments;
@@ -55,7 +58,7 @@ public abstract class AbstractHttpClientServerTest
             serverThreads.setName("server");
             server = new Server(serverThreads);
         }
-        connector = new ServerConnector(server, scenario.newSslContextFactory());
+        connector = new ServerConnector(server, scenario.newServerSslContextFactory());
         connector.setPort(0);
         server.addConnector(connector);
         server.setHandler(handler);
@@ -64,17 +67,30 @@ public abstract class AbstractHttpClientServerTest
 
     protected void startClient(final Scenario scenario) throws Exception
     {
-        startClient(scenario, new HttpClientTransportOverHTTP(1));
+        startClient(scenario, null, null);
     }
 
-    protected void startClient(final Scenario scenario, HttpClientTransport transport) throws Exception
+    protected void startClient(final Scenario scenario, HttpClientTransport transport, Consumer<HttpClient> config) throws Exception
     {
-        QueuedThreadPool clientThreads = new QueuedThreadPool();
-        clientThreads.setName("client");
-        client = new HttpClient(transport, scenario.newSslContextFactory());
-        client.setExecutor(clientThreads);
+        if (transport == null)
+            transport = new HttpClientTransportOverHTTP(1);
+
+        QueuedThreadPool executor = new QueuedThreadPool();
+        executor.setName("client");
+        Scheduler scheduler = new ScheduledExecutorScheduler("client-scheduler", false);
+        client = newHttpClient(scenario, transport);
+        client.setExecutor(executor);
+        client.setScheduler(scheduler);
         client.setSocketAddressResolver(new SocketAddressResolver.Sync());
+        if (config != null)
+            config.accept(client);
+
         client.start();
+    }
+
+    public HttpClient newHttpClient(Scenario scenario, HttpClientTransport transport)
+    {
+        return new HttpClient(transport, scenario.newClientSslContextFactory());
     }
 
     @AfterEach
@@ -97,37 +113,54 @@ public abstract class AbstractHttpClientServerTest
         }
     }
 
-    public static class ScenarioProvider implements ArgumentsProvider {
+    public static class ScenarioProvider implements ArgumentsProvider
+    {
         @Override
-        public Stream<? extends Arguments> provideArguments(ExtensionContext context) throws Exception
+        public Stream<? extends Arguments> provideArguments(ExtensionContext context)
         {
             return Stream.of(
-                    new NormalScenario(),
-                    new SslScenario()
-                    // TODO: add more ssl / non-ssl scenarios here
+                new NormalScenario(),
+                new SslScenario()
+                // TODO: add more ssl / non-ssl scenarios here
             ).map(Arguments::of);
         }
     }
 
-    public static class NonSslScenarioProvider implements ArgumentsProvider {
+    public static class NonSslScenarioProvider implements ArgumentsProvider
+    {
         @Override
-        public Stream<? extends Arguments> provideArguments(ExtensionContext context) throws Exception
+        public Stream<? extends Arguments> provideArguments(ExtensionContext context)
         {
             return Stream.of(
-                    new NormalScenario()
-                    // TODO: add more non-ssl scenarios here
+                new NormalScenario()
+                // TODO: add more non-ssl scenarios here
             ).map(Arguments::of);
         }
     }
 
     public interface Scenario
     {
-        default SslContextFactory newSslContextFactory() { return null; }
+        SslContextFactory newClientSslContextFactory();
+
+        SslContextFactory newServerSslContextFactory();
+
         String getScheme();
     }
 
     public static class NormalScenario implements Scenario
     {
+        @Override
+        public SslContextFactory newClientSslContextFactory()
+        {
+            return null;
+        }
+
+        @Override
+        public SslContextFactory newServerSslContextFactory()
+        {
+            return null;
+        }
+
         @Override
         public String getScheme()
         {
@@ -144,15 +177,27 @@ public abstract class AbstractHttpClientServerTest
     public static class SslScenario implements Scenario
     {
         @Override
-        public SslContextFactory newSslContextFactory()
+        public SslContextFactory newClientSslContextFactory()
+        {
+            SslContextFactory.Client result = new SslContextFactory.Client();
+            result.setEndpointIdentificationAlgorithm(null);
+            configure(result);
+            return result;
+        }
+
+        @Override
+        public SslContextFactory newServerSslContextFactory()
+        {
+            SslContextFactory.Server result = new SslContextFactory.Server();
+            configure(result);
+            return result;
+        }
+
+        private void configure(SslContextFactory ssl)
         {
             Path keystorePath = MavenTestingUtils.getTestResourcePath("keystore.jks");
-
-            SslContextFactory ssl = new SslContextFactory();
-            ssl.setEndpointIdentificationAlgorithm("");
             ssl.setKeyStorePath(keystorePath.toString());
             ssl.setKeyStorePassword("storepwd");
-            return ssl;
         }
 
         @Override

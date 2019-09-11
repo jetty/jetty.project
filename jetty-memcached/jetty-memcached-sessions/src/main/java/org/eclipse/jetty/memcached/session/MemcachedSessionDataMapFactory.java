@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -27,16 +27,14 @@ import org.eclipse.jetty.server.session.SessionDataMapFactory;
 
 /**
  * MemcachedSessionDataMapFactory
- *
- *
  */
 public class MemcachedSessionDataMapFactory implements SessionDataMapFactory
 {
     protected int _expiry;
     protected boolean _heartbeats = true;
-    protected int[] _weights;    
+    protected int[] _weights;
     protected List<InetSocketAddress> _addresses;
-    
+
     /**
      * @param addresses host and port address of memcached servers
      */
@@ -47,11 +45,13 @@ public class MemcachedSessionDataMapFactory implements SessionDataMapFactory
         else
         {
             _addresses = new ArrayList<>();
-            for (InetSocketAddress a:addresses)
+            for (InetSocketAddress a : addresses)
+            {
                 _addresses.add(a);
+            }
         }
     }
-    
+
     /**
      * @param weights the relative weight to give each server in the list of addresses
      */
@@ -60,12 +60,10 @@ public class MemcachedSessionDataMapFactory implements SessionDataMapFactory
         _weights = weights;
     }
 
-
     public int getExpirySec()
     {
         return _expiry;
     }
-
 
     /**
      * @param expiry time in secs that memcached item remains valid
@@ -74,7 +72,7 @@ public class MemcachedSessionDataMapFactory implements SessionDataMapFactory
     {
         _expiry = expiry;
     }
-    
+
     public boolean isHeartbeats()
     {
         return _heartbeats;
@@ -85,7 +83,7 @@ public class MemcachedSessionDataMapFactory implements SessionDataMapFactory
         _heartbeats = heartbeats;
     }
 
-    /** 
+    /**
      * @see org.eclipse.jetty.server.session.SessionDataMapFactory#getSessionDataMap()
      */
     @Override
@@ -96,6 +94,4 @@ public class MemcachedSessionDataMapFactory implements SessionDataMapFactory
         m.setHeartbeats(isHeartbeats());
         return m;
     }
-
-
 }

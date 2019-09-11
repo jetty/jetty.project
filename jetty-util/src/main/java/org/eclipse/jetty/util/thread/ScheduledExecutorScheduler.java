@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,15 +19,11 @@
 package org.eclipse.jetty.util.thread;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 
 /**
@@ -50,13 +46,13 @@ public class ScheduledExecutorScheduler extends AbstractLifeCycle implements Sch
     public ScheduledExecutorScheduler()
     {
         this(null, false);
-    }  
+    }
 
     public ScheduledExecutorScheduler(String name, boolean daemon)
     {
-        this (name,daemon, Thread.currentThread().getContextClassLoader());
+        this(name, daemon, Thread.currentThread().getContextClassLoader());
     }
-    
+
     public ScheduledExecutorScheduler(String name, boolean daemon, ClassLoader threadFactoryClassLoader)
     {
         this(name, daemon, threadFactoryClassLoader, null);
@@ -73,16 +69,12 @@ public class ScheduledExecutorScheduler extends AbstractLifeCycle implements Sch
     @Override
     protected void doStart() throws Exception
     {
-        scheduler = new ScheduledThreadPoolExecutor(1, new ThreadFactory()
+        scheduler = new ScheduledThreadPoolExecutor(1, r ->
         {
-            @Override
-            public Thread newThread(Runnable r)
-            {
-                Thread thread = ScheduledExecutorScheduler.this.thread = new Thread(threadGroup, r, name);
-                thread.setDaemon(daemon);
-                thread.setContextClassLoader(classloader);
-                return thread;
-            }
+            Thread thread = ScheduledExecutorScheduler.this.thread = new Thread(threadGroup, r, name);
+            thread.setDaemon(daemon);
+            thread.setContextClassLoader(classloader);
+            return thread;
         });
         scheduler.setRemoveOnCancelPolicy(true);
         super.doStart();
@@ -100,8 +92,8 @@ public class ScheduledExecutorScheduler extends AbstractLifeCycle implements Sch
     public Task schedule(Runnable task, long delay, TimeUnit unit)
     {
         ScheduledThreadPoolExecutor s = scheduler;
-        if (s==null)
-            return ()->false;
+        if (s == null)
+            return () -> false;
         ScheduledFuture<?> result = s.schedule(task, delay, unit);
         return new ScheduledFutureTask(result);
     }
@@ -109,19 +101,17 @@ public class ScheduledExecutorScheduler extends AbstractLifeCycle implements Sch
     @Override
     public String dump()
     {
-        return ContainerLifeCycle.dump(this);
+        return Dumpable.dump(this);
     }
 
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        ContainerLifeCycle.dumpObject(out, this);
         Thread thread = this.thread;
-        if (thread != null)
-        {
-            List<StackTraceElement> frames = Arrays.asList(thread.getStackTrace());
-            ContainerLifeCycle.dump(out, indent, frames);
-        }
+        if (thread == null)
+            Dumpable.dumpObject(out, this);
+        else
+            Dumpable.dumpObjects(out, indent, this, (Object[])thread.getStackTrace());
     }
 
     private static class ScheduledFutureTask implements Task

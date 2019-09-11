@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,11 +18,6 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
-import static java.time.Duration.ofSeconds;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -32,7 +27,6 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Consumer;
-
 import javax.websocket.ClientEndpointConfig;
 import javax.websocket.ContainerProvider;
 import javax.websocket.EncodeException;
@@ -58,6 +52,11 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import static java.time.Duration.ofSeconds;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
 public class EncoderTest
 {
@@ -135,7 +134,7 @@ public class EncoderTest
         public void write(Quotes quotes) throws IOException, EncodeException
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Writing Quotes: {}",quotes);
+                LOG.debug("Writing Quotes: {}", quotes);
             this.session.getBasicRemote().sendObject(quotes);
         }
     }
@@ -160,10 +159,10 @@ public class EncoderTest
 
     private void assertReceivedQuotes(String result, Quotes quotes)
     {
-        assertThat("Quote Author",result,containsString("Author: " + quotes.getAuthor()));
+        assertThat("Quote Author", result, containsString("Author: " + quotes.getAuthor()));
         for (String quote : quotes.quotes)
         {
-            assertThat("Quote",result,containsString("Quote: " + quote));
+            assertThat("Quote", result, containsString("Quote: " + quote));
         }
     }
 
@@ -173,7 +172,8 @@ public class EncoderTest
 
         // read file
         File qfile = MavenTestingUtils.getTestResourceFile(filename);
-        try (FileReader reader = new FileReader(qfile); BufferedReader buf = new BufferedReader(reader))
+        try (FileReader reader = new FileReader(qfile);
+             BufferedReader buf = new BufferedReader(reader))
         {
             String line;
             while ((line = buf.readLine()) != null)
@@ -220,11 +220,12 @@ public class EncoderTest
         encoders.add(QuotesEncoder.class);
         builder.encoders(encoders);
         ClientEndpointConfig cec = builder.build();
-        client.connectToServer(quoter,cec,server.getWsUri());
+        client.connectToServer(quoter, cec, server.getWsUri());
 
         try (BlockheadConnection serverConn = serverConnFut.get(Timeouts.CONNECT, Timeouts.CONNECT_UNIT))
         {
-            assertTimeoutPreemptively(ofSeconds(10),()-> {
+            assertTimeoutPreemptively(ofSeconds(10), () ->
+            {
                 // Setup echo of frames on server side
                 serverConn.setIncomingFrameConsumer(new DataFrameEcho(serverConn));
 
@@ -250,11 +251,12 @@ public class EncoderTest
         encoders.add(QuotesEncoder.class);
         builder.encoders(encoders);
         ClientEndpointConfig cec = builder.build();
-        client.connectToServer(quoter,cec,server.getWsUri());
+        client.connectToServer(quoter, cec, server.getWsUri());
 
         try (BlockheadConnection serverConn = serverConnFut.get(Timeouts.CONNECT, Timeouts.CONNECT_UNIT))
         {
-            assertTimeoutPreemptively(ofSeconds(10),()-> {
+            assertTimeoutPreemptively(ofSeconds(10), () ->
+            {
                 // Setup echo of frames on server side
                 serverConn.setIncomingFrameConsumer(new DataFrameEcho(serverConn));
 

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,7 +19,6 @@
 package org.eclipse.jetty.jaas.callback;
 
 import java.util.List;
-
 import javax.security.auth.callback.Callback;
 
 /**
@@ -34,21 +33,22 @@ public class RequestParameterCallback implements Callback
     private String _paramName;
     private List<?> _paramValues;
 
-    public void setParameterName (String name)
+    public void setParameterName(String name)
     {
         _paramName = name;
     }
-    public String getParameterName ()
+
+    public String getParameterName()
     {
         return _paramName;
     }
 
-    public void setParameterValues (List<?> values)
+    public void setParameterValues(List<?> values)
     {
         _paramValues = values;
     }
 
-    public List<?> getParameterValues ()
+    public List<?> getParameterValues()
     {
         return _paramValues;
     }

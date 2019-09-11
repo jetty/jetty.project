@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -25,6 +25,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.BadPayloadException;
 import org.eclipse.jetty.websocket.api.BatchMode;
+import org.eclipse.jetty.websocket.api.ProtocolException;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
@@ -70,10 +71,16 @@ public class PerMessageDeflateExtension extends CompressExtension
             nextIncomingFrame(frame);
             return;
         }
-        
+
+        if (frame.getOpCode() == OpCode.CONTINUATION && frame.isRsv1())
+        {
+            // Per RFC7692 we MUST Fail the websocket connection
+            throw new ProtocolException("Invalid RSV1 set on permessage-deflate CONTINUATION frame");
+        }
+
         ByteAccumulator accumulator = newByteAccumulator();
-        
-        try 
+
+        try
         {
             ByteBuffer payload = frame.getPayload();
             decompress(accumulator, payload);
@@ -81,7 +88,7 @@ public class PerMessageDeflateExtension extends CompressExtension
             {
                 decompress(accumulator, TAIL_BYTES_BUF.slice());
             }
-            
+
             forwardIncoming(frame, accumulator);
         }
         catch (DataFormatException e)
@@ -115,13 +122,13 @@ public class PerMessageDeflateExtension extends CompressExtension
         }
         super.nextOutgoingFrame(frame, callback, batchMode);
     }
-    
+
     @Override
     int getRsvUseMode()
     {
         return RSV_USE_ONLY_FIRST;
     }
-    
+
     @Override
     int getTailDropMode()
     {
@@ -133,7 +140,7 @@ public class PerMessageDeflateExtension extends CompressExtension
     {
         configRequested = new ExtensionConfig(config);
         configNegotiated = new ExtensionConfig(config.getName());
-        
+
         for (String key : config.getParameterKeys())
         {
             key = key.trim();
@@ -180,7 +187,7 @@ public class PerMessageDeflateExtension extends CompressExtension
                 }
             }
         }
-        
+
         LOG.debug("config: outgoingContextTakeover={}, incomingContextTakeover={} : {}", outgoingContextTakeover, incomingContextTakeover, this);
 
         super.setConfig(configNegotiated);
@@ -190,8 +197,8 @@ public class PerMessageDeflateExtension extends CompressExtension
     public String toString()
     {
         return String.format("%s[requested=\"%s\", negotiated=\"%s\"]",
-                getClass().getSimpleName(),
-                configRequested.getParameterizedName(),
-                configNegotiated.getParameterizedName());
+            getClass().getSimpleName(),
+            configRequested.getParameterizedName(),
+            configNegotiated.getParameterizedName());
     }
 }

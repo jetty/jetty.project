@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.jsr356.server.samples.echo;
 
+import javax.websocket.OnError;
 import javax.websocket.OnMessage;
 import javax.websocket.OnOpen;
 import javax.websocket.Session;
@@ -42,5 +43,11 @@ public class LargeEchoAnnotatedSocket
     {
         // reply with echo
         session.getAsyncRemote().sendText(msg);
+    }
+
+    @SuppressWarnings("unused")
+    @OnError
+    public void onError(Throwable cause)
+    {
     }
 }

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,7 +20,6 @@ package org.eclipse.jetty.deploy;
 
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
-
 import javax.management.MBeanServer;
 import javax.management.MBeanServerConnection;
 import javax.management.remote.JMXConnector;
@@ -33,7 +32,7 @@ import org.eclipse.jetty.toolchain.test.IO;
 
 /**
  * JmxServiceConnection
- * 
+ *
  * Provides ability to create a connection to either an external
  * JMX server, or a loopback connection to the internal one.
  */
@@ -55,9 +54,8 @@ public class JmxServiceConnection
 
     /**
      * Construct a connection to specified server
-     * 
-     * @param url
-     *            URL of JMX server
+     *
+     * @param url URL of JMX server
      */
     public JmxServiceConnection(String url)
     {
@@ -66,7 +64,7 @@ public class JmxServiceConnection
 
     /**
      * Retrieve an external URL for the JMX server
-     * 
+     *
      * @return service URL
      */
     public String getServiceUrl()
@@ -74,10 +72,9 @@ public class JmxServiceConnection
         return serviceUrl;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Retrieve a connection to MBean server
-     * 
+     *
      * @return connection to MBean server
      */
     public MBeanServerConnection getConnection()
@@ -102,15 +99,13 @@ public class JmxServiceConnection
 
     /**
      * Open a loopback connection to local JMX server
-     * 
-     * @throws IOException
      */
     private void openLoopbackConnection() throws IOException
     {
         server = ManagementFactory.getPlatformMBeanServer();
 
         JMXServiceURL serviceUrl = new JMXServiceURL("service:jmx:rmi://");
-        connectorServer = JMXConnectorServerFactory.newJMXConnectorServer(serviceUrl,null,server);
+        connectorServer = JMXConnectorServerFactory.newJMXConnectorServer(serviceUrl, null, server);
         connectorServer.start();
 
         this.serviceUrl = connectorServer.getAddress().toString();
@@ -121,9 +116,6 @@ public class JmxServiceConnection
 
     /**
      * Open a connection to remote JMX server
-     * 
-     * @param url
-     * @throws IOException
      */
     private void openServerConnection(String url) throws IOException
     {

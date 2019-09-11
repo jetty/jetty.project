@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -25,6 +25,7 @@ import org.eclipse.jetty.client.HttpReceiver;
 import org.eclipse.jetty.client.HttpSender;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.http2.ErrorCode;
+import org.eclipse.jetty.http2.IStream;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.ResetFrame;
@@ -101,6 +102,11 @@ public class HttpChannelOverHTTP2 extends HttpChannel
         connection.release(this);
     }
 
+    void onStreamClosed(IStream stream)
+    {
+        connection.onStreamClosed(stream, this);
+    }
+
     @Override
     public void exchangeTerminated(HttpExchange exchange, Result result)
     {
@@ -123,9 +129,9 @@ public class HttpChannelOverHTTP2 extends HttpChannel
     public String toString()
     {
         return String.format("%s[send=%s,recv=%s]",
-                super.toString(),
-                sender,
-                receiver);
+            super.toString(),
+            sender,
+            receiver);
     }
 
     private class ReleaseCallback implements Callback

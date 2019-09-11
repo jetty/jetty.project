@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -27,7 +27,7 @@ public final class Node
 
     public Node(String name)
     {
-        assert name!=null;
+        assert name != null;
         this._name = name;
     }
 
@@ -60,11 +60,9 @@ public final class Node
         Node other = (Node)obj;
         if (_name == null)
         {
-            if (other._name != null)
-                return false;
+            return other._name == null;
         }
-        else if (!_name.equals(other._name))
-            return false;
-        return true;
+        else
+            return _name.equals(other._name);
     }
 }

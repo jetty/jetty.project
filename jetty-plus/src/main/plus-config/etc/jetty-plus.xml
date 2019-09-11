@@ -1,9 +1,6 @@
-<?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+<?xml version="1.0"?><!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
 
-<!-- =============================================================== -->
-<!-- Configure extended support for webapps                          -->
-<!-- =============================================================== -->
+<!-- =============================================================== --><!-- Configure extended support for webapps                          --><!-- =============================================================== -->
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
 
   <!-- =========================================================== -->
@@ -20,6 +17,10 @@
         </Array>
       </Arg>
     </Call>
+  </Call>
+
+  <Call name="addBean">
+    <Arg><New class="org.eclipse.jetty.plus.jndi.NamingDump"/></Arg>
   </Call>
 
 </Configure>

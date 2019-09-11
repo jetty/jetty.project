@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -25,7 +25,7 @@ public class MessageDebug
     public static String toDetailHint(byte[] data, int offset, int len)
     {
         StringBuilder buf = new StringBuilder();
-        ByteBuffer buffer = ByteBuffer.wrap(data,offset,len);
+        ByteBuffer buffer = ByteBuffer.wrap(data, offset, len);
 
         buf.append("byte[").append(data.length);
         buf.append("](o=").append(offset);

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,7 +20,6 @@ package com.acme.initializer;
 
 import java.util.ArrayList;
 import java.util.Set;
-
 import javax.servlet.ServletContainerInitializer;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
@@ -28,13 +27,13 @@ import javax.servlet.ServletContextListener;
 import javax.servlet.ServletRegistration;
 import javax.servlet.annotation.HandlesTypes;
 
-@HandlesTypes ({javax.servlet.Servlet.class, Foo.class})
+@HandlesTypes({javax.servlet.Servlet.class, Foo.class})
 public class FooInitializer implements ServletContainerInitializer
 {
     public static class BarListener implements ServletContextListener
     {
 
-        /** 
+        /**
          * @see javax.servlet.ServletContextListener#contextInitialized(javax.servlet.ServletContextEvent)
          */
         @Override
@@ -43,29 +42,31 @@ public class FooInitializer implements ServletContainerInitializer
             throw new IllegalStateException("BAR LISTENER CALLED!");
         }
 
-        /** 
+        /**
          * @see javax.servlet.ServletContextListener#contextDestroyed(javax.servlet.ServletContextEvent)
          */
         @Override
         public void contextDestroyed(ServletContextEvent sce)
         {
-            
+
         }
-        
     }
 
     public static class FooListener implements ServletContextListener
     {
 
-        /** 
+        /**
          * @see javax.servlet.ServletContextListener#contextInitialized(javax.servlet.ServletContextEvent)
          */
         @Override
         public void contextInitialized(ServletContextEvent sce)
         {
+            if (sce.getServletContext().getAttribute("com.acme.AnnotationTest.listenerTest") != null)
+                throw new IllegalStateException("FooListener already initialized");
+
             //Can add a ServletContextListener from a ServletContainerInitializer
             sce.getServletContext().setAttribute("com.acme.AnnotationTest.listenerTest", Boolean.TRUE);
-            
+
             //Can't add a ServletContextListener from a ServletContextListener
             try
             {
@@ -82,19 +83,22 @@ public class FooInitializer implements ServletContainerInitializer
             }
         }
 
-        /** 
+        /**
          * @see javax.servlet.ServletContextListener#contextDestroyed(javax.servlet.ServletContextEvent)
          */
         @Override
         public void contextDestroyed(ServletContextEvent sce)
         {
-            
+
         }
-        
     }
+
     @Override
     public void onStartup(Set<Class<?>> classes, ServletContext context)
     {
+        if (context.getAttribute("com.acme.Foo") != null)
+            throw new IllegalStateException("FooInitializer on Startup already called");
+
         context.setAttribute("com.acme.Foo", new ArrayList<Class>(classes));
         ServletRegistration.Dynamic reg = context.addServlet("AnnotationTest", "com.acme.AnnotationTest");
         context.setAttribute("com.acme.AnnotationTest.complete", (reg == null));

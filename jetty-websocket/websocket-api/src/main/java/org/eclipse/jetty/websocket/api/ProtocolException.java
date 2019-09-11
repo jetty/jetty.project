@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -26,16 +26,16 @@ public class ProtocolException extends CloseException
 {
     public ProtocolException(String message)
     {
-        super(StatusCode.PROTOCOL,message);
+        super(StatusCode.PROTOCOL, message);
     }
 
     public ProtocolException(String message, Throwable t)
     {
-        super(StatusCode.PROTOCOL,message,t);
+        super(StatusCode.PROTOCOL, message, t);
     }
 
     public ProtocolException(Throwable t)
     {
-        super(StatusCode.PROTOCOL,t);
+        super(StatusCode.PROTOCOL, t);
     }
 }

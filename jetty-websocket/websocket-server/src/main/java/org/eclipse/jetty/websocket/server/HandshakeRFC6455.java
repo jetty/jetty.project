@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,9 +19,9 @@
 package org.eclipse.jetty.websocket.server;
 
 import java.io.IOException;
-
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.websocket.common.AcceptHash;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
@@ -31,23 +31,22 @@ import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
  */
 public class HandshakeRFC6455 implements WebSocketHandshake
 {
-    /** RFC 6455 - Sec-WebSocket-Version */
+    /**
+     * RFC 6455 - Sec-WebSocket-Version
+     */
     public static final int VERSION = 13;
 
     @Override
     public void doHandshakeResponse(ServletUpgradeRequest request, ServletUpgradeResponse response) throws IOException
     {
         String key = request.getHeader("Sec-WebSocket-Key");
-
         if (key == null)
-        {
-            throw new IllegalStateException("Missing request header 'Sec-WebSocket-Key'");
-        }
+            throw new BadMessageException("Missing request header 'Sec-WebSocket-Key'");
 
         // build response
-        response.setHeader("Upgrade","WebSocket");
-        response.addHeader("Connection","Upgrade");
-        response.addHeader("Sec-WebSocket-Accept",AcceptHash.hashKey(key));
+        response.setHeader("Upgrade", "WebSocket");
+        response.addHeader("Connection", "Upgrade");
+        response.addHeader("Sec-WebSocket-Accept", AcceptHash.hashKey(key));
 
         request.complete();
 

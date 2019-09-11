@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,13 +19,13 @@
 package org.eclipse.jetty.test;
 
 import java.util.Set;
-
 import javax.servlet.ServletContainerInitializer;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 
 /**
  * A SCI that tosses an Error to intentionally to cause issues with the DeploymentManager
+ *
  * @see <a href="https://github.com/eclipse/jetty.project/issues/1602">Issue #1602</a>
  */
 public class DeploymentErrorInitializer implements ServletContainerInitializer

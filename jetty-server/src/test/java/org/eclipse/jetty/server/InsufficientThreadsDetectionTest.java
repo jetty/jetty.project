@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,12 +18,12 @@
 
 package org.eclipse.jetty.server;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class InsufficientThreadsDetectionTest
 {
@@ -39,7 +39,8 @@ public class InsufficientThreadsDetectionTest
     @Test
     public void testConnectorUsesServerExecutorWithNotEnoughThreads() throws Exception
     {
-        assertThrows(IllegalStateException.class, ()->{
+        assertThrows(IllegalStateException.class, () ->
+        {
             // server has 3 threads in the executor
             _server = new Server(new QueuedThreadPool(3));
 
@@ -75,7 +76,8 @@ public class InsufficientThreadsDetectionTest
     @Test
     public void testCaseForMultipleConnectors() throws Exception
     {
-        assertThrows(IllegalStateException.class, ()->{
+        assertThrows(IllegalStateException.class, () ->
+        {
             // server has 4 threads in the executor
             _server = new Server(new QueuedThreadPool(4));
 

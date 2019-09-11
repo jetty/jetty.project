@@ -2,13 +2,18 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>9.4.13-SNAPSHOT</version>
+    <version>9.4.21-SNAPSHOT</version>
   </parent>
+
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-jmh</artifactId>
   <name>Jetty :: Jmh</name>
   <description>Jmh classes for Jetty</description>
-  <url>http://www.eclipse.org/jetty</url>
+
+  <properties>
+    <bundle-symbolic-name>${project.groupId}.jmh</bundle-symbolic-name>
+  </properties>
+
   <build>
     <plugins>
       <plugin>
@@ -39,8 +44,7 @@
               <finalName>${jmhjar.name}</finalName>
               <shadeTestJar>true</shadeTestJar>
               <transformers>
-                <transformer
-                  implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                   <mainClass>org.openjdk.jmh.Main</mainClass>
                 </transformer>
               </transformers>
@@ -72,6 +76,7 @@
       </plugins>
     </pluginManagement>
   </build>
+
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
@@ -87,12 +92,6 @@
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-http</artifactId>
       <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-http</artifactId>
-      <version>${project.version}</version>
-      <classifier>tests</classifier>
     </dependency>
     <dependency>
       <groupId>javax.servlet</groupId>

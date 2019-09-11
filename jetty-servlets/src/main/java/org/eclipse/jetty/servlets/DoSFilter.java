@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -31,7 +31,6 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
@@ -131,9 +130,9 @@ public class DoSFilter implements Filter
     private static final Logger LOG = Log.getLogger(DoSFilter.class);
 
     private static final String IPv4_GROUP = "(\\d{1,3})";
-    private static final Pattern IPv4_PATTERN = Pattern.compile(IPv4_GROUP+"\\."+IPv4_GROUP+"\\."+IPv4_GROUP+"\\."+IPv4_GROUP);
+    private static final Pattern IPv4_PATTERN = Pattern.compile(IPv4_GROUP + "\\." + IPv4_GROUP + "\\." + IPv4_GROUP + "\\." + IPv4_GROUP);
     private static final String IPv6_GROUP = "(\\p{XDigit}{1,4})";
-    private static final Pattern IPv6_PATTERN = Pattern.compile(IPv6_GROUP+":"+IPv6_GROUP+":"+IPv6_GROUP+":"+IPv6_GROUP+":"+IPv6_GROUP+":"+IPv6_GROUP+":"+IPv6_GROUP+":"+IPv6_GROUP);
+    private static final Pattern IPv6_PATTERN = Pattern.compile(IPv6_GROUP + ":" + IPv6_GROUP + ":" + IPv6_GROUP + ":" + IPv6_GROUP + ":" + IPv6_GROUP + ":" + IPv6_GROUP + ":" + IPv6_GROUP + ":" + IPv6_GROUP);
     private static final Pattern CIDR_PATTERN = Pattern.compile("([^/]+)/(\\d+)");
 
     private static final String __TRACKER = "DoSFilter.Tracker";
@@ -146,7 +145,7 @@ public class DoSFilter implements Filter
     private static final long __DEFAULT_THROTTLE_MS = 30000L;
     private static final long __DEFAULT_MAX_REQUEST_MS_INIT_PARAM = 30000L;
     private static final long __DEFAULT_MAX_IDLE_TRACKER_MS_INIT_PARAM = 30000L;
-    
+
     static final String NAME = "name";
     static final String MANAGED_ATTR_INIT_PARAM = "managedAttr";
     static final String MAX_REQUESTS_PER_S_INIT_PARAM = "maxRequestsPerSec";
@@ -265,23 +264,23 @@ public class DoSFilter implements Filter
         setEnabled(parameter == null || Boolean.parseBoolean(parameter));
 
         parameter = filterConfig.getInitParameter(TOO_MANY_CODE);
-        setTooManyCode(parameter==null?429:Integer.parseInt(parameter));
+        setTooManyCode(parameter == null ? 429 : Integer.parseInt(parameter));
 
         setName(filterConfig.getFilterName());
         _context = filterConfig.getServletContext();
-        if (_context != null )
-        {    
+        if (_context != null)
+        {
             _context.setAttribute(filterConfig.getFilterName(), this);
         }
 
-        _scheduler = startScheduler();        
+        _scheduler = startScheduler();
     }
 
     protected Scheduler startScheduler() throws ServletException
     {
         try
         {
-            Scheduler result = new ScheduledExecutorScheduler();
+            Scheduler result = new ScheduledExecutorScheduler(String.format("DoS-Scheduler-%x", hashCode()), false);
             result.start();
             return result;
         }
@@ -316,10 +315,10 @@ public class DoSFilter implements Filter
             // Get a rate tracker associated with this request, and record one hit.
             tracker = getRateTracker(request);
 
-            // Calculate the rate and check it is over the allowed limit
+            // Calculate the rate and check if it is over the allowed limit
             final boolean overRateLimit = tracker.isRateExceeded(System.currentTimeMillis());
 
-            // Pass it through if  we are not currently over the rate limit.
+            // Pass it through if we are not currently over the rate limit.
             if (!overRateLimit)
             {
                 if (LOG.isDebugEnabled())
@@ -490,9 +489,9 @@ public class DoSFilter implements Filter
     /**
      * Invoked when the request handling exceeds {@link #getMaxRequestMs()}.
      * <p>
-     * By default, a HTTP 503 response is returned and the handling thread is interrupted.
+     * By default, an HTTP 503 response is returned and the handling thread is interrupted.
      *
-     * @param request  the current request
+     * @param request the current request
      * @param response the current response
      * @param handlingThread the handling thread
      */
@@ -502,7 +501,16 @@ public class DoSFilter implements Filter
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Timing out {}", request);
-            response.sendError(HttpStatus.SERVICE_UNAVAILABLE_503);
+            try
+            {
+                response.sendError(HttpStatus.SERVICE_UNAVAILABLE_503);
+            }
+            catch (IllegalStateException ise)
+            {
+                LOG.ignore(ise);
+                // abort instead
+                response.sendError(-1);
+            }
         }
         catch (Throwable x)
         {
@@ -513,10 +521,10 @@ public class DoSFilter implements Filter
     }
 
     /**
-     * @deprecated use {@link #onRequestTimeout(HttpServletRequest, HttpServletResponse, Thread)} instead
-     * @param request  the current request
+     * @param request the current request
      * @param response the current response
      * @param thread the handling thread
+     * @deprecated use {@link #onRequestTimeout(HttpServletRequest, HttpServletResponse, Thread)} instead
      */
     @Deprecated
     protected void closeConnection(HttpServletRequest request, HttpServletResponse response, Thread thread)
@@ -547,8 +555,8 @@ public class DoSFilter implements Filter
     {
         return USER_AUTH;
     }
-    
-    public void schedule (RateTracker tracker)
+
+    public void schedule(RateTracker tracker)
     {
         _scheduler.schedule(tracker, getMaxIdleTrackerMs(), TimeUnit.MILLISECONDS);
     }
@@ -600,7 +608,7 @@ public class DoSFilter implements Filter
             boolean allowed = checkWhitelist(request.getRemoteAddr());
             int maxRequestsPerSec = getMaxRequestsPerSec();
             tracker = allowed ? new FixedRateTracker(_context, _name, loadId, type, maxRequestsPerSec)
-                    : new RateTracker(_context,_name, loadId, type, maxRequestsPerSec);
+                : new RateTracker(_context, _name, loadId, type, maxRequestsPerSec);
             tracker.setContext(_context);
             RateTracker existing = _rateTrackers.putIfAbsent(loadId, tracker);
             if (existing != null)
@@ -620,17 +628,13 @@ public class DoSFilter implements Filter
 
         return tracker;
     }
-    
-    
-    
-    
-    
-    public void addToRateTracker (RateTracker tracker)
+
+    public void addToRateTracker(RateTracker tracker)
     {
         _rateTrackers.put(tracker.getId(), tracker);
     }
-    
-    public void removeFromRateTracker (String id)
+
+    public void removeFromRateTracker(String id)
     {
         _rateTrackers.remove(id);
     }
@@ -726,7 +730,9 @@ public class DoSFilter implements Filter
         {
             byte[] result = new byte[4];
             for (int i = 0; i < result.length; ++i)
+            {
                 result[i] = Integer.valueOf(ipv4Matcher.group(i + 1)).byteValue();
+            }
             return result;
         }
         else
@@ -769,7 +775,7 @@ public class DoSFilter implements Filter
     @Override
     public void destroy()
     {
-        LOG.debug("Destroy {}",this);
+        LOG.debug("Destroy {}", this);
         stopScheduler();
         _rateTrackers.clear();
         _whitelist.clear();
@@ -827,6 +833,7 @@ public class DoSFilter implements Filter
     /**
      * Get delay (in milliseconds) that is applied to all requests
      * over the rate limit, before they are considered at all.
+     *
      * @return the delay in milliseconds
      */
     @ManagedAttribute("delay applied to all requests over the rate limit (in ms)")
@@ -966,7 +973,7 @@ public class DoSFilter implements Filter
     /**
      * The unique name of the filter when there is more than
      * one DosFilter instance.
-     * 
+     *
      * @return the name
      */
     public String getName()
@@ -1083,7 +1090,7 @@ public class DoSFilter implements Filter
     public String getWhitelist()
     {
         StringBuilder result = new StringBuilder();
-        for (Iterator<String> iterator = _whitelist.iterator(); iterator.hasNext();)
+        for (Iterator<String> iterator = _whitelist.iterator(); iterator.hasNext(); )
         {
             String address = iterator.next();
             result.append(address);
@@ -1102,7 +1109,9 @@ public class DoSFilter implements Filter
     {
         List<String> result = new ArrayList<>();
         for (String address : StringUtil.csvSplit(commaSeparatedList))
+        {
             addWhitelistAddress(result, address);
+        }
         clearWhitelist();
         _whitelist.addAll(result);
         LOG.debug("Whitelisted IP addresses: {}", result);
@@ -1163,7 +1172,7 @@ public class DoSFilter implements Filter
         protected final String _id;
         protected final int _type;
         protected final long[] _timestamps;
-        
+
         protected int _next;
 
         public RateTracker(ServletContext context, String filterName, String id, int type, int maxRequestsPerSecond)
@@ -1243,14 +1252,13 @@ public class DoSFilter implements Filter
             }
             addToRateTrackers(filter, tracker);
         }
-        
-        public void setContext (ServletContext context)
+
+        public void setContext(ServletContext context)
         {
             _context = context;
         }
 
-
-        protected void removeFromRateTrackers (DoSFilter filter, String id)
+        protected void removeFromRateTrackers(DoSFilter filter, String id)
         {
             if (filter == null)
                 return;
@@ -1260,8 +1268,7 @@ public class DoSFilter implements Filter
                 LOG.debug("Tracker removed: {}", getId());
         }
 
-
-        protected void addToRateTrackers (DoSFilter filter, RateTracker tracker)
+        protected void addToRateTrackers(DoSFilter filter, RateTracker tracker)
         {
             if (filter == null)
                 return;
@@ -1370,12 +1377,13 @@ public class DoSFilter implements Filter
             super.onTimeout(event);
         }
     }
-    
-    private String createRemotePortId(final ServletRequest request) {
+
+    private String createRemotePortId(final ServletRequest request)
+    {
         final String addr = request.getRemoteAddr();
         final int port = request.getRemotePort();
-        if (addr.contains(":")) return "[" + addr + "]:" + port;
+        if (addr.contains(":"))
+            return "[" + addr + "]:" + port;
         return addr + ":" + port;
     }
-    
 }

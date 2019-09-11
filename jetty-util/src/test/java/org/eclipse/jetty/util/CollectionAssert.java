@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.util;
 
-import static org.junit.jupiter.api.Assertions.fail;
-
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayList;
@@ -28,6 +26,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * @deprecated use {@link org.eclipse.jetty.toolchain.test.ExtraMatchers#ordered(List)} instead
@@ -56,33 +55,33 @@ public class CollectionAssert
             StringWriter message = new StringWriter();
             PrintWriter err = new PrintWriter(message);
 
-            err.printf("%s: Assert Contains (Unordered)",msg);
+            err.printf("%s: Assert Contains (Unordered)", msg);
             if (mismatch)
             {
                 err.print(" [size mismatch]");
             }
             if (missing.size() >= 0)
             {
-                err.printf(" [%d entries missing]",missing.size());
+                err.printf(" [%d entries missing]", missing.size());
             }
             err.println();
-            err.printf("Actual Entries (size: %d)%n",actualSet.size());
+            err.printf("Actual Entries (size: %d)%n", actualSet.size());
             for (String actual : actualSet)
             {
-                char indicator = expectedSet.contains(actual)?' ':'>';
-                err.printf("%s| %s%n",indicator,actual);
+                char indicator = expectedSet.contains(actual) ? ' ' : '>';
+                err.printf("%s| %s%n", indicator, actual);
             }
-            err.printf("Expected Entries (size: %d)%n",expectedSet.size());
+            err.printf("Expected Entries (size: %d)%n", expectedSet.size());
             for (String expected : expectedSet)
             {
-                char indicator = actualSet.contains(expected)?' ':'>';
-                err.printf("%s| %s%n",indicator,expected);
+                char indicator = actualSet.contains(expected) ? ' ' : '>';
+                err.printf("%s| %s%n", indicator, expected);
             }
             err.flush();
             fail(message.toString());
         }
     }
-    
+
     public static void assertOrdered(String msg, List<String> expectedList, List<String> actualList)
     {
         // same size?
@@ -90,8 +89,8 @@ public class CollectionAssert
 
         // test content
         List<Integer> badEntries = new ArrayList<>();
-        int min = Math.min(expectedList.size(),actualList.size());
-        int max = Math.max(expectedList.size(),actualList.size());
+        int min = Math.min(expectedList.size(), actualList.size());
+        int max = Math.max(expectedList.size(), actualList.size());
         for (int i = 0; i < min; i++)
         {
             if (!expectedList.get(i).equals(actualList.get(i)))
@@ -110,30 +109,30 @@ public class CollectionAssert
             StringWriter message = new StringWriter();
             PrintWriter err = new PrintWriter(message);
 
-            err.printf("%s: Assert Contains (Unordered)",msg);
+            err.printf("%s: Assert Contains (Unordered)", msg);
             if (mismatch)
             {
                 err.print(" [size mismatch]");
             }
             if (badEntries.size() >= 0)
             {
-                err.printf(" [%d entries not matched]",badEntries.size());
+                err.printf(" [%d entries not matched]", badEntries.size());
             }
             err.println();
-            err.printf("Actual Entries (size: %d)%n",actualList.size());
+            err.printf("Actual Entries (size: %d)%n", actualList.size());
             for (int i = 0; i < actualList.size(); i++)
             {
                 String actual = actualList.get(i);
-                char indicator = badEntries.contains(i)?'>':' ';
-                err.printf("%s[%d] %s%n",indicator,i,actual);
+                char indicator = badEntries.contains(i) ? '>' : ' ';
+                err.printf("%s[%d] %s%n", indicator, i, actual);
             }
 
-            err.printf("Expected Entries (size: %d)%n",expectedList.size());
+            err.printf("Expected Entries (size: %d)%n", expectedList.size());
             for (int i = 0; i < expectedList.size(); i++)
             {
                 String expected = expectedList.get(i);
-                char indicator = badEntries.contains(i)?'>':' ';
-                err.printf("%s[%d] %s%n",indicator,i,expected);
+                char indicator = badEntries.contains(i) ? '>' : ' ';
+                err.printf("%s[%d] %s%n", indicator, i, expected);
             }
             err.flush();
             fail(message.toString());

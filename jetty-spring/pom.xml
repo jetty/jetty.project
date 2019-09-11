@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>9.4.13-SNAPSHOT</version>
+    <version>9.4.21-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-spring</artifactId>
@@ -28,12 +28,12 @@
         <groupId>org.apache.felix</groupId>
         <artifactId>maven-bundle-plugin</artifactId>
         <extensions>true</extensions>
-            <configuration>
-              <instructions>
-                <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)";resolution:=optional</Require-Capability>
-                <Provide-Capability>osgi.serviceloader;osgi.serviceloader=org.eclipse.jetty.xml.ConfigurationProcessorFactory</Provide-Capability>
-              </instructions>
-            </configuration>
+        <configuration>
+          <instructions>
+            <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)";resolution:=optional</Require-Capability>
+            <Provide-Capability>osgi.serviceloader;osgi.serviceloader=org.eclipse.jetty.xml.ConfigurationProcessorFactory</Provide-Capability>
+          </instructions>
+        </configuration>
       </plugin>
     </plugins>
   </build>

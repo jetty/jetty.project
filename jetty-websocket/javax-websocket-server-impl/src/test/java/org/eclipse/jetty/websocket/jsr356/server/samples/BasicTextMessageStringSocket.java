@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -23,13 +23,13 @@ import javax.websocket.server.ServerEndpoint;
 
 import org.eclipse.jetty.websocket.jsr356.server.TrackingSocket;
 
-@ServerEndpoint(value="/basic")
+@ServerEndpoint(value = "/basic")
 public class BasicTextMessageStringSocket extends TrackingSocket
 {
     @OnMessage
     public void onText(String message)
     {
-        addEvent("onText(%s)",message);
+        addEvent("onText(%s)", message);
         dataLatch.countDown();
     }
 }

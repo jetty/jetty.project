@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -29,7 +29,7 @@ import org.junit.jupiter.api.Test;
  */
 public class ClusteredOrphanedSessionTest extends AbstractClusteredOrphanedSessionTest
 {
-    
+
     @BeforeAll
     public static void beforeClass() throws Exception
     {
@@ -42,9 +42,8 @@ public class ClusteredOrphanedSessionTest extends AbstractClusteredOrphanedSessi
     {
         MongoTestHelper.dropCollection();
     }
-    
-    
-    /** 
+
+    /**
      * @see org.eclipse.jetty.server.session.AbstractTestBase#createSessionDataStoreFactory()
      */
     @Override
@@ -52,7 +51,6 @@ public class ClusteredOrphanedSessionTest extends AbstractClusteredOrphanedSessi
     {
         return MongoTestHelper.newSessionDataStoreFactory();
     }
-
 
     @Test
     @Override

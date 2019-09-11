@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -23,7 +23,8 @@ import com.google.gwt.user.client.rpc.AsyncCallback;
 /**
  * The async counterpart of <code>GreetingService</code>.
  */
-public interface GreetingServiceAsync {
+public interface GreetingServiceAsync
+{
     void greetServer(String input, AsyncCallback<GreetingResponse> callback)
-            throws IllegalArgumentException;
+        throws IllegalArgumentException;
 }

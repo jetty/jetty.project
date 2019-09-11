@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -45,6 +45,7 @@ import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.component.Container;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.Graceful;
@@ -115,7 +116,7 @@ import org.eclipse.jetty.util.thread.ThreadPoolBudget;
  * {@link ConnectionFactory}s may also create temporary {@link org.eclipse.jetty.io.Connection} instances that will exchange bytes
  * over the connection to determine what is the next protocol to use.  For example the ALPN protocol is an extension
  * of SSL to allow a protocol to be specified during the SSL handshake. ALPN is used by the HTTP/2 protocol to
- * negotiate the protocol that the client and server will speak.  Thus to accept a HTTP/2 connection, the
+ * negotiate the protocol that the client and server will speak.  Thus to accept an HTTP/2 connection, the
  * connector will be configured with {@link ConnectionFactory}s for "SSL-ALPN", "h2", "http/1.1"
  * with the default protocol being "SSL-ALPN".  Thus a newly accepted connection uses "SSL-ALPN", which specifies a
  * SSLConnectionFactory with "ALPN" as the next protocol.  Thus an SSL connection instance is created chained to an ALPN
@@ -141,7 +142,7 @@ import org.eclipse.jetty.util.thread.ThreadPoolBudget;
 @ManagedObject("Abstract implementation of the Connector Interface")
 public abstract class AbstractConnector extends ContainerLifeCycle implements Connector, Dumpable
 {
-    protected final Logger LOG = Log.getLogger(AbstractConnector.class);
+    protected static final Logger LOG = Log.getLogger(AbstractConnector.class);
 
     private final Locker _locker = new Locker();
     private final Condition _setAccepting = _locker.newCondition();
@@ -154,12 +155,13 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     private final Set<EndPoint> _endpoints = Collections.newSetFromMap(new ConcurrentHashMap<>());
     private final Set<EndPoint> _immutableEndPoints = Collections.unmodifiableSet(_endpoints);
     private final Graceful.Shutdown _shutdown = new Graceful.Shutdown();
+    private HttpChannel.Listener _httpChannelListeners = HttpChannel.NOOP_LISTENER;
     private CountDownLatch _stopping;
     private long _idleTimeout = 30000;
     private String _defaultProtocol;
     private ConnectionFactory _defaultConnectionFactory;
     private String _name;
-    private int _acceptorPriorityDelta=-2;
+    private int _acceptorPriorityDelta = -2;
     private boolean _accepting = true;
     private ThreadPoolBudget.Lease _lease;
 
@@ -172,40 +174,76 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
      * @param factories The Connection Factories to use.
      */
     public AbstractConnector(
-            Server server,
-            Executor executor,
-            Scheduler scheduler,
-            ByteBufferPool pool,
-            int acceptors,
-            ConnectionFactory... factories)
+        Server server,
+        Executor executor,
+        Scheduler scheduler,
+        ByteBufferPool pool,
+        int acceptors,
+        ConnectionFactory... factories)
     {
-        _server=server;
-        _executor=executor!=null?executor:_server.getThreadPool();
-        if (scheduler==null)
-            scheduler=_server.getBean(Scheduler.class);
-        _scheduler=scheduler!=null?scheduler:new ScheduledExecutorScheduler();
-        if (pool==null)
-            pool=_server.getBean(ByteBufferPool.class);
-        _byteBufferPool = pool!=null?pool:new ArrayByteBufferPool();
+        _server = server;
+        _executor = executor != null ? executor : _server.getThreadPool();
+        if (scheduler == null)
+            scheduler = _server.getBean(Scheduler.class);
+        _scheduler = scheduler != null ? scheduler : new ScheduledExecutorScheduler(String.format("Connector-Scheduler-%x", hashCode()), false);
+        if (pool == null)
+            pool = _server.getBean(ByteBufferPool.class);
+        _byteBufferPool = pool != null ? pool : new ArrayByteBufferPool();
 
-        addBean(_server,false);
+        addEventListener(new Container.Listener()
+        {
+            @Override
+            public void beanAdded(Container parent, Object bean)
+            {
+                if (bean instanceof HttpChannel.Listener)
+                    _httpChannelListeners = new HttpChannelListeners(getBeans(HttpChannel.Listener.class));
+            }
+
+            @Override
+            public void beanRemoved(Container parent, Object bean)
+            {
+                if (bean instanceof HttpChannel.Listener)
+                    _httpChannelListeners = new HttpChannelListeners(getBeans(HttpChannel.Listener.class));
+            }
+        });
+
+        addBean(_server, false);
         addBean(_executor);
-        if (executor==null)
+        if (executor == null)
             unmanage(_executor); // inherited from server
         addBean(_scheduler);
         addBean(_byteBufferPool);
 
-        for (ConnectionFactory factory:factories)
+        for (ConnectionFactory factory : factories)
+        {
             addConnectionFactory(factory);
+        }
 
         int cores = ProcessorUtils.availableProcessors();
         if (acceptors < 0)
-            acceptors=Math.max(1, Math.min(4,cores/8));
+            acceptors = Math.max(1, Math.min(4, cores / 8));
         if (acceptors > cores)
             LOG.warn("Acceptors should be <= availableProcessors: " + this);
         _acceptors = new Thread[acceptors];
     }
 
+    /**
+     * Get the {@link HttpChannel.Listener}s added to the connector
+     * as a single combined Listener.
+     * This is equivalent to a listener that iterates over the individual
+     * listeners returned from <code>getBeans(HttpChannel.Listener.class);</code>,
+     * except that: <ul>
+     *     <li>The result is precomputed, so it is more efficient</li>
+     *     <li>The result is ordered by the order added.</li>
+     *     <li>The result is immutable.</li>
+     * </ul>
+     * @see #getBeans(Class)
+     * @return An unmodifiable list of EventListener beans
+     */
+    public HttpChannel.Listener getHttpChannelListeners()
+    {
+        return _httpChannelListeners;
+    }
 
     @Override
     public Server getServer()
@@ -226,12 +264,12 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     }
 
     @Override
-    @ManagedAttribute("Idle timeout")
+    @ManagedAttribute("The connection idle timeout in milliseconds")
     public long getIdleTimeout()
     {
         return _idleTimeout;
     }
-    
+
     /**
      * <p>Sets the maximum Idle time for a connection, which roughly translates to the {@link Socket#setSoTimeout(int)}
      * call, although with NIO implementations other mechanisms may be used to implement the timeout.</p>
@@ -263,12 +301,12 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     protected void doStart() throws Exception
     {
         _shutdown.cancel();
-        
-        if(_defaultProtocol==null)
-            throw new IllegalStateException("No default protocol for "+this);
+
+        if (_defaultProtocol == null)
+            throw new IllegalStateException("No default protocol for " + this);
         _defaultConnectionFactory = getConnectionFactory(_defaultProtocol);
-        if(_defaultConnectionFactory==null)
-            throw new IllegalStateException("No protocol factory for default protocol '"+_defaultProtocol+"' in "+this);
+        if (_defaultConnectionFactory == null)
+            throw new IllegalStateException("No protocol factory for default protocol '" + _defaultProtocol + "' in " + this);
         SslConnectionFactory ssl = getConnectionFactory(SslConnectionFactory.class);
         if (ssl != null)
         {
@@ -278,10 +316,10 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
                 throw new IllegalStateException("No protocol factory for SSL next protocol: '" + next + "' in " + this);
         }
 
-        _lease = ThreadPoolBudget.leaseFrom(getExecutor(),this,_acceptors.length);
+        _lease = ThreadPoolBudget.leaseFrom(getExecutor(), this, _acceptors.length);
         super.doStart();
 
-        _stopping=new CountDownLatch(_acceptors.length);
+        _stopping = new CountDownLatch(_acceptors.length);
         for (int i = 0; i < _acceptors.length; i++)
         {
             Acceptor a = new Acceptor(i);
@@ -291,7 +329,6 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
 
         LOG.info("Started {}", this);
     }
-
 
     protected void interruptAcceptors()
     {
@@ -304,7 +341,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
             }
         }
     }
-        
+
     @Override
     public Future<Void> shutdown()
     {
@@ -316,11 +353,11 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     {
         return _shutdown.isShutdown();
     }
-    
+
     @Override
     protected void doStop() throws Exception
     {
-        if (_lease!=null)
+        if (_lease != null)
             _lease.close();
 
         // Tell the acceptors we are stopping
@@ -328,15 +365,17 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
 
         // If we have a stop timeout
         long stopTimeout = getStopTimeout();
-        CountDownLatch stopping=_stopping;
-        if (stopTimeout > 0 && stopping!=null && getAcceptors()>0)
-            stopping.await(stopTimeout,TimeUnit.MILLISECONDS);
-        _stopping=null;
+        CountDownLatch stopping = _stopping;
+        if (stopTimeout > 0 && stopping != null && getAcceptors() > 0)
+            stopping.await(stopTimeout, TimeUnit.MILLISECONDS);
+        _stopping = null;
 
         super.doStop();
 
         for (Acceptor a : getBeans(Acceptor.class))
+        {
             removeBean(a);
+        }
 
         LOG.info("Stopped {}", this);
     }
@@ -351,13 +390,14 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
         try (Locker.Lock lock = _locker.lock())
         {
             for (Thread thread : _acceptors)
+            {
                 if (thread != null)
                     thread.join(timeout);
+            }
         }
     }
 
     protected abstract void accept(int acceptorID) throws IOException, InterruptedException;
-
 
     /**
      * @return Is the connector accepting new connections
@@ -374,7 +414,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     {
         try (Locker.Lock lock = _locker.lock())
         {
-            _accepting=accepting;
+            _accepting = accepting;
             _setAccepting.signalAll();
         }
     }
@@ -394,8 +434,10 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
         try (Locker.Lock lock = _locker.lock())
         {
             for (ConnectionFactory f : _factories.values())
+            {
                 if (factoryType.isAssignableFrom(f.getClass()))
                     return (T)f;
+            }
             return null;
         }
     }
@@ -405,26 +447,28 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
         if (isRunning())
             throw new IllegalStateException(getState());
 
-        Set<ConnectionFactory> to_remove = new HashSet<>();
-        for (String key:factory.getProtocols())
+        Set<ConnectionFactory> toRemove = new HashSet<>();
+        for (String key : factory.getProtocols())
         {
-            key=StringUtil.asciiToLowerCase(key);
-            ConnectionFactory old=_factories.remove(key);
-            if (old!=null)
+            key = StringUtil.asciiToLowerCase(key);
+            ConnectionFactory old = _factories.remove(key);
+            if (old != null)
             {
                 if (old.getProtocol().equals(_defaultProtocol))
-                    _defaultProtocol=null;
-                to_remove.add(old);
+                    _defaultProtocol = null;
+                toRemove.add(old);
             }
             _factories.put(key, factory);
         }
 
         // keep factories still referenced
         for (ConnectionFactory f : _factories.values())
-            to_remove.remove(f);
+        {
+            toRemove.remove(f);
+        }
 
         // remove old factories
-        for (ConnectionFactory old: to_remove)
+        for (ConnectionFactory old : toRemove)
         {
             removeBean(old);
             if (LOG.isDebugEnabled())
@@ -433,8 +477,8 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
 
         // add new Bean
         addBean(factory);
-        if (_defaultProtocol==null)
-            _defaultProtocol=factory.getProtocol();
+        if (_defaultProtocol == null)
+            _defaultProtocol = factory.getProtocol();
         if (LOG.isDebugEnabled())
             LOG.debug("{} added {}", this, factory);
     }
@@ -448,7 +492,9 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
         _factories.clear();
         addConnectionFactory(factory);
         for (ConnectionFactory existing : existings)
+        {
             addConnectionFactory(existing);
+        }
         _defaultProtocol = factory.getProtocol();
     }
 
@@ -457,7 +503,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
         if (isRunning())
             throw new IllegalStateException(getState());
 
-        String key=StringUtil.asciiToLowerCase(factory.getProtocol());
+        String key = StringUtil.asciiToLowerCase(factory.getProtocol());
         if (_factories.containsKey(key))
         {
             if (LOG.isDebugEnabled())
@@ -467,8 +513,8 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
         {
             _factories.put(key, factory);
             addBean(factory);
-            if (_defaultProtocol==null)
-                _defaultProtocol=factory.getProtocol();
+            if (_defaultProtocol == null)
+                _defaultProtocol = factory.getProtocol();
             if (LOG.isDebugEnabled())
                 LOG.debug("{} addIfAbsent added {}", this, factory);
         }
@@ -479,7 +525,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
         if (isRunning())
             throw new IllegalStateException(getState());
 
-        ConnectionFactory factory= _factories.remove(StringUtil.asciiToLowerCase(protocol));
+        ConnectionFactory factory = _factories.remove(StringUtil.asciiToLowerCase(protocol));
         removeBean(factory);
         return factory;
     }
@@ -496,11 +542,15 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
             throw new IllegalStateException(getState());
 
         List<ConnectionFactory> existing = new ArrayList<>(_factories.values());
-        for (ConnectionFactory factory: existing)
+        for (ConnectionFactory factory : existing)
+        {
             removeConnectionFactory(factory.getProtocol());
-        for (ConnectionFactory factory: factories)
-            if (factory!=null)
+        }
+        for (ConnectionFactory factory : factories)
+        {
+            if (factory != null)
                 addConnectionFactory(factory);
+        }
     }
 
     @ManagedAttribute("The priority delta to apply to acceptor threads")
@@ -509,22 +559,25 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
         return _acceptorPriorityDelta;
     }
 
-    /* ------------------------------------------------------------ */
-    /** Set the acceptor thread priority delta.
+    /**
+     * Set the acceptor thread priority delta.
      * <p>This allows the acceptor thread to run at a different priority.
      * Typically this would be used to lower the priority to give preference
      * to handling previously accepted connections rather than accepting
      * new connections</p>
+     *
      * @param acceptorPriorityDelta the acceptor priority delta
      */
     public void setAcceptorPriorityDelta(int acceptorPriorityDelta)
     {
-        int old=_acceptorPriorityDelta;
+        int old = _acceptorPriorityDelta;
         _acceptorPriorityDelta = acceptorPriorityDelta;
-        if (old!=acceptorPriorityDelta && isStarted())
+        if (old != acceptorPriorityDelta && isStarted())
         {
             for (Thread thread : _acceptors)
-                thread.setPriority(Math.max(Thread.MIN_PRIORITY,Math.min(Thread.MAX_PRIORITY,thread.getPriority()-old+acceptorPriorityDelta)));
+            {
+                thread.setPriority(Math.max(Thread.MIN_PRIORITY, Math.min(Thread.MAX_PRIORITY, thread.getPriority() - old + acceptorPriorityDelta)));
+            }
         }
     }
 
@@ -553,7 +606,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     {
         _defaultProtocol = StringUtil.asciiToLowerCase(defaultProtocol);
         if (isRunning())
-            _defaultConnectionFactory=getConnectionFactory(_defaultProtocol);
+            _defaultConnectionFactory = getConnectionFactory(_defaultProtocol);
     }
 
     @Override
@@ -579,7 +632,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
                 LOG.debug(ex);
                 return false;
             }
-            
+
             LOG.warn(ex);
             try
             {
@@ -616,13 +669,13 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
         public void run()
         {
             final Thread thread = Thread.currentThread();
-            String name=thread.getName();
-            _name=String.format("%s-acceptor-%d@%x-%s",name,_id,hashCode(),AbstractConnector.this.toString());
+            String name = thread.getName();
+            _name = String.format("%s-acceptor-%d@%x-%s", name, _id, hashCode(), AbstractConnector.this.toString());
             thread.setName(_name);
 
-            int priority=thread.getPriority();
-            if (_acceptorPriorityDelta!=0)
-                thread.setPriority(Math.max(Thread.MIN_PRIORITY,Math.min(Thread.MAX_PRIORITY,priority+_acceptorPriorityDelta)));
+            int priority = thread.getPriority();
+            if (_acceptorPriorityDelta != 0)
+                thread.setPriority(Math.max(Thread.MIN_PRIORITY, Math.min(Thread.MAX_PRIORITY, priority + _acceptorPriorityDelta)));
 
             _acceptors[_id] = thread;
 
@@ -638,11 +691,11 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
                             continue;
                         }
                     }
-                    catch (InterruptedException e) 
+                    catch (InterruptedException e)
                     {
                         continue;
                     }
-                    
+
                     try
                     {
                         accept(_id);
@@ -657,15 +710,15 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
             finally
             {
                 thread.setName(name);
-                if (_acceptorPriorityDelta!=0)
+                if (_acceptorPriorityDelta != 0)
                     thread.setPriority(priority);
 
                 synchronized (AbstractConnector.this)
                 {
                     _acceptors[_id] = null;
                 }
-                CountDownLatch stopping=_stopping;
-                if (stopping!=null)
+                CountDownLatch stopping = _stopping;
+                if (stopping != null)
                     stopping.countDown();
             }
         }
@@ -673,13 +726,12 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
         @Override
         public String toString()
         {
-            String name=_name;
-            if (name==null)
+            String name = _name;
+            if (name == null)
                 return String.format("acceptor-%d@%x", _id, hashCode());
             return name;
         }
     }
-
 
     @Override
     public Collection<EndPoint> getConnectedEndPoints()
@@ -709,24 +761,24 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
         return _name;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Set a connector name.   A context may be configured with
      * virtual hosts in the form "@contextname" and will only serve
      * requests from the named connector,
+     *
      * @param name A connector name.
      */
     public void setName(String name)
     {
-        _name=name;
+        _name = name;
     }
 
     @Override
     public String toString()
     {
         return String.format("%s@%x{%s,%s}",
-                _name==null?getClass().getSimpleName():_name,
-                hashCode(),
-                getDefaultProtocol(),getProtocols());
+            _name == null ? getClass().getSimpleName() : _name,
+            hashCode(),
+            getDefaultProtocol(), getProtocols());
     }
 }

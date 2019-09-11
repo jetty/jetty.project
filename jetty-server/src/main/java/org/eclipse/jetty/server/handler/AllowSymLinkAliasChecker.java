@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -27,9 +27,6 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
 
-
-/* ------------------------------------------------------------ */
-
 /**
  * Symbolic Link AliasChecker.
  * <p>An instance of this class can be registered with {@link ContextHandler#addAliasCheck(AliasCheck)}
@@ -40,22 +37,22 @@ import org.eclipse.jetty.util.resource.Resource;
 public class AllowSymLinkAliasChecker implements AliasCheck
 {
     private static final Logger LOG = Log.getLogger(AllowSymLinkAliasChecker.class);
-    
+
     @Override
     public boolean check(String uri, Resource resource)
     {
         // Only support PathResource alias checking
         if (!(resource instanceof PathResource))
             return false;
-        
-        PathResource pathResource = (PathResource) resource;
+
+        PathResource pathResource = (PathResource)resource;
 
         try
         {
             Path path = pathResource.getPath();
             Path alias = pathResource.getAliasPath();
 
-            if (path.equals(alias))
+            if (PathResource.isSameName(alias, path))
                 return false; // Unknown why this is an alias
 
             if (hasSymbolicLink(path) && Files.isSameFile(path, alias))
@@ -69,7 +66,7 @@ public class AllowSymLinkAliasChecker implements AliasCheck
         {
             LOG.ignore(e);
         }
-        
+
         return false;
     }
 
@@ -94,5 +91,4 @@ public class AllowSymLinkAliasChecker implements AliasCheck
 
         return false;
     }
-
 }

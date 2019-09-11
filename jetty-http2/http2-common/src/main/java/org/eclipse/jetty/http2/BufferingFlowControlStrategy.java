@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -170,7 +170,7 @@ public class BufferingFlowControlStrategy extends AbstractFlowControlStrategy
         // and here we keep track of its max value.
 
         // Updating the max session recv window is done here
-        // so that if a peer decides to send an unilateral
+        // so that if a peer decides to send a unilateral
         // window update to enlarge the session window,
         // without the corresponding data consumption, here
         // we can track it.
@@ -201,11 +201,11 @@ public class BufferingFlowControlStrategy extends AbstractFlowControlStrategy
     public String toString()
     {
         return String.format("%s@%x[ratio=%.2f,sessionLevel=%s,sessionStallTime=%dms,streamsStallTime=%dms]",
-                getClass().getSimpleName(),
-                hashCode(),
-                bufferRatio,
-                sessionLevel,
-                getSessionStallTime(),
-                getStreamsStallTime());
+            getClass().getSimpleName(),
+            hashCode(),
+            bufferRatio,
+            sessionLevel,
+            getSessionStallTime(),
+            getStreamsStallTime());
     }
 }

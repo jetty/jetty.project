@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -27,11 +27,17 @@ import org.eclipse.jetty.websocket.jsr356.metadata.EndpointMetadata;
  */
 public class EndpointInstance
 {
-    /** The instance of the Endpoint */
+    /**
+     * The instance of the Endpoint
+     */
     private final Object endpoint;
-    /** The instance specific configuration for the Endpoint */
+    /**
+     * The instance specific configuration for the Endpoint
+     */
     private final EndpointConfig config;
-    /** The metadata for this endpoint */
+    /**
+     * The metadata for this endpoint
+     */
     private final EndpointMetadata metadata;
 
     public EndpointInstance(Object endpoint, EndpointConfig config, EndpointMetadata metadata)

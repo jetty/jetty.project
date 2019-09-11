@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -21,7 +21,6 @@ package org.eclipse.jetty.servlets;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
@@ -135,7 +134,9 @@ public class ConcatServlet extends HttpServlet
             response.setContentType(type);
 
         for (RequestDispatcher dispatcher : dispatchers)
+        {
             dispatcher.include(request, response);
+        }
     }
 
     private boolean startsWith(String path, String prefix)

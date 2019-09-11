@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,7 +20,6 @@ package org.eclipse.jetty.test.jmx;
 
 import java.io.IOException;
 import java.util.Date;
-
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -40,12 +39,12 @@ import org.eclipse.jetty.util.log.Logger;
 public class PingServlet extends HttpServlet
 {
     private static final Logger LOG = Log.getLogger(PingServlet.class);
-    
+
     @Override
     public void init(ServletConfig config) throws ServletException
     {
         LOG.info("Adding {} to attribute {}", this, config.getServletName());
-        config.getServletContext().setAttribute(config.getServletName(),this);
+        config.getServletContext().setAttribute(config.getServletName(), this);
         super.init(config);
     }
 

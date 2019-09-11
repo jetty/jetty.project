@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,10 +20,10 @@ package org.eclipse.jetty.http2;
 
 public interface Flags
 {
-    public static final int NONE = 0x00;
-    public static final int END_STREAM = 0x01;
-    public static final int ACK = 0x01;
-    public static final int END_HEADERS = 0x04;
-    public static final int PADDING = 0x08;
-    public static final int PRIORITY = 0x20;
+    int NONE = 0x00;
+    int END_STREAM = 0x01;
+    int ACK = 0x01;
+    int END_HEADERS = 0x04;
+    int PADDING = 0x08;
+    int PRIORITY = 0x20;
 }

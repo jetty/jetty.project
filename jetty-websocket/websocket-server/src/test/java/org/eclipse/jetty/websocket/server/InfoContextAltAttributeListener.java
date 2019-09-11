@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -28,7 +28,7 @@ import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 public class InfoContextAltAttributeListener implements WebSocketCreator, ServletContextListener
 {
     private static final String ATTR = "alt.config";
-    
+
     @Override
     public void contextInitialized(ServletContextEvent sce)
     {
@@ -37,12 +37,12 @@ public class InfoContextAltAttributeListener implements WebSocketCreator, Servle
         configuration.addMapping("/info/*", this);
         sce.getServletContext().setAttribute(ATTR, configuration);
     }
-    
+
     @Override
     public void contextDestroyed(ServletContextEvent sce)
     {
     }
-    
+
     @Override
     public Object createWebSocket(ServletUpgradeRequest req, ServletUpgradeResponse resp)
     {

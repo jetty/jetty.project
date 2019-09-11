@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -46,28 +46,29 @@ public class TestABCase7_GoodStatusCodes extends AbstractABCase
         // The various Good UTF8 sequences as a String (hex form)
         List<Object[]> data = new ArrayList<>();
 
-        data.add(new Object[] { "7.7.1", 1000 });
-        data.add(new Object[] { "7.7.2", 1001 });
-        data.add(new Object[] { "7.7.3", 1002 });
-        data.add(new Object[] { "7.7.4", 1003 });
-        data.add(new Object[] { "7.7.5", 1007 });
-        data.add(new Object[] { "7.7.6", 1008 });
-        data.add(new Object[] { "7.7.7", 1009 });
-        data.add(new Object[] { "7.7.8", 1010 });
-        data.add(new Object[] { "7.7.9", 1011 });
-        data.add(new Object[] { "IANA Assigned", 1012 });
-        data.add(new Object[] { "IANA Assigned", 1013 });
-        data.add(new Object[] { "IANA Assigned", 1014 });
-        data.add(new Object[] { "7.7.10", 3000 });
-        data.add(new Object[] { "7.7.11", 3999 });
-        data.add(new Object[] { "7.7.12", 4000 });
-        data.add(new Object[] { "7.7.13", 4999 });
+        data.add(new Object[]{"7.7.1", 1000});
+        data.add(new Object[]{"7.7.2", 1001});
+        data.add(new Object[]{"7.7.3", 1002});
+        data.add(new Object[]{"7.7.4", 1003});
+        data.add(new Object[]{"7.7.5", 1007});
+        data.add(new Object[]{"7.7.6", 1008});
+        data.add(new Object[]{"7.7.7", 1009});
+        data.add(new Object[]{"7.7.8", 1010});
+        data.add(new Object[]{"7.7.9", 1011});
+        data.add(new Object[]{"IANA Assigned", 1012});
+        data.add(new Object[]{"IANA Assigned", 1013});
+        data.add(new Object[]{"IANA Assigned", 1014});
+        data.add(new Object[]{"7.7.10", 3000});
+        data.add(new Object[]{"7.7.11", 3999});
+        data.add(new Object[]{"7.7.12", 4000});
+        data.add(new Object[]{"7.7.13", 4999});
 
         return data.stream().map(Arguments::of);
     }
 
     /**
      * just the close code, no reason
+     *
      * @throws Exception on test failure
      */
     @ParameterizedTest
@@ -77,7 +78,7 @@ public class TestABCase7_GoodStatusCodes extends AbstractABCase
         ByteBuffer payload = ByteBuffer.allocate(256);
         BufferUtil.clearToFill(payload);
         payload.putChar((char)statusCode);
-        BufferUtil.flipToFlush(payload,0);
+        BufferUtil.flipToFlush(payload, 0);
 
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new CloseFrame().setPayload(payload.slice()));
@@ -85,7 +86,7 @@ public class TestABCase7_GoodStatusCodes extends AbstractABCase
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseFrame().setPayload(clone(payload)));
 
-        try(Fuzzer fuzzer = new Fuzzer(this))
+        try (Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);
@@ -97,6 +98,7 @@ public class TestABCase7_GoodStatusCodes extends AbstractABCase
 
     /**
      * the good close code, with reason
+     *
      * @throws Exception on test failure
      */
     @ParameterizedTest
@@ -114,7 +116,7 @@ public class TestABCase7_GoodStatusCodes extends AbstractABCase
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseFrame().setPayload(clone(payload)));
 
-        try(Fuzzer fuzzer = new Fuzzer(this))
+        try (Fuzzer fuzzer = new Fuzzer(this))
         {
             fuzzer.connect();
             fuzzer.setSendMode(Fuzzer.SendMode.BULK);

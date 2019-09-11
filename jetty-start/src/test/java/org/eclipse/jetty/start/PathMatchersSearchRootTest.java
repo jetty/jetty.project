@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.start;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -30,6 +27,9 @@ import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 public class PathMatchersSearchRootTest
 {
@@ -41,7 +41,9 @@ public class PathMatchersSearchRootTest
         {
             // absolute first
             arguments.add(Arguments.of("/opt/app/*.jar", "/opt/app"));
+            //@checkstyle-disable-check : LegacyMethodSeparators
             arguments.add(Arguments.of("/lib/jvm/**/jre/lib/*.jar", "/lib/jvm"));
+            //@checkstyle-enable-check :  LegacyMethodSeparators
             arguments.add(Arguments.of("glob:/var/lib/*.xml", "/var/lib"));
             arguments.add(Arguments.of("glob:/var/lib/*.{xml,java}", "/var/lib"));
             arguments.add(Arguments.of("glob:/opt/corporate/lib-{dev,prod}/*.ini", "/opt/corporate"));
@@ -56,7 +58,7 @@ public class PathMatchersSearchRootTest
         {
             // absolute declaration
             arguments.add(Arguments.of("D:\\code\\jetty\\jetty-start\\src\\test\\resources\\extra-libs\\example.jar",
-                    "D:\\code\\jetty\\jetty-start\\src\\test\\resources\\extra-libs"));
+                "D:\\code\\jetty\\jetty-start\\src\\test\\resources\\extra-libs"));
             // escaped declaration
             // absolute patterns (complete with required windows slash escaping)
             arguments.add(Arguments.of("C:\\\\corp\\\\lib\\\\*.jar", "C:\\corp\\lib"));
@@ -70,7 +72,7 @@ public class PathMatchersSearchRootTest
         arguments.add(Arguments.of("start.d/", "start.d"));
 
         return Stream.of(
-                arguments.toArray(new Arguments[0])
+            arguments.toArray(new Arguments[0])
         );
     }
 

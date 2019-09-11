@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -28,12 +28,11 @@ import java.util.concurrent.Callable;
  * <li>non-blocking, the invocation will certainly <strong>not</strong> block</li>
  * <li>either, the invocation <em>may</em> block</li>
  * </ul>
- * 
+ *
  * <p>
- * Static methods and are provided that allow the current thread to be tagged 
+ * Static methods and are provided that allow the current thread to be tagged
  * with a {@link ThreadLocal} to indicate if it has a blocking invocation type.
  * </p>
- * 
  */
 public interface Invocable
 {
@@ -42,14 +41,15 @@ public interface Invocable
         BLOCKING, NON_BLOCKING, EITHER
     }
 
-    static ThreadLocal<Boolean> __nonBlocking = new ThreadLocal<>();
+    ThreadLocal<Boolean> __nonBlocking = new ThreadLocal<>();
 
     /**
      * Test if the current thread has been tagged as non blocking
+     *
      * @return True if the task the current thread is running has
      * indicated that it will not block.
      */
-    public static boolean isNonBlockingInvocation()
+    static boolean isNonBlockingInvocation()
     {
         return Boolean.TRUE.equals(__nonBlocking.get());
     }
@@ -57,11 +57,12 @@ public interface Invocable
     /**
      * Invoke a task with the calling thread, tagged to indicate
      * that it will not block.
+     *
      * @param task The task to invoke.
      */
-    public static void invokeNonBlocking(Runnable task)
+    static void invokeNonBlocking(Runnable task)
     {
-        Boolean was_non_blocking = __nonBlocking.get();
+        Boolean wasNonBlocking = __nonBlocking.get();
         try
         {
             __nonBlocking.set(Boolean.TRUE);
@@ -69,17 +70,18 @@ public interface Invocable
         }
         finally
         {
-            __nonBlocking.set(was_non_blocking);
+            __nonBlocking.set(wasNonBlocking);
         }
     }
 
     /**
      * Get the invocation type of an Object.
+     *
      * @param o The object to check the invocation type of.
      * @return If the object is an Invocable, it is coerced and the {@link #getInvocationType()}
      * used, otherwise {@link InvocationType#BLOCKING} is returned.
      */
-    public static InvocationType getInvocationType(Object o)
+    static InvocationType getInvocationType(Object o)
     {
         if (o instanceof Invocable)
             return ((Invocable)o).getInvocationType();

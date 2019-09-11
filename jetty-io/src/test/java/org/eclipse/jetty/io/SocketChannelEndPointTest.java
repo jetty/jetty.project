@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -17,15 +17,6 @@
 //
 
 package org.eclipse.jetty.io;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -49,7 +40,6 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
-
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSocket;
 
@@ -72,6 +62,15 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 @SuppressWarnings("Duplicates")
 public class SocketChannelEndPointTest
@@ -159,7 +158,7 @@ public class SocketChannelEndPointTest
                 // wait for read timeout
                 client.setSoTimeout(500);
                 long start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
-                assertThrows(SocketTimeoutException.class, ()-> client.getInputStream().read());
+                assertThrows(SocketTimeoutException.class, () -> client.getInputStream().read());
                 long duration = TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start;
                 assertThat("timeout duration", duration, greaterThanOrEqualTo(400L));
 
@@ -171,7 +170,7 @@ public class SocketChannelEndPointTest
                 {
                     int b = client.getInputStream().read();
                     assertThat("expect valid char integer", b, greaterThan(0));
-                    assertEquals(c, (char) b, "expect characters to be same");
+                    assertEquals(c, (char)b, "expect characters to be same");
                 }
                 client.close();
 
@@ -214,7 +213,7 @@ public class SocketChannelEndPointTest
 
                 // wait for read timeout
                 long start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
-                assertThrows(SocketTimeoutException.class, ()-> client.getInputStream().read());
+                assertThrows(SocketTimeoutException.class, () -> client.getInputStream().read());
                 assertTrue(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start >= 400);
 
                 // write then shutdown
@@ -262,7 +261,7 @@ public class SocketChannelEndPointTest
             Thread.sleep((11 * specifiedTimeout) / 10);
 
             long start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
-            assertThrows(SocketTimeoutException.class, ()-> clientInputStream.read());
+            assertThrows(SocketTimeoutException.class, () -> clientInputStream.read());
             int elapsed = Long.valueOf(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start).intValue();
             assertThat("Expected timeout", elapsed, greaterThanOrEqualTo(3 * specifiedTimeout / 4));
 
@@ -417,7 +416,7 @@ public class SocketChannelEndPointTest
                             int b = in.read();
                             byteNum++;
                             assertTrue(b > 0);
-                            assertEquals(c, (char) b, "test-" + i + "/" + j);
+                            assertEquals(c, (char)b, "test-" + i + "/" + j);
                         }
 
                         if (i == 0)
@@ -445,7 +444,6 @@ public class SocketChannelEndPointTest
             }
         }
     }
-
 
     @ParameterizedTest
     @MethodSource("scenarios")
@@ -626,24 +624,23 @@ public class SocketChannelEndPointTest
     public static class SslScenario implements Scenario
     {
         private final NormalScenario _normalScenario;
-        private final SslContextFactory __sslCtxFactory = new SslContextFactory();
-        private final ByteBufferPool __byteBufferPool = new MappedByteBufferPool();
+        private final SslContextFactory _sslCtxFactory = new SslContextFactory.Server();
+        private final ByteBufferPool _byteBufferPool = new MappedByteBufferPool();
 
         public SslScenario(NormalScenario normalScenario) throws Exception
         {
             _normalScenario = normalScenario;
             File keystore = MavenTestingUtils.getTestResourceFile("keystore");
-            __sslCtxFactory.setKeyStorePath(keystore.getAbsolutePath());
-            __sslCtxFactory.setKeyStorePassword("storepwd");
-            __sslCtxFactory.setKeyManagerPassword("keypwd");
-            __sslCtxFactory.setEndpointIdentificationAlgorithm("");
-            __sslCtxFactory.start();
+            _sslCtxFactory.setKeyStorePath(keystore.getAbsolutePath());
+            _sslCtxFactory.setKeyStorePassword("storepwd");
+            _sslCtxFactory.setKeyManagerPassword("keypwd");
+            _sslCtxFactory.start();
         }
 
         @Override
         public Socket newClient(ServerSocketChannel connector) throws IOException
         {
-            SSLSocket socket = __sslCtxFactory.newSslSocket();
+            SSLSocket socket = _sslCtxFactory.newSslSocket();
             socket.connect(connector.socket().getLocalSocketAddress());
             return socket;
         }
@@ -651,11 +648,11 @@ public class SocketChannelEndPointTest
         @Override
         public Connection newConnection(SelectableChannel channel, EndPoint endpoint, Executor executor, AtomicInteger blockAt, AtomicInteger writeCount)
         {
-            SSLEngine engine = __sslCtxFactory.newSSLEngine();
+            SSLEngine engine = _sslCtxFactory.newSSLEngine();
             engine.setUseClientMode(false);
-            SslConnection sslConnection = new SslConnection(__byteBufferPool, executor, endpoint, engine);
-            sslConnection.setRenegotiationAllowed(__sslCtxFactory.isRenegotiationAllowed());
-            sslConnection.setRenegotiationLimit(__sslCtxFactory.getRenegotiationLimit());
+            SslConnection sslConnection = new SslConnection(_byteBufferPool, executor, endpoint, engine);
+            sslConnection.setRenegotiationAllowed(_sslCtxFactory.isRenegotiationAllowed());
+            sslConnection.setRenegotiationLimit(_sslCtxFactory.getRenegotiationLimit());
             Connection appConnection = _normalScenario.newConnection(channel, sslConnection.getDecryptedEndPoint(), executor, blockAt, writeCount);
             sslConnection.getDecryptedEndPoint().setConnection(appConnection);
             return sslConnection;
@@ -817,7 +814,7 @@ public class SocketChannelEndPointTest
             }
             catch (InterruptedException | EofException e)
             {
-                if(LOG.isDebugEnabled())
+                if (LOG.isDebugEnabled())
                     LOG.debug(e);
                 else
                     LOG.info(e.getClass().getName());

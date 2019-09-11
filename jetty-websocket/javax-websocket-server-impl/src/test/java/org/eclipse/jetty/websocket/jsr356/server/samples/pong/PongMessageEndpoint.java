@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,7 +19,6 @@
 package org.eclipse.jetty.websocket.jsr356.server.samples.pong;
 
 import java.nio.charset.StandardCharsets;
-
 import javax.websocket.Endpoint;
 import javax.websocket.EndpointConfig;
 import javax.websocket.MessageHandler;
@@ -44,8 +43,8 @@ public class PongMessageEndpoint extends Endpoint implements MessageHandler.Whol
     @Override
     public void onMessage(PongMessage pong)
     {
-        byte buf[] = BufferUtil.toArray(pong.getApplicationData());
-        String message = new String(buf,StandardCharsets.UTF_8);
+        byte[] buf = BufferUtil.toArray(pong.getApplicationData());
+        String message = new String(buf, StandardCharsets.UTF_8);
         this.session.getAsyncRemote().sendText("PongMessage[" + path + "]:" + message);
     }
 }

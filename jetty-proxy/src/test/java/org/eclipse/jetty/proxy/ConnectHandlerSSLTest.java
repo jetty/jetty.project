@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,15 +18,12 @@
 
 package org.eclipse.jetty.proxy;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
-
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
@@ -43,9 +40,10 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ConnectHandlerSSLTest extends AbstractConnectHandlerTest
 {
@@ -54,7 +52,7 @@ public class ConnectHandlerSSLTest extends AbstractConnectHandlerTest
     @BeforeEach
     public void prepare() throws Exception
     {
-        sslContextFactory = new SslContextFactory();
+        sslContextFactory = new SslContextFactory.Server();
         String keyStorePath = MavenTestingUtils.getTestResourceFile("keystore").getAbsolutePath();
         sslContextFactory.setKeyStorePath(keyStorePath);
         sslContextFactory.setKeyStorePassword("storepwd");
@@ -71,8 +69,8 @@ public class ConnectHandlerSSLTest extends AbstractConnectHandlerTest
     public void testGETRequest() throws Exception
     {
         String hostPort = "localhost:" + serverConnector.getLocalPort();
-        String request = "" +
-                "CONNECT " + hostPort + " HTTP/1.1\r\n" +
+        String request =
+            "CONNECT " + hostPort + " HTTP/1.1\r\n" +
                 "Host: " + hostPort + "\r\n" +
                 "\r\n";
         try (Socket socket = newSocket())
@@ -92,9 +90,9 @@ public class ConnectHandlerSSLTest extends AbstractConnectHandlerTest
                 output = sslSocket.getOutputStream();
 
                 request =
-                        "GET /echo HTTP/1.1\r\n" +
-                                "Host: " + hostPort + "\r\n" +
-                                "\r\n";
+                    "GET /echo HTTP/1.1\r\n" +
+                        "Host: " + hostPort + "\r\n" +
+                        "\r\n";
                 output.write(request.getBytes(StandardCharsets.UTF_8));
                 output.flush();
 
@@ -109,8 +107,8 @@ public class ConnectHandlerSSLTest extends AbstractConnectHandlerTest
     public void testPOSTRequests() throws Exception
     {
         String hostPort = "localhost:" + serverConnector.getLocalPort();
-        String request = "" +
-                "CONNECT " + hostPort + " HTTP/1.1\r\n" +
+        String request =
+            "CONNECT " + hostPort + " HTTP/1.1\r\n" +
                 "Host: " + hostPort + "\r\n" +
                 "\r\n";
         try (Socket socket = newSocket())
@@ -131,8 +129,8 @@ public class ConnectHandlerSSLTest extends AbstractConnectHandlerTest
 
                 for (int i = 0; i < 10; ++i)
                 {
-                    request = "" +
-                            "POST /echo?param=" + i + " HTTP/1.1\r\n" +
+                    request =
+                        "POST /echo?param=" + i + " HTTP/1.1\r\n" +
                             "Host: " + hostPort + "\r\n" +
                             "Content-Length: 5\r\n" +
                             "\r\n" +
@@ -177,7 +175,9 @@ public class ConnectHandlerSSLTest extends AbstractConnectHandlerTest
                 InputStream input = httpRequest.getInputStream();
                 int read;
                 while ((read = input.read()) >= 0)
+                {
                     baos.write(read);
+                }
                 baos.close();
                 byte[] bytes = baos.toByteArray();
 

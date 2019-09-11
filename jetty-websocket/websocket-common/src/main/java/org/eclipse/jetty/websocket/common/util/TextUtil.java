@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -27,9 +27,8 @@ public final class TextUtil
      * Create a hint of what the text is like.
      * <p>
      * Used by logging and error messages to get a hint of what the text is like.
-     * 
-     * @param text
-     *            the text to abbreviate, quote, and generally give you a hint of what the value is.
+     *
+     * @param text the text to abbreviate, quote, and generally give you a hint of what the value is.
      * @return the abbreviated text
      */
     public static String hint(String text)
@@ -38,23 +37,21 @@ public final class TextUtil
         {
             return "<null>";
         }
-        return '"' + maxStringLength(30,text) + '"';
+        return '"' + maxStringLength(30, text) + '"';
     }
 
     /**
      * Smash a long string to fit within the max string length, by taking the middle section of the string and replacing them with an ellipsis "..."
-     * 
+     *
      * <pre>
      * Examples:
      * .maxStringLength( 9, "Eatagramovabits") == "Eat...its"
      * .maxStringLength(10, "Eatagramovabits") == "Eat...bits"
      * .maxStringLength(11, "Eatagramovabits") == "Eata...bits"
      * </pre>
-     * 
-     * @param max
-     *            the maximum size of the string (minimum size supported is 9)
-     * @param raw
-     *            the raw string to smash
+     *
+     * @param max the maximum size of the string (minimum size supported is 9)
+     * @param raw the raw string to smash
      * @return the ellipsis'd version of the string.
      */
     public static String maxStringLength(int max, String raw)
@@ -69,12 +66,12 @@ public final class TextUtil
         if (max < 9)
         {
             // minimum supported
-            return raw.substring(0,max);
+            return raw.substring(0, max);
         }
 
         StringBuilder ret = new StringBuilder();
         int startLen = (int)Math.round((double)max / (double)3);
-        ret.append(raw.substring(0,startLen));
+        ret.append(raw, 0, startLen);
         ret.append("...");
         ret.append(raw.substring(length - (max - startLen - 3)));
 

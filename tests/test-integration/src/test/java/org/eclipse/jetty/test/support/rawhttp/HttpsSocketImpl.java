@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -23,7 +23,6 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
-
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSession;
@@ -62,7 +61,7 @@ public class HttpsSocketImpl implements HttpSocket
         {
             // TODO real trust manager
             this.sslContext = SSLContext.getInstance("TLS");
-            sslContext.init(null,SslContextFactory.TRUST_ALL_CERTS,new java.security.SecureRandom());
+            sslContext.init(null, SslContextFactory.TRUST_ALL_CERTS, new java.security.SecureRandom());
         }
         catch (Exception e)
         {
@@ -70,15 +69,14 @@ public class HttpsSocketImpl implements HttpSocket
         }
 
         sslfactory = sslContext.getSocketFactory();
-        
     }
 
     @Override
     public Socket connect(InetAddress host, int port) throws IOException
     {
         SSLSocket sslsock = (SSLSocket)sslfactory.createSocket();
-        sslsock.setEnabledProtocols(new String[] {"TLSv1"});
-        SocketAddress address = new InetSocketAddress(host,port);
+        sslsock.setEnabledProtocols(new String[]{"TLSv1"});
+        SocketAddress address = new InetSocketAddress(host, port);
         sslsock.connect(address);
         return sslsock;
     }

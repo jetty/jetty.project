@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -25,14 +25,16 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
-
 import javax.websocket.EndpointConfig;
+import javax.websocket.OnError;
 import javax.websocket.OnMessage;
 import javax.websocket.OnOpen;
 import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
 import javax.websocket.server.ServerEndpointConfig;
 
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.jsr356.server.samples.beans.DateDecoder;
 import org.eclipse.jetty.websocket.jsr356.server.samples.beans.TimeEncoder;
 
@@ -40,13 +42,14 @@ import org.eclipse.jetty.websocket.jsr356.server.samples.beans.TimeEncoder;
  * Annotated echo socket, using all of the annotation configurations
  */
 @ServerEndpoint(
-        value = "/echo",
-        decoders = { DateDecoder.class },
-        encoders = { TimeEncoder.class },
-        subprotocols = { "test", "echo", "chat" },
-        configurator = EchoSocketConfigurator.class)
+    value = "/echo",
+    decoders = {DateDecoder.class},
+    encoders = {TimeEncoder.class},
+    subprotocols = {"test", "echo", "chat"},
+    configurator = EchoSocketConfigurator.class)
 public class ConfiguredEchoSocket
 {
+    private static final Logger LOG = Log.getLogger(ConfiguredEchoSocket.class);
     private Session session;
     private EndpointConfig config;
     private ServerEndpointConfig serverConfig;
@@ -62,19 +65,28 @@ public class ConfiguredEchoSocket
         }
     }
 
+    @OnError
+    public void onError(Throwable cause)
+    {
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug(cause);
+        }
+    }
+
     @OnMessage(maxMessageSize = 111222)
     public String echoText(String msg)
     {
         switch (msg)
         {
             case "text-max":
-                return String.format(Locale.US, "%,d",session.getMaxTextMessageBufferSize());
+                return String.format(Locale.US, "%,d", session.getMaxTextMessageBufferSize());
             case "binary-max":
-                return String.format(Locale.US, "%,d",session.getMaxBinaryMessageBufferSize());
+                return String.format(Locale.US, "%,d", session.getMaxBinaryMessageBufferSize());
             case "decoders":
-                return join(config.getDecoders(),", ");
+                return join(config.getDecoders(), ", ");
             case "encoders":
-                return join(config.getEncoders(),", ");
+                return join(config.getEncoders(), ", ");
             case "subprotocols":
                 if (serverConfig == null)
                 {
@@ -85,7 +97,7 @@ public class ConfiguredEchoSocket
                     List<String> protocols = new ArrayList<>();
                     protocols.addAll(serverConfig.getSubprotocols());
                     Collections.sort(protocols);
-                    return join(protocols,", ");
+                    return join(protocols, ", ");
                 }
             case "configurator":
                 if (serverConfig == null)

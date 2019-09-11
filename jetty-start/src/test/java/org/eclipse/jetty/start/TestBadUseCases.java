@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.start;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
@@ -34,6 +30,10 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 /**
  * Test bad configuration scenarios.
  */
@@ -43,13 +43,17 @@ public class TestBadUseCases
     {
         List<Object[]> ret = new ArrayList<>();
 
-        ret.add(new Object[]{ "http2",
-                "Invalid Java version",
-                new String[]{"java.version=0.0.0_0"}});
+        ret.add(new Object[]{
+            "http2",
+            "Invalid Java version",
+            new String[]{"java.version=0.0.0_0"}
+        });
 
-        ret.add(new Object[]{ "versioned-modules-too-new",
-                "Module [http3] specifies jetty version [10.0] which is newer than this version of jetty [" + RebuildTestResources.JETTY_VERSION + "]",
-                null});
+        ret.add(new Object[]{
+            "versioned-modules-too-new",
+            "Module [http3] specifies jetty version [10.0] which is newer than this version of jetty [" + RebuildTestResources.JETTY_VERSION + "]",
+            null
+        });
 
         return ret.stream().map(Arguments::of);
     }
@@ -77,7 +81,7 @@ public class TestBadUseCases
             }
         }
 
-        UsageException x = assertThrows(UsageException.class, ()->main.processCommandLine(cmdLine));
+        UsageException x = assertThrows(UsageException.class, () -> main.processCommandLine(cmdLine));
         assertThat(x.getMessage(), containsString(expectedErrorMessage));
     }
 }

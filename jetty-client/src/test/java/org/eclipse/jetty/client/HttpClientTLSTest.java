@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,15 +18,6 @@
 
 package org.eclipse.jetty.client;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
-
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
@@ -39,8 +30,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-
 import javax.net.ssl.SSLException;
+import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSocket;
 
 import org.eclipse.jetty.client.api.ContentResponse;
@@ -53,22 +44,30 @@ import org.eclipse.jetty.io.ssl.SslHandshakeListener;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.util.JavaVersion;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.ExecutorThreadPool;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledOnJre;
+import org.junit.jupiter.api.condition.EnabledOnJre;
 import org.junit.jupiter.api.condition.JRE;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpClientTLSTest
 {
     private Server server;
     private ServerConnector connector;
     private HttpClient client;
+
+    private SSLSocket sslSocket;
 
     private void startServer(SslContextFactory sslContextFactory, Handler handler) throws Exception
     {
@@ -92,13 +91,25 @@ public class HttpClientTLSTest
         client.start();
     }
 
-    private SslContextFactory createSslContextFactory()
+    private SslContextFactory.Server createServerSslContextFactory()
     {
-        SslContextFactory sslContextFactory = new SslContextFactory();
-        sslContextFactory.setEndpointIdentificationAlgorithm("");
+        SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
+        configureSslContextFactory(sslContextFactory);
+        return sslContextFactory;
+    }
+
+    private SslContextFactory.Client createClientSslContextFactory()
+    {
+        SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
+        configureSslContextFactory(sslContextFactory);
+        sslContextFactory.setEndpointIdentificationAlgorithm(null);
+        return sslContextFactory;
+    }
+
+    private void configureSslContextFactory(SslContextFactory sslContextFactory)
+    {
         sslContextFactory.setKeyStorePath("src/test/resources/keystore.jks");
         sslContextFactory.setKeyStorePassword("storepwd");
-        return sslContextFactory;
     }
 
     @AfterEach
@@ -113,8 +124,8 @@ public class HttpClientTLSTest
     @Test
     public void testNoCommonTLSProtocol() throws Exception
     {
-        SslContextFactory serverTLSFactory = createSslContextFactory();
-        serverTLSFactory.setIncludeProtocols("TLSv1.2");
+        SslContextFactory serverTLSFactory = createServerSslContextFactory();
+        serverTLSFactory.setIncludeProtocols("TLSv1.3");
         startServer(serverTLSFactory, new EmptyServerHandler());
 
         CountDownLatch serverLatch = new CountDownLatch(1);
@@ -127,8 +138,8 @@ public class HttpClientTLSTest
             }
         });
 
-        SslContextFactory clientTLSFactory = createSslContextFactory();
-        clientTLSFactory.setIncludeProtocols("TLSv1.1");
+        SslContextFactory clientTLSFactory = createClientSslContextFactory();
+        clientTLSFactory.setIncludeProtocols("TLSv1.2");
         startClient(clientTLSFactory);
 
         CountDownLatch clientLatch = new CountDownLatch(1);
@@ -141,12 +152,11 @@ public class HttpClientTLSTest
             }
         });
 
-        assertThrows(ExecutionException.class, ()->{
+        assertThrows(ExecutionException.class, () ->
             client.newRequest("localhost", connector.getLocalPort())
-                    .scheme(HttpScheme.HTTPS.asString())
-                    .timeout(5, TimeUnit.SECONDS)
-                    .send();
-        });
+                .scheme(HttpScheme.HTTPS.asString())
+                .timeout(5, TimeUnit.SECONDS)
+                .send());
 
         assertTrue(serverLatch.await(1, TimeUnit.SECONDS));
         assertTrue(clientLatch.await(1, TimeUnit.SECONDS));
@@ -155,7 +165,7 @@ public class HttpClientTLSTest
     @Test
     public void testNoCommonTLSCiphers() throws Exception
     {
-        SslContextFactory serverTLSFactory = createSslContextFactory();
+        SslContextFactory serverTLSFactory = createServerSslContextFactory();
         serverTLSFactory.setIncludeCipherSuites("TLS_RSA_WITH_AES_128_CBC_SHA");
         startServer(serverTLSFactory, new EmptyServerHandler());
 
@@ -169,7 +179,7 @@ public class HttpClientTLSTest
             }
         });
 
-        SslContextFactory clientTLSFactory = createSslContextFactory();
+        SslContextFactory clientTLSFactory = createClientSslContextFactory();
         clientTLSFactory.setExcludeCipherSuites(".*_SHA$");
         startClient(clientTLSFactory);
 
@@ -183,12 +193,11 @@ public class HttpClientTLSTest
             }
         });
 
-        assertThrows(ExecutionException.class, ()->{
+        assertThrows(ExecutionException.class, () ->
             client.newRequest("localhost", connector.getLocalPort())
-                    .scheme(HttpScheme.HTTPS.asString())
-                    .timeout(5, TimeUnit.SECONDS)
-                    .send();
-        });
+                .scheme(HttpScheme.HTTPS.asString())
+                .timeout(5, TimeUnit.SECONDS)
+                .send());
 
         assertTrue(serverLatch.await(1, TimeUnit.SECONDS));
         assertTrue(clientLatch.await(1, TimeUnit.SECONDS));
@@ -197,7 +206,7 @@ public class HttpClientTLSTest
     @Test
     public void testMismatchBetweenTLSProtocolAndTLSCiphersOnServer() throws Exception
     {
-        SslContextFactory serverTLSFactory = createSslContextFactory();
+        SslContextFactory serverTLSFactory = createServerSslContextFactory();
         // TLS 1.1 protocol, but only TLS 1.2 ciphers.
         serverTLSFactory.setIncludeProtocols("TLSv1.1");
         serverTLSFactory.setIncludeCipherSuites("TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256");
@@ -213,7 +222,7 @@ public class HttpClientTLSTest
             }
         });
 
-        SslContextFactory clientTLSFactory = createSslContextFactory();
+        SslContextFactory clientTLSFactory = createClientSslContextFactory();
         startClient(clientTLSFactory);
 
         CountDownLatch clientLatch = new CountDownLatch(1);
@@ -226,25 +235,23 @@ public class HttpClientTLSTest
             }
         });
 
-        assertThrows(ExecutionException.class, ()->{
+        assertThrows(ExecutionException.class, () ->
             client.newRequest("localhost", connector.getLocalPort())
-                    .scheme(HttpScheme.HTTPS.asString())
-                    .timeout(5, TimeUnit.SECONDS)
-                    .send();
-        });
+                .scheme(HttpScheme.HTTPS.asString())
+                .timeout(5, TimeUnit.SECONDS)
+                .send());
 
         assertTrue(serverLatch.await(1, TimeUnit.SECONDS));
         assertTrue(clientLatch.await(1, TimeUnit.SECONDS));
     }
 
-    // In JDK 11, a mismatch on the client does not generate any bytes towards
-    // the server, while in TLS 1.2 the client sends to the server the close_notify.
-    @DisabledOnJre( JRE.JAVA_11 )
+    // In JDK 11+, a mismatch on the client does not generate any bytes towards
+    // the server, while in previous JDKs the client sends to the server the close_notify.
+    @EnabledOnJre({JRE.JAVA_8, JRE.JAVA_9, JRE.JAVA_10})
     @Test
     public void testMismatchBetweenTLSProtocolAndTLSCiphersOnClient() throws Exception
     {
-
-        SslContextFactory serverTLSFactory = createSslContextFactory();
+        SslContextFactory serverTLSFactory = createServerSslContextFactory();
         startServer(serverTLSFactory, new EmptyServerHandler());
 
         CountDownLatch serverLatch = new CountDownLatch(1);
@@ -257,7 +264,7 @@ public class HttpClientTLSTest
             }
         });
 
-        SslContextFactory clientTLSFactory = createSslContextFactory();
+        SslContextFactory clientTLSFactory = createClientSslContextFactory();
         // TLS 1.1 protocol, but only TLS 1.2 ciphers.
         clientTLSFactory.setIncludeProtocols("TLSv1.1");
         clientTLSFactory.setIncludeCipherSuites("TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256");
@@ -273,12 +280,11 @@ public class HttpClientTLSTest
             }
         });
 
-        assertThrows(ExecutionException.class, ()->{
+        assertThrows(ExecutionException.class, () ->
             client.newRequest("localhost", connector.getLocalPort())
-                    .scheme(HttpScheme.HTTPS.asString())
-                    .timeout(5, TimeUnit.SECONDS)
-                    .send();
-        });
+                .scheme(HttpScheme.HTTPS.asString())
+                .timeout(5, TimeUnit.SECONDS)
+                .send());
 
         assertTrue(serverLatch.await(1, TimeUnit.SECONDS));
         assertTrue(clientLatch.await(1, TimeUnit.SECONDS));
@@ -287,7 +293,7 @@ public class HttpClientTLSTest
     @Test
     public void testHandshakeSucceeded() throws Exception
     {
-        SslContextFactory serverTLSFactory = createSslContextFactory();
+        SslContextFactory serverTLSFactory = createServerSslContextFactory();
         startServer(serverTLSFactory, new EmptyServerHandler());
 
         CountDownLatch serverLatch = new CountDownLatch(1);
@@ -300,7 +306,7 @@ public class HttpClientTLSTest
             }
         });
 
-        SslContextFactory clientTLSFactory = createSslContextFactory();
+        SslContextFactory clientTLSFactory = createClientSslContextFactory();
         startClient(clientTLSFactory);
 
         CountDownLatch clientLatch = new CountDownLatch(1);
@@ -320,13 +326,13 @@ public class HttpClientTLSTest
         assertTrue(clientLatch.await(1, TimeUnit.SECONDS));
     }
 
-    // Excluded because of a bug in JDK 11+27 where session resumption does not work.
-    @DisabledOnJre( JRE.JAVA_11 )
+    // Excluded in JDK 11+ because resumed sessions cannot be compared
+    // using their session IDs even though they are resumed correctly.
+    @EnabledOnJre({JRE.JAVA_8, JRE.JAVA_9, JRE.JAVA_10})
     @Test
     public void testHandshakeSucceededWithSessionResumption() throws Exception
     {
-
-        SslContextFactory serverTLSFactory = createSslContextFactory();
+        SslContextFactory serverTLSFactory = createServerSslContextFactory();
         startServer(serverTLSFactory, new EmptyServerHandler());
 
         AtomicReference<byte[]> serverSession = new AtomicReference<>();
@@ -339,7 +345,7 @@ public class HttpClientTLSTest
             }
         });
 
-        SslContextFactory clientTLSFactory = createSslContextFactory();
+        SslContextFactory clientTLSFactory = createClientSslContextFactory();
         startClient(clientTLSFactory);
 
         AtomicReference<byte[]> clientSession = new AtomicReference<>();
@@ -354,10 +360,10 @@ public class HttpClientTLSTest
 
         // First request primes the TLS session.
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(HttpScheme.HTTPS.asString())
-                .header(HttpHeader.CONNECTION, "close")
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+            .scheme(HttpScheme.HTTPS.asString())
+            .header(HttpHeader.CONNECTION, "close")
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
         assertEquals(HttpStatus.OK_200, response.getStatus());
 
         assertNotNull(serverSession.get());
@@ -390,32 +396,32 @@ public class HttpClientTLSTest
 
         // Second request should have the same session ID.
         response = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(HttpScheme.HTTPS.asString())
-                .header(HttpHeader.CONNECTION, "close")
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+            .scheme(HttpScheme.HTTPS.asString())
+            .header(HttpHeader.CONNECTION, "close")
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
         assertEquals(HttpStatus.OK_200, response.getStatus());
 
         assertTrue(serverLatch.await(1, TimeUnit.SECONDS));
         assertTrue(clientLatch.await(1, TimeUnit.SECONDS));
     }
 
-    // Excluded because of a bug in JDK 11+27 where session resumption does not work.
-    @DisabledOnJre( JRE.JAVA_11 )
+    // Excluded in JDK 11+ because resumed sessions cannot be compared
+    // using their session IDs even though they are resumed correctly.
+    @EnabledOnJre({JRE.JAVA_8, JRE.JAVA_9, JRE.JAVA_10})
     @Test
     public void testClientRawCloseDoesNotInvalidateSession() throws Exception
     {
-
-        SslContextFactory serverTLSFactory = createSslContextFactory();
+        SslContextFactory serverTLSFactory = createServerSslContextFactory();
         startServer(serverTLSFactory, new EmptyServerHandler());
 
-        SslContextFactory clientTLSFactory = createSslContextFactory();
+        SslContextFactory clientTLSFactory = createClientSslContextFactory();
         clientTLSFactory.start();
 
         String host = "localhost";
         int port = connector.getLocalPort();
         Socket socket = new Socket(host, port);
-        SSLSocket sslSocket = (SSLSocket)clientTLSFactory.getSslContext().getSocketFactory().createSocket(socket, host, port, true);
+        sslSocket = (SSLSocket)clientTLSFactory.getSslContext().getSocketFactory().createSocket(socket, host, port, true);
         CountDownLatch handshakeLatch1 = new CountDownLatch(1);
         AtomicReference<byte[]> session1 = new AtomicReference<>();
         sslSocket.addHandshakeCompletedListener(event ->
@@ -428,14 +434,12 @@ public class HttpClientTLSTest
 
         // In TLS 1.3 the server sends a NewSessionTicket post-handshake message
         // to enable session resumption and without a read, the message is not processed.
-        try
+
+        assertThrows(SocketTimeoutException.class, () ->
         {
             sslSocket.setSoTimeout(1000);
             sslSocket.getInputStream().read();
-        }
-        catch (SocketTimeoutException expected)
-        {
-        }
+        });
 
         // The client closes abruptly.
         socket.close();
@@ -461,13 +465,13 @@ public class HttpClientTLSTest
     @Test
     public void testServerRawCloseDetectedByClient() throws Exception
     {
-        SslContextFactory serverTLSFactory = createSslContextFactory();
+        SslContextFactory serverTLSFactory = createServerSslContextFactory();
         serverTLSFactory.start();
         try (ServerSocket server = new ServerSocket(0))
         {
             QueuedThreadPool clientThreads = new QueuedThreadPool();
             clientThreads.setName("client");
-            client = new HttpClient(createSslContextFactory())
+            client = new HttpClient(createClientSslContextFactory())
             {
                 @Override
                 protected ClientConnectionFactory newSslClientConnectionFactory(ClientConnectionFactory connectionFactory)
@@ -482,12 +486,12 @@ public class HttpClientTLSTest
 
             CountDownLatch latch = new CountDownLatch(1);
             client.newRequest("localhost", server.getLocalPort())
-                    .scheme(HttpScheme.HTTPS.asString())
-                    .send(result ->
-                    {
-                        assertThat(result.getResponseFailure(), instanceOf(SSLException.class));
-                        latch.countDown();
-                    });
+                .scheme(HttpScheme.HTTPS.asString())
+                .send(result ->
+                {
+                    assertThat(result.getResponseFailure(), instanceOf(SSLException.class));
+                    latch.countDown();
+                });
 
             try (Socket socket = server.accept())
             {
@@ -497,7 +501,7 @@ public class HttpClientTLSTest
                 while (true)
                 {
                     String line = reader.readLine();
-                    if (line == null || line.isEmpty())
+                    if (StringUtil.isEmpty(line))
                         break;
                 }
 
@@ -514,8 +518,8 @@ public class HttpClientTLSTest
                 byte[] half = new byte[8];
                 String response = "HTTP/1.1 200 OK\r\n" +
 //                        "Content-Length: " + (half.length * 2) + "\r\n" +
-                        "Connection: close\r\n" +
-                        "\r\n";
+                    "Connection: close\r\n" +
+                    "\r\n";
                 OutputStream output = sslSocket.getOutputStream();
                 output.write(response.getBytes(StandardCharsets.UTF_8));
                 output.write(half);
@@ -526,5 +530,31 @@ public class HttpClientTLSTest
 
             assertTrue(latch.await(5, TimeUnit.SECONDS));
         }
+    }
+
+    @Test
+    public void testHostNameVerificationFailure() throws Exception
+    {
+        SslContextFactory serverTLSFactory = createServerSslContextFactory();
+        startServer(serverTLSFactory, new EmptyServerHandler());
+
+        SslContextFactory clientTLSFactory = createClientSslContextFactory();
+        // Make sure the host name is not verified at the TLS level.
+        clientTLSFactory.setEndpointIdentificationAlgorithm(null);
+        // Add host name verification after the TLS handshake.
+        clientTLSFactory.setHostnameVerifier((host, session) -> false);
+        startClient(clientTLSFactory);
+
+        CountDownLatch latch = new CountDownLatch(1);
+        client.newRequest("localhost", connector.getLocalPort())
+            .scheme(HttpScheme.HTTPS.asString())
+            .send(result ->
+            {
+                Throwable failure = result.getFailure();
+                if (failure instanceof SSLPeerUnverifiedException)
+                    latch.countDown();
+            });
+
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 }

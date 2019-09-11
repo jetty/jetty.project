@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,7 +20,7 @@ package org.eclipse.jetty.security.authentication;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-
+import java.util.Base64;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
@@ -32,7 +32,6 @@ import org.eclipse.jetty.security.UserAuthentication;
 import org.eclipse.jetty.server.Authentication;
 import org.eclipse.jetty.server.Authentication.User;
 import org.eclipse.jetty.server.UserIdentity;
-import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.security.Constraint;
 
 /**
@@ -40,12 +39,11 @@ import org.eclipse.jetty.util.security.Constraint;
  */
 public class BasicAuthenticator extends LoginAuthenticator
 {
-    /* ------------------------------------------------------------ */
+
     public BasicAuthenticator()
     {
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * @see org.eclipse.jetty.security.Authenticator#getAuthMethod()
      */
@@ -55,9 +53,6 @@ public class BasicAuthenticator extends LoginAuthenticator
         return Constraint.__BASIC_AUTH;
     }
 
- 
-
-    /* ------------------------------------------------------------ */
     /**
      * @see org.eclipse.jetty.security.Authenticator#validateRequest(javax.servlet.ServletRequest, javax.servlet.ServletResponse, boolean)
      */
@@ -75,24 +70,24 @@ public class BasicAuthenticator extends LoginAuthenticator
 
             if (credentials != null)
             {
-                int space=credentials.indexOf(' ');
-                if (space>0)
+                int space = credentials.indexOf(' ');
+                if (space > 0)
                 {
-                    String method=credentials.substring(0,space);
+                    String method = credentials.substring(0, space);
                     if ("basic".equalsIgnoreCase(method))
                     {
-                        credentials = credentials.substring(space+1);
-                        credentials = B64Code.decode(credentials, StandardCharsets.ISO_8859_1);
+                        credentials = credentials.substring(space + 1);
+                        credentials = new String(Base64.getDecoder().decode(credentials), StandardCharsets.ISO_8859_1);
                         int i = credentials.indexOf(':');
-                        if (i>0)
+                        if (i > 0)
                         {
-                            String username = credentials.substring(0,i);
-                            String password = credentials.substring(i+1);
+                            String username = credentials.substring(0, i);
+                            String password = credentials.substring(i + 1);
 
-                            UserIdentity user = login (username, password, request);
-                            if (user!=null)
+                            UserIdentity user = login(username, password, request);
+                            if (user != null)
                             {
-                                return new UserAuthentication(getAuthMethod(),user);
+                                return new UserAuthentication(getAuthMethod(), user);
                             }
                         }
                     }
@@ -117,5 +112,4 @@ public class BasicAuthenticator extends LoginAuthenticator
     {
         return true;
     }
-
 }

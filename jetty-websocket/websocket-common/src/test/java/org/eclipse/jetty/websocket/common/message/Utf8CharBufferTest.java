@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,15 +18,14 @@
 
 package org.eclipse.jetty.websocket.common.message;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
 import org.eclipse.jetty.util.BufferUtil;
-
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 public class Utf8CharBufferTest
 {
@@ -46,16 +45,16 @@ public class Utf8CharBufferTest
         ByteBuffer buf = ByteBuffer.allocate(128);
         Utf8CharBuffer utf = Utf8CharBuffer.wrap(buf);
 
-        byte hellobytes[] = asUTF("Hello ");
-        byte worldbytes[] = asUTF("World!");
+        byte[] hellobytes = asUTF("Hello ");
+        byte[] worldbytes = asUTF("World!");
 
         utf.append(hellobytes, 0, hellobytes.length);
         ByteBuffer hellobuf = utf.getByteBuffer();
         utf.append(worldbytes, 0, worldbytes.length);
         ByteBuffer worldbuf = utf.getByteBuffer();
 
-        assertThat("Hello buffer",asString(hellobuf),is("Hello "));
-        assertThat("World buffer",asString(worldbuf),is("Hello World!"));
+        assertThat("Hello buffer", asString(hellobuf), is("Hello "));
+        assertThat("World buffer", asString(worldbuf), is("Hello World!"));
     }
 
     @Test
@@ -66,26 +65,26 @@ public class Utf8CharBufferTest
         Utf8CharBuffer utf = Utf8CharBuffer.wrap(buf);
 
         int expectedSize = bufsize / 2;
-        assertThat("Remaining (initial)",utf.remaining(),is(expectedSize));
+        assertThat("Remaining (initial)", utf.remaining(), is(expectedSize));
 
-        byte hellobytes[] = asUTF("Hello World");
+        byte[] hellobytes = asUTF("Hello World");
 
-        utf.append(hellobytes,0,hellobytes.length);
+        utf.append(hellobytes, 0, hellobytes.length);
         ByteBuffer hellobuf = utf.getByteBuffer();
 
-        assertThat("Remaining (after append)",utf.remaining(),is(expectedSize - hellobytes.length));
-        assertThat("Hello buffer",asString(hellobuf),is("Hello World"));
+        assertThat("Remaining (after append)", utf.remaining(), is(expectedSize - hellobytes.length));
+        assertThat("Hello buffer", asString(hellobuf), is("Hello World"));
 
         utf.clear();
 
-        assertThat("Remaining (after clear)",utf.remaining(),is(expectedSize));
+        assertThat("Remaining (after clear)", utf.remaining(), is(expectedSize));
 
-        byte whatnowbytes[] = asUTF("What Now?");
-        utf.append(whatnowbytes,0,whatnowbytes.length);
+        byte[] whatnowbytes = asUTF("What Now?");
+        utf.append(whatnowbytes, 0, whatnowbytes.length);
         ByteBuffer whatnowbuf = utf.getByteBuffer();
 
-        assertThat("Remaining (after 2nd append)",utf.remaining(),is(expectedSize - whatnowbytes.length));
-        assertThat("What buffer",asString(whatnowbuf),is("What Now?"));
+        assertThat("Remaining (after 2nd append)", utf.remaining(), is(expectedSize - whatnowbytes.length));
+        assertThat("What buffer", asString(whatnowbuf), is("What Now?"));
     }
 
     @Test
@@ -94,12 +93,12 @@ public class Utf8CharBufferTest
         ByteBuffer buf = ByteBuffer.allocate(64);
         Utf8CharBuffer utf = Utf8CharBuffer.wrap(buf);
 
-        byte bb[] = asUTF("Hello A\u00ea\u00f1\u00fcC");
-        utf.append(bb,0,bb.length);
+        byte[] bb = asUTF("Hello A\u00ea\u00f1\u00fcC");
+        utf.append(bb, 0, bb.length);
 
         ByteBuffer actual = utf.getByteBuffer();
-        assertThat("Buffer length should be retained",actual.remaining(),is(bb.length));
-        assertThat("Message",asString(actual),is("Hello A\u00ea\u00f1\u00fcC"));
+        assertThat("Buffer length should be retained", actual.remaining(), is(bb.length));
+        assertThat("Message", asString(actual), is("Hello A\u00ea\u00f1\u00fcC"));
     }
 
     @Test
@@ -110,17 +109,17 @@ public class Utf8CharBufferTest
         Utf8CharBuffer utf = Utf8CharBuffer.wrap(buf);
 
         int expectedSize = bufsize / 2;
-        assertThat("Remaining (initial)",utf.remaining(),is(expectedSize));
+        assertThat("Remaining (initial)", utf.remaining(), is(expectedSize));
 
-        byte bb[] = asUTF("Hello World");
-        utf.append(bb,0,bb.length);
+        byte[] bb = asUTF("Hello World");
+        utf.append(bb, 0, bb.length);
 
         expectedSize -= bb.length;
-        assertThat("Remaining (after append)",utf.remaining(),is(expectedSize));
+        assertThat("Remaining (after append)", utf.remaining(), is(expectedSize));
 
         ByteBuffer actual = utf.getByteBuffer();
-        assertThat("Buffer length",actual.remaining(),is(bb.length));
+        assertThat("Buffer length", actual.remaining(), is(bb.length));
 
-        assertThat("Message",asString(actual),is("Hello World"));
+        assertThat("Message", asString(actual), is("Hello World"));
     }
 }

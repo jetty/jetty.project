@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,7 +20,7 @@ package org.eclipse.jetty.security.jaspi.modules;
 
 import java.io.IOException;
 import java.security.Principal;
-
+import java.util.Base64;
 import javax.security.auth.Subject;
 import javax.security.auth.callback.CallbackHandler;
 import javax.security.auth.callback.UnsupportedCallbackException;
@@ -30,7 +30,6 @@ import javax.security.auth.message.MessageInfo;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.security.Password;
 
@@ -48,13 +47,13 @@ public class ClientCertAuthModule extends BaseAuthModule
     }
 
     @Override
-    public AuthStatus validateRequest(MessageInfo messageInfo, Subject clientSubject, 
-                                      Subject serviceSubject) 
-    throws AuthException
+    public AuthStatus validateRequest(MessageInfo messageInfo, Subject clientSubject,
+                                      Subject serviceSubject)
+        throws AuthException
     {
-        HttpServletRequest request = (HttpServletRequest) messageInfo.getRequestMessage();
-        HttpServletResponse response = (HttpServletResponse) messageInfo.getResponseMessage();
-        java.security.cert.X509Certificate[] certs = (java.security.cert.X509Certificate[]) request.getAttribute("javax.servlet.request.X509Certificate");
+        HttpServletRequest request = (HttpServletRequest)messageInfo.getRequestMessage();
+        HttpServletResponse response = (HttpServletResponse)messageInfo.getResponseMessage();
+        java.security.cert.X509Certificate[] certs = (java.security.cert.X509Certificate[])request.getAttribute("javax.servlet.request.X509Certificate");
 
         try
         {
@@ -62,19 +61,26 @@ public class ClientCertAuthModule extends BaseAuthModule
             if (certs == null || certs.length == 0 || certs[0] == null)
             {
                 response.sendError(HttpServletResponse.SC_FORBIDDEN,
-                                   "A client certificate is required for accessing this web application but the server's listener is not configured for mutual authentication (or the client did not provide a certificate).");
+                    "A client certificate is required for accessing this web application but the server's listener is not configured for mutual authentication (or the client did not provide a certificate).");
                 return AuthStatus.SEND_FAILURE;
             }
             Principal principal = certs[0].getSubjectDN();
-            if (principal == null) principal = certs[0].getIssuerDN();
+            if (principal == null)
+                principal = certs[0].getIssuerDN();
             final String username = principal == null ? "clientcert" : principal.getName();
             // TODO no idea if this is correct
-            final String password = new String(B64Code.encode(certs[0].getSignature()));
+            final String password = Base64.getEncoder().encodeToString(certs[0].getSignature());
 
             // TODO is cert_auth correct?
-            if (login(clientSubject, username, new Password(password), Constraint.__CERT_AUTH, messageInfo)) { return AuthStatus.SUCCESS; }
+            if (login(clientSubject, username, new Password(password), Constraint.__CERT_AUTH, messageInfo))
+            {
+                return AuthStatus.SUCCESS;
+            }
 
-            if (!isMandatory(messageInfo)) { return AuthStatus.SUCCESS; }
+            if (!isMandatory(messageInfo))
+            {
+                return AuthStatus.SUCCESS;
+            }
             response.sendError(HttpServletResponse.SC_FORBIDDEN, "The provided client certificate does not correspond to a trusted user.");
             return AuthStatus.SEND_FAILURE;
         }
@@ -86,6 +92,5 @@ public class ClientCertAuthModule extends BaseAuthModule
         {
             throw new AuthException(e.getMessage());
         }
-
     }
 }

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -31,8 +31,8 @@ import java.security.Security;
  */
 public class SecurityProviderLeakPreventer extends AbstractLeakPreventer
 {
-    /* ------------------------------------------------------------ */
-    /** 
+
+    /**
      * @see org.eclipse.jetty.util.preventers.AbstractLeakPreventer#prevent(java.lang.ClassLoader)
      */
     @Override
@@ -40,5 +40,4 @@ public class SecurityProviderLeakPreventer extends AbstractLeakPreventer
     {
         Security.getProviders();
     }
-
 }

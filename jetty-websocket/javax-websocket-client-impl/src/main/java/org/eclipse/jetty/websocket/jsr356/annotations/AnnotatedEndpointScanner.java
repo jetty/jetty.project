@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -22,7 +22,6 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.LinkedList;
 import java.util.List;
-
 import javax.websocket.EndpointConfig;
 import javax.websocket.OnClose;
 import javax.websocket.OnError;
@@ -78,9 +77,9 @@ public class AnnotatedEndpointScanner<T extends Annotation, C extends EndpointCo
             err.append("Encountered duplicate method annotations @");
             err.append(methodAnnotationClass.getSimpleName());
             err.append(" on ");
-            err.append(ReflectUtils.toString(pojo,callable.getMethod()));
+            err.append(ReflectUtils.toString(pojo, callable.getMethod()));
             err.append(" and ");
-            err.append(ReflectUtils.toString(pojo,method));
+            err.append(ReflectUtils.toString(pojo, method));
 
             throw new InvalidSignatureException(err.toString());
         }
@@ -91,50 +90,50 @@ public class AnnotatedEndpointScanner<T extends Annotation, C extends EndpointCo
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("onMethodAnnotation({}, {}, {}, {})",metadata,pojo,method,annotation);
+            LOG.debug("onMethodAnnotation({}, {}, {}, {})", metadata, pojo, method, annotation);
         }
 
-        if (isAnnotation(annotation,OnOpen.class))
+        if (isAnnotation(annotation, OnOpen.class))
         {
             assertIsPublicNonStatic(method);
-            assertIsReturn(method,Void.TYPE);
-            assertNotDuplicate(metadata.onOpen,OnOpen.class,pojo,method);
-            OnOpenCallable onopen = new OnOpenCallable(pojo,method);
-            visitMethod(onopen,pojo,method,paramsOnOpen,OnOpen.class);
+            assertIsReturn(method, Void.TYPE);
+            assertNotDuplicate(metadata.onOpen, OnOpen.class, pojo, method);
+            OnOpenCallable onopen = new OnOpenCallable(pojo, method);
+            visitMethod(onopen, pojo, method, paramsOnOpen, OnOpen.class);
             metadata.onOpen = onopen;
             return;
         }
 
-        if (isAnnotation(annotation,OnClose.class))
+        if (isAnnotation(annotation, OnClose.class))
         {
             assertIsPublicNonStatic(method);
-            assertIsReturn(method,Void.TYPE);
-            assertNotDuplicate(metadata.onClose,OnClose.class,pojo,method);
-            OnCloseCallable onclose = new OnCloseCallable(pojo,method);
-            visitMethod(onclose,pojo,method,paramsOnClose,OnClose.class);
+            assertIsReturn(method, Void.TYPE);
+            assertNotDuplicate(metadata.onClose, OnClose.class, pojo, method);
+            OnCloseCallable onclose = new OnCloseCallable(pojo, method);
+            visitMethod(onclose, pojo, method, paramsOnClose, OnClose.class);
             metadata.onClose = onclose;
             return;
         }
 
-        if (isAnnotation(annotation,OnError.class))
+        if (isAnnotation(annotation, OnError.class))
         {
             assertIsPublicNonStatic(method);
-            assertIsReturn(method,Void.TYPE);
-            assertNotDuplicate(metadata.onError,OnError.class,pojo,method);
-            OnErrorCallable onerror = new OnErrorCallable(pojo,method);
-            visitMethod(onerror,pojo,method,paramsOnError,OnError.class);
+            assertIsReturn(method, Void.TYPE);
+            assertNotDuplicate(metadata.onError, OnError.class, pojo, method);
+            OnErrorCallable onerror = new OnErrorCallable(pojo, method);
+            visitMethod(onerror, pojo, method, paramsOnError, OnError.class);
             metadata.onError = onerror;
             return;
         }
 
-        if (isAnnotation(annotation,OnMessage.class))
+        if (isAnnotation(annotation, OnMessage.class))
         {
             assertIsPublicNonStatic(method);
             // assertIsReturn(method,Void.TYPE); // no validation, it can be any return type
-            OnMessageCallable onmessage = new OnMessageCallable(pojo,method);
-            visitMethod(onmessage,pojo,method,paramsOnMessage,OnMessage.class);
+            OnMessageCallable onmessage = new OnMessageCallable(pojo, method);
+            visitMethod(onmessage, pojo, method, paramsOnMessage, OnMessage.class);
 
-            OnMessage messageAnno = (OnMessage) annotation;
+            OnMessage messageAnno = (OnMessage)annotation;
             Param param = onmessage.getMessageObjectParam();
             switch (param.role)
             {
@@ -169,17 +168,17 @@ public class AnnotatedEndpointScanner<T extends Annotation, C extends EndpointCo
 
     public AnnotatedEndpointMetadata<T, C> scan()
     {
-        scanMethodAnnotations(metadata,metadata.getEndpointClass());
+        scanMethodAnnotations(metadata, metadata.getEndpointClass());
         return metadata;
     }
 
     private void visitMethod(JsrCallable callable, Class<?> pojo, Method method, LinkedList<IJsrParamId> paramIds,
-            Class<? extends Annotation> methodAnnotationClass)
+                             Class<? extends Annotation> methodAnnotationClass)
     {
         // Identify all of the parameters
         for (Param param : callable.getParams())
         {
-            if (!visitParam(callable,param,paramIds))
+            if (!visitParam(callable, param, paramIds))
             {
                 StringBuilder err = new StringBuilder();
                 err.append("Encountered unknown parameter type <");
@@ -187,7 +186,7 @@ public class AnnotatedEndpointScanner<T extends Annotation, C extends EndpointCo
                 err.append("> on @");
                 err.append(methodAnnotationClass.getSimpleName());
                 err.append(" annotated method: ");
-                err.append(ReflectUtils.toString(pojo,method));
+                err.append(ReflectUtils.toString(pojo, method));
 
                 throw new InvalidSignatureException(err.toString());
             }
@@ -200,14 +199,14 @@ public class AnnotatedEndpointScanner<T extends Annotation, C extends EndpointCo
         {
             if (LOG.isDebugEnabled())
             {
-                LOG.debug("{}.process()",paramId);
+                LOG.debug("{}.process()", paramId);
             }
-            if (paramId.process(param,callable))
+            if (paramId.process(param, callable))
             {
                 // Successfully identified
                 if (LOG.isDebugEnabled())
                 {
-                    LOG.debug("Identified: {}",param);
+                    LOG.debug("Identified: {}", param);
                 }
                 return true;
             }

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -16,9 +16,7 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.server;
-
 
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSession;
@@ -47,14 +45,14 @@ public class SslConnectionFactory extends AbstractConnectionFactory
 
     public SslConnectionFactory(@Name("next") String nextProtocol)
     {
-        this(null,nextProtocol);
+        this(null, nextProtocol);
     }
 
     public SslConnectionFactory(@Name("sslContextFactory") SslContextFactory factory, @Name("next") String nextProtocol)
     {
         super("SSL");
-        _sslContextFactory=factory==null?new SslContextFactory():factory;
-        _nextProtocol=nextProtocol;
+        _sslContextFactory = factory == null ? new SslContextFactory.Server() : factory;
+        _nextProtocol = nextProtocol;
         addBean(_sslContextFactory);
     }
 
@@ -95,9 +93,9 @@ public class SslConnectionFactory extends AbstractConnectionFactory
 
         SSLEngine engine = _sslContextFactory.newSSLEngine();
         engine.setUseClientMode(false);
-        SSLSession session=engine.getSession();
+        SSLSession session = engine.getSession();
 
-        if (session.getPacketBufferSize()>getInputBufferSize())
+        if (session.getPacketBufferSize() > getInputBufferSize())
             setInputBufferSize(session.getPacketBufferSize());
     }
 
@@ -144,7 +142,6 @@ public class SslConnectionFactory extends AbstractConnectionFactory
     @Override
     public String toString()
     {
-        return String.format("%s@%x{%s->%s}",this.getClass().getSimpleName(),hashCode(),getProtocol(),_nextProtocol);
+        return String.format("%s@%x{%s->%s}", this.getClass().getSimpleName(), hashCode(), getProtocol(), _nextProtocol);
     }
-
 }

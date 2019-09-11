@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -43,7 +43,7 @@ import org.eclipse.jetty.util.thread.Invocable.InvocationType;
  * flush and should organize for the {@link #completeWrite()} method to be called when a subsequent call to flush
  * should  be able to make more progress.
  */
-abstract public class WriteFlusher
+public abstract class WriteFlusher
 {
     private static final Logger LOG = Log.getLogger(WriteFlusher.class);
     private static final boolean DEBUG = LOG.isDebugEnabled(); // Easy for the compiler to remove the code if DEBUG==false
@@ -98,7 +98,7 @@ abstract public class WriteFlusher
      * Tries to update the current state to the given new state.
      *
      * @param previous the expected current state
-     * @param next     the desired new state
+     * @param next the desired new state
      * @return the previous state or null if the state transition failed
      * @throws WritePendingException if currentState is WRITING and new state is WRITING (api usage error)
      */
@@ -233,15 +233,15 @@ abstract public class WriteFlusher
     {
         State s = _state.get();
         return (s instanceof PendingState)
-                ? ((PendingState)s).getCallbackInvocationType()
-                : Invocable.InvocationType.BLOCKING;
+            ? ((PendingState)s).getCallbackInvocationType()
+            : Invocable.InvocationType.BLOCKING;
     }
 
     /**
      * Abstract call to be implemented by specific WriteFlushers. It should schedule a call to {@link #completeWrite()}
      * or {@link #onFail(Throwable)} when appropriate.
      */
-    abstract protected void onIncompleteFlush();
+    protected abstract void onIncompleteFlush();
 
     /**
      * Tries to switch state to WRITING. If successful it writes the given buffers to the EndPoint. If state transition
@@ -253,14 +253,14 @@ abstract public class WriteFlusher
      * If all buffers have been written it calls callback.complete().
      *
      * @param callback the callback to call on either failed or complete
-     * @param buffers  the buffers to flush to the endpoint
+     * @param buffers the buffers to flush to the endpoint
      * @throws WritePendingException if unable to write due to prior pending write
      */
     public void write(Callback callback, ByteBuffer... buffers) throws WritePendingException
     {
-        callback = Objects.requireNonNull(callback);
+        Objects.requireNonNull(callback);
 
-        if(isFailed())
+        if (isFailed())
         {
             fail(callback);
             return;
@@ -294,7 +294,7 @@ abstract public class WriteFlusher
             else
                 fail(callback);
         }
-        catch (IOException e)
+        catch (Throwable e)
         {
             if (DEBUG)
                 LOG.debug("write exception", e);
@@ -307,9 +307,38 @@ abstract public class WriteFlusher
 
     private void fail(Callback callback, Throwable... suppressed)
     {
-        FailedState failed = (FailedState)_state.get();
+        Throwable cause;
+        loop:
+        while (true)
+        {
+            State state = _state.get();
 
-        Throwable cause = failed.getCause();
+            switch (state.getType())
+            {
+                case FAILED:
+                {
+                    FailedState failed = (FailedState)state;
+                    cause = failed.getCause();
+                    break loop;
+                }
+
+                case IDLE:
+                    for (Throwable t : suppressed)
+                    {
+                        LOG.warn(t);
+                    }
+                    return;
+
+                default:
+                    Throwable t = new IllegalStateException();
+                    if (!_state.compareAndSet(state, new FailedState(t)))
+                        continue;
+
+                    cause = t;
+                    break loop;
+            }
+        }
+
         for (Throwable t : suppressed)
         {
             if (t != cause)
@@ -366,7 +395,7 @@ abstract public class WriteFlusher
             else
                 fail(callback);
         }
-        catch (IOException e)
+        catch (Throwable e)
         {
             if (DEBUG)
                 LOG.debug("completeWrite exception", e);
@@ -389,9 +418,9 @@ abstract public class WriteFlusher
         boolean progress = true;
         while (progress && buffers != null)
         {
-            long before = remaining(buffers);
+            long before = BufferUtil.remaining(buffers);
             boolean flushed = _endPoint.flush(buffers);
-            long after = remaining(buffers);
+            long after = BufferUtil.remaining(buffers);
             long written = before - after;
 
             if (LOG.isDebugEnabled())
@@ -439,16 +468,6 @@ abstract public class WriteFlusher
         // This is probably SSL being unable to flush the encrypted buffer, so return EMPTY_BUFFERS
         // and that will keep this WriteFlusher pending.
         return buffers == null ? EMPTY_BUFFERS : buffers;
-    }
-
-    private long remaining(ByteBuffer[] buffers)
-    {
-        if (buffers == null)
-            return 0;
-        long result = 0;
-        for (ByteBuffer buffer : buffers)
-            result += buffer.remaining();
-        return result;
     }
 
     /**
@@ -504,12 +523,22 @@ abstract public class WriteFlusher
 
     boolean isFailed()
     {
-        return _state.get().getType() == StateType.FAILED;
+        return isState(StateType.FAILED);
     }
 
     boolean isIdle()
     {
-        return _state.get().getType() == StateType.IDLE;
+        return isState(StateType.IDLE);
+    }
+
+    public boolean isPending()
+    {
+        return isState(StateType.PENDING);
+    }
+
+    private boolean isState(StateType type)
+    {
+        return _state.get().getType() == type;
     }
 
     public String toStateString()

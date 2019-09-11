@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,20 +18,12 @@
 
 package org.eclipse.jetty.osgi.test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
-import static org.ops4j.pax.exam.CoreOptions.systemProperty;
-
 import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executor;
-
 import javax.inject.Inject;
 
 import org.eclipse.jetty.client.HttpClient;
@@ -41,7 +33,6 @@ import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.ops4j.pax.exam.Configuration;
@@ -54,15 +45,18 @@ import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
 
-/**
- * HTTP2 setup.
- */
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
+import static org.ops4j.pax.exam.CoreOptions.systemProperty;
+
 @RunWith(PaxExam.class)
 @ExamReactorStrategy(PerClass.class)
 public class TestJettyOSGiBootHTTP2
 {
     private static final String LOG_LEVEL = "WARN";
-
 
     @Inject
     private BundleContext bundleContext;
@@ -70,13 +64,13 @@ public class TestJettyOSGiBootHTTP2
     @Configuration
     public Option[] config()
     {
-        ArrayList<Option> options = new ArrayList<Option>();
+        ArrayList<Option> options = new ArrayList<>();
         options.add(CoreOptions.junitBundles());
-        options.addAll(TestOSGiUtil.configureJettyHomeAndPort(true,"jetty-http2.xml"));
+        options.addAll(TestOSGiUtil.configureJettyHomeAndPort(true, "jetty-http2.xml"));
         options.add(CoreOptions.bootDelegationPackages("org.xml.sax", "org.xml.*", "org.w3c.*", "javax.xml.*", "javax.activation.*"));
-        options.add(CoreOptions.systemPackages("com.sun.org.apache.xalan.internal.res","com.sun.org.apache.xml.internal.utils",
-                                               "com.sun.org.apache.xml.internal.utils", "com.sun.org.apache.xpath.internal",
-                                               "com.sun.org.apache.xpath.internal.jaxp", "com.sun.org.apache.xpath.internal.objects"));
+        options.add(CoreOptions.systemPackages("com.sun.org.apache.xalan.internal.res", "com.sun.org.apache.xml.internal.utils",
+            "com.sun.org.apache.xml.internal.utils", "com.sun.org.apache.xpath.internal",
+            "com.sun.org.apache.xpath.internal.jaxp", "com.sun.org.apache.xpath.internal.objects"));
         options.addAll(http2JettyDependencies());
 
         options.addAll(TestOSGiUtil.coreJettyDependencies());
@@ -91,95 +85,101 @@ public class TestJettyOSGiBootHTTP2
         options.add(systemProperty("org.ops4j.pax.logging.DefaultServiceLog.level").value(LOG_LEVEL));
         options.add(systemProperty("org.eclipse.jetty.LEVEL").value("DEBUG"));
         options.add(CoreOptions.cleanCaches(true));
-        return options.toArray(new Option[options.size()]);
+        return options.toArray(new Option[0]);
     }
 
     public static List<Option> http2JettyDependencies()
     {
-        List<Option> res = new ArrayList<Option>();
+        List<Option> res = new ArrayList<>();
         res.add(CoreOptions.systemProperty("jetty.alpn.protocols").value("h2,http/1.1"));
 
         String alpnBoot = System.getProperty("mortbay-alpn-boot");
-        if (alpnBoot == null) { throw new IllegalStateException("Define path to alpn boot jar as system property -Dmortbay-alpn-boot"); }
+        if (alpnBoot == null)
+        {
+            throw new IllegalStateException("Define path to alpn boot jar as system property -Dmortbay-alpn-boot");
+        }
         File checkALPNBoot = new File(alpnBoot);
-        if (!checkALPNBoot.exists()) { throw new IllegalStateException("Unable to find the alpn boot jar here: " + alpnBoot); }
+        if (!checkALPNBoot.exists())
+        {
+            throw new IllegalStateException("Unable to find the alpn boot jar here: " + alpnBoot);
+        }
 
         res.add(CoreOptions.vmOptions("-Xbootclasspath/p:" + checkALPNBoot.getAbsolutePath()));
-        
+
         res.add(mavenBundle().groupId("org.eclipse.jetty.osgi").artifactId("jetty-osgi-alpn").versionAsInProject().noStart());
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-openjdk8-server").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-server").versionAsInProject().start());
-
 
         res.add(mavenBundle().groupId("org.eclipse.jetty.http2").artifactId("http2-common").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty.http2").artifactId("http2-hpack").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty.http2").artifactId("http2-server").versionAsInProject().start());
         return res;
     }
- 
-    @Ignore
-    @Test
+
     public void checkALPNBootOnBootstrapClasspath() throws Exception
     {
         Class<?> alpn = Thread.currentThread().getContextClassLoader().loadClass("org.eclipse.jetty.alpn.ALPN");
         assertNotNull(alpn);
         assertNull(alpn.getClassLoader());
     }
-    
-    @Ignore
-    @Test
-    public void assertAllBundlesActiveOrResolved() throws Exception
+
+    public void assertAllBundlesActiveOrResolved()
     {
         TestOSGiUtil.debugBundles(bundleContext);
         TestOSGiUtil.assertAllBundlesActiveOrResolved(bundleContext);
         Bundle openjdk8 = TestOSGiUtil.getBundle(bundleContext, "org.eclipse.jetty.alpn.openjdk8.server");
         assertNotNull(openjdk8);
         ServiceReference[] services = openjdk8.getRegisteredServices();
-        assertNotNull(services);        
+        assertNotNull(services);
         Bundle server = TestOSGiUtil.getBundle(bundleContext, "org.eclipse.jetty.alpn.server");
         assertNotNull(server);
     }
 
-    
-
     @Test
     public void testHTTP2() throws Exception
     {
+        if (Boolean.getBoolean(TestOSGiUtil.BUNDLE_DEBUG))
+        {
+            checkALPNBootOnBootstrapClasspath();
+            assertAllBundlesActiveOrResolved();
+        }
+
         HttpClient httpClient = null;
         HTTP2Client http2Client = null;
-        try 
+        try
         {
             //get the port chosen for https
             String tmp = System.getProperty("boot.https.port");
             assertNotNull(tmp);
-            int port = Integer.valueOf(tmp.trim()).intValue();
-            
-            Path path = Paths.get("src",  "test", "config");
-            File base = path.toFile();
+            int port = Integer.valueOf(tmp.trim());
+
+            Path path = Paths.get("src", "test", "config");
             File keys = path.resolve("etc").resolve("keystore").toFile();
-            
+
             //set up client to do http2
             http2Client = new HTTP2Client();
-            SslContextFactory sslContextFactory = new SslContextFactory();
+            SslContextFactory sslContextFactory = new SslContextFactory.Client();
             sslContextFactory.setKeyManagerPassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
             sslContextFactory.setTrustStorePath(keys.getAbsolutePath());
             sslContextFactory.setKeyStorePath(keys.getAbsolutePath());
             sslContextFactory.setTrustStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
+            sslContextFactory.setEndpointIdentificationAlgorithm(null);
             httpClient = new HttpClient(new HttpClientTransportOverHTTP2(http2Client), sslContextFactory);
             Executor executor = new QueuedThreadPool();
             httpClient.setExecutor(executor);
             httpClient.start();
 
-            ContentResponse response = httpClient.GET("https://localhost:"+port+"/jsp/jstl.jsp");
+            ContentResponse response = httpClient.GET("https://localhost:" + port + "/jsp/jstl.jsp");
             assertEquals(response.toString(), response.getStatus(), HttpStatus.OK_200);
             String body = response.getContentAsString();
             assertTrue("Body contains \"JSTL Example\": " + body, body.contains("JSTL Example"));
         }
         finally
         {
-            if (httpClient != null) httpClient.stop();
-            if (http2Client != null) http2Client.stop();
+            if (httpClient != null)
+                httpClient.stop();
+            if (http2Client != null)
+                http2Client.stop();
         }
     }
-
 }

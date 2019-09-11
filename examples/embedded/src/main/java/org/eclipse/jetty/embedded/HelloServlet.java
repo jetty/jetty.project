@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,7 +19,6 @@
 package org.eclipse.jetty.embedded;
 
 import java.io.IOException;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -35,19 +34,19 @@ public class HelloServlet extends HttpServlet
         this("Hello");
     }
 
-    public HelloServlet( String greeting )
+    public HelloServlet(String greeting)
     {
         this.greeting = greeting;
     }
 
     @Override
-    protected void doGet( HttpServletRequest request,
-                          HttpServletResponse response ) throws ServletException,
-                                                        IOException
+    protected void doGet(HttpServletRequest request,
+                         HttpServletResponse response) throws ServletException,
+        IOException
     {
         response.setContentType("text/html");
         response.setStatus(HttpServletResponse.SC_OK);
         response.getWriter().println(
-                "<h1>" + greeting + " from HelloServlet</h1>");
+            "<h1>" + greeting + " from HelloServlet</h1>");
     }
 }

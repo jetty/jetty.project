@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,14 +18,8 @@
 
 package org.eclipse.jetty.servlet;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
@@ -52,6 +46,12 @@ import org.eclipse.jetty.util.log.StacklessLogging;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * This tests the correct functioning of the AsyncContext
@@ -100,7 +100,7 @@ public class AsyncContextTest
 
         HandlerList handlers = new HandlerList();
         handlers.setHandlers(new Handler[]
-                {_contextHandler, new DefaultHandler()});
+            {_contextHandler, new DefaultHandler()});
 
         _server.setHandler(handlers);
         _server.start();
@@ -116,7 +116,7 @@ public class AsyncContextTest
     public void testSimpleAsyncContext() throws Exception
     {
         String request =
-                "GET /ctx/servletPath HTTP/1.1\r\n" +
+            "GET /ctx/servletPath HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
                 "Connection: close\r\n" +
                 "\r\n";
@@ -134,11 +134,11 @@ public class AsyncContextTest
     public void testStartThrow() throws Exception
     {
         String request =
-                "GET /ctx/startthrow HTTP/1.1\r\n" +
+            "GET /ctx/startthrow HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
                 "Connection: close\r\n" +
                 "\r\n";
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request,10,TimeUnit.MINUTES));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request, 10, TimeUnit.MINUTES));
 
         assertThat("Response.status", response.getStatus(), is(HttpServletResponse.SC_INTERNAL_SERVER_ERROR));
 
@@ -152,8 +152,8 @@ public class AsyncContextTest
     @Test
     public void testStartDispatchThrow() throws Exception
     {
-        String request = "" +
-                "GET /ctx/startthrow?dispatch=true HTTP/1.1\r\n" +
+        String request =
+            "GET /ctx/startthrow?dispatch=true HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
                 "Connection: close\r\n" +
                 "\r\n";
@@ -172,10 +172,10 @@ public class AsyncContextTest
     public void testStartCompleteThrow() throws Exception
     {
         String request = "GET /ctx/startthrow?complete=true HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Content-Type: application/x-www-form-urlencoded\r\n" +
-                "Connection: close\r\n" +
-                "\r\n";
+            "Host: localhost\r\n" +
+            "Content-Type: application/x-www-form-urlencoded\r\n" +
+            "Connection: close\r\n" +
+            "\r\n";
         HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
 
         assertThat("Response.status", response.getStatus(), is(HttpServletResponse.SC_INTERNAL_SERVER_ERROR));
@@ -189,13 +189,13 @@ public class AsyncContextTest
     @Test
     public void testStartFlushCompleteThrow() throws Exception
     {
-        try(StacklessLogging ignore = new StacklessLogging(HttpChannel.class))
+        try (StacklessLogging ignore = new StacklessLogging(HttpChannel.class))
         {
-            String request = "GET /ctx/startthrow?flush=true&complete=true HTTP/1.1\r\n" + 
-                    "Host: localhost\r\n" + 
-                    "Content-Type: application/x-www-form-urlencoded\r\n" + 
-                    "Connection: close\r\n" + 
-                    "\r\n";
+            String request = "GET /ctx/startthrow?flush=true&complete=true HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "Content-Type: application/x-www-form-urlencoded\r\n" +
+                "Connection: close\r\n" +
+                "\r\n";
             HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
             assertThat("Response.status", response.getStatus(), is(HttpServletResponse.SC_OK));
 
@@ -209,10 +209,10 @@ public class AsyncContextTest
     public void testDispatchAsyncContext() throws Exception
     {
         String request = "GET /ctx/servletPath?dispatch=true HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Content-Type: application/x-www-form-urlencoded\r\n" +
-                "Connection: close\r\n" +
-                "\r\n";
+            "Host: localhost\r\n" +
+            "Content-Type: application/x-www-form-urlencoded\r\n" +
+            "Connection: close\r\n" +
+            "\r\n";
         HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
         assertThat("Response.status", response.getStatus(), is(HttpServletResponse.SC_OK));
 
@@ -230,10 +230,10 @@ public class AsyncContextTest
     public void testDispatchAsyncContext_EncodedUrl() throws Exception
     {
         String request = "GET /ctx/test/hello%2fthere?dispatch=true HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Content-Type: application/x-www-form-urlencoded\r\n" +
-                "Connection: close\r\n" +
-                "\r\n";
+            "Host: localhost\r\n" +
+            "Content-Type: application/x-www-form-urlencoded\r\n" +
+            "Connection: close\r\n" +
+            "\r\n";
         HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
         assertThat("Response.status", response.getStatus(), is(HttpServletResponse.SC_OK));
 
@@ -263,10 +263,10 @@ public class AsyncContextTest
     public void testDispatchAsyncContext_SelfEncodedUrl() throws Exception
     {
         String request = "GET /ctx/self/hello%2fthere?dispatch=true HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Content-Type: application/x-www-form-urlencoded\r\n" +
-                "Connection: close\r\n" +
-                "\r\n";
+            "Host: localhost\r\n" +
+            "Content-Type: application/x-www-form-urlencoded\r\n" +
+            "Connection: close\r\n" +
+            "\r\n";
         HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
         assertThat("Response.status", response.getStatus(), is(HttpServletResponse.SC_OK));
 
@@ -280,10 +280,10 @@ public class AsyncContextTest
     public void testDispatchAsyncContextEncodedPathAndQueryString() throws Exception
     {
         String request = "GET /ctx/path%20with%20spaces/servletPath?dispatch=true&queryStringWithEncoding=space%20space HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Content-Type: application/x-www-form-urlencoded\r\n" +
-                "Connection: close\r\n" +
-                "\r\n";
+            "Host: localhost\r\n" +
+            "Content-Type: application/x-www-form-urlencoded\r\n" +
+            "Connection: close\r\n" +
+            "\r\n";
         HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
         assertThat("Response.status", response.getStatus(), is(HttpServletResponse.SC_OK));
 
@@ -302,10 +302,10 @@ public class AsyncContextTest
     public void testSimpleWithContextAsyncContext() throws Exception
     {
         String request = "GET /ctx/servletPath HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Content-Type: application/x-www-form-urlencoded\r\n" +
-                "Connection: close\r\n" +
-                "\r\n";
+            "Host: localhost\r\n" +
+            "Content-Type: application/x-www-form-urlencoded\r\n" +
+            "Connection: close\r\n" +
+            "\r\n";
 
         HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
         assertThat("Response.status", response.getStatus(), is(HttpServletResponse.SC_OK));
@@ -321,10 +321,10 @@ public class AsyncContextTest
     public void testDispatchWithContextAsyncContext() throws Exception
     {
         String request = "GET /ctx/servletPath?dispatch=true HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Content-Type: application/x-www-form-urlencoded\r\n" +
-                "Connection: close\r\n" +
-                "\r\n";
+            "Host: localhost\r\n" +
+            "Content-Type: application/x-www-form-urlencoded\r\n" +
+            "Connection: close\r\n" +
+            "\r\n";
 
         HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
         assertThat("Response.status", response.getStatus(), is(HttpServletResponse.SC_OK));
@@ -343,12 +343,12 @@ public class AsyncContextTest
     @Test
     public void testDispatch() throws Exception
     {
-        String request = 
-            "GET /ctx/forward HTTP/1.1\r\n" + 
-            "Host: localhost\r\n" + 
-            "Content-Type: application/x-www-form-urlencoded\r\n" + 
-            "Connection: close\r\n" + 
-            "\r\n";
+        String request =
+            "GET /ctx/forward HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "Content-Type: application/x-www-form-urlencoded\r\n" +
+                "Connection: close\r\n" +
+                "\r\n";
 
         String responseString = _connector.getResponse(request);
         HttpTester.Response response = HttpTester.parseResponse(responseString);
@@ -362,10 +362,10 @@ public class AsyncContextTest
     public void testDispatchRequestResponse() throws Exception
     {
         String request = "GET /ctx/forward?dispatchRequestResponse=true HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Content-Type: application/x-www-form-urlencoded\r\n" +
-                "Connection: close\r\n" +
-                "\r\n";
+            "Host: localhost\r\n" +
+            "Content-Type: application/x-www-form-urlencoded\r\n" +
+            "Connection: close\r\n" +
+            "\r\n";
 
         String responseString = _connector.getResponse(request);
 
@@ -452,10 +452,10 @@ public class AsyncContextTest
     public void testExpire() throws Exception
     {
         String request = "GET /ctx/expire HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Content-Type: application/x-www-form-urlencoded\r\n" +
-                "Connection: close\r\n" +
-                "\r\n";
+            "Host: localhost\r\n" +
+            "Content-Type: application/x-www-form-urlencoded\r\n" +
+            "Connection: close\r\n" +
+            "\r\n";
         HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
         assertThat("Response.status", response.getStatus(), is(HttpServletResponse.SC_INTERNAL_SERVER_ERROR));
 
@@ -468,10 +468,10 @@ public class AsyncContextTest
     public void testBadExpire() throws Exception
     {
         String request = "GET /ctx/badexpire HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Content-Type: application/x-www-form-urlencoded\r\n" +
-                "Connection: close\r\n" +
-                "\r\n";
+            "Host: localhost\r\n" +
+            "Content-Type: application/x-www-form-urlencoded\r\n" +
+            "Connection: close\r\n" +
+            "\r\n";
         HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
         assertThat("Response.status", response.getStatus(), is(HttpServletResponse.SC_INTERNAL_SERVER_ERROR));
 
@@ -479,7 +479,7 @@ public class AsyncContextTest
 
         assertThat("error servlet", responseBody, containsString("ERROR: /error"));
         assertThat("error servlet", responseBody, containsString("PathInfo= /500"));
-        assertThat("error servlet", responseBody, containsString("EXCEPTION: java.lang.RuntimeException: TEST"));
+        assertThat("error servlet", responseBody, not(containsString("EXCEPTION: ")));
     }
 
     private class DispatchingRunnable implements Runnable
@@ -508,7 +508,6 @@ public class AsyncContextTest
         _server.stop();
         _server.join();
     }
-
 
     private class ErrorServlet extends HttpServlet
     {
@@ -554,7 +553,7 @@ public class AsyncContextTest
                     @Override
                     public void onTimeout(AsyncEvent event) throws IOException
                     {
-                        throw new RuntimeException("TEST");
+                        throw new RuntimeException("BAD EXPIRE");
                     }
 
                     @Override
@@ -613,7 +612,6 @@ public class AsyncContextTest
                 response.getOutputStream().print("doGet:async:getRequestURL:" + asyncRequest.getRequestURL() + "\n");
                 response.getOutputStream().print("doGet:async:getPathInfo:" + asyncRequest.getPathInfo() + "\n");
                 asyncContext.start(new AsyncRunnable(asyncContext));
-
             }
         }
     }
@@ -705,6 +703,4 @@ public class AsyncContextTest
             super(response);
         }
     }
-
-
 }

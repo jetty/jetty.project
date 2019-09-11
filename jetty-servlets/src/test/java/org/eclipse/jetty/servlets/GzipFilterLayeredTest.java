@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,18 +18,12 @@
 
 package org.eclipse.jetty.servlets;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.Servlet;
@@ -52,6 +46,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 
 /**
  * Test the GzipFilter support when under several layers of Filters.
@@ -82,7 +81,7 @@ public class GzipFilterLayeredTest
         contentServlets.add(AsyncScheduledDispatchWrite.Default.class);
         contentServlets.add(AsyncScheduledDispatchWrite.Passed.class);
 
-        for (Class<?> contentServlet: contentServlets)
+        for (Class<?> contentServlet : contentServlets)
         {
             for (Class<?> gzipFilter : gzipFilters)
             {
@@ -98,45 +97,45 @@ public class GzipFilterLayeredTest
     }
 
     public WorkDir testingdir;
-    
+
     @ParameterizedTest
     @MethodSource("scenarios")
     public void testGzipDos(Scenario scenario) throws Exception
     {
         GzipTester tester = new GzipTester(testingdir.getEmptyPathDir(), GzipHandler.GZIP);
-        
+
         // Add Gzip Filter first
         FilterHolder gzipHolder = new FilterHolder(scenario.gzipFilterClass);
         gzipHolder.setAsyncSupported(true);
-        tester.addFilter(gzipHolder,"*.txt",EnumSet.of(DispatcherType.REQUEST,DispatcherType.ASYNC));
-        tester.addFilter(gzipHolder,"*.mp3",EnumSet.of(DispatcherType.REQUEST,DispatcherType.ASYNC));
-        gzipHolder.setInitParameter("mimeTypes","text/plain");
+        tester.addFilter(gzipHolder, "*.txt", EnumSet.of(DispatcherType.REQUEST, DispatcherType.ASYNC));
+        tester.addFilter(gzipHolder, "*.mp3", EnumSet.of(DispatcherType.REQUEST, DispatcherType.ASYNC));
+        gzipHolder.setInitParameter("mimeTypes", "text/plain");
 
         // Add (DoSFilter-like) manip filter (in chain of Gzip)
         FilterHolder manipHolder = new FilterHolder(AsyncManipFilter.class);
         manipHolder.setAsyncSupported(true);
-        tester.addFilter(manipHolder,"/*",EnumSet.of(DispatcherType.REQUEST,DispatcherType.ASYNC));
-        
+        tester.addFilter(manipHolder, "/*", EnumSet.of(DispatcherType.REQUEST, DispatcherType.ASYNC));
+
         // Add content servlet
         tester.setContentServlet(scenario.contentServletClass);
-        
+
         try
         {
-            String testFilename = String.format("GzipDos-%s-%s",scenario.contentServletClass.getSimpleName(),scenario.fileName);
-            File testFile = tester.prepareServerFile(testFilename,scenario.fileSize);
-            
+            String testFilename = String.format("GzipDos-%s-%s", scenario.contentServletClass.getSimpleName(), scenario.fileName);
+            File testFile = tester.prepareServerFile(testFilename, scenario.fileSize);
+
             tester.start();
-            
-            HttpTester.Response response = tester.executeRequest("GET","/context/" + testFile.getName(),5,TimeUnit.SECONDS);
-            
+
+            HttpTester.Response response = tester.executeRequest("GET", "/context/" + testFile.getName(), 5, TimeUnit.SECONDS);
+
             assertThat("Response status", response.getStatus(), is(HttpStatus.OK_200));
-            
+
             if (scenario.expectCompressed)
             {
                 // Must be gzip compressed
-                assertThat("Content-Encoding",response.get("Content-Encoding"),containsString(GzipHandler.GZIP));
+                assertThat("Content-Encoding", response.get("Content-Encoding"), containsString(GzipHandler.GZIP));
             }
-            
+
             // Uncompressed content Size
             ContentMetadata content = tester.getResponseMetadata(response);
             assertThat("(Uncompressed) Content Length", content.size, is((long)scenario.fileSize));
@@ -152,42 +151,43 @@ public class GzipFilterLayeredTest
     public void testDosGzip(Scenario scenario) throws Exception
     {
         GzipTester tester = new GzipTester(testingdir.getPath(), GzipHandler.GZIP);
-        
+
         // Add (DoSFilter-like) manip filter
         FilterHolder manipHolder = new FilterHolder(AsyncManipFilter.class);
         manipHolder.setAsyncSupported(true);
-        tester.addFilter(manipHolder,"/*",EnumSet.of(DispatcherType.REQUEST,DispatcherType.ASYNC));
-        
+        tester.addFilter(manipHolder, "/*", EnumSet.of(DispatcherType.REQUEST, DispatcherType.ASYNC));
+
         // Add Gzip Filter first (in chain of DosFilter)
         FilterHolder gzipHolder = new FilterHolder(scenario.gzipFilterClass);
         gzipHolder.setAsyncSupported(true);
-        tester.addFilter(gzipHolder,"*.txt",EnumSet.of(DispatcherType.REQUEST,DispatcherType.ASYNC));
-        tester.addFilter(gzipHolder,"*.mp3",EnumSet.of(DispatcherType.REQUEST,DispatcherType.ASYNC));
-        gzipHolder.setInitParameter("mimeTypes","text/plain");
+        tester.addFilter(gzipHolder, "*.txt", EnumSet.of(DispatcherType.REQUEST, DispatcherType.ASYNC));
+        tester.addFilter(gzipHolder, "*.mp3", EnumSet.of(DispatcherType.REQUEST, DispatcherType.ASYNC));
+        gzipHolder.setInitParameter("mimeTypes", "text/plain");
 
         // Add content servlet
         tester.setContentServlet(scenario.contentServletClass);
-        
+
         try
         {
-            String testFilename = String.format("DosGzip-%s-%s",scenario.contentServletClass.getSimpleName(),scenario.fileName);
-            File testFile = tester.prepareServerFile(testFilename,scenario.fileSize);
-            
+            String testFilename = String.format("DosGzip-%s-%s", scenario.contentServletClass.getSimpleName(), scenario.fileName);
+            File testFile = tester.prepareServerFile(testFilename, scenario.fileSize);
+
             tester.start();
-            
-            HttpTester.Response response = tester.executeRequest("GET","/context/" + testFile.getName(),5,TimeUnit.SECONDS);
-            
+
+            HttpTester.Response response = tester.executeRequest("GET", "/context/" + testFile.getName(), 5, TimeUnit.SECONDS);
+
             assertThat("Response status", response.getStatus(), is(HttpStatus.OK_200));
-            
+
             if (scenario.expectCompressed)
             {
                 // Must be gzip compressed
-                assertThat("Content-Encoding",response.get("Content-Encoding"),containsString(GzipHandler.GZIP));
-            } else
-            {
-                assertThat("Content-Encoding",response.get("Content-Encoding"),not(containsString(GzipHandler.GZIP)));
+                assertThat("Content-Encoding", response.get("Content-Encoding"), containsString(GzipHandler.GZIP));
             }
-            
+            else
+            {
+                assertThat("Content-Encoding", response.get("Content-Encoding"), not(containsString(GzipHandler.GZIP)));
+            }
+
             // Uncompressed content Size
             ContentMetadata content = tester.getResponseMetadata(response);
             assertThat("(Uncompressed) Content Length", content.size, is((long)scenario.fileSize));
@@ -211,15 +211,15 @@ public class GzipFilterLayeredTest
             this.fileSize = fileSize;
             this.fileName = fileName;
             this.expectCompressed = expectCompressed;
-            this.gzipFilterClass = (Class<? extends Filter>) gzipFilterClass;
-            this.contentServletClass = (Class<? extends Servlet>) contentServletClass;
+            this.gzipFilterClass = (Class<? extends Filter>)gzipFilterClass;
+            this.contentServletClass = (Class<? extends Servlet>)contentServletClass;
         }
 
         @Override
         public String toString()
         {
             return String.format("%,d bytes - %s - compressed(%b) - filter(%s) - servlet(%s)",
-                    fileSize, fileName, expectCompressed, gzipFilterClass, contentServletClass
+                fileSize, fileName, expectCompressed, gzipFilterClass, contentServletClass
             );
         }
     }

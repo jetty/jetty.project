@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -27,6 +27,7 @@ import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 
@@ -38,12 +39,12 @@ public class RFCSocket
     private Session session;
 
     @OnWebSocketMessage
-    public void onBinary(byte buf[], int offset, int len) throws IOException
+    public void onBinary(byte[] buf, int offset, int len) throws IOException
     {
-        LOG.debug("onBinary(byte[{}],{},{})",buf.length,offset,len);
+        LOG.debug("onBinary(byte[{}],{},{})", buf.length, offset, len);
 
         // echo the message back.
-        ByteBuffer data = ByteBuffer.wrap(buf,offset,len);
+        ByteBuffer data = ByteBuffer.wrap(buf, offset, len);
         RemoteEndpoint remote = session.getRemote();
         remote.sendBytes(data, null);
         if (remote.getBatchMode() == BatchMode.ON)
@@ -59,7 +60,7 @@ public class RFCSocket
     @OnWebSocketMessage
     public void onText(String message) throws IOException
     {
-        LOG.debug("onText({})",message);
+        LOG.debug("onText({})", message);
         // Test the RFC 6455 close code 1011 that should close
         // trigger a WebSocket server terminated close.
         if (message.equals("CRASH"))
@@ -72,5 +73,11 @@ public class RFCSocket
         remote.sendString(message, null);
         if (remote.getBatchMode() == BatchMode.ON)
             remote.flush();
+    }
+
+    @OnWebSocketError
+    public void onError(Throwable cause)
+    {
+        LOG.warn(cause);
     }
 }

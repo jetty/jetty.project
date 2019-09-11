@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -77,87 +77,87 @@ public class JettyAnnotatedScanner extends AbstractMethodAnnotationScanner<Jetty
         validConnectParams.addParams(Session.class);
 
         validCloseParams = new ParamList();
-        validCloseParams.addParams(int.class,String.class);
-        validCloseParams.addParams(Session.class,int.class,String.class);
+        validCloseParams.addParams(int.class, String.class);
+        validCloseParams.addParams(Session.class, int.class, String.class);
 
         validErrorParams = new ParamList();
         validErrorParams.addParams(Throwable.class);
-        validErrorParams.addParams(Session.class,Throwable.class);
+        validErrorParams.addParams(Session.class, Throwable.class);
 
         validTextParams = new ParamList();
         validTextParams.addParams(String.class);
-        validTextParams.addParams(Session.class,String.class);
+        validTextParams.addParams(Session.class, String.class);
         validTextParams.addParams(Reader.class);
-        validTextParams.addParams(Session.class,Reader.class);
+        validTextParams.addParams(Session.class, Reader.class);
 
         validBinaryParams = new ParamList();
-        validBinaryParams.addParams(byte[].class,int.class,int.class);
-        validBinaryParams.addParams(Session.class,byte[].class,int.class,int.class);
+        validBinaryParams.addParams(byte[].class, int.class, int.class);
+        validBinaryParams.addParams(Session.class, byte[].class, int.class, int.class);
         validBinaryParams.addParams(InputStream.class);
-        validBinaryParams.addParams(Session.class,InputStream.class);
+        validBinaryParams.addParams(Session.class, InputStream.class);
 
         validFrameParams = new ParamList();
         validFrameParams.addParams(Frame.class);
-        validFrameParams.addParams(Session.class,Frame.class);
+        validFrameParams.addParams(Session.class, Frame.class);
     }
 
     @Override
     public void onMethodAnnotation(JettyAnnotatedMetadata metadata, Class<?> pojo, Method method, Annotation annotation)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("onMethodAnnotation({}, {}, {}, {})",metadata,pojo,method,annotation);
+            LOG.debug("onMethodAnnotation({}, {}, {}, {})", metadata, pojo, method, annotation);
 
-        if (isAnnotation(annotation,OnWebSocketConnect.class))
+        if (isAnnotation(annotation, OnWebSocketConnect.class))
         {
-            assertValidSignature(method,OnWebSocketConnect.class,validConnectParams);
-            assertUnset(metadata.onConnect,OnWebSocketConnect.class,method);
-            metadata.onConnect = new CallableMethod(pojo,method);
+            assertValidSignature(method, OnWebSocketConnect.class, validConnectParams);
+            assertUnset(metadata.onConnect, OnWebSocketConnect.class, method);
+            metadata.onConnect = new CallableMethod(pojo, method);
             return;
         }
 
-        if (isAnnotation(annotation,OnWebSocketMessage.class))
+        if (isAnnotation(annotation, OnWebSocketMessage.class))
         {
-            if (isSignatureMatch(method,validTextParams))
+            if (isSignatureMatch(method, validTextParams))
             {
                 // Text mode
-                assertUnset(metadata.onText,OnWebSocketMessage.class,method);
-                metadata.onText = new OptionalSessionCallableMethod(pojo,method);
+                assertUnset(metadata.onText, OnWebSocketMessage.class, method);
+                metadata.onText = new OptionalSessionCallableMethod(pojo, method);
                 return;
             }
 
-            if (isSignatureMatch(method,validBinaryParams))
+            if (isSignatureMatch(method, validBinaryParams))
             {
                 // Binary Mode
                 // TODO
-                assertUnset(metadata.onBinary,OnWebSocketMessage.class,method);
-                metadata.onBinary = new OptionalSessionCallableMethod(pojo,method);
+                assertUnset(metadata.onBinary, OnWebSocketMessage.class, method);
+                metadata.onBinary = new OptionalSessionCallableMethod(pojo, method);
                 return;
             }
 
-            throw InvalidSignatureException.build(method,OnWebSocketMessage.class,validTextParams,validBinaryParams);
+            throw InvalidSignatureException.build(method, OnWebSocketMessage.class, validTextParams, validBinaryParams);
         }
 
-        if (isAnnotation(annotation,OnWebSocketClose.class))
+        if (isAnnotation(annotation, OnWebSocketClose.class))
         {
-            assertValidSignature(method,OnWebSocketClose.class,validCloseParams);
-            assertUnset(metadata.onClose,OnWebSocketClose.class,method);
-            metadata.onClose = new OptionalSessionCallableMethod(pojo,method);
+            assertValidSignature(method, OnWebSocketClose.class, validCloseParams);
+            assertUnset(metadata.onClose, OnWebSocketClose.class, method);
+            metadata.onClose = new OptionalSessionCallableMethod(pojo, method);
             return;
         }
 
-        if (isAnnotation(annotation,OnWebSocketError.class))
+        if (isAnnotation(annotation, OnWebSocketError.class))
         {
-            assertValidSignature(method,OnWebSocketError.class,validErrorParams);
-            assertUnset(metadata.onError,OnWebSocketError.class,method);
-            metadata.onError = new OptionalSessionCallableMethod(pojo,method);
+            assertValidSignature(method, OnWebSocketError.class, validErrorParams);
+            assertUnset(metadata.onError, OnWebSocketError.class, method);
+            metadata.onError = new OptionalSessionCallableMethod(pojo, method);
             return;
         }
 
-        if (isAnnotation(annotation,OnWebSocketFrame.class))
+        if (isAnnotation(annotation, OnWebSocketFrame.class))
         {
-            assertValidSignature(method,OnWebSocketFrame.class,validFrameParams);
-            assertUnset(metadata.onFrame,OnWebSocketFrame.class,method);
-            metadata.onFrame = new OptionalSessionCallableMethod(pojo,method);
+            assertValidSignature(method, OnWebSocketFrame.class, validFrameParams);
+            assertUnset(metadata.onFrame, OnWebSocketFrame.class, method);
+            metadata.onFrame = new OptionalSessionCallableMethod(pojo, method);
             return;
         }
     }
@@ -165,7 +165,7 @@ public class JettyAnnotatedScanner extends AbstractMethodAnnotationScanner<Jetty
     public JettyAnnotatedMetadata scan(Class<?> pojo)
     {
         JettyAnnotatedMetadata metadata = new JettyAnnotatedMetadata();
-        scanMethodAnnotations(metadata,pojo);
+        scanMethodAnnotations(metadata, pojo);
         return metadata;
     }
 }

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,30 +20,26 @@ package org.eclipse.jetty.security;
 
 import org.eclipse.jetty.server.UserIdentity;
 
-
 /**
  * @version $Rev: 4793 $ $Date: 2009-03-19 00:00:01 +0100 (Thu, 19 Mar 2009) $
  */
 public class UserAuthentication extends AbstractUserAuthentication
 {
-   
+
     public UserAuthentication(String method, UserIdentity userIdentity)
     {
         super(method, userIdentity);
     }
 
-    
     @Override
     public String toString()
     {
-        return "{User,"+getAuthMethod()+","+_userIdentity+"}";
+        return "{User," + getAuthMethod() + "," + _userIdentity + "}";
     }
 
     @Override
+    @Deprecated
     public void logout()
     {
-        SecurityHandler security=SecurityHandler.getCurrentSecurityHandler();
-        if (security!=null)
-            security.logout(this);
     }
 }

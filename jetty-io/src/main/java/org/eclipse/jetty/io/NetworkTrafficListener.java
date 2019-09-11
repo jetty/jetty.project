@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -45,24 +45,24 @@ public interface NetworkTrafficListener
      *
      * @param socket the socket associated with the remote client
      */
-    public void opened(Socket socket);
+    void opened(Socket socket);
 
     /**
      * <p>Callback method invoked when bytes sent by a remote client arrived on the server.</p>
      *
      * @param socket the socket associated with the remote client
-     * @param bytes  the read-only buffer containing the incoming bytes
+     * @param bytes the read-only buffer containing the incoming bytes
      */
-    public void incoming(Socket socket, ByteBuffer bytes);
+    void incoming(Socket socket, ByteBuffer bytes);
 
     /**
      * <p>Callback method invoked when bytes are sent to a remote client from the server.</p>
      * <p>This method is invoked after the bytes have been actually written to the remote client.</p>
      *
      * @param socket the socket associated with the remote client
-     * @param bytes  the read-only buffer containing the outgoing bytes
+     * @param bytes the read-only buffer containing the outgoing bytes
      */
-    public void outgoing(Socket socket, ByteBuffer bytes);
+    void outgoing(Socket socket, ByteBuffer bytes);
 
     /**
      * <p>Callback method invoked when a connection to a remote client has been closed.</p>
@@ -74,12 +74,12 @@ public interface NetworkTrafficListener
      *
      * @param socket the (closed) socket associated with the remote client
      */
-    public void closed(Socket socket);
+    void closed(Socket socket);
 
     /**
      * <p>A commodity class that implements {@link NetworkTrafficListener} with empty methods.</p>
      */
-    public static class Adapter implements NetworkTrafficListener
+    class Adapter implements NetworkTrafficListener
     {
         @Override
         public void opened(Socket socket)

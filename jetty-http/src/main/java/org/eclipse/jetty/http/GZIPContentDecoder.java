@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,7 +18,10 @@
 
 package org.eclipse.jetty.http;
 
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.zip.DataFormatException;
 import java.util.zip.Inflater;
 import java.util.zip.ZipException;
@@ -28,13 +31,13 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.component.Destroyable;
 
 /**
- * Decoder for the "gzip" encoding.
- * <p>
- * A decoder that inflates gzip compressed data that has been
- * optimized for async usage with minimal data copies.
+ * <p>Decoder for the "gzip" content encoding.</p>
+ * <p>This decoder inflates gzip compressed data, and has
+ * been optimized for async usage with minimal data copies.</p>
  */
 public class GZIPContentDecoder implements Destroyable
 {
+    private final List<ByteBuffer> _inflateds = new ArrayList<>();
     private final Inflater _inflater = new Inflater(true);
     private final ByteBufferPool _pool;
     private final int _bufferSize;
@@ -46,14 +49,14 @@ public class GZIPContentDecoder implements Destroyable
 
     public GZIPContentDecoder()
     {
-        this(null,2048);
+        this(null, 2048);
     }
 
     public GZIPContentDecoder(int bufferSize)
     {
-        this(null,bufferSize);
+        this(null, bufferSize);
     }
-    
+
     public GZIPContentDecoder(ByteBufferPool pool, int bufferSize)
     {
         _bufferSize = bufferSize;
@@ -61,68 +64,95 @@ public class GZIPContentDecoder implements Destroyable
         reset();
     }
 
-    /** Inflate compressed data from a buffer.
-     * 
-     * @param compressed Buffer containing compressed data.
-     * @return Buffer containing inflated data.
+    /**
+     * <p>Inflates compressed data from a buffer.</p>
+     * <p>The buffers returned by this method should be released
+     * via {@link #release(ByteBuffer)}.</p>
+     * <p>This method may fully consume the input buffer, but return
+     * only a chunk of the inflated bytes, to allow applications to
+     * consume the inflated chunk before performing further inflation,
+     * applying backpressure. In this case, this method should be
+     * invoked again with the same input buffer (even if
+     * it's already fully consumed) and that will produce another
+     * chunk of inflated bytes. Termination happens when the input
+     * buffer is fully consumed, and the returned buffer is empty.</p>
+     * <p>See {@link #decodedChunk(ByteBuffer)} to perform inflating
+     * in a non-blocking way that allows to apply backpressure.</p>
+     *
+     * @param compressed the buffer containing compressed data.
+     * @return a buffer containing inflated data.
      */
     public ByteBuffer decode(ByteBuffer compressed)
     {
         decodeChunks(compressed);
-        if (BufferUtil.isEmpty(_inflated) || _state==State.CRC || _state==State.ISIZE )
-            return BufferUtil.EMPTY_BUFFER;
-        
-        ByteBuffer result = _inflated;
-        _inflated = null;
-        return result;
-    }
 
-    /** Called when a chunk of data is inflated.
-     * <p>The default implementation aggregates all the chunks 
-     * into a single buffer returned from {@link #decode(ByteBuffer)}.
-     * Derived implementations may choose to consume chunks individually
-     * and return false to prevent further inflation until a subsequent
-     * call to {@link #decode(ByteBuffer)} or {@link #decodeChunks(ByteBuffer)}.
-     *  
-     * @param chunk The inflated chunk of data
-     * @return False if inflating should continue, or True if the call 
-     * to {@link #decodeChunks(ByteBuffer)} or {@link #decode(ByteBuffer)} 
-     * should return, allowing back pressure of compressed data.
-     */
-    protected boolean decodedChunk(ByteBuffer chunk)
-    {
-        if (_inflated==null)
+        if (_inflateds.isEmpty())
         {
-            _inflated=chunk;
+            if (BufferUtil.isEmpty(_inflated) || _state == State.CRC || _state == State.ISIZE)
+                return BufferUtil.EMPTY_BUFFER;
+            ByteBuffer result = _inflated;
+            _inflated = null;
+            return result;
         }
         else
         {
-            int size = _inflated.remaining() + chunk.remaining();
-            if (size<=_inflated.capacity())
+            _inflateds.add(_inflated);
+            _inflated = null;
+            int length = _inflateds.stream().mapToInt(Buffer::remaining).sum();
+            ByteBuffer result = acquire(length);
+            for (ByteBuffer buffer : _inflateds)
             {
-                BufferUtil.append(_inflated,chunk);
+                BufferUtil.append(result, buffer);
+                release(buffer);
+            }
+            _inflateds.clear();
+            return result;
+        }
+    }
+
+    /**
+     * <p>Called when a chunk of data is inflated.</p>
+     * <p>The default implementation aggregates all the chunks
+     * into a single buffer returned from {@link #decode(ByteBuffer)}.</p>
+     * <p>Derived implementations may choose to consume inflated chunks
+     * individually and return {@code true} from this method to prevent
+     * further inflation until a subsequent call to {@link #decode(ByteBuffer)}
+     * or {@link #decodeChunks(ByteBuffer)} is made.
+     *
+     * @param chunk the inflated chunk of data
+     * @return false if inflating should continue, or true if the call
+     * to {@link #decodeChunks(ByteBuffer)} or {@link #decode(ByteBuffer)}
+     * should return, allowing to consume the inflated chunk and apply
+     * backpressure
+     */
+    protected boolean decodedChunk(ByteBuffer chunk)
+    {
+        if (_inflated == null)
+        {
+            _inflated = chunk;
+        }
+        else
+        {
+            if (BufferUtil.space(_inflated) >= chunk.remaining())
+            {
+                BufferUtil.append(_inflated, chunk);
                 release(chunk);
             }
             else
             {
-                ByteBuffer bigger=acquire(size);
-                int pos=BufferUtil.flipToFill(bigger);
-                BufferUtil.put(_inflated,bigger);
-                BufferUtil.put(chunk,bigger);
-                BufferUtil.flipToFlush(bigger,pos);
-                release(_inflated);
-                release(chunk);
-                _inflated = bigger;
+                _inflateds.add(_inflated);
+                _inflated = chunk;
             }
         }
         return false;
     }
 
     /**
-     * Inflate compressed data.
-     * <p>Inflation continues until the compressed block end is reached, there is no 
-     * more compressed data or a call to {@link #decodedChunk(ByteBuffer)} returns true.
-     * @param compressed Buffer of compressed data to inflate
+     * <p>Inflates compressed data.</p>
+     * <p>Inflation continues until the compressed block end is reached, there is no
+     * more compressed data or a call to {@link #decodedChunk(ByteBuffer)} returns true.</p>
+     *
+     * @param compressed the buffer of compressed data to inflate
      */
     protected void decodeChunks(ByteBuffer compressed)
     {
@@ -164,24 +194,24 @@ public class GZIPContentDecoder implements Destroyable
                         }
                         break;
                     }
-                    
+
                     case DATA:
                     {
                         while (true)
                         {
-                            if (buffer==null)
+                            if (buffer == null)
                                 buffer = acquire(_bufferSize);
-                            
+
                             try
                             {
-                                int length = _inflater.inflate(buffer.array(),buffer.arrayOffset(),buffer.capacity());
+                                int length = _inflater.inflate(buffer.array(), buffer.arrayOffset(), buffer.capacity());
                                 buffer.limit(length);
                             }
                             catch (DataFormatException x)
                             {
                                 throw new ZipException(x.getMessage());
                             }
-                            
+
                             if (buffer.hasRemaining())
                             {
                                 ByteBuffer chunk = buffer;
@@ -195,7 +225,7 @@ public class GZIPContentDecoder implements Destroyable
                                     return;
                                 if (compressed.hasArray())
                                 {
-                                    _inflater.setInput(compressed.array(),compressed.arrayOffset()+compressed.position(),compressed.remaining());
+                                    _inflater.setInput(compressed.array(), compressed.arrayOffset() + compressed.position(), compressed.remaining());
                                     compressed.position(compressed.limit());
                                 }
                                 else
@@ -204,7 +234,7 @@ public class GZIPContentDecoder implements Destroyable
                                     byte[] input = new byte[compressed.remaining()];
                                     compressed.get(input);
                                     _inflater.setInput(input);
-                                }  
+                                }
                             }
                             else if (_inflater.finished())
                             {
@@ -218,14 +248,14 @@ public class GZIPContentDecoder implements Destroyable
                         }
                         continue;
                     }
-                    
+
                     default:
                         break;
                 }
-        
+
                 if (!compressed.hasRemaining())
                     break;
-                
+
                 byte currByte = compressed.get();
                 switch (_state)
                 {
@@ -354,7 +384,7 @@ public class GZIPContentDecoder implements Destroyable
 
                             // TODO ByteBuffer result = output == null ? BufferUtil.EMPTY_BUFFER : ByteBuffer.wrap(output);
                             reset();
-                            return ;
+                            return;
                         }
                         break;
                     }
@@ -369,7 +399,7 @@ public class GZIPContentDecoder implements Destroyable
         }
         finally
         {
-            if (buffer!=null)
+            if (buffer != null)
                 release(buffer);
         }
     }
@@ -398,28 +428,28 @@ public class GZIPContentDecoder implements Destroyable
     {
         INITIAL, ID, CM, FLG, MTIME, XFL, OS, FLAGS, EXTRA_LENGTH, EXTRA, NAME, COMMENT, HCRC, DATA, CRC, ISIZE
     }
-    
+
     /**
-     * @param capacity capacity capacity of the allocated ByteBuffer
-     * @return An indirect buffer of the configured buffersize either from the pool or freshly allocated.
+     * @param capacity capacity of the ByteBuffer to acquire
+     * @return a heap buffer of the configured capacity either from the pool or freshly allocated.
      */
     public ByteBuffer acquire(int capacity)
     {
-        return _pool==null?BufferUtil.allocate(capacity):_pool.acquire(capacity,false);
+        return _pool == null ? BufferUtil.allocate(capacity) : _pool.acquire(capacity, false);
     }
-    
+
     /**
-     * Release an allocated buffer.
-     * <p>This method will called {@link ByteBufferPool#release(ByteBuffer)} if a buffer pool has
-     * been configured.  This method should be called once for all buffers returned from {@link #decode(ByteBuffer)}
-     * or passed to {@link #decodedChunk(ByteBuffer)}.
-     * @param buffer The buffer to release.
+     * <p>Releases an allocated buffer.</p>
+     * <p>This method calls {@link ByteBufferPool#release(ByteBuffer)} if a buffer pool has
+     * been configured.</p>
+     * <p>This method should be called once for all buffers returned from {@link #decode(ByteBuffer)}
+     * or passed to {@link #decodedChunk(ByteBuffer)}.</p>
+     *
+     * @param buffer the buffer to release.
      */
     public void release(ByteBuffer buffer)
     {
-        @SuppressWarnings("ReferenceEquality")
-        boolean isTheEmptyBuffer = (buffer==BufferUtil.EMPTY_BUFFER);
-        if (_pool!=null && !isTheEmptyBuffer)
+        if (_pool != null && !BufferUtil.isTheEmptyBuffer(buffer))
             _pool.release(buffer);
     }
 }

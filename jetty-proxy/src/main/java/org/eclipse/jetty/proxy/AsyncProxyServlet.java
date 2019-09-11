@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -21,7 +21,6 @@ package org.eclipse.jetty.proxy;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.WritePendingException;
-
 import javax.servlet.ReadListener;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -125,7 +124,7 @@ public class AsyncProxyServlet extends ProxyServlet
             return delegate.rewriteTarget(clientRequest);
         }
     }
-    
+
     protected class StreamReader extends IteratingCallback implements ReadListener
     {
         private final byte[] buffer = new byte[getHttpClient().getRequestBufferSize()];
@@ -133,7 +132,6 @@ public class AsyncProxyServlet extends ProxyServlet
         private final HttpServletResponse response;
         private final Request proxyRequest;
         private final DeferredContentProvider provider;
-        
 
         protected StreamReader(HttpServletRequest request, HttpServletResponse response, Request proxyRequest, DeferredContentProvider provider)
         {

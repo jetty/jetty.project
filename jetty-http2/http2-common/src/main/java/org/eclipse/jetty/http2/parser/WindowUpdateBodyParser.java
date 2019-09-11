@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -61,7 +61,7 @@ public class WindowUpdateBodyParser extends BodyParser
                     if (buffer.remaining() >= 4)
                     {
                         windowDelta = buffer.getInt() & 0x7F_FF_FF_FF;
-                        return onWindowUpdate(windowDelta);
+                        return onWindowUpdate(buffer, windowDelta);
                     }
                     else
                     {
@@ -78,7 +78,7 @@ public class WindowUpdateBodyParser extends BodyParser
                     if (cursor == 0)
                     {
                         windowDelta &= 0x7F_FF_FF_FF;
-                        return onWindowUpdate(windowDelta);
+                        return onWindowUpdate(buffer, windowDelta);
                     }
                     break;
                 }
@@ -91,9 +91,17 @@ public class WindowUpdateBodyParser extends BodyParser
         return false;
     }
 
-    private boolean onWindowUpdate(int windowDelta)
+    private boolean onWindowUpdate(ByteBuffer buffer, int windowDelta)
     {
-        WindowUpdateFrame frame = new WindowUpdateFrame(getStreamId(), windowDelta);
+        int streamId = getStreamId();
+        if (windowDelta == 0)
+        {
+            if (streamId == 0)
+                return connectionFailure(buffer, ErrorCode.PROTOCOL_ERROR.code, "invalid_window_update_frame");
+            else
+                return streamFailure(streamId, ErrorCode.PROTOCOL_ERROR.code, "invalid_window_update_frame");
+        }
+        WindowUpdateFrame frame = new WindowUpdateFrame(streamId, windowDelta);
         reset();
         notifyWindowUpdate(frame);
         return true;

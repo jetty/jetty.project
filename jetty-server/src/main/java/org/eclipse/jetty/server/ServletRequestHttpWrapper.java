@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -16,14 +16,12 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.security.Principal;
 import java.util.Collection;
 import java.util.Enumeration;
-
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletRequestWrapper;
@@ -34,12 +32,10 @@ import javax.servlet.http.HttpSession;
 import javax.servlet.http.HttpUpgradeHandler;
 import javax.servlet.http.Part;
 
-
-/* ------------------------------------------------------------ */
-/** 
+/**
  * ServletRequestHttpWrapper
- * 
- * Class to tunnel a ServletRequest via a HttpServletRequest
+ *
+ * Class to tunnel a ServletRequest via an HttpServletRequest
  */
 public class ServletRequestHttpWrapper extends ServletRequestWrapper implements HttpServletRequest
 {
@@ -243,8 +239,7 @@ public class ServletRequestHttpWrapper extends ServletRequestWrapper implements 
 
     }
 
-
-    /** 
+    /**
      * @see javax.servlet.http.HttpServletRequest#changeSessionId()
      */
     @Override
@@ -254,7 +249,7 @@ public class ServletRequestHttpWrapper extends ServletRequestWrapper implements 
         return null;
     }
 
-    /** 
+    /**
      * @see javax.servlet.http.HttpServletRequest#upgrade(java.lang.Class)
      */
     @Override
@@ -263,6 +258,4 @@ public class ServletRequestHttpWrapper extends ServletRequestWrapper implements 
         // TODO 3.1 Auto-generated method stub
         return null;
     }
-
-
 }

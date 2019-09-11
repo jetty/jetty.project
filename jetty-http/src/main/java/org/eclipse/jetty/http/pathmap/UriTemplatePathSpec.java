@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -35,19 +35,23 @@ import org.eclipse.jetty.util.log.Logger;
 
 /**
  * PathSpec for URI Template based declarations
- * 
+ *
  * @see <a href="https://tools.ietf.org/html/rfc6570">URI Templates (Level 1)</a>
  */
 public class UriTemplatePathSpec extends RegexPathSpec
 {
     private static final Logger LOG = Log.getLogger(UriTemplatePathSpec.class);
-    
+
     private static final Pattern VARIABLE_PATTERN = Pattern.compile("\\{(.*)\\}");
-    /** Reserved Symbols in URI Template variable */
+    /**
+     * Reserved Symbols in URI Template variable
+     */
     private static final String VARIABLE_RESERVED = ":/?#[]@" + // gen-delims
-                                                    "!$&'()*+,;="; // sub-delims
-    /** Allowed Symbols in a URI Template variable */
-    private static final String VARIABLE_SYMBOLS="-._";
+        "!$&'()*+,;="; // sub-delims
+    /**
+     * Allowed Symbols in a URI Template variable
+     */
+    private static final String VARIABLE_SYMBOLS = "-._";
     private static final Set<String> FORBIDDEN_SEGMENTS;
 
     static
@@ -58,12 +62,12 @@ public class UriTemplatePathSpec extends RegexPathSpec
         FORBIDDEN_SEGMENTS.add("//");
     }
 
-    private String variables[];
+    private String[] variables;
 
     public UriTemplatePathSpec(String rawSpec)
     {
         super();
-        Objects.requireNonNull(rawSpec,"Path Param Spec cannot be null");
+        Objects.requireNonNull(rawSpec, "Path Param Spec cannot be null");
 
         if ("".equals(rawSpec) || "/".equals(rawSpec))
         {
@@ -106,8 +110,8 @@ public class UriTemplatePathSpec extends RegexPathSpec
 
         List<String> varNames = new ArrayList<>();
         // split up into path segments (ignoring the first slash that will always be empty)
-        String segments[] = rawSpec.substring(1).split("/");
-        char segmentSignature[] = new char[segments.length];
+        String[] segments = rawSpec.substring(1).split("/");
+        char[] segmentSignature = new char[segments.length];
         this.pathDepth = segments.length;
         for (int i = 0; i < segments.length; i++)
         {
@@ -184,9 +188,9 @@ public class UriTemplatePathSpec extends RegexPathSpec
                 }
             }
         }
-        
+
         // Handle trailing slash (which is not picked up during split)
-        if(rawSpec.charAt(rawSpec.length()-1) == '/')
+        if (rawSpec.charAt(rawSpec.length() - 1) == '/')
         {
             regex.append('/');
         }
@@ -201,15 +205,15 @@ public class UriTemplatePathSpec extends RegexPathSpec
         // Convert signature to group
         String sig = String.valueOf(segmentSignature);
 
-        if (Pattern.matches("^e*$",sig))
+        if (Pattern.matches("^e*$", sig))
         {
             this.group = PathSpecGroup.EXACT;
         }
-        else if (Pattern.matches("^e*v+",sig))
+        else if (Pattern.matches("^e*v+", sig))
         {
             this.group = PathSpecGroup.PREFIX_GLOB;
         }
-        else if (Pattern.matches("^v+e+",sig))
+        else if (Pattern.matches("^v+e+", sig))
         {
             this.group = PathSpecGroup.SUFFIX_GLOB;
         }
@@ -221,17 +225,15 @@ public class UriTemplatePathSpec extends RegexPathSpec
 
     /**
      * Validate variable literal name, per RFC6570, Section 2.1 Literals
-     * @param variable
-     * @param pathParamSpec
      */
     private void assertIsValidVariableLiteral(String variable)
     {
         int len = variable.length();
-        
+
         int i = 0;
         int codepoint;
         boolean valid = (len > 0); // must not be zero length
-        
+
         while (valid && i < len)
         {
             codepoint = variable.codePointAt(i);
@@ -267,7 +269,7 @@ public class UriTemplatePathSpec extends RegexPathSpec
                     continue;
                 }
             }
-            
+
             valid = false;
         }
 
@@ -282,27 +284,27 @@ public class UriTemplatePathSpec extends RegexPathSpec
             throw new IllegalArgumentException(err.toString());
         }
     }
-    
+
     private boolean isValidBasicLiteralCodepoint(int codepoint)
     {
         // basic letters or digits
-        if((codepoint >= 'a' && codepoint <= 'z') ||
-           (codepoint >= 'A' && codepoint <= 'Z') ||
-           (codepoint >= '0' && codepoint <= '9'))
+        if ((codepoint >= 'a' && codepoint <= 'z') ||
+            (codepoint >= 'A' && codepoint <= 'Z') ||
+            (codepoint >= '0' && codepoint <= '9'))
         {
             return true;
         }
-        
+
         // basic allowed symbols
-        if(VARIABLE_SYMBOLS.indexOf(codepoint) >= 0)
+        if (VARIABLE_SYMBOLS.indexOf(codepoint) >= 0)
         {
             return true; // valid simple value
         }
-        
+
         // basic reserved symbols
-        if(VARIABLE_RESERVED.indexOf(codepoint) >= 0)
+        if (VARIABLE_RESERVED.indexOf(codepoint) >= 0)
         {
-            LOG.warn("Detected URI Template reserved symbol [{}] in path spec \"{}\"",(char)codepoint,pathSpec);
+            LOG.warn("Detected URI Template reserved symbol [{}] in path spec \"{}\"", (char)codepoint, pathSpec);
             return false; // valid simple value
         }
 
@@ -322,7 +324,7 @@ public class UriTemplatePathSpec extends RegexPathSpec
             int groupCount = matcher.groupCount();
             for (int i = 1; i <= groupCount; i++)
             {
-                ret.put(this.variables[i - 1],matcher.group(i));
+                ret.put(this.variables[i - 1], matcher.group(i));
             }
             return ret;
         }

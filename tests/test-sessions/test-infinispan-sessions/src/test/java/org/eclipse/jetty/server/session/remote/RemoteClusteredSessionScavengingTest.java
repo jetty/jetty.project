@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -16,7 +16,6 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.server.session.remote;
 
 import org.eclipse.jetty.server.session.AbstractClusteredSessionScavengingTest;
@@ -27,30 +26,26 @@ import org.junit.jupiter.api.BeforeAll;
 
 /**
  * ClusteredSessionScavengingTest
- *
- *
  */
 public class RemoteClusteredSessionScavengingTest extends AbstractClusteredSessionScavengingTest
 {
 
     public static RemoteInfinispanTestSupport __testSupport;
-    
+
     @BeforeAll
-    public static void setup () throws Exception
+    public static void setup() throws Exception
     {
         __testSupport = new RemoteInfinispanTestSupport("remote-session-test");
         __testSupport.setup();
     }
-    
-    @AfterAll
-    public static void teardown () throws Exception
-    {
-       __testSupport.teardown();
-    }
-    
-    
 
-    /** 
+    @AfterAll
+    public static void teardown() throws Exception
+    {
+        __testSupport.teardown();
+    }
+
+    /**
      * @see org.eclipse.jetty.server.session.AbstractTestBase#createSessionDataStoreFactory()
      */
     @Override
@@ -60,5 +55,4 @@ public class RemoteClusteredSessionScavengingTest extends AbstractClusteredSessi
         factory.setCache(__testSupport.getCache());
         return factory;
     }
-
 }

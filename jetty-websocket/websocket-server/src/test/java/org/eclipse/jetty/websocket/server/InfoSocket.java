@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -28,13 +28,13 @@ import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 public class InfoSocket
 {
     private Session session;
-    
+
     @OnWebSocketConnect
     public void onConnect(Session session)
     {
         this.session = session;
     }
-    
+
     @OnWebSocketMessage
     public void onMessage(String msg)
     {

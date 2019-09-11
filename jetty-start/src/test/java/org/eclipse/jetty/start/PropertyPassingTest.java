@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -17,10 +17,6 @@
 //
 
 package org.eclipse.jetty.start;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -41,6 +37,10 @@ import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+
 @ExtendWith(WorkDirExtension.class)
 public class PropertyPassingTest
 {
@@ -49,7 +49,7 @@ public class PropertyPassingTest
         private String mode;
         private BufferedReader reader;
         private StringWriter output;
-        private CountDownLatch latch=new CountDownLatch(1);
+        private CountDownLatch latch = new CountDownLatch(1);
 
         public ConsoleCapture(String mode, InputStream is)
         {
@@ -83,20 +83,20 @@ public class PropertyPassingTest
 
         public String getConsoleOutput() throws InterruptedException
         {
-            latch.await(30,TimeUnit.SECONDS);
+            latch.await(30, TimeUnit.SECONDS);
             return output.toString();
         }
 
         public ConsoleCapture start()
         {
-            Thread thread = new Thread(this,"ConsoleCapture/" + mode);
+            Thread thread = new Thread(this, "ConsoleCapture/" + mode);
             thread.start();
             return this;
         }
     }
 
     public WorkDir testingdir;
-    
+
     @Test
     public void testAsJvmArg() throws IOException, InterruptedException
     {
@@ -117,7 +117,7 @@ public class PropertyPassingTest
         String output = collectRunOutput(commands);
 
         // Test for values
-        assertThat("output",output,containsString("foo=bar"));
+        assertThat("output", output, containsString("foo=bar"));
     }
 
     @Test
@@ -140,7 +140,7 @@ public class PropertyPassingTest
         String output = collectRunOutput(commands);
 
         // Test for values
-        assertThat("output",output,containsString("foo=bar"));
+        assertThat("output", output, containsString("foo=bar"));
     }
 
     @Test
@@ -161,9 +161,9 @@ public class PropertyPassingTest
 
         // Run command, collect output
         String output = collectRunOutput(commands);
-        
+
         // Test for values
-        assertThat(output,containsString("test.foo=bar"));
+        assertThat(output, containsString("test.foo=bar"));
     }
 
     private String getClassPath()
@@ -198,15 +198,15 @@ public class PropertyPassingTest
         builder.directory(MavenTestingUtils.getTestResourceDir("empty.home"));
         Process pid = builder.start();
 
-        ConsoleCapture stdOutPump = new ConsoleCapture("STDOUT",pid.getInputStream()).start();
-        ConsoleCapture stdErrPump = new ConsoleCapture("STDERR",pid.getErrorStream()).start();
+        ConsoleCapture stdOutPump = new ConsoleCapture("STDOUT", pid.getInputStream()).start();
+        ConsoleCapture stdErrPump = new ConsoleCapture("STDERR", pid.getErrorStream()).start();
 
         int exitCode = pid.waitFor();
         if (exitCode != 0)
         {
             System.out.printf("STDERR: [" + stdErrPump.getConsoleOutput() + "]%n");
             System.out.printf("STDOUT: [" + stdOutPump.getConsoleOutput() + "]%n");
-            assertThat("Exit code",exitCode,is(0));
+            assertThat("Exit code", exitCode, is(0));
         }
         stdErrPump.getConsoleOutput();
         return stdOutPump.getConsoleOutput();

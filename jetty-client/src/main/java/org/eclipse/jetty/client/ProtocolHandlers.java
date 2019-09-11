@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,16 +18,18 @@
 
 package org.eclipse.jetty.client;
 
+import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.util.component.Dumpable;
 
 /**
  * <p>A container for {@link ProtocolHandler}s accessible from {@link HttpClient#getProtocolHandlers()}.</p>
  */
-public class ProtocolHandlers
+public class ProtocolHandlers implements Dumpable
 {
     private final Map<String, ProtocolHandler> handlers = new LinkedHashMap<>();
 
@@ -77,7 +79,7 @@ public class ProtocolHandlers
      * {@link ProtocolHandler#accept(Request, Response) accepts}
      * the given request and response.</p>
      *
-     * @param request  the request to accept
+     * @param request the request to accept
      * @param response the response to accept
      * @return the protocol handler that accepted the request and response,
      * or null if none of the protocol handlers accepted the request and response
@@ -90,5 +92,17 @@ public class ProtocolHandlers
                 return handler;
         }
         return null;
+    }
+
+    @Override
+    public String dump()
+    {
+        return Dumpable.dump(this);
+    }
+
+    @Override
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        Dumpable.dumpObjects(out, indent, this, handlers);
     }
 }

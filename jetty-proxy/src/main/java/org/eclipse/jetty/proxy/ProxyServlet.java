@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -25,7 +25,6 @@ import java.nio.ByteBuffer;
 import java.util.Iterator;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -78,8 +77,8 @@ public class ProxyServlet extends AbstractProxyServlet
         }
 
         final Request proxyRequest = getHttpClient().newRequest(rewrittenTarget)
-                .method(request.getMethod())
-                .version(HttpVersion.fromString(request.getProtocol()));
+            .method(request.getMethod())
+            .version(HttpVersion.fromString(request.getProtocol()));
 
         copyRequestHeaders(request, proxyRequest);
 

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.server;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -32,27 +30,28 @@ import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  * HttpServer Tester.
  */
 public abstract class ConnectorCloseTestBase extends HttpServerTestFixture
 {
     private static String __content =
-        "Lorem ipsum dolor sit amet, consectetur adipiscing elit. In quis felis nunc. "+
-        "Quisque suscipit mauris et ante auctor ornare rhoncus lacus aliquet. Pellentesque "+
-        "habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. "+
-        "Vestibulum sit amet felis augue, vel convallis dolor. Cras accumsan vehicula diam "+
-        "at faucibus. Etiam in urna turpis, sed congue mi. Morbi et lorem eros. Donec vulputate "+
-        "velit in risus suscipit lobortis. Aliquam id urna orci, nec sollicitudin ipsum. "+
-        "Cras a orci turpis. Donec suscipit vulputate cursus. Mauris nunc tellus, fermentum "+
-        "eu auctor ut, mollis at diam. Quisque porttitor ultrices metus, vitae tincidunt massa "+
-        "sollicitudin a. Vivamus porttitor libero eget purus hendrerit cursus. Integer aliquam "+
-        "consequat mauris quis luctus. Cras enim nibh, dignissim eu faucibus ac, mollis nec neque. "+
-        "Aliquam purus mauris, consectetur nec convallis lacinia, porta sed ante. Suspendisse "+
-        "et cursus magna. Donec orci enim, molestie a lobortis eu, imperdiet vitae neque.";
+        "Lorem ipsum dolor sit amet, consectetur adipiscing elit. In quis felis nunc. " +
+            "Quisque suscipit mauris et ante auctor ornare rhoncus lacus aliquet. Pellentesque " +
+            "habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. " +
+            "Vestibulum sit amet felis augue, vel convallis dolor. Cras accumsan vehicula diam " +
+            "at faucibus. Etiam in urna turpis, sed congue mi. Morbi et lorem eros. Donec vulputate " +
+            "velit in risus suscipit lobortis. Aliquam id urna orci, nec sollicitudin ipsum. " +
+            "Cras a orci turpis. Donec suscipit vulputate cursus. Mauris nunc tellus, fermentum " +
+            "eu auctor ut, mollis at diam. Quisque porttitor ultrices metus, vitae tincidunt massa " +
+            "sollicitudin a. Vivamus porttitor libero eget purus hendrerit cursus. Integer aliquam " +
+            "consequat mauris quis luctus. Cras enim nibh, dignissim eu faucibus ac, mollis nec neque. " +
+            "Aliquam purus mauris, consectetur nec convallis lacinia, porta sed ante. Suspendisse " +
+            "et cursus magna. Donec orci enim, molestie a lobortis eu, imperdiet vitae neque.";
     private static int __length = __content.length();
 
-    /* ------------------------------------------------------------ */
     @Test
     public void testCloseBetweenRequests() throws Exception
     {
@@ -60,17 +59,16 @@ public abstract class ConnectorCloseTestBase extends HttpServerTestFixture
         final CountDownLatch latch = new CountDownLatch(requestCount);
 
         configureServer(new HelloWorldHandler());
-
         URI uri = _server.getURI();
-        Socket client = newSocket(uri.getHost(),uri.getPort());
-        try
+
+        try (Socket client = newSocket(uri.getHost(), uri.getPort()))
         {
             OutputStream os = client.getOutputStream();
 
-            ResponseReader reader = new ResponseReader(client) {
+            ResponseReader reader = new ResponseReader(client)
+            {
                 private int _index = 0;
 
-                /* ------------------------------------------------------------ */
                 @Override
                 protected int doRead() throws IOException, InterruptedException
                 {
@@ -78,7 +76,7 @@ public abstract class ConnectorCloseTestBase extends HttpServerTestFixture
                     if (count > 0)
                     {
                         int idx;
-                        while ((idx=_response.indexOf("HTTP/1.1 200 OK", _index)) >= 0)
+                        while ((idx = _response.indexOf("HTTP/1.1 200 OK", _index)) >= 0)
                         {
                             latch.countDown();
                             _index = idx + 15;
@@ -97,17 +95,17 @@ public abstract class ConnectorCloseTestBase extends HttpServerTestFixture
                 if (pipeline == requestCount / 2)
                 {
                     // wait for at least 1 request to have been received
-                    if (latch.getCount()==requestCount)
+                    if (latch.getCount() == requestCount)
                         Thread.sleep(1);
                     _connector.close();
                 }
 
                 String request =
-                        "GET /data?writes=1&block=16&id="+pipeline+" HTTP/1.1\r\n"+
-                        "host: "+uri.getHost()+":"+uri.getPort()+"\r\n"+
-                        "user-agent: testharness/1.0 (blah foo/bar)\r\n"+
-                        "accept-encoding: nothing\r\n"+
-                        "cookie: aaa=1234567890\r\n"+
+                    "GET /data?writes=1&block=16&id=" + pipeline + " HTTP/1.1\r\n" +
+                        "host: " + uri.getHost() + ":" + uri.getPort() + "\r\n" +
+                        "user-agent: testharness/1.0 (blah foo/bar)\r\n" +
+                        "accept-encoding: nothing\r\n" +
+                        "cookie: aaa=1234567890\r\n" +
                         "\r\n";
                 os.write(request.getBytes());
                 os.flush();
@@ -120,27 +118,21 @@ public abstract class ConnectorCloseTestBase extends HttpServerTestFixture
             reader.setDone();
             runner.join();
         }
-        finally
-        {
-            client.close();
-        }
     }
 
-    /* ------------------------------------------------------------ */
     private int iterations(int cnt)
     {
         return cnt > 0 ? iterations(--cnt) + cnt : 0;
     }
 
-    /* ------------------------------------------------------------ */
     @Test
     public void testCloseBetweenChunks() throws Exception
     {
         configureServer(new EchoHandler());
 
         URI uri = _server.getURI();
-        Socket client = newSocket(uri.getHost(),uri.getPort());
-        try
+
+        try (Socket client = newSocket(uri.getHost(), uri.getPort()))
         {
             OutputStream os = client.getOutputStream();
 
@@ -151,11 +143,11 @@ public abstract class ConnectorCloseTestBase extends HttpServerTestFixture
             byte[] bytes = __content.getBytes("utf-8");
 
             os.write((
-                "POST /echo?charset=utf-8 HTTP/1.1\r\n"+
-                "host: "+uri.getHost()+":"+uri.getPort()+"\r\n"+
-                "content-type: text/plain; charset=utf-8\r\n"+
-                "content-length: "+bytes.length+"\r\n"+
-                "\r\n"
+                "POST /echo?charset=utf-8 HTTP/1.1\r\n" +
+                    "host: " + uri.getHost() + ":" + uri.getPort() + "\r\n" +
+                    "content-type: text/plain; charset=utf-8\r\n" +
+                    "content-length: " + bytes.length + "\r\n" +
+                    "\r\n"
             ).getBytes(StandardCharsets.ISO_8859_1));
 
             int len = bytes.length;
@@ -172,7 +164,7 @@ public abstract class ConnectorCloseTestBase extends HttpServerTestFixture
 
             while (offset < len)
             {
-                os.write(bytes, offset, len-offset <=64 ? len-offset : 64);
+                os.write(bytes, offset, len - offset <= 64 ? len - offset : 64);
                 offset += 64;
                 Thread.sleep(25);
             }
@@ -182,16 +174,10 @@ public abstract class ConnectorCloseTestBase extends HttpServerTestFixture
             runner.join();
 
             String in = reader.getResponse().toString();
-            assertTrue(in.indexOf(__content.substring(__length-64))>0);
-        }
-        finally
-        {
-            client.close();
+            assertTrue(in.indexOf(__content.substring(__length - 64)) > 0);
         }
     }
 
-
-    /* ------------------------------------------------------------ */
     public class ResponseReader implements Runnable
     {
         private boolean _done = false;
@@ -200,7 +186,6 @@ public abstract class ConnectorCloseTestBase extends HttpServerTestFixture
         protected StringBuffer _response;
         protected BufferedReader _reader;
 
-        /* ------------------------------------------------------------ */
         public ResponseReader(Socket client) throws IOException
         {
             _buffer = new char[256];
@@ -208,7 +193,6 @@ public abstract class ConnectorCloseTestBase extends HttpServerTestFixture
             _reader = new BufferedReader(new InputStreamReader(client.getInputStream()));
         }
 
-        /* ------------------------------------------------------------ */
         public void setDone()
         {
             _done = true;
@@ -219,7 +203,6 @@ public abstract class ConnectorCloseTestBase extends HttpServerTestFixture
             return _response;
         }
 
-        /* ------------------------------------------------------------ */
         /**
          * @see java.lang.Runnable#run()
          */
@@ -234,19 +217,23 @@ public abstract class ConnectorCloseTestBase extends HttpServerTestFixture
                     count = doRead();
                 }
             }
-            catch (IOException ex) { }
-            catch (InterruptedException ex) { }
+            catch (IOException | InterruptedException e)
+            {
+                // ignore
+            }
             finally
             {
                 try
                 {
                     _reader.close();
                 }
-                catch (IOException e) { }
+                catch (IOException e)
+                {
+                    // ignore
+                }
             }
         }
 
-        /* ------------------------------------------------------------ */
         protected int doRead() throws IOException, InterruptedException
         {
             if (!_reader.ready())

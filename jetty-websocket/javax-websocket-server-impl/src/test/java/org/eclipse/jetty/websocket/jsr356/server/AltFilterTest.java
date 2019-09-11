@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -17,11 +17,6 @@
 //
 
 package org.eclipse.jetty.websocket.jsr356.server;
-
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.CoreMatchers.nullValue;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.net.URI;
 import java.util.concurrent.Future;
@@ -41,6 +36,11 @@ import org.eclipse.jetty.websocket.jsr356.server.samples.echo.BasicEchoSocket;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 /**
  * Testing the use of an alternate {@link org.eclipse.jetty.websocket.server.WebSocketUpgradeFilter}
  * defined in the WEB-INF/web.xml
@@ -55,7 +55,7 @@ public class AltFilterTest
     @Test
     public void testEcho() throws Exception
     {
-        WSServer wsb = new WSServer(testdir,"app");
+        WSServer wsb = new WSServer(testdir, "app");
         wsb.copyWebInf("alt-filter-web.xml");
         // the endpoint (extends javax.websocket.Endpoint)
         wsb.copyClass(BasicEchoSocket.class);
@@ -64,13 +64,13 @@ public class AltFilterTest
         {
             wsb.start();
             URI uri = wsb.getServerBaseURI();
-            
+
             WebAppContext webapp = wsb.createWebAppContext();
             wsb.deployWebapp(webapp);
-            
+
             FilterHolder filterWebXml = webapp.getServletHandler().getFilter("wsuf-test");
             assertThat("Filter[wsuf-test]", filterWebXml, notNullValue());
-            
+
             FilterHolder filterSCI = webapp.getServletHandler().getFilter("Jetty_WebSocketUpgradeFilter");
             assertThat("Filter[Jetty_WebSocketUpgradeFilter]", filterSCI, nullValue());
 
@@ -79,12 +79,12 @@ public class AltFilterTest
             {
                 client.start();
                 JettyEchoSocket clientEcho = new JettyEchoSocket();
-                Future<Session> future = client.connect(clientEcho,uri.resolve("echo;jsession=xyz"));
+                Future<Session> future = client.connect(clientEcho, uri.resolve("echo;jsession=xyz"));
                 // wait for connect
-                future.get(1,TimeUnit.SECONDS);
+                future.get(1, TimeUnit.SECONDS);
                 clientEcho.sendMessage("Hello Echo");
                 LinkedBlockingQueue<String> msgs = clientEcho.incomingMessages;
-                assertEquals("Hello Echo",msgs.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT), "Expected message");
+                assertEquals("Hello Echo", msgs.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT), "Expected message");
             }
             finally
             {

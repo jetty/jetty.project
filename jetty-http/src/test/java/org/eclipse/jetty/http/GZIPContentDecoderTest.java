@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.http;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
@@ -35,52 +31,54 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class GZIPContentDecoderTest
 {
-    ArrayByteBufferPool pool;
-    AtomicInteger buffers = new AtomicInteger(0);
-    
+    private ArrayByteBufferPool pool;
+    private AtomicInteger buffers = new AtomicInteger(0);
+
     @BeforeEach
-    public void beforeClass() throws Exception
+    public void before()
     {
         buffers.set(0);
         pool = new ArrayByteBufferPool()
+        {
+
+            @Override
+            public ByteBuffer acquire(int size, boolean direct)
             {
+                buffers.incrementAndGet();
+                return super.acquire(size, direct);
+            }
 
-                @Override
-                public ByteBuffer acquire(int size, boolean direct)
-                {
-                    buffers.incrementAndGet();
-                    return super.acquire(size,direct);
-                }
-
-                @Override
-                public void release(ByteBuffer buffer)
-                {
-                    buffers.decrementAndGet();
-                    super.release(buffer);
-                }
-            
-            };
+            @Override
+            public void release(ByteBuffer buffer)
+            {
+                buffers.decrementAndGet();
+                super.release(buffer);
+            }
+        };
     }
-    
+
     @AfterEach
-    public void afterClass() throws Exception
+    public void after()
     {
-        assertEquals(0,buffers.get());
+        assertEquals(0, buffers.get());
     }
-    
+
     @Test
-    public void testCompresedContentFormat() throws Exception
+    public void testCompressedContentFormat()
     {
-        assertTrue(CompressedContentFormat.tagEquals("tag","tag"));
-        assertTrue(CompressedContentFormat.tagEquals("\"tag\"","\"tag\""));
-        assertTrue(CompressedContentFormat.tagEquals("\"tag\"","\"tag--gzip\""));
-        assertFalse(CompressedContentFormat.tagEquals("Zag","Xag--gzip"));
-        assertFalse(CompressedContentFormat.tagEquals("xtag","tag"));
+        assertTrue(CompressedContentFormat.tagEquals("tag", "tag"));
+        assertTrue(CompressedContentFormat.tagEquals("\"tag\"", "\"tag\""));
+        assertTrue(CompressedContentFormat.tagEquals("\"tag\"", "\"tag--gzip\""));
+        assertFalse(CompressedContentFormat.tagEquals("Zag", "Xag--gzip"));
+        assertFalse(CompressedContentFormat.tagEquals("xtag", "tag"));
     }
-    
+
     @Test
     public void testStreamNoBlocks() throws Exception
     {
@@ -99,7 +97,9 @@ public class GZIPContentDecoderTest
     {
         String data = "0123456789ABCDEF";
         for (int i = 0; i < 10; ++i)
+        {
             data += data;
+        }
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         GZIPOutputStream output = new GZIPOutputStream(baos);
         output.write(data.getBytes(StandardCharsets.UTF_8));
@@ -110,7 +110,9 @@ public class GZIPContentDecoderTest
         GZIPInputStream input = new GZIPInputStream(new ByteArrayInputStream(bytes), 1);
         int read;
         while ((read = input.read()) >= 0)
+        {
             baos.write(read);
+        }
         assertEquals(data, new String(baos.toByteArray(), StandardCharsets.UTF_8));
     }
 
@@ -122,7 +124,7 @@ public class GZIPContentDecoderTest
         output.close();
         byte[] bytes = baos.toByteArray();
 
-        GZIPContentDecoder decoder = new GZIPContentDecoder(pool,2048);
+        GZIPContentDecoder decoder = new GZIPContentDecoder(pool, 2048);
         ByteBuffer decoded = decoder.decode(ByteBuffer.wrap(bytes));
         assertEquals(0, decoded.remaining());
     }
@@ -138,7 +140,7 @@ public class GZIPContentDecoderTest
         output.close();
         byte[] bytes = baos.toByteArray();
 
-        GZIPContentDecoder decoder = new GZIPContentDecoder(pool,2048);
+        GZIPContentDecoder decoder = new GZIPContentDecoder(pool, 2048);
         ByteBuffer decoded = decoder.decode(ByteBuffer.wrap(bytes));
         assertEquals(data, StandardCharsets.UTF_8.decode(decoded).toString());
         decoder.release(decoded);
@@ -161,7 +163,7 @@ public class GZIPContentDecoderTest
         byte[] bytes2 = new byte[bytes.length - bytes1.length];
         System.arraycopy(bytes, bytes1.length, bytes2, 0, bytes2.length);
 
-        GZIPContentDecoder decoder = new GZIPContentDecoder(pool,2048);
+        GZIPContentDecoder decoder = new GZIPContentDecoder(pool, 2048);
         ByteBuffer decoded = decoder.decode(ByteBuffer.wrap(bytes1));
         assertEquals(0, decoded.capacity());
         decoded = decoder.decode(ByteBuffer.wrap(bytes2));
@@ -186,7 +188,7 @@ public class GZIPContentDecoderTest
         byte[] bytes2 = new byte[bytes.length - bytes1.length];
         System.arraycopy(bytes, bytes1.length, bytes2, 0, bytes2.length);
 
-        GZIPContentDecoder decoder = new GZIPContentDecoder(pool,2048);
+        GZIPContentDecoder decoder = new GZIPContentDecoder(pool, 2048);
         ByteBuffer decoded = decoder.decode(ByteBuffer.wrap(bytes1));
         assertEquals(data, StandardCharsets.UTF_8.decode(decoded).toString());
         assertFalse(decoder.isFinished());
@@ -214,7 +216,7 @@ public class GZIPContentDecoderTest
         byte[] bytes2 = new byte[bytes.length - bytes1.length];
         System.arraycopy(bytes, bytes1.length, bytes2, 0, bytes2.length);
 
-        GZIPContentDecoder decoder = new GZIPContentDecoder(pool,2048);
+        GZIPContentDecoder decoder = new GZIPContentDecoder(pool, 2048);
         ByteBuffer decoded = decoder.decode(ByteBuffer.wrap(bytes1));
         assertEquals(0, decoded.capacity());
         decoder.release(decoded);
@@ -244,7 +246,7 @@ public class GZIPContentDecoderTest
         System.arraycopy(bytes1, 0, bytes, 0, bytes1.length);
         System.arraycopy(bytes2, 0, bytes, bytes1.length, bytes2.length);
 
-        GZIPContentDecoder decoder = new GZIPContentDecoder(pool,2048);
+        GZIPContentDecoder decoder = new GZIPContentDecoder(pool, 2048);
         ByteBuffer buffer = ByteBuffer.wrap(bytes);
         ByteBuffer decoded = decoder.decode(buffer);
         assertEquals(data1, StandardCharsets.UTF_8.decode(decoded).toString());
@@ -263,7 +265,9 @@ public class GZIPContentDecoderTest
     {
         String data = "0123456789ABCDEF";
         for (int i = 0; i < 10; ++i)
+        {
             data += data;
+        }
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         GZIPOutputStream output = new GZIPOutputStream(baos);
         output.write(data.getBytes(StandardCharsets.UTF_8));
@@ -271,7 +275,7 @@ public class GZIPContentDecoderTest
         byte[] bytes = baos.toByteArray();
 
         String result = "";
-        GZIPContentDecoder decoder = new GZIPContentDecoder(pool,2048);
+        GZIPContentDecoder decoder = new GZIPContentDecoder(pool, 2048);
         ByteBuffer buffer = ByteBuffer.wrap(bytes);
         while (buffer.hasRemaining())
         {
@@ -287,7 +291,9 @@ public class GZIPContentDecoderTest
     {
         String data = "0123456789ABCDEF";
         for (int i = 0; i < 10; ++i)
+        {
             data += data;
+        }
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         GZIPOutputStream output = new GZIPOutputStream(baos);
         output.write(data.getBytes(StandardCharsets.UTF_8));
@@ -313,7 +319,9 @@ public class GZIPContentDecoderTest
     {
         String data1 = "0123456789ABCDEF";
         for (int i = 0; i < 10; ++i)
+        {
             data1 += data1;
+        }
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         GZIPOutputStream output = new GZIPOutputStream(baos);
         output.write(data1.getBytes(StandardCharsets.UTF_8));

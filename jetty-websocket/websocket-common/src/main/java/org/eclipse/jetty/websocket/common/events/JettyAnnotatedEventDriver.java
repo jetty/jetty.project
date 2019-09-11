@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -23,6 +23,8 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
@@ -31,6 +33,7 @@ import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.message.MessageAppender;
 import org.eclipse.jetty.websocket.common.message.MessageInputStream;
 import org.eclipse.jetty.websocket.common.message.MessageReader;
+import org.eclipse.jetty.websocket.common.message.NullMessage;
 import org.eclipse.jetty.websocket.common.message.SimpleBinaryMessage;
 import org.eclipse.jetty.websocket.common.message.SimpleTextMessage;
 
@@ -39,13 +42,14 @@ import org.eclipse.jetty.websocket.common.message.SimpleTextMessage;
  */
 public class JettyAnnotatedEventDriver extends AbstractEventDriver
 {
+    private static final Logger LOG = Log.getLogger(JettyAnnotatedEventDriver.class);
     private final JettyAnnotatedMetadata events;
     private boolean hasCloseBeenCalled = false;
     private BatchMode batchMode;
 
     public JettyAnnotatedEventDriver(WebSocketPolicy policy, Object websocket, JettyAnnotatedMetadata events)
     {
-        super(policy,websocket);
+        super(policy, websocket);
         this.events = events;
 
         WebSocket anno = websocket.getClass().getAnnotation(WebSocket.class);
@@ -68,7 +72,7 @@ public class JettyAnnotatedEventDriver extends AbstractEventDriver
         }
         this.batchMode = anno.batchMode();
     }
-    
+
     @Override
     public BatchMode getBatchMode()
     {
@@ -81,6 +85,11 @@ public class JettyAnnotatedEventDriver extends AbstractEventDriver
         if (events.onBinary == null)
         {
             // not interested in binary events
+            if (activeMessage == null)
+            {
+                activeMessage = NullMessage.INSTANCE;
+            }
+
             return;
         }
 
@@ -97,7 +106,7 @@ public class JettyAnnotatedEventDriver extends AbstractEventDriver
                     {
                         try
                         {
-                            events.onBinary.call(websocket,session,msg);
+                            events.onBinary.call(websocket, session, msg);
                         }
                         catch (Throwable t)
                         {
@@ -113,7 +122,7 @@ public class JettyAnnotatedEventDriver extends AbstractEventDriver
             }
         }
 
-        appendMessage(buffer,fin);
+        appendMessage(buffer, fin);
     }
 
     @Override
@@ -121,7 +130,7 @@ public class JettyAnnotatedEventDriver extends AbstractEventDriver
     {
         if (events.onBinary != null)
         {
-            events.onBinary.call(websocket,session,data,0,data.length);
+            events.onBinary.call(websocket, session, data, 0, data.length);
         }
     }
 
@@ -136,7 +145,7 @@ public class JettyAnnotatedEventDriver extends AbstractEventDriver
         hasCloseBeenCalled = true;
         if (events.onClose != null)
         {
-            events.onClose.call(websocket,session,close.getStatusCode(),close.getReason());
+            events.onClose.call(websocket, session, close.getStatusCode(), close.getReason());
         }
     }
 
@@ -145,7 +154,7 @@ public class JettyAnnotatedEventDriver extends AbstractEventDriver
     {
         if (events.onConnect != null)
         {
-            events.onConnect.call(websocket,session);
+            events.onConnect.call(websocket, session);
         }
     }
 
@@ -154,7 +163,11 @@ public class JettyAnnotatedEventDriver extends AbstractEventDriver
     {
         if (events.onError != null)
         {
-            events.onError.call(websocket,session,cause);
+            events.onError.call(websocket, session, cause);
+        }
+        else
+        {
+            LOG.warn("Unable to report throwable to websocket (no @OnWebSocketError handler declared): " + websocket.getClass().getName(), cause);
         }
     }
 
@@ -163,7 +176,7 @@ public class JettyAnnotatedEventDriver extends AbstractEventDriver
     {
         if (events.onFrame != null)
         {
-            events.onFrame.call(websocket,session,frame);
+            events.onFrame.call(websocket, session, frame);
         }
     }
 
@@ -172,7 +185,7 @@ public class JettyAnnotatedEventDriver extends AbstractEventDriver
     {
         if (events.onBinary != null)
         {
-            events.onBinary.call(websocket,session,stream);
+            events.onBinary.call(websocket, session, stream);
         }
     }
 
@@ -181,7 +194,7 @@ public class JettyAnnotatedEventDriver extends AbstractEventDriver
     {
         if (events.onText != null)
         {
-            events.onText.call(websocket,session,reader);
+            events.onText.call(websocket, session, reader);
         }
     }
 
@@ -191,6 +204,10 @@ public class JettyAnnotatedEventDriver extends AbstractEventDriver
         if (events.onText == null)
         {
             // not interested in text events
+            if (activeMessage == null)
+            {
+                activeMessage = NullMessage.INSTANCE;
+            }
             return;
         }
 
@@ -207,7 +224,7 @@ public class JettyAnnotatedEventDriver extends AbstractEventDriver
                     {
                         try
                         {
-                            events.onText.call(websocket,session,msg);
+                            events.onText.call(websocket, session, msg);
                         }
                         catch (Throwable t)
                         {
@@ -223,7 +240,7 @@ public class JettyAnnotatedEventDriver extends AbstractEventDriver
             }
         }
 
-        appendMessage(buffer,fin);
+        appendMessage(buffer, fin);
     }
 
     @Override
@@ -231,7 +248,7 @@ public class JettyAnnotatedEventDriver extends AbstractEventDriver
     {
         if (events.onText != null)
         {
-            events.onText.call(websocket,session,message);
+            events.onText.call(websocket, session, message);
         }
     }
 

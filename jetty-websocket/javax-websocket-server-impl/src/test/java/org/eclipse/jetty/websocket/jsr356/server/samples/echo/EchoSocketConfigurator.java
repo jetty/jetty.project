@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,7 +19,6 @@
 package org.eclipse.jetty.websocket.jsr356.server.samples.echo;
 
 import java.util.Collections;
-
 import javax.websocket.HandshakeResponse;
 import javax.websocket.server.HandshakeRequest;
 import javax.websocket.server.ServerEndpointConfig;
@@ -29,7 +28,7 @@ public class EchoSocketConfigurator extends ServerEndpointConfig.Configurator
     @Override
     public void modifyHandshake(ServerEndpointConfig sec, HandshakeRequest request, HandshakeResponse response)
     {
-        response.getHeaders().put("X-Test",Collections.singletonList("Extra"));
-        super.modifyHandshake(sec,request,response);
+        response.getHeaders().put("X-Test", Collections.singletonList("Extra"));
+        super.modifyHandshake(sec, request, response);
     }
 }

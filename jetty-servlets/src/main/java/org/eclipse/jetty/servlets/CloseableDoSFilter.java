@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -33,7 +33,7 @@ public class CloseableDoSFilter extends DoSFilter
     @Override
     protected void onRequestTimeout(HttpServletRequest request, HttpServletResponse response, Thread handlingThread)
     {
-        Request base_request=Request.getBaseRequest(request);
-        base_request.getHttpChannel().getEndPoint().close();
+        Request baseRequest = Request.getBaseRequest(request);
+        baseRequest.getHttpChannel().getEndPoint().close();
     }
 }

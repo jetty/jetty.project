@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -36,17 +36,19 @@ public class DataFrame extends WebSocketFrame
      * Construct new DataFrame based on headers of provided frame.
      * <p>
      * Useful for when working in extensions and a new frame needs to be created.
+     *
      * @param basedOn the frame this one is based on
      */
     public DataFrame(Frame basedOn)
     {
-        this(basedOn,false);
+        this(basedOn, false);
     }
 
     /**
      * Construct new DataFrame based on headers of provided frame, overriding for continuations if needed.
      * <p>
      * Useful for when working in extensions and a new frame needs to be created.
+     *
      * @param basedOn the frame this one is based on
      * @param continuation true if this is a continuation frame
      */

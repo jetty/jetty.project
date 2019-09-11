@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -44,14 +44,15 @@ public class TestABCase6 extends AbstractABCase
 {
     /**
      * Split a message byte array into a series of fragments (frames + continuations) of 1 byte message contents each.
+     *
      * @param frames the frames
      * @param msg the message
      */
-    protected void fragmentText(List<WebSocketFrame> frames, byte msg[])
+    protected void fragmentText(List<WebSocketFrame> frames, byte[] msg)
     {
         int len = msg.length;
         boolean continuation = false;
-        byte mini[];
+        byte[] mini;
         for (int i = 0; i < len; i++)
         {
             DataFrame frame = null;
@@ -75,6 +76,7 @@ public class TestABCase6 extends AbstractABCase
 
     /**
      * text message, 1 frame, 0 length
+     *
      * @throws Exception on test failure
      */
     @Test
@@ -99,6 +101,7 @@ public class TestABCase6 extends AbstractABCase
 
     /**
      * text message, 0 length, 3 fragments
+     *
      * @throws Exception on test failure
      */
     @Test
@@ -125,6 +128,7 @@ public class TestABCase6 extends AbstractABCase
 
     /**
      * text message, small length, 3 fragments (only middle frame has payload)
+     *
      * @throws Exception on test failure
      */
     @Test
@@ -151,6 +155,7 @@ public class TestABCase6 extends AbstractABCase
 
     /**
      * valid utf8 text message, 2 fragments (on UTF8 code point boundary)
+     *
      * @throws Exception on test failure
      */
     @Test
@@ -186,16 +191,17 @@ public class TestABCase6 extends AbstractABCase
 
     /**
      * valid utf8 text message, many fragments (1 byte each)
+     *
      * @throws Exception on test failure
      */
     @Test
     public void testCase6_2_3() throws Exception
     {
         String utf8 = "Hello-\uC2B5@\uC39F\uC3A4\uC3BC\uC3A0\uC3A1-UTF-8!!";
-        byte msg[] = StringUtil.getUtf8Bytes(utf8);
+        byte[] msg = StringUtil.getUtf8Bytes(utf8);
 
         List<WebSocketFrame> send = new ArrayList<>();
-        fragmentText(send,msg);
+        fragmentText(send, msg);
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
@@ -213,15 +219,16 @@ public class TestABCase6 extends AbstractABCase
 
     /**
      * valid utf8 text message, many fragments (1 byte each)
+     *
      * @throws Exception on test failure
      */
     @Test
     public void testCase6_2_4() throws Exception
     {
-        byte msg[] = Hex.asByteArray("CEBAE1BDB9CF83CEBCCEB5");
+        byte[] msg = Hex.asByteArray("CEBAE1BDB9CF83CEBCCEB5");
 
         List<WebSocketFrame> send = new ArrayList<>();
-        fragmentText(send,msg);
+        fragmentText(send, msg);
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
@@ -239,15 +246,16 @@ public class TestABCase6 extends AbstractABCase
 
     /**
      * invalid utf8 text message, many fragments (1 byte each)
+     *
      * @throws Exception on test failure
      */
     @Test
     public void testCase6_3_2() throws Exception
     {
-        byte invalid[] = Hex.asByteArray("CEBAE1BDB9CF83CEBCCEB5EDA080656469746564");
+        byte[] invalid = Hex.asByteArray("CEBAE1BDB9CF83CEBCCEB5EDA080656469746564");
 
         List<WebSocketFrame> send = new ArrayList<>();
-        fragmentText(send,invalid);
+        fragmentText(send, invalid);
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
 
         List<WebSocketFrame> expect = new ArrayList<>();
@@ -268,14 +276,15 @@ public class TestABCase6 extends AbstractABCase
      * fragment #1 and fragment #3 are both valid in themselves.
      * <p>
      * fragment #2 contains the invalid utf8 code point.
+     *
      * @throws Exception on test failure
      */
     @Test
     public void testCase6_4_1() throws Exception
     {
-        byte part1[] = StringUtil.getUtf8Bytes("\u03BA\u1F79\u03C3\u03BC\u03B5");
-        byte part2[] = Hex.asByteArray("F4908080"); // invalid
-        byte part3[] = StringUtil.getUtf8Bytes("edited");
+        byte[] part1 = StringUtil.getUtf8Bytes("\u03BA\u1F79\u03C3\u03BC\u03B5");
+        byte[] part2 = Hex.asByteArray("F4908080"); // invalid
+        byte[] part3 = StringUtil.getUtf8Bytes("edited");
 
         ByteBuffer b1 = ByteBuffer.wrap(part1);
         ByteBuffer b2 = ByteBuffer.wrap(part2);
@@ -307,14 +316,15 @@ public class TestABCase6 extends AbstractABCase
      * fragment #2 finishes the UTF8 code point but it is invalid
      * <p>
      * fragment #3 contains the remainder of the message.
+     *
      * @throws Exception on test failure
      */
     @Test
     public void testCase6_4_2() throws Exception
     {
-        byte part1[] = Hex.asByteArray("CEBAE1BDB9CF83CEBCCEB5F4"); // split code point
-        byte part2[] = Hex.asByteArray("90"); // continue code point & invalid
-        byte part3[] = Hex.asByteArray("8080656469746564"); // continue code point & finish
+        byte[] part1 = Hex.asByteArray("CEBAE1BDB9CF83CEBCCEB5F4"); // split code point
+        byte[] part2 = Hex.asByteArray("90"); // continue code point & invalid
+        byte[] part3 = Hex.asByteArray("8080656469746564"); // continue code point & finish
 
         ByteBuffer b1 = ByteBuffer.wrap(part1);
         ByteBuffer b2 = ByteBuffer.wrap(part2);
@@ -340,6 +350,7 @@ public class TestABCase6 extends AbstractABCase
 
     /**
      * invalid text message, 1 frame/fragment (slowly, and split within code points)
+     *
      * @throws Exception on test failure
      */
     @Test
@@ -353,7 +364,7 @@ public class TestABCase6 extends AbstractABCase
             payload.put(TypeUtil.fromHexString("cebae1bdb9cf83cebcceb5")); // good
             payload.put(TypeUtil.fromHexString("f4908080")); // INVALID
             payload.put(TypeUtil.fromHexString("656469746564")); // good
-            BufferUtil.flipToFlush(payload,0);
+            BufferUtil.flipToFlush(payload, 0);
 
             List<WebSocketFrame> send = new ArrayList<>();
             send.add(new TextFrame().setPayload(payload));
@@ -368,7 +379,7 @@ public class TestABCase6 extends AbstractABCase
 
                 ByteBuffer net = fuzzer.asNetworkBuffer(send);
 
-                int splits[] = { 17, 21, net.limit() };
+                int[] splits = {17, 21, net.limit()};
 
                 ByteBuffer part1 = net.slice(); // Header + good UTF
                 part1.limit(splits[0]);
@@ -390,12 +401,13 @@ public class TestABCase6 extends AbstractABCase
 
     /**
      * invalid text message, 1 frame/fragment (slowly, and split within code points)
+     *
      * @throws Exception on test failure
      */
     @Test
     public void testCase6_4_4() throws Exception
     {
-        byte invalid[] = Hex.asByteArray("CEBAE1BDB9CF83CEBCCEB5F49080808080656469746564");
+        byte[] invalid = Hex.asByteArray("CEBAE1BDB9CF83CEBCCEB5F49080808080656469746564");
 
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new TextFrame().setPayload(ByteBuffer.wrap(invalid)));
@@ -404,15 +416,16 @@ public class TestABCase6 extends AbstractABCase
         List<WebSocketFrame> expect = new ArrayList<>();
         expect.add(new CloseInfo(StatusCode.BAD_PAYLOAD).asFrame());
 
-        try (Fuzzer fuzzer = new Fuzzer(this); StacklessLogging scope = new StacklessLogging(Parser.class))
+        try (Fuzzer fuzzer = new Fuzzer(this);
+             StacklessLogging scope = new StacklessLogging(Parser.class))
         {
             fuzzer.connect();
 
             ByteBuffer net = fuzzer.asNetworkBuffer(send);
-            fuzzer.send(net,6);
-            fuzzer.send(net,11);
-            fuzzer.send(net,1);
-            fuzzer.send(net,100); // the rest
+            fuzzer.send(net, 6);
+            fuzzer.send(net, 11);
+            fuzzer.send(net, 1);
+            fuzzer.send(net, 100); // the rest
 
             fuzzer.expect(expect);
         }

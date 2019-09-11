@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,13 +18,13 @@
 
 package org.eclipse.jetty.http.pathmap;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 import java.util.stream.Stream;
 
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * Tests for bad path specs on ServerEndpoint Path Param / URI Template
@@ -33,7 +33,7 @@ public class UriTemplatePathSpecBadSpecsTest
 {
     public static Stream<Arguments> data()
     {
-        String badSpecs[] = new String[]{
+        String[] badSpecs = new String[]{
             "/a/b{var}", // bad syntax - variable does not encompass whole path segment
             "a/{var}", // bad syntax - no start slash
             "/a/{var/b}", // path segment separator in variable name
@@ -54,10 +54,10 @@ public class UriTemplatePathSpecBadSpecsTest
         return Stream.of(badSpecs).map(Arguments::of);
     }
 
-    @ParameterizedTest(name="[{index}] {0}")
+    @ParameterizedTest(name = "[{index}] {0}")
     @MethodSource("data")
     public void testBadPathSpec(String pathSpec)
     {
-        assertThrows(IllegalArgumentException.class, ()-> new UriTemplatePathSpec(pathSpec));
+        assertThrows(IllegalArgumentException.class, () -> new UriTemplatePathSpec(pathSpec));
     }
 }

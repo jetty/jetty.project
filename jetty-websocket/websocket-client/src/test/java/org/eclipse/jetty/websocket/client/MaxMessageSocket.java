@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.websocket.client;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -35,8 +31,11 @@ import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@WebSocket(maxTextMessageSize = 100*1024)
+@WebSocket(maxTextMessageSize = 100 * 1024)
 public class MaxMessageSocket
 {
     private static final Logger LOG = Log.getLogger(MaxMessageSocket.class);
@@ -55,11 +54,11 @@ public class MaxMessageSocket
         this.session = session;
         openLatch.countDown();
     }
-    
+
     @OnWebSocketClose
     public void onClose(int statusCode, String reason)
     {
-        LOG.debug("onWebSocketClose({},{})",statusCode,reason);
+        LOG.debug("onWebSocketClose({},{})", statusCode, reason);
         closeCode = statusCode;
         closeMessage.append(reason);
         closeLatch.countDown();
@@ -68,16 +67,16 @@ public class MaxMessageSocket
     @OnWebSocketMessage
     public void onMessage(String message)
     {
-        LOG.debug("onWebSocketText({})",message);
+        LOG.debug("onWebSocketText({})", message);
         messageQueue.offer(message);
         dataLatch.countDown();
     }
-    
+
     @OnWebSocketError
     public void onError(Throwable cause)
     {
-        LOG.debug("onWebSocketError",cause);
-        assertThat("Error capture",errorQueue.offer(cause),is(true));
+        LOG.debug("onWebSocketError", cause);
+        assertThat("Error capture", errorQueue.offer(cause), is(true));
     }
 
     public Session getSession()
@@ -87,15 +86,15 @@ public class MaxMessageSocket
 
     public void awaitConnect(int duration, TimeUnit unit) throws InterruptedException
     {
-        assertThat("Client Socket connected",openLatch.await(duration,unit),is(true));
+        assertThat("Client Socket connected", openLatch.await(duration, unit), is(true));
     }
-    
+
     public void waitForMessage(int timeoutDuration, TimeUnit timeoutUnit) throws InterruptedException
     {
         LOG.debug("Waiting for message");
-        assertThat("Message Received",dataLatch.await(timeoutDuration,timeoutUnit),is(true));
+        assertThat("Message Received", dataLatch.await(timeoutDuration, timeoutUnit), is(true));
     }
-    
+
     public void assertMessage(String expected)
     {
         String actual = messageQueue.poll();

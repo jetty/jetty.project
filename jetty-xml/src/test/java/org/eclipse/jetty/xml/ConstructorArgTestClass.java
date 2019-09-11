@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -23,8 +23,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
-/* ------------------------------------------------------------ */
 /**
+ *
  */
 public class ConstructorArgTestClass
 {
@@ -49,7 +49,7 @@ public class ConstructorArgTestClass
         this.arrayList = arrayList;
         this.list = list;
     }
-    
+
     @SuppressWarnings("rawtypes")
     public ConstructorArgTestClass(ArrayList list)
     {

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -115,10 +115,10 @@ public class MultiPartContentProvider extends AbstractTypedContentProvider imple
      * {@code content} as part content.</p>
      * <p>The {@code Content-Type} of this part will be obtained from:</p>
      * <ul>
-     *     <li>the {@code Content-Type} header in the {@code fields} parameter; otherwise</li>
-     *     <li>the {@link org.eclipse.jetty.client.api.ContentProvider.Typed#getContentType()} method if the {@code content} parameter
-     *     implements {@link org.eclipse.jetty.client.api.ContentProvider.Typed}; otherwise</li>
-     *     <li>"text/plain"</li>
+     * <li>the {@code Content-Type} header in the {@code fields} parameter; otherwise</li>
+     * <li>the {@link org.eclipse.jetty.client.api.ContentProvider.Typed#getContentType()} method if the {@code content} parameter
+     * implements {@link org.eclipse.jetty.client.api.ContentProvider.Typed}; otherwise</li>
+     * <li>"text/plain"</li>
      * </ul>
      *
      * @param name the part name
@@ -135,10 +135,10 @@ public class MultiPartContentProvider extends AbstractTypedContentProvider imple
      * {@code fileName} as file name, and the given {@code content} as part content.</p>
      * <p>The {@code Content-Type} of this part will be obtained from:</p>
      * <ul>
-     *     <li>the {@code Content-Type} header in the {@code fields} parameter; otherwise</li>
-     *     <li>the {@link org.eclipse.jetty.client.api.ContentProvider.Typed#getContentType()} method if the {@code content} parameter
-     *     implements {@link org.eclipse.jetty.client.api.ContentProvider.Typed}; otherwise</li>
-     *     <li>"application/octet-stream"</li>
+     * <li>the {@code Content-Type} header in the {@code fields} parameter; otherwise</li>
+     * <li>the {@link org.eclipse.jetty.client.api.ContentProvider.Typed#getContentType()} method if the {@code content} parameter
+     * implements {@link org.eclipse.jetty.client.api.ContentProvider.Typed}; otherwise</li>
+     * <li>"application/octet-stream"</li>
      * </ul>
      *
      * @param name the part name
@@ -289,12 +289,12 @@ public class MultiPartContentProvider extends AbstractTypedContentProvider imple
         public String toString()
         {
             return String.format("%s@%x[name=%s,fileName=%s,length=%d,headers=%s]",
-                    getClass().getSimpleName(),
-                    hashCode(),
-                    name,
-                    fileName,
-                    content.getLength(),
-                    fields);
+                getClass().getSimpleName(),
+                hashCode(),
+                name,
+                fileName,
+                content.getLength(),
+                fields);
         }
     }
 

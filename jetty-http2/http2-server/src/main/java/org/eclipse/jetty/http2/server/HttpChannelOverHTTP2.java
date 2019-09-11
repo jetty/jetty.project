@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -127,16 +127,16 @@ public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable, Writ
             }
 
             _delayedUntilContent = getHttpConfiguration().isDelayDispatchUntilContent() &&
-                    !endStream && !_expect100Continue;
+                !endStream && !_expect100Continue;
 
             if (LOG.isDebugEnabled())
             {
                 Stream stream = getStream();
                 LOG.debug("HTTP2 Request #{}/{}, delayed={}:{}{} {} {}{}{}",
-                        stream.getId(), Integer.toHexString(stream.getSession().hashCode()),
-                        _delayedUntilContent, System.lineSeparator(),
-                        request.getMethod(), request.getURI(), request.getHttpVersion(),
-                        System.lineSeparator(), fields);
+                    stream.getId(), Integer.toHexString(stream.getSession().hashCode()),
+                    _delayedUntilContent, System.lineSeparator(),
+                    request.getMethod(), request.getURI(), request.getHttpVersion(),
+                    System.lineSeparator(), fields);
             }
 
             return _delayedUntilContent ? null : this;
@@ -166,9 +166,9 @@ public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable, Writ
             {
                 Stream stream = getStream();
                 LOG.debug("HTTP2 PUSH Request #{}/{}:{}{} {} {}{}{}",
-                        stream.getId(), Integer.toHexString(stream.getSession().hashCode()), System.lineSeparator(),
-                        request.getMethod(), request.getURI(), request.getHttpVersion(),
-                        System.lineSeparator(), request.getFields());
+                    stream.getId(), Integer.toHexString(stream.getSession().hashCode()), System.lineSeparator(),
+                    request.getMethod(), request.getURI(), request.getHttpVersion(),
+                    System.lineSeparator(), request.getFields());
             }
 
             return this;
@@ -208,8 +208,8 @@ public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable, Writ
         {
             Stream stream = getStream();
             LOG.debug("HTTP2 Commit Response #{}/{}:{}{} {} {}{}{}",
-                    stream.getId(), Integer.toHexString(stream.getSession().hashCode()), System.lineSeparator(), info.getHttpVersion(), info.getStatus(), info.getReason(),
-                    System.lineSeparator(), info.getFields());
+                stream.getId(), Integer.toHexString(stream.getSession().hashCode()), System.lineSeparator(), info.getHttpVersion(), info.getStatus(), info.getReason(),
+                System.lineSeparator(), info.getFields());
         }
     }
 
@@ -252,19 +252,19 @@ public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable, Writ
         boolean endStream = frame.isEndStream();
         if (endStream)
         {
-            boolean handle_content = onContentComplete();
-            boolean handle_request = onRequestComplete();
-            handle |= handle_content | handle_request;
+            boolean handleContent = onContentComplete();
+            boolean handleRequest = onRequestComplete();
+            handle |= handleContent | handleRequest;
         }
 
         if (LOG.isDebugEnabled())
         {
             LOG.debug("HTTP2 Request #{}/{}: {} bytes of {} content, handle: {}",
-                    stream.getId(),
-                    Integer.toHexString(stream.getSession().hashCode()),
-                    length,
-                    endStream ? "last" : "some",
-                    handle);
+                stream.getId(),
+                Integer.toHexString(stream.getSession().hashCode()),
+                length,
+                endStream ? "last" : "some",
+                handle);
         }
 
         boolean wasDelayed = _delayedUntilContent;
@@ -282,8 +282,8 @@ public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable, Writ
         {
             Stream stream = getStream();
             LOG.debug("HTTP2 Request #{}/{}, trailers:{}{}",
-                    stream.getId(), Integer.toHexString(stream.getSession().hashCode()),
-                    System.lineSeparator(), trailers);
+                stream.getId(), Integer.toHexString(stream.getSession().hashCode()),
+                System.lineSeparator(), trailers);
         }
 
         boolean handle = onRequestComplete();

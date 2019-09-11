@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -23,7 +23,6 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
@@ -81,10 +80,10 @@ public class QoSFilter implements Filter
 {
     private static final Logger LOG = Log.getLogger(QoSFilter.class);
 
-    static final int __DEFAULT_MAX_PRIORITY = 10;
-    static final int __DEFAULT_PASSES = 10;
-    static final int __DEFAULT_WAIT_MS = 50;
-    static final long __DEFAULT_TIMEOUT_MS = -1;
+    static final int DEFAULT_MAX_PRIORITY = 10;
+    static final int DEFAULT_PASSES = 10;
+    static final int DEFAULT_WAIT_MS = 50;
+    static final long DEFAULT_TIMEOUT_MS = -1;
 
     static final String MANAGED_ATTR_INIT_PARAM = "managedAttr";
     static final String MAX_REQUESTS_INIT_PARAM = "maxRequests";
@@ -104,10 +103,10 @@ public class QoSFilter implements Filter
     @Override
     public void init(FilterConfig filterConfig)
     {
-        int max_priority = __DEFAULT_MAX_PRIORITY;
+        int maxPriority = DEFAULT_MAX_PRIORITY;
         if (filterConfig.getInitParameter(MAX_PRIORITY_INIT_PARAM) != null)
-            max_priority = Integer.parseInt(filterConfig.getInitParameter(MAX_PRIORITY_INIT_PARAM));
-        _queues = new Queue[max_priority + 1];
+            maxPriority = Integer.parseInt(filterConfig.getInitParameter(MAX_PRIORITY_INIT_PARAM));
+        _queues = new Queue[maxPriority + 1];
         _listeners = new AsyncListener[_queues.length];
         for (int p = 0; p < _queues.length; ++p)
         {
@@ -115,18 +114,18 @@ public class QoSFilter implements Filter
             _listeners[p] = new QoSAsyncListener(p);
         }
 
-        int maxRequests = __DEFAULT_PASSES;
+        int maxRequests = DEFAULT_PASSES;
         if (filterConfig.getInitParameter(MAX_REQUESTS_INIT_PARAM) != null)
             maxRequests = Integer.parseInt(filterConfig.getInitParameter(MAX_REQUESTS_INIT_PARAM));
         _passes = new Semaphore(maxRequests, true);
         _maxRequests = maxRequests;
 
-        long wait = __DEFAULT_WAIT_MS;
+        long wait = DEFAULT_WAIT_MS;
         if (filterConfig.getInitParameter(MAX_WAIT_INIT_PARAM) != null)
             wait = Integer.parseInt(filterConfig.getInitParameter(MAX_WAIT_INIT_PARAM));
         _waitMs = wait;
 
-        long suspend = __DEFAULT_TIMEOUT_MS;
+        long suspend = DEFAULT_TIMEOUT_MS;
         if (filterConfig.getInitParameter(SUSPEND_INIT_PARAM) != null)
             suspend = Integer.parseInt(filterConfig.getInitParameter(SUSPEND_INIT_PARAM));
         _suspendMs = suspend;

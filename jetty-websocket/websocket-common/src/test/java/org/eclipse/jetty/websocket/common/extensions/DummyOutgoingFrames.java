@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -41,7 +41,7 @@ public class DummyOutgoingFrames implements OutgoingFrames
     @Override
     public void outgoingFrame(Frame frame, WriteCallback callback, BatchMode batchMode)
     {
-        LOG.debug("outgoingFrame({},{})",frame,callback);
+        LOG.debug("outgoingFrame({},{})", frame, callback);
         if (callback != null)
         {
             callback.writeSuccess();
@@ -51,6 +51,6 @@ public class DummyOutgoingFrames implements OutgoingFrames
     @Override
     public String toString()
     {
-        return String.format("%s@%x[%s]",this.getClass().getSimpleName(),hashCode(),id);
+        return String.format("%s@%x[%s]", this.getClass().getSimpleName(), hashCode(), id);
     }
 }

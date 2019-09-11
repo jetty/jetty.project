@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,14 +18,9 @@
 
 package org.eclipse.jetty.client;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.fail;
-
 import java.io.IOException;
 import java.security.cert.CertificateException;
 import java.util.concurrent.ExecutionException;
-
 import javax.net.ssl.SSLHandshakeException;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -40,10 +35,13 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * This test class runs tests to make sure that hostname verification (http://www.ietf.org/rfc/rfc2818.txt
@@ -52,7 +50,7 @@ import org.junit.jupiter.api.Test;
 @Disabled
 public class HostnameVerificationTest
 {
-    private SslContextFactory clientSslContextFactory = new SslContextFactory();
+    private SslContextFactory clientSslContextFactory = new SslContextFactory.Client();
     private Server server;
     private HttpClient client;
     private NetworkConnector connector;
@@ -64,7 +62,7 @@ public class HostnameVerificationTest
         serverThreads.setName("server");
         server = new Server(serverThreads);
 
-        SslContextFactory serverSslContextFactory = new SslContextFactory();
+        SslContextFactory serverSslContextFactory = new SslContextFactory.Server();
         serverSslContextFactory.setKeyStorePath("src/test/resources/keystore.jks");
         serverSslContextFactory.setKeyStorePassword("storepwd");
         connector = new ServerConnector(server, serverSslContextFactory);
@@ -102,7 +100,7 @@ public class HostnameVerificationTest
     /**
      * This test is supposed to verify that hostname verification works as described in:
      * http://www.ietf.org/rfc/rfc2818.txt section 3.1. It uses a certificate with a common name different to localhost
-     * and sends a request to localhost. This should fail with a SSLHandshakeException.
+     * and sends a request to localhost. This should fail with an SSLHandshakeException.
      *
      * @throws Exception on test failure
      */
@@ -112,7 +110,8 @@ public class HostnameVerificationTest
         clientSslContextFactory.setEndpointIdentificationAlgorithm("HTTPS");
         String uri = "https://localhost:" + connector.getLocalPort() + "/";
 
-        ExecutionException x = assertThrows(ExecutionException.class, ()->{
+        ExecutionException x = assertThrows(ExecutionException.class, () ->
+        {
             client.GET(uri);
         });
         Throwable cause = x.getCause();
@@ -126,7 +125,6 @@ public class HostnameVerificationTest
      * work fine.
      *
      * @throws Exception on test failure
-     *
      */
     @Test
     public void simpleGetWithHostnameVerificationDisabledTest() throws Exception

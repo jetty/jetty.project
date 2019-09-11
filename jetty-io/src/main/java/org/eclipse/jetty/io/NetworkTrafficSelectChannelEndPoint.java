@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -52,16 +52,16 @@ public class NetworkTrafficSelectChannelEndPoint extends SelectChannelEndPoint
     @Override
     public boolean flush(ByteBuffer... buffers) throws IOException
     {
-        boolean flushed=true;
+        boolean flushed = true;
         for (ByteBuffer b : buffers)
         {
             if (b.hasRemaining())
             {
                 int position = b.position();
-                ByteBuffer view=b.slice();
-                flushed&=super.flush(b);
-                int l=b.position()-position;
-                view.limit(view.position()+l);
+                ByteBuffer view = b.slice();
+                flushed &= super.flush(b);
+                int l = b.position() - position;
+                view.limit(view.position() + l);
                 notifyOutgoing(view);
                 if (!flushed)
                     break;
@@ -69,8 +69,6 @@ public class NetworkTrafficSelectChannelEndPoint extends SelectChannelEndPoint
         }
         return flushed;
     }
-
-    
 
     @Override
     public void onOpen()
@@ -112,7 +110,6 @@ public class NetworkTrafficSelectChannelEndPoint extends SelectChannelEndPoint
         }
     }
 
-
     public void notifyIncoming(ByteBuffer buffer, int read)
     {
         if (listeners != null && !listeners.isEmpty() && read > 0)
@@ -136,12 +133,12 @@ public class NetworkTrafficSelectChannelEndPoint extends SelectChannelEndPoint
     {
         if (listeners != null && !listeners.isEmpty() && view.hasRemaining())
         {
-            Socket socket=getSocket();
+            Socket socket = getSocket();
             for (NetworkTrafficListener listener : listeners)
             {
                 try
                 {
-                    listener.outgoing(socket, view);   
+                    listener.outgoing(socket, view);
                 }
                 catch (Exception x)
                 {
@@ -150,5 +147,4 @@ public class NetworkTrafficSelectChannelEndPoint extends SelectChannelEndPoint
             }
         }
     }
-
 }

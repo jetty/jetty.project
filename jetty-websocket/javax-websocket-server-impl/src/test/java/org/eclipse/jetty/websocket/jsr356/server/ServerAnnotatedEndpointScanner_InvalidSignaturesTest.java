@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,15 +18,10 @@
 
 package org.eclipse.jetty.websocket.jsr356.server;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
-
 import javax.websocket.DeploymentException;
 import javax.websocket.OnClose;
 import javax.websocket.OnError;
@@ -50,6 +45,10 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 /**
  * Test {@link AnnotatedEndpointScanner} against various simple, 1 method {@link ServerEndpoint} annotated classes with invalid signatures.
  */
@@ -59,13 +58,13 @@ public class ServerAnnotatedEndpointScanner_InvalidSignaturesTest
     {
         List<Class<?>[]> data = new ArrayList<>();
 
-        data.add(new Class<?>[]{ InvalidCloseIntSocket.class, OnClose.class });
-        data.add(new Class<?>[]{ InvalidErrorErrorSocket.class, OnError.class });
-        data.add(new Class<?>[]{ InvalidErrorExceptionSocket.class, OnError.class });
-        data.add(new Class<?>[]{ InvalidErrorIntSocket.class, OnError.class });
-        data.add(new Class<?>[]{ InvalidOpenCloseReasonSocket.class, OnOpen.class });
-        data.add(new Class<?>[]{ InvalidOpenIntSocket.class, OnOpen.class });
-        data.add(new Class<?>[]{ InvalidOpenSessionIntSocket.class, OnOpen.class });
+        data.add(new Class<?>[]{InvalidCloseIntSocket.class, OnClose.class});
+        data.add(new Class<?>[]{InvalidErrorErrorSocket.class, OnError.class});
+        data.add(new Class<?>[]{InvalidErrorExceptionSocket.class, OnError.class});
+        data.add(new Class<?>[]{InvalidErrorIntSocket.class, OnError.class});
+        data.add(new Class<?>[]{InvalidOpenCloseReasonSocket.class, OnOpen.class});
+        data.add(new Class<?>[]{InvalidOpenIntSocket.class, OnOpen.class});
+        data.add(new Class<?>[]{InvalidOpenSessionIntSocket.class, OnOpen.class});
 
         // TODO: invalid return types
         // TODO: static methods
@@ -80,13 +79,14 @@ public class ServerAnnotatedEndpointScanner_InvalidSignaturesTest
     public void testScan_InvalidSignature(Class<?> pojo, Class<? extends Annotation> expectedAnnoClass) throws DeploymentException
     {
         WebSocketContainerScope container = new SimpleContainerScope(WebSocketPolicy.newClientPolicy());
-        AnnotatedServerEndpointMetadata metadata = new AnnotatedServerEndpointMetadata(container,pojo,null);
-        AnnotatedEndpointScanner<ServerEndpoint,ServerEndpointConfig> scanner = new AnnotatedEndpointScanner<>(metadata);
+        AnnotatedServerEndpointMetadata metadata = new AnnotatedServerEndpointMetadata(container, pojo, null);
+        AnnotatedEndpointScanner<ServerEndpoint, ServerEndpointConfig> scanner = new AnnotatedEndpointScanner<>(metadata);
 
-        InvalidSignatureException e = assertThrows(InvalidSignatureException.class, ()->{
+        InvalidSignatureException e = assertThrows(InvalidSignatureException.class, () ->
+        {
             scanner.scan();
             // Expected InvalidSignatureException with message that references annotation
         });
-        assertThat("Message",e.getMessage(),containsString(expectedAnnoClass.getSimpleName()));
+        assertThat("Message", e.getMessage(), containsString(expectedAnnoClass.getSimpleName()));
     }
 }

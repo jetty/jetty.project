@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.websocket.server;
 
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.MatcherAssert.assertThat;
-
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -35,6 +32,9 @@ import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.notNullValue;
+
 public class WebSocketServerFactoryTest
 {
     private int setLogLevel(Class<?> clazz, int newLevel)
@@ -43,21 +43,21 @@ public class WebSocketServerFactoryTest
         Logger logger = Log.getLogger(clazz);
         if (logger instanceof StdErrLog)
         {
-            StdErrLog stdErrLog = (StdErrLog) logger;
+            StdErrLog stdErrLog = (StdErrLog)logger;
             oldLevel = stdErrLog.getLevel();
             stdErrLog.setLevel(newLevel);
         }
-        
+
         return oldLevel;
     }
-    
+
     @Test
     public void testInit()
     {
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
         Executor executor = new QueuedThreadPool();
         ByteBufferPool bufferPool = new MappedByteBufferPool();
-        
+
         int wsFactoryLevel = setLogLevel(WebSocketServerFactory.class, StdErrLog.LEVEL_DEBUG);
         int abstractLifecycleLevel = setLogLevel(AbstractLifeCycle.class, StdErrLog.LEVEL_DEBUG);
         int containerLifecycleLevel = setLogLevel(ContainerLifeCycle.class, StdErrLog.LEVEL_DEBUG);

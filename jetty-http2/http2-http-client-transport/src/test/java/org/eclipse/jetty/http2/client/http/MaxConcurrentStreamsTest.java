@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -17,6 +17,21 @@
 //
 
 package org.eclipse.jetty.http2.client.http;
+
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.IntStream;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.AbstractConnectionPool;
 import org.eclipse.jetty.client.HttpClient;
@@ -43,24 +58,8 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.Test;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.IntStream;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
 
 public class MaxConcurrentStreamsTest extends AbstractTest
 {
@@ -101,21 +100,21 @@ public class MaxConcurrentStreamsTest extends AbstractTest
 
         // First request is sent immediately.
         client.newRequest("localhost", connector.getLocalPort())
-                .path("/first")
-                .send(result ->
-                {
-                    if (result.isSucceeded())
-                        latch.countDown();
-                });
+            .path("/first")
+            .send(result ->
+            {
+                if (result.isSucceeded())
+                    latch.countDown();
+            });
 
         // Second request is queued.
         client.newRequest("localhost", connector.getLocalPort())
-                .path("/second")
-                .send(result ->
-                {
-                    if (result.isSucceeded())
-                        latch.countDown();
-                });
+            .path("/second")
+            .send(result ->
+            {
+                if (result.isSucceeded())
+                    latch.countDown();
+            });
 
         // When the first request returns, the second must be sent.
         assertTrue(latch.await(5 * sleep, TimeUnit.MILLISECONDS));
@@ -129,21 +128,21 @@ public class MaxConcurrentStreamsTest extends AbstractTest
 
         int iterations = 50;
         IntStream.range(0, concurrency).parallel().forEach(i ->
-                IntStream.range(0, iterations).forEach(j ->
+            IntStream.range(0, iterations).forEach(j ->
+            {
+                try
                 {
-                    try
-                    {
-                        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                                .path("/" + i + "_" + j)
-                                .timeout(5, TimeUnit.SECONDS)
-                                .send();
-                        assertEquals(HttpStatus.OK_200, response.getStatus());
-                    }
-                    catch (Throwable x)
-                    {
-                        throw new RuntimeException(x);
-                    }
-                })
+                    ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+                        .path("/" + i + "_" + j)
+                        .timeout(5, TimeUnit.SECONDS)
+                        .send();
+                    assertEquals(HttpStatus.OK_200, response.getStatus());
+                }
+                catch (Throwable x)
+                {
+                    throw new RuntimeException(x);
+                }
+            })
         );
     }
 
@@ -184,22 +183,22 @@ public class MaxConcurrentStreamsTest extends AbstractTest
                         if (connections.incrementAndGet() == 1)
                         {
                             client.newRequest(host, port)
-                                    .path("/2")
-                                    .send(result ->
+                                .path("/2")
+                                .send(result ->
+                                {
+                                    if (result.isSucceeded())
                                     {
-                                        if (result.isSucceeded())
-                                        {
-                                            Response response2 = result.getResponse();
-                                            if (response2.getStatus() == HttpStatus.OK_200)
-                                                latch.countDown();
-                                            else
-                                                failures.add(new HttpResponseException("", response2));
-                                        }
+                                        Response response2 = result.getResponse();
+                                        if (response2.getStatus() == HttpStatus.OK_200)
+                                            latch.countDown();
                                         else
-                                        {
-                                            failures.add(result.getFailure());
-                                        }
-                                    });
+                                            failures.add(new HttpResponseException("", response2));
+                                    }
+                                    else
+                                    {
+                                        failures.add(result.getFailure());
+                                    }
+                                });
                         }
                         super.onSettings(session, frame);
                     }
@@ -214,9 +213,9 @@ public class MaxConcurrentStreamsTest extends AbstractTest
         // This request will be queued and establish the connection,
         // which will trigger the send of the second request.
         ContentResponse response1 = client.newRequest(host, port)
-                .path("/1")
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+            .path("/1")
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(HttpStatus.OK_200, response1.getStatus());
         assertTrue(latch.await(5, TimeUnit.SECONDS), failures.toString());
@@ -247,20 +246,20 @@ public class MaxConcurrentStreamsTest extends AbstractTest
         for (int i = 0; i < maxStreams; ++i)
         {
             client.newRequest("localhost", connector.getLocalPort())
-                    .path("/" + i)
-                    .send(null);
+                .path("/" + i)
+                .send(null);
         }
 
         // Send the request in excess.
         CountDownLatch latch = new CountDownLatch(1);
         String path = "/excess";
         client.newRequest("localhost", connector.getLocalPort())
-                .path(path)
-                .send(result ->
-                {
-                    if (result.getResponse().getStatus() == HttpStatus.OK_200)
-                        latch.countDown();
-                });
+            .path(path)
+            .send(result ->
+            {
+                if (result.getResponse().getStatus() == HttpStatus.OK_200)
+                    latch.countDown();
+            });
 
         // The last exchange should remain in the queue.
         HttpDestinationOverHTTP2 destination = (HttpDestinationOverHTTP2)client.getDestination("http", "localhost", connector.getLocalPort());
@@ -288,9 +287,9 @@ public class MaxConcurrentStreamsTest extends AbstractTest
 
         // Send a request that is aborted while queued.
         client.newRequest("localhost", connector.getLocalPort())
-                .path("/aborted")
-                .onRequestQueued(request -> request.abort(new Exception()))
-                .send(null);
+            .path("/aborted")
+            .onRequestQueued(request -> request.abort(new Exception()))
+            .send(null);
 
         // Must be able to send another request.
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort()).path("/check").send();
@@ -318,8 +317,8 @@ public class MaxConcurrentStreamsTest extends AbstractTest
         for (int i = 0; i < maxConcurrent; ++i)
         {
             client.newRequest("localhost", connector.getLocalPort())
-                    .path("/" + i)
-                    .send(result -> latch.countDown());
+                .path("/" + i)
+                .send(result -> latch.countDown());
         }
 
         // The requests should be processed in parallel, not sequentially.
@@ -355,14 +354,14 @@ public class MaxConcurrentStreamsTest extends AbstractTest
                 for (int k = 0; k < iterations; ++k)
                 {
                     client.newRequest("localhost", connector.getLocalPort())
-                            .path("/" + i + "_" + j + "_" + k)
-                            .send(result ->
-                            {
-                                if (result.isFailed())
-                                    failures.offer(result);
-                                latch.countDown();
-                            });
-              }
+                        .path("/" + i + "_" + j + "_" + k)
+                        .send(result ->
+                        {
+                            if (result.isFailed())
+                                failures.offer(result);
+                            latch.countDown();
+                        });
+                }
             })));
 
         assertTrue(latch.await(total * 10, TimeUnit.MILLISECONDS));
@@ -370,7 +369,7 @@ public class MaxConcurrentStreamsTest extends AbstractTest
     }
 
     @Test
-    public void testTwoConcurrentStreamsFirstTimesOut() throws Exception
+    public void testTwoStreamsFirstTimesOut() throws Exception
     {
         long timeout = 1000;
         start(1, new EmptyServerHandler()
@@ -386,17 +385,17 @@ public class MaxConcurrentStreamsTest extends AbstractTest
 
         CountDownLatch latch = new CountDownLatch(1);
         client.newRequest("localhost", connector.getLocalPort())
-                .path("/1")
-                .timeout(timeout, TimeUnit.MILLISECONDS)
-                .send(result ->
-                {
-                    if (result.isFailed())
-                        latch.countDown();
-                });
+            .path("/1")
+            .timeout(timeout, TimeUnit.MILLISECONDS)
+            .send(result ->
+            {
+                if (result.isFailed())
+                    latch.countDown();
+            });
 
         ContentResponse response2 = client.newRequest("localhost", connector.getLocalPort())
-                .path("/2")
-                .send();
+            .path("/2")
+            .send();
 
         assertEquals(HttpStatus.OK_200, response2.getStatus());
         assertTrue(latch.await(2 * timeout, TimeUnit.MILLISECONDS));

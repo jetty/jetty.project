@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -27,6 +27,7 @@ import org.eclipse.jetty.websocket.common.events.ParamList;
 
 /**
  * Basic scanner for Annotated Methods
+ *
  * @param <T> The type of metadata
  */
 public abstract class AbstractMethodAnnotationScanner<T>
@@ -76,7 +77,7 @@ public abstract class AbstractMethodAnnotationScanner<T>
 
     protected void assertIsVoidReturn(Method method)
     {
-        assertIsReturn(method,Void.TYPE);
+        assertIsReturn(method, Void.TYPE);
     }
 
     protected void assertUnset(CallableMethod callable, Class<? extends Annotation> annoClass, Method method)
@@ -99,15 +100,15 @@ public abstract class AbstractMethodAnnotationScanner<T>
     protected void assertValidSignature(Method method, Class<? extends Annotation> annoClass, ParamList validParams)
     {
         assertIsPublicNonStatic(method);
-        assertIsReturn(method,Void.TYPE);
+        assertIsReturn(method, Void.TYPE);
 
         boolean valid = false;
 
         // validate parameters
-        Class<?> actual[] = method.getParameterTypes();
+        Class<?>[] actual = method.getParameterTypes();
         for (Class<?>[] params : validParams)
         {
-            if (isSameParameters(actual,params))
+            if (isSameParameters(actual, params))
             {
                 valid = true;
                 break;
@@ -116,7 +117,7 @@ public abstract class AbstractMethodAnnotationScanner<T>
 
         if (!valid)
         {
-            throw InvalidSignatureException.build(method,annoClass,validParams);
+            throw InvalidSignatureException.build(method, annoClass, validParams);
         }
     }
 
@@ -148,13 +149,13 @@ public abstract class AbstractMethodAnnotationScanner<T>
     protected boolean isSignatureMatch(Method method, ParamList validParams)
     {
         assertIsPublicNonStatic(method);
-        assertIsReturn(method,Void.TYPE);
+        assertIsReturn(method, Void.TYPE);
 
         // validate parameters
-        Class<?> actual[] = method.getParameterTypes();
+        Class<?>[] actual = method.getParameterTypes();
         for (Class<?>[] params : validParams)
         {
-            if (isSameParameters(actual,params))
+            if (isSameParameters(actual, params))
             {
                 return true;
             }
@@ -178,14 +179,14 @@ public abstract class AbstractMethodAnnotationScanner<T>
         {
             for (Method method : clazz.getDeclaredMethods())
             {
-                Annotation annotations[] = method.getAnnotations();
+                Annotation[] annotations = method.getAnnotations();
                 if ((annotations == null) || (annotations.length <= 0))
                 {
                     continue; // skip
                 }
                 for (Annotation annotation : annotations)
                 {
-                    onMethodAnnotation(metadata,clazz,method,annotation);
+                    onMethodAnnotation(metadata, clazz, method, annotation);
                 }
             }
 

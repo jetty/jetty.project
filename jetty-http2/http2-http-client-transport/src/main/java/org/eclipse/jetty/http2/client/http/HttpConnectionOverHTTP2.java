@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -35,17 +35,23 @@ import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.SendFailure;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http2.ErrorCode;
+import org.eclipse.jetty.http2.IStream;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Sweeper;
 
 public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.Sweepable
 {
+    private static final Logger LOG = Log.getLogger(HttpConnection.class);
+
     private final Set<HttpChannel> activeChannels = ConcurrentHashMap.newKeySet();
     private final Queue<HttpChannelOverHTTP2> idleChannels = new ConcurrentLinkedQueue<>();
     private final AtomicBoolean closed = new AtomicBoolean();
     private final AtomicInteger sweeps = new AtomicInteger();
     private final Session session;
+    private boolean recycleHttpChannels;
 
     public HttpConnectionOverHTTP2(HttpDestination destination, Session session)
     {
@@ -56,6 +62,16 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
     public Session getSession()
     {
         return session;
+    }
+
+    public boolean isRecycleHttpChannels()
+    {
+        return recycleHttpChannels;
+    }
+
+    public void setRecycleHttpChannels(boolean recycleHttpChannels)
+    {
+        this.recycleHttpChannels = recycleHttpChannels;
     }
 
     @Override
@@ -87,21 +103,30 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
 
     protected void release(HttpChannelOverHTTP2 channel)
     {
-        // Only non-push channels are released.
+        if (LOG.isDebugEnabled())
+            LOG.debug("Released {}", channel);
         if (activeChannels.remove(channel))
         {
-            channel.setStream(null);
             // Recycle only non-failed channels.
             if (channel.isFailed())
                 channel.destroy();
-            else
+            else if (isRecycleHttpChannels())
                 idleChannels.offer(channel);
-            getHttpDestination().release(this);
         }
         else
         {
             channel.destroy();
         }
+    }
+
+    void onStreamClosed(IStream stream, HttpChannelOverHTTP2 channel)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} closed for {}", stream, channel);
+        channel.setStream(null);
+        // Only non-push channels are released.
+        if (stream.isLocal())
+            getHttpDestination().release(this);
     }
 
     @Override
@@ -128,9 +153,9 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
             abort(failure);
 
             session.close(ErrorCode.NO_ERROR.code, failure.getMessage(), Callback.NOOP);
-            
+
             HttpChannel channel = idleChannels.poll();
-            while (channel!=null)
+            while (channel != null)
             {
                 channel.destroy();
                 channel = idleChannels.poll();
@@ -154,7 +179,7 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
         }
         activeChannels.clear();
         HttpChannel channel = idleChannels.poll();
-        while (channel!=null)
+        while (channel != null)
         {
             channel.destroy();
             channel = idleChannels.poll();
@@ -166,18 +191,16 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
     {
         if (!isClosed())
             return false;
-        if (sweeps.incrementAndGet() < 4)
-            return false;
-        return true;
+        return sweeps.incrementAndGet() >= 4;
     }
 
     @Override
     public String toString()
     {
         return String.format("%s@%x(closed=%b)[%s]",
-                getClass().getSimpleName(),
-                hashCode(),
-                isClosed(),
-                session);
+            getClass().getSimpleName(),
+            hashCode(),
+            isClosed(),
+            session);
     }
 }

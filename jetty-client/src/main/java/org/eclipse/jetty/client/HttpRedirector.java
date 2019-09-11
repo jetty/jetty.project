@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -23,6 +23,7 @@ import java.net.URISyntaxException;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -61,10 +62,10 @@ public class HttpRedirector
 {
     private static final Logger LOG = Log.getLogger(HttpRedirector.class);
     private static final String SCHEME_REGEXP = "(^https?)";
-    private static final String AUTHORITY_REGEXP = "([^/\\?#]+)";
+    private static final String AUTHORITY_REGEXP = "([^/?#]+)";
     // The location may be relative so the scheme://authority part may be missing
     private static final String DESTINATION_REGEXP = "(" + SCHEME_REGEXP + "://" + AUTHORITY_REGEXP + ")?";
-    private static final String PATH_REGEXP = "([^\\?#]*)";
+    private static final String PATH_REGEXP = "([^?#]*)";
     private static final String QUERY_REGEXP = "([^#]*)";
     private static final String FRAGMENT_REGEXP = "(.*)";
     private static final Pattern URI_PATTERN = Pattern.compile(DESTINATION_REGEXP + PATH_REGEXP + QUERY_REGEXP + FRAGMENT_REGEXP);
@@ -81,7 +82,7 @@ public class HttpRedirector
 
     /**
      * @param response the response to check for redirects
-     * @return whether the response code is a HTTP redirect code
+     * @return whether the response code is an HTTP redirect code
      */
     public boolean isRedirect(Response response)
     {
@@ -118,9 +119,9 @@ public class HttpRedirector
             public void onComplete(Result result)
             {
                 resultRef.set(new Result(result.getRequest(),
-                        result.getRequestFailure(),
-                        new HttpContentResponse(result.getResponse(), getContent(), getMediaType(), getEncoding()),
-                        result.getResponseFailure()));
+                    result.getRequestFailure(),
+                    new HttpContentResponse(result.getResponse(), getContent(), getMediaType(), getEncoding()),
+                    result.getResponseFailure()));
                 latch.countDown();
             }
         });
@@ -217,7 +218,7 @@ public class HttpRedirector
                 {
                     return new URI(scheme, authority, path, query, fragment);
                 }
-                catch (URISyntaxException xx)
+                catch (URISyntaxException ex)
                 {
                     // Give up
                 }
@@ -292,7 +293,8 @@ public class HttpRedirector
         Integer redirects = (Integer)conversation.getAttribute(ATTRIBUTE);
         if (redirects == null)
             redirects = 0;
-        if (redirects < client.getMaxRedirects())
+        int maxRedirects = client.getMaxRedirects();
+        if (maxRedirects < 0 || redirects < maxRedirects)
         {
             ++redirects;
             conversation.setAttribute(ATTRIBUTE, redirects);
@@ -310,19 +312,17 @@ public class HttpRedirector
         try
         {
             Request redirect = client.copyRequest(httpRequest, location);
+            // Disable the timeout so that only the one from the initial request applies.
+            redirect.timeout(0, TimeUnit.MILLISECONDS);
 
             // Use given method
             redirect.method(method);
 
-            redirect.onRequestBegin(new Request.BeginListener()
+            redirect.onRequestBegin(request ->
             {
-                @Override
-                public void onBegin(Request redirect)
-                {
-                    Throwable cause = httpRequest.getAbortCause();
-                    if (cause != null)
-                        redirect.abort(cause);
-                }
+                Throwable cause = httpRequest.getAbortCause();
+                if (cause != null)
+                    request.abort(cause);
             });
 
             redirect.send(listener);

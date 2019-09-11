@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,12 +20,11 @@ package org.eclipse.jetty.util.ssl;
 
 import java.security.cert.CertificateParsingException;
 import java.security.cert.X509Certificate;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
+import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-
 import javax.naming.InvalidNameException;
 import javax.naming.ldap.LdapName;
 import javax.naming.ldap.Rdn;
@@ -42,38 +41,37 @@ public class X509
     /*
      * @see {@link X509Certificate#getKeyUsage()}
      */
-    private static final int KEY_USAGE__KEY_CERT_SIGN=5;
+    private static final int KEY_USAGE__KEY_CERT_SIGN = 5;
 
     /*
      *
      * @see {@link X509Certificate#getSubjectAlternativeNames()}
      */
-    private static final int SUBJECT_ALTERNATIVE_NAMES__DNS_NAME=2;
+    private static final int SUBJECT_ALTERNATIVE_NAMES__DNS_NAME = 2;
 
     public static boolean isCertSign(X509Certificate x509)
     {
-        boolean[] key_usage = x509.getKeyUsage();
-        if ((key_usage == null) || (key_usage.length <= KEY_USAGE__KEY_CERT_SIGN))
+        boolean[] keyUsage = x509.getKeyUsage();
+        if ((keyUsage == null) || (keyUsage.length <= KEY_USAGE__KEY_CERT_SIGN))
         {
             return false;
         }
-        return key_usage[KEY_USAGE__KEY_CERT_SIGN];
+        return keyUsage[KEY_USAGE__KEY_CERT_SIGN];
     }
 
     private final X509Certificate _x509;
     private final String _alias;
-    private final List<String> _hosts=new ArrayList<>();
-    private final List<String> _wilds=new ArrayList<>();
+    private final Set<String> _hosts = new LinkedHashSet<>();
+    private final Set<String> _wilds = new LinkedHashSet<>();
 
-    public X509(String alias,X509Certificate x509) throws CertificateParsingException, InvalidNameException
+    public X509(String alias, X509Certificate x509) throws CertificateParsingException, InvalidNameException
     {
-        _alias=alias;
+        _alias = alias;
         _x509 = x509;
 
         // Look for alternative name extensions
-        boolean named=false;
         Collection<List<?>> altNames = x509.getSubjectAlternativeNames();
-        if (altNames!=null)
+        if (altNames != null)
         {
             for (List<?> list : altNames)
             {
@@ -81,37 +79,31 @@ public class X509
                 {
                     String cn = list.get(1).toString();
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Certificate SAN alias={} CN={} in {}",alias,cn,this);
-                    if (cn!=null)
-                    {
-                        named=true;
+                        LOG.debug("Certificate SAN alias={} CN={} in {}", alias, cn, this);
+                    if (cn != null)
                         addName(cn);
-                    }
                 }
             }
         }
 
         // If no names found, look up the CN from the subject
-        if (!named)
+        LdapName name = new LdapName(x509.getSubjectX500Principal().getName(X500Principal.RFC2253));
+        for (Rdn rdn : name.getRdns())
         {
-            LdapName name=new LdapName(x509.getSubjectX500Principal().getName(X500Principal.RFC2253));
-            for (Rdn rdn : name.getRdns())
+            if (rdn.getType().equalsIgnoreCase("CN"))
             {
-                if (rdn.getType().equalsIgnoreCase("CN"))
-                {
-                    String cn = rdn.getValue().toString();
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Certificate CN alias={} CN={} in {}",alias,cn,this);
-                    if (cn!=null && cn.contains(".") && !cn.contains(" "))
-                        addName(cn);
-                }
+                String cn = rdn.getValue().toString();
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Certificate CN alias={} CN={} in {}", alias, cn, this);
+                if (cn != null && cn.contains(".") && !cn.contains(" "))
+                    addName(cn);
             }
         }
     }
 
     protected void addName(String cn)
     {
-        cn=StringUtil.asciiToLowerCase(cn);
+        cn = StringUtil.asciiToLowerCase(cn);
         if (cn.startsWith("*."))
             _wilds.add(cn.substring(2));
         else
@@ -130,26 +122,25 @@ public class X509
 
     public Set<String> getHosts()
     {
-        return new HashSet<>(_hosts);
+        return Collections.unmodifiableSet(_hosts);
     }
 
     public Set<String> getWilds()
     {
-        return new HashSet<>(_wilds);
+        return Collections.unmodifiableSet(_wilds);
     }
 
     public boolean matches(String host)
     {
-        host=StringUtil.asciiToLowerCase(host);
+        host = StringUtil.asciiToLowerCase(host);
         if (_hosts.contains(host) || _wilds.contains(host))
             return true;
 
         int dot = host.indexOf('.');
-        if (dot>=0)
+        if (dot >= 0)
         {
-            String domain=host.substring(dot+1);
-            if (_wilds.contains(domain))
-                return true;
+            String domain = host.substring(dot + 1);
+            return _wilds.contains(domain);
         }
         return false;
     }
@@ -158,10 +149,10 @@ public class X509
     public String toString()
     {
         return String.format("%s@%x(%s,h=%s,w=%s)",
-                getClass().getSimpleName(),
-                hashCode(),
-                _alias,
-                _hosts,
-                _wilds);
+            getClass().getSimpleName(),
+            hashCode(),
+            _alias,
+            _hosts,
+            _wilds);
     }
 }

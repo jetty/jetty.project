@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,16 +18,12 @@
 
 package org.eclipse.jetty.servlet;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -48,6 +44,9 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+
 public class ComplianceViolations2616Test
 {
     private static Server server;
@@ -65,10 +64,10 @@ public class ComplianceViolations2616Test
         {
             if (request instanceof HttpServletRequest)
             {
-                List<String> violations = (List<String>) request.getAttribute("org.eclipse.jetty.http.compliance.violations");
+                List<String> violations = (List<String>)request.getAttribute("org.eclipse.jetty.http.compliance.violations");
                 if (violations != null)
                 {
-                    HttpServletResponse httpResponse = (HttpServletResponse) response;
+                    HttpServletResponse httpResponse = (HttpServletResponse)response;
                     int i = 0;
                     for (String violation : violations)
                     {
@@ -147,7 +146,7 @@ public class ComplianceViolations2616Test
 
         String response = connector.getResponse(req1.toString());
         assertThat("Response status", response, containsString("HTTP/1.1 200 OK"));
-        assertThat("Response headers", response, containsString("X-Http-Violation-0: Fields must have a Colon"));   
+        assertThat("Response headers", response, containsString("X-Http-Violation-0: Fields must have a Colon"));
         assertThat("Response body", response, containsString("[Name] = []"));
     }
 
@@ -164,7 +163,7 @@ public class ComplianceViolations2616Test
 
         String response = connector.getResponse(req1.toString());
         assertThat("Response status", response, containsString("HTTP/1.1 200"));
-        assertThat("Response headers", response, containsString("X-Http-Violation-0: Fields must have a Colon"));        
+        assertThat("Response headers", response, containsString("X-Http-Violation-0: Fields must have a Colon"));
         assertThat("Response body", response, containsString("[Name] = []"));
     }
 
@@ -182,8 +181,7 @@ public class ComplianceViolations2616Test
 
         String response = connector.getResponse(req1.toString());
         assertThat("Response status", response, containsString("HTTP/1.1 200"));
-        assertThat("Response headers", response, containsString("X-Http-Violation-0: No line Folding"));        
+        assertThat("Response headers", response, containsString("X-Http-Violation-0: No line Folding"));
         assertThat("Response body", response, containsString("[Name] = [Some Value]"));
-        
     }
 }

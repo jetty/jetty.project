@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.websocket.common.ab;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.log.StacklessLogging;
@@ -31,6 +29,8 @@ import org.eclipse.jetty.websocket.common.test.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.common.test.UnitParser;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 public class TestABCase4
 {
     private WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
@@ -40,7 +40,7 @@ public class TestABCase4
     {
         ByteBuffer expected = ByteBuffer.allocate(32);
 
-        expected.put(new byte[] { (byte)0x8b, 0x00 });
+        expected.put(new byte[]{(byte)0x8b, 0x00});
 
         expected.flip();
 
@@ -59,7 +59,7 @@ public class TestABCase4
     {
         ByteBuffer expected = ByteBuffer.allocate(32);
 
-        expected.put(new byte[] { (byte)0x8c, 0x01, 0x00 });
+        expected.put(new byte[]{(byte)0x8c, 0x01, 0x00});
 
         expected.flip();
 
@@ -78,7 +78,7 @@ public class TestABCase4
     {
         ByteBuffer expected = ByteBuffer.allocate(32);
 
-        expected.put(new byte[] { (byte)0x83, 0x00 });
+        expected.put(new byte[]{(byte)0x83, 0x00});
 
         expected.flip();
 
@@ -97,7 +97,7 @@ public class TestABCase4
     {
         ByteBuffer expected = ByteBuffer.allocate(32);
 
-        expected.put(new byte[] { (byte)0x84, 0x01, 0x00 });
+        expected.put(new byte[]{(byte)0x84, 0x01, 0x00});
 
         expected.flip();
 

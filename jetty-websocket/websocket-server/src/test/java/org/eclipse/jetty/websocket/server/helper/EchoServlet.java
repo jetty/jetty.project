@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -32,11 +32,11 @@ public class EchoServlet extends WebSocketServlet
     public void configure(WebSocketServletFactory factory)
     {
         // Setup some extensions we want to test against
-        factory.getExtensionFactory().register("permessage-compress",PerMessageDeflateExtension.class);
+        factory.getExtensionFactory().register("permessage-compress", PerMessageDeflateExtension.class);
 
         // Setup the desired Socket to use for all incoming upgrade requests
         factory.register(EchoSocket.class);
-        
+
         // Some alternate sizes
         factory.getPolicy().setMaxBinaryMessageSize(2222);
         factory.getPolicy().setMaxTextMessageSize(4444);

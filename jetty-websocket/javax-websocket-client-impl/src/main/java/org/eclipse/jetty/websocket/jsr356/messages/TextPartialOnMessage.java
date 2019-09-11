@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,7 +20,6 @@ package org.eclipse.jetty.websocket.jsr356.messages;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-
 import javax.websocket.OnMessage;
 
 import org.eclipse.jetty.websocket.common.message.MessageAppender;
@@ -50,9 +49,9 @@ public class TextPartialOnMessage implements MessageAppender
         {
             throw new IOException("Cannot append to finished buffer");
         }
-        
+
         String text = utf8Partial.toPartialString(payload);
-        driver.onPartialTextMessage(text,isLast);
+        driver.onPartialTextMessage(text, isLast);
     }
 
     @Override

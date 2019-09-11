@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,11 +18,6 @@
 
 package org.eclipse.jetty.websocket.jsr356.misbehaving;
 
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 import java.io.IOException;
 import java.net.URI;
 import java.util.concurrent.TimeUnit;
@@ -38,6 +33,11 @@ import org.eclipse.jetty.websocket.jsr356.EchoHandler;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class MisbehavingClassTest
 {
@@ -69,7 +69,7 @@ public class MisbehavingClassTest
             host = "localhost";
         }
         int port = connector.getLocalPort();
-        serverUri = new URI(String.format("ws://%s:%d/",host,port));
+        serverUri = new URI(String.format("ws://%s:%d/", host, port));
     }
 
     @AfterAll
@@ -97,10 +97,10 @@ public class MisbehavingClassTest
         {
             // expecting IOException during onOpen - Should have failed .connectToServer()
             IOException e = assertThrows(IOException.class,
-                    () -> container.connectToServer(socket, serverUri));
+                () -> container.connectToServer(socket, serverUri));
             assertThat(e.getCause(), instanceOf(RuntimeException.class));
 
-            assertThat("Close should have occurred", socket.closeLatch.await(10,TimeUnit.SECONDS), is(true));
+            assertThat("Close should have occurred", socket.closeLatch.await(10, TimeUnit.SECONDS), is(true));
             assertThat("Error", socket.errors.pop(), instanceOf(RuntimeException.class));
         }
     }
@@ -116,11 +116,11 @@ public class MisbehavingClassTest
         {
             // expecting IOException during onOpen - Should have failed .connectToServer()
             IOException e = assertThrows(IOException.class,
-                    () -> container.connectToServer(socket, serverUri));
+                () -> container.connectToServer(socket, serverUri));
             assertThat(e.getCause(), instanceOf(RuntimeException.class));
-            
-            assertThat("Close should have occurred", socket.closeLatch.await(10,TimeUnit.SECONDS), is(true));
-            assertThat("Error",socket.errors.pop(), instanceOf(RuntimeException.class));
+
+            assertThat("Close should have occurred", socket.closeLatch.await(10, TimeUnit.SECONDS), is(true));
+            assertThat("Error", socket.errors.pop(), instanceOf(RuntimeException.class));
         }
     }
 }

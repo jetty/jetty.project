@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty.osgi</groupId>
     <artifactId>jetty-osgi-project</artifactId>
-    <version>9.4.13-SNAPSHOT</version>
+    <version>9.4.21-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>test-jetty-osgi-server</artifactId>
@@ -15,7 +15,7 @@
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-server</artifactId>
+      <artifactId>jetty-webapp</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
@@ -40,7 +40,7 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-deploy-plugin</artifactId>
         <configuration>
-        <!-- DO NOT DEPLOY (or Release) -->
+          <!-- DO NOT DEPLOY (or Release) -->
           <skip>true</skip>
         </configuration>
       </plugin>

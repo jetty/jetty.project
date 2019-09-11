@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,13 +18,8 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-
 import java.net.URI;
 import java.util.concurrent.TimeUnit;
-
 import javax.websocket.ContainerProvider;
 import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
@@ -38,6 +33,10 @@ import org.eclipse.jetty.websocket.jsr356.samples.EchoStringEndpoint;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
 
 public class EndpointEchoTest
 {
@@ -69,7 +68,7 @@ public class EndpointEchoTest
             host = "localhost";
         }
         int port = connector.getLocalPort();
-        serverUri = new URI(String.format("ws://%s:%d/",host,port));
+        serverUri = new URI(String.format("ws://%s:%d/", host, port));
     }
 
     @AfterAll
@@ -91,11 +90,11 @@ public class EndpointEchoTest
         WebSocketContainer container = ContainerProvider.getWebSocketContainer();
         server.addBean(container); // allow to shutdown with server
         EndpointEchoClient echoer = new EndpointEchoClient();
-        assertThat(echoer,instanceOf(javax.websocket.Endpoint.class));
+        assertThat(echoer, instanceOf(javax.websocket.Endpoint.class));
         // Issue connect using instance of class that extends Endpoint
-        Session session = container.connectToServer(echoer,serverUri);
+        Session session = container.connectToServer(echoer, serverUri);
         if (LOG.isDebugEnabled())
-            LOG.debug("Client Connected: {}",session);
+            LOG.debug("Client Connected: {}", session);
         session.getBasicRemote().sendText("Echo");
         if (LOG.isDebugEnabled())
             LOG.debug("Client Message Sent");
@@ -109,13 +108,13 @@ public class EndpointEchoTest
         WebSocketContainer container = ContainerProvider.getWebSocketContainer();
         server.addBean(container); // allow to shutdown with server
         // Issue connect using class reference (class extends Endpoint)
-        Session session = container.connectToServer(EndpointEchoClient.class,serverUri);
+        Session session = container.connectToServer(EndpointEchoClient.class, serverUri);
         if (LOG.isDebugEnabled())
-            LOG.debug("Client Connected: {}",session);
+            LOG.debug("Client Connected: {}", session);
         session.getBasicRemote().sendText("Echo");
         if (LOG.isDebugEnabled())
             LOG.debug("Client Message Sent");
-        EndpointEchoClient client = (EndpointEchoClient) session.getUserProperties().get("endpoint");
+        EndpointEchoClient client = (EndpointEchoClient)session.getUserProperties().get("endpoint");
         String echoed = client.textCapture.messages.poll(1, TimeUnit.SECONDS);
         assertThat("Echoed message", echoed, is("Echo"));
     }
@@ -126,11 +125,11 @@ public class EndpointEchoTest
         WebSocketContainer container = ContainerProvider.getWebSocketContainer();
         server.addBean(container); // allow to shutdown with server
         EchoStringEndpoint echoer = new EchoStringEndpoint();
-        assertThat(echoer,instanceOf(javax.websocket.Endpoint.class));
+        assertThat(echoer, instanceOf(javax.websocket.Endpoint.class));
         // Issue connect using instance of class that extends abstract that extends Endpoint
-        Session session = container.connectToServer(echoer,serverUri);
+        Session session = container.connectToServer(echoer, serverUri);
         if (LOG.isDebugEnabled())
-            LOG.debug("Client Connected: {}",session);
+            LOG.debug("Client Connected: {}", session);
         session.getBasicRemote().sendText("Echo");
         if (LOG.isDebugEnabled())
             LOG.debug("Client Message Sent");
@@ -144,13 +143,13 @@ public class EndpointEchoTest
         WebSocketContainer container = ContainerProvider.getWebSocketContainer();
         server.addBean(container); // allow to shutdown with server
         // Issue connect using class reference (class that extends abstract that extends Endpoint)
-        Session session = container.connectToServer(EchoStringEndpoint.class,serverUri);
+        Session session = container.connectToServer(EchoStringEndpoint.class, serverUri);
         if (LOG.isDebugEnabled())
-            LOG.debug("Client Connected: {}",session);
+            LOG.debug("Client Connected: {}", session);
         session.getBasicRemote().sendText("Echo");
         if (LOG.isDebugEnabled())
             LOG.debug("Client Message Sent");
-        EchoStringEndpoint client = (EchoStringEndpoint) session.getUserProperties().get("endpoint");
+        EchoStringEndpoint client = (EchoStringEndpoint)session.getUserProperties().get("endpoint");
         String echoed = client.messages.poll(1, TimeUnit.SECONDS);
         assertThat("Echoed message", echoed, is("Echo"));
     }

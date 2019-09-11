@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.websocket.client;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
@@ -31,6 +29,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 public class WebSocketClientBadUriTest
 {
     public static Stream<Arguments> data()
@@ -38,16 +38,16 @@ public class WebSocketClientBadUriTest
         List<String[]> data = new ArrayList<>();
 
         // - not using right scheme
-        data.add(new String[] { "http://localhost" });
-        data.add(new String[] { "https://localhost" });
-        data.add(new String[] { "file://localhost" });
-        data.add(new String[] { "content://localhost" });
-        data.add(new String[] { "jar://localhost" });
+        data.add(new String[]{"http://localhost"});
+        data.add(new String[]{"https://localhost"});
+        data.add(new String[]{"file://localhost"});
+        data.add(new String[]{"content://localhost"});
+        data.add(new String[]{"jar://localhost"});
         // - non-absolute uri
-        data.add(new String[] { "/mysocket" });
-        data.add(new String[] { "/sockets/echo" });
-        data.add(new String[] { "#echo" });
-        data.add(new String[] { "localhost:8080/echo" });
+        data.add(new String[]{"/mysocket"});
+        data.add(new String[]{"/sockets/echo"});
+        data.add(new String[]{"#echo"});
+        data.add(new String[]{"localhost:8080/echo"});
 
         return data.stream().map(Arguments::of);
     }
@@ -74,7 +74,7 @@ public class WebSocketClientBadUriTest
         JettyTrackingSocket wsocket = new JettyTrackingSocket();
         URI uri = URI.create(uriStr);
 
-        assertThrows(IllegalArgumentException.class, ()-> client.connect(wsocket, uri));
+        assertThrows(IllegalArgumentException.class, () -> client.connect(wsocket, uri));
         wsocket.assertNotOpened();
     }
 }

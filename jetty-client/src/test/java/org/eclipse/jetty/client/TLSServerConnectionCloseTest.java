@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,15 +18,12 @@
 
 package org.eclipse.jetty.client;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.TimeUnit;
-
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
 
@@ -42,14 +39,16 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 public class TLSServerConnectionCloseTest
 {
     private HttpClient client;
 
     private void startClient() throws Exception
     {
-        SslContextFactory sslContextFactory = new SslContextFactory();
-        sslContextFactory.setEndpointIdentificationAlgorithm("");
+        SslContextFactory sslContextFactory = new SslContextFactory.Client();
+        sslContextFactory.setEndpointIdentificationAlgorithm(null);
         sslContextFactory.setKeyStorePath("src/test/resources/keystore.jks");
         sslContextFactory.setKeyStorePassword("storepwd");
 
@@ -111,22 +110,22 @@ public class TLSServerConnectionCloseTest
                 consumeRequest(input);
 
                 OutputStream output = sslSocket.getOutputStream();
-                String serverResponse = "" +
-                        "HTTP/1.1 200 OK\r\n" +
+                String serverResponse =
+                    "HTTP/1.1 200 OK\r\n" +
                         "Connection: close\r\n";
                 if (chunked)
                 {
-                    serverResponse += "" +
-                            "Transfer-Encoding: chunked\r\n" +
+                    serverResponse +=
+                        "Transfer-Encoding: chunked\r\n" +
                             "\r\n";
                     for (int i = 0; i < 2; ++i)
                     {
                         serverResponse +=
-                                Integer.toHexString(content.length()) + "\r\n" +
-                                        content + "\r\n";
+                            Integer.toHexString(content.length()) + "\r\n" +
+                                content + "\r\n";
                     }
-                    serverResponse += "" +
-                            "0\r\n" +
+                    serverResponse +=
+                        "0\r\n" +
                             "\r\n";
                 }
                 else

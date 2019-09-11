@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -39,19 +39,19 @@ public class BasicEchoEndpointConfigContextListener implements ServletContextLis
     public void contextInitialized(ServletContextEvent sce)
     {
         ServerContainer container = (ServerContainer)sce.getServletContext().getAttribute(ServerContainer.class.getName());
-        if (container==null)
-            throw new IllegalStateException("No Websocket ServerContainer in "+sce.getServletContext());
-        
+        if (container == null)
+            throw new IllegalStateException("No Websocket ServerContainer in " + sce.getServletContext());
+
         // Build up a configuration with a specific path
         String path = "/echo";
-        ServerEndpointConfig.Builder builder = ServerEndpointConfig.Builder.create(BasicEchoEndpoint.class,path);
+        ServerEndpointConfig.Builder builder = ServerEndpointConfig.Builder.create(BasicEchoEndpoint.class, path);
         try
         {
             container.addEndpoint(builder.build());
         }
         catch (DeploymentException e)
         {
-            throw new RuntimeException("Unable to add endpoint via config file",e);
+            throw new RuntimeException("Unable to add endpoint via config file", e);
         }
     }
 }

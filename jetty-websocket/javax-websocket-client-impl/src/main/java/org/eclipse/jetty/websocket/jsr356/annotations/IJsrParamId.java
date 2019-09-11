@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -29,15 +29,11 @@ public interface IJsrParamId
      * Process the potential parameter.
      * <p>
      * If known to be a valid parameter, bind a role to it.
-     * 
-     * @param param
-     *            the parameter being processed
-     * @param callable
-     *            the callable this param belongs to (used to obtain extra state about the callable that might impact decision making)
-     * 
+     *
+     * @param param the parameter being processed
+     * @param callable the callable this param belongs to (used to obtain extra state about the callable that might impact decision making)
      * @return true if processed, false if not processed
-     * @throws InvalidSignatureException
-     *             if a violation of the signature rules occurred
+     * @throws InvalidSignatureException if a violation of the signature rules occurred
      */
     boolean process(Param param, JsrCallable callable) throws InvalidSignatureException;
 }

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.common.test;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -44,7 +45,6 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -64,6 +64,7 @@ public class BlockheadClientRequest extends HttpRequest implements Response.Comp
         super(client, new HttpConversation(), uri);
         this.client = client;
         this.fut = new CompletableFuture<>();
+        getConversation().setAttribute(HttpConnectionUpgrader.class.getName(), this);
     }
 
     public void setInitialBytes(ByteBuffer initialBytes)
@@ -75,7 +76,7 @@ public class BlockheadClientRequest extends HttpRequest implements Response.Comp
     {
         byte[] bytes = new byte[16];
         ThreadLocalRandom.current().nextBytes(bytes);
-        return new String(B64Code.encode(bytes));
+        return Base64.getEncoder().encodeToString(bytes);
     }
 
     private void initWebSocketHeaders()
@@ -219,12 +220,12 @@ public class BlockheadClientRequest extends HttpRequest implements Response.Comp
         extensionStack.negotiate(extensions);
 
         BlockheadClientConnection connection = new BlockheadClientConnection(
-                client.getPolicy(),
-                client.getBufferPool(),
-                extensionStack,
-                fut,
-                endp,
-                client.getExecutor());
+            client.getPolicy(),
+            client.getBufferPool(),
+            extensionStack,
+            fut,
+            endp,
+            client.getExecutor());
 
         endp.setIdleTimeout(client.getIdleTimeout());
 

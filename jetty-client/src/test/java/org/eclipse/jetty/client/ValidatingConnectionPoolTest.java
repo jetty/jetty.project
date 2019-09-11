@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,19 +18,15 @@
 
 package org.eclipse.jetty.client;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
@@ -40,16 +36,18 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 public class ValidatingConnectionPoolTest extends AbstractHttpClientServerTest
 {
     @Override
-    protected void startClient(final Scenario scenario) throws Exception
+    public HttpClient newHttpClient(Scenario scenario, HttpClientTransport transport)
     {
         long timeout = 1000;
-        HttpClientTransportOverHTTP transport = new HttpClientTransportOverHTTP(1);
         transport.setConnectionPoolFactory(destination ->
-                new ValidatingConnectionPool(destination, destination.getHttpClient().getMaxConnectionsPerDestination(), destination, destination.getHttpClient().getScheduler(), timeout));
-        startClient(scenario, transport);
+            new ValidatingConnectionPool(destination, destination.getHttpClient().getMaxConnectionsPerDestination(), destination, destination.getHttpClient().getScheduler(), timeout));
+
+        return super.newHttpClient(scenario, transport);
     }
 
     @ParameterizedTest
@@ -61,14 +59,14 @@ public class ValidatingConnectionPoolTest extends AbstractHttpClientServerTest
         client.setMaxConnectionsPerDestination(1);
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .send();
+            .scheme(scenario.getScheme())
+            .send();
         assertEquals(200, response.getStatus());
 
         // The second request should be sent after the validating timeout.
         response = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .send();
+            .scheme(scenario.getScheme())
+            .send();
         assertEquals(200, response.getStatus());
     }
 
@@ -100,9 +98,9 @@ public class ValidatingConnectionPoolTest extends AbstractHttpClientServerTest
         });
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .path("/redirect")
-                .send();
+            .scheme(scenario.getScheme())
+            .path("/redirect")
+            .send();
         assertEquals(200, response.getStatus());
     }
 
@@ -148,25 +146,25 @@ public class ValidatingConnectionPoolTest extends AbstractHttpClientServerTest
 
         final CountDownLatch latch = new CountDownLatch(1);
         Request request1 = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .path("/one")
-                .onRequestBegin(r ->
+            .scheme(scenario.getScheme())
+            .path("/one")
+            .onRequestBegin(r ->
+            {
+                try
                 {
-                    try
-                    {
-                        latch.await();
-                    }
-                    catch (InterruptedException x)
-                    {
-                        r.abort(x);
-                    }
-                });
+                    latch.await();
+                }
+                catch (InterruptedException x)
+                {
+                    r.abort(x);
+                }
+            });
         FutureResponseListener listener1 = new FutureResponseListener(request1);
         request1.send(listener1);
 
         Request request2 = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .path("/two");
+            .scheme(scenario.getScheme())
+            .path("/two");
         FutureResponseListener listener2 = new FutureResponseListener(request2);
         request2.send(listener2);
 

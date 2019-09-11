@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.util.log;
 
-
-
 /**
  * Slf4jLog Logger
  */
@@ -35,8 +33,8 @@ public class Slf4jLog extends AbstractLogger
     public Slf4jLog(String name)
     {
         //NOTE: if only an slf4j-api jar is on the classpath, slf4j will use a NOPLogger
-        org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger( name );
-        
+        org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(name);
+
         // Fix LocationAwareLogger use to indicate FQCN of this class - 
         // https://bugs.eclipse.org/bugs/show_bug.cgi?id=276670
         if (logger instanceof org.slf4j.spi.LocationAwareLogger)
@@ -96,7 +94,7 @@ public class Slf4jLog extends AbstractLogger
     {
         _logger.debug(msg, args);
     }
-    
+
     @Override
     public void debug(String msg, long arg)
     {
@@ -125,7 +123,7 @@ public class Slf4jLog extends AbstractLogger
     @Override
     public void setDebugEnabled(boolean enabled)
     {
-        warn("setDebugEnabled not implemented",null,null);
+        warn("setDebugEnabled not implemented", null, null);
     }
 
     /**

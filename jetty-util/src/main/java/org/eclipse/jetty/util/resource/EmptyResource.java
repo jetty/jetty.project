@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -28,12 +28,12 @@ import java.nio.channels.ReadableByteChannel;
 /**
  * EmptyResource
  *
- * Represents a resource that does does not refer to any file, url, jar etc. 
+ * Represents a resource that does does not refer to any file, url, jar etc.
  */
 public class EmptyResource extends Resource
 {
     public static final Resource INSTANCE = new EmptyResource();
-    
+
     private EmptyResource()
     {
     }
@@ -122,9 +122,8 @@ public class EmptyResource extends Resource
     }
 
     @Override
-    public Resource addPath(String path) throws IOException, MalformedURLException
+    public Resource addPath(String path) throws IOException
     {
         return null;
     }
-
 }

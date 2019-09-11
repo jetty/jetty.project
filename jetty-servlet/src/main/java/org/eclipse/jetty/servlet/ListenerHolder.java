@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -16,35 +16,39 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.servlet;
 
 import java.util.EventListener;
+import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
+
+import org.eclipse.jetty.server.handler.ContextHandler;
 
 /**
  * ListenerHolder
  *
- * Specialization of AbstractHolder for servlet listeners. This
+ * Specialization of BaseHolder for servlet listeners. This
  * allows us to record where the listener originated - web.xml,
  * annotation, api etc.
  */
 public class ListenerHolder extends BaseHolder<EventListener>
 {
     private EventListener _listener;
-    
+
+    public ListenerHolder()
+    {
+        this(Source.EMBEDDED);
+    }
 
     public ListenerHolder(Source source)
     {
         super(source);
     }
-   
-    
-    public void setListener(EventListener listener)
+
+    public ListenerHolder(Class<? extends EventListener> listenerClass)
     {
-        _listener = listener;
-        setClassName(listener.getClass().getName());
-        setHeldClass(listener.getClass());
-        _extInstance=true;
+        super(Source.EMBEDDED);
+        setHeldClass(listenerClass);
     }
 
     public EventListener getListener()
@@ -52,23 +56,65 @@ public class ListenerHolder extends BaseHolder<EventListener>
         return _listener;
     }
 
+    /**
+     * Set an explicit instance. In this case,
+     * just like ServletHolder and FilterHolder,
+     * the listener will not be introspected for
+     * annotations like Resource etc.
+     */
+    public void setListener(EventListener listener)
+    {
+        _listener = listener;
+        _extInstance = true;
+        setHeldClass(_listener.getClass());
+    }
 
     @Override
     public void doStart() throws Exception
     {
-        //Listeners always have an instance eagerly created, it cannot be deferred to the doStart method
-        if (_listener == null)
-            throw new IllegalStateException("No listener instance");
-        
         super.doStart();
+        if (!java.util.EventListener.class.isAssignableFrom(_class))
+        {
+            String msg = _class + " is not a java.util.EventListener";
+            super.stop();
+            throw new IllegalStateException(msg);
+        }
+        
+        ContextHandler contextHandler = ContextHandler.getCurrentContext().getContextHandler();
+        if (_listener == null)
+        {
+            //create an instance of the listener and decorate it
+            try
+            {
+                ServletContext scontext = contextHandler.getServletContext();
+                _listener = (scontext instanceof ServletContextHandler.Context)
+                    ? scontext.createListener(getHeldClass())
+                    : getHeldClass().getDeclaredConstructor().newInstance();
+            }
+            catch (ServletException ex)
+            {
+                Throwable cause = ex.getRootCause();
+                if (cause instanceof InstantiationException)
+                    throw (InstantiationException)cause;
+                if (cause instanceof IllegalAccessException)
+                    throw (IllegalAccessException)cause;
+                throw ex;
+            }
+        }
+        contextHandler.addEventListener(_listener);
     }
 
+    @Override
+    public void doStop() throws Exception
+    {
+        super.doStop();
+        if (!_extInstance)
+            _listener = null;
+    }
 
     @Override
     public String toString()
     {
-        return super.toString()+(_listener == null?"":": "+getClassName());
+        return super.toString() + ": " + getClassName();
     }
-    
-    
 }

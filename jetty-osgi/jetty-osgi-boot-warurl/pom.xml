@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty.osgi</groupId>
     <artifactId>jetty-osgi-project</artifactId>
-    <version>9.4.13-SNAPSHOT</version>
+    <version>9.4.21-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <modelVersion>4.0.0</modelVersion>
@@ -27,15 +27,15 @@
   <build>
     <plugins>
       <plugin>
-          <groupId>org.apache.felix</groupId>
-          <artifactId>maven-bundle-plugin</artifactId>
-          <extensions>true</extensions>
-          <configuration>
-              <instructions>
-                  <Bundle-Name>RFC66 War URL</Bundle-Name>
-                  <Bundle-Activator>org.eclipse.jetty.osgi.boot.warurl.WarUrlActivator</Bundle-Activator>
-              </instructions>
-          </configuration>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>maven-bundle-plugin</artifactId>
+        <extensions>true</extensions>
+        <configuration>
+          <instructions>
+            <Bundle-Name>RFC66 War URL</Bundle-Name>
+            <Bundle-Activator>org.eclipse.jetty.osgi.boot.warurl.WarUrlActivator</Bundle-Activator>
+          </instructions>
+        </configuration>
       </plugin>
       <plugin>
         <groupId>org.codehaus.mojo</groupId>

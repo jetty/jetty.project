@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.test.webapp;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
@@ -36,8 +34,9 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.webapp.WebAppContext;
-
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class HTTP2FromWebAppIT
 {
@@ -46,7 +45,7 @@ public class HTTP2FromWebAppIT
     {
         Server server = new Server();
 
-        SslContextFactory serverTLS = new SslContextFactory();
+        SslContextFactory serverTLS = new SslContextFactory.Server();
         serverTLS.setKeyStorePath("src/test/resources/keystore.jks");
         serverTLS.setKeyStorePassword("storepwd");
         serverTLS.setCipherComparator(new HTTP2Cipher.CipherComparator());
@@ -71,17 +70,17 @@ public class HTTP2FromWebAppIT
 
         try
         {
-            SslContextFactory clientTLS = new SslContextFactory(true);
+            SslContextFactory clientTLS = new SslContextFactory.Client(true);
             HttpClient client = new HttpClient(clientTLS);
             client.start();
 
             try
             {
                 ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                        .scheme(HttpScheme.HTTPS.asString())
-                        .path(contextPath + "/h1")
-                        .timeout(5, TimeUnit.SECONDS)
-                        .send();
+                    .scheme(HttpScheme.HTTPS.asString())
+                    .path(contextPath + "/h1")
+                    .timeout(5, TimeUnit.SECONDS)
+                    .send();
 
                 assertEquals("ok", response.getContentAsString());
             }

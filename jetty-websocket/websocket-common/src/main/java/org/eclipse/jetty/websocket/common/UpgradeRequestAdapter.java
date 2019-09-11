@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -123,7 +123,7 @@ public class UpgradeRequestAdapter implements UpgradeRequest
             {
                 ret.append(", ");
             }
-            QuoteUtil.quoteIfNeeded(ret,value,QuoteUtil.ABNF_REQUIRED_QUOTING);
+            QuoteUtil.quoteIfNeeded(ret, value, QuoteUtil.ABNF_REQUIRED_QUOTING);
             needsDelim = true;
         }
         return ret.toString();
@@ -190,7 +190,7 @@ public class UpgradeRequestAdapter implements UpgradeRequest
 
     /**
      * Returns a map of the query parameters of the request.
-     * 
+     *
      * @return a unmodifiable map of query parameters of the request.
      */
     @Override
@@ -226,7 +226,7 @@ public class UpgradeRequestAdapter implements UpgradeRequest
      * Access the Servlet HTTP Session (if present)
      * <p>
      * Note: Never present on a Client UpgradeRequest.
-     * 
+     *
      * @return the Servlet HTTPSession on server side UpgradeRequests
      */
     @Override
@@ -245,7 +245,7 @@ public class UpgradeRequestAdapter implements UpgradeRequest
      * Get the User Principal for this request.
      * <p>
      * Only applicable when using UpgradeRequest from server side.
-     * 
+     *
      * @return the user principal
      */
     @Override
@@ -289,7 +289,7 @@ public class UpgradeRequestAdapter implements UpgradeRequest
             this.cookies.addAll(cookies);
         }
     }
-    
+
     @Override
     public void setExtensions(List<ExtensionConfig> configs)
     {
@@ -303,7 +303,7 @@ public class UpgradeRequestAdapter implements UpgradeRequest
     @Override
     public void setHeader(String name, List<String> values)
     {
-        headers.put(name,values);
+        headers.put(name, values);
     }
 
     @Override
@@ -311,7 +311,7 @@ public class UpgradeRequestAdapter implements UpgradeRequest
     {
         List<String> values = new ArrayList<>();
         values.add(value);
-        setHeader(name,values);
+        setHeader(name, values);
     }
 
     @Override
@@ -323,7 +323,7 @@ public class UpgradeRequestAdapter implements UpgradeRequest
         {
             String name = entry.getKey();
             List<String> values = entry.getValue();
-            setHeader(name,values);
+            setHeader(name, values);
         }
     }
 
@@ -384,9 +384,8 @@ public class UpgradeRequestAdapter implements UpgradeRequest
 
     /**
      * Set Sub Protocol request list.
-     * 
-     * @param protocols
-     *            the sub protocols desired
+     *
+     * @param protocols the sub protocols desired
      */
     @Override
     public void setSubProtocols(String... protocols)

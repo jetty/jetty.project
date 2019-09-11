@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -29,12 +29,14 @@ import org.eclipse.jetty.websocket.jsr356.endpoints.TrackingSocket;
 public class BasicOpenCloseSocket extends TrackingSocket
 {
     @OnOpen
-    public void onOpen() {
+    public void onOpen()
+    {
         openLatch.countDown();
     }
-    
+
     @OnClose
-    public void onClose(CloseReason close) {
+    public void onClose(CloseReason close)
+    {
         this.closeReason = close;
         closeLatch.countDown();
     }

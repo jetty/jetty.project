@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.websocket.common.scopes;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -25,11 +28,13 @@ import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.DeprecationWarning;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.common.WebSocketSession;
+import org.eclipse.jetty.websocket.common.WebSocketSessionListener;
 
 public class SimpleContainerScope extends ContainerLifeCycle implements WebSocketContainerScope
 {
@@ -37,12 +42,13 @@ public class SimpleContainerScope extends ContainerLifeCycle implements WebSocke
     private final DecoratedObjectFactory objectFactory;
     private final WebSocketPolicy policy;
     private final Executor executor;
+    private final Logger logger;
     private SslContextFactory sslContextFactory;
+    private List<WebSocketSessionListener> sessionListeners = new ArrayList<>();
 
     public SimpleContainerScope(WebSocketPolicy policy)
     {
-        this(policy, new MappedByteBufferPool(), new DecoratedObjectFactory());
-        this.sslContextFactory = new SslContextFactory();
+        this(policy, new MappedByteBufferPool());
     }
 
     public SimpleContainerScope(WebSocketPolicy policy, ByteBufferPool bufferPool)
@@ -52,9 +58,9 @@ public class SimpleContainerScope extends ContainerLifeCycle implements WebSocke
 
     public SimpleContainerScope(WebSocketPolicy policy, ByteBufferPool bufferPool, DecoratedObjectFactory objectFactory)
     {
-        this(policy, bufferPool, (Executor) null, objectFactory);
+        this(policy, bufferPool, null, objectFactory);
     }
-    
+
     public SimpleContainerScope(WebSocketPolicy policy, ByteBufferPool bufferPool, Executor executor, DecoratedObjectFactory objectFactory)
     {
         this(policy, bufferPool, executor, null, objectFactory);
@@ -62,9 +68,10 @@ public class SimpleContainerScope extends ContainerLifeCycle implements WebSocke
 
     public SimpleContainerScope(WebSocketPolicy policy, ByteBufferPool bufferPool, Executor executor, SslContextFactory ssl, DecoratedObjectFactory objectFactory)
     {
+        this.logger = Log.getLogger(this.getClass());
         this.policy = policy;
         this.bufferPool = bufferPool;
-        
+
         if (objectFactory == null)
         {
             this.objectFactory = new DecoratedObjectFactory();
@@ -75,15 +82,18 @@ public class SimpleContainerScope extends ContainerLifeCycle implements WebSocke
             this.objectFactory = objectFactory;
         }
 
-        if(ssl == null)
+        if (ssl == null)
         {
-            this.sslContextFactory = new SslContextFactory();
+            if (policy.getBehavior() == WebSocketBehavior.CLIENT)
+                this.sslContextFactory = new SslContextFactory.Client();
+            else if (policy.getBehavior() == WebSocketBehavior.SERVER)
+                this.sslContextFactory = new SslContextFactory.Server();
         }
         else
         {
             this.sslContextFactory = ssl;
         }
-        
+
         if (executor == null)
         {
             QueuedThreadPool threadPool = new QueuedThreadPool();
@@ -141,16 +151,22 @@ public class SimpleContainerScope extends ContainerLifeCycle implements WebSocke
     {
         this.sslContextFactory = sslContextFactory;
     }
-    
+
     @Override
-    public void onSessionOpened(WebSocketSession session)
+    public void addSessionListener(WebSocketSessionListener listener)
     {
-        /* do nothing */
+        this.sessionListeners.add(listener);
     }
 
     @Override
-    public void onSessionClosed(WebSocketSession session)
+    public void removeSessionListener(WebSocketSessionListener listener)
     {
-        /* do nothing */
+        this.sessionListeners.remove(listener);
+    }
+
+    @Override
+    public Collection<WebSocketSessionListener> getSessionListeners()
+    {
+        return sessionListeners;
     }
 }

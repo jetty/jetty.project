@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -21,7 +21,6 @@ package org.eclipse.jetty.websocket.jsr356.annotations;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.Map;
-
 import javax.websocket.DecodeException;
 import javax.websocket.Decoder;
 
@@ -41,15 +40,15 @@ public abstract class JsrCallable extends CallableMethod
 
     public JsrCallable(Class<?> pojo, Method method)
     {
-        super(pojo,method);
+        super(pojo, method);
 
-        Class<?> ptypes[] = method.getParameterTypes();
-        Annotation pannos[][] = method.getParameterAnnotations();
+        Class<?>[] ptypes = method.getParameterTypes();
+        Annotation[][] pannos = method.getParameterAnnotations();
         int len = ptypes.length;
         params = new Param[len];
         for (int i = 0; i < len; i++)
         {
-            params[i] = new Param(i,ptypes[i],pannos[i]);
+            params[i] = new Param(i, ptypes[i], pannos[i]);
         }
 
         args = new Object[len];
@@ -57,15 +56,16 @@ public abstract class JsrCallable extends CallableMethod
 
     /**
      * Copy Constructor
-     * @param copy the JsrCallable to copy from 
+     *
+     * @param copy the JsrCallable to copy from
      */
     public JsrCallable(JsrCallable copy)
     {
-        this(copy.getPojo(),copy.getMethod());
+        this(copy.getPojo(), copy.getMethod());
         this.idxSession = copy.idxSession;
         this.idxConfig = copy.idxConfig;
-        System.arraycopy(copy.params,0,this.params,0,params.length);
-        System.arraycopy(copy.args,0,this.args,0,args.length);
+        System.arraycopy(copy.params, 0, this.params, 0, params.length);
+        System.arraycopy(copy.args, 0, this.args, 0, args.length);
     }
 
     protected void assertRoleRequired(int index, String description)
@@ -75,16 +75,15 @@ public abstract class JsrCallable extends CallableMethod
             StringBuilder err = new StringBuilder();
             err.append("Unable to find parameter with role [");
             err.append(description).append("] in method: ");
-            err.append(ReflectUtils.toString(pojo,method));
+            err.append(ReflectUtils.toString(pojo, method));
             throw new InvalidSignatureException(err.toString());
         }
     }
 
     /**
      * Search the list of parameters for first one matching the role specified.
-     * 
-     * @param role
-     *            the role to look for
+     *
+     * @param role the role to look for
      * @return the index for the role specified (or -1 if not found)
      */
     protected int findIndexForRole(Role role)
@@ -99,9 +98,8 @@ public abstract class JsrCallable extends CallableMethod
 
     /**
      * Find first param for specified role.
-     * 
-     * @param role
-     *            the role specified
+     *
+     * @param role the role specified
      * @return the param (or null if not found)
      */
     protected Param findParamForRole(Role role)
@@ -160,7 +158,7 @@ public abstract class JsrCallable extends CallableMethod
                         }
                         catch (DecodeException e)
                         {
-                            session.notifyError(e);
+                            session.close(e);
                         }
                     }
                     else
@@ -174,6 +172,7 @@ public abstract class JsrCallable extends CallableMethod
 
     /**
      * The Type of Class a {@link Decoder} should be created to produce.
+     *
      * @param decodingType the type of class a Decoder should be created to produce
      */
     public abstract void setDecodingType(Class<?> decodingType);

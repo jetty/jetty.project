@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.websocket.client;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -34,9 +32,10 @@ import org.eclipse.jetty.websocket.common.test.BlockheadConnection;
 import org.eclipse.jetty.websocket.common.test.BlockheadServer;
 import org.eclipse.jetty.websocket.common.test.Timeouts;
 import org.junit.jupiter.api.AfterAll;
-
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TomcatServerQuirksTest
 {
@@ -86,7 +85,7 @@ public class TomcatServerQuirksTest
      * <li><a href="https://bugs.eclipse.org/bugs/show_bug.cgi?id=393075">Eclipse Jetty Bug #393075</a></li>
      * <li><a href="https://issues.apache.org/bugzilla/show_bug.cgi?id=54067">Apache Tomcat Bug #54067</a></li>
      * </ul>
-     * 
+     *
      * @throws Exception on test failure
      */
     @Test
@@ -94,7 +93,8 @@ public class TomcatServerQuirksTest
     {
         WebSocketClient client = new WebSocketClient();
 
-        server.setRequestHandling((req, resp) -> {
+        server.setRequestHandling((req, resp) ->
+        {
             // Add the extra problematic header that triggers bug found in jetty-io
             resp.setHeader("Transfer-Encoding", "chunked");
             return false;
@@ -115,28 +115,28 @@ public class TomcatServerQuirksTest
 
             // Open connection
             URI wsURI = server.getWsUri();
-            client.connect(websocket,wsURI);
+            client.connect(websocket, wsURI);
 
             // Wait for proper upgrade
-            assertTrue(websocket.openLatch.await(1,TimeUnit.SECONDS), "Timed out waiting for Client side WebSocket open event");
+            assertTrue(websocket.openLatch.await(1, TimeUnit.SECONDS), "Timed out waiting for Client side WebSocket open event");
 
             try (BlockheadConnection serverConn = serverConnFut.get(Timeouts.CONNECT, Timeouts.CONNECT_UNIT))
             {
                 // Have server write frame.
-                byte payload[] = new byte[bufferSize / 2];
-                Arrays.fill(payload, (byte) 'x');
+                byte[] payload = new byte[bufferSize / 2];
+                Arrays.fill(payload, (byte)'x');
                 ByteBuffer serverFrame = BufferUtil.allocate(bufferSize);
                 BufferUtil.flipToFill(serverFrame);
-                serverFrame.put((byte) (0x80 | 0x01)); // FIN + TEXT
-                serverFrame.put((byte) 0x7E); // No MASK and 2 bytes length
-                serverFrame.put((byte) (payload.length >> 8)); // first length byte
-                serverFrame.put((byte) (payload.length & 0xFF)); // second length byte
+                serverFrame.put((byte)(0x80 | 0x01)); // FIN + TEXT
+                serverFrame.put((byte)0x7E); // No MASK and 2 bytes length
+                serverFrame.put((byte)(payload.length >> 8)); // first length byte
+                serverFrame.put((byte)(payload.length & 0xFF)); // second length byte
                 serverFrame.put(payload);
                 BufferUtil.flipToFlush(serverFrame, 0);
                 serverConn.writeRaw(serverFrame);
             }
 
-            assertTrue(websocket.dataLatch.await(1000,TimeUnit.SECONDS));
+            assertTrue(websocket.dataLatch.await(1000, TimeUnit.SECONDS));
         }
         finally
         {

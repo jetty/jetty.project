@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -23,17 +23,29 @@ import org.eclipse.jetty.websocket.common.events.annotated.OptionalSessionCallab
 
 public class JettyAnnotatedMetadata
 {
-    /** &#064;OnWebSocketConnect () */
+    /**
+     * &#064;OnWebSocketConnect ()
+     */
     public CallableMethod onConnect;
-    /** &#064;OnWebSocketMessage (byte[], or ByteBuffer, or InputStream) */
+    /**
+     * &#064;OnWebSocketMessage (byte[], or ByteBuffer, or InputStream)
+     */
     public OptionalSessionCallableMethod onBinary;
-    /** &#064;OnWebSocketMessage (String, or Reader) */
+    /**
+     * &#064;OnWebSocketMessage (String, or Reader)
+     */
     public OptionalSessionCallableMethod onText;
-    /** &#064;OnWebSocketFrame (Frame) */
+    /**
+     * &#064;OnWebSocketFrame (Frame)
+     */
     public OptionalSessionCallableMethod onFrame;
-    /** &#064;OnWebSocketError (Throwable) */
+    /**
+     * &#064;OnWebSocketError (Throwable)
+     */
     public OptionalSessionCallableMethod onError;
-    /** &#064;OnWebSocketClose (Frame) */
+    /**
+     * &#064;OnWebSocketClose (Frame)
+     */
     public OptionalSessionCallableMethod onClose;
 
     @Override

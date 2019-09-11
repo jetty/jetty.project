@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -60,16 +60,10 @@ public class MappedResource<E> implements Comparable<MappedResource<E>>
         MappedResource<?> other = (MappedResource<?>)obj;
         if (pathSpec == null)
         {
-            if (other.pathSpec != null)
-            {
-                return false;
-            }
+            return other.pathSpec == null;
         }
-        else if (!pathSpec.equals(other.pathSpec))
-        {
-            return false;
-        }
-        return true;
+        else
+            return pathSpec.equals(other.pathSpec);
     }
 
     @ManagedAttribute(value = "path spec", readonly = true)
@@ -96,6 +90,6 @@ public class MappedResource<E> implements Comparable<MappedResource<E>>
     @Override
     public String toString()
     {
-        return String.format("MappedResource[pathSpec=%s,resource=%s]",pathSpec,resource);
+        return String.format("MappedResource[pathSpec=%s,resource=%s]", pathSpec, resource);
     }
 }

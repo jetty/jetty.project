@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,7 +20,6 @@ package org.eclipse.jetty.websocket.jsr356.server.browser;
 
 import java.util.Collections;
 import java.util.List;
-
 import javax.websocket.Extension;
 import javax.websocket.HandshakeResponse;
 import javax.websocket.server.HandshakeRequest;
@@ -33,15 +32,15 @@ public class JsrBrowserConfigurator extends ServerEndpointConfig.Configurator
     @Override
     public void modifyHandshake(ServerEndpointConfig sec, HandshakeRequest request, HandshakeResponse response)
     {
-        super.modifyHandshake(sec,request,response);
-        sec.getUserProperties().put("userAgent",getHeaderValue(request,"User-Agent"));
-        sec.getUserProperties().put("requestedExtensions",getHeaderValue(request,"Sec-WebSocket-Extensions"));
+        super.modifyHandshake(sec, request, response);
+        sec.getUserProperties().put("userAgent", getHeaderValue(request, "User-Agent"));
+        sec.getUserProperties().put("requestedExtensions", getHeaderValue(request, "Sec-WebSocket-Extensions"));
     }
 
     private String getHeaderValue(HandshakeRequest request, String key)
     {
         List<String> value = request.getHeaders().get(key);
-        return QuoteUtil.join(value,",");
+        return QuoteUtil.join(value, ",");
     }
 
     @Override

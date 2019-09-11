@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,15 +18,10 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.is;
-
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-
 import javax.websocket.ClientEndpointConfig;
 import javax.websocket.ContainerProvider;
 import javax.websocket.HandshakeResponse;
@@ -37,9 +32,12 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.junit.jupiter.api.AfterAll;
-
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 
 /**
  * Tests of {@link javax.websocket.ClientEndpointConfig.Configurator}
@@ -91,7 +89,7 @@ public class ConfiguratorTest
             host = "localhost";
         }
         int port = connector.getLocalPort();
-        serverUri = new URI(String.format("ws://%s:%d/",host,port));
+        serverUri = new URI(String.format("ws://%s:%d/", host, port));
     }
 
     @AfterAll
@@ -121,17 +119,17 @@ public class ConfiguratorTest
         ClientEndpointConfig config = cfgbldr.build();
 
         // Connect
-        Session session = container.connectToServer(echoer,config,serverUri);
+        Session session = container.connectToServer(echoer, config, serverUri);
 
         // Send Simple Message
         session.getBasicRemote().sendText("Echo");
 
         // Wait for echo
-        String echoed = echoer.textCapture.messages.poll(1,TimeUnit.SECONDS);
+        String echoed = echoer.textCapture.messages.poll(1, TimeUnit.SECONDS);
         assertThat("Echoed", echoed, is("Echo"));
 
         // Validate client side configurator use
-        assertThat("configurator.request",configurator.request,notNullValue());
-        assertThat("configurator.response",configurator.response,notNullValue());
+        assertThat("configurator.request", configurator.request, notNullValue());
+        assertThat("configurator.response", configurator.response, notNullValue());
     }
 }

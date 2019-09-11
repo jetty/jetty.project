@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -79,7 +79,7 @@ public class TestABCase7_BadStatusCodes extends AbstractABCase
     {
         ByteBuffer payload = ByteBuffer.allocate(256);
         BufferUtil.clearToFill(payload);
-        payload.putChar((char) statusCode);
+        payload.putChar((char)statusCode);
         BufferUtil.flipToFlush(payload, 0);
 
         List<WebSocketFrame> send = new ArrayList<>();
@@ -109,7 +109,7 @@ public class TestABCase7_BadStatusCodes extends AbstractABCase
     {
         ByteBuffer payload = ByteBuffer.allocate(256);
         BufferUtil.clearToFill(payload);
-        payload.putChar((char) statusCode);
+        payload.putChar((char)statusCode);
         payload.put(StringUtil.getBytes("Reason"));
         BufferUtil.flipToFlush(payload, 0);
 

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.websocket.common;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
@@ -31,25 +27,28 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.test.IncomingFramesCapture;
-
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class GeneratorParserRoundtripTest
 {
     public ByteBufferPool bufferPool = new MappedByteBufferPool();
-    
+
     @Test
     public void testParserAndGenerator() throws Exception
     {
         WebSocketPolicy policy = WebSocketPolicy.newClientPolicy();
-        Generator gen = new Generator(policy,bufferPool);
-        Parser parser = new Parser(policy,bufferPool);
+        Generator gen = new Generator(policy, bufferPool);
+        Parser parser = new Parser(policy, bufferPool);
         IncomingFramesCapture capture = new IncomingFramesCapture();
         parser.setIncomingFramesHandler(capture);
 
         String message = "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF";
 
-        ByteBuffer out = bufferPool.acquire(8192,false);
+        ByteBuffer out = bufferPool.acquire(8192, false);
         try
         {
             // Generate Buffer
@@ -61,7 +60,7 @@ public class GeneratorParserRoundtripTest
             out.put(payload);
 
             // Parse Buffer
-            BufferUtil.flipToFlush(out,0);
+            BufferUtil.flipToFlush(out, 0);
             parser.parse(out);
         }
         finally
@@ -70,24 +69,23 @@ public class GeneratorParserRoundtripTest
         }
 
         // Validate
-        capture.assertNoErrors();
-        capture.assertHasFrame(OpCode.TEXT,1);
+        capture.assertHasFrame(OpCode.TEXT, 1);
 
         TextFrame txt = (TextFrame)capture.getFrames().poll();
-        assertThat("Text parsed",txt.getPayloadAsUTF8(),is(message));
+        assertThat("Text parsed", txt.getPayloadAsUTF8(), is(message));
     }
 
     @Test
     public void testParserAndGeneratorMasked() throws Exception
     {
-        Generator gen = new Generator(WebSocketPolicy.newClientPolicy(),bufferPool);
-        Parser parser = new Parser(WebSocketPolicy.newServerPolicy(),bufferPool);
+        Generator gen = new Generator(WebSocketPolicy.newClientPolicy(), bufferPool);
+        Parser parser = new Parser(WebSocketPolicy.newServerPolicy(), bufferPool);
         IncomingFramesCapture capture = new IncomingFramesCapture();
         parser.setIncomingFramesHandler(capture);
 
         String message = "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF";
 
-        ByteBuffer out = bufferPool.acquire(8192,false);
+        ByteBuffer out = bufferPool.acquire(8192, false);
         BufferUtil.flipToFill(out);
         try
         {
@@ -95,8 +93,8 @@ public class GeneratorParserRoundtripTest
             WebSocketFrame frame = new TextFrame().setPayload(message);
 
             // Add masking
-            byte mask[] = new byte[4];
-            Arrays.fill(mask,(byte)0xFF);
+            byte[] mask = new byte[4];
+            Arrays.fill(mask, (byte)0xFF);
             frame.setMask(mask);
 
             // Generate Buffer
@@ -106,7 +104,7 @@ public class GeneratorParserRoundtripTest
             out.put(payload);
 
             // Parse Buffer
-            BufferUtil.flipToFlush(out,0);
+            BufferUtil.flipToFlush(out, 0);
             parser.parse(out);
         }
         finally
@@ -115,11 +113,10 @@ public class GeneratorParserRoundtripTest
         }
 
         // Validate
-        capture.assertNoErrors();
-        capture.assertHasFrame(OpCode.TEXT,1);
+        capture.assertHasFrame(OpCode.TEXT, 1);
 
         TextFrame txt = (TextFrame)capture.getFrames().poll();
         assertTrue(txt.isMasked(), "Text.isMasked");
-        assertThat("Text parsed",txt.getPayloadAsUTF8(),is(message));
+        assertThat("Text parsed", txt.getPayloadAsUTF8(), is(message));
     }
 }

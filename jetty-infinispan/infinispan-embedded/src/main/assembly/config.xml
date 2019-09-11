@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<assembly>
+  <id>config</id>
+  <includeBaseDirectory>false</includeBaseDirectory>
+  <formats>
+    <format>jar</format>
+  </formats>
+  <fileSets>
+    <fileSet>
+      <directory>src/main/config-templates</directory>
+      <outputDirectory></outputDirectory>
+      <includes>
+        <include>**</include>
+      </includes>
+      <excludes>
+        <exclude>**/infinispan-embedded-libs.mod</exclude>
+      </excludes>
+    </fileSet>
+    <fileSet>
+      <directory>target</directory>
+      <outputDirectory>modules/sessions/infinispan/embedded</outputDirectory>
+      <includes>
+        <include>infinispan-embedded-libs.mod</include>
+      </includes>
+    </fileSet>
+  </fileSets>
+</assembly>

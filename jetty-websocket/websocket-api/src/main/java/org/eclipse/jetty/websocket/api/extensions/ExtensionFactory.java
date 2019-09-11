@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -24,6 +24,12 @@ import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.Set;
 
+/**
+ * The Factory for Extensions.
+ *
+ * @deprecated this class is removed from Jetty 10.0.0+
+ */
+@Deprecated
 public abstract class ExtensionFactory implements Iterable<Class<? extends Extension>>
 {
     private ServiceLoader<Extension> extensionLoader = ServiceLoader.load(Extension.class);
@@ -36,7 +42,7 @@ public abstract class ExtensionFactory implements Iterable<Class<? extends Exten
         {
             if (ext != null)
             {
-                availableExtensions.put(ext.getName(),ext.getClass());
+                availableExtensions.put(ext.getName(), ext.getClass());
             }
         }
     }
@@ -71,7 +77,7 @@ public abstract class ExtensionFactory implements Iterable<Class<? extends Exten
 
     public void register(String name, Class<? extends Extension> extension)
     {
-        availableExtensions.put(name,extension);
+        availableExtensions.put(name, extension);
     }
 
     public void unregister(String name)

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -48,9 +48,9 @@ import org.eclipse.jetty.websocket.common.extensions.ExtensionStack;
 
 public class BlockheadConnection extends AbstractConnection implements Connection.UpgradeTo
 {
-    private final static int BUFFER_SIZE = 4096;
+    private static final int BUFFER_SIZE = 4096;
     public static final String STATIC_REQUEST_HASH_KEY = "dGhlIHNhbXBsZSBub25jZQ==";
-    private final Logger LOG;
+    private final Logger log;
     private final WebSocketPolicy policy;
     private final ByteBufferPool bufferPool;
     private final Parser parser;
@@ -66,7 +66,7 @@ public class BlockheadConnection extends AbstractConnection implements Connectio
     public BlockheadConnection(WebSocketPolicy policy, ByteBufferPool bufferPool, ExtensionStack extensionStack, CompletableFuture<BlockheadConnection> openFut, EndPoint endp, Executor executor)
     {
         super(endp, executor);
-        this.LOG = Log.getLogger(this.getClass());
+        this.log = Log.getLogger(this.getClass());
         this.policy = policy;
         this.bufferPool = bufferPool;
         this.parser = new Parser(policy, bufferPool);
@@ -182,15 +182,15 @@ public class BlockheadConnection extends AbstractConnection implements Connectio
     public void onOpen()
     {
         super.onOpen();
-        if(this.openFuture != null)
+        if (this.openFuture != null)
             this.openFuture.complete(this);
         fillInterested();
     }
 
     public void processConnectionError(Throwable cause)
     {
-        LOG.warn("Connection Error", cause);
-        if(this.openFuture != null)
+        log.warn("Connection Error", cause);
+        if (this.openFuture != null)
             this.openFuture.completeExceptionally(cause);
     }
 
@@ -263,9 +263,9 @@ public class BlockheadConnection extends AbstractConnection implements Connectio
      */
     protected void setInitialBuffer(ByteBuffer prefilled)
     {
-        if (LOG.isDebugEnabled())
+        if (log.isDebugEnabled())
         {
-            LOG.debug("set Initial Buffer - {}", BufferUtil.toDetailString(prefilled));
+            log.debug("set Initial Buffer - {}", BufferUtil.toDetailString(prefilled));
         }
 
         if ((prefilled != null) && (prefilled.hasRemaining()))
@@ -294,8 +294,8 @@ public class BlockheadConnection extends AbstractConnection implements Connectio
 
                 int filled = getEndPoint().fill(nBuffer);
 
-                if (LOG.isDebugEnabled())
-                    LOG.debug("endpointFill() filled={}: {}", filled, BufferUtil.toDetailString(nBuffer));
+                if (log.isDebugEnabled())
+                    log.debug("endpointFill() filled={}: {}", filled, BufferUtil.toDetailString(nBuffer));
 
                 if (filled < 0)
                 {
@@ -347,19 +347,12 @@ public class BlockheadConnection extends AbstractConnection implements Connectio
     public class IncomingCapture implements IncomingFrames
     {
         public final LinkedBlockingQueue<WebSocketFrame> incomingFrames = new LinkedBlockingQueue<>();
-        public final LinkedBlockingQueue<Throwable> incomingErrors = new LinkedBlockingQueue<>();
         public Consumer<Frame> frameConsumer;
-
-        @Override
-        public void incomingError(Throwable cause)
-        {
-            incomingErrors.offer(cause);
-        }
 
         @Override
         public void incomingFrame(Frame frame)
         {
-            if(frameConsumer != null)
+            if (frameConsumer != null)
                 frameConsumer.accept(frame);
 
             incomingFrames.offer(WebSocketFrame.copy(frame));
@@ -403,7 +396,7 @@ public class BlockheadConnection extends AbstractConnection implements Connectio
         {
             if (writeCallback instanceof org.eclipse.jetty.util.Callback)
             {
-                return (org.eclipse.jetty.util.Callback) writeCallback;
+                return (org.eclipse.jetty.util.Callback)writeCallback;
             }
             else
             {

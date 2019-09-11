@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -15,7 +15,6 @@
 //  You may elect to redistribute this code under either of these licenses.
 //  ========================================================================
 //
-
 
 package org.eclipse.jetty.http2.hpack;
 
@@ -35,33 +34,31 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-
 public class HpackPerfTest
 {
-    int _maxDynamicTableSize=4*1024;
+    int _maxDynamicTableSize = 4 * 1024;
     int _unencodedSize;
     int _encodedSize;
-    
+
     @BeforeEach
     public void before()
     {
-        _unencodedSize=0;
-        _encodedSize=0;
+        _unencodedSize = 0;
+        _encodedSize = 0;
     }
 
     @AfterEach
     public void after()
-    {        
-        System.err.printf("dynamictable=%d unencoded=%d encoded=%d p=%3.1f%%%n",_maxDynamicTableSize,_unencodedSize,_encodedSize,100.0*_encodedSize/_unencodedSize);
-
+    {
+        System.err.printf("dynamictable=%d unencoded=%d encoded=%d p=%3.1f%%%n", _maxDynamicTableSize, _unencodedSize, _encodedSize, 100.0 * _encodedSize / _unencodedSize);
     }
-    
+
     @Test
     public void simpleTest() throws Exception
     {
         runStories(_maxDynamicTableSize);
     }
-    
+
     private void runStories(int maxDynamicTableSize) throws Exception
     {
         // Find files
@@ -74,62 +71,58 @@ public class HpackPerfTest
                 return name.startsWith("story_");
             }
         });
-        
+
         // Parse JSON
-        Map<String,Object>[] stories = new Map[files.length];
-        int i=0;
+        Map<String, Object>[] stories = new Map[files.length];
+        int i = 0;
         for (String story : files)
-            stories[i++]=(Map<String,Object>)JSON.parse(new FileReader(new File(data,story)));
-        
-        ByteBuffer buffer = BufferUtil.allocate(256*1024);
-        
+        {
+            stories[i++] = (Map<String, Object>)JSON.parse(new FileReader(new File(data, story)));
+        }
+
+        ByteBuffer buffer = BufferUtil.allocate(256 * 1024);
+
         // Encode all the requests
-        encodeStories(buffer,stories,"request");
+        encodeStories(buffer, stories, "request");
 
         // clear table
         BufferUtil.clearToFill(buffer);
-        BufferUtil.flipToFlush(buffer,0);
-        
+        BufferUtil.flipToFlush(buffer, 0);
+
         // Encode all the responses
-        encodeStories(buffer,stories,"response");
-        
+        encodeStories(buffer, stories, "response");
     }
-    
-    private void encodeStories(ByteBuffer buffer,Map<String,Object>[] stories, String type) throws Exception
+
+    private void encodeStories(ByteBuffer buffer, Map<String, Object>[] stories, String type) throws Exception
     {
-        for (Map<String,Object> story : stories)
+        for (Map<String, Object> story : stories)
         {
             if (type.equals(story.get("context")))
             {
-                HpackEncoder encoder = new HpackEncoder(_maxDynamicTableSize,_maxDynamicTableSize);
-                
+                HpackEncoder encoder = new HpackEncoder(_maxDynamicTableSize, _maxDynamicTableSize);
+
                 // System.err.println(story);
                 Object[] cases = (Object[])story.get("cases");
                 for (Object c : cases)
                 {
                     // System.err.println("  "+c);
-                    Object[] headers = (Object[])((Map<String,Object>)c).get("headers");
+                    Object[] headers = (Object[])((Map<String, Object>)c).get("headers");
                     // System.err.println("    "+headers);
                     HttpFields fields = new HttpFields();
-                    for (Object header:headers)
+                    for (Object header : headers)
                     {
-                        Map<String,String> h = (Map<String,String>)header;
+                        Map<String, String> h = (Map<String, String>)header;
                         Map.Entry<String, String> e = h.entrySet().iterator().next();
-                        fields.add(e.getKey(),e.getValue());
-                        _unencodedSize+=e.getKey().length()+e.getValue().length();
-                        
+                        fields.add(e.getKey(), e.getValue());
+                        _unencodedSize += e.getKey().length() + e.getValue().length();
                     }
 
                     BufferUtil.clearToFill(buffer);
-                    encoder.encode(buffer,new MetaData(HttpVersion.HTTP_2,fields));
-                    BufferUtil.flipToFlush(buffer,0);
-                    _encodedSize+=buffer.remaining();
-                    
+                    encoder.encode(buffer, new MetaData(HttpVersion.HTTP_2, fields));
+                    BufferUtil.flipToFlush(buffer, 0);
+                    _encodedSize += buffer.remaining();
                 }
             }
         }
-
     }
-    
-    
 }

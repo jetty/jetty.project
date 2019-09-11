@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,17 +18,9 @@
 
 package org.eclipse.jetty.servlets;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.not;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.lang.management.ManagementFactory;
 import java.util.EnumSet;
 import java.util.Set;
-
 import javax.management.Attribute;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
@@ -40,8 +32,14 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
-
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class DoSFilterJMXTest
 {
@@ -79,12 +77,16 @@ public class DoSFilterJMXTest
         String whitelist = (String)mbeanServer.getAttribute(objectName, "whitelist");
         String address = "127.0.0.1";
         assertFalse(whitelist.contains(address));
-        boolean result = (Boolean)mbeanServer.invoke(objectName, "addWhitelistAddress", new Object[]{address}, new String[]{String.class.getName()});
+        boolean result = (Boolean)mbeanServer.invoke(objectName, "addWhitelistAddress", new Object[]{address}, new String[]{
+            String.class.getName()
+        });
         assertTrue(result);
         whitelist = (String)mbeanServer.getAttribute(objectName, "whitelist");
         assertThat(whitelist, containsString(address));
 
-        result = (Boolean)mbeanServer.invoke(objectName, "removeWhitelistAddress", new Object[]{address}, new String[]{String.class.getName()});
+        result = (Boolean)mbeanServer.invoke(objectName, "removeWhitelistAddress", new Object[]{address}, new String[]{
+            String.class.getName()
+        });
         assertTrue(result);
         whitelist = (String)mbeanServer.getAttribute(objectName, "whitelist");
         assertThat(whitelist, not(containsString(address)));

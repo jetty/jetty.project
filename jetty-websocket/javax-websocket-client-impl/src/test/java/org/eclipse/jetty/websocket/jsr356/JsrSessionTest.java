@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,13 +18,8 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.net.URI;
 import java.nio.ByteBuffer;
-
 import javax.websocket.ClientEndpointConfig;
 import javax.websocket.DeploymentException;
 import javax.websocket.MessageHandler;
@@ -44,6 +39,10 @@ import org.eclipse.jetty.websocket.jsr356.samples.DummyEndpoint;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 public class JsrSessionTest
 {
     private ClientContainer container;
@@ -61,11 +60,11 @@ public class JsrSessionTest
         SimpleEndpointMetadata metadata = new SimpleEndpointMetadata(websocket.getClass());
         // Executor executor = null;
 
-        EndpointInstance ei = new EndpointInstance(websocket,config,metadata);
-        
-        EventDriver driver = new JsrEndpointEventDriver(policy,ei);
+        EndpointInstance ei = new EndpointInstance(websocket, config, metadata);
+
+        EventDriver driver = new JsrEndpointEventDriver(policy, ei);
         DummyConnection connection = new DummyConnection();
-        session = new JsrSession(container,id,requestURI,driver,connection);
+        session = new JsrSession(container, id, requestURI, driver, connection);
     }
 
     @Test
@@ -73,7 +72,7 @@ public class JsrSessionTest
     {
         session.addMessageHandler(new ByteBufferPartialHandler());
         MessageHandlerWrapper wrapper = session.getMessageHandlerWrapper(MessageType.BINARY);
-        assertThat("Binary Handler",wrapper.getHandler(),instanceOf(ByteBufferPartialHandler.class));
+        assertThat("Binary Handler", wrapper.getHandler(), instanceOf(ByteBufferPartialHandler.class));
         assertEquals(wrapper.getMetadata().getMessageClass(), ByteBuffer.class, "Message Class");
     }
 
@@ -83,10 +82,10 @@ public class JsrSessionTest
         session.addMessageHandler(new StringWholeHandler());
         session.addMessageHandler(new ByteArrayWholeHandler());
         MessageHandlerWrapper wrapper = session.getMessageHandlerWrapper(MessageType.TEXT);
-        assertThat("Text Handler",wrapper.getHandler(),instanceOf(StringWholeHandler.class));
+        assertThat("Text Handler", wrapper.getHandler(), instanceOf(StringWholeHandler.class));
         assertEquals(wrapper.getMetadata().getMessageClass(), String.class, "Message Class");
         wrapper = session.getMessageHandlerWrapper(MessageType.BINARY);
-        assertThat("Binary Handler",wrapper.getHandler(),instanceOf(ByteArrayWholeHandler.class));
+        assertThat("Binary Handler", wrapper.getHandler(), instanceOf(ByteArrayWholeHandler.class));
         assertEquals(wrapper.getMetadata().getMessageClass(), byte[].class, "Message Class");
     }
 
@@ -99,10 +98,10 @@ public class JsrSessionTest
         session.removeMessageHandler(oldText); // remove original TEXT handler
         session.addMessageHandler(new LongMessageHandler()); // add new TEXT handler
         MessageHandlerWrapper wrapper = session.getMessageHandlerWrapper(MessageType.BINARY);
-        assertThat("Binary Handler",wrapper.getHandler(),instanceOf(ByteArrayWholeHandler.class));
+        assertThat("Binary Handler", wrapper.getHandler(), instanceOf(ByteArrayWholeHandler.class));
         assertEquals(wrapper.getMetadata().getMessageClass(), byte[].class, "Message Class");
         wrapper = session.getMessageHandlerWrapper(MessageType.TEXT);
-        assertThat("Text Handler",wrapper.getHandler(),instanceOf(LongMessageHandler.class));
+        assertThat("Text Handler", wrapper.getHandler(), instanceOf(LongMessageHandler.class));
         assertEquals(wrapper.getMetadata().getMessageClass(), Long.class, "Message Class");
     }
 
@@ -111,7 +110,7 @@ public class JsrSessionTest
     {
         session.addMessageHandler(new StringWholeHandler());
         MessageHandlerWrapper wrapper = session.getMessageHandlerWrapper(MessageType.TEXT);
-        assertThat("Text Handler",wrapper.getHandler(),instanceOf(StringWholeHandler.class));
+        assertThat("Text Handler", wrapper.getHandler(), instanceOf(StringWholeHandler.class));
         assertEquals(wrapper.getMetadata().getMessageClass(), String.class, "Message Class");
     }
 }

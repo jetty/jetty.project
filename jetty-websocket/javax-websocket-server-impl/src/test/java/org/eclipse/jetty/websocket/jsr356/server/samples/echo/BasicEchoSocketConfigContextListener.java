@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -42,14 +42,14 @@ public class BasicEchoSocketConfigContextListener implements ServletContextListe
         // Build up a configuration with a specific path
         // Intentionally using alternate path in config (which differs from @ServerEndpoint declaration)
         String path = "/echo-alt";
-        ServerEndpointConfig.Builder builder = ServerEndpointConfig.Builder.create(BasicEchoSocket.class,path);
+        ServerEndpointConfig.Builder builder = ServerEndpointConfig.Builder.create(BasicEchoSocket.class, path);
         try
         {
             container.addEndpoint(builder.build());
         }
         catch (DeploymentException e)
         {
-            throw new RuntimeException("Unable to add endpoint via config file",e);
+            throw new RuntimeException("Unable to add endpoint via config file", e);
         }
     }
 }

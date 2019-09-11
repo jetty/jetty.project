@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -17,9 +17,6 @@
 //
 
 package org.eclipse.jetty.quickstart;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
 
 import java.io.File;
 import java.io.IOException;
@@ -40,34 +37,37 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+
 public class AttributeNormalizerTest
 {
     public static Stream<Arguments> scenarios() throws IOException
     {
         List<Scenario> data = new ArrayList<>();
-    
+
         String arch = String.format("%s/%s", System.getProperty("os.name"), System.getProperty("os.arch"));
-        
+
         String title;
         Map<String, String> env;
-        
+
         // ------
         title = "Typical Setup";
-        
+
         env = new HashMap<>();
-        env.put("jetty.home", asTargetPath(title,"jetty-distro"));
-        env.put("jetty.base", asTargetPath(title,"jetty-distro/demo.base"));
-        env.put("WAR", asTargetPath(title,"jetty-distro/demo.base/webapps/FOO"));
-        
+        env.put("jetty.home", asTargetPath(title, "jetty-distro"));
+        env.put("jetty.base", asTargetPath(title, "jetty-distro/demo.base"));
+        env.put("WAR", asTargetPath(title, "jetty-distro/demo.base/webapps/FOO"));
+
         data.add(new Scenario(arch, title, env));
-        
+
         // ------
         title = "Old Setup";
 
         env = new HashMap<>();
-        env.put("jetty.home", asTargetPath(title,"jetty-distro"));
-        env.put("jetty.base", asTargetPath(title,"jetty-distro"));
-        env.put("WAR", asTargetPath(title,"jetty-distro/webapps/FOO"));
+        env.put("jetty.home", asTargetPath(title, "jetty-distro"));
+        env.put("jetty.base", asTargetPath(title, "jetty-distro"));
+        env.put("WAR", asTargetPath(title, "jetty-distro/webapps/FOO"));
 
         data.add(new Scenario(arch, title, env));
 
@@ -75,20 +75,20 @@ public class AttributeNormalizerTest
         // This puts the jetty.home inside of the jetty.base
         title = "Overlap Setup";
         env = new HashMap<>();
-        env.put("jetty.home", asTargetPath(title,"app/dist"));
-        env.put("jetty.base", asTargetPath(title,"app"));
-        env.put("WAR", asTargetPath(title,"app/webapps/FOO"));
-        
+        env.put("jetty.home", asTargetPath(title, "app/dist"));
+        env.put("jetty.base", asTargetPath(title, "app"));
+        env.put("WAR", asTargetPath(title, "app/webapps/FOO"));
+
         data.add(new Scenario(arch, title, env));
-        
+
         // ------
         // This tests a path scenario often seen on various automatic deployments tooling
         // such as Kubernetes, CircleCI, TravisCI, and Jenkins.
         title = "Nasty Path Setup";
         env = new HashMap<>();
-        env.put("jetty.home", asTargetPath(title,"app%2Fnasty/dist"));
-        env.put("jetty.base", asTargetPath(title,"app%2Fnasty/base"));
-        env.put("WAR", asTargetPath(title,"app%2Fnasty/base/webapps/FOO"));
+        env.put("jetty.home", asTargetPath(title, "app%2Fnasty/dist"));
+        env.put("jetty.base", asTargetPath(title, "app%2Fnasty/base"));
+        env.put("WAR", asTargetPath(title, "app%2Fnasty/base/webapps/FOO"));
 
         data.add(new Scenario(arch, title, env));
 
@@ -103,14 +103,14 @@ public class AttributeNormalizerTest
         data.add(new Scenario(arch, title, env));
         return data.stream().map(Arguments::of);
     }
-    
+
     private static final String asTargetPath(String title, String subpath)
     {
         Path rootPath = MavenTestingUtils.getTargetTestingPath(title);
         FS.ensureDirExists(rootPath);
         Path path = rootPath.resolve(FS.separators(subpath));
         FS.ensureDirExists(path);
-        
+
         return path.toString();
     }
 
@@ -120,16 +120,18 @@ public class AttributeNormalizerTest
     public static void rememberOriginalEnv()
     {
         System.getProperties().stringPropertyNames()
-                .forEach((name)->{
-                    originalEnv.put(name, System.getProperty(name));
-                });
+            .forEach((name) ->
+            {
+                originalEnv.put(name, System.getProperty(name));
+            });
     }
 
     @AfterEach
     public void restoreOriginalEnv()
     {
-        originalEnv.forEach((name,value)->{
-            EnvUtils.restoreSystemProperty(name,value);
+        originalEnv.forEach((name, value) ->
+        {
+            EnvUtils.restoreSystemProperty(name, value);
         });
     }
 
@@ -137,7 +139,7 @@ public class AttributeNormalizerTest
     {
         String result = scenario.normalizer.normalize(o);
         assertThat("normalize((" + o.getClass().getSimpleName() + ") " + o.toString() + ")",
-                result, is(expected));
+            result, is(expected));
     }
 
     private void assertExpandPath(final Scenario scenario, String line, String expected)
@@ -178,7 +180,7 @@ public class AttributeNormalizerTest
     public void testNormalizeJettyHomeAsFile(final Scenario scenario)
     {
         // Normalize jetty.home as File path
-        String expected = scenario.jettyBase.equals(scenario.jettyHome)?"${jetty.base}":"${jetty.home}";
+        String expected = scenario.jettyBase.equals(scenario.jettyHome) ? "${jetty.base}" : "${jetty.home}";
         assertNormalize(scenario, scenario.jettyHome.toFile(), expected);
     }
 
@@ -195,7 +197,7 @@ public class AttributeNormalizerTest
     public void testNormalizeJettyHomeAsPath(final Scenario scenario)
     {
         // Normalize jetty.home as File path
-        String expected = scenario.jettyBase.equals(scenario.jettyHome)?"${jetty.base}":"${jetty.home}";
+        String expected = scenario.jettyBase.equals(scenario.jettyHome) ? "${jetty.base}" : "${jetty.home}";
         assertNormalize(scenario, scenario.jettyHome, expected);
     }
 
@@ -222,7 +224,7 @@ public class AttributeNormalizerTest
     public void testNormalizeJettyHomeAsURI_WithAuthority(final Scenario scenario)
     {
         // Normalize jetty.home as URI path
-        String expected = scenario.jettyBase.equals(scenario.jettyHome)?"${jetty.base.uri}":"${jetty.home.uri}";
+        String expected = scenario.jettyBase.equals(scenario.jettyHome) ? "${jetty.base.uri}" : "${jetty.home.uri}";
 
         // Path.toUri() typically includes an URI authority
         assertNormalize(scenario, scenario.jettyHome.toUri(), expected);
@@ -233,7 +235,7 @@ public class AttributeNormalizerTest
     public void testNormalizeJettyHomeAsURI_WithoutAuthority(final Scenario scenario)
     {
         // Normalize jetty.home as URI path
-        String expected = scenario.jettyBase.equals(scenario.jettyHome)?"${jetty.base.uri}":"${jetty.home.uri}";
+        String expected = scenario.jettyBase.equals(scenario.jettyHome) ? "${jetty.base.uri}" : "${jetty.home.uri}";
 
         // File.toURI() typically DOES NOT include an URI authority
         assertNormalize(scenario, scenario.jettyHome.toFile().toURI(), expected);
@@ -324,8 +326,8 @@ public class AttributeNormalizerTest
 
             // Set environment (skipping null and WAR)
             env.entrySet().stream()
-                    .filter((e) -> e.getValue() != null && !e.getKey().equalsIgnoreCase("WAR"))
-                    .forEach((entry) -> System.setProperty(entry.getKey(), entry.getValue()));
+                .filter((e) -> e.getValue() != null && !e.getKey().equalsIgnoreCase("WAR"))
+                .forEach((entry) -> System.setProperty(entry.getKey(), entry.getValue()));
 
             // Setup normalizer
             Resource webresource = Resource.newResource(war);

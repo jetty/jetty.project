@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -21,6 +21,7 @@ package org.eclipse.jetty.embedded;
 import java.io.File;
 
 import org.eclipse.jetty.plus.jndi.EnvEntry;
+import org.eclipse.jetty.plus.jndi.NamingDump;
 import org.eclipse.jetty.plus.jndi.Resource;
 import org.eclipse.jetty.plus.jndi.Transaction;
 import org.eclipse.jetty.security.HashLoginService;
@@ -33,30 +34,28 @@ import org.eclipse.jetty.webapp.WebAppContext;
  */
 public class ServerWithAnnotations
 {
-    public static final void main( String args[] ) throws Exception
+    public static final void main(String[] args) throws Exception
     {
         // Create the server
         Server server = new Server(8080);
 
         // Enable parsing of jndi-related parts of web.xml and jetty-env.xml
         Configuration.ClassList classlist = Configuration.ClassList
-                .setServerDefault(server);
+            .setServerDefault(server);
         classlist.addAfter("org.eclipse.jetty.webapp.FragmentConfiguration",
-                "org.eclipse.jetty.plus.webapp.EnvConfiguration",
-                "org.eclipse.jetty.plus.webapp.PlusConfiguration");
+            "org.eclipse.jetty.plus.webapp.EnvConfiguration",
+            "org.eclipse.jetty.plus.webapp.PlusConfiguration");
         classlist.addBefore(
-                "org.eclipse.jetty.webapp.JettyWebXmlConfiguration",
-                "org.eclipse.jetty.annotations.AnnotationConfiguration");
-
+            "org.eclipse.jetty.webapp.JettyWebXmlConfiguration",
+            "org.eclipse.jetty.annotations.AnnotationConfiguration");
         // Create a WebApp
         WebAppContext webapp = new WebAppContext();
         webapp.setContextPath("/");
-        File warFile = new File(
-                "../../jetty-distribution/target/distribution/demo-base/webapps/test.war");
+        File warFile = JettyDistribution.resolve("demo-base/webapps/test-spec.war").toFile();
         webapp.setWar(warFile.getAbsolutePath());
         webapp.setAttribute(
-                "org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern",
-                ".*/javax.servlet-[^/]*\\.jar$|.*/servlet-api-[^/]*\\.jar$");
+            "org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern",
+            ".*/javax.servlet-[^/]*\\.jar$|.*/servlet-api-[^/]*\\.jar$");
         server.setHandler(webapp);
 
         // Register new transaction manager in JNDI
@@ -64,19 +63,23 @@ public class ServerWithAnnotations
         new Transaction(new com.acme.MockUserTransaction());
 
         // Define an env entry with webapp scope.
-        new EnvEntry(webapp, "maxAmount", new Double(100), true);
+        // THIS ENTRY IS OVERRIDEN BY THE ENTRY IN jetty-env.xml
+        new EnvEntry(webapp, "maxAmount", 100d, true);
 
         // Register a mock DataSource scoped to the webapp
-        new Resource(webapp, "jdbc/mydatasource", new com.acme.MockDataSource());
+        new Resource(server, "jdbc/mydatasource", new com.acme.MockDataSource());
+
+        // Add JNDI context to server for dump
+        server.addBean(new NamingDump());
 
         // Configure a LoginService
         HashLoginService loginService = new HashLoginService();
         loginService.setName("Test Realm");
-        loginService.setConfig("src/test/resources/realm.properties");
+        loginService.setConfig("examples/embedded/src/test/resources/realm.properties");
         server.addBean(loginService);
 
         server.start();
+        server.dumpStdErr();
         server.join();
     }
-
 }

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,13 +18,12 @@
 
 package org.eclipse.jetty.xml;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class XmlAppendableTest
 {
@@ -50,8 +49,8 @@ public class XmlAppendableTest
 
         out.closeTag();
 
-        String expected = "" +
-                "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n" +
+        String expected =
+            "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n" +
                 "<test>\n" +
                 "  <tag/>\n" +
                 "  <tag name=\"attr value\" noval=\"\" quotes=\"&apos;&quot;\"/>\n" +

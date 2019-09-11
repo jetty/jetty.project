@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -34,9 +34,8 @@ public class PathSpecSet extends AbstractSet<String> implements Predicate<String
     @Override
     public boolean test(String s)
     {
-        return specs.getMatch(s)!=null;
+        return specs.getMatch(s) != null;
     }
-
 
     @Override
     public int size()
@@ -64,7 +63,7 @@ public class PathSpecSet extends AbstractSet<String> implements Predicate<String
     @Override
     public boolean add(String s)
     {
-        return specs.put(PathMappings.asPathSpec(s),Boolean.TRUE);
+        return specs.put(PathMappings.asPathSpec(s), Boolean.TRUE);
     }
 
     @Override
@@ -78,7 +77,6 @@ public class PathSpecSet extends AbstractSet<String> implements Predicate<String
     {
         specs.reset();
     }
-
 
     @Override
     public Iterator<String> iterator()

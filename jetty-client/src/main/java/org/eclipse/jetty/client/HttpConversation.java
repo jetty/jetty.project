@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -25,9 +25,13 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.util.AttributesMap;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 public class HttpConversation extends AttributesMap
 {
+    private static final Logger LOG = Log.getLogger(HttpConversation.class);
+
     private final Deque<HttpExchange> exchanges = new ConcurrentLinkedDeque<>();
     private volatile List<Response.ResponseListener> listeners;
 
@@ -41,46 +45,46 @@ public class HttpConversation extends AttributesMap
      * This list changes as the conversation proceeds, as follows:
      * <ol>
      * <li>
-     *     request R1 send =&gt; conversation.updateResponseListeners(null)
-     *     <ul>
-     *         <li>exchanges in conversation: E1</li>
-     *         <li>listeners to be notified: E1.listeners</li>
-     *     </ul>
+     * request R1 send =&gt; conversation.updateResponseListeners(null)
+     * <ul>
+     * <li>exchanges in conversation: E1</li>
+     * <li>listeners to be notified: E1.listeners</li>
+     * </ul>
      * </li>
      * <li>
-     *     response R1 arrived, 401 =&gt; conversation.updateResponseListeners(AuthenticationProtocolHandler.listener)
-     *     <ul>
-     *         <li>exchanges in conversation: E1</li>
-     *         <li>listeners to be notified: AuthenticationProtocolHandler.listener</li>
-     *     </ul>
+     * response R1 arrived, 401 =&gt; conversation.updateResponseListeners(AuthenticationProtocolHandler.listener)
+     * <ul>
+     * <li>exchanges in conversation: E1</li>
+     * <li>listeners to be notified: AuthenticationProtocolHandler.listener</li>
+     * </ul>
      * </li>
      * <li>
-     *     request R2 send =&gt; conversation.updateResponseListeners(null)
-     *     <ul>
-     *         <li>exchanges in conversation: E1 + E2</li>
-     *         <li>listeners to be notified: E2.listeners + E1.listeners</li>
-     *     </ul>
+     * request R2 send =&gt; conversation.updateResponseListeners(null)
+     * <ul>
+     * <li>exchanges in conversation: E1 + E2</li>
+     * <li>listeners to be notified: E2.listeners + E1.listeners</li>
+     * </ul>
      * </li>
      * <li>
-     *     response R2 arrived, 302 =&gt; conversation.updateResponseListeners(RedirectProtocolHandler.listener)
-     *     <ul>
-     *         <li>exchanges in conversation: E1 + E2</li>
-     *         <li>listeners to be notified: E2.listeners + RedirectProtocolHandler.listener</li>
-     *     </ul>
+     * response R2 arrived, 302 =&gt; conversation.updateResponseListeners(RedirectProtocolHandler.listener)
+     * <ul>
+     * <li>exchanges in conversation: E1 + E2</li>
+     * <li>listeners to be notified: E2.listeners + RedirectProtocolHandler.listener</li>
+     * </ul>
      * </li>
      * <li>
-     *     request R3 send =&gt; conversation.updateResponseListeners(null)
-     *     <ul>
-     *         <li>exchanges in conversation: E1 + E2 + E3</li>
-     *         <li>listeners to be notified: E3.listeners + E1.listeners</li>
-     *     </ul>
+     * request R3 send =&gt; conversation.updateResponseListeners(null)
+     * <ul>
+     * <li>exchanges in conversation: E1 + E2 + E3</li>
+     * <li>listeners to be notified: E3.listeners + E1.listeners</li>
+     * </ul>
      * </li>
      * <li>
-     *     response R3 arrived, 200 =&gt; conversation.updateResponseListeners(null)
-     *     <ul>
-     *         <li>exchanges in conversation: E1 + E2 + E3</li>
-     *         <li>listeners to be notified: E3.listeners + E1.listeners</li>
-     *     </ul>
+     * response R3 arrived, 200 =&gt; conversation.updateResponseListeners(null)
+     * <ul>
+     * <li>exchanges in conversation: E1 + E2 + E3</li>
+     * <li>listeners to be notified: E3.listeners + E1.listeners</li>
+     * </ul>
      * </li>
      * </ol>
      * Basically the override conversation listener replaces the first exchange response listener,
@@ -118,6 +122,7 @@ public class HttpConversation extends AttributesMap
         HttpExchange lastExchange = exchanges.peekLast();
         if (firstExchange == lastExchange)
         {
+            // We don't have a conversation, just a single request.
             if (overrideListener != null)
                 listeners.add(overrideListener);
             else
@@ -125,13 +130,16 @@ public class HttpConversation extends AttributesMap
         }
         else
         {
-            // Order is important, we want to notify the last exchange first
+            // We have a conversation (e.g. redirect, authentication).
+            // Order is important, we want to notify the last exchange first.
             listeners.addAll(lastExchange.getResponseListeners());
             if (overrideListener != null)
                 listeners.add(overrideListener);
             else
                 listeners.addAll(firstExchange.getResponseListeners());
         }
+        if (LOG.isDebugEnabled())
+            LOG.debug("Exchanges in conversation {}, override={}, listeners={}", exchanges.size(), overrideListener, listeners);
         this.listeners = listeners;
     }
 

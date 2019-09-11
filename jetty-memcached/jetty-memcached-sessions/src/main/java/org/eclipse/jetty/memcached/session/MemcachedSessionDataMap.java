@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,21 +18,21 @@
 
 package org.eclipse.jetty.memcached.session;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.List;
 
+import net.rubyeye.xmemcached.MemcachedClient;
+import net.rubyeye.xmemcached.XMemcachedClientBuilder;
+import net.rubyeye.xmemcached.transcoders.SerializingTranscoder;
 import org.eclipse.jetty.server.session.SessionContext;
 import org.eclipse.jetty.server.session.SessionData;
 import org.eclipse.jetty.server.session.SessionDataMap;
+import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
-
-import net.rubyeye.xmemcached.MemcachedClient;
-import net.rubyeye.xmemcached.XMemcachedClientBuilder;
-
-
 
 /**
  * MemcachedSessionDataMap
@@ -49,8 +49,39 @@ public class MemcachedSessionDataMap extends AbstractLifeCycle implements Sessio
     protected boolean _heartbeats = true;
     protected XMemcachedClientBuilder _builder;
 
-    
-    
+    /**
+     * SessionDataTranscoder
+     *
+     * We override memcached deserialization to use our classloader-aware
+     * ObjectInputStream.
+     */
+    public static class SessionDataTranscoder extends SerializingTranscoder
+    {
+
+        @Override
+        protected Object deserialize(byte[] in)
+        {
+            Object rv = null;
+
+            if (in != null)
+            {
+                try (ByteArrayInputStream bis = new ByteArrayInputStream(in);
+                     ClassLoadingObjectInputStream is = new ClassLoadingObjectInputStream(bis))
+                {
+                    rv = is.readObject();
+                }
+                catch (IOException e)
+                {
+                    log.error("Caught IOException decoding " + in.length + " bytes of data", e);
+                }
+                catch (ClassNotFoundException e)
+                {
+                    log.error("Caught CNFE decoding " + in.length + " bytes of data", e);
+                }
+            }
+            return rv;
+        }
+    }
 
     /**
      * @param host address of memcache server
@@ -59,22 +90,20 @@ public class MemcachedSessionDataMap extends AbstractLifeCycle implements Sessio
     public MemcachedSessionDataMap(String host, String port)
     {
         if (host == null || port == null)
-            throw new IllegalArgumentException("Host: "+host+" port: "+port);
-        _builder = new XMemcachedClientBuilder(host+":"+port);
+            throw new IllegalArgumentException("Host: " + host + " port: " + port);
+        _builder = new XMemcachedClientBuilder(host + ":" + port);
     }
-    
-    
-    public MemcachedSessionDataMap (List<InetSocketAddress> addresses)
+
+    public MemcachedSessionDataMap(List<InetSocketAddress> addresses)
     {
         _builder = new XMemcachedClientBuilder(addresses);
     }
-    
-    
-    public MemcachedSessionDataMap (List<InetSocketAddress> addresses, int[] weights)
+
+    public MemcachedSessionDataMap(List<InetSocketAddress> addresses, int[] weights)
     {
         _builder = new XMemcachedClientBuilder(addresses, weights);
     }
-    
+
     /**
      * @return the builder
      */
@@ -83,48 +112,42 @@ public class MemcachedSessionDataMap extends AbstractLifeCycle implements Sessio
         return _builder;
     }
 
- 
-    
-    
     /**
      * @param sec the expiry to use in seconds
      */
-    public void setExpirySec (int sec)
+    public void setExpirySec(int sec)
     {
         _expirySec = sec;
     }
-    
+
     /**
      * Expiry time for memached entries.
+     *
      * @return memcached expiry time in sec
      */
-    @ManagedAttribute(value="memcached expiry time in sec", readonly=true)
-    public int getExpirySec ()
+    @ManagedAttribute(value = "memcached expiry time in sec", readonly = true)
+    public int getExpirySec()
     {
         return _expirySec;
     }
 
-    @ManagedAttribute(value="enable memcached heartbeats", readonly=true)
+    @ManagedAttribute(value = "enable memcached heartbeats", readonly = true)
     public boolean isHeartbeats()
     {
         return _heartbeats;
     }
-
 
     public void setHeartbeats(boolean heartbeats)
     {
         _heartbeats = heartbeats;
     }
 
-
-    /** 
-     * @see org.eclipse.jetty.server.session.SessionDataMap#initialize(org.eclipse.jetty.server.session.SessionContext)
-     */
     @Override
     public void initialize(SessionContext context)
     {
         try
         {
+            _builder.setTranscoder(new SessionDataTranscoder());
             _client = _builder.build();
             _client.setEnableHeartBeat(isHeartbeats());
         }
@@ -134,9 +157,6 @@ public class MemcachedSessionDataMap extends AbstractLifeCycle implements Sessio
         }
     }
 
-    /** 
-     * @see org.eclipse.jetty.server.session.SessionDataMap#load(java.lang.String)
-     */
     @Override
     public SessionData load(String id) throws Exception
     {
@@ -144,28 +164,18 @@ public class MemcachedSessionDataMap extends AbstractLifeCycle implements Sessio
         return data;
     }
 
-    
-    /** 
-     * @see org.eclipse.jetty.server.session.SessionDataMap#store(java.lang.String, org.eclipse.jetty.server.session.SessionData)
-     */
     @Override
     public void store(String id, SessionData data) throws Exception
     {
         _client.set(id, _expirySec, data);
-    }        
+    }
 
-    
-    /** 
-     * @see org.eclipse.jetty.server.session.SessionDataMap#delete(java.lang.String)
-     */
     @Override
     public boolean delete(String id) throws Exception
     {
         _client.delete(id);
         return true; //delete returns false if the value didn't exist
     }
-
-
 
     @Override
     protected void doStop() throws Exception
@@ -177,6 +187,4 @@ public class MemcachedSessionDataMap extends AbstractLifeCycle implements Sessio
             _client = null;
         }
     }
-    
-    
 }

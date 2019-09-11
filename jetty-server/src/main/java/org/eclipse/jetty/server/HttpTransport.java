@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -23,15 +23,16 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.util.Callback;
 
-
-/* ------------------------------------------------------------ */
-/** Abstraction of the outbound HTTP transport.
+/**
+ * Abstraction of the outbound HTTP transport.
  */
 public interface HttpTransport
 {
-    /** Asynchronous call to send a response (or part) over the transport
+    /**
+     * Asynchronous call to send a response (or part) over the transport
+     *
      * @param info The header info to send, or null if just sending more data.
-     *             The first call to send for a response must have a non null info.
+     * The first call to send for a response must have a non null info.
      * @param head True if the response if for a HEAD request (and the data should not be sent).
      * @param content A buffer of content to be sent.
      * @param lastContent True if the content is the last content for the current response.
@@ -54,7 +55,7 @@ public interface HttpTransport
      * some time after the last content is sent).
      */
     void onCompleted();
-    
+
     /**
      * Aborts this transport.
      * <p>
@@ -71,8 +72,9 @@ public interface HttpTransport
      */
     void abort(Throwable failure);
 
-    /* ------------------------------------------------------------ */
-    /** Is the underlying transport optimized for DirectBuffer usage
+    /**
+     * Is the underlying transport optimized for DirectBuffer usage
+     *
      * @return True if direct buffers can be used optimally.
      */
     boolean isOptimizedForDirectBuffers();

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -243,16 +243,16 @@ public abstract class AfterContentTransformer implements AsyncMiddleManServlet.C
         {
             Path path = Files.createTempFile(getOverflowDirectory(), getInputFilePrefix(), null);
             inputFile = FileChannel.open(path,
-                    StandardOpenOption.CREATE,
-                    StandardOpenOption.READ,
-                    StandardOpenOption.WRITE,
-                    StandardOpenOption.DELETE_ON_CLOSE);
+                StandardOpenOption.CREATE,
+                StandardOpenOption.READ,
+                StandardOpenOption.WRITE,
+                StandardOpenOption.DELETE_ON_CLOSE);
             int size = sourceBuffers.size();
             if (size > 0)
             {
                 ByteBuffer[] buffers = sourceBuffers.toArray(new ByteBuffer[size]);
                 sourceBuffers.clear();
-                IO.write(inputFile,buffers,0,buffers.length);
+                IO.write(inputFile, buffers, 0, buffers.length);
             }
         }
         inputFile.write(input);
@@ -423,24 +423,23 @@ public abstract class AfterContentTransformer implements AsyncMiddleManServlet.C
             return stream;
         }
 
-        
         private void overflow(ByteBuffer output) throws IOException
         {
             if (outputFile == null)
             {
                 Path path = Files.createTempFile(getOverflowDirectory(), getOutputFilePrefix(), null);
                 outputFile = FileChannel.open(path,
-                        StandardOpenOption.CREATE,
-                        StandardOpenOption.READ,
-                        StandardOpenOption.WRITE,
-                        StandardOpenOption.DELETE_ON_CLOSE);
+                    StandardOpenOption.CREATE,
+                    StandardOpenOption.READ,
+                    StandardOpenOption.WRITE,
+                    StandardOpenOption.DELETE_ON_CLOSE);
                 int size = sinkBuffers.size();
                 if (size > 0)
                 {
                     ByteBuffer[] buffers = sinkBuffers.toArray(new ByteBuffer[size]);
                     sinkBuffers.clear();
-                    
-                    IO.write(outputFile,buffers,0,buffers.length);
+
+                    IO.write(outputFile, buffers, 0, buffers.length);
                 }
             }
             outputFile.write(output);

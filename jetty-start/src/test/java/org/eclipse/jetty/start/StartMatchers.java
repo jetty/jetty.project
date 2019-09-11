@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -43,7 +43,7 @@ public final class StartMatchers
             {
                 description.appendText("Path should exist");
             }
-            
+
             @Override
             public void describeMismatch(Object item, Description description)
             {
@@ -51,7 +51,7 @@ public final class StartMatchers
             }
         };
     }
-    
+
     public static Matcher<Path> notPathExists()
     {
         return new BaseMatcher<Path>()
@@ -68,7 +68,7 @@ public final class StartMatchers
             {
                 description.appendText("Path should not exist");
             }
-            
+
             @Override
             public void describeMismatch(Object item, Description description)
             {
@@ -76,7 +76,7 @@ public final class StartMatchers
             }
         };
     }
-    
+
     public static Matcher<Path> fileExists()
     {
         return new BaseMatcher<Path>()
@@ -93,7 +93,7 @@ public final class StartMatchers
             {
                 description.appendText("File should exist");
             }
-            
+
             @Override
             public void describeMismatch(Object item, Description description)
             {

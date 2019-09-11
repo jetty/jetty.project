@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -23,6 +23,7 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.WebSocketConnectionListener;
@@ -37,21 +38,26 @@ import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.frames.ReadOnlyDelegatedFrame;
 import org.eclipse.jetty.websocket.common.message.SimpleBinaryMessage;
 import org.eclipse.jetty.websocket.common.message.SimpleTextMessage;
-import org.eclipse.jetty.websocket.common.util.Utf8PartialBuilder;
 
 /**
  * Handler for {@link WebSocketListener} based User WebSocket implementations.
  */
 public class JettyListenerEventDriver extends AbstractEventDriver
 {
+    private enum PartialMode
+    {
+        NONE, TEXT, BINARY
+    }
+
     private static final Logger LOG = Log.getLogger(JettyListenerEventDriver.class);
     private final WebSocketConnectionListener listener;
-    private Utf8PartialBuilder utf8Partial;
+    private Utf8StringBuilder utf8Partial;
+    private PartialMode partialMode = PartialMode.NONE;
     private boolean hasCloseBeenCalled = false;
 
     public JettyListenerEventDriver(WebSocketPolicy policy, WebSocketConnectionListener listener)
     {
-        super(policy,listener);
+        super(policy, listener);
         this.listener = listener;
     }
 
@@ -65,12 +71,27 @@ public class JettyListenerEventDriver extends AbstractEventDriver
                 activeMessage = new SimpleBinaryMessage(this);
             }
 
-            appendMessage(buffer,fin);
+            appendMessage(buffer, fin);
         }
 
         if (listener instanceof WebSocketPartialListener)
         {
-            ((WebSocketPartialListener)listener).onWebSocketPartialBinary(buffer.slice().asReadOnlyBuffer(),fin);
+            switch (partialMode)
+            {
+                case NONE:
+                    partialMode = PartialMode.BINARY;
+                    // fallthru
+                case BINARY:
+                    ((WebSocketPartialListener)listener).onWebSocketPartialBinary(buffer.slice().asReadOnlyBuffer(), fin);
+                    break;
+                case TEXT:
+                    throw new IOException("Out of order binary frame encountered");
+            }
+
+            if (fin)
+            {
+                partialMode = PartialMode.NONE;
+            }
         }
     }
 
@@ -79,7 +100,7 @@ public class JettyListenerEventDriver extends AbstractEventDriver
     {
         if (listener instanceof WebSocketListener)
         {
-            ((WebSocketListener)listener).onWebSocketBinary(data,0,data.length);
+            ((WebSocketListener)listener).onWebSocketBinary(data, 0, data.length);
         }
     }
 
@@ -95,7 +116,7 @@ public class JettyListenerEventDriver extends AbstractEventDriver
 
         int statusCode = close.getStatusCode();
         String reason = close.getReason();
-        listener.onWebSocketClose(statusCode,reason);
+        listener.onWebSocketClose(statusCode, reason);
     }
 
     @Override
@@ -155,30 +176,51 @@ public class JettyListenerEventDriver extends AbstractEventDriver
                 activeMessage = new SimpleTextMessage(this);
             }
 
-            appendMessage(buffer,fin);
+            appendMessage(buffer, fin);
         }
 
         if (listener instanceof WebSocketPartialListener)
         {
-            if (utf8Partial == null)
+            switch (partialMode)
             {
-                utf8Partial = new Utf8PartialBuilder();
+                case NONE:
+                    partialMode = PartialMode.TEXT;
+                    // fallthru
+                case TEXT:
+                    if (utf8Partial == null)
+                    {
+                        utf8Partial = new Utf8StringBuilder();
+                    }
+
+                    String partial = "";
+
+                    if (buffer != null)
+                    {
+                        utf8Partial.append(buffer);
+                        partial = utf8Partial.takePartialString();
+                    }
+
+                    ((WebSocketPartialListener)listener).onWebSocketPartialText(partial, fin);
+
+                    if (fin)
+                    {
+                        utf8Partial = null;
+                    }
+                    break;
+                case BINARY:
+                    throw new IOException("Out of order text frame encountered");
             }
-            
-            String partial = utf8Partial.toPartialString(buffer);
-            
-            ((WebSocketPartialListener)listener).onWebSocketPartialText(partial,fin);
-            
+
             if (fin)
             {
-                partial = null;
+                partialMode = PartialMode.NONE;
             }
         }
     }
 
     /**
      * Whole Message event.
-     * 
+     *
      * @param message the whole message
      */
     @Override
@@ -190,9 +232,33 @@ public class JettyListenerEventDriver extends AbstractEventDriver
         }
     }
 
+    public void onContinuationFrame(ByteBuffer buffer, boolean fin) throws IOException
+    {
+        if (listener instanceof WebSocketPartialListener)
+        {
+            switch (partialMode)
+            {
+                case NONE:
+                    throw new IOException("Out of order Continuation frame encountered");
+                case TEXT:
+                    onTextFrame(buffer, fin);
+                    break;
+                case BINARY:
+                    onBinaryFrame(buffer, fin);
+                    break;
+            }
+            return;
+        }
+
+        if (listener instanceof WebSocketListener)
+        {
+            super.onContinuationFrame(buffer, fin);
+        }
+    }
+
     @Override
     public String toString()
     {
-        return String.format("%s[%s]",JettyListenerEventDriver.class.getSimpleName(),listener.getClass().getName());
+        return String.format("%s[%s]", JettyListenerEventDriver.class.getSimpleName(), listener.getClass().getName());
     }
 }

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,15 +18,6 @@
 
 package org.eclipse.jetty.continuation;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.endsWith;
-import static org.hamcrest.Matchers.hasItem;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.startsWith;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.Socket;
@@ -36,7 +27,6 @@ import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.stream.Stream;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -60,12 +50,21 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.endsWith;
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 public class ContinuationsTest
 {
     public static Stream<Arguments> setups()
     {
         List<Arguments> setup = new ArrayList<>();
-        
+
         // Servlet3 / AsyncContext Setup
         {
             String description = "Servlet 3 Setup";
@@ -73,43 +72,43 @@ public class ContinuationsTest
             List<String> log = new ArrayList<>();
             RequestLogHandler servlet3Setup = new RequestLogHandler();
             servlet3Setup.setRequestLog(new Log(log));
-        
+
             ServletContextHandler servletContext = new ServletContextHandler();
             servlet3Setup.setHandler(servletContext);
-        
-            ServletHandler servletHandler=servletContext.getServletHandler();
+
+            ServletHandler servletHandler = servletContext.getServletHandler();
             List<String> history = new ArrayList<>();
             Listener listener = new Listener(history);
-            ServletHolder holder=new ServletHolder(new SuspendServlet(history, listener));
+            ServletHolder holder = new ServletHolder(new SuspendServlet(history, listener));
             holder.setAsyncSupported(true);
             servletHandler.addServletWithMapping(holder, "/");
             setup.add(Arguments.of(new Scenario(description, servlet3Setup, history, listener, expectedImplClass, log)));
         }
-        
+
         // Faux Continuations Setup
         {
             String description = "Faux Setup";
             Class<? extends Continuation> expectedImplClass = FauxContinuation.class;
-            
+
             // no log for this setup
             List<String> log = null;
-            
+
             ServletContextHandler fauxSetup = new ServletContextHandler();
-            ServletHandler servletHandler=fauxSetup.getServletHandler();
+            ServletHandler servletHandler = fauxSetup.getServletHandler();
             List<String> history = new ArrayList<>();
             Listener listener = new Listener(history);
-            ServletHolder holder=new ServletHolder(new SuspendServlet(history, listener));
-            servletHandler.addServletWithMapping(holder,"/");
-    
-            FilterHolder filter= servletHandler.addFilterWithMapping(ContinuationFilter.class,"/*",null);
-            filter.setInitParameter("debug","true");
-            filter.setInitParameter("faux","true");
+            ServletHolder holder = new ServletHolder(new SuspendServlet(history, listener));
+            servletHandler.addServletWithMapping(holder, "/");
+
+            FilterHolder filter = servletHandler.addFilterWithMapping(ContinuationFilter.class, "/*", null);
+            filter.setInitParameter("debug", "true");
+            filter.setInitParameter("faux", "true");
             setup.add(Arguments.of(new Scenario(description, fauxSetup, history, listener, expectedImplClass, log)));
         }
-        
+
         return setup.stream();
     }
-    
+
     @ParameterizedTest
     @MethodSource("setups")
     public void testNormal(Scenario scenario) throws Exception
@@ -317,19 +316,19 @@ public class ContinuationsTest
     private long count(List<String> history, String value)
     {
         return history.stream()
-                .filter(value::equals)
-                .count();
+            .filter(value::equals)
+            .count();
     }
 
     private String process(Scenario scenario, String query, String content) throws Exception
     {
         Server server = new Server();
         server.setStopTimeout(20000);
-        try 
+        try
         {
             ServerConnector connector = new ServerConnector(server);
             server.addConnector(connector);
-            if(scenario.log != null)
+            if (scenario.log != null)
             {
                 scenario.log.clear();
             }
@@ -337,18 +336,18 @@ public class ContinuationsTest
             StatisticsHandler stats = new StatisticsHandler();
             server.setHandler(stats);
             stats.setHandler(scenario.setupHandler);
-        
+
             server.start();
-            int port=connector.getLocalPort();
-            
+            int port = connector.getLocalPort();
+
             StringBuilder request = new StringBuilder("GET /");
-    
+
             if (query != null)
                 request.append("?").append(query);
-    
+
             request.append(" HTTP/1.1\r\n")
-                    .append("Host: localhost\r\n")
-                    .append("Connection: close\r\n");
+                .append("Host: localhost\r\n")
+                .append("Connection: close\r\n");
 
             if (content != null)
                 request.append("Content-Length: ").append(content.length()).append("\r\n");
@@ -366,16 +365,16 @@ public class ContinuationsTest
                 socket.getOutputStream().flush();
                 return toString(socket.getInputStream());
             }
-        } 
-        finally 
+        }
+        finally
         {
             if (scenario.log != null)
             {
-                for (int i=0;scenario.log.isEmpty()&&i<60;i++)
+                for (int i = 0; scenario.log.isEmpty() && i < 60; i++)
                 {
                     Thread.sleep(100);
                 }
-                assertThat("Log.size", scenario.log.size(),is(1));
+                assertThat("Log.size", scenario.log.size(), is(1));
                 String entry = scenario.log.get(0);
                 assertThat("Log entry", entry, startsWith("200 "));
                 assertThat("Log entry", entry, endsWith(" /"));
@@ -451,7 +450,9 @@ public class ContinuationsTest
                     InputStream in = request.getInputStream();
                     int b = in.read();
                     while (b != -1)
+                    {
                         b = in.read();
+                    }
                 }
 
                 if (suspend_for >= 0)
@@ -636,22 +637,22 @@ public class ContinuationsTest
             history.add("onTimeout");
         }
     }
-    
+
     public static class Log extends AbstractLifeCycle implements RequestLog
     {
         private final List<String> log;
-        
-        public Log(List<String> log) 
+
+        public Log(List<String> log)
         {
             this.log = log;
         }
-        
+
         @Override
         public void log(Request request, Response response)
         {
             int status = response.getCommittedMetaData().getStatus();
             long written = response.getHttpChannel().getBytesWritten();
-            log.add(status+" "+written+" "+request.getRequestURI());
+            log.add(status + " " + written + " " + request.getRequestURI());
         }
     }
 

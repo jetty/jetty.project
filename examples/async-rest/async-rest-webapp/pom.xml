@@ -2,16 +2,19 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>example-async-rest</artifactId>
-    <version>9.4.13-SNAPSHOT</version>
-  </parent>  
+    <version>9.4.21-SNAPSHOT</version>
+  </parent>
+
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.eclipse.jetty.example-async-rest</groupId>
   <artifactId>example-async-rest-webapp</artifactId>
   <packaging>war</packaging>
   <name>Example Async Rest :: Webapp</name>
+
   <build>
     <finalName>async-rest</finalName>
   </build>
+
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty.example-async-rest</groupId>
@@ -24,10 +27,10 @@
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
-      <dependency>
-         <groupId>javax.servlet</groupId>
-         <artifactId>javax.servlet-api</artifactId>
-         <scope>provided</scope>
-       </dependency>
+    <dependency>
+      <groupId>javax.servlet</groupId>
+      <artifactId>javax.servlet-api</artifactId>
+      <scope>provided</scope>
+    </dependency>
   </dependencies>
 </project>

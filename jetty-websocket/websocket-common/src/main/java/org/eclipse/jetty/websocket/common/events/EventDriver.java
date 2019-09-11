@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -32,37 +32,37 @@ import org.eclipse.jetty.websocket.common.WebSocketSession;
 
 public interface EventDriver extends IncomingFrames
 {
-    public WebSocketPolicy getPolicy();
+    WebSocketPolicy getPolicy();
 
-    public WebSocketSession getSession();
-    
-    public BatchMode getBatchMode();
+    WebSocketSession getSession();
 
-    public void onBinaryFrame(ByteBuffer buffer, boolean fin) throws IOException;
+    BatchMode getBatchMode();
 
-    public void onBinaryMessage(byte[] data);
+    void onBinaryFrame(ByteBuffer buffer, boolean fin) throws IOException;
 
-    public void onClose(CloseInfo close);
+    void onBinaryMessage(byte[] data);
 
-    public void onConnect();
+    void onClose(CloseInfo close);
 
-    public void onContinuationFrame(ByteBuffer buffer, boolean fin) throws IOException;
+    void onConnect();
 
-    public void onError(Throwable t);
+    void onContinuationFrame(ByteBuffer buffer, boolean fin) throws IOException;
 
-    public void onFrame(Frame frame);
+    void onError(Throwable t);
 
-    public void onInputStream(InputStream stream) throws IOException;
+    void onFrame(Frame frame);
 
-    public void onPing(ByteBuffer buffer);
-    
-    public void onPong(ByteBuffer buffer);
+    void onInputStream(InputStream stream) throws IOException;
 
-    public void onReader(Reader reader) throws IOException;
+    void onPing(ByteBuffer buffer);
 
-    public void onTextFrame(ByteBuffer buffer, boolean fin) throws IOException;
+    void onPong(ByteBuffer buffer);
 
-    public void onTextMessage(String message);
+    void onReader(Reader reader) throws IOException;
 
-    public void openSession(WebSocketSession session);
+    void onTextFrame(ByteBuffer buffer, boolean fin) throws IOException;
+
+    void onTextMessage(String message);
+
+    void openSession(WebSocketSession session);
 }

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,24 +19,22 @@
 package org.eclipse.jetty.plus.webapp;
 
 import java.util.Random;
-
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NameNotFoundException;
 
+import org.eclipse.jetty.jndi.NamingContext;
 import org.eclipse.jetty.plus.annotation.InjectionCollection;
 import org.eclipse.jetty.plus.annotation.LifeCycleCallbackCollection;
 import org.eclipse.jetty.plus.jndi.Transaction;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.ThreadClassLoaderScope;
 import org.eclipse.jetty.webapp.AbstractConfiguration;
 import org.eclipse.jetty.webapp.WebAppContext;
 
-
 /**
  * Configuration
- *
- *
  */
 public class PlusConfiguration extends AbstractConfiguration
 {
@@ -45,8 +43,8 @@ public class PlusConfiguration extends AbstractConfiguration
     private Integer _key;
 
     @Override
-    public void preConfigure (WebAppContext context)
-    throws Exception
+    public void preConfigure(WebAppContext context)
+        throws Exception
     {
         context.getObjectFactory().addDecorator(new PlusDecorator(context));
     }
@@ -58,8 +56,8 @@ public class PlusConfiguration extends AbstractConfiguration
     }
 
     @Override
-    public void configure (WebAppContext context)
-    throws Exception
+    public void configure(WebAppContext context)
+        throws Exception
     {
         bindUserTransaction(context);
 
@@ -74,21 +72,21 @@ public class PlusConfiguration extends AbstractConfiguration
     }
 
     @Override
-    public void deconfigure (WebAppContext context)
-    throws Exception
+    public void deconfigure(WebAppContext context)
+        throws Exception
     {
         unlockCompEnv(context);
         _key = null;
-        context.setAttribute(InjectionCollection.INJECTION_COLLECTION,null);
-        context.setAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION,null);
+        context.setAttribute(InjectionCollection.INJECTION_COLLECTION, null);
+        context.setAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION, null);
     }
 
-    public void bindUserTransaction (WebAppContext context)
-    throws Exception
+    public void bindUserTransaction(WebAppContext context)
+        throws Exception
     {
         try
         {
-           Transaction.bindToENC();
+            Transaction.bindToENC();
         }
         catch (NameNotFoundException e)
         {
@@ -96,44 +94,29 @@ public class PlusConfiguration extends AbstractConfiguration
         }
     }
 
-
-
-    protected void lockCompEnv (WebAppContext wac)
-    throws Exception
+    protected void lockCompEnv(WebAppContext wac)
+        throws Exception
     {
-        ClassLoader old_loader = Thread.currentThread().getContextClassLoader();
-        Thread.currentThread().setContextClassLoader(wac.getClassLoader());
-        try
+        try (ThreadClassLoaderScope scope = new ThreadClassLoaderScope(wac.getClassLoader()))
         {
-            Random random = new Random ();
-            _key = new Integer(random.nextInt());
+            Random random = new Random();
+            _key = random.nextInt();
             Context context = new InitialContext();
             Context compCtx = (Context)context.lookup("java:comp");
-            compCtx.addToEnvironment("org.eclipse.jetty.jndi.lock", _key);
-        }
-        finally
-        {
-            Thread.currentThread().setContextClassLoader(old_loader);
+            compCtx.addToEnvironment(NamingContext.LOCK_PROPERTY, _key);
         }
     }
 
-    protected void unlockCompEnv (WebAppContext wac)
-    throws Exception
+    protected void unlockCompEnv(WebAppContext wac)
+        throws Exception
     {
-        if (_key!=null)
+        if (_key != null)
         {
-            ClassLoader old_loader = Thread.currentThread().getContextClassLoader();
-            Thread.currentThread().setContextClassLoader(wac.getClassLoader());
-
-            try
+            try (ThreadClassLoaderScope scope = new ThreadClassLoaderScope(wac.getClassLoader()))
             {
                 Context context = new InitialContext();
                 Context compCtx = (Context)context.lookup("java:comp");
                 compCtx.addToEnvironment("org.eclipse.jetty.jndi.unlock", _key);
-            }
-            finally
-            {
-                Thread.currentThread().setContextClassLoader(old_loader);
             }
         }
     }

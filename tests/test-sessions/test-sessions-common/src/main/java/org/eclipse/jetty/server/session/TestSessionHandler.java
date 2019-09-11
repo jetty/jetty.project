@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -16,18 +16,14 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.server.session;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-
-
 /**
  * TestSessionHandler
- * 
- * For testing convenience, allows access to some protected fields in SessionHandler
  *
+ * For testing convenience, allows access to some protected fields in SessionHandler
  */
 public class TestSessionHandler extends SessionHandler
 {
@@ -35,9 +31,8 @@ public class TestSessionHandler extends SessionHandler
     /**
      * @param size the size of the expiry candidates to check
      */
-    public void assertCandidatesForExpiry (int size)
+    public void assertCandidatesForExpiry(int size)
     {
         assertEquals(size, _candidateSessionIdsForExpiry.size());
     }
-
 }

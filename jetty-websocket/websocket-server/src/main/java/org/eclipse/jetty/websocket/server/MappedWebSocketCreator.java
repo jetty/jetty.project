@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -28,15 +28,15 @@ public interface MappedWebSocketCreator
     /**
      * Add a mapping, of a pathspec to a WebSocketCreator.
      * <p>
-     *     Recognized Path Spec syntaxes
+     * Recognized Path Spec syntaxes
      * </p>
      * <dl>
-     *  <dt><code>/path/to</code> or <code>/</code> or <code>*.ext</code> or <code>servlet|{spec}</code></dt>
-     *  <dd>Servlet Syntax</dd>
-     *  <dt><code>^{spec}</code> or <code>regex|{spec}</code></dt>
-     *  <dd>Regex Syntax</dd>
-     *  <dt><code>uri-template|{spec}</code></dt>
-     *  <dd>URI Template (see JSR356 and RFC6570 level 1)</dd>
+     * <dt><code>/path/to</code> or <code>/</code> or <code>*.ext</code> or <code>servlet|{spec}</code></dt>
+     * <dd>Servlet Syntax</dd>
+     * <dt><code>^{spec}</code> or <code>regex|{spec}</code></dt>
+     * <dd>Regex Syntax</dd>
+     * <dt><code>uri-template|{spec}</code></dt>
+     * <dd>URI Template (see JSR356 and RFC6570 level 1)</dd>
      * </dl>
      *
      * @param spec the path spec to use.
@@ -54,7 +54,7 @@ public interface MappedWebSocketCreator
      */
     @Deprecated
     void addMapping(org.eclipse.jetty.websocket.server.pathmap.PathSpec spec, WebSocketCreator creator);
-    
+
     /**
      * Add a mapping.
      *
@@ -63,9 +63,9 @@ public interface MappedWebSocketCreator
      * @since 9.2.20
      */
     void addMapping(org.eclipse.jetty.http.pathmap.PathSpec spec, WebSocketCreator creator);
-    
+
     /**
-    /**
+     * /**
      * Returns the creator for the given path spec.
      *
      * @param spec the spec to test for (using the same spec syntax as seen in {@link #addMapping(String, WebSocketCreator)})

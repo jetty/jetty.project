@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -39,6 +39,7 @@ import org.eclipse.jetty.util.BufferUtil;
  * specified to the constructors.</p>
  * <p>The content may be retrieved from {@link #onSuccess(Response)} or {@link #onComplete(Result)}
  * via {@link #getContent()} or {@link #getContentAsString()}.</p>
+ * <p>Instances of this class are not reusable, so one must be allocated for each request.</p>
  */
 public abstract class BufferingResponseListener extends Listener.Adapter
 {
@@ -187,7 +188,7 @@ public abstract class BufferingResponseListener extends Listener.Adapter
             return null;
         return BufferUtil.toString(buffer, encoding);
     }
-    
+
     /**
      * @return Content as InputStream
      */

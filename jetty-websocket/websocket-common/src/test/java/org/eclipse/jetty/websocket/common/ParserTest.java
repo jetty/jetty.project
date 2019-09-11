@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -17,11 +17,6 @@
 //
 
 package org.eclipse.jetty.websocket.common;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -42,8 +37,12 @@ import org.eclipse.jetty.websocket.common.test.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.common.test.UnitGenerator;
 import org.eclipse.jetty.websocket.common.test.UnitParser;
 import org.eclipse.jetty.websocket.common.util.Hex;
-
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class ParserTest
 {
@@ -111,11 +110,10 @@ public class ParserTest
         parser.setIncomingFramesHandler(capture);
         parser.parseQuietly(completeBuf);
 
-        capture.assertErrorCount(0);
-        capture.assertHasFrame(OpCode.TEXT,1);
-        capture.assertHasFrame(OpCode.CONTINUATION,4);
-        capture.assertHasFrame(OpCode.CLOSE,1);
-        capture.assertHasFrame(OpCode.PING,2);
+        capture.assertHasFrame(OpCode.TEXT, 1);
+        capture.assertHasFrame(OpCode.CONTINUATION, 4);
+        capture.assertHasFrame(OpCode.CLOSE, 1);
+        capture.assertHasFrame(OpCode.PING, 2);
     }
 
     /**
@@ -135,10 +133,9 @@ public class ParserTest
         parser.setIncomingFramesHandler(capture);
         parser.parse(completeBuf);
 
-        capture.assertErrorCount(0);
-        capture.assertHasFrame(OpCode.TEXT,1);
-        capture.assertHasFrame(OpCode.CLOSE,1);
-        capture.assertHasFrame(OpCode.PONG,1);
+        capture.assertHasFrame(OpCode.TEXT, 1);
+        capture.assertHasFrame(OpCode.CLOSE, 1);
+        capture.assertHasFrame(OpCode.PONG, 1);
     }
 
     /**
@@ -148,14 +145,14 @@ public class ParserTest
     public void testParseCase6_2_3()
     {
         String utf8 = "Hello-\uC2B5@\uC39F\uC3A4\uC3BC\uC3A0\uC3A1-UTF-8!!";
-        byte msg[] = StringUtil.getUtf8Bytes(utf8);
+        byte[] msg = StringUtil.getUtf8Bytes(utf8);
 
         List<WebSocketFrame> send = new ArrayList<>();
         int textCount = 0;
         int continuationCount = 0;
         int len = msg.length;
         boolean continuation = false;
-        byte mini[];
+        byte[] mini;
         for (int i = 0; i < len; i++)
         {
             DataFrame frame = null;
@@ -185,10 +182,9 @@ public class ParserTest
         parser.setIncomingFramesHandler(capture);
         parser.parse(completeBuf);
 
-        capture.assertErrorCount(0);
-        capture.assertHasFrame(OpCode.TEXT,textCount);
-        capture.assertHasFrame(OpCode.CONTINUATION,continuationCount);
-        capture.assertHasFrame(OpCode.CLOSE,1);
+        capture.assertHasFrame(OpCode.TEXT, textCount);
+        capture.assertHasFrame(OpCode.CONTINUATION, continuationCount);
+        capture.assertHasFrame(OpCode.CLOSE, 1);
     }
 
     @Test
@@ -204,16 +200,15 @@ public class ParserTest
         parser.setIncomingFramesHandler(capture);
         parser.parse(buf);
 
-        capture.assertNoErrors();
-        assertThat("Frame Count",capture.getFrames().size(),is(0));
+        assertThat("Frame Count", capture.getFrames().size(), is(0));
     }
 
     @Test
     public void testWindowedParseLargeFrame()
     {
         // Create frames
-        byte payload[] = new byte[65536];
-        Arrays.fill(payload,(byte)'*');
+        byte[] payload = new byte[65536];
+        Arrays.fill(payload, (byte)'*');
 
         List<WebSocketFrame> frames = new ArrayList<>();
         TextFrame text = new TextFrame();
@@ -234,22 +229,21 @@ public class ParserTest
         while (networkBytes.remaining() > 0)
         {
             ByteBuffer window = networkBytes.slice();
-            int windowSize = Math.min(window.remaining(),4096);
+            int windowSize = Math.min(window.remaining(), 4096);
             window.limit(windowSize);
             parser.parse(window);
             networkBytes.position(networkBytes.position() + windowSize);
         }
 
-        capture.assertNoErrors();
-        assertThat("Frame Count",capture.getFrames().size(),is(2));
+        assertThat("Frame Count", capture.getFrames().size(), is(2));
         WebSocketFrame frame = capture.getFrames().poll();
-        assertThat("Frame[0].opcode",frame.getOpCode(),is(OpCode.TEXT));
+        assertThat("Frame[0].opcode", frame.getOpCode(), is(OpCode.TEXT));
         ByteBuffer actualPayload = frame.getPayload();
-        assertThat("Frame[0].payload.length",actualPayload.remaining(),is(payload.length));
+        assertThat("Frame[0].payload.length", actualPayload.remaining(), is(payload.length));
         // Should be all '*' characters (if masking is correct)
         for (int i = actualPayload.position(); i < actualPayload.remaining(); i++)
         {
-            assertThat("Frame[0].payload[i]",actualPayload.get(i),is((byte)'*'));
+            assertThat("Frame[0].payload[i]", actualPayload.get(i), is((byte)'*'));
         }
     }
 }

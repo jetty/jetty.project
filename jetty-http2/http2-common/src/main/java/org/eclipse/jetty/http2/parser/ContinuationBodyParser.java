@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -23,6 +23,7 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.Flags;
+import org.eclipse.jetty.http2.frames.ContinuationFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 
 public class ContinuationBodyParser extends BodyParser
@@ -43,7 +44,15 @@ public class ContinuationBodyParser extends BodyParser
     protected void emptyBody(ByteBuffer buffer)
     {
         if (hasFlag(Flags.END_HEADERS))
-            onHeaders();
+        {
+            onHeaders(buffer);
+        }
+        else
+        {
+            ContinuationFrame frame = new ContinuationFrame(getStreamId(), hasFlag(Flags.END_HEADERS));
+            if (!rateControlOnEvent(frame))
+                connectionFailure(buffer, ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, "invalid_continuation_frame_rate");
+        }
     }
 
     @Override
@@ -81,7 +90,7 @@ public class ContinuationBodyParser extends BodyParser
                         headerBlockFragments.storeFragment(buffer, length, last);
                         reset();
                         if (last)
-                            return onHeaders();
+                            return onHeaders(buffer);
                         return true;
                     }
                 }
@@ -94,15 +103,20 @@ public class ContinuationBodyParser extends BodyParser
         return false;
     }
 
-    private boolean onHeaders()
+    private boolean onHeaders(ByteBuffer buffer)
     {
         ByteBuffer headerBlock = headerBlockFragments.complete();
         MetaData metaData = headerBlockParser.parse(headerBlock, headerBlock.remaining());
+        if (metaData == null)
+            return true;
         if (metaData == HeaderBlockParser.SESSION_FAILURE)
             return false;
-        if (metaData == null || metaData == HeaderBlockParser.STREAM_FAILURE)
-            return true;
         HeadersFrame frame = new HeadersFrame(getStreamId(), metaData, headerBlockFragments.getPriorityFrame(), headerBlockFragments.isEndStream());
+        if (metaData == HeaderBlockParser.STREAM_FAILURE)
+        {
+            if (!rateControlOnEvent(frame))
+                return connectionFailure(buffer, ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, "invalid_continuation_frame_rate");
+        }
         notifyHeaders(frame);
         return true;
     }

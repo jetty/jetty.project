@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,7 +19,6 @@
 package org.eclipse.jetty.fcgi.server.proxy;
 
 import java.util.EnumSet;
-
 import javax.servlet.DispatcherType;
 
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
@@ -43,8 +42,7 @@ public class WordPressHTTP2FastCGIProxyServer
     {
         int tlsPort = 8443;
 
-        SslContextFactory sslContextFactory = new SslContextFactory();
-        sslContextFactory.setEndpointIdentificationAlgorithm("");
+        SslContextFactory sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setKeyStorePath("src/test/resources/keystore.jks");
         sslContextFactory.setKeyStorePassword("storepwd");
         sslContextFactory.setTrustStorePath("src/test/resources/truststore.jks");
@@ -57,18 +55,18 @@ public class WordPressHTTP2FastCGIProxyServer
         HttpConfiguration config = new HttpConfiguration();
         HttpConfiguration https_config = new HttpConfiguration(config);
         https_config.addCustomizer(new SecureRequestCustomizer());
-        
+
         // HTTP2 factory
         HTTP2ServerConnectionFactory h2 = new HTTP2ServerConnectionFactory(https_config);
         ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory();
         alpn.setDefaultProtocol(h2.getProtocol());
-        
+
         // SSL Factory
-        SslConnectionFactory ssl = new SslConnectionFactory(sslContextFactory,alpn.getProtocol());
-        
+        SslConnectionFactory ssl = new SslConnectionFactory(sslContextFactory, alpn.getProtocol());
+
         // HTTP2 Connector
-        ServerConnector http2Connector = 
-            new ServerConnector(server,ssl,alpn,h2,new HttpConnectionFactory(https_config));
+        ServerConnector http2Connector =
+            new ServerConnector(server, ssl, alpn, h2, new HttpConnectionFactory(https_config));
         http2Connector.setPort(tlsPort);
         http2Connector.setIdleTimeout(15000);
         server.addConnector(http2Connector);

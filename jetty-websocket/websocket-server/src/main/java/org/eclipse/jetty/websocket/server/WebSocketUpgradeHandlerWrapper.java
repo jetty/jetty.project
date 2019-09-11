@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,7 +19,6 @@
 package org.eclipse.jetty.websocket.server;
 
 import java.io.IOException;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -41,18 +40,18 @@ public class WebSocketUpgradeHandlerWrapper extends HandlerWrapper implements Ma
     {
         this(context, new MappedByteBufferPool());
     }
-    
+
     public WebSocketUpgradeHandlerWrapper(ServletContextHandler context, ByteBufferPool bufferPool)
     {
         this.configuration = new NativeWebSocketConfiguration(new WebSocketServerFactory(context.getServletContext(), bufferPool));
     }
-    
+
     @Override
     public void addMapping(PathSpec spec, WebSocketCreator creator)
     {
         this.configuration.addMapping(spec, creator);
     }
-    
+
     /**
      * Add a mapping.
      *
@@ -84,27 +83,27 @@ public class WebSocketUpgradeHandlerWrapper extends HandlerWrapper implements Ma
     {
         return configuration.getMapping(target);
     }
-    
+
     @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
-        if (configuration.getFactory().isUpgradeRequest(request,response))
+        if (configuration.getFactory().isUpgradeRequest(request, response))
         {
             MappedResource<WebSocketCreator> resource = configuration.getMatch(target);
             if (resource == null)
             {
                 // no match.
-                response.sendError(HttpServletResponse.SC_NOT_FOUND,"No websocket endpoint matching path: " + target);
+                response.sendError(HttpServletResponse.SC_NOT_FOUND, "No websocket endpoint matching path: " + target);
                 return;
             }
 
             WebSocketCreator creator = resource.getResource();
 
             // Store PathSpec resource mapping as request attribute
-            request.setAttribute(PathSpec.class.getName(),resource);
+            request.setAttribute(PathSpec.class.getName(), resource);
 
             // We have an upgrade request
-            if (configuration.getFactory().acceptWebSocket(creator,request,response))
+            if (configuration.getFactory().acceptWebSocket(creator, request, response))
             {
                 // We have a socket instance created
                 return;
@@ -119,6 +118,6 @@ public class WebSocketUpgradeHandlerWrapper extends HandlerWrapper implements Ma
                 return;
             }
         }
-        super.handle(target,baseRequest,request,response);
+        super.handle(target, baseRequest, request, response);
     }
 }

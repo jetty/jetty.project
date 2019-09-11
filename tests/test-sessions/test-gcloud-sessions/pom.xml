@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>test-sessions-parent</artifactId>
-    <version>9.4.13-SNAPSHOT</version>
+    <version>9.4.21-SNAPSHOT</version>
   </parent>
   <artifactId>test-gcloud-sessions</artifactId>
   <name>Jetty Tests :: Sessions :: GCloud</name>
@@ -27,37 +27,42 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <skipTests>true</skipTests>
-          <test>GCloudTestSuite</test>
         </configuration>
       </plugin>
     </plugins>
   </build>
   <dependencies>
-       <dependency>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-server</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-webapp</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-client</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.jetty.tests</groupId>
-            <artifactId>test-sessions-common</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.jetty.gcloud</groupId>
-            <artifactId>jetty-gcloud-session-manager</artifactId>
-            <version>${project.version}</version>
-         </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-server</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-webapp</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-client</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.tests</groupId>
+      <artifactId>test-sessions-common</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.gcloud</groupId>
+      <artifactId>jetty-gcloud-session-manager</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <!-- avoid depending on a range dependency from a transitive dependency -->
+    <dependency>
+      <groupId>io.grpc</groupId>
+      <artifactId>grpc-core</artifactId>
+      <scope>compile</scope>
+    </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
       <artifactId>jetty-test-helper</artifactId>
@@ -65,30 +70,30 @@
     </dependency>
   </dependencies>
   <profiles>
-      <profile>
-        <id>gcloud</id>
-        <activation>
-          <property>
-            <name>gcloud.enabled</name>
-            <value>true</value>
-          </property>
-        </activation>
-        <build>
-          <plugins>
-            <plugin>
-              <groupId>org.apache.maven.plugins</groupId>
-              <artifactId>maven-surefire-plugin</artifactId>
-              <configuration>
-                <skipTests>false</skipTests>
-                <systemPropertyVariables>
-                  <DATASTORE_DATASET>jetty9-work</DATASTORE_DATASET>
-                  <DATASTORE_HOST>http://localhost:8088</DATASTORE_HOST>
-                </systemPropertyVariables>
-              </configuration>
-            </plugin>
-          </plugins>
-        </build>
-      </profile>
+    <profile>
+      <id>gcloud</id>
+      <activation>
+        <property>
+          <name>gcloud.enabled</name>
+          <value>true</value>
+        </property>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <configuration>
+              <skipTests>false</skipTests>
+              <systemPropertyVariables>
+                <DATASTORE_DATASET>jetty9-work</DATASTORE_DATASET>
+                <DATASTORE_HOST>http://localhost:8088</DATASTORE_HOST>
+              </systemPropertyVariables>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
   </profiles>
 
 </project>

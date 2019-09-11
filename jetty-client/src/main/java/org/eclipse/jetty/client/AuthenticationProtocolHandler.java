@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -37,19 +38,20 @@ import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.BufferingResponseListener;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 public abstract class AuthenticationProtocolHandler implements ProtocolHandler
 {
-    public static final int DEFAULT_MAX_CONTENT_LENGTH = 16*1024;
+    public static final int DEFAULT_MAX_CONTENT_LENGTH = 16 * 1024;
     public static final Logger LOG = Log.getLogger(AuthenticationProtocolHandler.class);
     private final HttpClient client;
     private final int maxContentLength;
     private final ResponseNotifier notifier;
 
-    private static final Pattern CHALLENGE_PATTERN = Pattern.compile("(?<schemeOnly>[!#$%&'*+\\-.^_`|~0-9A-Za-z]+)|(?:(?<scheme>[!#$%&'*+\\-.^_`|~0-9A-Za-z]+)\\s+)?(?:(?<token68>[a-zA-Z0-9\\-._~+\\/]+=*)|(?<paramName>[!#$%&'*+\\-.^_`|~0-9A-Za-z]+)\\s*=\\s*(?:(?<paramValue>.*)))");
+    private static final Pattern CHALLENGE_PATTERN = Pattern.compile("(?<schemeOnly>[!#$%&'*+\\-.^_`|~0-9A-Za-z]+)|(?:(?<scheme>[!#$%&'*+\\-.^_`|~0-9A-Za-z]+)\\s+)?(?:(?<token68>[a-zA-Z0-9\\-._~+/]+=*)|(?<paramName>[!#$%&'*+\\-.^_`|~0-9A-Za-z]+)\\s*=\\s*(?:(?<paramValue>.*)))");
 
     protected AuthenticationProtocolHandler(HttpClient client, int maxContentLength)
     {
@@ -78,18 +80,17 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
         return new AuthenticationListener();
     }
 
-
     protected List<HeaderInfo> getHeaderInfo(String header) throws IllegalArgumentException
     {
         List<HeaderInfo> headerInfos = new ArrayList<>();
         Matcher m;
 
-        for(String value : new QuotedCSV(true, header))
+        for (String value : new QuotedCSV(true, header))
         {
             m = CHALLENGE_PATTERN.matcher(value);
             if (m.matches())
             {
-                if(m.group("schemeOnly") != null)
+                if (m.group("schemeOnly") != null)
                 {
                     headerInfos.add(new HeaderInfo(getAuthorizationHeader(), m.group(1), new HashMap<>()));
                     continue;
@@ -121,7 +122,6 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
 
         return headerInfos;
     }
-
 
     private class AuthenticationListener extends BufferingResponseListener
     {
@@ -217,6 +217,8 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
                     path = request.getPath();
                 }
                 Request newRequest = client.copyRequest(request, requestURI);
+                // Disable the timeout so that only the one from the initial request applies.
+                newRequest.timeout(0, TimeUnit.MILLISECONDS);
                 if (path != null)
                     newRequest.path(path);
 
@@ -225,13 +227,12 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
                 copyIfAbsent(request, newRequest, HttpHeader.AUTHORIZATION);
                 copyIfAbsent(request, newRequest, HttpHeader.PROXY_AUTHORIZATION);
 
-                newRequest.onResponseSuccess(r -> client.getAuthenticationStore().addAuthenticationResult(authnResult));
-
+                AfterAuthenticationListener listener = new AfterAuthenticationListener(authnResult);
                 Connection connection = (Connection)request.getAttributes().get(Connection.class.getName());
                 if (connection != null)
-                    connection.send(newRequest, null);
+                    connection.send(newRequest, listener);
                 else
-                    newRequest.send(null);
+                    newRequest.send(listener);
             }
             catch (Throwable x)
             {
@@ -289,13 +290,31 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
                 {
                     result.addAll(getHeaderInfo(value));
                 }
-                catch(IllegalArgumentException e)
+                catch (IllegalArgumentException e)
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("Failed to parse authentication header", e);
                 }
             }
             return result;
+        }
+    }
+
+    private class AfterAuthenticationListener extends Response.Listener.Adapter
+    {
+        private final Authentication.Result authenticationResult;
+
+        private AfterAuthenticationListener(Authentication.Result authenticationResult)
+        {
+            this.authenticationResult = authenticationResult;
+        }
+
+        @Override
+        public void onSuccess(Response response)
+        {
+            int status = response.getStatus();
+            if (HttpStatus.isSuccess(status) || HttpStatus.isRedirection(status))
+                client.getAuthenticationStore().addAuthenticationResult(authenticationResult);
         }
     }
 }

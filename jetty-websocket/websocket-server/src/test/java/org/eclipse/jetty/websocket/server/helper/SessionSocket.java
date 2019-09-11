@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -28,6 +28,7 @@ import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 
@@ -46,7 +47,7 @@ public class SessionSocket
     @OnWebSocketMessage
     public void onText(String message)
     {
-        LOG.debug("onText({})",message);
+        LOG.debug("onText({})", message);
         if (message == null)
         {
             return;
@@ -88,14 +89,14 @@ public class SessionSocket
 
             if ("session.isSecure".equals(message))
             {
-                String issecure = String.format("session.isSecure=%b",session.isSecure());
+                String issecure = String.format("session.isSecure=%b", session.isSecure());
                 sendString(issecure);
                 return;
             }
 
             if ("session.upgradeRequest.requestURI".equals(message))
             {
-                String response = String.format("session.upgradeRequest.requestURI=%s",session.getUpgradeRequest().getRequestURI().toASCIIString());
+                String response = String.format("session.upgradeRequest.requestURI=%s", session.getUpgradeRequest().getRequestURI().toASCIIString());
                 sendString(response);
                 return;
             }
@@ -112,6 +113,15 @@ public class SessionSocket
         catch (Throwable t)
         {
             LOG.warn(t);
+        }
+    }
+
+    @OnWebSocketError
+    public void onError(Throwable cause)
+    {
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("onError()", cause);
         }
     }
 

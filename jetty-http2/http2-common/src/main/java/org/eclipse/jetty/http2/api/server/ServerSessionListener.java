@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -27,14 +27,15 @@ public interface ServerSessionListener extends Session.Listener
 {
     /**
      * <p>Callback method invoked when a connection has been accepted by the server.</p>
+     *
      * @param session the session
      */
-    public void onAccept(Session session);
+    void onAccept(Session session);
 
     /**
      * <p>Empty implementation of {@link ServerSessionListener}</p>
      */
-    public static class Adapter extends Session.Listener.Adapter implements ServerSessionListener
+    class Adapter extends Session.Listener.Adapter implements ServerSessionListener
     {
         @Override
         public void onAccept(Session session)

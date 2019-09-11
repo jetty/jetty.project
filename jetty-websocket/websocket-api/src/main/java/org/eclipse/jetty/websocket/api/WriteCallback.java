@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -31,18 +31,17 @@ public interface WriteCallback
      * <p>
      * Callback invoked when the write fails.
      * </p>
-     * 
-     * @param x
-     *            the reason for the write failure
+     *
+     * @param x the reason for the write failure
      */
-    public void writeFailed(Throwable x);
+    void writeFailed(Throwable x);
 
     /**
      * <p>
      * Callback invoked when the write completes.
      * </p>
-     * 
+     *
      * @see #writeFailed(Throwable)
      */
-    public abstract void writeSuccess();
+    void writeSuccess();
 }

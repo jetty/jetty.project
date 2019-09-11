@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -34,7 +34,7 @@ public class OptionalSessionCallableMethod extends CallableMethod
 
     public OptionalSessionCallableMethod(Class<?> pojo, Method method)
     {
-        super(pojo,method);
+        super(pojo, method);
 
         boolean foundConnection = false;
         boolean foundStreaming = false;
@@ -62,14 +62,14 @@ public class OptionalSessionCallableMethod extends CallableMethod
     {
         if (wantsSession)
         {
-            Object fullArgs[] = new Object[args.length + 1];
+            Object[] fullArgs = new Object[args.length + 1];
             fullArgs[0] = connection;
-            System.arraycopy(args,0,fullArgs,1,args.length);
-            call(obj,fullArgs);
+            System.arraycopy(args, 0, fullArgs, 1, args.length);
+            call(obj, fullArgs);
         }
         else
         {
-            call(obj,args);
+            call(obj, args);
         }
     }
 
@@ -86,6 +86,6 @@ public class OptionalSessionCallableMethod extends CallableMethod
     @Override
     public String toString()
     {
-        return String.format("%s[%s]",this.getClass().getSimpleName(),method.toGenericString());
+        return String.format("%s[%s]", this.getClass().getSimpleName(), method.toGenericString());
     }
 }

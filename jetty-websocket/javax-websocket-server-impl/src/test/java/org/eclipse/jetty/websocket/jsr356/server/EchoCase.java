@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -21,7 +21,6 @@ package org.eclipse.jetty.websocket.jsr356.server;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
-
 import javax.websocket.server.ServerEndpoint;
 
 public class EchoCase
@@ -31,6 +30,7 @@ public class EchoCase
         ByteBuffer part;
 
         boolean fin;
+
         public PartialBinary(ByteBuffer part, boolean fin)
         {
             this.part = part;
@@ -43,6 +43,7 @@ public class EchoCase
         String part;
 
         boolean fin;
+
         public PartialText(String part, boolean fin)
         {
             this.part = part;
@@ -97,7 +98,7 @@ public class EchoCase
         int len = parts.length;
         for (int i = 0; i < len; i++)
         {
-            addMessage(new PartialBinary(parts[i],(i == (len-1))));
+            addMessage(new PartialBinary(parts[i], (i == (len - 1))));
         }
         return this;
     }
@@ -107,7 +108,7 @@ public class EchoCase
         int len = parts.length;
         for (int i = 0; i < len; i++)
         {
-            addMessage(new PartialText(parts[i],(i == (len-1))));
+            addMessage(new PartialText(parts[i], (i == (len - 1))));
         }
         return this;
     }
@@ -181,7 +182,7 @@ public class EchoCase
                 messageCount++;
             }
         }
-        
+
         return messageCount;
     }
 }

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -52,7 +52,7 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
 public class CachedContentFactory implements HttpContent.ContentFactory
 {
     private static final Logger LOG = Log.getLogger(CachedContentFactory.class);
-    private final static Map<CompressedContentFormat, CachedPrecompressedHttpContent> NO_PRECOMPRESSED = Collections.unmodifiableMap(Collections.emptyMap());
+    private static final Map<CompressedContentFormat, CachedPrecompressedHttpContent> NO_PRECOMPRESSED = Collections.unmodifiableMap(Collections.emptyMap());
 
     private final ConcurrentMap<String, CachedHttpContent> _cache;
     private final AtomicInteger _cachedSize;
@@ -71,11 +71,11 @@ public class CachedContentFactory implements HttpContent.ContentFactory
     /**
      * Constructor.
      *
-     * @param parent               the parent resource cache
-     * @param factory              the resource factory
-     * @param mimeTypes            Mimetype to use for meta data
-     * @param useFileMappedBuffer  true to file memory mapped buffers
-     * @param etags                true to support etags
+     * @param parent the parent resource cache
+     * @param factory the resource factory
+     * @param mimeTypes Mimetype to use for meta data
+     * @param useFileMappedBuffer true to file memory mapped buffers
+     * @param etags true to support etags
      * @param precompressedFormats array of precompression formats to support
      */
     public CachedContentFactory(CachedContentFactory parent, ResourceFactory factory, MimeTypes mimeTypes, boolean useFileMappedBuffer, boolean etags, CompressedContentFormat[] precompressedFormats)
@@ -169,7 +169,7 @@ public class CachedContentFactory implements HttpContent.ContentFactory
      *
      * @param pathInContext The key into the cache
      * @param maxBufferSize The maximum buffer size allocated for this request.  For cached content, a larger buffer may have
-     *                      previously been allocated and returned by the {@link HttpContent#getDirectBuffer()} or {@link HttpContent#getIndirectBuffer()} calls.
+     * previously been allocated and returned by the {@link HttpContent#getDirectBuffer()} or {@link HttpContent#getIndirectBuffer()} calls.
      * @return The entry matching {@code pathInContext}, or a new entry
      * if no matching entry was found. If the content exists but is not cacheable,
      * then a {@link ResourceHttpContent} instance is returned. If
@@ -241,8 +241,8 @@ public class CachedContentFactory implements HttpContent.ContentFactory
                     {
                         compressedContent = null;
                         Resource compressedResource = _factory.getResource(compressedPathInContext);
-                        if (compressedResource.exists() && compressedResource.lastModified() >= resource.lastModified()
-                                && compressedResource.length() < resource.length())
+                        if (compressedResource.exists() && compressedResource.lastModified() >= resource.lastModified() &&
+                            compressedResource.length() < resource.length())
                         {
                             compressedContent = new CachedHttpContent(compressedPathInContext, compressedResource, null);
                             CachedHttpContent added = _cache.putIfAbsent(compressedPathInContext, compressedContent);
@@ -287,10 +287,10 @@ public class CachedContentFactory implements HttpContent.ContentFactory
 
                 // Is there a precompressed resource?
                 Resource compressedResource = _factory.getResource(compressedPathInContext);
-                if (compressedResource.exists() && compressedResource.lastModified() >= resource.lastModified()
-                        && compressedResource.length() < resource.length())
+                if (compressedResource.exists() && compressedResource.lastModified() >= resource.lastModified() &&
+                    compressedResource.length() < resource.length())
                     compressedContents.put(format,
-                            new ResourceHttpContent(compressedResource, _mimeTypes.getMimeByExtension(compressedPathInContext), maxBufferSize));
+                        new ResourceHttpContent(compressedResource, _mimeTypes.getMimeByExtension(compressedPathInContext), maxBufferSize));
             }
             if (!compressedContents.isEmpty())
                 return new ResourceHttpContent(resource, mt, maxBufferSize, compressedContents);
@@ -335,13 +335,14 @@ public class CachedContentFactory implements HttpContent.ContentFactory
     {
         try
         {
-            return BufferUtil.toBuffer(resource, true);
+            return BufferUtil.toBuffer(resource, false);
         }
         catch (IOException | IllegalArgumentException e)
         {
-            LOG.warn(e);
-            return null;
+            if (LOG.isDebugEnabled())
+                LOG.debug(e);
         }
+        return null;
     }
 
     protected ByteBuffer getMappedBuffer(Resource resource)
@@ -355,7 +356,8 @@ public class CachedContentFactory implements HttpContent.ContentFactory
         }
         catch (IOException | IllegalArgumentException e)
         {
-            LOG.warn(e);
+            if (LOG.isDebugEnabled())
+                LOG.debug(e);
         }
         return null;
     }
@@ -368,7 +370,8 @@ public class CachedContentFactory implements HttpContent.ContentFactory
         }
         catch (IOException | IllegalArgumentException e)
         {
-            LOG.warn(e);
+            if (LOG.isDebugEnabled())
+                LOG.debug(e);
         }
         return null;
     }
@@ -386,7 +389,7 @@ public class CachedContentFactory implements HttpContent.ContentFactory
     {
         private final String _key;
         private final Resource _resource;
-        private final int _contentLengthValue;
+        private final long _contentLengthValue;
         private final HttpField _contentType;
         private final String _characterEncoding;
         private final MimeTypes.Type _mimeType;
@@ -413,9 +416,9 @@ public class CachedContentFactory implements HttpContent.ContentFactory
             boolean exists = resource.exists();
             _lastModifiedValue = exists ? resource.lastModified() : -1L;
             _lastModified = _lastModifiedValue == -1 ? null
-                    : new PreEncodedHttpField(HttpHeader.LAST_MODIFIED, DateGenerator.formatDate(_lastModifiedValue));
+                : new PreEncodedHttpField(HttpHeader.LAST_MODIFIED, DateGenerator.formatDate(_lastModifiedValue));
 
-            _contentLengthValue = exists ? (int)resource.length() : 0;
+            _contentLengthValue = exists ? resource.length() : 0;
             _contentLength = new PreEncodedHttpField(HttpHeader.CONTENT_LENGTH, Long.toString(_contentLengthValue));
 
             if (_cachedFiles.incrementAndGet() > _maxCachedFiles)
@@ -552,25 +555,34 @@ public class CachedContentFactory implements HttpContent.ContentFactory
         @Override
         public ByteBuffer getIndirectBuffer()
         {
+            if (_resource.length() > _maxCachedFileSize)
+            {
+                return null;
+            }
+
             ByteBuffer buffer = _indirectBuffer.get();
             if (buffer == null)
             {
                 ByteBuffer buffer2 = CachedContentFactory.this.getIndirectBuffer(_resource);
-
                 if (buffer2 == null)
-                    LOG.warn("Could not load " + this);
-                else if (_indirectBuffer.compareAndSet(null, buffer2))
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Could not load indirect buffer from " + this);
+                    return null;
+                }
+
+                if (_indirectBuffer.compareAndSet(null, buffer2))
                 {
                     buffer = buffer2;
                     if (_cachedSize.addAndGet(BufferUtil.length(buffer)) > _maxCacheSize)
                         shrinkCache();
                 }
                 else
+                {
                     buffer = _indirectBuffer.get();
+                }
             }
-            if (buffer == null)
-                return null;
-            return buffer.slice();
+            return buffer == null ? null : buffer.asReadOnlyBuffer();
         }
 
         @Override
@@ -589,7 +601,8 @@ public class CachedContentFactory implements HttpContent.ContentFactory
                     else
                         buffer = _mappedBuffer.get();
                 }
-                else
+                // Since MappedBuffers don't use heap, we don't care about the resource.length
+                else if (_resource.length() < _maxCachedFileSize)
                 {
                     ByteBuffer direct = CachedContentFactory.this.getDirectBuffer(_resource);
                     if (direct != null)
@@ -607,7 +620,8 @@ public class CachedContentFactory implements HttpContent.ContentFactory
                     }
                     else
                     {
-                        LOG.warn("Could not load " + this);
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Could not load " + this);
                     }
                 }
             }

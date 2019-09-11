@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>9.4.13-SNAPSHOT</version>
+    <version>9.4.21-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-nosql</artifactId>
@@ -13,8 +13,7 @@
   </properties>
   <build>
     <defaultGoal>install</defaultGoal>
-    <plugins>
-    </plugins>
+    <plugins></plugins>
   </build>
   <dependencies>
     <dependency>

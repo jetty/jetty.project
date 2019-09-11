@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -29,7 +29,7 @@ import org.eclipse.jetty.start.FileInitializer;
 import org.eclipse.jetty.start.StartLog;
 
 public class LocalFileInitializer extends FileInitializer
-{   
+{
     public LocalFileInitializer(BaseHome basehome)
     {
         super(basehome);
@@ -38,14 +38,14 @@ public class LocalFileInitializer extends FileInitializer
     @Override
     public boolean create(URI uri, String location) throws IOException
     {
-        Path destination = getDestination(uri,location);
-        
+        Path destination = getDestination(uri, location);
+
         if (destination == null)
         {
-            StartLog.error("Bad file arg %s",uri);
+            StartLog.error("Bad file arg %s", uri);
             return false;
         }
-            
+
         boolean isDir = location.endsWith("/");
 
         if (FS.exists(destination))
@@ -78,10 +78,10 @@ public class LocalFileInitializer extends FileInitializer
             // Create directory
             boolean mkdir = FS.ensureDirectoryExists(destination);
             if (mkdir)
-                StartLog.log("MKDIR",_basehome.toShortForm(destination));
+                StartLog.log("MKDIR", _basehome.toShortForm(destination));
             return mkdir;
         }
-        
-        throw new IOException("Unable to create "+_basehome.toShortForm(destination));
+
+        throw new IOException("Unable to create " + _basehome.toShortForm(destination));
     }
 }

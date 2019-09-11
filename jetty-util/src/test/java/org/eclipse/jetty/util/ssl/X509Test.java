@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,12 +18,12 @@
 
 package org.eclipse.jetty.util.ssl;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-
 import java.security.cert.X509Certificate;
 
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 public class X509Test
 {
@@ -40,10 +40,10 @@ public class X509Test
                 return keyUsage;
             }
         };
-        
+
         assertThat("Normal X509", X509.isCertSign(bogusX509), is(true));
     }
-    
+
     @Test
     public void testIsCertSign_Normal_NoSupported()
     {
@@ -57,10 +57,10 @@ public class X509Test
                 return keyUsage;
             }
         };
-        
+
         assertThat("Normal X509", X509.isCertSign(bogusX509), is(false));
     }
-    
+
     @Test
     public void testIsCertSign_NonStandard_Short()
     {
@@ -74,10 +74,10 @@ public class X509Test
                 return keyUsage;
             }
         };
-        
+
         assertThat("NonStandard X509", X509.isCertSign(bogusX509), is(true));
     }
-    
+
     @Test
     public void testIsCertSign_NonStandard_Shorter()
     {
@@ -90,10 +90,10 @@ public class X509Test
                 return keyUsage;
             }
         };
-        
+
         assertThat("NonStandard X509", X509.isCertSign(bogusX509), is(false));
     }
-    
+
     @Test
     public void testIsCertSign_Normal_Null()
     {
@@ -105,10 +105,10 @@ public class X509Test
                 return null;
             }
         };
-        
+
         assertThat("Normal X509", X509.isCertSign(bogusX509), is(false));
     }
-    
+
     @Test
     public void testIsCertSign_Normal_Empty()
     {
@@ -120,7 +120,7 @@ public class X509Test
                 return new boolean[0];
             }
         };
-        
+
         assertThat("Normal X509", X509.isCertSign(bogusX509), is(false));
     }
 }

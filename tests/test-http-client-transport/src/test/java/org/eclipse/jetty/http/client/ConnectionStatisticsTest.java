@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,14 +18,9 @@
 
 package org.eclipse.jetty.http.client;
 
-import static org.eclipse.jetty.http.client.Transport.H2C;
-import static org.eclipse.jetty.http.client.Transport.HTTP;
-import static org.hamcrest.MatcherAssert.assertThat;
-
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -43,6 +38,10 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
+
+import static org.eclipse.jetty.http.client.Transport.H2C;
+import static org.eclipse.jetty.http.client.Transport.HTTP;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 public class ConnectionStatisticsTest extends AbstractTest<TransportScenario>
 {
@@ -73,7 +72,7 @@ public class ConnectionStatisticsTest extends AbstractTest<TransportScenario>
         {
             @Override
             public void onOpened(Connection connection)
-            {             
+            {
             }
 
             @Override
@@ -82,7 +81,7 @@ public class ConnectionStatisticsTest extends AbstractTest<TransportScenario>
                 closed.countDown();
             }
         };
-        
+
         ConnectionStatistics serverStats = new ConnectionStatistics();
         scenario.connector.addBean(serverStats);
         scenario.connector.addBean(closer);
@@ -98,15 +97,15 @@ public class ConnectionStatisticsTest extends AbstractTest<TransportScenario>
         byte[] content = new byte[3072];
         long contentLength = content.length;
         ContentResponse response = scenario.client.newRequest(scenario.newURI())
-                .header(HttpHeader.CONNECTION,"close")
-                .content(new BytesContentProvider(content))
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+            .header(HttpHeader.CONNECTION, "close")
+            .content(new BytesContentProvider(content))
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
 
         assertThat(response.getStatus(), Matchers.equalTo(HttpStatus.OK_200));
 
         closed.await();
-        
+
         assertThat(serverStats.getConnectionsMax(), Matchers.greaterThan(0L));
         assertThat(serverStats.getReceivedBytes(), Matchers.greaterThan(contentLength));
         assertThat(serverStats.getSentBytes(), Matchers.greaterThan(contentLength));

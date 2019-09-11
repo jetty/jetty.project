@@ -1,5 +1,4 @@
-<?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+<?xml version="1.0"?><!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
 
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
 
@@ -12,6 +11,11 @@
     <New class="org.eclipse.jetty.server.session.NullSessionCacheFactory">
      <Set name="saveOnCreate"><Property name="jetty.session.saveOnCreate" default="false" /></Set>
      <Set name="removeUnloadableSessions"><Property name="jetty.session.removeUnloadableSessions" default="false"/></Set>
+     <Set name="writeThroughMode">
+         <Call class="org.eclipse.jetty.server.session.NullSessionCache$WriteThroughMode" name="valueOf">
+            <Arg><Property name="jetty.session.writeThroughMode" default="ON_EXIT"/></Arg>
+         </Call>
+    </Set>
     </New>
    </Arg>
   </Call>

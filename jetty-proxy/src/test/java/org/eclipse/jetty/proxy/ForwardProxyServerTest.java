@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -17,10 +17,6 @@
 //
 
 package org.eclipse.jetty.proxy;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -52,6 +48,10 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+
 public class ForwardProxyServerTest
 {
     @SuppressWarnings("Duplicates")
@@ -62,15 +62,13 @@ public class ForwardProxyServerTest
         // no server SSL
         SslContextFactory scenario1 = null;
         // basic server SSL
-        SslContextFactory scenario2 = new SslContextFactory();
+        SslContextFactory scenario2 = new SslContextFactory.Server();
         scenario2.setKeyStorePath(keyStorePath);
         scenario2.setKeyStorePassword("storepwd");
         scenario2.setKeyManagerPassword("keypwd");
         // TODO: add more SslContextFactory configurations/scenarios?
 
-        return Stream.of(
-                scenario1, scenario2
-        ).map(Arguments::of);
+        return Stream.of(scenario1, scenario2).map(Arguments::of);
     }
 
     private SslContextFactory serverSslContextFactory;
@@ -172,7 +170,9 @@ public class ForwardProxyServerTest
                             ByteBuffer buffer = BufferUtil.allocate(1024);
                             int filled = 0;
                             while (filled == 0)
+                            {
                                 filled = getEndPoint().fill(buffer);
+                            }
                             Utf8StringBuilder builder = new Utf8StringBuilder();
                             builder.append(buffer);
                             String request = builder.toString();
@@ -187,8 +187,8 @@ public class ForwardProxyServerTest
                             else
                                 assertFalse(request.contains("https://"));
 
-                            String response = "" +
-                                    "HTTP/1.1 200 OK\r\n" +
+                            String response =
+                                "HTTP/1.1 200 OK\r\n" +
                                     "Content-Length: 0\r\n" +
                                     "\r\n";
                             getEndPoint().write(Callback.NOOP, ByteBuffer.wrap(response.getBytes(StandardCharsets.UTF_8)));
@@ -205,10 +205,11 @@ public class ForwardProxyServerTest
         startProxy();
 
         String keyStorePath = MavenTestingUtils.getTestResourceFile("keystore").getAbsolutePath();
-        SslContextFactory clientSsl = new SslContextFactory();
+        SslContextFactory clientSsl = new SslContextFactory.Client();
         clientSsl.setKeyStorePath(keyStorePath);
         clientSsl.setKeyStorePassword("storepwd");
         clientSsl.setKeyManagerPassword("keypwd");
+        clientSsl.setEndpointIdentificationAlgorithm(null);
 
         HttpClient httpClient = new HttpClient(clientSsl);
         httpClient.getProxyConfiguration().getProxies().add(newHttpProxy());
@@ -217,10 +218,10 @@ public class ForwardProxyServerTest
         try
         {
             ContentResponse response = httpClient.newRequest("localhost", serverConnector.getLocalPort())
-                    .scheme(serverSslContextFactory == null ? "http" : "https")
-                    .method(HttpMethod.GET)
-                    .path("/test")
-                    .send();
+                .scheme(serverSslContextFactory == null ? "http" : "https")
+                .method(HttpMethod.GET)
+                .path("/test")
+                .send();
 
             assertEquals(HttpStatus.OK_200, response.getStatus());
         }

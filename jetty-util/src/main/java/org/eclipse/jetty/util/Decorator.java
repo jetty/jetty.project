@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -24,7 +24,7 @@ package org.eclipse.jetty.util;
  * Most common use is weld/CDI.
  * <p>
  * This was moved from org.eclipse.jetty.servlet.ServletContextHandler to allow
- * client applications to also use Weld/CDI to decorate objects.  
+ * client applications to also use Weld/CDI to decorate objects.
  * Such as websocket client (which has no servlet api requirement)
  */
 public interface Decorator

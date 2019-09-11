@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,16 +18,12 @@
 
 package org.eclipse.jetty.servlet;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -39,6 +35,9 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class AsyncServletLongPollTest
 {
@@ -116,8 +115,8 @@ public class AsyncServletLongPollTest
         {
             int wait = 1000;
             String request1 = "GET " + uri + "?suspend=" + wait + " HTTP/1.1\r\n" +
-                    "Host: localhost:" + connector.getLocalPort() + "\r\n" +
-                    "\r\n";
+                "Host: localhost:" + connector.getLocalPort() + "\r\n" +
+                "\r\n";
             OutputStream output1 = socket1.getOutputStream();
             output1.write(request1.getBytes(StandardCharsets.UTF_8));
             output1.flush();
@@ -128,8 +127,8 @@ public class AsyncServletLongPollTest
             try (Socket socket2 = new Socket("localhost", connector.getLocalPort()))
             {
                 String request2 = "DELETE " + uri + "?error=" + error + " HTTP/1.1\r\n" +
-                        "Host: localhost:" + connector.getLocalPort() + "\r\n" +
-                        "\r\n";
+                    "Host: localhost:" + connector.getLocalPort() + "\r\n" +
+                    "\r\n";
                 OutputStream output2 = socket2.getOutputStream();
                 output2.write(request2.getBytes(StandardCharsets.UTF_8));
                 output2.flush();
@@ -140,7 +139,7 @@ public class AsyncServletLongPollTest
             }
 
             socket1.setSoTimeout(2 * wait);
-            
+
             HttpTester.Input input1 = HttpTester.from(socket1.getInputStream());
             HttpTester.Response response1 = HttpTester.parseResponse(input1);
             assertEquals(error, response1.getStatus());
@@ -148,8 +147,8 @@ public class AsyncServletLongPollTest
             // Now try to make another request on the first connection
             // to verify that we set correctly the read interest (#409842)
             String request3 = "GET " + uri + " HTTP/1.1\r\n" +
-                    "Host: localhost:" + connector.getLocalPort() + "\r\n" +
-                    "\r\n";
+                "Host: localhost:" + connector.getLocalPort() + "\r\n" +
+                "\r\n";
             output1.write(request3.getBytes(StandardCharsets.UTF_8));
             output1.flush();
 

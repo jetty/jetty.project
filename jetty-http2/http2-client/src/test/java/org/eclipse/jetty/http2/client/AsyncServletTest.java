@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,18 +18,12 @@
 
 package org.eclipse.jetty.http2.client;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
@@ -60,8 +54,12 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Promise;
-
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class AsyncServletTest extends AbstractTest
 {
@@ -137,25 +135,28 @@ public class AsyncServletTest extends AbstractTest
         MetaData.Request metaData = newRequest("GET", fields);
         HeadersFrame frame = new HeadersFrame(metaData, null, true);
         FuturePromise<Stream> promise = new FuturePromise<>();
-        CountDownLatch clientLatch = new CountDownLatch(1);
+        CountDownLatch responseLatch = new CountDownLatch(1);
+        CountDownLatch resetLatch = new CountDownLatch(1);
         session.newStream(frame, promise, new Stream.Listener.Adapter()
         {
             @Override
             public void onHeaders(Stream stream, HeadersFrame frame)
             {
-                MetaData.Response response = (MetaData.Response)frame.getMetaData();
-                if (response.getStatus() == HttpStatus.INTERNAL_SERVER_ERROR_500 && frame.isEndStream())
-                    clientLatch.countDown();
+                responseLatch.countDown();
+            }
+
+            @Override
+            public void onReset(Stream stream, ResetFrame frame)
+            {
+                resetLatch.countDown();
             }
         });
         Stream stream = promise.get(5, TimeUnit.SECONDS);
         stream.setIdleTimeout(10 * idleTimeout);
 
-        // When the client closes, the server receives the
-        // corresponding frame and acts by notifying the failure,
-        // which sends back to the client the error response.
         assertTrue(serverLatch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
-        assertTrue(clientLatch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
+        assertFalse(responseLatch.await(idleTimeout + 1000, TimeUnit.MILLISECONDS));
+        assertTrue(resetLatch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
     }
 
     @Test
@@ -237,11 +238,12 @@ public class AsyncServletTest extends AbstractTest
         ServletOutputStream output = response.getOutputStream();
 
         assertThrows(IOException.class,
-                () -> {
-                    // Large writes or explicit flush() must
-                    // fail because the stream has been reset.
-                    output.flush();
-                });
+            () ->
+            {
+                // Large writes or explicit flush() must
+                // fail because the stream has been reset.
+                output.flush();
+            });
     }
 
     @Test

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,70 +18,77 @@
 
 package org.eclipse.jetty.websocket.common.scopes;
 
+import java.util.Collection;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.common.WebSocketSession;
+import org.eclipse.jetty.websocket.common.WebSocketSessionListener;
 
 public class DelegatedContainerScope implements WebSocketContainerScope
 {
     private final WebSocketPolicy policy;
     private final WebSocketContainerScope delegate;
-    
+
     public DelegatedContainerScope(WebSocketPolicy policy, WebSocketContainerScope parentScope)
     {
         this.policy = policy;
         this.delegate = parentScope;
     }
-    
+
     @Override
     public ByteBufferPool getBufferPool()
     {
         return this.delegate.getBufferPool();
     }
-    
+
     @Override
     public Executor getExecutor()
     {
         return this.delegate.getExecutor();
     }
-    
+
     @Override
     public DecoratedObjectFactory getObjectFactory()
     {
         return this.delegate.getObjectFactory();
     }
-    
+
     @Override
     public WebSocketPolicy getPolicy()
     {
         return this.policy;
     }
-    
+
     @Override
     public SslContextFactory getSslContextFactory()
     {
         return this.delegate.getSslContextFactory();
     }
-    
+
     @Override
     public boolean isRunning()
     {
         return this.delegate.isRunning();
     }
-    
+
     @Override
-    public void onSessionOpened(WebSocketSession session)
+    public void addSessionListener(WebSocketSessionListener listener)
     {
-        this.delegate.onSessionOpened(session);
+        this.delegate.addSessionListener(listener);
     }
-    
+
     @Override
-    public void onSessionClosed(WebSocketSession session)
+    public void removeSessionListener(WebSocketSessionListener listener)
     {
-        this.delegate.onSessionClosed(session);
+        this.delegate.removeSessionListener(listener);
+    }
+
+    @Override
+    public Collection<WebSocketSessionListener> getSessionListeners()
+    {
+        return this.delegate.getSessionListeners();
     }
 }

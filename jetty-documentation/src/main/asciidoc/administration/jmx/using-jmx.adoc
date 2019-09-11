@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ========================================================================
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -290,8 +290,8 @@ Similarly, in code:
 
 [source, java, subs="{sub-order}"]
 ----
-SslContextFactory sslContextFactory = new SslContextFactory();
-sslContextFactory.setKeyStorePath();
+SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
+sslContextFactory.setKeyStorePath("/path/to/keystore");
 sslContextFactory.setKeyStorePassword("secret");
 
 JMXServiceURL jmxURL = new JMXServiceURL("rmi", null, 1099, "/jndi/rmi:///jmxrmi");

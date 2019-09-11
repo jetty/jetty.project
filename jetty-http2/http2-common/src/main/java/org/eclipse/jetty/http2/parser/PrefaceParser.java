@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -42,7 +42,7 @@ public class PrefaceParser
      * <p>Advances this parser after the {@link PrefaceFrame#PREFACE_PREAMBLE_BYTES}.</p>
      * <p>This allows the HTTP/1.1 parser to parse the preamble of the preface,
      * which is a legal HTTP/1.1 request, and this parser will parse the remaining
-     * bytes, that are not parseable by a HTTP/1.1 parser.</p>
+     * bytes, that are not parseable by an HTTP/1.1 parser.</p>
      */
     protected void directUpgrade()
     {

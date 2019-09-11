@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -21,7 +21,6 @@ package org.eclipse.jetty.alpn.client;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
-
 import javax.net.ssl.SSLEngine;
 
 import org.eclipse.jetty.io.ClientConnectionFactory;
@@ -49,7 +48,7 @@ public class ALPNClientConnection extends NegotiatingClientConnection
 
     public void selected(String protocol)
     {
-        if (protocol==null || !protocols.contains(protocol))
+        if (protocol == null || !protocols.contains(protocol))
             close();
         else
             super.completed();

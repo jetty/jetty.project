@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,6 +20,7 @@ package org.eclipse.jetty.websocket.common;
 
 import java.nio.ByteBuffer;
 import java.util.List;
+import java.util.concurrent.atomic.LongAdder;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
@@ -62,6 +63,10 @@ public class Parser
     private final WebSocketPolicy policy;
     private final ByteBufferPool bufferPool;
 
+    // Stats (where a message is defined as a WebSocket frame)
+    private final LongAdder messagesIn = new LongAdder();
+    private final LongAdder bytesIn = new LongAdder();
+
     // State specific
     private State state = State.START;
     private int cursor = 0;
@@ -73,18 +78,18 @@ public class Parser
     private int payloadLength;
     private PayloadProcessor maskProcessor = new DeMaskProcessor();
 
-    /** 
+    /**
      * Is there an extension using RSV flag?
      * <p>
-     * 
+     *
      * <pre>
      *   0100_0000 (0x40) = rsv1
      *   0010_0000 (0x20) = rsv2
      *   0001_0000 (0x10) = rsv3
      * </pre>
      */
-    private byte flagsInUse=0x00;
-    
+    private byte flagsInUse = 0x00;
+
     private IncomingFrames incomingFramesHandler;
 
     public Parser(WebSocketPolicy wspolicy, ByteBufferPool bufferPool)
@@ -95,8 +100,9 @@ public class Parser
 
     private void assertSanePayloadLength(long len)
     {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("{} Payload Length: {} - {}",policy.getBehavior(),len,this);
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("{} Payload Length: {} - {}", policy.getBehavior(), len, this);
         }
 
         // Since we use ByteBuffer so often, having lengths over Integer.MAX_VALUE is really impossible.
@@ -113,13 +119,12 @@ public class Parser
                 {
                     throw new ProtocolException("Invalid close frame payload length, [" + payloadLength + "]");
                 }
-                // fall thru
+                // fallthru
             case OpCode.PING:
             case OpCode.PONG:
                 if (len > ControlFrame.MAX_CONTROL_PAYLOAD)
                 {
-                    throw new ProtocolException("Invalid control frame payload length, [" + payloadLength + "] cannot exceed ["
-                            + ControlFrame.MAX_CONTROL_PAYLOAD + "]");
+                    throw new ProtocolException("Invalid control frame payload length, [" + payloadLength + "] cannot exceed [" + ControlFrame.MAX_CONTROL_PAYLOAD + "]");
                 }
                 break;
             case OpCode.TEXT:
@@ -132,7 +137,7 @@ public class Parser
     }
 
     public void configureFromExtensions(List<? extends Extension> exts)
-    {        
+    {
         // default
         flagsInUse = 0x00;
 
@@ -182,17 +187,17 @@ public class Parser
     protected void notifyFrame(final Frame f) throws WebSocketException
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("{} Notify {}",policy.getBehavior(),getIncomingFramesHandler());
+            LOG.debug("{} Notify {}", policy.getBehavior(), getIncomingFramesHandler());
 
         if (policy.getBehavior() == WebSocketBehavior.SERVER)
         {
             /* Parsing on server.
-             * 
+             *
              * Then you MUST make sure all incoming frames are masked!
-             * 
+             *
              * Technically, this test is in violation of RFC-6455, Section 5.1
              * http://tools.ietf.org/html/rfc6455#section-5.1
-             * 
+             *
              * But we can't trust the client at this point, so Jetty opts to close
              * the connection as a Protocol error.
              */
@@ -201,7 +206,7 @@ public class Parser
                 throw new ProtocolException("Client MUST mask all frames (RFC-6455: Section 5.1)");
             }
         }
-        else if(policy.getBehavior() == WebSocketBehavior.CLIENT)
+        else if (policy.getBehavior() == WebSocketBehavior.CLIENT)
         {
             // Required by RFC-6455 / Section 5.1
             if (f.isMasked())
@@ -212,6 +217,8 @@ public class Parser
 
         if (incomingFramesHandler == null)
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("No IncomingFrames Handler to notify");
             return;
         }
         try
@@ -230,17 +237,28 @@ public class Parser
 
     public void parse(ByteBuffer buffer) throws WebSocketException
     {
-        if (buffer.remaining() <= 0)
+        while (buffer.hasRemaining())
         {
-            return;
+            parseSingleFrame(buffer);
         }
+    }
+
+    public void parseSingleFrame(ByteBuffer buffer) throws WebSocketException
+    {
+        if (buffer.remaining() <= 0)
+            return;
+
         try
         {
-            // parse through all the frames in the buffer
-            while (parseFrame(buffer))
+            int startingBytes = buffer.remaining();
+
+            // attempt to parse a frame from the buffer
+            if (parseFrame(buffer))
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("{} Parsed Frame: {}",policy.getBehavior(),frame);
+                    LOG.debug("{} Parsed Frame: {}", policy.getBehavior(), frame);
+
+                messagesIn.increment();
                 notifyFrame(frame);
                 if (frame.isDataFrame())
                 {
@@ -248,20 +266,18 @@ public class Parser
                 }
                 reset();
             }
-        }
-        catch (WebSocketException e)
-        {
-            buffer.position(buffer.limit()); // consume remaining
-            reset();
-            // need to throw for proper close behavior in connection
-            throw e;
+
+            bytesIn.add(startingBytes - buffer.remaining());
         }
         catch (Throwable t)
         {
             buffer.position(buffer.limit()); // consume remaining
             reset();
             // need to throw for proper close behavior in connection
-            throw new WebSocketException(t);
+            if (t instanceof WebSocketException)
+                throw t;
+            else
+                throw new WebSocketException(t);
         }
     }
 
@@ -280,16 +296,15 @@ public class Parser
      * Note the first byte (fin,rsv1,rsv2,rsv3,opcode) are parsed by the {@link Parser#parse(ByteBuffer)} method
      * <p>
      * Not overridable
-     * 
-     * @param buffer
-     *            the buffer to parse from.
+     *
+     * @param buffer the buffer to parse from.
      * @return true if done parsing base framing protocol and ready for parsing of the payload. false if incomplete parsing of base framing protocol.
      */
     private boolean parseFrame(ByteBuffer buffer)
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("{} Parsing {} bytes",policy.getBehavior(),buffer.remaining());
+            LOG.debug("{} Parsing {} bytes", policy.getBehavior(), buffer.remaining());
         }
         while (buffer.hasRemaining())
         {
@@ -300,25 +315,25 @@ public class Parser
                     // peek at byte
                     byte b = buffer.get();
                     boolean fin = ((b & 0x80) != 0);
-                    
+
                     byte opcode = (byte)(b & 0x0F);
 
                     if (!OpCode.isKnown(opcode))
                     {
                         throw new ProtocolException("Unknown opcode: " + opcode);
                     }
-                    
+
                     if (LOG.isDebugEnabled())
                         LOG.debug("{} OpCode {}, fin={} rsv={}{}{}",
-                                policy.getBehavior(),
-                                OpCode.name(opcode),
-                                fin,
-                                (((b & 0x40) != 0)?'1':'.'),
-                                (((b & 0x20) != 0)?'1':'.'),
-                                (((b & 0x10) != 0)?'1':'.'));
+                            policy.getBehavior(),
+                            OpCode.name(opcode),
+                            fin,
+                            (((b & 0x40) != 0) ? '1' : '.'),
+                            (((b & 0x20) != 0) ? '1' : '.'),
+                            (((b & 0x10) != 0) ? '1' : '.'));
 
                     // base framing flags
-                    switch(opcode)
+                    switch (opcode)
                     {
                         case OpCode.TEXT:
                             frame = new TextFrame();
@@ -370,7 +385,7 @@ public class Parser
                             }
                             break;
                     }
-                    
+
                     frame.setFin(fin);
 
                     // Are any flags set?
@@ -378,7 +393,7 @@ public class Parser
                     {
                         /*
                          * RFC 6455 Section 5.2
-                         * 
+                         *
                          * MUST be 0 unless an extension is negotiated that defines meanings for non-zero values. If a nonzero value is received and none of the
                          * negotiated extensions defines the meaning of such a nonzero value, the receiving endpoint MUST _Fail the WebSocket Connection_.
                          */
@@ -389,7 +404,7 @@ public class Parser
                             else
                             {
                                 String err = "RSV1 not allowed to be set";
-                                if(LOG.isDebugEnabled())
+                                if (LOG.isDebugEnabled())
                                 {
                                     LOG.debug(err + ": Remaining buffer: {}", BufferUtil.toDetailString(buffer));
                                 }
@@ -403,7 +418,7 @@ public class Parser
                             else
                             {
                                 String err = "RSV2 not allowed to be set";
-                                if(LOG.isDebugEnabled())
+                                if (LOG.isDebugEnabled())
                                 {
                                     LOG.debug(err + ": Remaining buffer: {}", BufferUtil.toDetailString(buffer));
                                 }
@@ -417,7 +432,7 @@ public class Parser
                             else
                             {
                                 String err = "RSV3 not allowed to be set";
-                                if(LOG.isDebugEnabled())
+                                if (LOG.isDebugEnabled())
                                 {
                                     LOG.debug(err + ": Remaining buffer: {}", BufferUtil.toDetailString(buffer));
                                 }
@@ -425,11 +440,11 @@ public class Parser
                             }
                         }
                     }
-                    
+
                     state = State.PAYLOAD_LEN;
                     break;
                 }
-                
+
                 case PAYLOAD_LEN:
                 {
                     byte b = buffer.get();
@@ -473,7 +488,7 @@ public class Parser
 
                     break;
                 }
-                
+
                 case PAYLOAD_LEN_BYTES:
                 {
                     byte b = buffer.get();
@@ -501,14 +516,14 @@ public class Parser
                     }
                     break;
                 }
-                
+
                 case MASK:
                 {
-                    byte m[] = new byte[4];
+                    byte[] m = new byte[4];
                     frame.setMask(m);
                     if (buffer.remaining() >= 4)
                     {
-                        buffer.get(m,0,4);
+                        buffer.get(m, 0, 4);
                         // special case for empty payloads (no more bytes left in buffer)
                         if (payloadLength == 0)
                         {
@@ -526,7 +541,7 @@ public class Parser
                     }
                     break;
                 }
-                
+
                 case MASK_BYTES:
                 {
                     byte b = buffer.get();
@@ -546,7 +561,7 @@ public class Parser
                     }
                     break;
                 }
-                
+
                 case PAYLOAD:
                 {
                     frame.assertValid();
@@ -572,13 +587,12 @@ public class Parser
 
     /**
      * Implementation specific parsing of a payload
-     * 
-     * @param buffer
-     *            the payload buffer
+     *
+     * @param buffer the payload buffer
      * @return true if payload is done reading, false if incomplete
      */
     private boolean parsePayload(ByteBuffer buffer)
-    {        
+    {
         if (payloadLength == 0)
         {
             return true;
@@ -599,8 +613,9 @@ public class Parser
             buffer.limit(limit);
             buffer.position(buffer.position() + window.remaining());
 
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("{} Window: {}",policy.getBehavior(),BufferUtil.toDetailString(window));
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("{} Window: {}", policy.getBehavior(), BufferUtil.toDetailString(window));
             }
 
             maskProcessor.process(window);
@@ -615,7 +630,7 @@ public class Parser
             {
                 if (payload == null)
                 {
-                    payload = bufferPool.acquire(payloadLength,false);
+                    payload = bufferPool.acquire(payloadLength, false);
                     BufferUtil.clearToFill(payload);
                 }
                 // Copy the payload.
@@ -635,6 +650,16 @@ public class Parser
     public void setIncomingFramesHandler(IncomingFrames incoming)
     {
         this.incomingFramesHandler = incoming;
+    }
+
+    public long getMessagesIn()
+    {
+        return messagesIn.longValue();
+    }
+
+    public long getBytesIn()
+    {
+        return bytesIn.longValue();
     }
 
     @Override

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,7 +20,7 @@ package org.eclipse.jetty.websocket.api;
 
 /**
  * Exception when a violation of policy occurs and should trigger a connection close.
- * 
+ *
  * @see StatusCode#POLICY_VIOLATION
  */
 @SuppressWarnings("serial")
@@ -28,16 +28,16 @@ public class PolicyViolationException extends CloseException
 {
     public PolicyViolationException(String message)
     {
-        super(StatusCode.POLICY_VIOLATION,message);
+        super(StatusCode.POLICY_VIOLATION, message);
     }
 
     public PolicyViolationException(String message, Throwable t)
     {
-        super(StatusCode.POLICY_VIOLATION,message,t);
+        super(StatusCode.POLICY_VIOLATION, message, t);
     }
 
     public PolicyViolationException(Throwable t)
     {
-        super(StatusCode.POLICY_VIOLATION,t);
+        super(StatusCode.POLICY_VIOLATION, t);
     }
 }

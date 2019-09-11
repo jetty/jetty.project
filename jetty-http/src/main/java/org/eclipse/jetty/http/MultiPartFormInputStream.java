@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -35,7 +35,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-
 import javax.servlet.MultipartConfigElement;
 import javax.servlet.ServletInputStream;
 import javax.servlet.http.Part;
@@ -72,7 +71,7 @@ public class MultiPartFormInputStream
     private boolean _writeFilesWithFilenames;
     private boolean _parsed;
     private int _bufferSize = 16 * 1024;
-    
+
     public class MultiPart implements Part
     {
         protected String _name;
@@ -84,30 +83,30 @@ public class MultiPartFormInputStream
         protected MultiMap<String> _headers;
         protected long _size = 0;
         protected boolean _temporary = true;
-        
+
         public MultiPart(String name, String filename)
         {
             _name = name;
             _filename = filename;
         }
-        
+
         @Override
         public String toString()
         {
             return String.format("Part{n=%s,fn=%s,ct=%s,s=%d,tmp=%b,file=%s}", _name, _filename, _contentType, _size, _temporary, _file);
         }
-        
+
         protected void setContentType(String contentType)
         {
             _contentType = contentType;
         }
-        
+
         protected void open() throws IOException
         {
             // We will either be writing to a file, if it has a filename on the content-disposition
             // and otherwise a byte-array-input-stream, OR if we exceed the getFileSizeThreshold, we
             // will need to change to write to a file.
-            if (isWriteFilesWithFilenames() && _filename != null && _filename.trim().length() > 0)
+            if (isWriteFilesWithFilenames() && _filename != null && !_filename.trim().isEmpty())
             {
                 createFile();
             }
@@ -118,38 +117,38 @@ public class MultiPartFormInputStream
                 _out = _bout = new ByteArrayOutputStream2();
             }
         }
-        
+
         protected void close() throws IOException
         {
             _out.close();
         }
-        
+
         protected void write(int b) throws IOException
         {
             if (MultiPartFormInputStream.this._config.getMaxFileSize() > 0 && _size + 1 > MultiPartFormInputStream.this._config.getMaxFileSize())
                 throw new IllegalStateException("Multipart Mime part " + _name + " exceeds max filesize");
-            
-            if (MultiPartFormInputStream.this._config.getFileSizeThreshold() > 0 && _size + 1 > MultiPartFormInputStream.this._config.getFileSizeThreshold()
-                    && _file == null)
+
+            if (MultiPartFormInputStream.this._config.getFileSizeThreshold() > 0 &&
+                _size + 1 > MultiPartFormInputStream.this._config.getFileSizeThreshold() && _file == null)
                 createFile();
-            
+
             _out.write(b);
             _size++;
         }
-        
+
         protected void write(byte[] bytes, int offset, int length) throws IOException
         {
             if (MultiPartFormInputStream.this._config.getMaxFileSize() > 0 && _size + length > MultiPartFormInputStream.this._config.getMaxFileSize())
                 throw new IllegalStateException("Multipart Mime part " + _name + " exceeds max filesize");
-            
-            if (MultiPartFormInputStream.this._config.getFileSizeThreshold() > 0
-                    && _size + length > MultiPartFormInputStream.this._config.getFileSizeThreshold() && _file == null)
+
+            if (MultiPartFormInputStream.this._config.getFileSizeThreshold() > 0 &&
+                _size + length > MultiPartFormInputStream.this._config.getFileSizeThreshold() && _file == null)
                 createFile();
-            
+
             _out.write(bytes, offset, length);
             _size += length;
         }
-        
+
         protected void createFile() throws IOException
         {
             /*
@@ -157,16 +156,16 @@ public class MultiPartFormInputStream
              */
             final boolean USER = true;
             final boolean WORLD = false;
-            
+
             _file = File.createTempFile("MultiPart", "", MultiPartFormInputStream.this._tmpDir);
             _file.setReadable(false, WORLD); // (reset) disable it for everyone first
             _file.setReadable(true, USER); // enable for user only
-            
+
             if (_deleteOnExit)
                 _file.deleteOnExit();
             FileOutputStream fos = new FileOutputStream(_file);
             BufferedOutputStream bos = new BufferedOutputStream(fos);
-            
+
             if (_size > 0 && _out != null)
             {
                 // already written some bytes, so need to copy them into the file
@@ -177,18 +176,18 @@ public class MultiPartFormInputStream
             _bout = null;
             _out = bos;
         }
-        
+
         protected void setHeaders(MultiMap<String> headers)
         {
             _headers = headers;
         }
-        
+
         @Override
         public String getContentType()
         {
             return _contentType;
         }
-        
+
         @Override
         public String getHeader(String name)
         {
@@ -196,19 +195,20 @@ public class MultiPartFormInputStream
                 return null;
             return _headers.getValue(StringUtil.asciiToLowerCase(name), 0);
         }
-        
+
         @Override
         public Collection<String> getHeaderNames()
         {
             return _headers.keySet();
         }
-        
+
         @Override
         public Collection<String> getHeaders(String name)
         {
-            return _headers.getValues(name);
+            Collection<String> headers = _headers.getValues(name);
+            return headers == null ? Collections.emptyList() : headers;
         }
-        
+
         @Override
         public InputStream getInputStream() throws IOException
         {
@@ -223,42 +223,42 @@ public class MultiPartFormInputStream
                 return new ByteArrayInputStream(_bout.getBuf(), 0, _bout.size());
             }
         }
-        
+
         @Override
         public String getSubmittedFileName()
         {
             return getContentDispositionFilename();
         }
-        
+
         public byte[] getBytes()
         {
             if (_bout != null)
                 return _bout.toByteArray();
             return null;
         }
-        
+
         @Override
         public String getName()
         {
             return _name;
         }
-        
+
         @Override
         public long getSize()
         {
             return _size;
         }
-        
+
         @Override
         public void write(String fileName) throws IOException
         {
             if (_file == null)
             {
                 _temporary = false;
-                
+
                 // part data is only in the ByteArrayOutputStream and never been written to disk
                 _file = new File(_tmpDir, fileName);
-                
+
                 try (BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(_file)))
                 {
                     _bout.writeTo(bos);
@@ -273,14 +273,14 @@ public class MultiPartFormInputStream
             {
                 // the part data is already written to a temporary file, just rename it
                 _temporary = false;
-                
+
                 Path src = _file.toPath();
                 Path target = src.resolveSibling(fileName);
                 Files.move(src, target, StandardCopyOption.REPLACE_EXISTING);
                 _file = target.toFile();
             }
         }
-        
+
         /**
          * Remove the file, whether or not Part.write() was called on it (ie no longer temporary)
          */
@@ -291,7 +291,7 @@ public class MultiPartFormInputStream
                 if (!_file.delete())
                     throw new IOException("Could Not Delete File");
         }
-        
+
         /**
          * Only remove tmp files.
          *
@@ -299,11 +299,10 @@ public class MultiPartFormInputStream
          */
         public void cleanUp() throws IOException
         {
-            if (_temporary && _file != null && _file.exists())
-                if (!_file.delete())
-                    throw new IOException("Could Not Delete File");
+            if (_temporary)
+                delete();
         }
-        
+
         /**
          * Get the file
          *
@@ -313,7 +312,7 @@ public class MultiPartFormInputStream
         {
             return _file;
         }
-        
+
         /**
          * Get the filename from the content-disposition.
          *
@@ -324,11 +323,11 @@ public class MultiPartFormInputStream
             return _filename;
         }
     }
-    
+
     /**
-     * @param in            Request input stream
-     * @param contentType   Content-Type header
-     * @param config        MultipartConfigElement
+     * @param in Request input stream
+     * @param contentType Content-Type header
+     * @param config MultipartConfigElement
      * @param contextTmpDir javax.servlet.context.tempdir
      */
     public MultiPartFormInputStream(InputStream in, String contentType, MultipartConfigElement config, File contextTmpDir)
@@ -338,10 +337,10 @@ public class MultiPartFormInputStream
         _contextTmpDir = contextTmpDir;
         if (_contextTmpDir == null)
             _contextTmpDir = new File(System.getProperty("java.io.tmpdir"));
-        
+
         if (_config == null)
             _config = new MultipartConfigElement(_contextTmpDir.getAbsolutePath());
-        
+
         if (in instanceof ServletInputStream)
         {
             if (((ServletInputStream)in).isFinished())
@@ -353,7 +352,7 @@ public class MultiPartFormInputStream
         }
         _in = new BufferedInputStream(in);
     }
-    
+
     /**
      * @return whether the list of parsed parts is empty
      */
@@ -361,17 +360,17 @@ public class MultiPartFormInputStream
     {
         if (_parts == null)
             return true;
-        
+
         Collection<List<Part>> values = _parts.values();
         for (List<Part> partList : values)
         {
-            if (partList.size() != 0)
+            if (!partList.isEmpty())
                 return false;
         }
-        
+
         return true;
     }
-    
+
     /**
      * Get the already parsed parts.
      *
@@ -382,7 +381,7 @@ public class MultiPartFormInputStream
     {
         if (_parts == null)
             return Collections.emptyList();
-        
+
         Collection<List<Part>> values = _parts.values();
         List<Part> parts = new ArrayList<>();
         for (List<Part> o : values)
@@ -392,45 +391,35 @@ public class MultiPartFormInputStream
         }
         return parts;
     }
-    
+
     /**
      * Delete any tmp storage for parts, and clear out the parts list.
      */
     public void deleteParts()
     {
-        if (!_parsed)
-            return;
-        
-        Collection<Part> parts;
-        try
-        {
-            parts = getParts();
-        }
-        catch (IOException e)
-        {
-            throw new RuntimeException(e);
-        }
-        
         MultiException err = null;
-        for (Part p : parts)
+        for (List<Part> parts : _parts.values())
         {
-            try
+            for (Part p : parts)
             {
-                ((MultiPart)p).cleanUp();
-            }
-            catch (Exception e)
-            {
-                if (err == null)
-                    err = new MultiException();
-                err.add(e);
+                try
+                {
+                    ((MultiPart)p).cleanUp();
+                }
+                catch (Exception e)
+                {
+                    if (err == null)
+                        err = new MultiException();
+                    err.add(e);
+                }
             }
         }
         _parts.clear();
-        
+
         if (err != null)
             err.ifExceptionThrowRuntime();
     }
-    
+
     /**
      * Parse, if necessary, the multipart data and return the list of Parts.
      *
@@ -442,7 +431,7 @@ public class MultiPartFormInputStream
         if (!_parsed)
             parse();
         throwIfError();
-        
+
         Collection<List<Part>> values = _parts.values();
         List<Part> parts = new ArrayList<>();
         for (List<Part> o : values)
@@ -452,7 +441,7 @@ public class MultiPartFormInputStream
         }
         return parts;
     }
-    
+
     /**
      * Get the named Part.
      *
@@ -467,7 +456,7 @@ public class MultiPartFormInputStream
         throwIfError();
         return _parts.getValue(name, 0);
     }
-    
+
     /**
      * Throws an exception if one has been latched.
      *
@@ -477,6 +466,9 @@ public class MultiPartFormInputStream
     {
         if (_err != null)
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("MultiPart parsing failure ", _err);
+
             _err.addSuppressed(new Throwable());
             if (_err instanceof IOException)
                 throw (IOException)_err;
@@ -485,7 +477,7 @@ public class MultiPartFormInputStream
             throw new IllegalStateException(_err);
         }
     }
-    
+
     /**
      * Parse, if necessary, the multipart stream.
      */
@@ -495,16 +487,18 @@ public class MultiPartFormInputStream
         if (_parsed)
             return;
         _parsed = true;
-        
+
+        MultiPartParser parser = null;
+        Handler handler = new Handler();
         try
         {
             // initialize
             _parts = new MultiMap<>();
-            
+
             // if its not a multipart request, don't parse it
             if (_contentType == null || !_contentType.startsWith("multipart/form-data"))
                 return;
-            
+
             // sort out the location to which to write the files
             if (_config.getLocation() == null)
                 _tmpDir = _contextTmpDir;
@@ -518,10 +512,10 @@ public class MultiPartFormInputStream
                 else
                     _tmpDir = new File(_contextTmpDir, _config.getLocation());
             }
-            
+
             if (!_tmpDir.exists())
                 _tmpDir.mkdirs();
-            
+
             String contentTypeBoundary = "";
             int bstart = _contentType.indexOf("boundary=");
             if (bstart >= 0)
@@ -530,22 +524,19 @@ public class MultiPartFormInputStream
                 bend = (bend < 0 ? _contentType.length() : bend);
                 contentTypeBoundary = QuotedStringTokenizer.unquote(value(_contentType.substring(bstart, bend)).trim());
             }
-            
-            Handler handler = new Handler();
-            MultiPartParser parser = new MultiPartParser(handler, contentTypeBoundary);
-            
+
+            parser = new MultiPartParser(handler, contentTypeBoundary);
             byte[] data = new byte[_bufferSize];
             int len;
             long total = 0;
-            
+
             while (true)
             {
-                
+
                 len = _in.read(data);
-                
+
                 if (len > 0)
                 {
-                    
                     // keep running total of size of bytes read from input and throw an exception if exceeds MultipartConfigElement._maxRequestSize
                     total += len;
                     if (_config.getMaxRequestSize() > 0 && total > _config.getMaxRequestSize())
@@ -553,30 +544,28 @@ public class MultiPartFormInputStream
                         _err = new IllegalStateException("Request exceeds maxRequestSize (" + _config.getMaxRequestSize() + ")");
                         return;
                     }
-                    
+
                     ByteBuffer buffer = BufferUtil.toBuffer(data);
                     buffer.limit(len);
                     if (parser.parse(buffer, false))
                         break;
-                    
+
                     if (buffer.hasRemaining())
                         throw new IllegalStateException("Buffer did not fully consume");
-                    
                 }
                 else if (len == -1)
                 {
                     parser.parse(BufferUtil.EMPTY_BUFFER, true);
                     break;
                 }
-                
             }
-            
+
             // check for exceptions
             if (_err != null)
             {
                 return;
             }
-            
+
             // check we read to the end of the message
             if (parser.getState() != MultiPartParser.State.END)
             {
@@ -585,32 +574,35 @@ public class MultiPartFormInputStream
                 else
                     _err = new IOException("Incomplete Multipart");
             }
-            
+
             if (LOG.isDebugEnabled())
             {
                 LOG.debug("Parsing Complete {} err={}", parser, _err);
             }
-            
         }
         catch (Throwable e)
         {
             _err = e;
+
+            // Notify parser if failure occurs
+            if (parser != null)
+                parser.parse(BufferUtil.EMPTY_BUFFER, true);
         }
     }
-    
+
     class Handler implements MultiPartParser.Handler
     {
         private MultiPart _part = null;
         private String contentDisposition = null;
         private String contentType = null;
         private MultiMap<String> headers = new MultiMap<>();
-        
+
         @Override
         public boolean messageComplete()
         {
             return true;
         }
-        
+
         @Override
         public void parsedField(String key, String value)
         {
@@ -620,12 +612,12 @@ public class MultiPartFormInputStream
                 contentDisposition = value;
             else if (key.equalsIgnoreCase("content-type"))
                 contentType = value;
-            
+
             // Transfer encoding is not longer considers as it is deprecated as per
             // https://tools.ietf.org/html/rfc7578#section-4.7
-            
+
         }
-        
+
         @Override
         public boolean headerComplete()
         {
@@ -633,16 +625,16 @@ public class MultiPartFormInputStream
             {
                 LOG.debug("headerComplete {}", this);
             }
-            
+
             try
             {
                 // Extract content-disposition
-                boolean form_data = false;
+                boolean formData = false;
                 if (contentDisposition == null)
                 {
                     throw new IOException("Missing content-disposition");
                 }
-                
+
                 QuotedStringTokenizer tok = new QuotedStringTokenizer(contentDisposition, ";", false, true);
                 String name = null;
                 String filename = null;
@@ -651,17 +643,17 @@ public class MultiPartFormInputStream
                     String t = tok.nextToken().trim();
                     String tl = StringUtil.asciiToLowerCase(t);
                     if (tl.startsWith("form-data"))
-                        form_data = true;
+                        formData = true;
                     else if (tl.startsWith("name="))
                         name = value(t);
                     else if (tl.startsWith("filename="))
                         filename = filenameValue(t);
                 }
-                
+
                 // Check disposition
-                if (!form_data)
+                if (!formData)
                     throw new IOException("Part not form-data");
-                
+
                 // It is valid for reset and submit buttons to have an empty name.
                 // If no name is supplied, the browser skips sending the info for that field.
                 // However, if you supply the empty string as the name, the browser sends the
@@ -669,14 +661,13 @@ public class MultiPartFormInputStream
                 // have not yet seen a name field.
                 if (name == null)
                     throw new IOException("No name in part");
-                
-                
+
                 // create the new part
                 _part = new MultiPart(name, filename);
                 _part.setHeaders(headers);
                 _part.setContentType(contentType);
                 _parts.add(name, _part);
-                
+
                 try
                 {
                     _part.open();
@@ -692,16 +683,16 @@ public class MultiPartFormInputStream
                 _err = e;
                 return true;
             }
-            
+
             return false;
         }
-        
+
         @Override
         public boolean content(ByteBuffer buffer, boolean last)
         {
             if (_part == null)
                 return false;
-            
+
             if (BufferUtil.hasContent(buffer))
             {
                 try
@@ -714,7 +705,7 @@ public class MultiPartFormInputStream
                     return true;
                 }
             }
-            
+
             if (last)
             {
                 try
@@ -727,23 +718,33 @@ public class MultiPartFormInputStream
                     return true;
                 }
             }
-            
+
             return false;
         }
-        
+
         @Override
         public void startPart()
         {
             reset();
         }
-        
+
         @Override
         public void earlyEOF()
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Early EOF {}", MultiPartFormInputStream.this);
+
+            try
+            {
+                if (_part != null)
+                    _part.close();
+            }
+            catch (IOException e)
+            {
+                LOG.warn("part could not be closed", e);
+            }
         }
-        
+
         public void reset()
         {
             _part = null;
@@ -752,41 +753,39 @@ public class MultiPartFormInputStream
             headers = new MultiMap<>();
         }
     }
-    
+
     public void setDeleteOnExit(boolean deleteOnExit)
     {
         _deleteOnExit = deleteOnExit;
     }
-    
+
     public void setWriteFilesWithFilenames(boolean writeFilesWithFilenames)
     {
         _writeFilesWithFilenames = writeFilesWithFilenames;
     }
-    
+
     public boolean isWriteFilesWithFilenames()
     {
         return _writeFilesWithFilenames;
     }
-    
+
     public boolean isDeleteOnExit()
     {
         return _deleteOnExit;
     }
-    
-    /* ------------------------------------------------------------ */
+
     private static String value(String nameEqualsValue)
     {
         int idx = nameEqualsValue.indexOf('=');
         String value = nameEqualsValue.substring(idx + 1).trim();
         return QuotedStringTokenizer.unquoteOnly(value);
     }
-    
-    /* ------------------------------------------------------------ */
+
     private static String filenameValue(String nameEqualsValue)
     {
         int idx = nameEqualsValue.indexOf('=');
         String value = nameEqualsValue.substring(idx + 1).trim();
-        
+
         if (value.matches(".??[a-z,A-Z]\\:\\\\[^\\\\].*"))
         {
             // incorrectly escaped IE filenames that have the whole path
@@ -797,7 +796,7 @@ public class MultiPartFormInputStream
             char last = value.charAt(value.length() - 1);
             if (last == '"' || last == '\'')
                 value = value.substring(0, value.length() - 1);
-            
+
             return value;
         }
         else
@@ -807,7 +806,7 @@ public class MultiPartFormInputStream
             // backslashes
             return QuotedStringTokenizer.unquoteOnly(value, true);
     }
-    
+
     /**
      * @return the size of buffer used to read data from the input stream
      */
@@ -815,7 +814,7 @@ public class MultiPartFormInputStream
     {
         return _bufferSize;
     }
-    
+
     /**
      * @param bufferSize the size of buffer used to read data from the input stream
      */

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -32,8 +32,8 @@ public class LocalWebSocketSession extends WebSocketSession
 
     public LocalWebSocketSession(WebSocketContainerScope containerScope, String id, EventDriver driver)
     {
-        super(containerScope,URI.create("ws://localhost/LocalWebSocketSesssion/" + id),driver,
-                new LocalWebSocketConnection(id,containerScope.getBufferPool()));
+        super(containerScope, URI.create("ws://localhost/LocalWebSocketSesssion/" + id), driver,
+            new LocalWebSocketConnection(id, containerScope.getBufferPool()));
         this.id = id;
         outgoingCapture = new OutgoingFramesCapture();
         setOutgoingHandler(outgoingCapture);
@@ -53,6 +53,6 @@ public class LocalWebSocketSession extends WebSocketSession
     @Override
     public String toString()
     {
-        return String.format("%s[%s]",LocalWebSocketSession.class.getSimpleName(),id);
+        return String.format("%s[%s]", LocalWebSocketSession.class.getSimpleName(), id);
     }
 }

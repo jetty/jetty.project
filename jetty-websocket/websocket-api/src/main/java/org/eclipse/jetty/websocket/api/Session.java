@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -33,7 +33,7 @@ public interface Session extends Closeable
      * Request a close of the current conversation with a normal status code and no reason phrase.
      * <p>
      * This will enqueue a graceful close to the remote endpoint.
-     * 
+     *
      * @see #close(CloseStatus)
      * @see #close(int, String)
      * @see #disconnect()
@@ -46,10 +46,8 @@ public interface Session extends Closeable
      * phrases.
      * <p>
      * This will enqueue a graceful close to the remote endpoint.
-     * 
-     * @param closeStatus
-     *            the reason for the closure
-     * 
+     *
+     * @param closeStatus the reason for the closure
      * @see #close()
      * @see #close(int, String)
      * @see #disconnect()
@@ -60,13 +58,10 @@ public interface Session extends Closeable
      * Send a websocket Close frame, with status code.
      * <p>
      * This will enqueue a graceful close to the remote endpoint.
-     * 
-     * @param statusCode
-     *            the status code
-     * @param reason
-     *            the (optional) reason. (can be null for no reason)
+     *
+     * @param statusCode the status code
+     * @param reason the (optional) reason. (can be null for no reason)
      * @see StatusCode
-     * 
      * @see #close()
      * @see #close(CloseStatus)
      * @see #disconnect()
@@ -83,10 +78,8 @@ public interface Session extends Closeable
      * Once the underlying connection has been determined to be closed, the various onClose() events (either
      * {@link WebSocketListener#onWebSocketClose(int, String)} or {@link OnWebSocketClose}) will be called on your
      * websocket.
-     * 
-     * @throws IOException
-     *             if unable to disconnect
-     * 
+     *
+     * @throws IOException if unable to disconnect
      * @see #close()
      * @see #close(CloseStatus)
      * @see #close(int, String)
@@ -97,21 +90,21 @@ public interface Session extends Closeable
     /**
      * Return the number of milliseconds before this conversation will be closed by the container if it is inactive, ie no messages are either sent or received
      * in that time.
-     * 
+     *
      * @return the timeout in milliseconds.
      */
     long getIdleTimeout();
 
     /**
      * Get the address of the local side.
-     * 
+     *
      * @return the local side address
      */
-    public InetSocketAddress getLocalAddress();
+    InetSocketAddress getLocalAddress();
 
     /**
      * Access the (now read-only) {@link WebSocketPolicy} in use for this connection.
-     * 
+     *
      * @return the policy in use
      */
     WebSocketPolicy getPolicy();
@@ -119,64 +112,63 @@ public interface Session extends Closeable
     /**
      * Returns the version of the websocket protocol currently being used. This is taken as the value of the Sec-WebSocket-Version header used in the opening
      * handshake. i.e. "13".
-     * 
+     *
      * @return the protocol version
      */
     String getProtocolVersion();
 
     /**
      * Return a reference to the RemoteEndpoint object representing the other end of this conversation.
-     * 
+     *
      * @return the remote endpoint
      */
     RemoteEndpoint getRemote();
 
     /**
      * Get the address of the remote side.
-     * 
+     *
      * @return the remote side address
      */
-    public InetSocketAddress getRemoteAddress();
+    InetSocketAddress getRemoteAddress();
 
     /**
      * Get the UpgradeRequest used to create this session
-     * 
+     *
      * @return the UpgradeRequest used to create this session
      */
     UpgradeRequest getUpgradeRequest();
 
     /**
      * Get the UpgradeResponse used to create this session
-     * 
+     *
      * @return the UpgradeResponse used to create this session
      */
     UpgradeResponse getUpgradeResponse();
 
     /**
      * Return true if and only if the underlying socket is open.
-     * 
+     *
      * @return whether the session is open
      */
     boolean isOpen();
 
     /**
      * Return true if and only if the underlying socket is using a secure transport.
-     * 
+     *
      * @return whether its using a secure transport
      */
     boolean isSecure();
 
     /**
      * Set the number of milliseconds before this conversation will be closed by the container if it is inactive, ie no messages are either sent or received.
-     * 
-     * @param ms
-     *            the number of milliseconds.
+     *
+     * @param ms the number of milliseconds.
      */
     void setIdleTimeout(long ms);
 
     /**
      * Suspend the incoming read events on the connection.
-     * 
+     *
      * @return the suspend token suitable for resuming the reading of data on the connection.
      */
     SuspendToken suspend();

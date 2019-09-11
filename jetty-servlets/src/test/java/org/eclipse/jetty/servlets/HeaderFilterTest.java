@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,13 +18,8 @@
 
 package org.eclipse.jetty.servlets;
 
-import static org.eclipse.jetty.http.HttpFieldsMatchers.containsHeaderValue;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.collection.IsIn.isIn;
-
 import java.io.IOException;
 import java.util.EnumSet;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -40,6 +35,11 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.eclipse.jetty.http.HttpFieldsMatchers.containsHeaderValue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.in;
+import static org.hamcrest.Matchers.is;
+
 public class HeaderFilterTest
 {
     private ServletTester _tester;
@@ -49,7 +49,7 @@ public class HeaderFilterTest
     {
         _tester = new ServletTester();
         _tester.setContextPath("/context");
-        _tester.addServlet(NullServlet.class,"/test/*");
+        _tester.addServlet(NullServlet.class, "/test/*");
 
         _tester.start();
     }
@@ -64,30 +64,30 @@ public class HeaderFilterTest
     public void testHeaderFilterSet() throws Exception
     {
         FilterHolder holder = new FilterHolder(HeaderFilter.class);
-        holder.setInitParameter("headerConfig","set X-Frame-Options: DENY");
-        _tester.getContext().getServletHandler().addFilterWithMapping(holder,"/*",EnumSet.of(DispatcherType.REQUEST));
+        holder.setInitParameter("headerConfig", "set X-Frame-Options: DENY");
+        _tester.getContext().getServletHandler().addFilterWithMapping(holder, "/*", EnumSet.of(DispatcherType.REQUEST));
 
         HttpTester.Request request = HttpTester.newRequest();
         request.setMethod("GET");
         request.setVersion("HTTP/1.1");
-        request.setHeader("Host","localhost");
+        request.setHeader("Host", "localhost");
         request.setURI("/context/test/0");
 
         HttpTester.Response response = HttpTester.parseResponse(_tester.getResponses(request.generate()));
-        assertThat(response, containsHeaderValue("X-Frame-Options","DENY"));
+        assertThat(response, containsHeaderValue("X-Frame-Options", "DENY"));
     }
 
     @Test
     public void testHeaderFilterAdd() throws Exception
     {
         FilterHolder holder = new FilterHolder(HeaderFilter.class);
-        holder.setInitParameter("headerConfig","add X-Frame-Options: DENY");
-        _tester.getContext().getServletHandler().addFilterWithMapping(holder,"/*",EnumSet.of(DispatcherType.REQUEST));
+        holder.setInitParameter("headerConfig", "add X-Frame-Options: DENY");
+        _tester.getContext().getServletHandler().addFilterWithMapping(holder, "/*", EnumSet.of(DispatcherType.REQUEST));
 
         HttpTester.Request request = HttpTester.newRequest();
         request.setMethod("GET");
         request.setVersion("HTTP/1.1");
-        request.setHeader("Host","localhost");
+        request.setHeader("Host", "localhost");
         request.setURI("/context/test/0");
 
         HttpTester.Response response = HttpTester.parseResponse(_tester.getResponses(request.generate()));
@@ -98,34 +98,34 @@ public class HeaderFilterTest
     public void testHeaderFilterSetDate() throws Exception
     {
         FilterHolder holder = new FilterHolder(HeaderFilter.class);
-        holder.setInitParameter("headerConfig","setDate Expires: 100");
-        _tester.getContext().getServletHandler().addFilterWithMapping(holder,"/*",EnumSet.of(DispatcherType.REQUEST));
+        holder.setInitParameter("headerConfig", "setDate Expires: 100");
+        _tester.getContext().getServletHandler().addFilterWithMapping(holder, "/*", EnumSet.of(DispatcherType.REQUEST));
 
         HttpTester.Request request = HttpTester.newRequest();
         request.setMethod("GET");
         request.setVersion("HTTP/1.1");
-        request.setHeader("Host","localhost");
+        request.setHeader("Host", "localhost");
         request.setURI("/context/test/0");
 
         HttpTester.Response response = HttpTester.parseResponse(_tester.getResponses(request.generate()));
-        assertThat(response.toString(), HttpHeader.EXPIRES.asString(), isIn(response.getFieldNamesCollection()));
+        assertThat(response.toString(), HttpHeader.EXPIRES.asString(), is(in(response.getFieldNamesCollection())));
     }
 
     @Test
     public void testHeaderFilterAddDate() throws Exception
     {
         FilterHolder holder = new FilterHolder(HeaderFilter.class);
-        holder.setInitParameter("headerConfig","addDate Expires: 100");
-        _tester.getContext().getServletHandler().addFilterWithMapping(holder,"/*",EnumSet.of(DispatcherType.REQUEST));
+        holder.setInitParameter("headerConfig", "addDate Expires: 100");
+        _tester.getContext().getServletHandler().addFilterWithMapping(holder, "/*", EnumSet.of(DispatcherType.REQUEST));
 
         HttpTester.Request request = HttpTester.newRequest();
         request.setMethod("GET");
         request.setVersion("HTTP/1.1");
-        request.setHeader("Host","localhost");
+        request.setHeader("Host", "localhost");
         request.setURI("/context/test/0");
 
         HttpTester.Response response = HttpTester.parseResponse(_tester.getResponses(request.generate()));
-        assertThat(response.toString(), HttpHeader.EXPIRES.asString(), isIn(response.getFieldNamesCollection()));
+        assertThat(response.toString(), HttpHeader.EXPIRES.asString(), is(in(response.getFieldNamesCollection())));
     }
 
     public static class NullServlet extends HttpServlet
@@ -135,6 +135,5 @@ public class HeaderFilterTest
         {
             resp.setStatus(HttpStatus.NO_CONTENT_204);
         }
-
     }
 }

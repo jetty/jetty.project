@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -29,30 +29,30 @@ public class ListenerBasicSocket implements WebSocketListener
     @Override
     public void onWebSocketBinary(byte[] payload, int offset, int len)
     {
-        capture.offer("onWebSocketBinary([%d], %d, %d)",payload.length,offset,len);
+        capture.offer("onWebSocketBinary([%d], %d, %d)", payload.length, offset, len);
     }
 
     @Override
     public void onWebSocketClose(int statusCode, String reason)
     {
-        capture.offer("onWebSocketClose(%d, %s)",statusCode,capture.q(reason));
+        capture.offer("onWebSocketClose(%d, %s)", statusCode, capture.q(reason));
     }
 
     @Override
     public void onWebSocketConnect(Session session)
     {
-        capture.offer("onWebSocketConnect(%s)",session);
+        capture.offer("onWebSocketConnect(%s)", session);
     }
 
     @Override
     public void onWebSocketError(Throwable cause)
     {
-        capture.offer("onWebSocketError((%s) %s)",cause.getClass().getSimpleName(),cause.getMessage());
+        capture.offer("onWebSocketError((%s) %s)", cause.getClass().getSimpleName(), cause.getMessage());
     }
 
     @Override
     public void onWebSocketText(String message)
     {
-        capture.offer("onWebSocketText(%s)",capture.q(message));
+        capture.offer("onWebSocketText(%s)", capture.q(message));
     }
 }

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -24,7 +24,6 @@ import java.io.Writer;
 import java.nio.ByteBuffer;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-
 import javax.websocket.EncodeException;
 import javax.websocket.RemoteEndpoint;
 
@@ -62,7 +61,7 @@ public class JsrBasicRemote extends AbstractJsrRemote implements RemoteEndpoint.
         assertMessageNotNull(data);
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("sendBinary({})",BufferUtil.toDetailString(data));
+            LOG.debug("sendBinary({})", BufferUtil.toDetailString(data));
         }
         jettyRemote.sendBytes(data);
     }
@@ -73,9 +72,9 @@ public class JsrBasicRemote extends AbstractJsrRemote implements RemoteEndpoint.
         assertMessageNotNull(partialByte);
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("sendBinary({},{})",BufferUtil.toDetailString(partialByte),isLast);
+            LOG.debug("sendBinary({},{})", BufferUtil.toDetailString(partialByte), isLast);
         }
-        jettyRemote.sendPartialBytes(partialByte,isLast);
+        jettyRemote.sendPartialBytes(partialByte, isLast);
     }
 
     @Override
@@ -89,11 +88,11 @@ public class JsrBasicRemote extends AbstractJsrRemote implements RemoteEndpoint.
         }
         catch (ExecutionException e)
         {
-            throw new IOException("Failed to write object",e.getCause());
+            throw new IOException("Failed to write object", e.getCause());
         }
         catch (InterruptedException e)
         {
-            throw new IOException("Failed to write object",e);
+            throw new IOException("Failed to write object", e);
         }
     }
 
@@ -103,7 +102,7 @@ public class JsrBasicRemote extends AbstractJsrRemote implements RemoteEndpoint.
         assertMessageNotNull(text);
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("sendText({})",TextUtil.hint(text));
+            LOG.debug("sendText({})", TextUtil.hint(text));
         }
         jettyRemote.sendString(text);
     }
@@ -114,8 +113,8 @@ public class JsrBasicRemote extends AbstractJsrRemote implements RemoteEndpoint.
         assertMessageNotNull(partialMessage);
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("sendText({},{})",TextUtil.hint(partialMessage),isLast);
+            LOG.debug("sendText({},{})", TextUtil.hint(partialMessage), isLast);
         }
-        jettyRemote.sendPartialString(partialMessage,isLast);
+        jettyRemote.sendPartialString(partialMessage, isLast);
     }
 }

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -23,114 +23,107 @@ import java.util.EventListener;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 
-/* ------------------------------------------------------------ */
 /**
  * The lifecycle interface for generic components.
  * <br>
  * Classes implementing this interface have a defined life cycle
  * defined by the methods of this interface.
- *
- * 
  */
 @ManagedObject("Lifecycle Interface for startable components")
 public interface LifeCycle
 {
-    /* ------------------------------------------------------------ */
+
     /**
      * Starts the component.
+     *
      * @throws Exception If the component fails to start
      * @see #isStarted()
      * @see #stop()
      * @see #isFailed()
      */
-    @ManagedOperation(value="Starts the instance", impact="ACTION")
-    public void start()
+    @ManagedOperation(value = "Starts the instance", impact = "ACTION")
+    void start()
         throws Exception;
 
-    /* ------------------------------------------------------------ */
     /**
      * Stops the component.
      * The component may wait for current activities to complete
      * normally, but it can be interrupted.
-     * @exception Exception If the component fails to stop
+     *
+     * @throws Exception If the component fails to stop
      * @see #isStopped()
      * @see #start()
      * @see #isFailed()
      */
-    @ManagedOperation(value="Stops the instance", impact="ACTION")
-    public void stop()
+    @ManagedOperation(value = "Stops the instance", impact = "ACTION")
+    void stop()
         throws Exception;
 
-    /* ------------------------------------------------------------ */
     /**
      * @return true if the component is starting or has been started.
      */
-    public boolean isRunning();
+    boolean isRunning();
 
-    /* ------------------------------------------------------------ */
     /**
      * @return true if the component has been started.
      * @see #start()
      * @see #isStarting()
      */
-    public boolean isStarted();
+    boolean isStarted();
 
-    /* ------------------------------------------------------------ */
     /**
      * @return true if the component is starting.
      * @see #isStarted()
      */
-    public boolean isStarting();
+    boolean isStarting();
 
-    /* ------------------------------------------------------------ */
     /**
      * @return true if the component is stopping.
      * @see #isStopped()
      */
-    public boolean isStopping();
+    boolean isStopping();
 
-    /* ------------------------------------------------------------ */
     /**
      * @return true if the component has been stopped.
      * @see #stop()
      * @see #isStopping()
      */
-    public boolean isStopped();
+    boolean isStopped();
 
-    /* ------------------------------------------------------------ */
     /**
      * @return true if the component has failed to start or has failed to stop.
      */
-    public boolean isFailed();
-    
-    /* ------------------------------------------------------------ */
-    public void addLifeCycleListener(LifeCycle.Listener listener);
+    boolean isFailed();
 
-    /* ------------------------------------------------------------ */
-    public void removeLifeCycleListener(LifeCycle.Listener listener);
-    
+    void addLifeCycleListener(LifeCycle.Listener listener);
 
-    /* ------------------------------------------------------------ */
-    /** Listener.
+    void removeLifeCycleListener(LifeCycle.Listener listener);
+
+    /**
+     * Listener.
      * A listener for Lifecycle events.
      */
-    public interface Listener extends EventListener
+    interface Listener extends EventListener
     {
-        public void lifeCycleStarting(LifeCycle event);
-        public void lifeCycleStarted(LifeCycle event);
-        public void lifeCycleFailure(LifeCycle event,Throwable cause);
-        public void lifeCycleStopping(LifeCycle event);
-        public void lifeCycleStopped(LifeCycle event);
+        void lifeCycleStarting(LifeCycle event);
+
+        void lifeCycleStarted(LifeCycle event);
+
+        void lifeCycleFailure(LifeCycle event, Throwable cause);
+
+        void lifeCycleStopping(LifeCycle event);
+
+        void lifeCycleStopped(LifeCycle event);
     }
-    
-    
+
     /**
      * Utility to start an object if it is a LifeCycle and to convert
      * any exception thrown to a {@link RuntimeException}
+     *
      * @param object The instance to start.
      * @throws RuntimeException if the call to start throws an exception.
      */
-    public static void start(Object object)
+    static void start(Object object)
     {
         if (object instanceof LifeCycle)
         {
@@ -138,20 +131,21 @@ public interface LifeCycle
             {
                 ((LifeCycle)object).start();
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 throw new RuntimeException(e);
             }
         }
     }
-    
+
     /**
      * Utility to stop an object if it is a LifeCycle and to convert
      * any exception thrown to a {@link RuntimeException}
+     *
      * @param object The instance to stop.
      * @throws RuntimeException if the call to stop throws an exception.
      */
-    public static void stop(Object object)
+    static void stop(Object object)
     {
         if (object instanceof LifeCycle)
         {
@@ -159,7 +153,7 @@ public interface LifeCycle
             {
                 ((LifeCycle)object).stop();
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 throw new RuntimeException(e);
             }

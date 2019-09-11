@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -27,14 +27,17 @@ public enum UserDataConstraint
 
     public static UserDataConstraint get(int dataConstraint)
     {
-        if (dataConstraint < -1 || dataConstraint > 2) throw new IllegalArgumentException("Expected -1, 0, 1, or 2, not: " + dataConstraint);
-        if (dataConstraint == -1) return None;
+        if (dataConstraint < -1 || dataConstraint > 2)
+            throw new IllegalArgumentException("Expected -1, 0, 1, or 2, not: " + dataConstraint);
+        if (dataConstraint == -1)
+            return None;
         return values()[dataConstraint];
     }
 
     public UserDataConstraint combine(UserDataConstraint other)
     {
-        if (this.compareTo(other) < 0) return this;
+        if (this.compareTo(other) < 0)
+            return this;
         return other;
     }
 }

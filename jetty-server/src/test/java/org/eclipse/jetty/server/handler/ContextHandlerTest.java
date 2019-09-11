@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,17 +18,15 @@
 
 package org.eclipse.jetty.server.handler;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -37,10 +35,19 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.toolchain.test.FS;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.resource.Resource;
 import org.hamcrest.Matchers;
-
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ContextHandlerTest
 {
@@ -62,11 +69,11 @@ public class ContextHandlerTest
         Server server = new Server();
         LocalConnector connector = new LocalConnector(server);
         server.setConnectors(new Connector[]
-        { connector });
+            {connector});
 
         ContextHandler contextA = new ContextHandler("/");
         contextA.setVirtualHosts(new String[]
-        { "www.example.com" });
+            {"www.example.com"});
         IsHandledHandler handlerA = new IsHandledHandler();
         contextA.setHandler(handlerA);
 
@@ -74,7 +81,7 @@ public class ContextHandlerTest
         IsHandledHandler handlerB = new IsHandledHandler();
         contextB.setHandler(handlerB);
         contextB.setVirtualHosts(new String[]
-        { "www.example2.com." });
+            {"www.example2.com."});
 
         ContextHandler contextC = new ContextHandler("/");
         IsHandledHandler handlerC = new IsHandledHandler();
@@ -106,16 +113,13 @@ public class ContextHandlerTest
             assertFalse(handlerA.isHandled());
             assertTrue(handlerB.isHandled());
             assertFalse(handlerC.isHandled());
-
         }
         finally
         {
             server.stop();
         }
-
     }
-    
-    
+
     @Test
     public void testNamedConnector() throws Exception
     {
@@ -123,11 +127,11 @@ public class ContextHandlerTest
         LocalConnector connector = new LocalConnector(server);
         LocalConnector connectorN = new LocalConnector(server);
         connectorN.setName("name");
-        server.setConnectors(new Connector[] { connector, connectorN });
+        server.setConnectors(new Connector[]{connector, connectorN});
 
         ContextHandler contextA = new ContextHandler("/");
         contextA.setDisplayName("A");
-        contextA.setVirtualHosts(new String[]{"www.example.com" });
+        contextA.setVirtualHosts(new String[]{"www.example.com"});
         IsHandledHandler handlerA = new IsHandledHandler();
         contextA.setHandler(handlerA);
 
@@ -135,7 +139,7 @@ public class ContextHandlerTest
         contextB.setDisplayName("B");
         IsHandledHandler handlerB = new IsHandledHandler();
         contextB.setHandler(handlerB);
-        contextB.setVirtualHosts(new String[]{ "@name" });
+        contextB.setVirtualHosts(new String[]{"@name"});
 
         ContextHandler contextC = new ContextHandler("/");
         contextC.setDisplayName("C");
@@ -146,31 +150,31 @@ public class ContextHandlerTest
         contextD.setDisplayName("D");
         IsHandledHandler handlerD = new IsHandledHandler();
         contextD.setHandler(handlerD);
-        contextD.setVirtualHosts(new String[]{ "www.example.com@name" });
+        contextD.setVirtualHosts(new String[]{"www.example.com@name"});
 
         ContextHandler contextE = new ContextHandler("/");
         contextE.setDisplayName("E");
         IsHandledHandler handlerE = new IsHandledHandler();
         contextE.setHandler(handlerE);
-        contextE.setVirtualHosts(new String[]{ "*.example.com" });
+        contextE.setVirtualHosts(new String[]{"*.example.com"});
 
         ContextHandler contextF = new ContextHandler("/");
         contextF.setDisplayName("F");
         IsHandledHandler handlerF = new IsHandledHandler();
         contextF.setHandler(handlerF);
-        contextF.setVirtualHosts(new String[]{ "*.example.com@name" });
+        contextF.setVirtualHosts(new String[]{"*.example.com@name"});
 
         ContextHandler contextG = new ContextHandler("/");
         contextG.setDisplayName("G");
         IsHandledHandler handlerG = new IsHandledHandler();
         contextG.setHandler(handlerG);
-        contextG.setVirtualHosts(new String[]{ "*.com@name" });
+        contextG.setVirtualHosts(new String[]{"*.com@name"});
 
         ContextHandler contextH = new ContextHandler("/");
         contextH.setDisplayName("H");
         IsHandledHandler handlerH = new IsHandledHandler();
         contextH.setHandler(handlerH);
-        contextH.setVirtualHosts(new String[]{ "*.com" });
+        contextH.setVirtualHosts(new String[]{"*.com"});
 
         HandlerCollection c = new HandlerCollection();
         c.addHandler(contextA);
@@ -258,7 +262,6 @@ public class ContextHandlerTest
             handlerF.reset();
             handlerG.reset();
             handlerH.reset();
-
         }
         finally
         {
@@ -275,7 +278,6 @@ public class ContextHandlerTest
         d.addHandler(contextC);
         d.addHandler(contextB);
         d.addHandler(contextA);
-
 
         server.setHandler(d);
 
@@ -353,14 +355,11 @@ public class ContextHandlerTest
             handlerF.reset();
             handlerG.reset();
             handlerH.reset();
-
         }
         finally
         {
             server.stop();
         }
-
-
     }
 
     @Test
@@ -368,13 +367,13 @@ public class ContextHandlerTest
     {
         Server server = new Server();
         LocalConnector connector = new LocalConnector(server);
-        server.setConnectors(new Connector[] { connector });
+        server.setConnectors(new Connector[]{connector});
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         server.setHandler(contexts);
 
-        ContextHandler rootA = new ContextHandler(contexts,"/");
-        ContextHandler fooA = new ContextHandler(contexts,"/foo");
-        ContextHandler foobarA = new ContextHandler(contexts,"/foo/bar");
+        ContextHandler rootA = new ContextHandler(contexts, "/");
+        ContextHandler fooA = new ContextHandler(contexts, "/foo");
+        ContextHandler foobarA = new ContextHandler(contexts, "/foo/bar");
 
         server.start();
 
@@ -400,15 +399,15 @@ public class ContextHandlerTest
     {
         Server server = new Server();
         LocalConnector connector = new LocalConnector(server);
-        server.setConnectors(new Connector[] { connector });
+        server.setConnectors(new Connector[]{connector});
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         server.setHandler(contexts);
 
-        ContextHandler root = new ContextHandler(contexts,"/");
+        ContextHandler root = new ContextHandler(contexts, "/");
         root.setHandler(new ContextPathHandler());
-        ContextHandler foo = new ContextHandler(contexts,"/foo");
+        ContextHandler foo = new ContextHandler(contexts, "/foo");
         foo.setHandler(new ContextPathHandler());
-        ContextHandler foobar = new ContextHandler(contexts,"/foo/bar");
+        ContextHandler foobar = new ContextHandler(contexts, "/foo/bar");
         foobar.setHandler(new ContextPathHandler());
 
         // check that all contexts start normally
@@ -448,35 +447,32 @@ public class ContextHandlerTest
         assertThat(connector.getResponse("GET /foo/bar/xxx HTTP/1.0\n\n"), Matchers.containsString("ctx='/foo/bar'"));
     }
 
-
     @Test
     public void testContextVirtualGetContext() throws Exception
     {
         Server server = new Server();
         LocalConnector connector = new LocalConnector(server);
-        server.setConnectors(new Connector[] { connector });
+        server.setConnectors(new Connector[]{connector});
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         server.setHandler(contexts);
 
-        ContextHandler rootA = new ContextHandler(contexts,"/");
-        rootA.setVirtualHosts(new String[] {"a.com"});
+        ContextHandler rootA = new ContextHandler(contexts, "/");
+        rootA.setVirtualHosts(new String[]{"a.com"});
 
-        ContextHandler rootB = new ContextHandler(contexts,"/");
-        rootB.setVirtualHosts(new String[] {"b.com"});
+        ContextHandler rootB = new ContextHandler(contexts, "/");
+        rootB.setVirtualHosts(new String[]{"b.com"});
 
-        ContextHandler rootC = new ContextHandler(contexts,"/");
-        rootC.setVirtualHosts(new String[] {"c.com"});
+        ContextHandler rootC = new ContextHandler(contexts, "/");
+        rootC.setVirtualHosts(new String[]{"c.com"});
 
+        ContextHandler fooA = new ContextHandler(contexts, "/foo");
+        fooA.setVirtualHosts(new String[]{"a.com"});
 
-        ContextHandler fooA = new ContextHandler(contexts,"/foo");
-        fooA.setVirtualHosts(new String[] {"a.com"});
+        ContextHandler fooB = new ContextHandler(contexts, "/foo");
+        fooB.setVirtualHosts(new String[]{"b.com"});
 
-        ContextHandler fooB = new ContextHandler(contexts,"/foo");
-        fooB.setVirtualHosts(new String[] {"b.com"});
-
-
-        ContextHandler foobarA = new ContextHandler(contexts,"/foo/bar");
-        foobarA.setVirtualHosts(new String[] {"a.com"});
+        ContextHandler foobarA = new ContextHandler(contexts, "/foo/bar");
+        foobarA.setVirtualHosts(new String[]{"a.com"});
 
         server.start();
 
@@ -495,13 +491,12 @@ public class ContextHandlerTest
         assertEquals(rootC._scontext, rootC._scontext.getContext("/foo/other"));
     }
 
-
     @Test
     public void testVirtualHostWildcard() throws Exception
     {
         Server server = new Server();
         LocalConnector connector = new LocalConnector(server);
-        server.setConnectors(new Connector[] { connector });
+        server.setConnectors(new Connector[]{connector});
 
         ContextHandler context = new ContextHandler("/");
 
@@ -513,21 +508,35 @@ public class ContextHandlerTest
         try
         {
             server.start();
-            checkWildcardHost(true,server,null,new String[] {"example.com", ".example.com", "vhost.example.com"});
-            checkWildcardHost(false,server,new String[] {null},new String[] {"example.com", ".example.com", "vhost.example.com"});
+            checkWildcardHost(true, server, null, new String[]{"example.com", ".example.com", "vhost.example.com"});
+            checkWildcardHost(false, server, new String[]{null}, new String[]{
+                "example.com", ".example.com", "vhost.example.com"
+            });
 
-            checkWildcardHost(true,server,new String[] {"example.com", "*.example.com"}, new String[] {"example.com", ".example.com", "vhost.example.com"});
-            checkWildcardHost(false,server,new String[] {"example.com", "*.example.com"}, new String[] {"badexample.com", ".badexample.com", "vhost.badexample.com"});
+            checkWildcardHost(true, server, new String[]{"example.com", "*.example.com"}, new String[]{
+                "example.com", ".example.com", "vhost.example.com"
+            });
+            checkWildcardHost(false, server, new String[]{"example.com", "*.example.com"}, new String[]{
+                "badexample.com", ".badexample.com", "vhost.badexample.com"
+            });
 
-            checkWildcardHost(false,server,new String[] {"*."}, new String[] {"anything.anything"});
+            checkWildcardHost(false, server, new String[]{"*."}, new String[]{"anything.anything"});
 
-            checkWildcardHost(true,server,new String[] {"*.example.com"}, new String[] {"vhost.example.com", ".example.com"});
-            checkWildcardHost(false,server,new String[] {"*.example.com"}, new String[] {"vhost.www.example.com", "example.com", "www.vhost.example.com"});
+            checkWildcardHost(true, server, new String[]{"*.example.com"}, new String[]{"vhost.example.com", ".example.com"});
+            checkWildcardHost(false, server, new String[]{"*.example.com"}, new String[]{
+                "vhost.www.example.com", "example.com", "www.vhost.example.com"
+            });
 
-            checkWildcardHost(true,server,new String[] {"*.sub.example.com"}, new String[] {"vhost.sub.example.com", ".sub.example.com"});
-            checkWildcardHost(false,server,new String[] {"*.sub.example.com"}, new String[] {".example.com", "sub.example.com", "vhost.example.com"});
+            checkWildcardHost(true, server, new String[]{"*.sub.example.com"}, new String[]{
+                "vhost.sub.example.com", ".sub.example.com"
+            });
+            checkWildcardHost(false, server, new String[]{"*.sub.example.com"}, new String[]{
+                ".example.com", "sub.example.com", "vhost.example.com"
+            });
 
-            checkWildcardHost(false,server,new String[] {"example.*.com","example.com.*"}, new String[] {"example.vhost.com", "example.com.vhost", "example.com"});
+            checkWildcardHost(false, server, new String[]{"example.*.com", "example.com.*"}, new String[]{
+                "example.vhost.com", "example.com.vhost", "example.com"
+            });
         }
         finally
         {
@@ -541,29 +550,28 @@ public class ContextHandlerTest
         ContextHandler context = new ContextHandler("/");
 
         // test singular
-        context.setVirtualHosts(new String[] { "www.example.com"} );
+        context.setVirtualHosts(new String[]{"www.example.com"});
         assertEquals(1, context.getVirtualHosts().length);
 
         // test adding two more
-        context.addVirtualHosts(new String[] { "foo.com@connector1", "*.example2.com"});
+        context.addVirtualHosts(new String[]{"foo.com@connector1", "*.example2.com"});
         assertEquals(3, context.getVirtualHosts().length);
 
         // test adding existing context
-        context.addVirtualHosts(new String[] { "www.example.com" });
+        context.addVirtualHosts(new String[]{"www.example.com"});
         assertEquals(3, context.getVirtualHosts().length);
 
         // test removing existing
-        context.removeVirtualHosts(new String[] { "*.example2.com" });
+        context.removeVirtualHosts(new String[]{"*.example2.com"});
         assertEquals(2, context.getVirtualHosts().length);
 
         // test removing non-existent
-        context.removeVirtualHosts(new String[] { "www.example3.com" });
+        context.removeVirtualHosts(new String[]{"www.example3.com"});
         assertEquals(2, context.getVirtualHosts().length);
 
         // test removing all remaining and resets to null
-        context.removeVirtualHosts(new String[] { "www.example.com", "foo.com@connector1" });
+        context.removeVirtualHosts(new String[]{"www.example.com", "foo.com@connector1"});
         assertArrayEquals(null, context.getVirtualHosts());
-
     }
 
     @Test
@@ -571,18 +579,18 @@ public class ContextHandlerTest
     {
         ContextHandler handler = new ContextHandler();
         handler.setServer(new Server());
-        handler.setAttribute("aaa","111");
+        handler.setAttribute("aaa", "111");
         assertEquals("111", handler.getServletContext().getAttribute("aaa"));
         assertEquals(null, handler.getAttribute("bbb"));
 
         handler.start();
 
-        handler.getServletContext().setAttribute("aaa","000");
-        handler.setAttribute("ccc","333");
-        handler.getServletContext().setAttribute("ddd","444");
+        handler.getServletContext().setAttribute("aaa", "000");
+        handler.setAttribute("ccc", "333");
+        handler.getServletContext().setAttribute("ddd", "444");
         assertEquals("111", handler.getServletContext().getAttribute("aaa"));
         assertEquals(null, handler.getServletContext().getAttribute("bbb"));
-        handler.getServletContext().setAttribute("bbb","222");
+        handler.getServletContext().setAttribute("bbb", "222");
         assertEquals("333", handler.getServletContext().getAttribute("ccc"));
         assertEquals("444", handler.getServletContext().getAttribute("ddd"));
 
@@ -632,7 +640,7 @@ public class ContextHandlerTest
         ContextHandler handler = new ContextHandler();
         assertEquals(false, handler.isShutdown());
     }
-    
+
     @Test
     public void testLogNameFromDisplayName() throws Exception
     {
@@ -649,7 +657,7 @@ public class ContextHandlerTest
             handler.stop();
         }
     }
-    
+
     @Test
     public void testLogNameFromContextPath_Deep() throws Exception
     {
@@ -666,7 +674,7 @@ public class ContextHandlerTest
             handler.stop();
         }
     }
-    
+
     @Test
     public void testLogNameFromContextPath_Root() throws Exception
     {
@@ -683,7 +691,7 @@ public class ContextHandlerTest
             handler.stop();
         }
     }
-    
+
     @Test
     public void testLogNameFromContextPath_Undefined() throws Exception
     {
@@ -699,7 +707,7 @@ public class ContextHandlerTest
             handler.stop();
         }
     }
-    
+
     @Test
     public void testLogNameFromContextPath_Empty() throws Exception
     {
@@ -717,13 +725,36 @@ public class ContextHandlerTest
         }
     }
 
+    @Test
+    public void testClassPath_WithSpaces() throws IOException
+    {
+        ContextHandler handler = new ContextHandler();
+        handler.setServer(new Server());
+        handler.setContextPath("/");
+
+        Path baseDir = MavenTestingUtils.getTargetTestingPath("testClassPath_WithSpaces");
+        FS.ensureEmpty(baseDir);
+
+        Path spacey = baseDir.resolve("and extra directory");
+        FS.ensureEmpty(spacey);
+
+        Path jar = spacey.resolve("empty.jar");
+        FS.touch(jar);
+
+        URLClassLoader cl = new URLClassLoader(new URL[]{jar.toUri().toURL()});
+        handler.setClassLoader(cl);
+
+        String classpath = handler.getClassPath();
+        assertThat("classpath", classpath, containsString(jar.toString()));
+    }
+
     private void checkResourcePathsForExampleWebApp(String root) throws IOException
     {
         File testDirectory = setupTestDirectory();
 
         ContextHandler handler = new ContextHandler();
 
-        assertTrue(testDirectory.isDirectory(),"Not a directory " + testDirectory);
+        assertTrue(testDirectory.isDirectory(), "Not a directory " + testDirectory);
         handler.setBaseResource(Resource.newResource(Resource.toURL(testDirectory)));
 
         List<String> paths = new ArrayList<>(handler.getResourcePaths(root));
@@ -736,18 +767,18 @@ public class ContextHandlerTest
 
     private File setupTestDirectory() throws IOException
     {
-        File tmpDir = new File( System.getProperty( "basedir",".") + "/target/tmp/ContextHandlerTest" );
-        tmpDir=tmpDir.getCanonicalFile();
+        File tmpDir = new File(System.getProperty("basedir", ".") + "/target/tmp/ContextHandlerTest");
+        tmpDir = tmpDir.getCanonicalFile();
         if (!tmpDir.exists())
             assertTrue(tmpDir.mkdirs());
-        File tmp = File.createTempFile("cht",null, tmpDir );
+        File tmp = File.createTempFile("cht", null, tmpDir);
         assertTrue(tmp.delete());
         assertTrue(tmp.mkdir());
         tmp.deleteOnExit();
-        File root = new File(tmp,getClass().getName());
+        File root = new File(tmp, getClass().getName());
         assertTrue(root.mkdir());
 
-        File webInf = new File(root,"WEB-INF");
+        File webInf = new File(root, "WEB-INF");
         assertTrue(webInf.mkdir());
 
         assertTrue(new File(webInf, "jsp").mkdir());
@@ -763,16 +794,15 @@ public class ContextHandlerTest
         context.setVirtualHosts(contextHosts);
 
         IsHandledHandler handler = (IsHandledHandler)context.getHandler();
-        for(String host : requestHosts)
+        for (String host : requestHosts)
         {
-            connector.getResponse("GET / HTTP/1.1\n" + "Host: "+host+"\nConnection:close\n\n");
-            if(succeed)
-                assertTrue(handler.isHandled(),"'" + host + "' should have been handled.");
+            connector.getResponse("GET / HTTP/1.1\n" + "Host: " + host + "\nConnection:close\n\n");
+            if (succeed)
+                assertTrue(handler.isHandled(), "'" + host + "' should have been handled.");
             else
-                assertFalse(handler.isHandled(),"'" + host + "' should not have been handled.");
+                assertFalse(handler.isHandled(), "'" + host + "' should not have been handled.");
             handler.reset();
         }
-
     }
 
     private static final class IsHandledHandler extends AbstractHandler
@@ -806,9 +836,9 @@ public class ContextHandlerTest
 
             response.setStatus(200);
             response.setContentType("text/plain; charset=utf-8");
-            response.setHeader("Connection","close");
+            response.setHeader("Connection", "close");
             PrintWriter writer = response.getWriter();
-            writer.println("ctx='"+request.getContextPath()+"'");
+            writer.println("ctx='" + request.getContextPath() + "'");
         }
     }
 }

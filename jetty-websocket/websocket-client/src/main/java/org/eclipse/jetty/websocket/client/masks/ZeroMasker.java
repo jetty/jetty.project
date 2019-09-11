@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -24,12 +24,12 @@ import org.eclipse.jetty.websocket.common.WebSocketFrame;
 
 public class ZeroMasker implements Masker
 {
-    private final byte mask[];
+    private final byte[] mask;
 
     public ZeroMasker()
     {
         this.mask = new byte[4];
-        Arrays.fill(mask,(byte)0);
+        Arrays.fill(mask, (byte)0);
     }
 
     @Override

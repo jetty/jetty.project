@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,7 +19,6 @@
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -33,15 +32,13 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.Container;
-import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
 import org.eclipse.jetty.util.statistic.SampleStatistic;
 
-
-/* ------------------------------------------------------------ */
-/** A Connector.Listener that gathers Connector and Connections Statistics.
- * Adding an instance of this class as with {@link AbstractConnector#addBean(Object)} 
+/**
+ * A Connector.Listener that gathers Connector and Connections Statistics.
+ * Adding an instance of this class as with {@link AbstractConnector#addBean(Object)}
  * will register the listener with all connections accepted by that connector.
  *
  * @deprecated use {@link ServerConnectionStatistics} instead.
@@ -50,7 +47,7 @@ import org.eclipse.jetty.util.statistic.SampleStatistic;
 @ManagedObject("Connector Statistics")
 public class ConnectorStatistics extends AbstractLifeCycle implements Dumpable, Connection.Listener
 {
-    private final static Sample ZERO=new Sample();
+    private static final Sample ZERO = new Sample();
     private final AtomicLong _startMillis = new AtomicLong(-1L);
     private final CounterStatistic _connectionStats = new CounterStatistic();
     private final SampleStatistic _messagesIn = new SampleStatistic();
@@ -59,7 +56,7 @@ public class ConnectorStatistics extends AbstractLifeCycle implements Dumpable, 
     private final ConcurrentMap<Connection, Sample> _samples = new ConcurrentHashMap<>();
     private final LongAdder _closedIn = new LongAdder();
     private final LongAdder _closedOut = new LongAdder();
-    private AtomicLong _nanoStamp=new AtomicLong();
+    private AtomicLong _nanoStamp = new AtomicLong();
     private volatile int _messagesInPerSecond;
     private volatile int _messagesOutPerSecond;
 
@@ -69,7 +66,7 @@ public class ConnectorStatistics extends AbstractLifeCycle implements Dumpable, 
         if (isStarted())
         {
             _connectionStats.increment();
-            _samples.put(connection,ZERO);
+            _samples.put(connection, ZERO);
         }
     }
 
@@ -78,18 +75,18 @@ public class ConnectorStatistics extends AbstractLifeCycle implements Dumpable, 
     {
         if (isStarted())
         {
-            long msgsIn=connection.getMessagesIn();
-            long msgsOut=connection.getMessagesOut();
+            long msgsIn = connection.getMessagesIn();
+            long msgsOut = connection.getMessagesOut();
             _messagesIn.record(msgsIn);
             _messagesOut.record(msgsOut);
             _connectionStats.decrement();
-            _connectionDurationStats.record(System.currentTimeMillis()-connection.getCreatedTimeStamp());
+            _connectionDurationStats.record(System.currentTimeMillis() - connection.getCreatedTimeStamp());
 
-            Sample sample=_samples.remove(connection);
-            if (sample!=null)
+            Sample sample = _samples.remove(connection);
+            if (sample != null)
             {
-                _closedIn.add(msgsIn-sample._messagesIn);
-                _closedOut.add(msgsOut-sample._messagesOut);
+                _closedIn.add(msgsIn - sample._messagesIn);
+                _closedOut.add(msgsOut - sample._messagesOut);
             }
         }
     }
@@ -240,71 +237,75 @@ public class ConnectorStatistics extends AbstractLifeCycle implements Dumpable, 
     @ManagedOperation("dump thread state")
     public String dump()
     {
-        return ContainerLifeCycle.dump(this);
+        return Dumpable.dump(this);
     }
 
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        ContainerLifeCycle.dumpObject(out,this);
-        ContainerLifeCycle.dump(out,indent,Arrays.asList(new String[]{"connections="+_connectionStats,"duration="+_connectionDurationStats,"in="+_messagesIn,"out="+_messagesOut}));
+        Dumpable.dumpObjects(out, indent, this,
+            "connections=" + _connectionStats,
+            "duration=" + _connectionDurationStats,
+            "in=" + _messagesIn,
+            "out=" + _messagesOut);
     }
-    
+
     public static void addToAllConnectors(Server server)
     {
         for (Connector connector : server.getConnectors())
         {
             if (connector instanceof Container)
-             ((Container)connector).addBean(new ConnectorStatistics());
+                connector.addBean(new ConnectorStatistics());
         }
-    }  
-    
-    private static final long SECOND_NANOS=TimeUnit.SECONDS.toNanos(1);
+    }
+
+    private static final long SECOND_NANOS = TimeUnit.SECONDS.toNanos(1);
+
     private synchronized void update()
     {
-        long now=System.nanoTime();
-        long then=_nanoStamp.get();
-        long duration=now-then;
-                
-        if (duration>SECOND_NANOS/2)
+        long now = System.nanoTime();
+        long then = _nanoStamp.get();
+        long duration = now - then;
+
+        if (duration > SECOND_NANOS / 2)
         {
-            if (_nanoStamp.compareAndSet(then,now))
+            if (_nanoStamp.compareAndSet(then, now))
             {
-                long msgsIn=_closedIn.sumThenReset();
-                long msgsOut=_closedOut.sumThenReset();
+                long msgsIn = _closedIn.sumThenReset();
+                long msgsOut = _closedOut.sumThenReset();
 
                 for (Map.Entry<Connection, Sample> entry : _samples.entrySet())
                 {
-                    Connection connection=entry.getKey();
+                    Connection connection = entry.getKey();
                     Sample sample = entry.getValue();
                     Sample next = new Sample(connection);
-                    if (_samples.replace(connection,sample,next))
+                    if (_samples.replace(connection, sample, next))
                     {
-                        msgsIn+=next._messagesIn-sample._messagesIn;
-                        msgsOut+=next._messagesOut-sample._messagesOut;
+                        msgsIn += next._messagesIn - sample._messagesIn;
+                        msgsOut += next._messagesOut - sample._messagesOut;
                     }
                 }
-                
-                _messagesInPerSecond=(int)(msgsIn*SECOND_NANOS/duration);
-                _messagesOutPerSecond=(int)(msgsOut*SECOND_NANOS/duration);
+
+                _messagesInPerSecond = (int)(msgsIn * SECOND_NANOS / duration);
+                _messagesOutPerSecond = (int)(msgsOut * SECOND_NANOS / duration);
             }
         }
     }
-    
+
     private static class Sample
     {
         Sample()
         {
-            _messagesIn=0;
-            _messagesOut=0;
+            _messagesIn = 0;
+            _messagesOut = 0;
         }
-        
+
         Sample(Connection connection)
         {
-            _messagesIn=connection.getMessagesIn();
-            _messagesOut=connection.getMessagesOut();
+            _messagesIn = connection.getMessagesIn();
+            _messagesOut = connection.getMessagesOut();
         }
-        
+
         final long _messagesIn;
         final long _messagesOut;
     }

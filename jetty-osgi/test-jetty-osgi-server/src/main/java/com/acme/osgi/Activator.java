@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -21,38 +21,36 @@ package com.acme.osgi;
 import java.util.Dictionary;
 import java.util.Hashtable;
 
-import org.eclipse.jetty.util.component.AbstractLifeCycle.AbstractLifeCycleListener;
-import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
+import org.eclipse.jetty.util.component.AbstractLifeCycle.AbstractLifeCycleListener;
+import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.webapp.Configuration;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceRegistration;
 
 /**
  * Bootstrap a Server
- * 
- * 
  */
 public class Activator implements BundleActivator
 {
 
     private ServiceRegistration _sr;
-    
+
     /**
-     * 
-     * @param context
+     *
      */
     @Override
     public void start(BundleContext context) throws Exception
-    {    
+    {
         //For test purposes, use a random port
         Server server = new Server(0);
         server.getConnectors()[0].addLifeCycleListener(new AbstractLifeCycleListener()
         {
 
-            /** 
+            /**
              * @see org.eclipse.jetty.util.component.AbstractLifeCycle.AbstractLifeCycleListener#lifeCycleStarted(org.eclipse.jetty.util.component.LifeCycle)
              */
             @Override
@@ -61,12 +59,21 @@ public class Activator implements BundleActivator
                 System.setProperty("bundle.server.port", String.valueOf(((ServerConnector)event).getLocalPort()));
                 super.lifeCycleStarted(event);
             }
-
-     
-            
         });
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         server.setHandler(contexts);
+        //server.setDumpAfterStart(true);
+
+        Configuration.ClassList list = new Configuration.ClassList(new String[]{
+            "org.eclipse.jetty.osgi.boot.OSGiWebInfConfiguration",
+            "org.eclipse.jetty.webapp.WebXmlConfiguration",
+            "org.eclipse.jetty.webapp.MetaInfConfiguration",
+            "org.eclipse.jetty.webapp.FragmentConfiguration",
+            "org.eclipse.jetty.webapp.JettyWebXmlConfiguration"
+        });
+        server.addBean(list);
+        server.setAttribute("org.eclipse.jetty.webapp.configuration", list);
+        Configuration.ClassList.setServerDefault(server);
 
         Dictionary serverProps = new Hashtable();
         //define the unique name of the server instance
@@ -78,9 +85,8 @@ public class Activator implements BundleActivator
 
     /**
      * Stop the activator.
-     * 
-     * @see
-     * org.osgi.framework.BundleActivator#stop(org.osgi.framework.BundleContext)
+     *
+     * @see org.osgi.framework.BundleActivator#stop(org.osgi.framework.BundleContext)
      */
     @Override
     public void stop(BundleContext context) throws Exception

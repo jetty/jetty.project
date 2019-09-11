@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -17,8 +17,6 @@
 //
 
 package org.eclipse.jetty.http.client;
-
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
@@ -45,9 +43,12 @@ import org.eclipse.jetty.http2.client.http.HttpConnectionOverHTTP2;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.unixsocket.client.HttpClientTransportOverUnixSockets;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpChannelAssociationTest extends AbstractTest<TransportScenario>
 {
@@ -64,7 +65,7 @@ public class HttpChannelAssociationTest extends AbstractTest<TransportScenario>
         init(transport);
         scenario.startServer(new EmptyServerHandler());
 
-        scenario.client = new HttpClient(newHttpClientTransport(scenario, exchange -> false), scenario.sslContextFactory);
+        scenario.client = new HttpClient(newHttpClientTransport(scenario, exchange -> false), scenario.newClientSslContextFactory());
         QueuedThreadPool clientThreads = new QueuedThreadPool();
         clientThreads.setName("client");
         scenario.client.setExecutor(clientThreads);
@@ -72,11 +73,11 @@ public class HttpChannelAssociationTest extends AbstractTest<TransportScenario>
 
         CountDownLatch latch = new CountDownLatch(1);
         scenario.client.newRequest(scenario.newURI())
-                .send(result ->
-                {
-                    if (result.isFailed())
-                        latch.countDown();
-                });
+            .send(result ->
+            {
+                if (result.isFailed())
+                    latch.countDown();
+            });
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
@@ -89,13 +90,14 @@ public class HttpChannelAssociationTest extends AbstractTest<TransportScenario>
         scenario.startServer(new EmptyServerHandler());
 
         long idleTimeout = 1000;
+        SslContextFactory sslContextFactory = scenario.newClientSslContextFactory();
         scenario.client = new HttpClient(newHttpClientTransport(scenario, exchange ->
         {
             // We idle timeout just before the association,
             // we must be able to send the request successfully.
             sleep(2 * idleTimeout);
             return true;
-        }), scenario.sslContextFactory);
+        }), sslContextFactory);
         QueuedThreadPool clientThreads = new QueuedThreadPool();
         clientThreads.setName("client");
         scenario.client.setExecutor(clientThreads);
@@ -104,11 +106,11 @@ public class HttpChannelAssociationTest extends AbstractTest<TransportScenario>
 
         CountDownLatch latch = new CountDownLatch(1);
         scenario.client.newRequest(scenario.newURI())
-                .send(result ->
-                {
-                    if (result.isSucceeded())
-                        latch.countDown();
-                });
+            .send(result ->
+            {
+                if (result.isSucceeded())
+                    latch.countDown();
+            });
 
         assertTrue(latch.await(5 * idleTimeout, TimeUnit.MILLISECONDS));
     }
@@ -198,7 +200,8 @@ public class HttpChannelAssociationTest extends AbstractTest<TransportScenario>
             }
             case UNIX_SOCKET:
             {
-                return new HttpClientTransportOverUnixSockets( scenario.sockFile.toString() ){
+                return new HttpClientTransportOverUnixSockets(scenario.sockFile.toString())
+                {
                     @Override
                     protected HttpConnectionOverHTTP newHttpConnection(EndPoint endPoint, HttpDestination destination, Promise<Connection> promise)
                     {

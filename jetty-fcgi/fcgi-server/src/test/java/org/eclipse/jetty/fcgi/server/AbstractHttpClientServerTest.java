@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -17,8 +17,6 @@
 //
 
 package org.eclipse.jetty.fcgi.server;
-
-import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -40,6 +38,8 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+
 public abstract class AbstractHttpClientServerTest
 {
     private LeakTrackingByteBufferPool serverBufferPool;
@@ -56,8 +56,8 @@ public abstract class AbstractHttpClientServerTest
 
         ServerFCGIConnectionFactory fcgiConnectionFactory = new ServerFCGIConnectionFactory(new HttpConfiguration());
         serverBufferPool = new LeakTrackingByteBufferPool(new MappedByteBufferPool.Tagged());
-        connector = new ServerConnector( server, null, null, serverBufferPool,
-                                         1, Math.max( 1, ProcessorUtils.availableProcessors() / 2), fcgiConnectionFactory);
+        connector = new ServerConnector(server, null, null, serverBufferPool,
+            1, Math.max(1, ProcessorUtils.availableProcessors() / 2), fcgiConnectionFactory);
 //        connector.setPort(9000);
 
         server.addConnector(connector);
@@ -89,11 +89,14 @@ public abstract class AbstractHttpClientServerTest
     {
         System.gc();
 
-        assertThat("Server BufferPool - leaked acquires", serverBufferPool.getLeakedAcquires(), Matchers.is(0L));
-        assertThat("Server BufferPool - leaked releases", serverBufferPool.getLeakedReleases(), Matchers.is(0L));
-        assertThat("Server BufferPool - unreleased", serverBufferPool.getLeakedResources(), Matchers.is(0L));
+        if (serverBufferPool != null)
+        {
+            assertThat("Server BufferPool - leaked acquires", serverBufferPool.getLeakedAcquires(), Matchers.is(0L));
+            assertThat("Server BufferPool - leaked releases", serverBufferPool.getLeakedReleases(), Matchers.is(0L));
+            assertThat("Server BufferPool - unreleased", serverBufferPool.getLeakedResources(), Matchers.is(0L));
+        }
 
-        if (clientBufferPool instanceof LeakTrackingByteBufferPool)
+        if ((clientBufferPool != null) && (clientBufferPool instanceof LeakTrackingByteBufferPool))
         {
             LeakTrackingByteBufferPool pool = (LeakTrackingByteBufferPool)clientBufferPool;
             assertThat("Client BufferPool - leaked acquires", pool.getLeakedAcquires(), Matchers.is(0L));

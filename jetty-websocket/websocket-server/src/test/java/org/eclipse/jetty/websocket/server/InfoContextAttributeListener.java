@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -30,16 +30,16 @@ public class InfoContextAttributeListener implements WebSocketCreator, ServletCo
     @Override
     public void contextInitialized(ServletContextEvent sce)
     {
-        NativeWebSocketConfiguration configuration = (NativeWebSocketConfiguration) sce.getServletContext().getAttribute(NativeWebSocketConfiguration.class.getName());
+        NativeWebSocketConfiguration configuration = (NativeWebSocketConfiguration)sce.getServletContext().getAttribute(NativeWebSocketConfiguration.class.getName());
         configuration.getFactory().getPolicy().setMaxTextMessageSize(10 * 1024 * 1024);
         configuration.addMapping("/info/*", this);
     }
-    
+
     @Override
     public void contextDestroyed(ServletContextEvent sce)
     {
     }
-    
+
     @Override
     public Object createWebSocket(ServletUpgradeRequest req, ServletUpgradeResponse resp)
     {

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -50,12 +50,12 @@ public class UpgradeResponseAdapter implements UpgradeResponse
             values = new ArrayList<>();
         }
         values.add(value);
-        headers.put(key,values);
+        headers.put(key, values);
     }
 
     /**
      * Get the accepted WebSocket protocol.
-     * 
+     *
      * @return the accepted WebSocket protocol.
      */
     @Override
@@ -66,7 +66,7 @@ public class UpgradeResponseAdapter implements UpgradeResponse
 
     /**
      * Get the list of extensions that should be used for the websocket.
-     * 
+     *
      * @return the list of negotiated extensions to use.
      */
     @Override
@@ -104,7 +104,7 @@ public class UpgradeResponseAdapter implements UpgradeResponse
             {
                 ret.append(", ");
             }
-            QuoteUtil.quoteIfNeeded(ret,value,QuoteUtil.ABNF_REQUIRED_QUOTING);
+            QuoteUtil.quoteIfNeeded(ret, value, QuoteUtil.ABNF_REQUIRED_QUOTING);
             needsDelim = true;
         }
         return ret.toString();
@@ -153,11 +153,9 @@ public class UpgradeResponseAdapter implements UpgradeResponse
      * access.
      * <p>
      * Use this when the origin or authentication is invalid.
-     * 
-     * @param message
-     *            the short 1 line detail message about the forbidden response
-     * @throws IOException
-     *             if unable to send the forbidden
+     *
+     * @param message the short 1 line detail message about the forbidden response
+     * @throws IOException if unable to send the forbidden
      */
     @Override
     public void sendForbidden(String message) throws IOException
@@ -167,14 +165,13 @@ public class UpgradeResponseAdapter implements UpgradeResponse
 
     /**
      * Set the accepted WebSocket Protocol.
-     * 
-     * @param protocol
-     *            the protocol to list as accepted
+     *
+     * @param protocol the protocol to list as accepted
      */
     @Override
     public void setAcceptedSubProtocol(String protocol)
     {
-        setHeader(SEC_WEBSOCKET_PROTOCOL,protocol);
+        setHeader(SEC_WEBSOCKET_PROTOCOL, protocol);
     }
 
     /**
@@ -186,9 +183,8 @@ public class UpgradeResponseAdapter implements UpgradeResponse
      * <li>If this is unused, or a null is passed, then the list negotiation will follow default behavior and use the complete list of extensions that are
      * available in this WebSocket server implementation.</li>
      * </ul>
-     * 
-     * @param extensions
-     *            the list of extensions to use.
+     *
+     * @param extensions the list of extensions to use.
      */
     @Override
     public void setExtensions(List<ExtensionConfig> extensions)
@@ -205,7 +201,7 @@ public class UpgradeResponseAdapter implements UpgradeResponse
     {
         List<String> values = new ArrayList<>();
         values.add(value);
-        headers.put(name,values);
+        headers.put(name, values);
     }
 
     @Override

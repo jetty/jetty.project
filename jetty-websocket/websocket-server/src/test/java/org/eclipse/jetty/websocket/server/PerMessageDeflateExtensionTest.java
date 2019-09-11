@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -17,11 +17,6 @@
 //
 
 package org.eclipse.jetty.websocket.server;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -45,19 +40,24 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
+
 public class PerMessageDeflateExtensionTest
 {
     public static Stream<Arguments> modes()
     {
         List<Scenario> modes = new ArrayList<>();
 
-        for(Sizes size: Sizes.values())
+        for (Sizes size : Sizes.values())
         {
-            modes.add(new Scenario("Normal HTTP/WS", false, "ws", size, -1 ));
-            modes.add(new Scenario( "Encrypted HTTPS/WSS", true, "wss", size, -1 ));
-            int altInputBufSize = 15*1024;
-            modes.add(new Scenario( "Normal HTTP/WS", false, "ws", size, altInputBufSize ));
-            modes.add(new Scenario( "Encrypted HTTPS/WSS", true, "wss", size, altInputBufSize ));
+            modes.add(new Scenario("Normal HTTP/WS", false, "ws", size, -1));
+            modes.add(new Scenario("Encrypted HTTPS/WSS", true, "wss", size, -1));
+            int altInputBufSize = 15 * 1024;
+            modes.add(new Scenario("Normal HTTP/WS", false, "ws", size, altInputBufSize));
+            modes.add(new Scenario("Encrypted HTTPS/WSS", true, "wss", size, altInputBufSize));
         }
 
         return modes.stream().map(Arguments::of);
@@ -80,6 +80,7 @@ public class PerMessageDeflateExtensionTest
 
     /**
      * Default configuration for permessage-deflate
+     *
      * @throws Exception on test failure
      */
     @ParameterizedTest
@@ -89,18 +90,18 @@ public class PerMessageDeflateExtensionTest
         startServer(scenario);
 
         assumeTrue(server.getWebSocketServletFactory().getExtensionFactory().isAvailable("permessage-deflate"),
-                "Server has permessage-deflate registered");
+            "Server has permessage-deflate registered");
 
-        assertThat("server scheme",server.getServerUri().getScheme(),is(scenario.scheme));
+        assertThat("server scheme", server.getServerUri().getScheme(), is(scenario.scheme));
 
-        int binBufferSize = (int) (scenario.msgSize.size * 1.5);
+        int binBufferSize = (int)(scenario.msgSize.size * 1.5);
 
         WebSocketPolicy serverPolicy = server.getWebSocketServletFactory().getPolicy();
 
         // Ensure binBufferSize is sane (not smaller then other buffers)
-        binBufferSize = Math.max(binBufferSize,serverPolicy.getMaxBinaryMessageSize());
-        binBufferSize = Math.max(binBufferSize,serverPolicy.getMaxBinaryMessageBufferSize());
-        binBufferSize = Math.max(binBufferSize,scenario.inputBufferSize);
+        binBufferSize = Math.max(binBufferSize, serverPolicy.getMaxBinaryMessageSize());
+        binBufferSize = Math.max(binBufferSize, serverPolicy.getMaxBinaryMessageBufferSize());
+        binBufferSize = Math.max(binBufferSize, scenario.inputBufferSize);
 
         serverPolicy.setMaxBinaryMessageSize(binBufferSize);
         serverPolicy.setMaxBinaryMessageBufferSize(binBufferSize);
@@ -125,15 +126,15 @@ public class PerMessageDeflateExtensionTest
             request.addExtensions("permessage-deflate");
             request.setSubProtocols("echo");
 
-            Future<Session> fut = client.connect(clientSocket,server.getServerUri(),request);
+            Future<Session> fut = client.connect(clientSocket, server.getServerUri(), request);
 
             // Wait for connect
-            Session session = fut.get(30,TimeUnit.SECONDS);
+            Session session = fut.get(30, TimeUnit.SECONDS);
 
-            assertThat("Response.extensions",getNegotiatedExtensionList(session),containsString("permessage-deflate"));
+            assertThat("Response.extensions", getNegotiatedExtensionList(session), containsString("permessage-deflate"));
 
             // Create message
-            byte msg[] = new byte[scenario.msgSize.size];
+            byte[] msg = new byte[scenario.msgSize.size];
             Random rand = new Random();
             rand.setSeed(8080);
             rand.nextBytes(msg);
@@ -145,7 +146,7 @@ public class PerMessageDeflateExtensionTest
             session.getRemote().sendBytes(ByteBuffer.wrap(msg));
 
             String echoMsg = clientSocket.messages.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
-            assertThat("Echo'd Message",echoMsg,is("binary[sha1="+sha1+"]"));
+            assertThat("Echo'd Message", echoMsg, is("binary[sha1=" + sha1 + "]"));
         }
         finally
         {
@@ -175,9 +176,9 @@ public class PerMessageDeflateExtensionTest
     {
         TINY(10),
         SMALL(1024),
-        MEDIUM(10*1024),
-        LARGE(100*1024),
-        HUGE(1024*1024);
+        MEDIUM(10 * 1024),
+        LARGE(100 * 1024),
+        HUGE(1024 * 1024);
 
         private int size;
 

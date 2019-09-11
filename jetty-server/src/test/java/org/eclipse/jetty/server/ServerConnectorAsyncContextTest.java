@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -35,7 +35,7 @@ public class ServerConnectorAsyncContextTest extends LocalAsyncContextTest
     protected String getResponse(String request) throws Exception
     {
         ServerConnector connector = (ServerConnector)_connector;
-        Socket socket = new Socket((String)null,connector.getLocalPort());
+        Socket socket = new Socket((String)null, connector.getLocalPort());
         socket.getOutputStream().write(request.getBytes(StandardCharsets.UTF_8));
         return IO.toString(socket.getInputStream());
     }

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
@@ -55,7 +56,6 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
-import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.CountingCallback;
@@ -64,12 +64,12 @@ import org.eclipse.jetty.util.TypeUtil;
 public class HTTP2ServerConnection extends HTTP2Connection implements Connection.UpgradeTo
 {
     /**
-     * @param protocol A HTTP2 protocol variant
+     * @param protocol An HTTP2 protocol variant
      * @return True if the protocol version is supported
      */
     public static boolean isSupportedProtocol(String protocol)
     {
-        switch(protocol)
+        switch (protocol)
         {
             case "h2":
             case "h2-17":
@@ -86,7 +86,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
                 return false;
         }
     }
-    
+
     private final Queue<HttpChannelOverHTTP2> channels = new ArrayDeque<>();
     private final List<Frame> upgradeFrames = new ArrayList<>();
     private final AtomicLong totalRequests = new AtomicLong();
@@ -143,7 +143,9 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
     {
         notifyAccept(getSession());
         for (Frame frame : upgradeFrames)
+        {
             getSession().onFrame(frame);
+        }
         super.onOpen();
         produce();
     }
@@ -231,11 +233,11 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
         ISession session = getSession();
         // Compute whether all requests are idle.
         boolean result = session.getStreams().stream()
-                .map(stream -> (IStream)stream)
-                .map(stream -> (HttpChannelOverHTTP2)stream.getAttachment())
-                .filter(Objects::nonNull)
-                .map(HttpChannelOverHTTP2::isRequestIdle)
-                .reduce(true, Boolean::logicalAnd);
+            .map(stream -> (IStream)stream)
+            .map(stream -> (HttpChannelOverHTTP2)stream.getAttachment())
+            .filter(Objects::nonNull)
+            .map(HttpChannelOverHTTP2::isRequestIdle)
+            .reduce(true, Boolean::logicalAnd);
         if (LOG.isDebugEnabled())
             LOG.debug("{} idle timeout on {}: {}", result ? "Processed" : "Ignored", session, failure);
         return result;
@@ -255,7 +257,9 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
         {
             CountingCallback counter = new CountingCallback(callback, streams.size());
             for (Stream stream : streams)
+            {
                 onStreamFailure((IStream)stream, failure, counter);
+            }
         }
     }
 
@@ -333,10 +337,10 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
             if (settingsField == null)
                 throw new BadMessageException("Missing " + HttpHeader.HTTP2_SETTINGS + " header");
             String value = settingsField.getValue();
-            final byte[] settings = B64Code.decodeRFC4648URL(value == null ? "" : value);
+            final byte[] settings = Base64.getUrlDecoder().decode(value == null ? "" : value);
 
             if (LOG.isDebugEnabled())
-                LOG.debug("{} settings {}",this,TypeUtil.toHexString(settings));
+                LOG.debug("{} settings {}", this, TypeUtil.toHexString(settings));
 
             SettingsFrame settingsFrame = SettingsBodyParser.parseBody(BufferUtil.toBuffer(settings));
             if (settingsFrame == null)

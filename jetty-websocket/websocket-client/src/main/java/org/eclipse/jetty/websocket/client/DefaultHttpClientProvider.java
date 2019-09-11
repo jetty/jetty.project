@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -34,21 +34,21 @@ class DefaultHttpClientProvider
         SslContextFactory sslContextFactory = null;
         Executor executor = null;
         ByteBufferPool bufferPool = null;
-        
+
         if (scope != null)
         {
             sslContextFactory = scope.getSslContextFactory();
             executor = scope.getExecutor();
             bufferPool = scope.getBufferPool();
         }
-        
+
         if (sslContextFactory == null)
         {
-            sslContextFactory = new SslContextFactory();
+            sslContextFactory = new SslContextFactory.Client();
             sslContextFactory.setTrustAll(false);
             sslContextFactory.setEndpointIdentificationAlgorithm("HTTPS");
         }
-        
+
         HttpClient client = new HttpClient(sslContextFactory);
         if (executor == null)
         {

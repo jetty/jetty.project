@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,12 +20,12 @@ package org.eclipse.jetty.jaas.spi;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
-
 import javax.naming.AuthenticationException;
 import javax.naming.Context;
 import javax.naming.NamingEnumeration;
@@ -45,7 +45,6 @@ import javax.security.auth.login.FailedLoginException;
 import javax.security.auth.login.LoginException;
 
 import org.eclipse.jetty.jaas.callback.ObjectCallback;
-import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -180,7 +179,6 @@ public class LdapLoginModule extends AbstractLoginModule
 
     private DirContext _rootContext;
 
-
     public class LDAPUserInfo extends UserInfo
     {
         Attributes attributes;
@@ -201,9 +199,7 @@ public class LdapLoginModule extends AbstractLoginModule
         {
             return getUserRoles(_rootContext, getUserName(), attributes);
         }
-
     }
-
 
     /**
      * get the available information about the user
@@ -269,9 +265,7 @@ public class LdapLoginModule extends AbstractLoginModule
      * <p>
      * NOTE: this is not an user authenticated operation
      *
-     * @param username
      * @return the {@link Attributes} from the user
-     * @throws LoginException
      */
     private Attributes getUserAttributes(String username) throws LoginException
     {
@@ -299,7 +293,8 @@ public class LdapLoginModule extends AbstractLoginModule
             }
         }
 
-        if(LOG.isDebugEnabled()) LOG.debug("user cred is: " + ldapCredential);
+        if (LOG.isDebugEnabled())
+            LOG.debug("user cred is: " + ldapCredential);
 
         return ldapCredential;
     }
@@ -308,11 +303,6 @@ public class LdapLoginModule extends AbstractLoginModule
      * attempts to get the users roles from the root context
      * <p>
      * NOTE: this is not an user authenticated operation
-     *
-     * @param dirContext
-     * @param username
-     * @return
-     * @throws LoginException
      */
     private List<String> getUserRoles(DirContext dirContext, String username, Attributes attributes) throws LoginException, NamingException
     {
@@ -324,7 +314,7 @@ public class LdapLoginModule extends AbstractLoginModule
             {
                 rdnValue = (String)attribute.get();        // switch to the value stored in the _userRdnAttribute if we can
             }
-            catch (NamingException e)
+            catch (NamingException ignored)
             {
             }
         }
@@ -332,8 +322,8 @@ public class LdapLoginModule extends AbstractLoginModule
         String filter = "({0}={1})";
 
         Object[] filterArguments = new Object[]{
-                _userRdnAttribute,
-                rdnValue
+            _userRdnAttribute,
+            rdnValue
         };
 
         SearchResult searchResult = findUser(dirContext, filter, filterArguments);
@@ -359,7 +349,8 @@ public class LdapLoginModule extends AbstractLoginModule
         Object[] filterArguments = {_roleObjectClass, _roleMemberAttribute, userDn};
         NamingEnumeration<SearchResult> results = dirContext.search(_roleBaseDn, filter, filterArguments, ctls);
 
-        if(LOG.isDebugEnabled()) LOG.debug("Found user roles?: " + results.hasMoreElements());
+        if (LOG.isDebugEnabled())
+            LOG.debug("Found user roles?: " + results.hasMoreElements());
 
         while (results.hasMoreElements())
         {
@@ -388,7 +379,6 @@ public class LdapLoginModule extends AbstractLoginModule
 
         return roleList;
     }
-
 
     /**
      * since ldap uses a context bind for valid authentication checking, we override login()
@@ -461,15 +451,15 @@ public class LdapLoginModule extends AbstractLoginModule
         {
             if (_debug)
             {
-                LOG.info( e );
+                LOG.info(e);
             }
             throw new LoginException("IO Error performing login.");
         }
-        catch ( AuthenticationException e )
+        catch (AuthenticationException e)
         {
             if (_debug)
             {
-                LOG.info( e );
+                LOG.info(e);
             }
             return false;
         }
@@ -481,7 +471,7 @@ public class LdapLoginModule extends AbstractLoginModule
         {
             if (_debug)
                 LOG.info(e);
-            throw new LoginException ("Error obtaining user info");
+            throw new LoginException("Error obtaining user info");
         }
     }
 
@@ -507,7 +497,7 @@ public class LdapLoginModule extends AbstractLoginModule
      * @param username the user name
      * @param password the password
      * @return true always
-     * @throws LoginException  if unable to bind the login
+     * @throws LoginException if unable to bind the login
      */
     public boolean bindingLogin(String username, Object password) throws LoginException
     {
@@ -548,7 +538,7 @@ public class LdapLoginModule extends AbstractLoginModule
         }
         catch (NamingException e)
         {
-            throw new FailedLoginException (e.getMessage());
+            throw new FailedLoginException(e.getMessage());
         }
     }
 
@@ -560,9 +550,9 @@ public class LdapLoginModule extends AbstractLoginModule
             LOG.debug("Searching for user " + username + " with filter: \'" + filter + "\'" + " from base dn: " + _userBaseDn);
 
         Object[] filterArguments = new Object[]{
-                _userObjectClass,
-                _userIdAttribute,
-                username
+            _userObjectClass,
+            _userIdAttribute,
+            username
         };
 
         return findUser(_rootContext, filter, filterArguments);
@@ -579,9 +569,9 @@ public class LdapLoginModule extends AbstractLoginModule
         {
             results = _rootContext.search(_userBaseDn, filter, filterArguments, ctls);
         }
-        catch (NamingException ne)
+        catch (NamingException ex)
         {
-            throw new FailedLoginException(ne.getMessage());
+            throw new FailedLoginException(ex.getMessage());
         }
 
         if (LOG.isDebugEnabled())
@@ -590,23 +580,22 @@ public class LdapLoginModule extends AbstractLoginModule
         if (!results.hasMoreElements())
             throw new FailedLoginException("User not found.");
 
-        SearchResult searchResult = (SearchResult)results.nextElement();
+        SearchResult searchResult = results.nextElement();
         if (results.hasMoreElements())
             throw new FailedLoginException("Search result contains ambiguous entries");
 
         return searchResult;
     }
 
-
     /**
      * Init LoginModule.
      * <p>
      * Called once by JAAS after new instance is created.
      *
-     * @param subject         the subect
+     * @param subject the subect
      * @param callbackHandler the callback handler
-     * @param sharedState     the shared state map
-     * @param options         the option map
+     * @param sharedState the shared state map
+     * @param options the option map
      */
     @Override
     public void initialize(Subject subject,
@@ -741,13 +730,13 @@ public class LdapLoginModule extends AbstractLoginModule
 
         if (encryptedPassword.toUpperCase(Locale.ENGLISH).startsWith("{MD5}"))
         {
-            String src = encryptedPassword.substring("{MD5}".length(), encryptedPassword.length());
+            String src = encryptedPassword.substring("{MD5}".length());
             return "MD5:" + base64ToHex(src);
         }
 
         if (encryptedPassword.toUpperCase(Locale.ENGLISH).startsWith("{CRYPT}"))
         {
-            return "CRYPT:" + encryptedPassword.substring("{CRYPT}".length(), encryptedPassword.length());
+            return "CRYPT:" + encryptedPassword.substring("{CRYPT}".length());
         }
 
         return encryptedPassword;
@@ -755,13 +744,13 @@ public class LdapLoginModule extends AbstractLoginModule
 
     private static String base64ToHex(String src)
     {
-        byte[] bytes = B64Code.decode(src);
+        byte[] bytes = Base64.getDecoder().decode(src);
         return TypeUtil.toString(bytes, 16);
     }
 
     private static String hexToBase64(String src)
     {
         byte[] bytes = TypeUtil.fromHexString(src);
-        return new String(B64Code.encode(bytes));
+        return Base64.getEncoder().encodeToString(bytes);
     }
 }

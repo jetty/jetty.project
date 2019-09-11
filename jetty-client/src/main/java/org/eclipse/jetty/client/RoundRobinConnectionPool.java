@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -26,7 +26,7 @@ import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.annotation.ManagedObject;
-import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.Dumpable;
 
 @ManagedObject
 public class RoundRobinConnectionPool extends AbstractConnectionPool implements ConnectionPool.Multiplexable
@@ -45,7 +45,9 @@ public class RoundRobinConnectionPool extends AbstractConnectionPool implements 
         super(destination, maxConnections, requester);
         entries = new ArrayList<>(maxConnections);
         for (int i = 0; i < maxConnections; ++i)
+        {
             entries.add(new Entry());
+        }
         this.maxMultiplex = maxMultiplex;
     }
 
@@ -192,8 +194,7 @@ public class RoundRobinConnectionPool extends AbstractConnectionPool implements 
         {
             connections = new ArrayList<>(entries);
         }
-        ContainerLifeCycle.dumpObject(out, this);
-        ContainerLifeCycle.dump(out, indent, connections);
+        Dumpable.dumpObjects(out, indent, out, connections);
     }
 
     @Override
@@ -214,11 +215,11 @@ public class RoundRobinConnectionPool extends AbstractConnectionPool implements 
             }
         }
         return String.format("%s@%x[c=%d/%d,a=%d]",
-                getClass().getSimpleName(),
-                hashCode(),
-                present,
-                getMaxConnectionCount(),
-                active
+            getClass().getSimpleName(),
+            hashCode(),
+            present,
+            getMaxConnectionCount(),
+            active
         );
     }
 

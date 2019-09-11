@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,11 +18,6 @@
 
 package org.eclipse.jetty.websocket.common.io.http;
 
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
-import static org.hamcrest.MatcherAssert.assertThat;
-
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -30,8 +25,12 @@ import java.util.List;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
-
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
 
 public class HttpResponseHeaderParserTest
 {
@@ -54,16 +53,16 @@ public class HttpResponseHeaderParserTest
         // and some body content
         resp.append("What you are looking for is not here\r\n");
 
-        ByteBuffer buf = BufferUtil.toBuffer(resp.toString(),StandardCharsets.UTF_8);
+        ByteBuffer buf = BufferUtil.toBuffer(resp.toString(), StandardCharsets.UTF_8);
 
         HttpResponseParseCapture capture = new HttpResponseParseCapture();
         HttpResponseHeaderParser parser = new HttpResponseHeaderParser(capture);
-        assertThat("Parser.parse",parser.parse(buf),notNullValue());
-        assertThat("Response.statusCode",capture.getStatusCode(),is(404));
-        assertThat("Response.statusReason",capture.getStatusReason(),is("Not Found"));
-        assertThat("Response.headers[Content-Length]",capture.getHeader("Content-Length"),is("38"));
+        assertThat("Parser.parse", parser.parse(buf), notNullValue());
+        assertThat("Response.statusCode", capture.getStatusCode(), is(404));
+        assertThat("Response.statusReason", capture.getStatusReason(), is("Not Found"));
+        assertThat("Response.headers[Content-Length]", capture.getHeader("Content-Length"), is("38"));
 
-        assertThat("Response.remainingBuffer",capture.getRemainingBuffer().remaining(),is(38));
+        assertThat("Response.remainingBuffer", capture.getRemainingBuffer().remaining(), is(38));
     }
 
     @Test
@@ -90,20 +89,20 @@ public class HttpResponseHeaderParserTest
         ByteBuffer buf = ByteBuffer.allocate(512);
         for (String line : expected)
         {
-            appendUtf8(buf,line + "\r\n");
+            appendUtf8(buf, line + "\r\n");
         }
 
-        BufferUtil.flipToFlush(buf,0);
+        BufferUtil.flipToFlush(buf, 0);
 
         // Parse Buffer
         HttpResponseParseCapture capture = new HttpResponseParseCapture();
         HttpResponseHeaderParser parser = new HttpResponseHeaderParser(capture);
-        assertThat("Parser.parse",parser.parse(buf),notNullValue());
+        assertThat("Parser.parse", parser.parse(buf), notNullValue());
 
-        assertThat("Response.statusCode",capture.getStatusCode(),is(200));
-        assertThat("Response.statusReason",capture.getStatusReason(),is("OK"));
+        assertThat("Response.statusCode", capture.getStatusCode(), is(200));
+        assertThat("Response.statusReason", capture.getStatusReason(), is("OK"));
 
-        assertThat("Response.header[age]",capture.getHeader("age"),is("518097"));
+        assertThat("Response.header[age]", capture.getHeader("age"), is("518097"));
     }
 
     @Test
@@ -130,9 +129,9 @@ public class HttpResponseHeaderParserTest
         ByteBuffer buf = ByteBuffer.allocate(512);
         for (String line : expected)
         {
-            appendUtf8(buf,line + "\r\n");
+            appendUtf8(buf, line + "\r\n");
         }
-        BufferUtil.flipToFlush(buf,0);
+        BufferUtil.flipToFlush(buf, 0);
 
         // Prepare small buffers to simulate a slow read/fill/parse from the network
         ByteBuffer small1 = buf.slice();
@@ -147,21 +146,21 @@ public class HttpResponseHeaderParserTest
         // Parse Buffer
         HttpResponseParseCapture capture = new HttpResponseParseCapture();
         HttpResponseHeaderParser parser = new HttpResponseHeaderParser(capture);
-        assertThat("Parser.parse",parser.parse(buf),notNullValue());
+        assertThat("Parser.parse", parser.parse(buf), notNullValue());
 
         // Parse small 1
-        assertThat("Small 1",parser.parse(small1),nullValue());
+        assertThat("Small 1", parser.parse(small1), nullValue());
 
         // Parse small 2
-        assertThat("Small 2",parser.parse(small2),nullValue());
+        assertThat("Small 2", parser.parse(small2), nullValue());
 
         // Parse small 3
-        assertThat("Small 3",parser.parse(small3),notNullValue());
+        assertThat("Small 3", parser.parse(small3), notNullValue());
 
-        assertThat("Response.statusCode",capture.getStatusCode(),is(200));
-        assertThat("Response.statusReason",capture.getStatusReason(),is("OK"));
+        assertThat("Response.statusCode", capture.getStatusCode(), is(200));
+        assertThat("Response.statusReason", capture.getStatusReason(), is("OK"));
 
-        assertThat("Response.header[age]",capture.getHeader("age"),is("518097"));
+        assertThat("Response.header[age]", capture.getHeader("age"), is("518097"));
     }
 
     @Test
@@ -176,16 +175,16 @@ public class HttpResponseHeaderParserTest
         resp.append("Sec-WebSocket-Protocol: chat\r\n");
         resp.append("\r\n");
 
-        ByteBuffer buf = BufferUtil.toBuffer(resp.toString(),StandardCharsets.UTF_8);
+        ByteBuffer buf = BufferUtil.toBuffer(resp.toString(), StandardCharsets.UTF_8);
 
         HttpResponseParseCapture capture = new HttpResponseParseCapture();
         HttpResponseHeaderParser parser = new HttpResponseHeaderParser(capture);
-        assertThat("Parser.parse",parser.parse(buf),notNullValue());
-        assertThat("Response.statusCode",capture.getStatusCode(),is(101));
-        assertThat("Response.statusReason",capture.getStatusReason(),is("Switching Protocols"));
-        assertThat("Response.headers[Upgrade]",capture.getHeader("Upgrade"),is("websocket"));
-        assertThat("Response.headers[Connection]",capture.getHeader("Connection"),is("Upgrade"));
+        assertThat("Parser.parse", parser.parse(buf), notNullValue());
+        assertThat("Response.statusCode", capture.getStatusCode(), is(101));
+        assertThat("Response.statusReason", capture.getStatusReason(), is("Switching Protocols"));
+        assertThat("Response.headers[Upgrade]", capture.getHeader("Upgrade"), is("websocket"));
+        assertThat("Response.headers[Connection]", capture.getHeader("Connection"), is("Upgrade"));
 
-        assertThat("Buffer.remaining",buf.remaining(),is(0));
+        assertThat("Buffer.remaining", buf.remaining(), is(0));
     }
 }

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.fcgi.server;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -31,6 +29,8 @@ import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.fcgi.client.http.HttpClientTransportOverFCGI;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ExternalFastCGIServerTest
 {
@@ -44,9 +44,9 @@ public class ExternalFastCGIServerTest
         client.start();
 
         ContentResponse response = client.newRequest("localhost", 9000)
-                .path("/index.php")
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+            .path("/index.php")
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(200, response.getStatus());
 

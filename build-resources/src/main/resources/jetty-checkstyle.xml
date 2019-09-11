@@ -1,0 +1,281 @@
+<?xml version="1.0"?>
+<!DOCTYPE module PUBLIC
+  "-//Checkstyle//DTD Checkstyle Configuration 1.3//EN"
+  "https://checkstyle.org/dtds/configuration_1_3.dtd">
+
+<!--
+    Checkstyle configuration that checks the Jetty coding conventions.
+ -->
+
+<module name = "Checker">
+  <property name="charset" value="UTF-8"/>
+
+  <property name="severity" value="warning"/>
+
+  <property name="fileExtensions" value="java"/>
+
+  <!-- reference to suppressions filter for both eclipse and intellij checkstyle plugins -->
+  <module name="SuppressionFilter">
+    <property name="file" value="${checkstyle.suppressions.file}"/>
+    <property name="optional" value="true"/>
+  </module>
+
+  <!-- Excludes all 'module-info.java' files              -->
+  <!-- See https://checkstyle.org/config_filefilters.html -->
+  <module name="BeforeExecutionExclusionFileFilter">
+    <property name="fileNamePattern" value="module\-info\.java$"/>
+  </module>
+
+  <!-- Checks for whitespace                               -->
+  <!-- See http://checkstyle.sf.net/config_whitespace.html -->
+  <module name="FileTabCharacter">
+    <property name="eachLine" value="true"/>
+  </module>
+
+  <module name="TreeWalker">
+    <module name="SuppressionCommentFilter">
+      <property name="offCommentFormat" value="@checkstyle-disable-check : ([\w\|]+)"/>
+      <property name="onCommentFormat" value="@checkstyle-enable-check : ([\w\|]+)"/>
+      <property name="checkFormat" value="$1"/>
+    </module>
+
+    <!--
+      Eclipse Jetty Specific.
+      ===========================================================================================
+      -->
+
+    <!-- Location of Annotations -->
+    <module name="AnnotationLocation">
+      <property name="allowSamelineSingleParameterlessAnnotation" value="false"/>
+    </module>
+
+    <!-- Catch Parameter Name Format -->
+    <module name="CatchParameterName">
+      <property name="format" value="^(e|t|x|ex|th|e2|[a-z][a-z][a-zA-Z0-9]+)$"/>
+    </module>
+
+    <!-- Class Type Parameter Name Format -->
+    <module name="ClassTypeParameterName">
+      <property name="format" value="^[A-Z][A-Z0-9]*$"/>
+    </module>
+
+    <!-- Import Line Ordering -->
+    <module name="CustomImportOrder">
+      <property name="sortImportsInGroupAlphabetically" value="true"/>
+      <property name="separateLineBetweenGroups" value="true"/>
+      <property name="customImportOrderRules" value="STANDARD_JAVA_PACKAGE###THIRD_PARTY_PACKAGE###STATIC"/>
+    </module>
+
+    <!-- do not allow empty blocks in: try, finally, if, else, or switch -->
+    <module name="EmptyBlock">
+      <property name="option" value="TEXT"/>
+      <property name="tokens"
+                value="LITERAL_TRY, LITERAL_FINALLY, LITERAL_IF, LITERAL_ELSE, LITERAL_SWITCH"/>
+    </module>
+
+    <!-- enforce empty line after specified tokens  -->
+    <module name="EmptyLineSeparator">
+      <property name="allowNoEmptyLineBetweenFields" value="true"/>
+      <property name="allowMultipleEmptyLines" value="false"/>
+      <property name="tokens"
+                value="PACKAGE_DEF, IMPORT, STATIC_IMPORT, CLASS_DEF, INTERFACE_DEF, ENUM_DEF,
+                       STATIC_INIT, INSTANCE_INIT, METHOD_DEF, CTOR_DEF, VARIABLE_DEF"/>
+    </module>
+
+    <!-- Indentation Rules -->
+    <module name="Indentation">
+      <property name="arrayInitIndent" value="8"/>
+    </module>
+
+    <!-- Interface Type Parameter Name -->
+    <module name="InterfaceTypeParameterName">
+      <property name="format" value="^[A-Z][A-Z0-9]*$"/>
+    </module>
+
+    <!-- left curly brace must be on new line -->
+    <module name="LeftCurly">
+      <property name="option" value="nl"/>
+    </module>
+
+    <!-- Method Type Parameter Name -->
+    <module name="MethodTypeParameterName">
+      <property name="format" value="^[A-Z][A-Z0-9]*$"/>
+    </module>
+
+    <!-- Member Name Format -->
+    <module name="MemberName">
+      <property name="format" value="^[_a-z][a-zA-Z0-9]*$"/>
+    </module>
+
+    <!-- require braces is disabled - we don't enforce that in Jetty
+    <module name="NeedBraces">
+      <property name="allowSingleLineStatement" value="true"/>
+    </module>
+     -->
+
+    <!-- No Whitespace After specific tokens -->
+    <module name="NoWhitespaceAfter">
+      <property name="tokens" value="ARRAY_INIT, AT, INC, DEC, UNARY_MINUS, UNARY_PLUS, BNOT, LNOT, DOT, ARRAY_DECLARATOR, INDEX_OP, TYPECAST"/>
+      <property name="allowLineBreaks" value="true"/>
+    </module>
+
+    <!-- No Whitespace Before specific tokens -->
+    <module name="NoWhitespaceBefore">
+      <property name="tokens"
+                value="COMMA, SEMI, POST_INC, POST_DEC, DOT, ELLIPSIS, METHOD_REF"/>
+      <property name="allowLineBreaks" value="true"/>
+    </module>
+
+    <!-- allowed wrapping for operators -->
+    <module name="OperatorWrap">
+      <property name="id" value="OperatorWrapNextLine"/>
+      <property name="tokens" value="QUESTION, COLON"/>
+      <property name="option" value="nl"/>
+    </module>
+    <module name="OperatorWrap">
+      <property name="id" value="OperatorWrapSameLine"/>
+      <property name="tokens" value="EQUAL, NOT_EQUAL, DIV, PLUS, MINUS, STAR, MOD, SR, BSR, GE, GT, SL, LE, LT, BXOR, BOR, LOR, BAND, LAND, TYPE_EXTENSION_AND, LITERAL_INSTANCEOF"/>
+      <property name="option" value="eol"/>
+    </module>
+
+    <!-- ensure we don't have legacy comments that confuse javadoc tooling -->
+    <module name="Regexp">
+      <property name="id" value="LegacyMethodSeparators"/>
+      <property name="format" value="/\*\s*[=*-]*\s*\*/"/>
+      <property name="illegalPattern" value="true"/>
+      <property name="ignoreComments" value="false"/>
+      <property name="message" value="Legacy Method Separators"/>
+    </module>
+
+    <!-- right curly brace must be on new line -->
+    <module name="RightCurly">
+      <property name="option" value="alone_or_singleline"/>
+    </module>
+
+    <!-- Various Wrapping of ".", ",", "...", "[]", and method ref New Lines -->
+    <module name="SeparatorWrap">
+      <property name="id" value="SeparatorWrapNextLine"/>
+      <property name="tokens" value="DOT"/>
+      <property name="option" value="nl"/>
+    </module>
+    <module name="SeparatorWrap">
+      <property name="id" value="SeparatorWrapSameLine"/>
+      <property name="tokens" value="COMMA, ELLIPSIS, ARRAY_DECLARATOR, METHOD_REF"/>
+      <property name="option" value="eol"/>
+    </module>
+
+    <!-- checks that a token is followed by whitespace -->
+    <module name="WhitespaceAround">
+      <property name="allowEmptyConstructors" value="true"/>
+      <property name="allowEmptyLambdas" value="true"/>
+      <property name="allowEmptyMethods" value="true"/>
+      <property name="allowEmptyTypes" value="true"/>
+      <property name="allowEmptyLoops" value="true"/>
+    </module>
+
+    <!--
+      Checks based on common Open Source specific recommendations.
+      ===========================================================================================
+      -->
+
+    <!-- limit use of unicode escape sequences (eg "\u20ac") in mainline code. -->
+    <module name="AvoidEscapedUnicodeCharacters">
+      <!-- allow control characters to use unicode escape sequences -->
+      <property name="allowEscapesForControlCharacters" value="true"/>
+      <!-- allow unicode escape sequences if also followed by tail comments -->
+      <property name="allowByTailComment" value="true"/>
+      <!-- allow use of non-printable escape sequences -->
+      <property name="allowNonPrintableEscapes" value="true"/>
+    </module>
+
+    <!-- not allowing star import lines -->
+    <module name="AvoidStarImport"/>
+
+    <!-- if you have an empty catch block, name the caught exception "ignored" -->
+    <module name="EmptyCatchBlock">
+      <property name="exceptionVariableName" value="ignored"/>
+    </module>
+
+    <!-- if a switch statement contains java code, but lacks fall through comment its an error -->
+    <module name="FallThrough"/>
+
+    <!-- reject unicode or octal values in mainline code -->
+    <module name="IllegalTokenText">
+      <property name="tokens" value="STRING_LITERAL, CHAR_LITERAL"/>
+      <property name="format"
+                value="\\u00(09|0(a|A)|0(c|C)|0(d|D)|22|27|5(C|c))|\\(0(10|11|12|14|15|42|47)|134)"/>
+      <property name="message"
+                value="Consider using special escape sequence instead of octal value or Unicode escaped value."/>
+    </module>
+
+    <!-- all switch statements should have "default" label declared -->
+    <!-- Disabled: Is super noisy
+    <module name="MissingSwitchDefault"/>
+     -->
+
+    <!-- prevent line wrapping of import / package statements -->
+    <module name="NoLineWrap"/>
+
+    <!-- only 1 top level class defined per java file -->
+    <module name="OneTopLevelClass"/>
+
+    <!-- Filename and Classname match -->
+    <module name="OuterTypeFilename"/>
+
+    <!--
+       Checks based on the Java Language Specification recommendations.
+       https://docs.oracle.com/javase/specs/jls/se8/html/index.html
+      ===========================================================================================
+      -->
+
+    <!-- array type style -->
+    <!-- int[] foo;  // OK
+         int foo[];  // BAD -->
+    <module name="ArrayTypeStyle" />
+
+    <!-- Whitespace around Generics (angle brackets) follow convention -->
+    <module name="GenericWhitespace" />
+
+    <!-- Lambda Parameter Name Format -->
+    <module name="LambdaParameterName" />
+
+    <!-- Local Parameter Name Format -->
+    <module name="LocalVariableName" />
+
+    <!-- Method Name Format -->
+    <module name="MethodName" />
+
+    <!-- Checks the padding between the identifier of a method definition, constructor definition,
+         method call, or constructor invocation: nospace -->
+    <module name="MethodParamPad"/>
+
+    <!-- ensure that modifiers follow suggested order -->
+    <module name="ModifierOrder"/>
+
+    <!-- only 1 variable declaration per line -->
+    <module name="MultipleVariableDeclarations"/>
+
+    <!-- No Object.finalize() use -->
+    <module name="NoFinalizer"/>
+
+    <!-- checks that there is only one statement per line -->
+    <module name="OneStatementPerLine"/>
+
+    <!-- package name JLS rules -->
+    <module name="PackageName" />
+
+    <!-- Parameter Name Format -->
+    <module name="ParameterName" />
+
+    <!-- the policy on the padding of parentheses: nospace -->
+    <module name="ParenPad"/>
+
+    <!-- Type Name format -->
+    <module name="TypeName" />
+
+    <!-- checks that long constants are defined with an upper ell. That is 'L' and not 'l' -->
+    <module name="UpperEll"/>
+    <!-- TODO: look for float / double version of above -->
+
+  </module>
+</module>

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -39,12 +39,12 @@ public interface EventSource
      * @param emitter the {@link Emitter} instance that allows to operate on the connection
      * @throws IOException if the implementation of the method throws such exception
      */
-    public void onOpen(Emitter emitter) throws IOException;
+    void onOpen(Emitter emitter) throws IOException;
 
     /**
      * <p>Callback method invoked when an event source connection is closed.</p>
      */
-    public void onClose();
+    void onClose();
 
     /**
      * <p>{@link Emitter} is the active half of an event source connection, and allows applications
@@ -52,7 +52,7 @@ public interface EventSource
      * <p>An {@link Emitter} instance will be created for each new event source connection.</p>
      * <p>{@link Emitter} instances are fully thread safe and can be used from multiple threads.</p>
      */
-    public interface Emitter
+    interface Emitter
     {
         /**
          * <p>Sends a named event with data to the client.</p>
@@ -67,7 +67,7 @@ public interface EventSource
          * @throws IOException if an I/O failure occurred
          * @see #data(String)
          */
-        public void event(String name, String data) throws IOException;
+        void event(String name, String data) throws IOException;
 
         /**
          * <p>Sends a default event with data to the client.</p>
@@ -86,7 +86,7 @@ public interface EventSource
          * @param data the data to be sent
          * @throws IOException if an I/O failure occurred
          */
-        public void data(String data) throws IOException;
+        void data(String data) throws IOException;
 
         /**
          * <p>Sends a comment to the client.</p>
@@ -98,11 +98,11 @@ public interface EventSource
          * @param comment the comment to send
          * @throws IOException if an I/O failure occurred
          */
-        public void comment(String comment) throws IOException;
+        void comment(String comment) throws IOException;
 
         /**
          * <p>Closes this event source connection.</p>
          */
-        public void close();
+        void close();
     }
 }

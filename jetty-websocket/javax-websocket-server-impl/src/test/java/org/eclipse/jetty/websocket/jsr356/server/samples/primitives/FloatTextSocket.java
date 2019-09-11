@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,7 +20,6 @@ package org.eclipse.jetty.websocket.jsr356.server.samples.primitives;
 
 import java.io.IOException;
 import java.util.Locale;
-
 import javax.websocket.OnError;
 import javax.websocket.OnMessage;
 import javax.websocket.OnOpen;
@@ -35,7 +34,7 @@ import org.eclipse.jetty.websocket.common.util.StackUtil;
 public class FloatTextSocket
 {
     private static final Logger LOG = Log.getLogger(FloatTextSocket.class);
-    
+
     private Session session;
 
     @OnOpen
@@ -47,14 +46,14 @@ public class FloatTextSocket
     @OnMessage
     public void onMessage(float f) throws IOException
     {
-        String msg = String.format(Locale.US, "%.4f",f);
+        String msg = String.format(Locale.US, "%.4f", f);
         session.getAsyncRemote().sendText(msg);
     }
 
     @OnError
     public void onError(Throwable cause) throws IOException
     {
-        LOG.warn("Error",cause);
+        LOG.warn("Error", cause);
         session.getBasicRemote().sendText("Exception: " + StackUtil.toString(cause));
     }
 }

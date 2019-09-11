@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,6 +20,9 @@ package org.eclipse.jetty.http2.parser;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.http2.ErrorCode;
+import org.eclipse.jetty.http2.frames.UnknownFrame;
+
 public class UnknownBodyParser extends BodyParser
 {
     private int cursor;
@@ -34,7 +37,11 @@ public class UnknownBodyParser extends BodyParser
     {
         int length = cursor == 0 ? getBodyLength() : cursor;
         cursor = consume(buffer, length);
-        return cursor == 0;
+        boolean parsed = cursor == 0;
+        if (parsed && !rateControlOnEvent(new UnknownFrame(getFrameType())))
+            return connectionFailure(buffer, ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, "invalid_unknown_frame_rate");
+
+        return parsed;
     }
 
     private int consume(ByteBuffer buffer, int length)

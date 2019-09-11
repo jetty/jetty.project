@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,22 +20,20 @@ package org.eclipse.jetty.util.security;
 
 /**
  * Provider of credentials, it converts a String into a credential if it starts with a given prefix
- *
  */
 public interface CredentialProvider
 {
     /**
      * Get a credential from a String
-     * 
-     * @param credential
-     *            String representation of the credential
+     *
+     * @param credential String representation of the credential
      * @return A Credential or Password instance.
      */
     Credential getCredential(String credential);
 
     /**
      * Get the prefix of the credential strings convertible into credentials
-     * 
+     *
      * @return prefix of the credential strings convertible into credentials
      */
     String getPrefix();

@@ -3,13 +3,13 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>test-webapps-parent</artifactId>
-    <version>9.4.13-SNAPSHOT</version>
+    <version>9.4.21-SNAPSHOT</version>
   </parent>
   <name>Jetty Tests :: WebApp :: Mock Resources</name>
   <artifactId>test-mock-resources</artifactId>
   <packaging>jar</packaging>
   <properties>
-   <bundle-symbolic-name>${project.groupId}.mocks</bundle-symbolic-name>
+    <bundle-symbolic-name>${project.groupId}.mocks</bundle-symbolic-name>
   </properties>
   <build>
     <plugins>
@@ -25,14 +25,12 @@
             <configuration>
               <instructions>
                 <Bundle-SymbolicName>org.eclipse.jetty.tests.test-mock-resources</Bundle-SymbolicName>
-                <Bundle-Description>Mock resources used for testing </Bundle-Description>
+                <Bundle-Description>Mock resources used for testing</Bundle-Description>
                 <Export-Package>
-                   com.acme;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"
+                  com.acme;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"
                 </Export-Package>
                 <Import-Package>
-                   javax.sql,
-                   javax.transaction;version="1.1",
-                   javax.mail;version="1.4.1"
+                  javax.sql, javax.transaction;version="1.1", javax.mail;version="1.4.1"
                 </Import-Package>
                 <_nouses>true</_nouses>
               </instructions>

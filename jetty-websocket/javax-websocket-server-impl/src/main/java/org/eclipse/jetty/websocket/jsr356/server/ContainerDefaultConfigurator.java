@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,7 +20,6 @@ package org.eclipse.jetty.websocket.jsr356.server;
 
 import java.util.List;
 import java.util.ServiceLoader;
-
 import javax.websocket.Extension;
 import javax.websocket.HandshakeResponse;
 import javax.websocket.server.HandshakeRequest;
@@ -33,14 +32,14 @@ import org.eclipse.jetty.websocket.api.util.QuoteUtil;
 
 /**
  * The "Container Default Configurator" per the JSR-356 spec.
- * 
+ *
  * @see ServiceLoader behavior of {@link javax.websocket.server.ServerEndpointConfig.Configurator}
  */
 public final class ContainerDefaultConfigurator extends Configurator
 {
     private static final Logger LOG = Log.getLogger(ContainerDefaultConfigurator.class);
     private static final String NO_SUBPROTOCOL = "";
-    
+
     /**
      * Default Constructor required, as
      * javax.websocket.server.ServerEndpointConfig$Configurator.fetchContainerDefaultConfigurator()
@@ -62,9 +61,9 @@ public final class ContainerDefaultConfigurator extends Configurator
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug(".getEndpointInstance({})",endpointClass);
+            LOG.debug(".getEndpointInstance({})", endpointClass);
         }
-        
+
         try
         {
             // Since this is started via a ServiceLoader, this class has no Scope or context
@@ -73,7 +72,7 @@ public final class ContainerDefaultConfigurator extends Configurator
         }
         catch (Exception e)
         {
-            throw new InstantiationException(String.format("%s: %s",e.getClass().getName(),e.getMessage()));
+            throw new InstantiationException(String.format("%s: %s", e.getClass().getName(), e.getMessage()));
         }
     }
 
@@ -96,7 +95,7 @@ public final class ContainerDefaultConfigurator extends Configurator
         if ((supported == null) || (supported.isEmpty()))
         {
             // Just return the first hit in this case
-            LOG.warn("Client requested Subprotocols on endpoint with none supported: {}",QuoteUtil.join(requested,","));
+            LOG.warn("Client requested Subprotocols on endpoint with none supported: {}", QuoteUtil.join(requested, ","));
             return NO_SUBPROTOCOL;
         }
 
@@ -115,8 +114,8 @@ public final class ContainerDefaultConfigurator extends Configurator
             }
         }
 
-        LOG.warn("Client requested subprotocols {} do not match any endpoint supported subprotocols {}",QuoteUtil.join(requested,","),
-                QuoteUtil.join(supported,","));
+        LOG.warn("Client requested subprotocols {} do not match any endpoint supported subprotocols {}", QuoteUtil.join(requested, ","),
+            QuoteUtil.join(supported, ","));
         return NO_SUBPROTOCOL;
     }
 

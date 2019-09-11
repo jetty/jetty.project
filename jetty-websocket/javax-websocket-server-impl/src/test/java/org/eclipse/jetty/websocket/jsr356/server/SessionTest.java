@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -17,9 +17,6 @@
 //
 
 package org.eclipse.jetty.websocket.jsr356.server;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -43,41 +40,44 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+
 public class SessionTest
 {
     public static Stream<Arguments> scenarios()
     {
         List<Scenario> cases = new ArrayList<>();
 
-        cases.add(new Scenario("no customization", (context) -> {
-                // no customization here
+        cases.add(new Scenario("no customization", (context) ->
+        {
+            // no customization here
         }));
 
         cases.add(new Scenario("with DefaultServlet only",
-                (context) -> context.addServlet(DefaultServlet.class, "/")
+            (context) -> context.addServlet(DefaultServlet.class, "/")
         ));
 
-
         cases.add(new Scenario("with Servlet mapped to root-glob",
-                (context) -> context.addServlet(DefaultServlet.class, "/*")
+            (context) -> context.addServlet(DefaultServlet.class, "/*")
         ));
 
         cases.add(new Scenario("with Servlet mapped to info-glob",
-                // this tests the overlap of websocket paths and servlet paths
-                // the SessionInfoSocket below is also mapped to "/info/"
-                (context) -> context.addServlet(DefaultServlet.class, "/info/*")
+            // this tests the overlap of websocket paths and servlet paths
+            // the SessionInfoSocket below is also mapped to "/info/"
+            (context) -> context.addServlet(DefaultServlet.class, "/info/*")
         ));
 
         return cases.stream().map(Arguments::of);
     }
 
-    private final static AtomicInteger ID = new AtomicInteger(0);
+    private static final AtomicInteger ID = new AtomicInteger(0);
     private WSServer server;
     private URI serverUri;
 
     public void startServer(Scenario scenario) throws Exception
     {
-        server = new WSServer(MavenTestingUtils.getTargetTestingDir(SessionTest.class.getSimpleName() + "-" + ID.incrementAndGet()),"app");
+        server = new WSServer(MavenTestingUtils.getTargetTestingDir(SessionTest.class.getSimpleName() + "-" + ID.incrementAndGet()), "app");
         server.copyWebInf("empty-web.xml");
         server.copyClass(SessionInfoSocket.class);
         server.copyClass(SessionAltConfig.class);
@@ -102,11 +102,11 @@ public class SessionTest
         {
             client.start();
             ClientEchoSocket clientEcho = new ClientEchoSocket();
-            Future<Session> future = client.connect(clientEcho,serverUri.resolve(requestPath));
-            Session session = future.get(1,TimeUnit.SECONDS);
+            Future<Session> future = client.connect(clientEcho, serverUri.resolve(requestPath));
+            Session session = future.get(1, TimeUnit.SECONDS);
             session.getRemote().sendString(requestMessage);
             String msg = clientEcho.messages.poll(5, TimeUnit.SECONDS);
-            assertThat("Expected message",msg,is(expectedResponse));
+            assertThat("Expected message", msg, is(expectedResponse));
         }
         finally
         {
@@ -119,7 +119,7 @@ public class SessionTest
     public void testPathParams_Annotated_Empty(Scenario scenario) throws Exception
     {
         startServer(scenario);
-        assertResponse("info/","pathParams","pathParams[0]");
+        assertResponse("info/", "pathParams", "pathParams[0]");
     }
 
     @ParameterizedTest
@@ -127,7 +127,7 @@ public class SessionTest
     public void testPathParams_Annotated_Single(Scenario scenario) throws Exception
     {
         startServer(scenario);
-        assertResponse("info/apple/","pathParams","pathParams[1]: 'a'=apple");
+        assertResponse("info/apple/", "pathParams", "pathParams[1]: 'a'=apple");
     }
 
     @ParameterizedTest
@@ -135,7 +135,7 @@ public class SessionTest
     public void testPathParams_Annotated_Double(Scenario scenario) throws Exception
     {
         startServer(scenario);
-        assertResponse("info/apple/pear/","pathParams","pathParams[2]: 'a'=apple: 'b'=pear");
+        assertResponse("info/apple/pear/", "pathParams", "pathParams[2]: 'a'=apple: 'b'=pear");
     }
 
     @ParameterizedTest
@@ -143,7 +143,7 @@ public class SessionTest
     public void testPathParams_Annotated_Triple(Scenario scenario) throws Exception
     {
         startServer(scenario);
-        assertResponse("info/apple/pear/cherry/","pathParams","pathParams[3]: 'a'=apple: 'b'=pear: 'c'=cherry");
+        assertResponse("info/apple/pear/cherry/", "pathParams", "pathParams[3]: 'a'=apple: 'b'=pear: 'c'=cherry");
     }
 
     @ParameterizedTest
@@ -151,7 +151,7 @@ public class SessionTest
     public void testPathParams_Endpoint_Empty(Scenario scenario) throws Exception
     {
         startServer(scenario);
-        assertResponse("einfo/","pathParams","pathParams[0]");
+        assertResponse("einfo/", "pathParams", "pathParams[0]");
     }
 
     @ParameterizedTest
@@ -159,7 +159,7 @@ public class SessionTest
     public void testPathParams_Endpoint_Single(Scenario scenario) throws Exception
     {
         startServer(scenario);
-        assertResponse("einfo/apple/","pathParams","pathParams[1]: 'a'=apple");
+        assertResponse("einfo/apple/", "pathParams", "pathParams[1]: 'a'=apple");
     }
 
     @ParameterizedTest
@@ -167,7 +167,7 @@ public class SessionTest
     public void testPathParams_Endpoint_Double(Scenario scenario) throws Exception
     {
         startServer(scenario);
-        assertResponse("einfo/apple/pear/","pathParams","pathParams[2]: 'a'=apple: 'b'=pear");
+        assertResponse("einfo/apple/pear/", "pathParams", "pathParams[2]: 'a'=apple: 'b'=pear");
     }
 
     @ParameterizedTest
@@ -175,7 +175,7 @@ public class SessionTest
     public void testPathParams_Endpoint_Triple(Scenario scenario) throws Exception
     {
         startServer(scenario);
-        assertResponse("einfo/apple/pear/cherry/","pathParams","pathParams[3]: 'a'=apple: 'b'=pear: 'c'=cherry");
+        assertResponse("einfo/apple/pear/cherry/", "pathParams", "pathParams[3]: 'a'=apple: 'b'=pear: 'c'=cherry");
     }
 
     @ParameterizedTest
@@ -184,7 +184,7 @@ public class SessionTest
     {
         startServer(scenario);
         URI expectedUri = serverUri.resolve("info/");
-        assertResponse("info/","requestUri","requestUri=" + expectedUri.toASCIIString());
+        assertResponse("info/", "requestUri", "requestUri=" + expectedUri.toASCIIString());
     }
 
     @ParameterizedTest
@@ -193,7 +193,7 @@ public class SessionTest
     {
         startServer(scenario);
         URI expectedUri = serverUri.resolve("info/apple/banana/");
-        assertResponse("info/apple/banana/","requestUri","requestUri=" + expectedUri.toASCIIString());
+        assertResponse("info/apple/banana/", "requestUri", "requestUri=" + expectedUri.toASCIIString());
     }
 
     @ParameterizedTest
@@ -202,7 +202,7 @@ public class SessionTest
     {
         startServer(scenario);
         URI expectedUri = serverUri.resolve("info/apple/banana/?fruit=fresh&store=grandmasfarm");
-        assertResponse("info/apple/banana/?fruit=fresh&store=grandmasfarm","requestUri","requestUri=" + expectedUri.toASCIIString());
+        assertResponse("info/apple/banana/?fruit=fresh&store=grandmasfarm", "requestUri", "requestUri=" + expectedUri.toASCIIString());
     }
 
     @ParameterizedTest
@@ -211,7 +211,7 @@ public class SessionTest
     {
         startServer(scenario);
         URI expectedUri = serverUri.resolve("einfo/");
-        assertResponse("einfo/","requestUri","requestUri=" + expectedUri.toASCIIString());
+        assertResponse("einfo/", "requestUri", "requestUri=" + expectedUri.toASCIIString());
     }
 
     @ParameterizedTest
@@ -220,7 +220,7 @@ public class SessionTest
     {
         startServer(scenario);
         URI expectedUri = serverUri.resolve("einfo/apple/banana/");
-        assertResponse("einfo/apple/banana/","requestUri","requestUri=" + expectedUri.toASCIIString());
+        assertResponse("einfo/apple/banana/", "requestUri", "requestUri=" + expectedUri.toASCIIString());
     }
 
     @ParameterizedTest
@@ -229,7 +229,7 @@ public class SessionTest
     {
         startServer(scenario);
         URI expectedUri = serverUri.resolve("einfo/apple/banana/?fruit=fresh&store=grandmasfarm");
-        assertResponse("einfo/apple/banana/?fruit=fresh&store=grandmasfarm","requestUri","requestUri=" + expectedUri.toASCIIString());
+        assertResponse("einfo/apple/banana/?fruit=fresh&store=grandmasfarm", "requestUri", "requestUri=" + expectedUri.toASCIIString());
     }
 
     @WebSocket

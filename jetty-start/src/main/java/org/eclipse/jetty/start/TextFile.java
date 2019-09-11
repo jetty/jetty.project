@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -42,18 +42,18 @@ public class TextFile implements Iterable<String>
     private final List<String> lines = new ArrayList<>();
     private final List<String> allLines = new ArrayList<>();
 
-    public TextFile(Path file) throws FileNotFoundException, IOException
+    public TextFile(Path file) throws IOException
     {
         this.file = file;
         init();
-        
+
         if (!FS.canReadFile(file))
         {
-            StartLog.debug("Skipping read of missing file: %s",file.toAbsolutePath());
+            StartLog.debug("Skipping read of missing file: %s", file.toAbsolutePath());
             return;
         }
 
-        try (BufferedReader buf = Files.newBufferedReader(file,StandardCharsets.UTF_8))
+        try (BufferedReader buf = Files.newBufferedReader(file, StandardCharsets.UTF_8))
         {
             String line;
             while ((line = buf.readLine()) != null)
@@ -64,7 +64,7 @@ public class TextFile implements Iterable<String>
                 }
 
                 allLines.add(line);
-                
+
                 if (line.charAt(0) == '#')
                 {
                     continue;
@@ -122,13 +122,13 @@ public class TextFile implements Iterable<String>
     {
         return lines.stream();
     }
-    
+
     @Override
     public Iterator<String> iterator()
     {
         return lines.iterator();
     }
-    
+
     public ListIterator<String> listIterator()
     {
         return lines.listIterator();
@@ -138,8 +138,8 @@ public class TextFile implements Iterable<String>
     {
         addUniqueLine(line);
     }
-    
-    @Override 
+
+    @Override
     public String toString()
     {
         return file.toString();

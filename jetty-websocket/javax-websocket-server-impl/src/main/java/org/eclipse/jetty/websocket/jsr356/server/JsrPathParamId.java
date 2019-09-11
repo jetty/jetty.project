@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -37,7 +37,7 @@ public class JsrPathParamId implements IJsrParamId
     public boolean process(Param param, JsrCallable callable) throws InvalidSignatureException
     {
         PathParam pathparam = param.getAnnotation(PathParam.class);
-        if(pathparam != null)
+        if (pathparam != null)
         {
             param.bind(Role.PATH_PARAM);
             param.setPathParamName(pathparam.value());

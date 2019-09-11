@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -21,32 +21,39 @@ package org.olamy;
 import java.io.Serializable;
 
 @SuppressWarnings("serial")
-public class GreetingResponse implements Serializable {
+public class GreetingResponse implements Serializable
+{
     private String greeting;
     private String serverInfo;
     private String userAgent;
 
-    public String getGreeting() {
+    public String getGreeting()
+    {
         return greeting;
     }
 
-    public void setGreeting(String greeting) {
+    public void setGreeting(String greeting)
+    {
         this.greeting = greeting;
     }
 
-    public String getServerInfo() {
+    public String getServerInfo()
+    {
         return serverInfo;
     }
 
-    public void setServerInfo(String serverInfo) {
+    public void setServerInfo(String serverInfo)
+    {
         this.serverInfo = serverInfo;
     }
 
-    public String getUserAgent() {
+    public String getUserAgent()
+    {
         return userAgent;
     }
 
-    public void setUserAgent(String userAgent) {
+    public void setUserAgent(String userAgent)
+    {
         this.userAgent = userAgent;
     }
 }

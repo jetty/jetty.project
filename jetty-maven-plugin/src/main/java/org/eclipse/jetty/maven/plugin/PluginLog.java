@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -22,23 +22,21 @@ import org.apache.maven.plugin.logging.Log;
 
 /**
  * PluginLog
- * 
+ *
  * Convenience class to provide access to the plugin
  * Log for non-mojo classes.
- *
  */
 public class PluginLog
 {
     private static Log log = null;
-    
+
     public static void setLog(Log l)
     {
         log = l;
     }
-    
+
     public static Log getLog()
     {
         return log;
     }
-
 }

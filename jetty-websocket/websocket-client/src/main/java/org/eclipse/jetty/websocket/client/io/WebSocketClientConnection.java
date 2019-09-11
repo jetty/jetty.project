@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -43,7 +43,7 @@ public class WebSocketClientConnection extends AbstractWebSocketConnection
 
     public WebSocketClientConnection(EndPoint endp, Executor executor, Scheduler scheduler, WebSocketPolicy websocketPolicy, ByteBufferPool bufferPool)
     {
-        super(endp,executor,scheduler,websocketPolicy,bufferPool);
+        super(endp, executor, scheduler, websocketPolicy, bufferPool);
         this.masker = new RandomMasker();
     }
 
@@ -58,7 +58,7 @@ public class WebSocketClientConnection extends AbstractWebSocketConnection
     {
         return getEndPoint().getRemoteAddress();
     }
-    
+
     /**
      * Override to set the masker.
      */
@@ -69,7 +69,7 @@ public class WebSocketClientConnection extends AbstractWebSocketConnection
         {
             masker.setMask((WebSocketFrame)frame);
         }
-        super.outgoingFrame(frame,callback, batchMode);
+        super.outgoingFrame(frame, callback, batchMode);
     }
 
     @Override

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -23,6 +23,8 @@ import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
 
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.DefaultHandler;
+import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.websocket.jsr356.server.ServerContainer;
 import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
@@ -39,28 +41,33 @@ public class WebSocketJsrServer
     public static class EchoJsrSocket
     {
         @OnMessage
-        public void onMessage( Session session, String message )
+        public void onMessage(Session session, String message)
         {
             session.getAsyncRemote().sendText(message);
         }
     }
 
-    public static void main( String[] args ) throws Exception
+    public static void main(String[] args) throws Exception
     {
         Server server = new Server(8080);
 
+        HandlerList handlers = new HandlerList();
+
         ServletContextHandler context = new ServletContextHandler(
-                ServletContextHandler.SESSIONS);
+            ServletContextHandler.SESSIONS);
         context.setContextPath("/");
-        server.setHandler(context);
+        handlers.addHandler(context);
 
         // Enable javax.websocket configuration for the context
         ServerContainer wsContainer = WebSocketServerContainerInitializer
-                .configureContext(context);
+            .configureContext(context);
 
         // Add your websockets to the container
         wsContainer.addEndpoint(EchoJsrSocket.class);
 
+        handlers.addHandler(new DefaultHandler());
+
+        server.setHandler(handlers);
         server.start();
         context.dumpStdErr();
         server.join();

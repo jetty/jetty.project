@@ -4,14 +4,13 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>tests-parent</artifactId>
-    <version>9.4.13-SNAPSHOT</version>
+    <version>9.4.21-SNAPSHOT</version>
   </parent>
   <artifactId>test-sessions-parent</artifactId>
   <name>Jetty Tests :: Sessions :: Parent</name>
   <url>http://www.eclipse.org/jetty</url>
   <packaging>pom</packaging>
-  <build>
-  </build>
+  <build></build>
   <modules>
     <module>test-sessions-common</module>
     <module>test-file-sessions</module>

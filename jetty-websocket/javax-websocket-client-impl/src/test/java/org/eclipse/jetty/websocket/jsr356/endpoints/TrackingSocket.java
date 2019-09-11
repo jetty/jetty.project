@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,21 +18,19 @@
 
 package org.eclipse.jetty.websocket.jsr356.endpoints;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
-
 import javax.websocket.CloseReason;
 import javax.websocket.CloseReason.CloseCode;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 
 /**
  * Abstract base socket used for tracking state and events within the socket for testing reasons.
@@ -56,7 +54,7 @@ public abstract class TrackingSocket
 
     protected void addEvent(String format, Object... args)
     {
-        eventQueue.offer(String.format(format,args));
+        eventQueue.offer(String.format(format, args));
     }
 
     public void assertClose(CloseCode expectedCode, String expectedReason) throws InterruptedException
@@ -67,14 +65,14 @@ public abstract class TrackingSocket
 
     public void assertCloseCode(CloseCode expectedCode) throws InterruptedException
     {
-        assertThat("Was Closed",closeLatch.await(50,TimeUnit.MILLISECONDS),is(true));
-        assertThat("CloseReason",closeReason,notNullValue());
-        assertThat("Close Code",closeReason.getCloseCode(),is(expectedCode));
+        assertThat("Was Closed", closeLatch.await(50, TimeUnit.MILLISECONDS), is(true));
+        assertThat("CloseReason", closeReason, notNullValue());
+        assertThat("Close Code", closeReason.getCloseCode(), is(expectedCode));
     }
 
     private void assertCloseReason(String expectedReason)
     {
-        assertThat("Close Reason",closeReason.getReasonPhrase(),is(expectedReason));
+        assertThat("Close Reason", closeReason.getReasonPhrase(), is(expectedReason));
     }
 
     public void assertIsOpen() throws InterruptedException
@@ -85,17 +83,17 @@ public abstract class TrackingSocket
 
     public void assertNotClosed()
     {
-        assertThat("Closed Latch",closeLatch.getCount(),greaterThanOrEqualTo(1L));
+        assertThat("Closed Latch", closeLatch.getCount(), greaterThanOrEqualTo(1L));
     }
 
     public void assertNotOpened()
     {
-        assertThat("Open Latch",openLatch.getCount(),greaterThanOrEqualTo(1L));
+        assertThat("Open Latch", openLatch.getCount(), greaterThanOrEqualTo(1L));
     }
 
     public void assertWasOpened() throws InterruptedException
     {
-        assertThat("Was Opened",openLatch.await(30000,TimeUnit.MILLISECONDS),is(true));
+        assertThat("Was Opened", openLatch.await(30000, TimeUnit.MILLISECONDS), is(true));
     }
 
     public void clear()
@@ -106,18 +104,18 @@ public abstract class TrackingSocket
 
     public void waitForClose(int timeoutDuration, TimeUnit timeoutUnit) throws InterruptedException
     {
-        assertThat("Client Socket Closed",closeLatch.await(timeoutDuration,timeoutUnit),is(true));
+        assertThat("Client Socket Closed", closeLatch.await(timeoutDuration, timeoutUnit), is(true));
     }
 
     public void waitForConnected(int timeoutDuration, TimeUnit timeoutUnit) throws InterruptedException
     {
-        assertThat("Client Socket Connected",openLatch.await(timeoutDuration,timeoutUnit),is(true));
+        assertThat("Client Socket Connected", openLatch.await(timeoutDuration, timeoutUnit), is(true));
     }
 
     public void waitForData(int timeoutDuration, TimeUnit timeoutUnit) throws InterruptedException
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Waiting for message");
-        assertThat("Data Received",dataLatch.await(timeoutDuration,timeoutUnit),is(true));
+        assertThat("Data Received", dataLatch.await(timeoutDuration, timeoutUnit), is(true));
     }
 }

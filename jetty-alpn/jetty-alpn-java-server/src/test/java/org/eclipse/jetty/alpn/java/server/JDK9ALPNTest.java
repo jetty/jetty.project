@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,16 +18,12 @@
 
 package org.eclipse.jetty.alpn.java.server;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
-
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLParameters;
 import javax.net.ssl.SSLSocket;
@@ -46,6 +42,9 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 
 public class JDK9ALPNTest
 {
@@ -68,7 +67,7 @@ public class JDK9ALPNTest
 
     private SslContextFactory newSslContextFactory()
     {
-        SslContextFactory sslContextFactory = new SslContextFactory();
+        SslContextFactory sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setKeyStorePath("src/test/resources/keystore.jks");
         sslContextFactory.setKeyStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
         sslContextFactory.setKeyManagerPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");
@@ -90,7 +89,7 @@ public class JDK9ALPNTest
             }
         });
 
-        SslContextFactory sslContextFactory = new SslContextFactory(true);
+        SslContextFactory sslContextFactory = new SslContextFactory.Client(true);
         sslContextFactory.start();
         SSLContext sslContext = sslContextFactory.getSslContext();
         try (SSLSocket client = (SSLSocket)sslContext.getSocketFactory().createSocket("localhost", connector.getLocalPort()))
@@ -100,8 +99,8 @@ public class JDK9ALPNTest
             client.startHandshake();
 
             OutputStream output = client.getOutputStream();
-            output.write(("" +
-                    "GET / HTTP/1.1\r\n" +
+            output.write((
+                "GET / HTTP/1.1\r\n" +
                     "Host: localhost\r\n" +
                     "Connection: close\r\n" +
                     "\r\n" +
@@ -132,7 +131,7 @@ public class JDK9ALPNTest
             }
         });
 
-        SslContextFactory sslContextFactory = new SslContextFactory(true);
+        SslContextFactory sslContextFactory = new SslContextFactory.Client(true);
         sslContextFactory.start();
         SSLContext sslContext = sslContextFactory.getSslContext();
         try (SSLSocket client = (SSLSocket)sslContext.getSocketFactory().createSocket("localhost", connector.getLocalPort()))
@@ -145,8 +144,8 @@ public class JDK9ALPNTest
             client.startHandshake();
 
             OutputStream output = client.getOutputStream();
-            output.write(("" +
-                    "GET / HTTP/1.1\r\n" +
+            output.write((
+                "GET / HTTP/1.1\r\n" +
                     "Host: localhost\r\n" +
                     "Connection: close\r\n" +
                     "\r\n" +
@@ -163,6 +162,5 @@ public class JDK9ALPNTest
                     break;
             }
         }
-
     }
 }

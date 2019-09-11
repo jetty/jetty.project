@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,11 +18,8 @@
 
 package org.eclipse.jetty.client.ssl;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 import java.io.File;
 import java.nio.ByteBuffer;
-
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLHandshakeException;
 
@@ -36,8 +33,9 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class SslConnectionTest
 {
@@ -45,7 +43,7 @@ public class SslConnectionTest
     public void testSslConnectionClosedBeforeFill() throws Exception
     {
         File keyStore = MavenTestingUtils.getTestResourceFile("keystore.jks");
-        SslContextFactory sslContextFactory = new SslContextFactory();
+        SslContextFactory sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setKeyStorePath(keyStore.getAbsolutePath());
         sslContextFactory.setKeyStorePassword("storepwd");
         sslContextFactory.start();
@@ -83,6 +81,6 @@ public class SslConnectionTest
         // We want SSLHandshakeException to be thrown instead, because it is
         // handled better (it is an IOException) by the Connection code that
         // reads from the EndPoint.
-        assertThrows(SSLHandshakeException.class, ()->sslEndPoint.fill(BufferUtil.EMPTY_BUFFER));
+        assertThrows(SSLHandshakeException.class, () -> sslEndPoint.fill(BufferUtil.EMPTY_BUFFER));
     }
 }

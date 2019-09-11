@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -106,7 +106,7 @@ public class WebSocketPolicy
     {
         if (size > otherSize)
         {
-            throw new IllegalArgumentException(String.format("%s [%d] must be less than %s [%d]",name,size,otherName,otherSize));
+            throw new IllegalArgumentException(String.format("%s [%d] must be less than %s [%d]", name, size, otherName, otherSize));
         }
     }
 
@@ -114,7 +114,7 @@ public class WebSocketPolicy
     {
         if (size < minSize)
         {
-            throw new IllegalArgumentException(String.format("%s [%d] must be a greater than or equal to " + minSize,name,size));
+            throw new IllegalArgumentException(String.format("%s [%d] must be a greater than or equal to " + minSize, name, size));
         }
     }
 
@@ -144,6 +144,7 @@ public class WebSocketPolicy
 
     /**
      * Make a copy of the policy, with current values.
+     *
      * @return the cloned copy of the policy.
      */
     public WebSocketPolicy clonePolicy()
@@ -154,7 +155,7 @@ public class WebSocketPolicy
         clone.maxTextMessageBufferSize = this.getMaxTextMessageBufferSize();
         clone.maxBinaryMessageSize = this.getMaxBinaryMessageSize();
         clone.maxBinaryMessageBufferSize = this.getMaxBinaryMessageBufferSize();
-        clone.inputBufferSize = this.getInputBufferSize()   ;
+        clone.inputBufferSize = this.getInputBufferSize();
         clone.asyncWriteTimeout = this.getAsyncWriteTimeout();
         return clone;
     }
@@ -174,7 +175,7 @@ public class WebSocketPolicy
 
     public WebSocketPolicy delegateAs(WebSocketBehavior behavior)
     {
-        if(behavior == this.behavior)
+        if (behavior == this.behavior)
             return this;
 
         return new WebSocketPolicy.Delegated(this, behavior);
@@ -184,7 +185,7 @@ public class WebSocketPolicy
      * The timeout in ms (milliseconds) for async write operations.
      * <p>
      * Negative values indicate a disabled timeout.
-     * 
+     *
      * @return the timeout for async write operations. negative values indicate disabled timeout.
      */
     public long getAsyncWriteTimeout()
@@ -199,7 +200,7 @@ public class WebSocketPolicy
 
     /**
      * The time in ms (milliseconds) that a websocket connection may be idle before being closed automatically.
-     * 
+     *
      * @return the timeout in milliseconds for idle timeout.
      */
     public long getIdleTimeout()
@@ -211,7 +212,7 @@ public class WebSocketPolicy
      * The size of the input (read from network layer) buffer size.
      * <p>
      * This is the raw read operation buffer size, before the parsing of the websocket frames.
-     * 
+     *
      * @return the raw network bytes read operation buffer size.
      */
     public int getInputBufferSize()
@@ -221,7 +222,7 @@ public class WebSocketPolicy
 
     /**
      * Get the maximum size of a binary message buffer (for streaming writing)
-     * 
+     *
      * @return the maximum size of a binary message buffer
      */
     public int getMaxBinaryMessageBufferSize()
@@ -232,14 +233,14 @@ public class WebSocketPolicy
     /**
      * Get the maximum size of a binary message during parsing.
      * <p>
-     *     This is a memory conservation option, memory over this limit will not be
-     *     allocated by Jetty for handling binary messages.  This applies to individual frames,
-     *     whole message handling, and partial message handling.
+     * This is a memory conservation option, memory over this limit will not be
+     * allocated by Jetty for handling binary messages.  This applies to individual frames,
+     * whole message handling, and partial message handling.
      * </p>
      * <p>
-     *     Binary messages over this maximum will result in a close code 1009 {@link StatusCode#MESSAGE_TOO_LARGE}
+     * Binary messages over this maximum will result in a close code 1009 {@link StatusCode#MESSAGE_TOO_LARGE}
      * </p>
-     * 
+     *
      * @return the maximum size of a binary message
      */
     public int getMaxBinaryMessageSize()
@@ -249,7 +250,7 @@ public class WebSocketPolicy
 
     /**
      * Get the maximum size of a text message buffer (for streaming writing)
-     * 
+     *
      * @return the maximum size of a text message buffer
      */
     public int getMaxTextMessageBufferSize()
@@ -260,14 +261,14 @@ public class WebSocketPolicy
     /**
      * Get the maximum size of a text message during parsing.
      * <p>
-     *     This is a memory conservation option, memory over this limit will not be
-     *     allocated by Jetty for handling text messages.  This applies to individual frames,
-     *     whole message handling, and partial message handling.
+     * This is a memory conservation option, memory over this limit will not be
+     * allocated by Jetty for handling text messages.  This applies to individual frames,
+     * whole message handling, and partial message handling.
      * </p>
      * <p>
-     *     Text messages over this maximum will result in a close code 1009 {@link StatusCode#MESSAGE_TOO_LARGE}
+     * Text messages over this maximum will result in a close code 1009 {@link StatusCode#MESSAGE_TOO_LARGE}
      * </p>
-     * 
+     *
      * @return the maximum size of a text message.
      */
     public int getMaxTextMessageSize()
@@ -279,37 +280,34 @@ public class WebSocketPolicy
      * The timeout in ms (milliseconds) for async write operations.
      * <p>
      * Negative values indicate a disabled timeout.
-     * 
-     * @param ms
-     *            the timeout in milliseconds
+     *
+     * @param ms the timeout in milliseconds
      */
     public void setAsyncWriteTimeout(long ms)
     {
-        assertLessThan("AsyncWriteTimeout",ms,"IdleTimeout",idleTimeout);
+        assertLessThan("AsyncWriteTimeout", ms, "IdleTimeout", idleTimeout);
         this.asyncWriteTimeout = ms;
     }
 
     /**
      * The time in ms (milliseconds) that a websocket may be idle before closing.
-     * 
-     * @param ms
-     *            the timeout in milliseconds
+     *
+     * @param ms the timeout in milliseconds
      */
     public void setIdleTimeout(long ms)
     {
-        assertGreaterThan("IdleTimeout",ms,0);
+        assertGreaterThan("IdleTimeout", ms, 0);
         this.idleTimeout = ms;
     }
 
     /**
      * The size of the input (read from network layer) buffer size.
-     * 
-     * @param size
-     *            the size in bytes
+     *
+     * @param size the size in bytes
      */
     public void setInputBufferSize(int size)
     {
-        assertGreaterThan("InputBufferSize",size,1);
+        assertGreaterThan("InputBufferSize", size, 1);
         this.inputBufferSize = size;
     }
 
@@ -317,13 +315,12 @@ public class WebSocketPolicy
      * The maximum size of a binary message buffer.
      * <p>
      * Used ONLY for stream based binary message writing.
-     * 
-     * @param size
-     *            the maximum size of the binary message buffer
+     *
+     * @param size the maximum size of the binary message buffer
      */
     public void setMaxBinaryMessageBufferSize(int size)
     {
-        assertGreaterThan("MaxBinaryMessageBufferSize",size,1);
+        assertGreaterThan("MaxBinaryMessageBufferSize", size, 1);
 
         this.maxBinaryMessageBufferSize = size;
     }
@@ -331,20 +328,19 @@ public class WebSocketPolicy
     /**
      * The maximum size of a binary message during parsing.
      * <p>
-     *     This is a memory conservation option, memory over this limit will not be
-     *     allocated by Jetty for handling binary messages.  This applies to individual frames,
-     *     whole message handling, and partial message handling.
+     * This is a memory conservation option, memory over this limit will not be
+     * allocated by Jetty for handling binary messages.  This applies to individual frames,
+     * whole message handling, and partial message handling.
      * </p>
      * <p>
-     *     Binary messages over this maximum will result in a close code 1009 {@link StatusCode#MESSAGE_TOO_LARGE}
+     * Binary messages over this maximum will result in a close code 1009 {@link StatusCode#MESSAGE_TOO_LARGE}
      * </p>
-     * 
-     * @param size
-     *            the maximum allowed size of a binary message.
+     *
+     * @param size the maximum allowed size of a binary message.
      */
     public void setMaxBinaryMessageSize(int size)
     {
-        assertGreaterThan("MaxBinaryMessageSize",size,-1);
+        assertGreaterThan("MaxBinaryMessageSize", size, -1);
 
         this.maxBinaryMessageSize = size;
     }
@@ -353,13 +349,12 @@ public class WebSocketPolicy
      * The maximum size of a text message buffer.
      * <p>
      * Used ONLY for stream based text message writing.
-     * 
-     * @param size
-     *            the maximum size of the text message buffer
+     *
+     * @param size the maximum size of the text message buffer
      */
     public void setMaxTextMessageBufferSize(int size)
     {
-        assertGreaterThan("MaxTextMessageBufferSize",size,1);
+        assertGreaterThan("MaxTextMessageBufferSize", size, 1);
 
         this.maxTextMessageBufferSize = size;
     }
@@ -367,20 +362,19 @@ public class WebSocketPolicy
     /**
      * The maximum size of a text message during parsing.
      * <p>
-     *     This is a memory conservation option, memory over this limit will not be
-     *     allocated by Jetty for handling text messages.  This applies to individual frames,
-     *     whole message handling, and partial message handling.
+     * This is a memory conservation option, memory over this limit will not be
+     * allocated by Jetty for handling text messages.  This applies to individual frames,
+     * whole message handling, and partial message handling.
      * </p>
      * <p>
-     *     Text messages over this maximum will result in a close code 1009 {@link StatusCode#MESSAGE_TOO_LARGE}
+     * Text messages over this maximum will result in a close code 1009 {@link StatusCode#MESSAGE_TOO_LARGE}
      * </p>
-     * 
-     * @param size
-     *            the maximum allowed size of a text message.
+     *
+     * @param size the maximum allowed size of a text message.
      */
     public void setMaxTextMessageSize(int size)
     {
-        assertGreaterThan("MaxTextMessageSize",size,-1);
+        assertGreaterThan("MaxTextMessageSize", size, -1);
 
         this.maxTextMessageSize = size;
     }
@@ -406,11 +400,11 @@ public class WebSocketPolicy
     /**
      * Allows Behavior to be changed, but the settings to delegated.
      * <p>
-     *     This rears its ugly head when a JSR356 Server Container is used as a
-     *     JSR356 Client Container.
-     *     The JSR356 Server Container is Behavior SERVER, but its container
-     *     level Policy is shared with the JSR356 Client Container as well.
-     *     This allows a delegate to the policy with a different behavior.
+     * This rears its ugly head when a JSR356 Server Container is used as a
+     * JSR356 Client Container.
+     * The JSR356 Server Container is Behavior SERVER, but its container
+     * level Policy is shared with the JSR356 Client Container as well.
+     * This allows a delegate to the policy with a different behavior.
      * </p>
      */
     private class Delegated extends WebSocketPolicy

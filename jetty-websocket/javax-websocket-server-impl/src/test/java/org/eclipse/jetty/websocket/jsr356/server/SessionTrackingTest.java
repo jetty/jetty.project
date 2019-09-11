@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,13 +18,10 @@
 
 package org.eclipse.jetty.websocket.jsr356.server;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-
 import java.net.URI;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import javax.websocket.CloseReason;
 import javax.websocket.Endpoint;
 import javax.websocket.EndpointConfig;
@@ -37,14 +34,16 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
+import org.eclipse.jetty.websocket.common.WebSocketSessionListener;
 import org.eclipse.jetty.websocket.jsr356.ClientContainer;
 import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
 import org.eclipse.jetty.websocket.server.WebSocketServerFactory;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
 
 public class SessionTrackingTest
 {
@@ -95,16 +94,16 @@ public class SessionTrackingTest
         {
             CountDownLatch openedLatch = new CountDownLatch(2);
             CountDownLatch closedLatch = new CountDownLatch(2);
-            wsServerFactory.addSessionListener(new WebSocketSession.Listener()
+            wsServerFactory.addSessionListener(new WebSocketSessionListener()
             {
                 @Override
-                public void onOpened(WebSocketSession session)
+                public void onSessionOpened(WebSocketSession session)
                 {
                     openedLatch.countDown();
                 }
 
                 @Override
-                public void onClosed(WebSocketSession session)
+                public void onSessionClosed(WebSocketSession session)
                 {
                     closedLatch.countDown();
                 }

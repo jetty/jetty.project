@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>9.4.13-SNAPSHOT</version>
+    <version>9.4.21-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-util</artifactId>
@@ -50,6 +50,7 @@
         <extensions>true</extensions>
         <configuration>
           <instructions>
+            <Export-Package>org.eclipse.jetty.util;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}";exclude:="MultiPartInputStreamParser";uses:="org.eclipse.jetty.util.annotation,org.eclipse.jetty.util.component,org.eclipse.jetty.util.log,org.eclipse.jetty.util.resource,org.eclipse.jetty.util.thread";-noimport:=true,*</Export-Package>
             <Require-Capability>osgi.serviceloader; filter:="(osgi.serviceloader=org.eclipse.jetty.util.security.CredentialProvider)";resolution:=optional;cardinality:=multiple, osgi.extender; filter:="(osgi.extender=osgi.serviceloader.processor)";resolution:=optional</Require-Capability>
           </instructions>
         </configuration>

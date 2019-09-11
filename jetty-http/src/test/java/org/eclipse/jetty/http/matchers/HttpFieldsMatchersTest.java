@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,16 +18,16 @@
 
 package org.eclipse.jetty.http.matchers;
 
+import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpHeader;
+import org.junit.jupiter.api.Test;
+
 import static org.eclipse.jetty.http.HttpFieldsMatchers.containsHeader;
 import static org.eclipse.jetty.http.HttpFieldsMatchers.containsHeaderValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-
-import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpHeader;
-import org.junit.jupiter.api.Test;
 
 public class HttpFieldsMatchersTest
 {
@@ -50,7 +50,8 @@ public class HttpFieldsMatchersTest
         fields.put("b", "bar");
         fields.put("c", "fizz");
 
-        AssertionError x = assertThrows(AssertionError.class, ()-> {
+        AssertionError x = assertThrows(AssertionError.class, () ->
+        {
             assertThat(fields, not(containsHeader("a")));
         });
 
@@ -65,7 +66,8 @@ public class HttpFieldsMatchersTest
         fields.put("b", "bar");
         fields.put("c", "fizz");
 
-        AssertionError x = assertThrows(AssertionError.class, ()->{
+        AssertionError x = assertThrows(AssertionError.class, () ->
+        {
             assertThat(fields, containsHeader("z"));
         });
 
@@ -80,7 +82,8 @@ public class HttpFieldsMatchersTest
         fields.put("b", "bar");
         fields.put("c", "fizz");
 
-        AssertionError x = assertThrows(AssertionError.class, ()-> {
+        AssertionError x = assertThrows(AssertionError.class, () ->
+        {
             assertThat(fields, containsHeaderValue("z", "floom"));
         });
 
@@ -95,7 +98,8 @@ public class HttpFieldsMatchersTest
         fields.put("b", "bar");
         fields.put("c", "fizz");
 
-        AssertionError x = assertThrows(AssertionError.class, ()-> {
+        AssertionError x = assertThrows(AssertionError.class, () ->
+        {
             assertThat(fields, containsHeaderValue("a", "floom"));
         });
 

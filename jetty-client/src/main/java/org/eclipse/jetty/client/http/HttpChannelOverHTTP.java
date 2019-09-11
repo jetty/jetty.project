@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -82,7 +82,7 @@ public class HttpChannelOverHTTP extends HttpChannel
     public void send(HttpExchange exchange)
     {
         outMessages.increment();
-        sender.send( exchange );
+        sender.send(exchange);
     }
 
     @Override
@@ -98,28 +98,28 @@ public class HttpChannelOverHTTP extends HttpChannel
             return result;
 
         HttpResponse response = exchange.getResponse();
-        
-        if ((response.getVersion() == HttpVersion.HTTP_1_1) && 
+
+        if ((response.getVersion() == HttpVersion.HTTP_1_1) &&
             (response.getStatus() == HttpStatus.SWITCHING_PROTOCOLS_101))
         {
-            String next_connection = response.getHeaders().get(HttpHeader.CONNECTION);
-            if ((next_connection == null) || !next_connection.toLowerCase(Locale.US).contains("upgrade"))
+            String nextConnection = response.getHeaders().get(HttpHeader.CONNECTION);
+            if ((nextConnection == null) || !nextConnection.toLowerCase(Locale.US).contains("upgrade"))
             {
-                return new Result(result,new HttpResponseException("101 Switching Protocols without Connection: Upgrade not supported",response));
+                return new Result(result, new HttpResponseException("101 Switching Protocols without Connection: Upgrade not supported", response));
             }
-            
+
             // Upgrade Response
             HttpRequest request = exchange.getRequest();
-            if (request instanceof HttpConnectionUpgrader)
+            HttpConnectionUpgrader upgrader = (HttpConnectionUpgrader)request.getConversation().getAttribute(HttpConnectionUpgrader.class.getName());
+            if (upgrader != null)
             {
-                HttpConnectionUpgrader listener = (HttpConnectionUpgrader)request;
                 try
                 {
-                    listener.upgrade(response,getHttpConnection());
+                    upgrader.upgrade(response, getHttpConnection());
                 }
                 catch (Throwable x)
                 {
-                    return new Result(result,x);
+                    return new Result(result, x);
                 }
             }
         }
@@ -197,9 +197,8 @@ public class HttpChannelOverHTTP extends HttpChannel
     public String toString()
     {
         return String.format("%s[send=%s,recv=%s]",
-                super.toString(),
-                sender,
-                receiver);
+            super.toString(),
+            sender,
+            receiver);
     }
-
 }

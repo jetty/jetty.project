@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -31,7 +31,7 @@ public class OnOpenIdleTimeoutSocket
     {
         session.setMaxIdleTimeout(500);
     }
-    
+
     @OnMessage
     public String onMessage(String msg)
     {

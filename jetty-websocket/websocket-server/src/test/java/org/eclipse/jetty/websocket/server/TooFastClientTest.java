@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -17,9 +17,6 @@
 //
 
 package org.eclipse.jetty.websocket.server;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -40,9 +37,11 @@ import org.eclipse.jetty.websocket.common.test.BlockheadConnection;
 import org.eclipse.jetty.websocket.common.test.Timeouts;
 import org.eclipse.jetty.websocket.server.examples.MyEchoServlet;
 import org.junit.jupiter.api.AfterAll;
-
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 /**
  * Test simulating a client that talks too quickly.
@@ -84,17 +83,17 @@ public class TooFastClientTest
 
     private ByteBuffer createInitialPacket(String... msgs)
     {
-        int len = Arrays.stream(msgs).mapToInt((str)->str.length() + Generator.MAX_HEADER_LENGTH).sum();
+        int len = Arrays.stream(msgs).mapToInt((str) -> str.length() + Generator.MAX_HEADER_LENGTH).sum();
         ByteBuffer initialPacket = ByteBuffer.allocate(len);
 
         BufferUtil.clearToFill(initialPacket);
         Generator generator = new Generator(WebSocketPolicy.newClientPolicy(),
-                new MappedByteBufferPool());
+            new MappedByteBufferPool());
 
         for (String msg : msgs)
         {
             TextFrame frame = new TextFrame().setPayload(msg);
-            byte mask[] = new byte[]{0x11, 0x22, 0x33, 0x44};
+            byte[] mask = new byte[]{0x11, 0x22, 0x33, 0x44};
             frame.setMask(mask);
             generator.generateWholeFrame(frame, initialPacket);
         }
@@ -121,17 +120,18 @@ public class TooFastClientTest
             // Read frames (hopefully text frames)
             LinkedBlockingQueue<WebSocketFrame> frames = clientConn.getFrameQueue();
             WebSocketFrame tf = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
-            assertThat("Text Frame/msg1",tf.getPayloadAsUTF8(),is(msg1));
+            assertThat("Text Frame/msg1", tf.getPayloadAsUTF8(), is(msg1));
             tf = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
-            assertThat("Text Frame/msg2",tf.getPayloadAsUTF8(),is(msg2));
+            assertThat("Text Frame/msg2", tf.getPayloadAsUTF8(), is(msg2));
         }
     }
 
     /**
-     * Test where were a client sends a HTTP Upgrade to websocket AND enough websocket frame(s)
+     * Test where were a client sends an HTTP Upgrade to websocket AND enough websocket frame(s)
      * to completely overfill the {@link org.eclipse.jetty.io.AbstractConnection#getInputBufferSize()}
      * to test a situation where the WebSocket connection opens with prefill that exceeds
      * the normal input buffer sizes.
+     *
      * @throws Exception on test failure
      */
     @Test
@@ -139,8 +139,8 @@ public class TooFastClientTest
     {
         BlockheadClientRequest request = client.newWsRequest(server.getServerUri());
 
-        byte bigMsgBytes[] = new byte[64*1024];
-        Arrays.fill(bigMsgBytes,(byte)'x');
+        byte[] bigMsgBytes = new byte[64 * 1024];
+        Arrays.fill(bigMsgBytes, (byte)'x');
         String bigMsg = new String(bigMsgBytes, StandardCharsets.UTF_8);
 
         ByteBuffer initialPacket = createInitialPacket(bigMsg);
@@ -154,7 +154,7 @@ public class TooFastClientTest
             LinkedBlockingQueue<WebSocketFrame> frames = clientConn.getFrameQueue();
 
             WebSocketFrame tf = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
-            assertThat("Text Frame/msg1",tf.getPayloadAsUTF8(),is(bigMsg));
+            assertThat("Text Frame/msg1", tf.getPayloadAsUTF8(), is(bigMsg));
         }
     }
 }

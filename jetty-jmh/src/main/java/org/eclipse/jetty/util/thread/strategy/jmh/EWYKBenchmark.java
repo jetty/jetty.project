@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,18 +19,21 @@
 package org.eclipse.jetty.util.thread.strategy.jmh;
 
 import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.ExecutionStrategy;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.ReservedThreadExecutor;
 import org.eclipse.jetty.util.thread.strategy.EatWhatYouKill;
-import org.eclipse.jetty.util.thread.strategy.ProduceExecuteConsume;
 import org.eclipse.jetty.util.thread.strategy.ProduceConsume;
+import org.eclipse.jetty.util.thread.strategy.ProduceExecuteConsume;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Level;
@@ -47,79 +50,82 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 import org.openjdk.jmh.runner.options.TimeValue;
 
 @State(Scope.Benchmark)
-public class EWYKBenchmark 
+public class EWYKBenchmark
 {
     static TestServer server;
     static ReservedThreadExecutor reserved;
-    static File directory;
+    static Path directory;
 
-    @Param({"PC","PEC","EWYK"})
+    @Param({"PC", "PEC", "EWYK"})
     public static String strategyName;
-    
-    @Param({"true","false"})
+
+    @Param({"true", "false"})
     public static boolean sleeping;
-    
-    @Param({"true","false"})
+
+    @Param({"true", "false"})
     public static boolean nonBlocking;
-       
+
     @Setup(Level.Trial)
     public static void setupServer() throws Exception
     {
         // Make a test directory
-        directory = File.createTempFile("ewyk","dir");
-        if (directory.exists())
-            directory.delete();
-        directory.mkdir();
-        directory.deleteOnExit();
-        
+        directory = Files.createTempDirectory("ewyk");
+
         // Make some test files
-        for (int i=0;i<75;i++)
+        for (int i = 0; i < 75; i++)
         {
-            File file =new File(directory,i+".txt");
-            file.createNewFile();
-            file.deleteOnExit();
+            File.createTempFile("ewyk_benchmark", i + ".txt", directory.toFile());
         }
-        
-        server=new TestServer(directory);
+
+        server = new TestServer(directory.toFile());
         server.start();
-        reserved = new ReservedThreadExecutor(server,20);
+        reserved = new ReservedThreadExecutor(server, 20);
         reserved.start();
     }
-    
+
     @TearDown(Level.Trial)
     public static void stopServer() throws Exception
     {
+        try
+        {
+            IO.delete(directory.toFile());
+        }
+        catch (Exception e)
+        {
+            System.out.println("cannot delete directory:" + directory);
+        }
         reserved.stop();
         server.stop();
     }
-    
+
     @State(Scope.Thread)
     public static class ThreadState implements Runnable
     {
-        final TestConnection connection=new TestConnection(server,sleeping);
+        final TestConnection connection = new TestConnection(server, sleeping);
         final ExecutionStrategy strategy;
+
         {
-            switch(strategyName)
+            switch (strategyName)
             {
                 case "PC":
-                    strategy = new ProduceConsume(connection,server);
+                    strategy = new ProduceConsume(connection, server);
                     break;
-                    
+
                 case "PEC":
-                    strategy = new ProduceExecuteConsume(connection,server);
+                    strategy = new ProduceExecuteConsume(connection, server);
                     break;
-                    
+
                 case "EWYK":
-                    strategy = new EatWhatYouKill(connection,server);
+                    strategy = new EatWhatYouKill(connection, server);
                     break;
-                    
+
                 default:
                     throw new IllegalStateException();
             }
-            
+
             LifeCycle.start(strategy);
         }
-        
+
         @Override
         public void run()
         {
@@ -132,7 +138,7 @@ public class EWYKBenchmark
     public long testStrategy(ThreadState state) throws Exception
     {
         int r;
-        switch(server.getRandom(8))
+        switch (server.getRandom(8))
         {
             case 0:
                 r = 4;
@@ -147,43 +153,45 @@ public class EWYKBenchmark
         }
 
         List<CompletableFuture<String>> results = new ArrayList<>(r);
-        for (int i=0;i<r;i++)
+        for (int i = 0; i < r; i++)
         {
             CompletableFuture<String> result = new CompletableFuture<String>();
             results.add(result);
             state.connection.submit(result);
         }
-                
+
         if (nonBlocking)
             Invocable.invokeNonBlocking(state);
         else
             state.run();
-        
+
         long hash = 0;
         for (CompletableFuture<String> result : results)
+        {
             hash ^= result.get().hashCode();
-        
+        }
+
         return hash;
     }
 
-    public static void main(String[] args) throws RunnerException 
+    public static void main(String[] args) throws RunnerException
     {
         Options opt = new OptionsBuilder()
-                .include(EWYKBenchmark.class.getSimpleName())
-                .warmupIterations(2)
-                .measurementIterations(3)
-                .forks(1)
-                .threads(400)
-                // .syncIterations(true) // Don't start all threads at same time
-                .warmupTime(new TimeValue(10000,TimeUnit.MILLISECONDS))
-                .measurementTime(new TimeValue(10000,TimeUnit.MILLISECONDS))
-                // .addProfiler(CompilerProfiler.class)
-                // .addProfiler(LinuxPerfProfiler.class)
-                // .addProfiler(LinuxPerfNormProfiler.class)
-                // .addProfiler(LinuxPerfAsmProfiler.class)
-                // .resultFormat(ResultFormatType.CSV)
-                .build();
-        
+            .include(EWYKBenchmark.class.getSimpleName())
+            .warmupIterations(2)
+            .measurementIterations(3)
+            .forks(1)
+            .threads(400)
+            // .syncIterations(true) // Don't start all threads at same time
+            .warmupTime(new TimeValue(10000, TimeUnit.MILLISECONDS))
+            .measurementTime(new TimeValue(10000, TimeUnit.MILLISECONDS))
+            // .addProfiler(CompilerProfiler.class)
+            // .addProfiler(LinuxPerfProfiler.class)
+            // .addProfiler(LinuxPerfNormProfiler.class)
+            // .addProfiler(LinuxPerfAsmProfiler.class)
+            // .resultFormat(ResultFormatType.CSV)
+            .build();
+
         new Runner(opt).run();
     }
 }

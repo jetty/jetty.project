@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -22,13 +22,13 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
+import java.util.Base64;
 import java.util.BitSet;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
-
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
@@ -42,7 +42,6 @@ import org.eclipse.jetty.server.Authentication;
 import org.eclipse.jetty.server.Authentication.User;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.UserIdentity;
-import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -187,7 +186,6 @@ public class DigestAuthenticator extends LoginAuthenticator
                 }
                 else if (n == 0)
                     stale = true;
-
             }
 
             if (!DeferredAuthentication.isDeferred(response))
@@ -195,13 +193,12 @@ public class DigestAuthenticator extends LoginAuthenticator
                 String domain = request.getContextPath();
                 if (domain == null)
                     domain = "/";
-                response.setHeader(HttpHeader.WWW_AUTHENTICATE.asString(), "Digest realm=\"" + _loginService.getName()
-                        + "\", domain=\""
-                        + domain
-                        + "\", nonce=\""
-                        + newNonce((Request)request)
-                        + "\", algorithm=MD5, qop=\"auth\","
-                        + " stale=" + stale);
+                response.setHeader(HttpHeader.WWW_AUTHENTICATE.asString(), "Digest realm=\"" + _loginService.getName() +
+                    "\", domain=\"" + domain +
+                    "\", nonce=\"" + newNonce((Request)request) +
+                    "\", algorithm=MD5" +
+                    ", qop=\"auth\"" +
+                    ", stale=" + stale);
                 response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
 
                 return Authentication.SEND_CONTINUE;
@@ -233,7 +230,7 @@ public class DigestAuthenticator extends LoginAuthenticator
             byte[] nounce = new byte[24];
             _random.nextBytes(nounce);
 
-            nonce = new Nonce(new String(B64Code.encode(nounce)), request.getTimeStamp(), getMaxNonceCount());
+            nonce = new Nonce(Base64.getEncoder().encodeToString(nounce), request.getTimeStamp(), getMaxNonceCount());
         }
         while (_nonceMap.putIfAbsent(nonce._nonce, nonce) != null);
         _nonceQueue.add(nonce);
@@ -242,7 +239,7 @@ public class DigestAuthenticator extends LoginAuthenticator
     }
 
     /**
-     * @param digest  the digest data to check
+     * @param digest the digest data to check
      * @param request the request object
      * @return -1 for a bad nonce, 0 for a stale none, 1 for a good nonce
      */
@@ -320,13 +317,11 @@ public class DigestAuthenticator extends LoginAuthenticator
         String uri = "";
         String response = "";
 
-        /* ------------------------------------------------------------ */
         Digest(String m)
         {
             method = m;
         }
 
-        /* ------------------------------------------------------------ */
         @Override
         public boolean check(Object credentials)
         {

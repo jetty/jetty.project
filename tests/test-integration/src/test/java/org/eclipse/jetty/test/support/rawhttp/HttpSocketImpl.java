@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -30,6 +30,6 @@ public class HttpSocketImpl implements HttpSocket
     @Override
     public Socket connect(InetAddress host, int port) throws IOException
     {
-        return new Socket(host,port);
+        return new Socket(host, port);
     }
 }

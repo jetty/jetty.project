@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,13 +18,9 @@
 
 package org.eclipse.jetty.servlet;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-
 import java.io.IOException;
 import java.net.URLDecoder;
 import java.nio.ByteBuffer;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -34,9 +30,13 @@ import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.StringUtil;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 public class ResponseHeadersTest
 {
@@ -45,9 +45,9 @@ public class ResponseHeadersTest
         @Override
         protected void doGet(HttpServletRequest req, HttpServletResponse response) throws ServletException, IOException
         {
-            response.setHeader("Upgrade","WebSocket");
-            response.addHeader("Connection","Upgrade");
-            response.addHeader("Sec-WebSocket-Accept","123456789==");
+            response.setHeader("Upgrade", "WebSocket");
+            response.addHeader("Connection", "Upgrade");
+            response.addHeader("Sec-WebSocket-Accept", "123456789==");
 
             response.setStatus(HttpServletResponse.SC_SWITCHING_PROTOCOLS);
         }
@@ -60,7 +60,7 @@ public class ResponseHeadersTest
         {
             // The bad use-case
             String pathInfo = req.getPathInfo();
-            if(pathInfo != null && pathInfo.length() > 1 && pathInfo.startsWith("/"))
+            if (pathInfo != null && pathInfo.length() > 1 && pathInfo.startsWith("/"))
             {
                 pathInfo = pathInfo.substring(1);
             }
@@ -87,8 +87,8 @@ public class ResponseHeadersTest
         context.setContextPath("/");
         server.setHandler(context);
 
-        context.addServlet(new ServletHolder(new SimulateUpgradeServlet()),"/ws/*");
-        context.addServlet(new ServletHolder(new MultilineResponseValueServlet()),"/multiline/*");
+        context.addServlet(new ServletHolder(new SimulateUpgradeServlet()), "/ws/*");
+        context.addServlet(new ServletHolder(new MultilineResponseValueServlet()), "/multiline/*");
 
         server.start();
     }
@@ -119,9 +119,9 @@ public class ResponseHeadersTest
         HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
 
         // Now test for properly formatted HTTP Response Headers.
-        assertThat("Response Code",response.getStatus(),is(101));
-        assertThat("Response Header Upgrade",response.get("Upgrade"),is("WebSocket"));
-        assertThat("Response Header Connection",response.get("Connection"),is("Upgrade"));
+        assertThat("Response Code", response.getStatus(), is(101));
+        assertThat("Response Header Upgrade", response.get("Upgrade"), is("WebSocket"));
+        assertThat("Response Header Connection", response.get("Connection"), is("Upgrade"));
     }
 
     @Test
@@ -141,10 +141,10 @@ public class ResponseHeadersTest
         HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
 
         // Now test for properly formatted HTTP Response Headers.
-        assertThat("Response Code",response.getStatus(),is(200));
-        assertThat("Response Header Content-Type",response.get("Content-Type"),is("text/plain;charset=UTF-8"));
+        assertThat("Response Code", response.getStatus(), is(200));
+        assertThat("Response Header Content-Type", response.get("Content-Type"), is("text/plain;charset=UTF-8"));
 
-        String expected = actualPathInfo.replaceAll("%0A", " "); // replace OBS fold with space
+        String expected = StringUtil.replace(actualPathInfo, "%0A", " "); // replace OBS fold with space
         expected = URLDecoder.decode(expected, "utf-8"); // decode the rest
         expected = expected.trim(); // trim whitespace at start/end
         assertThat("Response Header X-example", response.get("X-Example"), is(expected));

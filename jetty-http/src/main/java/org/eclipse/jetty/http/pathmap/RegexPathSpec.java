@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -76,15 +76,15 @@ public class RegexPathSpec extends PathSpec
         // Figure out the grouping based on the signature
         String sig = signature.toString();
 
-        if (Pattern.matches("^l*$",sig))
+        if (Pattern.matches("^l*$", sig))
         {
             this.group = PathSpecGroup.EXACT;
         }
-        else if (Pattern.matches("^l*g+",sig))
+        else if (Pattern.matches("^l*g+", sig))
         {
             this.group = PathSpecGroup.PREFIX_GLOB;
         }
-        else if (Pattern.matches("^g+l+$",sig))
+        else if (Pattern.matches("^g+l+$", sig))
         {
             this.group = PathSpecGroup.SUFFIX_GLOB;
         }
@@ -140,7 +140,7 @@ public class RegexPathSpec extends PathSpec
                     {
                         idx--;
                     }
-                    return path.substring(0,idx);
+                    return path.substring(0, idx);
                 }
             }
             return path;
@@ -167,7 +167,7 @@ public class RegexPathSpec extends PathSpec
         if (idx >= 0)
         {
             // match only non-query part
-            return getMatcher(path.substring(0,idx)).matches();
+            return getMatcher(path.substring(0, idx)).matches();
         }
         else
         {

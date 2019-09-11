@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.websocket.client;
 
-import java.io.InputStream;
 import java.net.URL;
 
 import org.eclipse.jetty.client.HttpClient;
@@ -35,17 +34,17 @@ class XmlBasedHttpClientProvider
         {
             return null;
         }
-        
-        try (InputStream in = resource.openStream())
+
+        try
         {
-            XmlConfiguration configuration = new XmlConfiguration(in);
-            return (HttpClient) configuration.configure();
+            XmlConfiguration configuration = new XmlConfiguration(resource);
+            return (HttpClient)configuration.configure();
         }
         catch (Throwable t)
         {
             Log.getLogger(XmlBasedHttpClientProvider.class).warn("Unable to load: " + resource, t);
         }
-        
+
         return null;
     }
 }

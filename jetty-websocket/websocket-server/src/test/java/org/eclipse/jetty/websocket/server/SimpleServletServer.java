@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,7 +19,6 @@
 package org.eclipse.jetty.websocket.server;
 
 import java.net.URI;
-
 import javax.servlet.http.HttpServlet;
 
 import org.eclipse.jetty.http.HttpVersion;
@@ -88,20 +87,17 @@ public class SimpleServletServer
             http_config.setSendServerVersion(true);
             http_config.setSendDateHeader(false);
 
-            sslContextFactory = new SslContextFactory();
+            sslContextFactory = new SslContextFactory.Server();
             sslContextFactory.setKeyStorePath(MavenTestingUtils.getTestResourceFile("keystore").getAbsolutePath());
             sslContextFactory.setKeyStorePassword("storepwd");
             sslContextFactory.setKeyManagerPassword("keypwd");
-            sslContextFactory.setExcludeCipherSuites("SSL_RSA_WITH_DES_CBC_SHA","SSL_DHE_RSA_WITH_DES_CBC_SHA","SSL_DHE_DSS_WITH_DES_CBC_SHA",
-                    "SSL_RSA_EXPORT_WITH_RC4_40_MD5","SSL_RSA_EXPORT_WITH_DES40_CBC_SHA","SSL_DHE_RSA_EXPORT_WITH_DES40_CBC_SHA",
-                    "SSL_DHE_DSS_EXPORT_WITH_DES40_CBC_SHA");
 
             // SSL HTTP Configuration
             HttpConfiguration https_config = new HttpConfiguration(http_config);
             https_config.addCustomizer(new SecureRequestCustomizer());
 
             // SSL Connector
-            connector = new ServerConnector(server,new SslConnectionFactory(sslContextFactory,HttpVersion.HTTP_1_1.asString()),new HttpConnectionFactory(https_config));
+            connector = new ServerConnector(server, new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString()), new HttpConnectionFactory(https_config));
             connector.setPort(0);
         }
         else
@@ -118,7 +114,7 @@ public class SimpleServletServer
         server.setHandler(context);
 
         // Serve capture servlet
-        context.addServlet(new ServletHolder(servlet),"/*");
+        context.addServlet(new ServletHolder(servlet), "/*");
 
         // Start Server
         server.start();
@@ -130,7 +126,7 @@ public class SimpleServletServer
             host = "localhost";
         }
         int port = connector.getLocalPort();
-        serverUri = new URI(String.format("%s://%s:%d/",ssl?"wss":"ws",host,port));
+        serverUri = new URI(String.format("%s://%s:%d/", ssl ? "wss" : "ws", host, port));
 
         // Some debugging
         if (LOG.isDebugEnabled())

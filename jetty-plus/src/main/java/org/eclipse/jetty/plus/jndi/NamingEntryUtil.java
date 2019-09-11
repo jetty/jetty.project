@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -21,7 +21,6 @@ package org.eclipse.jetty.plus.jndi;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
 import javax.naming.Binding;
 import javax.naming.Context;
 import javax.naming.InitialContext;
@@ -31,13 +30,13 @@ import javax.naming.NameParser;
 import javax.naming.NamingEnumeration;
 import javax.naming.NamingException;
 
-import org.eclipse.jetty.jndi.NamingUtil;
+import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-
 
 public class NamingEntryUtil
 {
-    private static Logger __log = NamingUtil.__log;
+    private static final Logger LOG = Log.getLogger(NamingEntryUtil.class);
 
     /**
      * Link a name in a webapp's java:/comp/evn namespace to a pre-existing
@@ -51,26 +50,22 @@ public class NamingEntryUtil
      * @return true if bind success, false if not bound
      * @throws NamingException if unable to bind
      */
-    public static boolean bindToENC (Object scope, String asName, String mappedName)
-    throws NamingException
+    public static boolean bindToENC(Object scope, String asName, String mappedName)
+        throws NamingException
     {
-        if (asName==null||asName.trim().equals(""))
-            throw new NamingException ("No name for NamingEntry");
+        if (asName == null || asName.trim().equals(""))
+            throw new NamingException("No name for NamingEntry");
 
-        if (mappedName==null || "".equals(mappedName))
-            mappedName=asName;
+        if (mappedName == null || "".equals(mappedName))
+            mappedName = asName;
 
-        NamingEntry entry = lookupNamingEntry (scope, mappedName);
+        NamingEntry entry = lookupNamingEntry(scope, mappedName);
         if (entry == null)
             return false;
 
         entry.bindToENC(asName);
         return true;
-     }
-
-
-
-
+    }
 
     /**
      * Find a NamingEntry in the given scope.
@@ -80,8 +75,8 @@ public class NamingEntryUtil
      * @return the naming entry for the given scope
      * @throws NamingException if unable to lookup naming entry
      */
-    public static NamingEntry lookupNamingEntry (Object scope, String jndiName)
-    throws NamingException
+    public static NamingEntry lookupNamingEntry(Object scope, String jndiName)
+        throws NamingException
     {
         NamingEntry entry = null;
         try
@@ -91,9 +86,9 @@ public class NamingEntryUtil
             NameParser parser = ic.getNameParser("");
             Name namingEntryName = makeNamingEntryName(parser, jndiName);
             scopeName.addAll(namingEntryName);
-            entry =  (NamingEntry)ic.lookup(scopeName);
+            entry = (NamingEntry)ic.lookup(scopeName);
         }
-        catch (NameNotFoundException ee)
+        catch (NameNotFoundException ignored)
         {
         }
 
@@ -118,8 +113,8 @@ public class NamingEntryUtil
      * @return all NameEntries of a certain type in the given naming environment scope (server-wide names or context-specific names)
      * @throws NamingException if unable to lookup the naming entries
      */
-    public static List<Object> lookupNamingEntries (Object scope, Class<?> clazz)
-    throws NamingException
+    public static <T> List<? extends T> lookupNamingEntries(Object scope, Class<T> clazz)
+        throws NamingException
     {
         try
         {
@@ -127,7 +122,7 @@ public class NamingEntryUtil
             Context namingEntriesContext = (Context)scopeContext.lookup(NamingEntry.__contextName);
             ArrayList<Object> list = new ArrayList<Object>();
             lookupNamingEntries(list, namingEntriesContext, clazz);
-            return list;
+            return (List<T>)list;
         }
         catch (NameNotFoundException e)
         {
@@ -135,20 +130,19 @@ public class NamingEntryUtil
         }
     }
 
-
-    public static Name makeNamingEntryName (NameParser parser, NamingEntry namingEntry)
-    throws NamingException
+    public static Name makeNamingEntryName(NameParser parser, NamingEntry namingEntry)
+        throws NamingException
     {
-        return makeNamingEntryName(parser, (namingEntry==null?null:namingEntry.getJndiName()));
+        return makeNamingEntryName(parser, (namingEntry == null ? null : namingEntry.getJndiName()));
     }
 
-    public static Name makeNamingEntryName (NameParser parser, String jndiName)
-    throws NamingException
+    public static Name makeNamingEntryName(NameParser parser, String jndiName)
+        throws NamingException
     {
-        if (jndiName==null)
+        if (jndiName == null)
             return null;
 
-        if (parser==null)
+        if (parser == null)
         {
             InitialContext ic = new InitialContext();
             parser = ic.getNameParser("");
@@ -160,8 +154,7 @@ public class NamingEntryUtil
         return name;
     }
 
-
-    public static Name getNameForScope (Object scope)
+    public static Name getNameForScope(Object scope)
     {
         try
         {
@@ -176,13 +169,13 @@ public class NamingEntryUtil
         }
         catch (NamingException e)
         {
-            __log.warn(e);
+            LOG.warn(e);
             return null;
         }
     }
 
     public static Context getContextForScope(Object scope)
-    throws NamingException
+        throws NamingException
     {
         InitialContext ic = new InitialContext();
         NameParser parser = ic.getNameParser("");
@@ -194,8 +187,8 @@ public class NamingEntryUtil
         return (Context)ic.lookup(name);
     }
 
-    public static Context getContextForNamingEntries (Object scope)
-    throws NamingException
+    public static Context getContextForNamingEntries(Object scope)
+        throws NamingException
     {
         Context scopeContext = getContextForScope(scope);
         return (Context)scopeContext.lookup(NamingEntry.__contextName);
@@ -203,15 +196,9 @@ public class NamingEntryUtil
 
     /**
      * Build up a list of NamingEntry objects that are of a specific type.
-     *
-     * @param list
-     * @param context
-     * @param clazz
-     * @return
-     * @throws NamingException
      */
-    private static List<Object> lookupNamingEntries (List<Object> list, Context context, Class<?> clazz)
-    throws NamingException
+    private static List<Object> lookupNamingEntries(List<Object> list, Context context, Class<?> clazz)
+        throws NamingException
     {
         try
         {
@@ -220,14 +207,15 @@ public class NamingEntryUtil
             {
                 Binding binding = nenum.next();
                 if (binding.getObject() instanceof Context)
-                    lookupNamingEntries (list, (Context)binding.getObject(), clazz);
+                    lookupNamingEntries(list, (Context)binding.getObject(), clazz);
                 else if (clazz.isInstance(binding.getObject()))
-                  list.add(binding.getObject());
+                    list.add(binding.getObject());
             }
         }
         catch (NameNotFoundException e)
         {
-            __log.debug("No entries of type "+clazz.getName()+" in context="+context);
+            if (LOG.isDebugEnabled())
+                LOG.debug("No entries of type " + clazz.getName() + " in context=" + context);
         }
 
         return list;
@@ -235,11 +223,12 @@ public class NamingEntryUtil
 
     private static String canonicalizeScope(Object scope)
     {
-        if (scope==null)
+        if (scope == null)
             return "";
 
-        String str = scope.getClass().getName()+"@"+Long.toHexString(scope.hashCode());
-        str=str.replace('/', '_').replace(' ', '_');
+        String str = scope.getClass().getName() + "@" + Long.toHexString(scope.hashCode());
+        str = StringUtil.replace(str, '/', '_');
+        str = StringUtil.replace(str, ' ', '_');
         return str;
     }
 }

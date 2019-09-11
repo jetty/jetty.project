@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -24,7 +24,6 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -56,23 +55,23 @@ public class StatisticsServlet extends HttpServlet
     public void init() throws ServletException
     {
         ServletContext context = getServletContext();
-        ContextHandler.Context scontext = (ContextHandler.Context) context;
-        Server _server = scontext.getContextHandler().getServer();
+        ContextHandler.Context scontext = (ContextHandler.Context)context;
+        Server server = scontext.getContextHandler().getServer();
 
-        Handler handler = _server.getChildHandlerByClass(StatisticsHandler.class);
+        Handler handler = server.getChildHandlerByClass(StatisticsHandler.class);
 
         if (handler != null)
         {
-            _statsHandler = (StatisticsHandler) handler;
+            _statsHandler = (StatisticsHandler)handler;
         }
         else
         {
             LOG.warn("Statistics Handler not installed!");
             return;
         }
-        
+
         _memoryBean = ManagementFactory.getMemoryMXBean();
-        _connectors = _server.getConnectors();
+        _connectors = server.getConnectors();
 
         if (getInitParameter("restrictToLocalhost") != null)
         {
@@ -104,7 +103,7 @@ public class StatisticsServlet extends HttpServlet
             }
         }
 
-        if (Boolean.parseBoolean( req.getParameter("statsReset")))
+        if (Boolean.parseBoolean(req.getParameter("statsReset")))
         {
             _statsHandler.statsReset();
             return;
@@ -112,7 +111,7 @@ public class StatisticsServlet extends HttpServlet
 
         String wantXml = req.getParameter("xml");
         if (wantXml == null)
-          wantXml = req.getParameter("XML");
+            wantXml = req.getParameter("XML");
 
         if (Boolean.parseBoolean(wantXml))
         {
@@ -128,10 +127,10 @@ public class StatisticsServlet extends HttpServlet
     {
         try
         {
-            InetAddress addr = InetAddress.getByName(address); 
+            InetAddress addr = InetAddress.getByName(address);
             return addr.isLoopbackAddress();
         }
-        catch (UnknownHostException e )
+        catch (UnknownHostException e)
         {
             LOG.warn("Warning: attempt to access statistics servlet from " + address, e);
             return false;
@@ -146,7 +145,7 @@ public class StatisticsServlet extends HttpServlet
 
         sb.append("  <requests>\n");
         sb.append("    <statsOnMs>").append(_statsHandler.getStatsOnMs()).append("</statsOnMs>\n");
-        
+
         sb.append("    <requests>").append(_statsHandler.getRequests()).append("</requests>\n");
         sb.append("    <requestsActive>").append(_statsHandler.getRequestsActive()).append("</requestsActive>\n");
         sb.append("    <requestsActiveMax>").append(_statsHandler.getRequestsActiveMax()).append("</requestsActiveMax>\n");
@@ -162,7 +161,7 @@ public class StatisticsServlet extends HttpServlet
         sb.append("    <dispatchedTimeMeanMs>").append(_statsHandler.getDispatchedTimeMean()).append("</dispatchedTimeMeanMs>\n");
         sb.append("    <dispatchedTimeMaxMs>").append(_statsHandler.getDispatchedTimeMax()).append("</dispatchedTimeMaxMs>\n");
         sb.append("    <dispatchedTimeStdDevMs>").append(_statsHandler.getDispatchedTimeStdDev()).append("</dispatchedTimeStdDevMs>\n");
- 
+
         sb.append("    <asyncRequests>").append(_statsHandler.getAsyncRequests()).append("</asyncRequests>\n");
         sb.append("    <requestsSuspended>").append(_statsHandler.getAsyncRequestsWaiting()).append("</requestsSuspended>\n");
         sb.append("    <requestsSuspendedMax>").append(_statsHandler.getAsyncRequestsWaitingMax()).append("</requestsSuspendedMax>\n");
@@ -185,13 +184,15 @@ public class StatisticsServlet extends HttpServlet
             sb.append("    <connector>\n");
             sb.append("      <name>").append(connector.getClass().getName()).append("@").append(connector.hashCode()).append("</name>\n");
             sb.append("      <protocols>\n");
-            for (String protocol:connector.getProtocols())
+            for (String protocol : connector.getProtocols())
+            {
                 sb.append("      <protocol>").append(protocol).append("</protocol>\n");
+            }
             sb.append("      </protocols>\n");
 
             ConnectionStatistics connectionStats = null;
             if (connector instanceof AbstractConnector)
-                connectionStats = ((AbstractConnector)connector).getBean(ConnectionStatistics.class);
+                connectionStats = connector.getBean(ConnectionStatistics.class);
             if (connectionStats != null)
             {
                 sb.append("      <statsOn>true</statsOn>\n");
@@ -210,7 +211,7 @@ public class StatisticsServlet extends HttpServlet
             {
                 ConnectorStatistics connectorStats = null;
                 if (connector instanceof AbstractConnector)
-                    connectorStats = ((AbstractConnector)connector).getBean(ConnectorStatistics.class);
+                    connectorStats = connector.getBean(ConnectorStatistics.class);
                 if (connectorStats != null)
                 {
                     sb.append("      <statsOn>true</statsOn>\n");
@@ -237,7 +238,7 @@ public class StatisticsServlet extends HttpServlet
         sb.append("    <heapMemoryUsage>").append(_memoryBean.getHeapMemoryUsage().getUsed()).append("</heapMemoryUsage>\n");
         sb.append("    <nonHeapMemoryUsage>").append(_memoryBean.getNonHeapMemoryUsage().getUsed()).append("</nonHeapMemoryUsage>\n");
         sb.append("  </memory>\n");
-        
+
         sb.append("</statistics>\n");
 
         response.setContentType("text/xml");
@@ -255,13 +256,15 @@ public class StatisticsServlet extends HttpServlet
         {
             sb.append("<h3>").append(connector.getClass().getName()).append("@").append(connector.hashCode()).append("</h3>");
             sb.append("Protocols:");
-            for (String protocol:connector.getProtocols())
+            for (String protocol : connector.getProtocols())
+            {
                 sb.append(protocol).append("&nbsp;");
+            }
             sb.append("    <br />\n");
 
             ConnectionStatistics connectionStats = null;
             if (connector instanceof Container)
-                connectionStats = ((Container)connector).getBean(ConnectionStatistics.class);
+                connectionStats = connector.getBean(ConnectionStatistics.class);
             if (connectionStats != null)
             {
                 sb.append("Total connections: ").append(connectionStats.getConnectionsTotal()).append("<br />\n");
@@ -279,7 +282,7 @@ public class StatisticsServlet extends HttpServlet
             {
                 ConnectorStatistics connectorStats = null;
                 if (connector instanceof AbstractConnector)
-                    connectorStats = ((AbstractConnector)connector).getBean(ConnectorStatistics.class);
+                    connectorStats = connector.getBean(ConnectorStatistics.class);
                 if (connectorStats != null)
                 {
                     sb.append("Statistics gathering started ").append(connectorStats.getStartedMillis()).append("ms ago").append("<br />\n");

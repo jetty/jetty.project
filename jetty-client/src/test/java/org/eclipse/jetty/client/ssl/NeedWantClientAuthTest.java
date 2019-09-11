@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,15 +18,9 @@
 
 package org.eclipse.jetty.client.ssl;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.security.cert.Certificate;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLHandshakeException;
 import javax.net.ssl.SSLSession;
@@ -43,8 +37,12 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
-
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * In order to work, client authentication needs a certificate
@@ -81,10 +79,9 @@ public class NeedWantClientAuthTest
         client.start();
     }
 
-    private SslContextFactory createSslContextFactory()
+    private SslContextFactory.Server createServerSslContextFactory()
     {
-        SslContextFactory sslContextFactory = new SslContextFactory();
-        sslContextFactory.setEndpointIdentificationAlgorithm("");
+        SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setKeyStorePath("src/test/resources/keystore.jks");
         sslContextFactory.setKeyStorePassword("storepwd");
         return sslContextFactory;
@@ -102,16 +99,16 @@ public class NeedWantClientAuthTest
     @Test
     public void testWantClientAuthWithoutAuth() throws Exception
     {
-        SslContextFactory serverSSL = createSslContextFactory();
+        SslContextFactory.Server serverSSL = createServerSslContextFactory();
         serverSSL.setWantClientAuth(true);
         startServer(serverSSL, new EmptyServerHandler());
 
-        SslContextFactory clientSSL = new SslContextFactory(true);
+        SslContextFactory clientSSL = new SslContextFactory.Client(true);
         startClient(clientSSL);
 
         ContentResponse response = client.newRequest("https://localhost:" + connector.getLocalPort())
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+            .timeout(10, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(HttpStatus.OK_200, response.getStatus());
     }
@@ -119,7 +116,7 @@ public class NeedWantClientAuthTest
     @Test
     public void testWantClientAuthWithAuth() throws Exception
     {
-        SslContextFactory serverSSL = createSslContextFactory();
+        SslContextFactory.Server serverSSL = createServerSslContextFactory();
         serverSSL.setWantClientAuth(true);
         startServer(serverSSL, new EmptyServerHandler());
         CountDownLatch handshakeLatch = new CountDownLatch(1);
@@ -143,17 +140,17 @@ public class NeedWantClientAuthTest
             }
         });
 
-        SslContextFactory clientSSL = new SslContextFactory(true);
+        SslContextFactory clientSSL = new SslContextFactory.Client(true);
         clientSSL.setKeyStorePath("src/test/resources/client_keystore.jks");
         clientSSL.setKeyStorePassword("storepwd");
         startClient(clientSSL);
 
         ContentResponse response = client.newRequest("https://localhost:" + connector.getLocalPort())
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+            .timeout(10, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(HttpStatus.OK_200, response.getStatus());
-        assertTrue(handshakeLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(handshakeLatch.await(10, TimeUnit.SECONDS));
     }
 
     @Test
@@ -166,11 +163,11 @@ public class NeedWantClientAuthTest
         // The server still sends bad_certificate to the client, but the client handshake has already
         // completed successfully its TLS handshake.
 
-        SslContextFactory serverSSL = createSslContextFactory();
+        SslContextFactory.Server serverSSL = createServerSslContextFactory();
         serverSSL.setNeedClientAuth(true);
         startServer(serverSSL, new EmptyServerHandler());
 
-        SslContextFactory clientSSL = new SslContextFactory(true);
+        SslContextFactory clientSSL = new SslContextFactory.Client(true);
         startClient(clientSSL);
         CountDownLatch handshakeLatch = new CountDownLatch(1);
         client.addBean(new SslHandshakeListener()
@@ -192,25 +189,25 @@ public class NeedWantClientAuthTest
 
         CountDownLatch latch = new CountDownLatch(1);
         client.newRequest("https://localhost:" + connector.getLocalPort())
-                .timeout(5, TimeUnit.SECONDS)
-                .send(result ->
+            .timeout(10, TimeUnit.SECONDS)
+            .send(result ->
+            {
+                if (result.isFailed())
                 {
-                    if (result.isFailed())
-                    {
-                        Throwable failure = result.getFailure();
-                        if (failure instanceof SSLException)
-                            latch.countDown();
-                    }
-                });
+                    Throwable failure = result.getFailure();
+                    if (failure instanceof SSLException)
+                        latch.countDown();
+                }
+            });
 
-        assertTrue(handshakeLatch.await(5, TimeUnit.SECONDS));
-        assertTrue(latch.await(5, TimeUnit.SECONDS));
+        assertTrue(handshakeLatch.await(10, TimeUnit.SECONDS));
+        assertTrue(latch.await(10, TimeUnit.SECONDS));
     }
 
     @Test
     public void testNeedClientAuthWithAuth() throws Exception
     {
-        SslContextFactory serverSSL = createSslContextFactory();
+        SslContextFactory.Server serverSSL = createServerSslContextFactory();
         serverSSL.setNeedClientAuth(true);
         startServer(serverSSL, new EmptyServerHandler());
         CountDownLatch handshakeLatch = new CountDownLatch(1);
@@ -234,16 +231,16 @@ public class NeedWantClientAuthTest
             }
         });
 
-        SslContextFactory clientSSL = new SslContextFactory(true);
+        SslContextFactory clientSSL = new SslContextFactory.Client(true);
         clientSSL.setKeyStorePath("src/test/resources/client_keystore.jks");
         clientSSL.setKeyStorePassword("storepwd");
         startClient(clientSSL);
 
         ContentResponse response = client.newRequest("https://localhost:" + connector.getLocalPort())
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+            .timeout(10, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(HttpStatus.OK_200, response.getStatus());
-        assertTrue(handshakeLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(handshakeLatch.await(10, TimeUnit.SECONDS));
     }
 }

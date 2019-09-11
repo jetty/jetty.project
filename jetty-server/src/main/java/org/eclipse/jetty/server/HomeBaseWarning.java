@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -39,7 +39,7 @@ public class HomeBaseWarning
     public HomeBaseWarning()
     {
         boolean showWarn = false;
-        
+
         String home = System.getProperty("jetty.home");
         String base = System.getProperty("jetty.base");
 
@@ -55,7 +55,7 @@ public class HomeBaseWarning
 
         try
         {
-            showWarn = Files.isSameFile(homePath,basePath);
+            showWarn = Files.isSameFile(homePath, basePath);
         }
         catch (IOException e)
         {
@@ -69,7 +69,7 @@ public class HomeBaseWarning
             StringBuilder warn = new StringBuilder();
             warn.append("This instance of Jetty is not running from a separate {jetty.base} directory");
             warn.append(", this is not recommended.  See documentation at http://www.eclipse.org/jetty/documentation/current/startup.html");
-            LOG.warn("{}",warn.toString());
+            LOG.warn("{}", warn.toString());
         }
     }
 }

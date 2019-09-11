@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.server.ssl;
 
-import static java.time.Duration.ofSeconds;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -30,7 +28,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
 import javax.servlet.ServletException;
@@ -51,17 +48,19 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+import static java.time.Duration.ofSeconds;
+
 @Tag("Unstable")
 @Disabled
 public class SlowClientsTest
 {
     private Logger logger = Log.getLogger(getClass());
-    
+
     @Test
     public void testSlowClientsWithSmallThreadPool() throws Exception
     {
         File keystore = MavenTestingUtils.getTestResourceFile("keystore");
-        SslContextFactory sslContextFactory = new SslContextFactory();
+        SslContextFactory sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setKeyStorePath(keystore.getAbsolutePath());
         sslContextFactory.setKeyStorePassword("storepwd");
         sslContextFactory.setKeyManagerPassword("keypwd");
@@ -93,7 +92,8 @@ public class SlowClientsTest
 
             SSLContext sslContext = sslContextFactory.getSslContext();
 
-            Assertions.assertTimeoutPreemptively(ofSeconds(10),()-> {
+            Assertions.assertTimeoutPreemptively(ofSeconds(10), () ->
+            {
                 CompletableFuture[] futures = new CompletableFuture[2 * maxThreads];
                 ExecutorService executor = Executors.newFixedThreadPool(futures.length);
                 for (int i = 0; i < futures.length; i++)
@@ -101,20 +101,22 @@ public class SlowClientsTest
                     int k = i;
                     futures[i] = CompletableFuture.runAsync(() ->
                     {
-                        try (SSLSocket socket = (SSLSocket) sslContext.getSocketFactory().createSocket("localhost", connector.getLocalPort()))
+                        try (SSLSocket socket = (SSLSocket)sslContext.getSocketFactory().createSocket("localhost", connector.getLocalPort()))
                         {
                             socket.setSoTimeout(contentLength / 1024);
                             OutputStream output = socket.getOutputStream();
                             String target = "/" + k;
                             String request = "GET " + target + " HTTP/1.1\r\n" +
-                                    "Host: localhost\r\n" +
-                                    "Connection: close\r\n" +
-                                    "\r\n";
+                                "Host: localhost\r\n" +
+                                "Connection: close\r\n" +
+                                "\r\n";
                             output.write(request.getBytes(StandardCharsets.UTF_8));
                             output.flush();
 
                             while (serverThreads.getIdleThreads() > 0)
+                            {
                                 Thread.sleep(50);
+                            }
 
                             InputStream input = socket.getInputStream();
                             while (true)

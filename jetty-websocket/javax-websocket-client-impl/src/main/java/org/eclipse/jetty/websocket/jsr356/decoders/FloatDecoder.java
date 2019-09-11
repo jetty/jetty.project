@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -36,13 +36,13 @@ public class FloatDecoder extends AbstractDecoder implements Decoder.Text<Float>
             Float val = Float.parseFloat(s);
             if (val.isNaN())
             {
-                throw new DecodeException(s,"NaN");
+                throw new DecodeException(s, "NaN");
             }
             return val;
         }
         catch (NumberFormatException e)
         {
-            throw new DecodeException(s,"Unable to parse float",e);
+            throw new DecodeException(s, "Unable to parse float", e);
         }
     }
 

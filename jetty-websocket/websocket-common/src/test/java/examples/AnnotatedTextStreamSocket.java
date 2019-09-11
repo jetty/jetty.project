@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -35,18 +35,18 @@ public class AnnotatedTextStreamSocket
     @OnWebSocketClose
     public void onClose(int statusCode, String reason)
     {
-        capture.offer("onClose(%d, %s)",statusCode,capture.q(reason));
+        capture.offer("onClose(%d, %s)", statusCode, capture.q(reason));
     }
 
     @OnWebSocketConnect
     public void onConnect(Session sess)
     {
-        capture.offer("onConnect(%s)",sess);
+        capture.offer("onConnect(%s)", sess);
     }
 
     @OnWebSocketMessage
     public void onText(Reader reader)
     {
-        capture.offer("onText(%s)",reader);
+        capture.offer("onText(%s)", reader);
     }
 }

@@ -11,6 +11,7 @@ logging
 
 [depend]
 threadpool
+bytebufferpool
 
 [lib]
 lib/servlet-api-3.1.jar
@@ -23,6 +24,9 @@ lib/jetty-io-${jetty.version}.jar
 
 [xml]
 etc/jetty.xml
+
+[jpms]
+patch-module: servlet.api=lib/jetty-schemas-3.1.jar
 
 [ini-template]
 ### Common HTTP configuration
@@ -59,8 +63,11 @@ etc/jetty.xml
 ## Maximum number of error dispatches to prevent looping
 # jetty.httpConfig.maxErrorDispatches=10
 
-## Cookie compliance mode of: RFC2965, RFC6265
-# jetty.httpConfig.cookieCompliance=RFC6265
+## Cookie compliance mode for parsing request Cookie headers: RFC2965, RFC6265
+# jetty.httpConfig.requestCookieCompliance=RFC6265
+
+## Cookie compliance mode for generating response Set-Cookie: RFC2965, RFC6265
+# jetty.httpConfig.responseCookieCompliance=RFC6265
 
 ## multipart/form-data compliance mode of: LEGACY(slow), RFC7578(fast)
 # jetty.httpConfig.multiPartFormDataCompliance=LEGACY

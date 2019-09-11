@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.client;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -35,8 +33,9 @@ import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
-
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ServerConnectionCloseTest
 {
@@ -112,22 +111,22 @@ public class ServerConnectionCloseTest
                 consumeRequest(input);
 
                 OutputStream output = socket.getOutputStream();
-                String serverResponse = "" +
-                        "HTTP/1.1 200 OK\r\n" +
+                String serverResponse =
+                    "HTTP/1.1 200 OK\r\n" +
                         "Connection: close\r\n";
                 if (chunked)
                 {
-                    serverResponse += "" +
-                            "Transfer-Encoding: chunked\r\n" +
+                    serverResponse +=
+                        "Transfer-Encoding: chunked\r\n" +
                             "\r\n";
                     for (int i = 0; i < 2; ++i)
                     {
                         serverResponse +=
-                                Integer.toHexString(content.length()) + "\r\n" +
-                                        content + "\r\n";
+                            Integer.toHexString(content.length()) + "\r\n" +
+                                content + "\r\n";
                     }
-                    serverResponse += "" +
-                            "0\r\n" +
+                    serverResponse +=
+                        "0\r\n" +
                             "\r\n";
                 }
                 else

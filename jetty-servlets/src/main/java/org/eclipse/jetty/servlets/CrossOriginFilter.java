@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -26,7 +26,6 @@ import java.util.Enumeration;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -55,7 +54,7 @@ import org.eclipse.jetty.util.log.Logger;
  * <dd>a comma separated list of origins that are
  * allowed to access the resources. Default value is <b>*</b>, meaning all
  * origins.    Note that using wild cards can result in security problems
- * for requests identifying hosts that do not exist. 
+ * for requests identifying hosts that do not exist.
  * <p>
  * If an allowed origin contains one or more * characters (for example
  * http://*.domain.com), then "*" characters are converted to ".*", "."
@@ -65,7 +64,7 @@ import org.eclipse.jetty.util.log.Logger;
  * Allowed origins can therefore be more complex expressions such as
  * https?://*.domain.[a-z]{3} that matches http or https, multiple subdomains
  * and any 3 letter top-level domain (.com, .net, .org, etc.).</dd>
- * 
+ *
  * <dt>allowedTimingOrigins</dt>
  * <dd>a comma separated list of origins that are
  * allowed to time the resource. Default value is the empty string, meaning
@@ -78,33 +77,33 @@ import org.eclipse.jetty.util.log.Logger;
  * <dd>a comma separated list of HTTP methods that
  * are allowed to be used when accessing the resources. Default value is
  * <b>GET,POST,HEAD</b></dd>
- * 
- * 
+ *
+ *
  * <dt>allowedHeaders</dt>
  * <dd>a comma separated list of HTTP headers that
  * are allowed to be specified when accessing the resources. Default value
  * is <b>X-Requested-With,Content-Type,Accept,Origin</b>. If the value is a single "*",
  * this means that any headers will be accepted.</dd>
- * 
+ *
  * <dt>preflightMaxAge</dt>
  * <dd>the number of seconds that preflight requests
  * can be cached by the client. Default value is <b>1800</b> seconds, or 30
  * minutes</dd>
- * 
+ *
  * <dt>allowCredentials</dt>
  * <dd>a boolean indicating if the resource allows
  * requests with credentials. Default value is <b>true</b></dd>
- * 
+ *
  * <dt>exposedHeaders</dt>
  * <dd>a comma separated list of HTTP headers that
  * are allowed to be exposed on the client. Default value is the
  * <b>empty list</b></dd>
- * 
+ *
  * <dt>chainPreflight</dt>
  * <dd>if true preflight requests are chained to their
  * target resource for normal handling (as an OPTION request).  Otherwise the
  * filter will response to the preflight. Default is <b>true</b>.</dd>
- * 
+ *
  * </dl>
  * A typical configuration could be:
  * <pre>
@@ -172,7 +171,7 @@ public class CrossOriginFilter implements Filter
     {
         String allowedOriginsConfig = config.getInitParameter(ALLOWED_ORIGINS_PARAM);
         String allowedTimingOriginsConfig = config.getInitParameter(ALLOWED_TIMING_ORIGINS_PARAM);
-        
+
         anyOriginAllowed = generateAllowedOrigins(allowedOrigins, allowedOriginsConfig, DEFAULT_ALLOWED_ORIGINS);
         anyTimingOriginAllowed = generateAllowedOrigins(allowedTimingOrigins, allowedTimingOriginsConfig, DEFAULT_ALLOWED_TIMING_ORIGINS);
 
@@ -224,19 +223,19 @@ public class CrossOriginFilter implements Filter
         if (LOG.isDebugEnabled())
         {
             LOG.debug("Cross-origin filter configuration: " +
-                            ALLOWED_ORIGINS_PARAM + " = " + allowedOriginsConfig + ", " +
-                            ALLOWED_TIMING_ORIGINS_PARAM + " = " + allowedTimingOriginsConfig + ", " +
-                            ALLOWED_METHODS_PARAM + " = " + allowedMethodsConfig + ", " +
-                            ALLOWED_HEADERS_PARAM + " = " + allowedHeadersConfig + ", " +
-                            PREFLIGHT_MAX_AGE_PARAM + " = " + preflightMaxAgeConfig + ", " +
-                            ALLOW_CREDENTIALS_PARAM + " = " + allowedCredentialsConfig + "," +
-                            EXPOSED_HEADERS_PARAM + " = " + exposedHeadersConfig + "," +
-                            CHAIN_PREFLIGHT_PARAM + " = " + chainPreflightConfig
+                ALLOWED_ORIGINS_PARAM + " = " + allowedOriginsConfig + ", " +
+                ALLOWED_TIMING_ORIGINS_PARAM + " = " + allowedTimingOriginsConfig + ", " +
+                ALLOWED_METHODS_PARAM + " = " + allowedMethodsConfig + ", " +
+                ALLOWED_HEADERS_PARAM + " = " + allowedHeadersConfig + ", " +
+                PREFLIGHT_MAX_AGE_PARAM + " = " + preflightMaxAgeConfig + ", " +
+                ALLOW_CREDENTIALS_PARAM + " = " + allowedCredentialsConfig + "," +
+                EXPOSED_HEADERS_PARAM + " = " + exposedHeadersConfig + "," +
+                CHAIN_PREFLIGHT_PARAM + " = " + chainPreflightConfig
             );
         }
     }
 
-    private boolean generateAllowedOrigins(List<String> allowedOriginStore, String allowedOriginsConfig, String defaultOrigin) 
+    private boolean generateAllowedOrigins(List<String> allowedOriginStore, String allowedOriginsConfig, String defaultOrigin)
     {
         if (allowedOriginsConfig == null)
             allowedOriginsConfig = defaultOrigin;
@@ -258,7 +257,7 @@ public class CrossOriginFilter implements Filter
         }
         return false;
     }
-    
+
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
     {
@@ -315,14 +314,14 @@ public class CrossOriginFilter implements Filter
     {
         // WebSocket clients such as Chrome 5 implement a version of the WebSocket
         // protocol that does not accept extra response headers on the upgrade response
-        for (Enumeration<String> connections = request.getHeaders("Connection"); connections.hasMoreElements();)
+        for (Enumeration<String> connections = request.getHeaders("Connection"); connections.hasMoreElements(); )
         {
-            String connection = (String)connections.nextElement();
+            String connection = connections.nextElement();
             if ("Upgrade".equalsIgnoreCase(connection))
             {
-                for (Enumeration<String>  upgrades = request.getHeaders("Upgrade"); upgrades.hasMoreElements();)
+                for (Enumeration<String> upgrades = request.getHeaders("Upgrade"); upgrades.hasMoreElements(); )
                 {
-                    String upgrade = (String)upgrades.nextElement();
+                    String upgrade = upgrades.nextElement();
                     if ("WebSocket".equalsIgnoreCase(upgrade))
                         return false;
                 }
@@ -368,8 +367,8 @@ public class CrossOriginFilter implements Filter
 
     private String parseAllowedWildcardOriginToRegex(String allowedOrigin)
     {
-        String regex = allowedOrigin.replace(".", "\\.");
-        return regex.replace("*", ".*"); // we want to be greedy here to match multiple subdomains, thus we use .*
+        String regex = StringUtil.replace(allowedOrigin, ".", "\\.");
+        return StringUtil.replace(regex, "*", ".*"); // we want to be greedy here to match multiple subdomains, thus we use .*
     }
 
     private boolean isSimpleRequest(HttpServletRequest request)
@@ -391,17 +390,14 @@ public class CrossOriginFilter implements Filter
         String method = request.getMethod();
         if (!"OPTIONS".equalsIgnoreCase(method))
             return false;
-        if (request.getHeader(ACCESS_CONTROL_REQUEST_METHOD_HEADER) == null)
-            return false;
-        return true;
+        return request.getHeader(ACCESS_CONTROL_REQUEST_METHOD_HEADER) != null;
     }
 
     private void handleSimpleResponse(HttpServletRequest request, HttpServletResponse response, String origin)
     {
         response.setHeader(ACCESS_CONTROL_ALLOW_ORIGIN_HEADER, origin);
         //W3C CORS spec http://www.w3.org/TR/cors/#resource-implementation
-        if (!anyOriginAllowed)
-            response.addHeader("Vary", ORIGIN_HEADER);
+        response.addHeader("Vary", ORIGIN_HEADER);
         if (allowCredentials)
             response.setHeader(ACCESS_CONTROL_ALLOW_CREDENTIALS_HEADER, "true");
         if (!exposedHeaders.isEmpty())
@@ -497,7 +493,8 @@ public class CrossOriginFilter implements Filter
         StringBuilder builder = new StringBuilder();
         for (int i = 0; i < strings.size(); ++i)
         {
-            if (i > 0) builder.append(",");
+            if (i > 0)
+                builder.append(",");
             String string = strings.get(i);
             builder.append(string);
         }

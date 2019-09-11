@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.util;
 
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 /**
  * Java Version Utility class.
  * <p>Parses java versions to extract a consistent set of version parts</p>
@@ -32,14 +29,14 @@ public class JavaVersion
      * Acceptable values should correspond to those returned by JavaVersion.getPlatform().
      */
     public static final String JAVA_TARGET_PLATFORM = "org.eclipse.jetty.javaTargetPlatform";
-        
+
     public static final JavaVersion VERSION = parse(System.getProperty("java.version"));
-    
-    public static JavaVersion parse(String v) 
-    {        
+
+    public static JavaVersion parse(String v)
+    {
         // $VNUM is a dot-separated list of integers of arbitrary length
         String[] split = v.split("[^0-9]");
-        int len = Math.min(split.length,3);
+        int len = Math.min(split.length, 3);
         int[] version = new int[len];
         for (int i = 0; i < len; i++)
         {
@@ -47,21 +44,21 @@ public class JavaVersion
             {
                 version[i] = Integer.parseInt(split[i]);
             }
-            catch(Throwable e)
+            catch (Throwable e)
             {
-                len = i-1;
+                len = i - 1;
                 break;
             }
         }
 
         return new JavaVersion(
-                v,
-                (version[0]>=9 || len==1)?version[0]:version[1],
-                version[0],
-                len>1?version[1]:0,
-                len>2?version[2]:0);
+            v,
+            (version[0] >= 9 || len == 1) ? version[0] : version[1],
+            version[0],
+            len > 1 ? version[1] : 0,
+            len > 2 ? version[2] : 0);
     }
-    
+
     private final String version;
     private final int platform;
     private final int major;

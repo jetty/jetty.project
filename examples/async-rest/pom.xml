@@ -2,16 +2,18 @@
   <parent>
     <groupId>org.eclipse.jetty.examples</groupId>
     <artifactId>examples-parent</artifactId>
-    <version>9.4.13-SNAPSHOT</version>
-    <relativePath>../pom.xml</relativePath>
+    <version>9.4.21-SNAPSHOT</version>
   </parent>
+
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>example-async-rest</artifactId>
   <packaging>pom</packaging>
   <name>Example Async Rest</name>
+
   <modules>
     <module>async-rest-jar</module>
     <module>async-rest-webapp</module>
   </modules>
+
 </project>

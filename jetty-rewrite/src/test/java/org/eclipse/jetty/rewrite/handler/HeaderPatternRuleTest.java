@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,13 +18,13 @@
 
 package org.eclipse.jetty.rewrite.handler;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.io.IOException;
 import java.util.Iterator;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class HeaderPatternRuleTest extends AbstractRuleTestCase
 {
@@ -42,10 +42,10 @@ public class HeaderPatternRuleTest extends AbstractRuleTestCase
     public void testHeaderWithTextValues() throws IOException
     {
         // different keys
-        String headers[][] = {
-                { "hnum#1", "test1" },
-                { "hnum#2", "2test2" },
-                { "hnum#3", "test3" }
+        String[][] headers = {
+            {"hnum#1", "test1"},
+            {"hnum#2", "2test2"},
+            {"hnum#3", "test3"}
         };
         assertHeaders(headers);
     }
@@ -53,16 +53,16 @@ public class HeaderPatternRuleTest extends AbstractRuleTestCase
     @Test
     public void testHeaderWithNumberValues() throws IOException
     {
-        String headers[][] = {
-                { "hello", "1" },
-                { "hello", "-1" },
-                { "hello", "100" },
-                { "hello", "100" },
-                { "hello", "100" },
-                { "hello", "100" },
-                { "hello", "100" },
+        String[][] headers = {
+            {"hello", "1"},
+            {"hello", "-1"},
+            {"hello", "100"},
+            {"hello", "100"},
+            {"hello", "100"},
+            {"hello", "100"},
+            {"hello", "100"},
 
-                { "hello1", "200" }
+            {"hello1", "200"}
         };
         assertHeaders(headers);
     }
@@ -70,19 +70,19 @@ public class HeaderPatternRuleTest extends AbstractRuleTestCase
     @Test
     public void testHeaderOverwriteValues() throws IOException
     {
-        String headers[][] = {
-                { "size", "100" },
-                { "size", "200" },
-                { "size", "300" },
-                { "size", "400" },
-                { "size", "500" },
-                { "title", "abc" },
-                { "title", "bac" },
-                { "title", "cba" },
-                { "title1", "abba" },
-                { "title1", "abba1" },
-                { "title1", "abba" },
-                { "title1", "abba1" }
+        String[][] headers = {
+            {"size", "100"},
+            {"size", "200"},
+            {"size", "300"},
+            {"size", "400"},
+            {"size", "500"},
+            {"title", "abc"},
+            {"title", "bac"},
+            {"title", "cba"},
+            {"title1", "abba"},
+            {"title1", "abba1"},
+            {"title1", "abba"},
+            {"title1", "abba1"}
         };
         assertHeaders(headers);
 
@@ -100,7 +100,7 @@ public class HeaderPatternRuleTest extends AbstractRuleTestCase
         assertEquals("abba1", _response.getHeader("title1"));
     }
 
-    private void assertHeaders(String headers[][]) throws IOException
+    private void assertHeaders(String[][] headers) throws IOException
     {
         for (String[] header : headers)
         {

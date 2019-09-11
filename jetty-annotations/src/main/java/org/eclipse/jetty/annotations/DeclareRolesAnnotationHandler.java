@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -17,7 +17,6 @@
 //
 
 package org.eclipse.jetty.annotations;
-
 
 import javax.annotation.security.DeclareRoles;
 import javax.servlet.Servlet;
@@ -44,7 +43,6 @@ public class DeclareRolesAnnotationHandler extends AbstractIntrospectableAnnotat
         _context = context;
     }
 
-
     /**
      * @see org.eclipse.jetty.annotations.AnnotationIntrospector.AbstractIntrospectableAnnotationHandler#doHandle(java.lang.Class)
      */
@@ -60,7 +58,7 @@ public class DeclareRolesAnnotationHandler extends AbstractIntrospectableAnnotat
             return;
         }
 
-        DeclareRoles declareRoles = (DeclareRoles) clazz.getAnnotation(DeclareRoles.class);
+        DeclareRoles declareRoles = (DeclareRoles)clazz.getAnnotation(DeclareRoles.class);
         if (declareRoles == null)
             return;
 
@@ -68,9 +66,10 @@ public class DeclareRolesAnnotationHandler extends AbstractIntrospectableAnnotat
 
         if (roles != null && roles.length > 0)
         {
-            for (String r:roles)
+            for (String r : roles)
+            {
                 ((ConstraintSecurityHandler)_context.getSecurityHandler()).addRole(r);
+            }
         }
     }
-
 }

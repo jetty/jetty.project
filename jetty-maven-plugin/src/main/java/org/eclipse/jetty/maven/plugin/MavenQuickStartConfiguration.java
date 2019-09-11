@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -16,11 +16,9 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.maven.plugin;
 
 import java.io.File;
-import java.util.Iterator;
 
 import org.eclipse.jetty.quickstart.QuickStartConfiguration;
 import org.eclipse.jetty.util.IO;
@@ -33,63 +31,62 @@ import org.eclipse.jetty.webapp.WebAppContext;
 
 /**
  * MavenQuickStartConfiguration
- *
- *
  */
 public class MavenQuickStartConfiguration extends QuickStartConfiguration
 {
     private static final Logger LOG = Log.getLogger(QuickStartConfiguration.class);
-
-
 
     @Override
     public void preConfigure(WebAppContext context) throws Exception
     {
         //check that webapp is suitable for quick start 
         if (context.getBaseResource() == null)
-            throw new IllegalStateException ("No location for webapp");  
+            throw new IllegalStateException("No location for webapp");
 
-        
         //look for quickstart-web.xml in WEB-INF of webapp
         Resource quickStartWebXml = ((JettyWebAppContext)context).getQuickStartWebDescriptor();
-        LOG.debug("quickStartWebXml={}",quickStartWebXml);
-        
+        LOG.debug("quickStartWebXml={}", quickStartWebXml);
+
         context.getMetaData().setWebXml(quickStartWebXml);
     }
-
 
     @Override
     public void configure(WebAppContext context) throws Exception
     {
-        
-       JettyWebAppContext jwac = (JettyWebAppContext)context;
-        
+
+        JettyWebAppContext jwac = (JettyWebAppContext)context;
+
         //put the classes dir and all dependencies into the classpath
         if (jwac.getClassPathFiles() != null)
         {
-            if (LOG.isDebugEnabled()) LOG.debug("Setting up classpath ...");
-            for(File classPathFile:jwac.getClassPathFiles())
+            if (LOG.isDebugEnabled())
+                LOG.debug("Setting up classpath ...");
+            for (File classPathFile : jwac.getClassPathFiles())
+            {
                 ((WebAppClassLoader)context.getClassLoader()).addClassPath(classPathFile.getCanonicalPath());
+            }
         }
-        
+
         //Set up the quickstart environment for the context
         super.configure(context);
-        
+
         // knock out environmental maven and plexus classes from webAppContext
         String[] existingServerClasses = context.getServerClasses();
-        String[] newServerClasses = new String[2+(existingServerClasses==null?0:existingServerClasses.length)];
+        String[] newServerClasses = new String[2 + (existingServerClasses == null ? 0 : existingServerClasses.length)];
         newServerClasses[0] = "org.apache.maven.";
         newServerClasses[1] = "org.codehaus.plexus.";
-        System.arraycopy( existingServerClasses, 0, newServerClasses, 2, existingServerClasses.length );
+        System.arraycopy(existingServerClasses, 0, newServerClasses, 2, existingServerClasses.length);
         if (LOG.isDebugEnabled())
         {
             LOG.debug("Server classes:");
-            for (int i=0;i<newServerClasses.length;i++)
+            for (int i = 0; i < newServerClasses.length; i++)
+            {
                 LOG.debug(newServerClasses[i]);
+            }
         }
-        context.setServerClasses( newServerClasses ); 
+        context.setServerClasses(newServerClasses);
     }
-    
+
     @Override
     public void deconfigure(WebAppContext context) throws Exception
     {
@@ -104,7 +101,7 @@ public class MavenQuickStartConfiguration extends QuickStartConfiguration
             Resource res = context.getBaseResource();
             if (res instanceof ResourceCollection)
             {
-                for (Resource r:((ResourceCollection)res).getResources())
+                for (Resource r : ((ResourceCollection)res).getResources())
                 {
                     if (originalBaseStr.contains(r.toString()))
                         continue;
@@ -113,5 +110,4 @@ public class MavenQuickStartConfiguration extends QuickStartConfiguration
             }
         }
     }
-    
 }

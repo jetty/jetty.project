@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -21,7 +21,7 @@ package org.eclipse.jetty.websocket.servlet;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-
+import java.util.Set;
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -37,15 +37,15 @@ public interface WebSocketServletFactory
 {
     class Loader
     {
-        final static String DEFAULT_IMPL = "org.eclipse.jetty.websocket.server.WebSocketServerFactory";
-        
+        static final String DEFAULT_IMPL = "org.eclipse.jetty.websocket.server.WebSocketServerFactory";
+
         public static WebSocketServletFactory load(ServletContext ctx, WebSocketPolicy policy)
         {
             try
             {
                 Class<? extends WebSocketServletFactory> wsClazz =
-                        (Class<? extends WebSocketServletFactory>) Class.forName(DEFAULT_IMPL,true,Thread.currentThread().getContextClassLoader());
-                Constructor<? extends WebSocketServletFactory> ctor = wsClazz.getDeclaredConstructor(new Class<?>[]{ServletContext.class, WebSocketPolicy.class});
+                    (Class<? extends WebSocketServletFactory>)Class.forName(DEFAULT_IMPL, true, Thread.currentThread().getContextClassLoader());
+                Constructor<? extends WebSocketServletFactory> ctor = wsClazz.getDeclaredConstructor(ServletContext.class, WebSocketPolicy.class);
                 return ctor.newInstance(ctx, policy);
             }
             catch (ClassNotFoundException e)
@@ -58,18 +58,35 @@ public interface WebSocketServletFactory
             }
         }
     }
-    
+
     boolean acceptWebSocket(HttpServletRequest request, HttpServletResponse response) throws IOException;
-    
+
     boolean acceptWebSocket(WebSocketCreator creator, HttpServletRequest request, HttpServletResponse response) throws IOException;
-    
+
     void start() throws Exception;
+
     void stop() throws Exception;
-    
+
+    /**
+     * Get the set of available Extensions by registered name.
+     *
+     * @return the set of available extensions by registered name.
+     */
+    Set<String> getAvailableExtensionNames();
+
     WebSocketCreator getCreator();
-    
+
+    /**
+     * Get the registered extensions for this WebSocket factory.
+     *
+     * @return the ExtensionFactory
+     * @see #getAvailableExtensionNames()
+     * @deprecated this class is removed from Jetty 10.0.0+.  To remove specific extensions
+     * from negotiation use {@link WebSocketCreator} to remove then during handshake.
+     */
+    @Deprecated
     ExtensionFactory getExtensionFactory();
-    
+
     /**
      * Get the base policy in use for WebSockets.
      * <p>
@@ -78,9 +95,9 @@ public interface WebSocketServletFactory
      * @return the base policy
      */
     WebSocketPolicy getPolicy();
-    
+
     boolean isUpgradeRequest(HttpServletRequest request, HttpServletResponse response);
-    
+
     /**
      * Register a websocket class pojo with the default {@link WebSocketCreator}.
      * <p>
@@ -89,6 +106,6 @@ public interface WebSocketServletFactory
      * @param websocketPojo the class to instantiate for each incoming websocket upgrade request.
      */
     void register(Class<?> websocketPojo);
-    
+
     void setCreator(WebSocketCreator creator);
 }

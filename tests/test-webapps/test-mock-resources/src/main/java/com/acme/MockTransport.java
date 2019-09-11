@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -15,7 +15,6 @@
 //  You may elect to redistribute this code under either of these licenses.
 //  ========================================================================
 //
-
 
 package com.acme;
 
@@ -32,21 +31,19 @@ import javax.mail.URLName;
 public class MockTransport extends Transport
 {
     /**
-     * @param session
-     * @param urlname
+     *
      */
     public MockTransport(Session session, URLName urlname)
     {
         super(session, urlname);
     }
 
-    /** 
+    /**
      * @see javax.mail.Transport#sendMessage(javax.mail.Message, javax.mail.Address[])
      */
     @Override
     public void sendMessage(Message arg0, Address[] arg1) throws MessagingException
     {
-        System.err.println ("Sending message");
+        System.err.println("Sending message");
     }
-
 }

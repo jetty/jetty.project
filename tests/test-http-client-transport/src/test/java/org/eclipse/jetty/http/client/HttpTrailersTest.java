@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,12 +18,6 @@
 
 package org.eclipse.jetty.http.client;
 
-import static org.eclipse.jetty.http.client.Transport.FCGI;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -31,7 +25,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-
 import javax.servlet.ServletInputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -50,6 +43,12 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
+
+import static org.eclipse.jetty.http.client.Transport.FCGI;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class HttpTrailersTest extends AbstractTest<TransportScenario>
 {
@@ -187,23 +186,23 @@ public class HttpTrailersTest extends AbstractTest<TransportScenario>
 
         AtomicReference<Throwable> failure = new AtomicReference<>(new Throwable("no_success"));
         ContentResponse response = scenario.client.newRequest(scenario.newURI())
-                .onResponseSuccess(r ->
+            .onResponseSuccess(r ->
+            {
+                try
                 {
-                    try
-                    {
-                        HttpResponse httpResponse = (HttpResponse)r;
-                        HttpFields trailers = httpResponse.getTrailers();
-                        assertNotNull(trailers);
-                        assertEquals(trailerValue, trailers.get(trailerName));
-                        failure.set(null);
-                    }
-                    catch (Throwable x)
-                    {
-                        failure.set(x);
-                    }
-                })
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+                    HttpResponse httpResponse = (HttpResponse)r;
+                    HttpFields trailers = httpResponse.getTrailers();
+                    assertNotNull(trailers);
+                    assertEquals(trailerValue, trailers.get(trailerName));
+                    failure.set(null);
+                }
+                catch (Throwable x)
+                {
+                    failure.set(x);
+                }
+            })
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertNull(failure.get());
     }
@@ -229,22 +228,22 @@ public class HttpTrailersTest extends AbstractTest<TransportScenario>
 
         AtomicReference<Throwable> failure = new AtomicReference<>(new Throwable("no_success"));
         ContentResponse response = scenario.client.newRequest(scenario.newURI())
-                .onResponseSuccess(r ->
+            .onResponseSuccess(r ->
+            {
+                try
                 {
-                    try
-                    {
-                        HttpResponse httpResponse = (HttpResponse)r;
-                        HttpFields trailers = httpResponse.getTrailers();
-                        assertNull(trailers);
-                        failure.set(null);
-                    }
-                    catch (Throwable x)
-                    {
-                        failure.set(x);
-                    }
-                })
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+                    HttpResponse httpResponse = (HttpResponse)r;
+                    HttpFields trailers = httpResponse.getTrailers();
+                    assertNull(trailers);
+                    failure.set(null);
+                }
+                catch (Throwable x)
+                {
+                    failure.set(x);
+                }
+            })
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertNull(failure.get());
     }
@@ -278,8 +277,8 @@ public class HttpTrailersTest extends AbstractTest<TransportScenario>
 
         InputStreamResponseListener listener = new InputStreamResponseListener();
         scenario.client.newRequest(scenario.newURI())
-                .timeout(15, TimeUnit.SECONDS)
-                .send(listener);
+            .timeout(15, TimeUnit.SECONDS)
+            .send(listener);
         org.eclipse.jetty.client.api.Response response = listener.get(5, TimeUnit.SECONDS);
         assertEquals(HttpStatus.OK_200, response.getStatus());
 

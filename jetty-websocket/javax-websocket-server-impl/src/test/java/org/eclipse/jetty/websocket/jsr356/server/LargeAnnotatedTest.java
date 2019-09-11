@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,6 +18,14 @@
 
 package org.eclipse.jetty.websocket.jsr356.server;
 
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
+
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
@@ -31,16 +39,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import java.net.URI;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.concurrent.Future;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
-
 
 /**
  * Test Echo of Large messages, targeting the {@code @OnMessage(maxMessage=###)} functionality
@@ -57,7 +56,7 @@ public class LargeAnnotatedTest
     {
         Path testDir = MavenTestingUtils.getTargetTestingPath(LargeOnOpenSessionConfiguredTest.class.getSimpleName());
 
-        server = new WSServer(testDir,"app");
+        server = new WSServer(testDir, "app");
         server.createWebInf();
         server.copyEndpoint(LargeEchoAnnotatedSocket.class);
 
@@ -83,20 +82,20 @@ public class LargeAnnotatedTest
         WebSocketClient client = new WebSocketClient();
         try
         {
-            client.getPolicy().setMaxTextMessageSize(128*1024);
+            client.getPolicy().setMaxTextMessageSize(128 * 1024);
             client.start();
             JettyEchoSocket clientEcho = new JettyEchoSocket();
-            Future<Session> foo = client.connect(clientEcho,uri.resolve("echo/large"));
+            Future<Session> foo = client.connect(clientEcho, uri.resolve("echo/large"));
 
             // wait for connect
-            foo.get(1,TimeUnit.SECONDS);
+            foo.get(1, TimeUnit.SECONDS);
             // The message size should be bigger than default, but smaller than the limit that LargeEchoSocket specifies
-            byte txt[] = new byte[100 * 1024];
-            Arrays.fill(txt,(byte)'o');
-            String msg = new String(txt,StandardCharsets.UTF_8);
+            byte[] txt = new byte[100 * 1024];
+            Arrays.fill(txt, (byte)'o');
+            String msg = new String(txt, StandardCharsets.UTF_8);
             clientEcho.sendMessage(msg);
             LinkedBlockingQueue<String> msgs = clientEcho.incomingMessages;
-            assertEquals(msg,msgs.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT),"Expected message");
+            assertEquals(msg, msgs.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT), "Expected message");
         }
         finally
         {

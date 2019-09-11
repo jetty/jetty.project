@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -28,7 +28,7 @@ import org.osgi.framework.ServiceReference;
  */
 public interface ServiceProvider
 {
-    public boolean serviceAdded (ServiceReference ref, ContextHandler handler) throws Exception;
-    
-    public boolean serviceRemoved (ServiceReference ref, ContextHandler handler) throws Exception;
+    boolean serviceAdded(ServiceReference ref, ContextHandler handler) throws Exception;
+
+    boolean serviceRemoved(ServiceReference ref, ContextHandler handler) throws Exception;
 }

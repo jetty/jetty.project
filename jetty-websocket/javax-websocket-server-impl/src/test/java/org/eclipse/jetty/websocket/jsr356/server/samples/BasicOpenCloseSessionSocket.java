@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -26,13 +26,13 @@ import javax.websocket.server.ServerEndpoint;
 
 import org.eclipse.jetty.websocket.jsr356.server.TrackingSocket;
 
-@ServerEndpoint(value="/basic")
+@ServerEndpoint(value = "/basic")
 public class BasicOpenCloseSessionSocket extends TrackingSocket
 {
     @OnClose
     public void onClose(CloseReason close, Session session)
     {
-        addEvent("onClose(%s, %s)",close,session);
+        addEvent("onClose(%s, %s)", close, session);
         this.closeReason = close;
         closeLatch.countDown();
     }
@@ -40,7 +40,7 @@ public class BasicOpenCloseSessionSocket extends TrackingSocket
     @OnOpen
     public void onOpen(Session session)
     {
-        addEvent("onOpen(%s)",session);
+        addEvent("onOpen(%s)", session);
         openLatch.countDown();
     }
 }

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,17 +18,12 @@
 
 package org.eclipse.jetty.jmx;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.HashMap;
 import java.util.Map;
-
 import javax.management.remote.JMXConnector;
 import javax.management.remote.JMXConnectorFactory;
 import javax.management.remote.JMXServiceURL;
@@ -39,6 +34,10 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Running the tests of this class in the same JVM results often in
@@ -83,7 +82,8 @@ public class ConnectorServerTest
 
         // Verify that I can connect to the RMI registry using a non-loopback address.
         new Socket(InetAddress.getLocalHost(), 1099).close();
-        assertThrows(ConnectException.class, ()->{
+        assertThrows(ConnectException.class, () ->
+        {
             // Verify that I cannot connect to the RMI registry using the loopback address.
             new Socket(InetAddress.getLoopbackAddress(), 1099).close();
         });
@@ -100,7 +100,8 @@ public class ConnectorServerTest
 
         // Verify that I can connect to the RMI registry using a non-loopback address.
         new Socket(InetAddress.getLocalHost(), registryPort).close();
-        assertThrows(ConnectException.class, ()->{
+        assertThrows(ConnectException.class, () ->
+        {
             // Verify that I cannot connect to the RMI registry using the loopback address.
             new Socket(InetAddress.getLoopbackAddress(), registryPort).close();
         });
@@ -130,7 +131,8 @@ public class ConnectorServerTest
         InetAddress localHost = InetAddress.getLocalHost();
         if (!localHost.isLoopbackAddress())
         {
-            assertThrows(ConnectException.class, ()->{
+            assertThrows(ConnectException.class, () ->
+            {
                 // Verify that I cannot connect to the RMIRegistry using a non-loopback address.
                 new Socket(localHost, 1099);
             });
@@ -148,7 +150,8 @@ public class ConnectorServerTest
 
         // Verify that I can connect to the RMI server using a non-loopback address.
         new Socket(InetAddress.getLocalHost(), connectorServer.getAddress().getPort()).close();
-        assertThrows(ConnectException.class, ()->{
+        assertThrows(ConnectException.class, () ->
+        {
             // Verify that I cannot connect to the RMI server using the loopback address.
             new Socket(InetAddress.getLoopbackAddress(), connectorServer.getAddress().getPort()).close();
         });
@@ -176,7 +179,8 @@ public class ConnectorServerTest
         InetAddress localHost = InetAddress.getLocalHost();
         if (!localHost.isLoopbackAddress())
         {
-            assertThrows(ConnectException.class, ()->{
+            assertThrows(ConnectException.class, () ->
+            {
                 // Verify that I cannot connect to the RMIRegistry using a non-loopback address.
                 new Socket(localHost, address.getPort());
             });
@@ -227,7 +231,7 @@ public class ConnectorServerTest
     @Test
     public void testJMXOverTLS() throws Exception
     {
-        SslContextFactory sslContextFactory = new SslContextFactory();
+        SslContextFactory sslContextFactory = new SslContextFactory.Server();
         String keyStorePath = MavenTestingUtils.getTestResourcePath("keystore.jks").toString();
         String keyStorePassword = "storepwd";
         sslContextFactory.setKeyStorePath(keyStorePath);

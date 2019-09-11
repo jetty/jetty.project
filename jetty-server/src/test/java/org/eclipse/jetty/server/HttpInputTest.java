@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,6 +18,18 @@
 
 package org.eclipse.jetty.server;
 
+import java.io.EOFException;
+import java.io.IOException;
+import java.util.Queue;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeoutException;
+import javax.servlet.ReadListener;
+
+import org.eclipse.jetty.util.BufferUtil;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
@@ -25,19 +37,6 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import java.io.EOFException;
-import java.io.IOException;
-import java.util.Queue;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeoutException;
-
-import javax.servlet.ReadListener;
-
-import org.eclipse.jetty.util.BufferUtil;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 
 public class HttpInputTest
 {
@@ -93,7 +92,7 @@ public class HttpInputTest
     @BeforeEach
     public void before()
     {
-        _in = new HttpInput(new HttpChannelState(new HttpChannel(null, new HttpConfiguration(), null, null)
+        _in = new HttpInput(new HttpChannelState(new HttpChannel(new MockConnector(), new HttpConfiguration(), null, null)
         {
             @Override
             public void onAsyncWaitForContent()
@@ -291,7 +290,7 @@ public class HttpInputTest
         assertThat(_in.isFinished(), equalTo(false));
         assertThat(_in.read(), equalTo((int)'D'));
 
-        assertThrows(EOFException.class, ()-> _in.read());
+        assertThrows(EOFException.class, () -> _in.read());
         assertTrue(_in.isFinished());
 
         assertThat(_history.poll(), equalTo("Content succeeded AB"));
@@ -472,7 +471,7 @@ public class HttpInputTest
 
         assertThat(_in.isReady(), equalTo(true));
 
-        IOException e = assertThrows(IOException.class, ()->_in.read());
+        IOException e = assertThrows(IOException.class, () -> _in.read());
         assertThat(e.getCause(), instanceOf(TimeoutException.class));
         assertThat(_in.isFinished(), equalTo(true));
 

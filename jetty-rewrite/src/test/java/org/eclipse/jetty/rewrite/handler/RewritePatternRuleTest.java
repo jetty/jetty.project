@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,26 +18,26 @@
 
 package org.eclipse.jetty.rewrite.handler;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-
 import java.io.IOException;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+
 public class RewritePatternRuleTest extends AbstractRuleTestCase
 {
     // TODO: Parameterize
     private String[][] _tests =
-            {
-                    {"/foo/bar", "/", "/replace"},
-                    {"/foo/bar", "/*", "/replace/foo/bar"},
-                    {"/foo/bar", "/foo/*", "/replace/bar"},
-                    {"/foo/bar", "/foo/bar", "/replace"},
-                    {"/foo/bar.txt", "*.txt", "/replace"},
-                    {"/foo/bar/%20x", "/foo/*", "/replace/bar/%20x"},
-            };
+        {
+            {"/foo/bar", "/", "/replace"},
+            {"/foo/bar", "/*", "/replace/foo/bar"},
+            {"/foo/bar", "/foo/*", "/replace/bar"},
+            {"/foo/bar", "/foo/bar", "/replace"},
+            {"/foo/bar.txt", "*.txt", "/replace"},
+            {"/foo/bar/%20x", "/foo/*", "/replace/bar/%20x"},
+        };
     private RewritePatternRule _rule;
 
     @BeforeEach
@@ -80,7 +80,6 @@ public class RewritePatternRuleTest extends AbstractRuleTestCase
         rewritePatternRule.applyURI(_request, null, result);
         assertThat("queryString matches expected", _request.getQueryString(), is(queryString));
         assertThat("request URI matches expected", _request.getRequestURI(), is(path));
-
     }
 
     @Test
@@ -123,8 +122,7 @@ public class RewritePatternRuleTest extends AbstractRuleTestCase
 
         rewritePatternRule.applyURI(_request, null, result);
         assertThat("queryString matches expected", _request.getQueryString(),
-                is(requestQueryString + "&" + queryString));
+            is(requestQueryString + "&" + queryString));
         assertThat("request URI matches expected", _request.getRequestURI(), is(path));
     }
-
 }

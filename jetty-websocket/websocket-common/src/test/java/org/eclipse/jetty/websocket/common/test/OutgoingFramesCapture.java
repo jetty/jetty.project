@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,11 +18,7 @@
 
 package org.eclipse.jetty.websocket.common.test;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.is;
-
-import java.util.LinkedList;
+import java.util.concurrent.LinkedBlockingDeque;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.BatchMode;
@@ -32,39 +28,43 @@ import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
 import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.is;
 
 public class OutgoingFramesCapture implements OutgoingFrames
 {
-    private LinkedList<WebSocketFrame> frames = new LinkedList<>();
+    private LinkedBlockingDeque<WebSocketFrame> frames = new LinkedBlockingDeque<>();
 
     public void assertFrameCount(int expectedCount)
     {
-        assertThat("Captured frame count",frames.size(),is(expectedCount));
+        assertThat("Captured frame count", frames.size(), is(expectedCount));
     }
 
     public void assertHasFrame(byte op)
     {
-        assertThat(OpCode.name(op),getFrameCount(op),greaterThanOrEqualTo(1));
+        assertThat(OpCode.name(op), getFrameCount(op), greaterThanOrEqualTo(1));
     }
 
     public void assertHasFrame(byte op, int expectedCount)
     {
-        assertThat(OpCode.name(op),getFrameCount(op),is(expectedCount));
+        assertThat(OpCode.name(op), getFrameCount(op), is(expectedCount));
     }
 
     public void assertHasNoFrames()
     {
-        assertThat("Has no frames",frames.size(),is(0));
+        assertThat("Has no frames", frames.size(), is(0));
     }
 
     public void dump()
     {
-        System.out.printf("Captured %d outgoing writes%n",frames.size());
-        for (int i = 0; i < frames.size(); i++)
+        System.out.printf("Captured %d outgoing writes%n", frames.size());
+        int i = 0;
+        for (WebSocketFrame frame : frames)
         {
-            Frame frame = frames.get(i);
-            System.out.printf("[%3d] %s%n",i,frame);
-            System.out.printf("      %s%n",BufferUtil.toDetailString(frame.getPayload()));
+            System.out.printf("[%3d] %s%n", i, frame);
+            System.out.printf("      %s%n", BufferUtil.toDetailString(frame.getPayload()));
+            i++;
         }
     }
 
@@ -81,7 +81,7 @@ public class OutgoingFramesCapture implements OutgoingFrames
         return count;
     }
 
-    public LinkedList<WebSocketFrame> getFrames()
+    public LinkedBlockingDeque<WebSocketFrame> getFrames()
     {
         return frames;
     }

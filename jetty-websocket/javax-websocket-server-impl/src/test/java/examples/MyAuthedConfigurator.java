@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,7 +19,6 @@
 package examples;
 
 import java.security.Principal;
-
 import javax.websocket.HandshakeResponse;
 import javax.websocket.server.HandshakeRequest;
 import javax.websocket.server.ServerEndpointConfig;
@@ -32,7 +31,7 @@ public class MyAuthedConfigurator extends ServerEndpointConfig.Configurator
         // Is Authenticated?
         Principal principal = request.getUserPrincipal();
         if (principal == null)
-        { 
+        {
             throw new RuntimeException("Not authenticated");
         }
 
@@ -41,8 +40,8 @@ public class MyAuthedConfigurator extends ServerEndpointConfig.Configurator
         {
             throw new RuntimeException("Not authorized");
         }
-        
+
         // normal operation
-        super.modifyHandshake(sec,request,response);
+        super.modifyHandshake(sec, request, response);
     }
 }

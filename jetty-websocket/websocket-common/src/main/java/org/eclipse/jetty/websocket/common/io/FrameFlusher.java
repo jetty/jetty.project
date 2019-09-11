@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.atomic.LongAdder;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
@@ -52,7 +53,13 @@ public class FrameFlusher extends IteratingCallback
     private final Deque<FrameEntry> queue = new ArrayDeque<>();
     private final List<FrameEntry> entries;
     private final List<ByteBuffer> buffers;
+
+    // Stats (where a message is defined as a WebSocket frame)
+    private final LongAdder messagesOut = new LongAdder();
+    private final LongAdder bytesOut = new LongAdder();
+
     private boolean closed;
+    private boolean canEnqueue = true;
     private Throwable terminated;
     private ByteBuffer aggregate;
     private BatchMode batchMode;
@@ -68,28 +75,52 @@ public class FrameFlusher extends IteratingCallback
         this.buffers = new ArrayList<>((maxGather * 2) + 1);
     }
 
-    public void enqueue(Frame frame, WriteCallback callback, BatchMode batchMode)
+    public boolean enqueue(Frame frame, WriteCallback callback, BatchMode batchMode)
     {
         FrameEntry entry = new FrameEntry(frame, callback, batchMode);
 
-        Throwable closed;
+        Throwable dead;
+
         synchronized (this)
         {
-            closed = terminated;
-            if (closed == null)
+            if (canEnqueue)
             {
-                byte opCode = frame.getOpCode();
-                if (opCode == OpCode.PING || opCode == OpCode.PONG)
-                    queue.offerFirst(entry);
-                else
-                    queue.offerLast(entry);
+                dead = terminated;
+                if (dead == null)
+                {
+                    byte opCode = frame.getOpCode();
+                    if (opCode == OpCode.PING || opCode == OpCode.PONG)
+                    {
+                        queue.offerFirst(entry);
+                    }
+                    else
+                    {
+                        queue.offerLast(entry);
+                    }
+
+                    if (opCode == OpCode.CLOSE)
+                    {
+                        this.canEnqueue = false;
+                    }
+                }
+            }
+            else
+            {
+                dead = new ClosedChannelException();
             }
         }
 
-        if (closed == null)
-            iterate();
-        else
-            notifyCallbackFailure(callback, closed);
+        if (dead == null)
+        {
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("Enqueued {} to {}", entry, this);
+            }
+            return true;
+        }
+
+        notifyCallbackFailure(callback, dead);
+        return false;
     }
 
     @Override
@@ -103,15 +134,20 @@ public class FrameFlusher extends IteratingCallback
         synchronized (this)
         {
             if (closed)
+            {
                 return Action.SUCCEEDED;
+            }
 
             if (terminated != null)
+            {
                 throw terminated;
+            }
 
-            while (!queue.isEmpty() && entries.size() <= maxGather)
+            while (!queue.isEmpty() && entries.size() < maxGather)
             {
                 FrameEntry entry = queue.poll();
                 currentBatchMode = BatchMode.max(currentBatchMode, entry.batchMode);
+                messagesOut.increment();
 
                 // Force flush if we need to.
                 if (entry.frame == FLUSH_FRAME)
@@ -215,6 +251,16 @@ public class FrameFlusher extends IteratingCallback
             return Action.IDLE;
         }
 
+        int i = 0;
+        int bytes = 0;
+        ByteBuffer[] bufferArray = new ByteBuffer[buffers.size()];
+        for (ByteBuffer bb : buffers)
+        {
+            bytes += bb.limit() - bb.position();
+            bufferArray[i++] = bb;
+        }
+        bytesOut.add(bytes);
+
         endPoint.write(this, buffers.toArray(new ByteBuffer[buffers.size()]));
         buffers.clear();
         return Action.SCHEDULED;
@@ -243,7 +289,12 @@ public class FrameFlusher extends IteratingCallback
             entry.release();
             if (entry.frame.getOpCode() == OpCode.CLOSE)
             {
-                terminate(new ClosedChannelException(), true);
+                synchronized (this)
+                {
+                    // we know that enqueue protects us.
+                    // and the processing will not contain extra frame entries.
+                    closed = true;
+                }
                 endPoint.shutdownOutput();
             }
         }
@@ -255,12 +306,14 @@ public class FrameFlusher extends IteratingCallback
     {
         releaseAggregate();
 
-        Throwable closed;
         synchronized (this)
         {
-            closed = terminated;
-            if (closed == null)
+            if (terminated == null)
+            {
                 terminated = failure;
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Write flush failure", failure);
+            }
             entries.addAll(queue);
             queue.clear();
         }
@@ -282,19 +335,18 @@ public class FrameFlusher extends IteratingCallback
         }
     }
 
-    void terminate(Throwable cause, boolean close)
+    void terminate(Throwable cause)
     {
         Throwable reason;
         synchronized (this)
         {
-            closed = close;
             reason = terminated;
             if (reason == null)
                 terminated = cause;
         }
         if (LOG.isDebugEnabled())
             LOG.debug("{} {}", reason == null ? "Terminating" : "Terminated", this);
-        if (reason == null && !close)
+        if (reason == null)
             iterate();
     }
 
@@ -330,6 +382,16 @@ public class FrameFlusher extends IteratingCallback
         }
     }
 
+    public long getMessagesOut()
+    {
+        return messagesOut.longValue();
+    }
+
+    public long getBytesOut()
+    {
+        return bytesOut.longValue();
+    }
+
     @Override
     public String toString()
     {
@@ -337,12 +399,11 @@ public class FrameFlusher extends IteratingCallback
         ByteBuffer agg = aggregate;
         if (agg != null)
             aggSize = agg.position();
-        return String.format("%s@%x[queueSize=%d,aggregateSize=%d,terminated=%s]",
-                getClass().getSimpleName(),
-                hashCode(),
-                getQueueSize(),
-                aggSize,
-                terminated);
+        return String.format("%s[queueSize=%d,aggregateSize=%d,terminated=%s]",
+            super.toString(),
+            getQueueSize(),
+            aggSize,
+            terminated);
     }
 
     private class FrameEntry

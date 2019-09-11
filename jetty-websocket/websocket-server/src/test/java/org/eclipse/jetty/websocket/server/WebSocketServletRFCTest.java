@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -17,11 +17,6 @@
 //
 
 package org.eclipse.jetty.websocket.server;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.fail;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -54,9 +49,13 @@ import org.eclipse.jetty.websocket.common.util.Hex;
 import org.eclipse.jetty.websocket.server.helper.RFCServlet;
 import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.junit.jupiter.api.AfterAll;
-
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Test various <a href="http://tools.ietf.org/html/rfc6455">RFC 6455</a> specified requirements placed on {@link WebSocketServlet}
@@ -97,6 +96,7 @@ public class WebSocketServletRFCTest
 
     /**
      * Test that aggregation of binary frames into a single message occurs
+     *
      * @throws Exception on test failure
      */
     @Test
@@ -109,13 +109,13 @@ public class WebSocketServletRFCTest
         try (BlockheadConnection clientConn = connFut.get(Timeouts.CONNECT, Timeouts.CONNECT_UNIT))
         {
             // Generate binary frames
-            byte buf1[] = new byte[128];
-            byte buf2[] = new byte[128];
-            byte buf3[] = new byte[128];
+            byte[] buf1 = new byte[128];
+            byte[] buf2 = new byte[128];
+            byte[] buf3 = new byte[128];
 
-            Arrays.fill(buf1,(byte)0xAA);
-            Arrays.fill(buf2,(byte)0xBB);
-            Arrays.fill(buf3,(byte)0xCC);
+            Arrays.fill(buf1, (byte)0xAA);
+            Arrays.fill(buf2, (byte)0xBB);
+            Arrays.fill(buf3, (byte)0xCC);
 
             WebSocketFrame bin;
 
@@ -135,7 +135,7 @@ public class WebSocketServletRFCTest
             LinkedBlockingQueue<WebSocketFrame> frames = clientConn.getFrameQueue();
             Frame binmsg = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
             int expectedSize = buf1.length + buf2.length + buf3.length;
-            assertThat("BinaryFrame.payloadLength",binmsg.getPayloadLength(),is(expectedSize));
+            assertThat("BinaryFrame.payloadLength", binmsg.getPayloadLength(), is(expectedSize));
 
             int aaCount = 0;
             int bbCount = 0;
@@ -157,29 +157,31 @@ public class WebSocketServletRFCTest
                         ccCount++;
                         break;
                     default:
-                        fail(String.format("Encountered invalid byte 0x%02X",(byte)(0xFF & b)));
+                        fail(String.format("Encountered invalid byte 0x%02X", (byte)(0xFF & b)));
                 }
             }
-            assertThat("Echoed data count for 0xAA",aaCount,is(buf1.length));
-            assertThat("Echoed data count for 0xBB",bbCount,is(buf2.length));
-            assertThat("Echoed data count for 0xCC",ccCount,is(buf3.length));
+            assertThat("Echoed data count for 0xAA", aaCount, is(buf1.length));
+            assertThat("Echoed data count for 0xBB", bbCount, is(buf2.length));
+            assertThat("Echoed data count for 0xCC", ccCount, is(buf3.length));
         }
     }
 
     @Test
     public void testDetectBadUTF8()
     {
-        byte buf[] = new byte[]
-        { (byte)0xC2, (byte)0xC3 };
+        byte[] buf = new byte[]
+            {(byte)0xC2, (byte)0xC3};
 
         Utf8StringBuilder utf = new Utf8StringBuilder();
-        assertThrows(NotUtf8Exception.class, ()-> {
+        assertThrows(NotUtf8Exception.class, () ->
+        {
             utf.append(buf, 0, buf.length);
         });
     }
 
     /**
      * Test the requirement of issuing socket and receiving echo response
+     *
      * @throws Exception on test failure
      */
     @Test
@@ -198,13 +200,14 @@ public class WebSocketServletRFCTest
             // Read frame (hopefully text frame)
             LinkedBlockingQueue<WebSocketFrame> frames = clientConn.getFrameQueue();
             WebSocketFrame tf = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
-            assertThat("Text Frame.status code",tf.getPayloadAsUTF8(),is(msg));
+            assertThat("Text Frame.status code", tf.getPayloadAsUTF8(), is(msg));
         }
     }
 
     /**
      * Test the requirement of responding with server terminated close code 1011 when there is an unhandled (internal server error) being produced by the
      * WebSocket POJO.
+     *
      * @throws Exception on test failure
      */
     @Test
@@ -224,7 +227,7 @@ public class WebSocketServletRFCTest
             LinkedBlockingQueue<WebSocketFrame> frames = clientConn.getFrameQueue();
             Frame cf = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
             CloseInfo close = new CloseInfo(cf);
-            assertThat("Close Frame.status code",close.getStatusCode(),is(StatusCode.SERVER_ERROR));
+            assertThat("Close Frame.status code", close.getStatusCode(), is(StatusCode.SERVER_ERROR));
         }
     }
 
@@ -232,6 +235,7 @@ public class WebSocketServletRFCTest
      * Test http://tools.ietf.org/html/rfc6455#section-4.1 where server side upgrade handling is supposed to be case insensitive.
      * <p>
      * This test will simulate a client requesting upgrade with all lowercase headers.
+     *
      * @throws Exception on test failure
      */
     @Test
@@ -256,7 +260,7 @@ public class WebSocketServletRFCTest
             // Read frame (hopefully text frame)
             LinkedBlockingQueue<WebSocketFrame> frames = clientConn.getFrameQueue();
             WebSocketFrame tf = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
-            assertThat("Text Frame.status code",tf.getPayloadAsUTF8(),is(msg));
+            assertThat("Text Frame.status code", tf.getPayloadAsUTF8(), is(msg));
         }
     }
 
@@ -271,8 +275,8 @@ public class WebSocketServletRFCTest
         try (BlockheadConnection clientConn = connFut.get(Timeouts.CONNECT, Timeouts.CONNECT_UNIT);
              StacklessLogging ignore = new StacklessLogging(Parser.class))
         {
-            byte buf[] = new byte[]
-            { (byte)0xC2, (byte)0xC3 };
+            byte[] buf = new byte[]
+                {(byte)0xC2, (byte)0xC3};
 
             WebSocketFrame txt = new TextFrame().setPayload(ByteBuffer.wrap(buf));
             txt.setMask(Hex.asByteArray("11223344"));
@@ -282,9 +286,9 @@ public class WebSocketServletRFCTest
 
             LinkedBlockingQueue<WebSocketFrame> frames = clientConn.getFrameQueue();
             WebSocketFrame frame = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
-            assertThat("frames[0].opcode",frame.getOpCode(),is(OpCode.CLOSE));
+            assertThat("frames[0].opcode", frame.getOpCode(), is(OpCode.CLOSE));
             CloseInfo close = new CloseInfo(frame);
-            assertThat("Close Status Code",close.getStatusCode(),is(StatusCode.BAD_PAYLOAD));
+            assertThat("Close Status Code", close.getStatusCode(), is(StatusCode.BAD_PAYLOAD));
         }
     }
 
@@ -292,6 +296,7 @@ public class WebSocketServletRFCTest
      * Test http://tools.ietf.org/html/rfc6455#section-4.1 where server side upgrade handling is supposed to be case insensitive.
      * <p>
      * This test will simulate a client requesting upgrade with all uppercase headers.
+     *
      * @throws Exception on test failure
      */
     @Test
@@ -316,7 +321,7 @@ public class WebSocketServletRFCTest
             // Read frame (hopefully text frame)
             LinkedBlockingQueue<WebSocketFrame> frames = clientConn.getFrameQueue();
             WebSocketFrame tf = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
-            assertThat("Text Frame.status code",tf.getPayloadAsUTF8(),is(msg));
+            assertThat("Text Frame.status code", tf.getPayloadAsUTF8(), is(msg));
         }
     }
 }

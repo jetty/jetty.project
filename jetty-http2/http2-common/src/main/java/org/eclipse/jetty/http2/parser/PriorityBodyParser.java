@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -103,7 +103,7 @@ public class PriorityBodyParser extends BodyParser
                     if (getStreamId() == parentStreamId)
                         return connectionFailure(buffer, ErrorCode.PROTOCOL_ERROR.code, "invalid_priority_frame");
                     int weight = (buffer.get() & 0xFF) + 1;
-                    return onPriority(parentStreamId, weight, exclusive);
+                    return onPriority(buffer, parentStreamId, weight, exclusive);
                 }
                 default:
                 {
@@ -114,9 +114,11 @@ public class PriorityBodyParser extends BodyParser
         return false;
     }
 
-    private boolean onPriority(int parentStreamId, int weight, boolean exclusive)
+    private boolean onPriority(ByteBuffer buffer, int parentStreamId, int weight, boolean exclusive)
     {
         PriorityFrame frame = new PriorityFrame(getStreamId(), parentStreamId, weight, exclusive);
+        if (!rateControlOnEvent(frame))
+            return connectionFailure(buffer, ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, "invalid_priority_frame_rate");
         reset();
         notifyPriority(frame);
         return true;

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,11 +18,8 @@
 
 package org.eclipse.jetty.http2.client.http;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -46,8 +43,9 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
-
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class DirectHTTP2OverTLSTest
 {
@@ -69,7 +67,7 @@ public class DirectHTTP2OverTLSTest
         HttpConfiguration httpsConfig = new HttpConfiguration();
         httpsConfig.addCustomizer(new SecureRequestCustomizer());
         ConnectionFactory h2 = new HTTP2ServerConnectionFactory(httpsConfig);
-        ConnectionFactory ssl = new SslConnectionFactory(newSslContextFactory(), h2.getProtocol());
+        ConnectionFactory ssl = new SslConnectionFactory(newServerSslContextFactory(), h2.getProtocol());
         connector = new ServerConnector(server, 1, 1, ssl, h2);
         server.addConnector(connector);
         server.setHandler(handler);
@@ -82,7 +80,8 @@ public class DirectHTTP2OverTLSTest
         clientThreads.setName("client");
         HttpClientTransportOverHTTP2 transport = new HttpClientTransportOverHTTP2(new HTTP2Client());
         transport.setUseALPN(false);
-        client = new HttpClient(transport, newSslContextFactory());
+        SslContextFactory sslContextFactory = newClientSslContextFactory();
+        client = new HttpClient(transport, sslContextFactory);
         client.setExecutor(clientThreads);
         client.start();
     }
@@ -96,14 +95,27 @@ public class DirectHTTP2OverTLSTest
             server.stop();
     }
 
-    private SslContextFactory newSslContextFactory()
+    private SslContextFactory.Server newServerSslContextFactory()
     {
-        SslContextFactory sslContextFactory = new SslContextFactory();
+        SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
+        configureSslContextFactory(sslContextFactory);
+        return sslContextFactory;
+    }
+
+    private SslContextFactory.Client newClientSslContextFactory()
+    {
+        SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
+        configureSslContextFactory(sslContextFactory);
+        sslContextFactory.setEndpointIdentificationAlgorithm(null);
+        return sslContextFactory;
+    }
+
+    private void configureSslContextFactory(SslContextFactory sslContextFactory)
+    {
         sslContextFactory.setKeyStorePath("src/test/resources/keystore.jks");
         sslContextFactory.setKeyStorePassword("storepwd");
         sslContextFactory.setUseCipherSuitesOrder(true);
         sslContextFactory.setCipherComparator(HTTP2Cipher.COMPARATOR);
-        return sslContextFactory;
     }
 
     @Test
@@ -121,9 +133,9 @@ public class DirectHTTP2OverTLSTest
         });
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(HttpScheme.HTTPS.asString())
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+            .scheme(HttpScheme.HTTPS.asString())
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(HttpStatus.OK_200, response.getStatus());
     }

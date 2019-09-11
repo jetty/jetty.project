@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -17,10 +17,6 @@
 //
 
 package org.eclipse.jetty.websocket.client;
-
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.net.CookieManager;
 import java.net.HttpCookie;
@@ -44,12 +40,15 @@ import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.test.BlockheadConnection;
 import org.eclipse.jetty.websocket.common.test.BlockheadServer;
 import org.eclipse.jetty.websocket.common.test.Timeouts;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AfterAll;
-
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class CookieTest
 {
@@ -60,7 +59,7 @@ public class CookieTest
         public LinkedBlockingQueue<String> messageQueue = new LinkedBlockingQueue<>();
         public LinkedBlockingQueue<Throwable> errorQueue = new LinkedBlockingQueue<>();
         private CountDownLatch openLatch = new CountDownLatch(1);
-        
+
         @Override
         public void onWebSocketConnect(Session sess)
         {
@@ -71,20 +70,20 @@ public class CookieTest
         @Override
         public void onWebSocketText(String message)
         {
-            System.err.printf("onTEXT - %s%n",message);
+            System.err.printf("onTEXT - %s%n", message);
             messageQueue.add(message);
         }
 
         @Override
         public void onWebSocketError(Throwable cause)
         {
-            System.err.printf("onERROR - %s%n",cause);
+            System.err.printf("onERROR - %s%n", cause);
             errorQueue.add(cause);
         }
 
         public void awaitOpen(int duration, TimeUnit unit) throws InterruptedException
         {
-            assertTrue(openLatch.await(duration,unit), "Open Latch");
+            assertTrue(openLatch.await(duration, unit), "Open Latch");
         }
     }
 
@@ -126,16 +125,16 @@ public class CookieTest
         // Setup client
         CookieManager cookieMgr = new CookieManager();
         client.setCookieStore(cookieMgr.getCookieStore());
-        HttpCookie cookie = new HttpCookie("hello","world");
+        HttpCookie cookie = new HttpCookie("hello", "world");
         cookie.setPath("/");
         cookie.setVersion(0);
         cookie.setMaxAge(100000);
-        cookieMgr.getCookieStore().add(server.getWsUri(),cookie);
-        
-        cookie = new HttpCookie("foo","bar is the word");
+        cookieMgr.getCookieStore().add(server.getWsUri(), cookie);
+
+        cookie = new HttpCookie("foo", "bar is the word");
         cookie.setPath("/");
         cookie.setMaxAge(100000);
-        cookieMgr.getCookieStore().add(server.getWsUri(),cookie);
+        cookieMgr.getCookieStore().add(server.getWsUri(), cookie);
 
         // Hook into server connection creation
         CompletableFuture<BlockheadConnection> serverConnFut = new CompletableFuture<>();
@@ -143,7 +142,7 @@ public class CookieTest
 
         // Client connects
         CookieTrackingSocket clientSocket = new CookieTrackingSocket();
-        Future<Session> clientConnectFuture = client.connect(clientSocket,server.getWsUri());
+        Future<Session> clientConnectFuture = client.connect(clientSocket, server.getWsUri());
 
         try (BlockheadConnection serverConn = serverConnFut.get(Timeouts.CONNECT, Timeouts.CONNECT_UNIT))
         {
@@ -154,15 +153,15 @@ public class CookieTest
             assertThat("Cookies seen at server side", serverCookies, containsString("foo=bar is the word"));
         }
     }
-    
+
     @Test
     public void testViaServletUpgradeRequest() throws Exception
     {
         // Setup client
-        HttpCookie cookie = new HttpCookie("hello","world");
+        HttpCookie cookie = new HttpCookie("hello", "world");
         cookie.setPath("/");
         cookie.setMaxAge(100000);
-        
+
         ClientUpgradeRequest request = new ClientUpgradeRequest();
         request.setCookies(Collections.singletonList(cookie));
 
@@ -172,7 +171,7 @@ public class CookieTest
 
         // Client connects
         CookieTrackingSocket clientSocket = new CookieTrackingSocket();
-        Future<Session> clientConnectFuture = client.connect(clientSocket,server.getWsUri(),request);
+        Future<Session> clientConnectFuture = client.connect(clientSocket, server.getWsUri(), request);
 
         try (BlockheadConnection serverConn = serverConnFut.get(Timeouts.CONNECT, Timeouts.CONNECT_UNIT))
         {
@@ -184,7 +183,7 @@ public class CookieTest
     }
 
     private String confirmClientUpgradeAndCookies(CookieTrackingSocket clientSocket, Future<Session> clientConnectFuture, BlockheadConnection serverConn)
-            throws Exception
+        throws Exception
     {
         // Server side upgrade information
         HttpFields upgradeRequestHeaders = serverConn.getUpgradeRequestHeaders();
@@ -197,16 +196,16 @@ public class CookieTest
         serverConn.write(serverCookieFrame);
 
         // Confirm client connect on future
-        clientConnectFuture.get(10,TimeUnit.SECONDS);
-        clientSocket.awaitOpen(2,TimeUnit.SECONDS);
-    
+        clientConnectFuture.get(10, TimeUnit.SECONDS);
+        clientSocket.awaitOpen(2, TimeUnit.SECONDS);
+
         // Wait for client receipt of cookie frame via client websocket
         String cookies = clientSocket.messageQueue.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
-        LOG.debug("Cookies seen at server: {}",cookies);
-        
+        LOG.debug("Cookies seen at server: {}", cookies);
+
         // Server closes connection
         serverConn.write(new CloseInfo(StatusCode.NORMAL).asFrame());
-    
+
         return cookies;
     }
 }

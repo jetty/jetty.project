@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,29 +18,29 @@
 
 package org.eclipse.jetty.websocket.common;
 
+import java.util.Base64;
+
+import org.eclipse.jetty.util.TypeUtil;
+import org.junit.jupiter.api.Test;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-
-import org.eclipse.jetty.util.B64Code;
-import org.eclipse.jetty.util.TypeUtil;
-
-import org.junit.jupiter.api.Test;
 
 public class AcceptHashTest
 {
     @Test
     public void testHash()
     {
-        byte key[] = TypeUtil.fromHexString("00112233445566778899AABBCCDDEEFF");
-        assertThat("Key size",key.length,is(16));
+        byte[] key = TypeUtil.fromHexString("00112233445566778899AABBCCDDEEFF");
+        assertThat("Key size", key.length, is(16));
 
         // what the client sends
-        String clientKey = String.valueOf(B64Code.encode(key));
+        String clientKey = Base64.getEncoder().encodeToString(key);
         // what the server responds with
         String serverHash = AcceptHash.hashKey(clientKey);
 
         // how the client validates
-        assertThat(serverHash,is("mVL6JKtNRC4tluIaFAW2hhMffgE="));
+        assertThat(serverHash, is("mVL6JKtNRC4tluIaFAW2hhMffgE="));
     }
 
     /**
@@ -58,6 +58,6 @@ public class AcceptHashTest
         String serverAccept = AcceptHash.hashKey(clientKey);
         String expectedHash = "s3pPLMBiTxaQ9kYGzzhZRbK+xOo=";
 
-        assertThat(serverAccept,is(expectedHash));
+        assertThat(serverAccept, is(expectedHash));
     }
 }

@@ -1,4 +1,2 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE Configure PUBLIC "-//Mort Bay Consulting//DTD Configure//EN" "http://jetty.mortbay.org/configure_9_3.dtd">
-<Configure class="java.lang.Object">
-</Configure>
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE Configure PUBLIC "-//Mort Bay Consulting//DTD Configure//EN" "http://jetty.mortbay.org/configure_9_3.dtd">
+<Configure class="java.lang.Object"></Configure>

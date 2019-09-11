@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -31,11 +31,9 @@ public interface WebSocketCreator
 {
     /**
      * Create a websocket from the incoming request.
-     * 
-     * @param req
-     *            the request details
-     * @param resp
-     *            the response details
+     *
+     * @param req the request details
+     * @param resp the response details
      * @return a websocket object to use, or null if no websocket should be created from this request.
      */
     Object createWebSocket(ServletUpgradeRequest req, ServletUpgradeResponse resp);

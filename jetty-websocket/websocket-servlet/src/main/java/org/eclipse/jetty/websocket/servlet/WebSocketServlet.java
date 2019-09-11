@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,7 +19,6 @@
 package org.eclipse.jetty.websocket.servlet;
 
 import java.io.IOException;
-
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -37,13 +36,13 @@ import org.eclipse.jetty.websocket.api.annotations.WebSocket;
  * appropriate conditions.
  * <p>
  * The most basic implementation would be as follows.
- * 
+ *
  * <pre>
  * package my.example;
- * 
+ *
  * import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
  * import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
- * 
+ *
  * public class MyEchoServlet extends WebSocketServlet
  * {
  *     &#064;Override
@@ -56,26 +55,26 @@ import org.eclipse.jetty.websocket.api.annotations.WebSocket;
  *     }
  * }
  * </pre>
- * 
+ *
  * Note: that only request that conforms to a "WebSocket: Upgrade" handshake request will trigger the {@link WebSocketServletFactory} handling of creating
  * WebSockets.<br>
  * All other requests are treated as normal servlet requests.
- * 
+ *
  * <p>
  * <b>Configuration / Init-Parameters:</b><br>
  * Note: If you use the {@link WebSocket &#064;WebSocket} annotation, these configuration settings can be specified on a per WebSocket basis, vs a per Servlet
  * basis.
- * 
+ *
  * <dl>
  * <dt>maxIdleTime</dt>
  * <dd>set the time in ms that a websocket may be idle before closing<br>
- * 
+ *
  * <dt>maxTextMessageSize</dt>
  * <dd>set the size in UTF-8 bytes that a websocket may be accept as a Text Message before closing<br>
- * 
+ *
  * <dt>maxBinaryMessageSize</dt>
  * <dd>set the size in bytes that a websocket may be accept as a Binary Message before closing<br>
- * 
+ *
  * <dt>inputBufferSize</dt>
  * <dd>set the size in bytes of the buffer used to read raw bytes from the network layer<br>
  * </dl>
@@ -133,15 +132,15 @@ public abstract class WebSocketServlet extends HttpServlet
             {
                 policy.setInputBufferSize(Integer.parseInt(max));
             }
-    
+
             ServletContext ctx = getServletContext();
             factory = WebSocketServletFactory.Loader.load(ctx, policy);
 
             configure(factory);
-            
+
             factory.start();
-            
-            ctx.setAttribute(WebSocketServletFactory.class.getName(),factory);
+
+            ctx.setAttribute(WebSocketServletFactory.class.getName(), factory);
         }
         catch (Exception x)
         {
@@ -155,10 +154,10 @@ public abstract class WebSocketServlet extends HttpServlet
     @Override
     protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
-        if (factory.isUpgradeRequest(request,response))
+        if (factory.isUpgradeRequest(request, response))
         {
             // We have an upgrade request
-            if (factory.acceptWebSocket(request,response))
+            if (factory.acceptWebSocket(request, response))
             {
                 // We have a socket instance created
                 return;
@@ -174,6 +173,6 @@ public abstract class WebSocketServlet extends HttpServlet
         }
 
         // All other processing
-        super.service(request,response);
+        super.service(request, response);
     }
 }

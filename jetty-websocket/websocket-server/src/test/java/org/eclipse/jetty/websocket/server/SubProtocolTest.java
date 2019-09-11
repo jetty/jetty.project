@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -17,9 +17,6 @@
 //
 
 package org.eclipse.jetty.websocket.server;
-
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -45,6 +42,9 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+
 public class SubProtocolTest
 {
     @WebSocket
@@ -52,21 +52,21 @@ public class SubProtocolTest
     {
         private Session session;
         private String acceptedProtocol;
-        
+
         @OnWebSocketConnect
         public void onConnect(Session session)
         {
             this.session = session;
             this.acceptedProtocol = session.getUpgradeResponse().getAcceptedSubProtocol();
         }
-        
+
         @OnWebSocketMessage
         public void onMsg(String msg)
         {
             session.getRemote().sendStringByFuture("acceptedSubprotocol=" + acceptedProtocol);
         }
     }
-    
+
     public static class ProtocolCreator implements WebSocketCreator
     {
         @Override
@@ -81,11 +81,11 @@ public class SubProtocolTest
                     resp.setAcceptedSubProtocol(subProtocol);
                 }
             }
-            
+
             return new ProtocolEchoSocket();
         }
     }
-    
+
     public static class ProtocolServlet extends WebSocketServlet
     {
         @Override
@@ -97,14 +97,14 @@ public class SubProtocolTest
 
     private static BlockheadClient client;
     private static SimpleServletServer server;
-    
+
     @BeforeAll
     public static void startServer() throws Exception
     {
         server = new SimpleServletServer(new ProtocolServlet());
         server.start();
     }
-    
+
     @AfterAll
     public static void stopServer()
     {
@@ -124,19 +124,19 @@ public class SubProtocolTest
     {
         client.stop();
     }
-    
+
     @Test
     public void testSingleProtocol() throws Exception
     {
         testSubProtocol("echo", "echo");
     }
-    
+
     @Test
     public void testMultipleProtocols() throws Exception
     {
         testSubProtocol("chat,info,echo", "chat");
     }
-    
+
     private void testSubProtocol(String requestProtocols, String acceptedSubProtocols) throws Exception
     {
         BlockheadClientRequest request = client.newWsRequest(server.getServerUri());
@@ -150,7 +150,7 @@ public class SubProtocolTest
             clientConn.write(new TextFrame().setPayload("showme"));
             LinkedBlockingQueue<WebSocketFrame> frames = clientConn.getFrameQueue();
             WebSocketFrame tf = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
-            
+
             assertThat(ProtocolEchoSocket.class.getSimpleName() + ".onMessage()", tf.getPayloadAsUTF8(), is("acceptedSubprotocol=" + acceptedSubProtocols));
         }
     }

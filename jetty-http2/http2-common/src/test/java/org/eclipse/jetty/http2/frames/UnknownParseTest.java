@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -68,7 +68,9 @@ public class UnknownParseTest
         byte[] bytes = new byte[]{0, 0x40, 0x01, 64, 0, 0, 0, 0, 0};
         ByteBuffer buffer = ByteBuffer.wrap(bytes);
         while (buffer.hasRemaining())
+        {
             parser.parse(buffer);
+        }
 
         assertEquals(ErrorCode.FRAME_SIZE_ERROR.code, failure.get());
     }
@@ -92,7 +94,9 @@ public class UnknownParseTest
             byte[] bytes = new byte[]{0, 0, 4, 64, 0, 0, 0, 0, 0, 0, 0, 0, 0};
             ByteBuffer buffer = ByteBuffer.wrap(bytes);
             while (buffer.hasRemaining())
+            {
                 parser.parse(fn.apply(buffer));
+            }
         }
 
         assertFalse(failure.get());

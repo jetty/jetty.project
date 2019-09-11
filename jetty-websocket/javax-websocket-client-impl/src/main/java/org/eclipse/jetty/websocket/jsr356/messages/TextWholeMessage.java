@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -50,14 +50,18 @@ public class TextWholeMessage extends SimpleTextMessage
 
         DecoderFactory.Wrapper decoder = msgWrapper.getDecoder();
         Decoder.Text<Object> textDecoder = (Decoder.Text<Object>)decoder.getDecoder();
-        try
+        String msg = utf.toString();
+        if (textDecoder.willDecode(msg))
         {
-            Object obj = textDecoder.decode(utf.toString());
-            wholeHandler.onMessage(obj);
-        }
-        catch (DecodeException e)
-        {
-            throw new WebSocketException("Unable to decode text data",e);
+            try
+            {
+                Object obj = textDecoder.decode(msg);
+                wholeHandler.onMessage(obj);
+            }
+            catch (DecodeException e)
+            {
+                throw new WebSocketException("Unable to decode text data", e);
+            }
         }
     }
 }

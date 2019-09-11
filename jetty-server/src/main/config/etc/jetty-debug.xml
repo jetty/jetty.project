@@ -1,9 +1,6 @@
-<?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+<?xml version="1.0"?><!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
 
-<!-- =============================================================== -->
-<!-- The DebugListener                                               -->
-<!-- =============================================================== -->
+<!-- =============================================================== --><!-- The DebugListener                                               --><!-- =============================================================== -->
 
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
   <New id="DebugListener" class="org.eclipse.jetty.server.DebugListener">

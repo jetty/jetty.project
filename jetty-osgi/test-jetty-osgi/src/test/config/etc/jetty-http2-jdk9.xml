@@ -1,9 +1,6 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
 
-<!-- ============================================================= -->
-<!-- Configure a HTTP2 on the ssl connector.                       -->
-<!-- ============================================================= -->
+<!-- ============================================================= --><!-- Configure an HTTP2 on the ssl connector.                       --><!-- ============================================================= -->
 <Configure id="sslConnector" class="org.eclipse.jetty.server.ServerConnector">
   <Call name="addConnectionFactory">
     <Arg>

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -29,7 +29,7 @@ public interface ALPNProcessor
      *
      * @throws RuntimeException if this processor is unavailable (e.g. missing dependencies or wrong JVM)
      */
-    public default void init()
+    default void init()
     {
     }
 
@@ -39,7 +39,7 @@ public interface ALPNProcessor
      * @param sslEngine the SSLEngine to check
      * @return true if the processor can be applied to the given SSLEngine
      */
-    public default boolean appliesTo(SSLEngine sslEngine)
+    default boolean appliesTo(SSLEngine sslEngine)
     {
         return false;
     }
@@ -51,21 +51,21 @@ public interface ALPNProcessor
      * @param connection the Connection to configure
      * @throws RuntimeException if this processor cannot be configured
      */
-    public default void configure(SSLEngine sslEngine, Connection connection)
+    default void configure(SSLEngine sslEngine, Connection connection)
     {
     }
 
     /**
      * Server-side interface used by ServiceLoader.
      */
-    public interface Server extends ALPNProcessor
+    interface Server extends ALPNProcessor
     {
     }
 
     /**
      * Client-side interface used by ServiceLoader.
      */
-    public interface Client extends ALPNProcessor
+    interface Client extends ALPNProcessor
     {
     }
 }

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -31,11 +31,11 @@ import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 public class MyEchoBinarySocket extends MyEchoSocket
 {
     @OnWebSocketMessage
-    public void echoBin(byte buf[], int offset, int length)
+    public void echoBin(byte[] buf, int offset, int length)
     {
         try
         {
-            getRemote().sendBytes(ByteBuffer.wrap(buf,offset,length));
+            getRemote().sendBytes(ByteBuffer.wrap(buf, offset, length));
         }
         catch (IOException e)
         {

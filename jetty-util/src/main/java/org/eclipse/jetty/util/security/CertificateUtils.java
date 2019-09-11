@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -29,7 +29,7 @@ import org.eclipse.jetty.util.resource.Resource;
 
 public class CertificateUtils
 {
-    /* ------------------------------------------------------------ */
+
     public static KeyStore getKeyStore(Resource store, String storeType, String storeProvider, String storePassword) throws Exception
     {
         KeyStore keystore = null;
@@ -45,20 +45,19 @@ public class CertificateUtils
             {
                 keystore = KeyStore.getInstance(storeType);
             }
-            
+
             if (!store.exists())
                 throw new IllegalStateException("no valid keystore");
-            
+
             try (InputStream inStream = store.getInputStream())
             {
                 keystore.load(inStream, storePassword == null ? null : storePassword.toCharArray());
             }
         }
-        
+
         return keystore;
     }
 
-    /* ------------------------------------------------------------ */
     public static Collection<? extends CRL> loadCRL(String crlPath) throws Exception
     {
         Collection<? extends CRL> crlList = null;
@@ -82,5 +81,4 @@ public class CertificateUtils
 
         return crlList;
     }
-    
 }

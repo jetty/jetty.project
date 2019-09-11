@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -16,48 +16,44 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.maven.plugin;
 
 import org.eclipse.jetty.util.resource.Resource;
 
 /**
  * Overlay
- *
- *
  */
 public class Overlay
 {
     private OverlayConfig _config;
     private Resource _resource;
-    
-    public Overlay (OverlayConfig config, Resource resource)
+
+    public Overlay(OverlayConfig config, Resource resource)
     {
         _config = config;
         _resource = resource;
     }
 
-    public Overlay (OverlayConfig config)
+    public Overlay(OverlayConfig config)
     {
         _config = config;
     }
-    
-    
-    public void setResource (Resource r)
+
+    public void setResource(Resource r)
     {
         _resource = r;
     }
-    
-    public Resource getResource ()
+
+    public Resource getResource()
     {
         return _resource;
     }
-    
-    public OverlayConfig getConfig ()
+
+    public OverlayConfig getConfig()
     {
         return _config;
     }
-    
+
     @Override
     public String toString()
     {

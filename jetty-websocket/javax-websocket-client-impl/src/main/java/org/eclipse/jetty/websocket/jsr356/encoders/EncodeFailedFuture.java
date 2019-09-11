@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -22,7 +22,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
 import javax.websocket.Encoder;
 
 /**
@@ -35,7 +34,7 @@ public class EncodeFailedFuture implements Future<Void>
 
     public EncodeFailedFuture(Object data, Encoder encoder, Class<?> encoderType, Throwable cause)
     {
-        this.msg = String.format("Unable to encode %s using %s as %s",data.getClass().getName(),encoder.getClass().getName(),encoderType.getName());
+        this.msg = String.format("Unable to encode %s using %s as %s", data.getClass().getName(), encoder.getClass().getName(), encoderType.getName());
         this.cause = cause;
     }
 
@@ -48,13 +47,13 @@ public class EncodeFailedFuture implements Future<Void>
     @Override
     public Void get() throws InterruptedException, ExecutionException
     {
-        throw new ExecutionException(msg,cause);
+        throw new ExecutionException(msg, cause);
     }
 
     @Override
     public Void get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException
     {
-        throw new ExecutionException(msg,cause);
+        throw new ExecutionException(msg, cause);
     }
 
     @Override

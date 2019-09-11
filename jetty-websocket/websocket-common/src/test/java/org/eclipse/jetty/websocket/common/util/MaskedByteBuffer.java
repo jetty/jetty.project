@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -23,11 +23,11 @@ import java.nio.ByteBuffer;
 public class MaskedByteBuffer
 {
     private static byte[] mask = new byte[]
-            { 0x00, (byte)0xF0, 0x0F, (byte)0xFF };
+        {0x00, (byte)0xF0, 0x0F, (byte)0xFF};
 
     public static void putMask(ByteBuffer buffer)
     {
-        buffer.put(mask,0,mask.length);
+        buffer.put(mask, 0, mask.length);
     }
 
     public static void putPayload(ByteBuffer buffer, byte[] payload)

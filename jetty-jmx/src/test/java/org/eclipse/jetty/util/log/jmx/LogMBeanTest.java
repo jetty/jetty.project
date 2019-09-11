@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,15 +18,15 @@
 
 package org.eclipse.jetty.util.log.jmx;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.isIn;
-import static org.hamcrest.Matchers.not;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import com.acme.Managed;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.in;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class LogMBeanTest
 {
@@ -48,13 +48,13 @@ public class LogMBeanTest
     public void testKeySet()
     {
         // given
-        assertThat("Managed is not registered with loggers", MANAGED_CLASS, not(isIn(logMBean.getLoggers())));
+        assertThat("Managed is not registered with loggers", MANAGED_CLASS, not(is(in(logMBean.getLoggers()))));
 
         // when
-        logMBean.setDebugEnabled(MANAGED_CLASS,true);
+        logMBean.setDebugEnabled(MANAGED_CLASS, true);
 
         // then
-        assertThat("Managed must be registered with loggers", MANAGED_CLASS, isIn(logMBean.getLoggers()));
+        assertThat("Managed must be registered with loggers", MANAGED_CLASS, is(in(logMBean.getLoggers())));
         assertTrue(logMBean.isDebugEnabled(MANAGED_CLASS), "This must return true as debug is enabled for this class");
     }
 }

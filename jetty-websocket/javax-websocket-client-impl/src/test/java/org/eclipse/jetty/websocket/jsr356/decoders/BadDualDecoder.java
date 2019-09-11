@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -22,7 +22,6 @@ import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import javax.websocket.DecodeException;
 import javax.websocket.Decoder;
 import javax.websocket.EndpointConfig;
@@ -45,7 +44,7 @@ public class BadDualDecoder implements Decoder.Text<Fruit>, Decoder.Binary<Fruit
             if (id != FruitBinaryEncoder.FRUIT_ID_BYTE)
             {
                 // not a binary fruit object
-                throw new DecodeException(bytes,"Not an encoded Binary Fruit object");
+                throw new DecodeException(bytes, "Not an encoded Binary Fruit object");
             }
 
             Fruit fruit = new Fruit();
@@ -55,7 +54,7 @@ public class BadDualDecoder implements Decoder.Text<Fruit>, Decoder.Binary<Fruit
         }
         catch (BufferUnderflowException e)
         {
-            throw new DecodeException(bytes,"Unable to read Fruit from binary message",e);
+            throw new DecodeException(bytes, "Unable to read Fruit from binary message", e);
         }
     }
 
@@ -66,7 +65,7 @@ public class BadDualDecoder implements Decoder.Text<Fruit>, Decoder.Binary<Fruit
         Matcher mat = pat.matcher(s);
         if (!mat.find())
         {
-            throw new DecodeException(s,"Unable to find Fruit reference encoded in text message");
+            throw new DecodeException(s, "Unable to find Fruit reference encoded in text message");
         }
 
         Fruit fruit = new Fruit();

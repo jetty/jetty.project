@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,10 +18,7 @@
 
 package org.eclipse.jetty.websocket.server.misbehaving;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-
+import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -41,6 +38,11 @@ import org.eclipse.jetty.websocket.server.SimpleServletServer;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
 
 /**
  * Testing badly behaving Socket class implementations to get the best
@@ -97,23 +99,27 @@ public class MisbehavingClassTest
         {
             LinkedBlockingQueue<WebSocketFrame> frames = clientConn.getFrameQueue();
             WebSocketFrame frame = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
-            assertThat("frames[0].opcode",frame.getOpCode(),is(OpCode.CLOSE));
+            assertThat("frames[0].opcode", frame.getOpCode(), is(OpCode.CLOSE));
             CloseInfo close = new CloseInfo(frame);
-            assertThat("Close Status Code",close.getStatusCode(),is(StatusCode.SERVER_ERROR));
+            assertThat("Close Status Code", close.getStatusCode(), is(StatusCode.SERVER_ERROR));
 
             clientConn.write(close.asFrame()); // respond with close
 
             // ensure server socket got close event
-            assertThat("Close Latch",socket.closeLatch.await(1,TimeUnit.SECONDS),is(true));
-            assertThat("closeStatusCode",socket.closeStatusCode,is(StatusCode.SERVER_ERROR));
+            assertThat("Close Latch", socket.closeLatch.await(1, TimeUnit.SECONDS), is(true));
+            assertThat("closeStatusCode", socket.closeStatusCode, is(StatusCode.SERVER_ERROR));
 
-            // Validate errors
-            assertThat("socket.onErrors",socket.errors.size(),is(1));
+            // Validate errors (must be "java.lang.RuntimeException: Intentional Exception from onWebSocketConnect")
+            assertThat("socket.onErrors", socket.errors.size(), greaterThanOrEqualTo(1));
             Throwable cause = socket.errors.pop();
-            assertThat("Error type",cause,instanceOf(RuntimeException.class));
+            assertThat("Error type", cause, instanceOf(RuntimeException.class));
+            // ... with optional ClosedChannelException
+            cause = socket.errors.peek();
+            if (cause != null)
+                assertThat("Error type", cause, instanceOf(ClosedChannelException.class));
         }
     }
-    
+
     @Test
     public void testAnnotatedRuntimeOnConnect() throws Exception
     {
@@ -126,25 +132,29 @@ public class MisbehavingClassTest
 
         Future<BlockheadConnection> connFut = request.sendAsync();
 
-        try (StacklessLogging ignore = new StacklessLogging(AnnotatedRuntimeOnConnectSocket.class, WebSocketSession.class);
+        try (StacklessLogging ignore = new StacklessLogging(AnnotatedRuntimeOnConnectSocket.class /*, WebSocketSession.class*/);
              BlockheadConnection clientConn = connFut.get(Timeouts.CONNECT, Timeouts.CONNECT_UNIT))
         {
             LinkedBlockingQueue<WebSocketFrame> frames = clientConn.getFrameQueue();
             WebSocketFrame frame = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
-            assertThat("frames[0].opcode",frame.getOpCode(),is(OpCode.CLOSE));
+            assertThat("frames[0].opcode", frame.getOpCode(), is(OpCode.CLOSE));
             CloseInfo close = new CloseInfo(frame);
-            assertThat("Close Status Code",close.getStatusCode(),is(StatusCode.SERVER_ERROR));
+            assertThat("Close Status Code", close.getStatusCode(), is(StatusCode.SERVER_ERROR));
 
             clientConn.write(close.asFrame()); // respond with close
 
             // ensure server socket got close event
-            assertThat("Close Latch",socket.closeLatch.await(1,TimeUnit.SECONDS),is(true));
-            assertThat("closeStatusCode",socket.closeStatusCode,is(StatusCode.SERVER_ERROR));
+            assertThat("Close Latch", socket.closeLatch.await(1, TimeUnit.SECONDS), is(true));
+            assertThat("closeStatusCode", socket.closeStatusCode, is(StatusCode.SERVER_ERROR));
 
-            // Validate errors
-            assertThat("socket.onErrors",socket.errors.size(),is(1));
+            // Validate errors (must be "java.lang.RuntimeException: Intentional Exception from onWebSocketConnect")
+            assertThat("socket.onErrors", socket.errors.size(), greaterThanOrEqualTo(1));
             Throwable cause = socket.errors.pop();
-            assertThat("Error type",cause,instanceOf(RuntimeException.class));
+            assertThat("Error type", cause, instanceOf(RuntimeException.class));
+            // ... with optional ClosedChannelException
+            cause = socket.errors.peek();
+            if (cause != null)
+                assertThat("Error type", cause, instanceOf(ClosedChannelException.class));
         }
     }
 }

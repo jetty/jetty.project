@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -26,41 +26,34 @@ import java.net.URL;
 import java.nio.channels.ReadableByteChannel;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.StringTokenizer;
 
 import org.eclipse.jetty.util.URIUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 
 /**
  * A collection of resources (dirs).
  * Allows webapps to have multiple (static) sources.
  * The first resource in the collection is the main resource.
- * If a resource is not found in the main resource, it looks it up in 
+ * If a resource is not found in the main resource, it looks it up in
  * the order the resources were constructed.
- * 
- * 
- *
  */
 public class ResourceCollection extends Resource
 {
-    private static final Logger LOG = Log.getLogger(ResourceCollection.class);
     private Resource[] _resources;
 
-    /* ------------------------------------------------------------ */
     /**
      * Instantiates an empty resource collection.
-     * 
+     * <p>
      * This constructor is used when configuring jetty-maven-plugin.
      */
     public ResourceCollection()
     {
         _resources = new Resource[0];
     }
-    
-    /* ------------------------------------------------------------ */
+
     /**
      * Instantiates a new resource collection.
      *
@@ -68,29 +61,29 @@ public class ResourceCollection extends Resource
      */
     public ResourceCollection(Resource... resources)
     {
-        List<Resource> list = new ArrayList<Resource>();
+        List<Resource> list = new ArrayList<>();
         for (Resource r : resources)
         {
-            if (r==null)
+            if (r == null)
+            {
                 continue;
+            }
             if (r instanceof ResourceCollection)
             {
-                for (Resource r2 : ((ResourceCollection)r).getResources())
-                    list.add(r2);
+                Collections.addAll(list, ((ResourceCollection)r).getResources());
             }
             else
+            {
                 list.add(r);
+            }
         }
-        _resources = list.toArray(new Resource[list.size()]);
-        for(Resource r : _resources)
+        _resources = list.toArray(new Resource[0]);
+        for (Resource r : _resources)
         {
-            if(!r.exists() || !r.isDirectory())
-                throw new IllegalArgumentException(r + " is not an existing directory.");
+            assertResourceValid(r);
         }
     }
-    
-    
-    /* ------------------------------------------------------------ */
+
     /**
      * Instantiates a new resource collection.
      *
@@ -98,27 +91,45 @@ public class ResourceCollection extends Resource
      */
     public ResourceCollection(String[] resources)
     {
-        _resources = new Resource[resources.length];
+        if (resources == null || resources.length == 0)
+        {
+            _resources = null;
+            return;
+        }
+
+        ArrayList<Resource> res = new ArrayList<>();
+
         try
         {
-            for(int i=0; i<resources.length; i++)
+            for (String strResource : resources)
             {
-                _resources[i] = Resource.newResource(resources[i]);
-                if(!_resources[i].exists() || !_resources[i].isDirectory())
-                    throw new IllegalArgumentException(_resources[i] + " is not an existing directory.");
+                if (strResource == null || strResource.length() == 0)
+                {
+                    throw new IllegalArgumentException("empty/null resource path not supported");
+                }
+                Resource resource = Resource.newResource(strResource);
+                assertResourceValid(resource);
+                res.add(resource);
             }
+
+            if (res.isEmpty())
+            {
+                _resources = null;
+                return;
+            }
+
+            _resources = res.toArray(new Resource[0]);
         }
-        catch(IllegalArgumentException e)
+        catch (RuntimeException e)
         {
             throw e;
         }
-        catch(Exception e)
+        catch (Exception e)
         {
             throw new RuntimeException(e);
         }
     }
-    
-    /* ------------------------------------------------------------ */
+
     /**
      * Instantiates a new resource collection.
      *
@@ -128,19 +139,17 @@ public class ResourceCollection extends Resource
     {
         setResourcesAsCSV(csvResources);
     }
-    
-    /* ------------------------------------------------------------ */
+
     /**
      * Retrieves the resource collection's resources.
-     * 
+     *
      * @return the resource array
      */
     public Resource[] getResources()
     {
         return _resources;
     }
-    
-    /* ------------------------------------------------------------ */
+
     /**
      * Sets the resource collection's resources.
      *
@@ -148,346 +157,362 @@ public class ResourceCollection extends Resource
      */
     public void setResources(Resource[] resources)
     {
-        _resources = resources != null ? resources : new Resource[0];
+        if (resources == null || resources.length == 0)
+        {
+            _resources = null;
+            return;
+        }
+
+        List<Resource> res = new ArrayList<>();
+        for (Resource resource : resources)
+        {
+            assertResourceValid(resource);
+            res.add(resource);
+        }
+
+        if (res.isEmpty())
+        {
+            _resources = null;
+            return;
+        }
+
+        _resources = res.toArray(new Resource[0]);
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Sets the resources as string of comma-separated values.
      * This method should be used when configuring jetty-maven-plugin.
      *
      * @param csvResources the comma-separated string containing
-     *                     one or more resource strings.
+     * one or more resource strings.
      */
     public void setResourcesAsCSV(String csvResources)
     {
+        if (csvResources == null)
+        {
+            throw new IllegalArgumentException("CSV String is null");
+        }
+
         StringTokenizer tokenizer = new StringTokenizer(csvResources, ",;");
         int len = tokenizer.countTokens();
-        if(len==0)
+        if (len == 0)
         {
             throw new IllegalArgumentException("ResourceCollection@setResourcesAsCSV(String) " +
-                    " argument must be a string containing one or more comma-separated resource strings.");
+                " argument must be a string containing one or more comma-separated resource strings.");
         }
-        
-        List<Resource> resources = new ArrayList<>();
-        
+
+        List<Resource> res = new ArrayList<>();
+
         try
-        {            
-            while(tokenizer.hasMoreTokens())
+        {
+            while (tokenizer.hasMoreTokens())
             {
-                Resource resource = Resource.newResource(tokenizer.nextToken().trim());
-                if(!resource.exists() || !resource.isDirectory())
-                    LOG.warn(" !exist "+resource);
-                else
-                    resources.add(resource);
+                String token = tokenizer.nextToken().trim();
+                // TODO: If we want to support CSV tokens with spaces then we should not trim here
+                //       However, if we decide to to this, then CVS formatting/syntax becomes more strict.
+                if (token.length() == 0)
+                {
+                    continue; // skip
+                }
+                Resource resource = Resource.newResource(token);
+                assertResourceValid(resource);
+                res.add(resource);
             }
+
+            if (res.isEmpty())
+            {
+                _resources = null;
+                return;
+            }
+
+            _resources = res.toArray(new Resource[0]);
         }
-        catch(Exception e)
+        catch (RuntimeException e)
+        {
+            throw e;
+        }
+        catch (Exception e)
         {
             throw new RuntimeException(e);
         }
-
-        _resources = resources.toArray(new Resource[resources.size()]);
     }
-    
-    /* ------------------------------------------------------------ */
+
     /**
      * @param path The path segment to add
      * @return The contained resource (found first) in the collection of resources
      */
     @Override
-    public Resource addPath(String path) throws IOException, MalformedURLException
+    public Resource addPath(String path) throws IOException
     {
-        if(_resources==null)
-            throw new IllegalStateException("*resources* not set.");
-        
-        if(path==null)
+        assertResourcesSet();
+
+        if (path == null)
+        {
             throw new MalformedURLException();
-        
-        if(path.length()==0 || URIUtil.SLASH.equals(path))
+        }
+
+        if (path.length() == 0 || URIUtil.SLASH.equals(path))
+        {
             return this;
-        
-        Resource resource=null;
-        ArrayList<Resource> resources = null;
-        int i=0;
-        for(; i<_resources.length; i++)
-        {
-            resource = _resources[i].addPath(path);  
-            if (resource.exists())
-            {
-                if (resource.isDirectory())
-                    break;       
-                return resource;
-            }
-        }  
-
-        for(i++; i<_resources.length; i++)
-        {
-            Resource r = _resources[i].addPath(path); 
-            if (r.exists() && r.isDirectory())
-            {
-                if (resources==null)
-                    resources = new ArrayList<Resource>();
-                    
-                if (resource!=null)
-                {
-                    resources.add(resource);
-                    resource=null;
-                }
-                
-                resources.add(r);
-            }
         }
 
-        if (resource!=null)
-            return resource;
-        if (resources!=null)
-            return new ResourceCollection(resources.toArray(new Resource[resources.size()]));
-        return null;
-    }
-    
-    /* ------------------------------------------------------------ */
-    /**
-     * @param path the path to look for
-     * @return the resource(file) if found, returns a list of resource dirs if its a dir, else null.
-     * @throws IOException if unable to look for path
-     * @throws MalformedURLException if failed to look for path due to url issue
-     */
-    protected Object findResource(String path) throws IOException, MalformedURLException
-    {        
-        Resource resource=null;
+        Resource resource = null;
         ArrayList<Resource> resources = null;
-        int i=0;
-        for(; i<_resources.length; i++)
+        int i = 0;
+        for (; i < _resources.length; i++)
         {
-            resource = _resources[i].addPath(path);  
+            resource = _resources[i].addPath(path);
             if (resource.exists())
             {
                 if (resource.isDirectory())
+                {
                     break;
-               
+                }
                 return resource;
             }
-        }  
+        }
 
-        for(i++; i<_resources.length; i++)
+        for (i++; i < _resources.length; i++)
         {
-            Resource r = _resources[i].addPath(path); 
+            Resource r = _resources[i].addPath(path);
             if (r.exists() && r.isDirectory())
             {
-                if (resource!=null)
+                if (resources == null)
                 {
-                    resources = new ArrayList<Resource>();
-                    resources.add(resource);
+                    resources = new ArrayList<>();
                 }
+
+                if (resource != null)
+                {
+                    resources.add(resource);
+                    resource = null;
+                }
+
                 resources.add(r);
             }
         }
-        
-        if (resource!=null)
+
+        if (resource != null)
+        {
             return resource;
-        if (resources!=null)
-            return resources;
+        }
+        if (resources != null)
+        {
+            return new ResourceCollection(resources.toArray(new Resource[0]));
+        }
         return null;
     }
-    
-    /* ------------------------------------------------------------ */
+
     @Override
     public boolean delete() throws SecurityException
     {
         throw new UnsupportedOperationException();
     }
-    
-    /* ------------------------------------------------------------ */
+
     @Override
     public boolean exists()
     {
-        if(_resources==null)
-            throw new IllegalStateException("*resources* not set.");
-        
+        assertResourcesSet();
+
         return true;
     }
-    
-    /* ------------------------------------------------------------ */
+
     @Override
     public File getFile() throws IOException
     {
-        if(_resources==null)
-            throw new IllegalStateException("*resources* not set.");
-        
-        for(Resource r : _resources)
+        assertResourcesSet();
+
+        for (Resource r : _resources)
         {
             File f = r.getFile();
-            if(f!=null)
+            if (f != null)
+            {
                 return f;
-        }
-        return null;
-    }
-    
-    /* ------------------------------------------------------------ */
-    @Override
-    public InputStream getInputStream() throws IOException
-    {
-        if(_resources==null)
-            throw new IllegalStateException("*resources* not set.");
-        
-        for(Resource r : _resources)
-        {
-            InputStream is = r.getInputStream();
-            if(is!=null)
-                return is;
+            }
         }
         return null;
     }
 
-    /* ------------------------------------------------------------ */
-    @Override 
-    public ReadableByteChannel getReadableByteChannel() throws IOException
+    @Override
+    public InputStream getInputStream() throws IOException
     {
-        if(_resources==null)
-            throw new IllegalStateException("*resources* not set.");
-        
-        for(Resource r : _resources)
+        assertResourcesSet();
+
+        for (Resource r : _resources)
         {
-            ReadableByteChannel channel = r.getReadableByteChannel();
-            if(channel!=null)
-                return channel;
+            InputStream is = r.getInputStream();
+            if (is != null)
+            {
+                return is;
+            }
         }
         return null;
     }
-    
-    /* ------------------------------------------------------------ */
+
+    @Override
+    public ReadableByteChannel getReadableByteChannel() throws IOException
+    {
+        assertResourcesSet();
+
+        for (Resource r : _resources)
+        {
+            ReadableByteChannel channel = r.getReadableByteChannel();
+            if (channel != null)
+            {
+                return channel;
+            }
+        }
+        return null;
+    }
+
     @Override
     public String getName()
     {
-        if(_resources==null)
-            throw new IllegalStateException("*resources* not set.");
-        
-        for(Resource r : _resources)
+        assertResourcesSet();
+
+        for (Resource r : _resources)
         {
             String name = r.getName();
-            if(name!=null)
+            if (name != null)
+            {
                 return name;
+            }
         }
         return null;
     }
-    
-    /* ------------------------------------------------------------ */
+
     @Override
     public URL getURL()
     {
-        if(_resources==null)
-            throw new IllegalStateException("*resources* not set.");
-        
-        for(Resource r : _resources)
+        assertResourcesSet();
+
+        for (Resource r : _resources)
         {
             URL url = r.getURL();
-            if(url!=null)
+            if (url != null)
+            {
                 return url;
+            }
         }
         return null;
     }
-    
-    /* ------------------------------------------------------------ */
+
     @Override
     public boolean isDirectory()
     {
-        if(_resources==null)
-            throw new IllegalStateException("*resources* not set.");
-        
+        assertResourcesSet();
+
         return true;
     }
-    
-    /* ------------------------------------------------------------ */
+
     @Override
     public long lastModified()
     {
-        if(_resources==null)
-            throw new IllegalStateException("*resources* not set.");
-        
-        for(Resource r : _resources)
+        assertResourcesSet();
+
+        for (Resource r : _resources)
         {
             long lm = r.lastModified();
-            if (lm!=-1)
+            if (lm != -1)
+            {
                 return lm;
+            }
         }
         return -1;
     }
-    
-    /* ------------------------------------------------------------ */
+
     @Override
     public long length()
     {
         return -1;
-    }    
-    
-    /* ------------------------------------------------------------ */
+    }
+
     /**
      * @return The list of resource names(merged) contained in the collection of resources.
-     */    
+     */
     @Override
     public String[] list()
     {
-        if(_resources==null)
-            throw new IllegalStateException("*resources* not set.");
-        
-        HashSet<String> set = new HashSet<String>();
-        for(Resource r : _resources)
+        assertResourcesSet();
+
+        HashSet<String> set = new HashSet<>();
+        for (Resource r : _resources)
         {
-            for(String s : r.list())
-                set.add(s);
+            Collections.addAll(set, r.list());
         }
-        String[] result=set.toArray(new String[set.size()]);
+        String[] result = set.toArray(new String[0]);
         Arrays.sort(result);
         return result;
     }
-    
-    /* ------------------------------------------------------------ */
+
     @Override
     public void close()
     {
-        if(_resources==null)
-            throw new IllegalStateException("*resources* not set.");
-        
-        for(Resource r : _resources)
+        assertResourcesSet();
+
+        for (Resource r : _resources)
+        {
             r.close();
+        }
     }
-    
-    /* ------------------------------------------------------------ */
+
     @Override
     public boolean renameTo(Resource dest) throws SecurityException
     {
         throw new UnsupportedOperationException();
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public void copyTo(File destination)
         throws IOException
     {
-        for (int r=_resources.length;r-->0;)
+        assertResourcesSet();
+
+        for (int r = _resources.length; r-- > 0; )
+        {
             _resources[r].copyTo(destination);
+        }
     }
-    
-    /* ------------------------------------------------------------ */
+
     /**
      * @return the list of resources separated by a path separator
      */
     @Override
     public String toString()
     {
-        if(_resources==null)
+        if (_resources == null || _resources.length == 0)
+        {
             return "[]";
-        
+        }
+
         return String.valueOf(Arrays.asList(_resources));
     }
 
-    /* ------------------------------------------------------------ */
     @Override
-    public boolean isContainedIn(Resource r) throws MalformedURLException
+    public boolean isContainedIn(Resource r)
     {
         // TODO could look at implementing the semantic of is this collection a subset of the Resource r?
         return false;
     }
 
+    private void assertResourcesSet()
+    {
+        if (_resources == null || _resources.length == 0)
+        {
+            throw new IllegalStateException("*resources* not set.");
+        }
+    }
+
+    private void assertResourceValid(Resource resource)
+    {
+        if (resource == null)
+        {
+            throw new IllegalStateException("Null resource not supported");
+        }
+
+        if (!resource.exists() || !resource.isDirectory())
+        {
+            throw new IllegalArgumentException(resource + " is not an existing directory.");
+        }
+    }
 }

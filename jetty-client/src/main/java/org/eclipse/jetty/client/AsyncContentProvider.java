@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -30,16 +30,16 @@ public interface AsyncContentProvider extends ContentProvider
     /**
      * @param listener the listener to be notified of content availability
      */
-    public void setListener(Listener listener);
+    void setListener(Listener listener);
 
     /**
      * A listener that is notified of content availability
      */
-    public interface Listener extends EventListener
+    interface Listener extends EventListener
     {
         /**
          * Callback method invoked when content is available
          */
-        public void onContent();
+        void onContent();
     }
 }

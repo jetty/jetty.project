@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -56,40 +56,57 @@ public class HttpSenderOverHTTP2 extends HttpSender
         String path = relativize(request.getPath());
         HttpURI uri = HttpURI.createHttpURI(request.getScheme(), request.getHost(), request.getPort(), path, null, request.getQuery(), null);
         MetaData.Request metaData = new MetaData.Request(request.getMethod(), uri, HttpVersion.HTTP_2, request.getHeaders());
-        Supplier<HttpFields> trailers = request.getTrailers();
-        metaData.setTrailerSupplier(trailers);
-        HeadersFrame headersFrame = new HeadersFrame(metaData, null, trailers == null && !content.hasContent());
-        HttpChannelOverHTTP2 channel = getHttpChannel();
-        Promise<Stream> promise = new Promise<Stream>()
-        {
-            @Override
-            public void succeeded(Stream stream)
-            {
-                channel.setStream(stream);
-                ((IStream)stream).setAttachment(channel);
-                stream.setIdleTimeout(request.getIdleTimeout());
+        Supplier<HttpFields> trailerSupplier = request.getTrailers();
+        metaData.setTrailerSupplier(trailerSupplier);
 
-                if (content.hasContent() && !expects100Continue(request))
+        HeadersFrame headersFrame;
+        Promise<Stream> promise;
+        if (content.hasContent())
+        {
+            headersFrame = new HeadersFrame(metaData, null, false);
+            promise = new HeadersPromise(request, callback)
+            {
+                @Override
+                public void succeeded(Stream stream)
                 {
-                    boolean advanced = content.advance();
-                    boolean lastContent = trailers == null && content.isLast();
-                    if (advanced || lastContent)
+                    super.succeeded(stream);
+                    if (expects100Continue(request))
                     {
-                        DataFrame dataFrame = new DataFrame(stream.getId(), content.getByteBuffer(), lastContent);
-                        stream.data(dataFrame, callback);
-                        return;
+                        // Don't send the content yet.
+                        callback.succeeded();
+                    }
+                    else
+                    {
+                        boolean advanced = content.advance();
+                        boolean lastContent = content.isLast();
+                        if (advanced || lastContent)
+                            sendContent(stream, content, trailerSupplier, callback);
+                        else
+                            callback.succeeded();
                     }
                 }
-                callback.succeeded();
-            }
-
-            @Override
-            public void failed(Throwable failure)
+            };
+        }
+        else
+        {
+            HttpFields trailers = trailerSupplier == null ? null : trailerSupplier.get();
+            boolean endStream = trailers == null || trailers.size() == 0;
+            headersFrame = new HeadersFrame(metaData, null, endStream);
+            promise = new HeadersPromise(request, callback)
             {
-                callback.failed(failure);
-            }
-        };
+                @Override
+                public void succeeded(Stream stream)
+                {
+                    super.succeeded(stream);
+                    if (endStream)
+                        callback.succeeded();
+                    else
+                        sendTrailers(stream, trailers, callback);
+                }
+            };
+        }
         // TODO optimize the send of HEADERS and DATA frames.
+        HttpChannelOverHTTP2 channel = getHttpChannel();
         channel.getSession().newStream(headersFrame, promise, channel.getStreamListener());
     }
 
@@ -116,24 +133,67 @@ public class HttpSenderOverHTTP2 extends HttpSender
     {
         if (content.isConsumed())
         {
+            // The superclass calls sendContent() one more time after the last content.
+            // This is necessary for HTTP/1.1 to generate the terminal chunk (with trailers),
+            // but it's not necessary for HTTP/2 so we just succeed the callback.
             callback.succeeded();
         }
         else
         {
             Stream stream = getHttpChannel().getStream();
-            Supplier<HttpFields> trailers = exchange.getRequest().getTrailers();
-            DataFrame frame = new DataFrame(stream.getId(), content.getByteBuffer(), trailers == null && content.isLast());
-            stream.data(frame, callback);
+            Supplier<HttpFields> trailerSupplier = exchange.getRequest().getTrailers();
+            sendContent(stream, content, trailerSupplier, callback);
         }
     }
 
-    @Override
-    protected void sendTrailers(HttpExchange exchange, Callback callback)
+    private void sendContent(Stream stream, HttpContent content, Supplier<HttpFields> trailerSupplier, Callback callback)
     {
-        Supplier<HttpFields> trailers = exchange.getRequest().getTrailers();
-        MetaData metaData = new MetaData(HttpVersion.HTTP_2, trailers.get());
-        Stream stream = getHttpChannel().getStream();
+        boolean lastContent = content.isLast();
+        HttpFields trailers = null;
+        boolean endStream = false;
+        if (lastContent)
+        {
+            trailers = trailerSupplier == null ? null : trailerSupplier.get();
+            endStream = trailers == null || trailers.size() == 0;
+        }
+        DataFrame dataFrame = new DataFrame(stream.getId(), content.getByteBuffer(), endStream);
+        HttpFields fTrailers = trailers;
+        stream.data(dataFrame, endStream || !lastContent ? callback : Callback.from(() -> sendTrailers(stream, fTrailers, callback), callback::failed));
+    }
+
+    private void sendTrailers(Stream stream, HttpFields trailers, Callback callback)
+    {
+        MetaData metaData = new MetaData(HttpVersion.HTTP_2, trailers);
         HeadersFrame trailersFrame = new HeadersFrame(stream.getId(), metaData, null, true);
         stream.headers(trailersFrame, callback);
+    }
+
+    private class HeadersPromise implements Promise<Stream>
+    {
+        private final HttpRequest request;
+        private final Callback callback;
+
+        private HeadersPromise(HttpRequest request, Callback callback)
+        {
+            this.request = request;
+            this.callback = callback;
+        }
+
+        @Override
+        public void succeeded(Stream stream)
+        {
+            HttpChannelOverHTTP2 channel = getHttpChannel();
+            channel.setStream(stream);
+            ((IStream)stream).setAttachment(channel);
+            long idleTimeout = request.getIdleTimeout();
+            if (idleTimeout >= 0)
+                stream.setIdleTimeout(idleTimeout);
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            callback.failed(x);
+        }
     }
 }

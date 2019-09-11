@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -29,7 +29,7 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.util.Callback;
 
 /**
- * <p>{@link Response} represents a HTTP response and offers methods to retrieve status code, HTTP version
+ * <p>{@link Response} represents an HTTP response and offers methods to retrieve status code, HTTP version
  * and headers.</p>
  * <p>{@link Response} objects are passed as parameters to {@link Response.Listener} callbacks, or as
  * future result of {@link Request#send()}.</p>
@@ -47,8 +47,8 @@ public interface Response
 
     /**
      * @param listenerClass the listener class
-     * @return the response listener passed to {@link org.eclipse.jetty.client.api.Request#send(org.eclipse.jetty.client.api.Response.CompleteListener)}
      * @param <T> the type of class
+     * @return the response listener passed to {@link org.eclipse.jetty.client.api.Request#send(org.eclipse.jetty.client.api.Response.CompleteListener)}
      */
     <T extends ResponseListener> List<T> getListeners(Class<T> listenerClass);
 
@@ -83,14 +83,14 @@ public interface Response
     /**
      * Common, empty, super-interface for response listeners
      */
-    public interface ResponseListener extends EventListener
+    interface ResponseListener extends EventListener
     {
     }
 
     /**
      * Listener for the response begin event.
      */
-    public interface BeginListener extends ResponseListener
+    interface BeginListener extends ResponseListener
     {
         /**
          * Callback method invoked when the response line containing HTTP version,
@@ -100,13 +100,13 @@ public interface Response
          *
          * @param response the response containing the response line data
          */
-        public void onBegin(Response response);
+        void onBegin(Response response);
     }
 
     /**
      * Listener for a response header event.
      */
-    public interface HeaderListener extends ResponseListener
+    interface HeaderListener extends ResponseListener
     {
         /**
          * Callback method invoked when a response header has been received,
@@ -116,26 +116,26 @@ public interface Response
          * @param field the header received
          * @return true to process the header, false to skip processing of the header
          */
-        public boolean onHeader(Response response, HttpField field);
+        boolean onHeader(Response response, HttpField field);
     }
 
     /**
      * Listener for the response headers event.
      */
-    public interface HeadersListener extends ResponseListener
+    interface HeadersListener extends ResponseListener
     {
         /**
          * Callback method invoked when the response headers have been received and parsed.
          *
          * @param response the response containing the response line data and the headers
          */
-        public void onHeaders(Response response);
+        void onHeaders(Response response);
     }
 
     /**
      * Listener for the response content events.
      */
-    public interface ContentListener extends ResponseListener
+    interface ContentListener extends ResponseListener
     {
         /**
          * Callback method invoked when the response content has been received.
@@ -145,10 +145,10 @@ public interface Response
          * @param response the response containing the response line data and the headers
          * @param content the content bytes received
          */
-        public void onContent(Response response, ByteBuffer content);
+        void onContent(Response response, ByteBuffer content);
     }
 
-    public interface AsyncContentListener extends ResponseListener
+    interface AsyncContentListener extends ResponseListener
     {
         /**
          * Callback method invoked asynchronously when the response content has been received.
@@ -157,26 +157,26 @@ public interface Response
          * @param content the content bytes received
          * @param callback the callback to call when the content is consumed.
          */
-        public void onContent(Response response, ByteBuffer content, Callback callback);
+        void onContent(Response response, ByteBuffer content, Callback callback);
     }
 
     /**
      * Listener for the response succeeded event.
      */
-    public interface SuccessListener extends ResponseListener
+    interface SuccessListener extends ResponseListener
     {
         /**
          * Callback method invoked when the whole response has been successfully received.
          *
          * @param response the response containing the response line data and the headers
          */
-        public void onSuccess(Response response);
+        void onSuccess(Response response);
     }
 
     /**
      * Listener for the response failure event.
      */
-    public interface FailureListener extends ResponseListener
+    interface FailureListener extends ResponseListener
     {
         /**
          * Callback method invoked when the response has failed in the process of being received
@@ -184,13 +184,13 @@ public interface Response
          * @param response the response containing data up to the point the failure happened
          * @param failure the failure happened
          */
-        public void onFailure(Response response, Throwable failure);
+        void onFailure(Response response, Throwable failure);
     }
 
     /**
      * Listener for the request and response completed event.
      */
-    public interface CompleteListener extends ResponseListener
+    interface CompleteListener extends ResponseListener
     {
         /**
          * Callback method invoked when the request <em><b>and</b></em> the response have been processed,
@@ -206,18 +206,18 @@ public interface Response
          *
          * @param result the result of the request / response exchange
          */
-        public void onComplete(Result result);
+        void onComplete(Result result);
     }
 
     /**
      * Listener for all response events.
      */
-    public interface Listener extends BeginListener, HeaderListener, HeadersListener, ContentListener, AsyncContentListener, SuccessListener, FailureListener, CompleteListener
+    interface Listener extends BeginListener, HeaderListener, HeadersListener, ContentListener, AsyncContentListener, SuccessListener, FailureListener, CompleteListener
     {
         /**
          * An empty implementation of {@link Listener}
          */
-        public static class Adapter implements Listener
+        class Adapter implements Listener
         {
             @Override
             public void onBegin(Response response)

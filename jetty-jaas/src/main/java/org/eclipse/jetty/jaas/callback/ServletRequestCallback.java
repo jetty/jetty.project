@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -16,12 +16,10 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.jaas.callback;
 
 import javax.security.auth.callback.Callback;
 import javax.servlet.ServletRequest;
-
 
 /**
  * ServletRequestCallback
@@ -31,13 +29,13 @@ import javax.servlet.ServletRequest;
 public class ServletRequestCallback implements Callback
 {
     protected ServletRequest _request;
-    
-    public void setRequest (ServletRequest request)
+
+    public void setRequest(ServletRequest request)
     {
         _request = request;
     }
- 
-    public ServletRequest getRequest ()
+
+    public ServletRequest getRequest()
     {
         return _request;
     }

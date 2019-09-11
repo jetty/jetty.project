@@ -1,13 +1,6 @@
-<?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Mort Bay Consulting//DTD Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+<?xml version="1.0"?><!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
 
-<!-- =============================================================== -->
-<!-- Configure the Jetty Server                                      -->
-<!--                                                                 -->
-<!-- Documentation of this file format can be found at:              -->
-<!-- http://docs.codehaus.org/display/JETTY/jetty.xml                -->
-<!--                                                                 -->
-<!-- =============================================================== -->
+<!-- =============================================================== --><!-- Configure the Jetty Server                                      --><!--                                                                 --><!-- Documentation of this file format can be found at:              --><!-- http://docs.codehaus.org/display/JETTY/jetty.xml                --><!--                                                                 --><!-- =============================================================== -->
 
 
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
@@ -47,7 +40,7 @@
     </Call>
 
     <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
-    <!-- To add a HTTPS SSL listener                                     -->
+    <!-- To add an HTTPS SSL listener                                     -->
     <!-- see jetty-ssl.xml to add an ssl connector. use                  -->
     <!-- java -jar start.jar etc/jetty-ssl.xml                           -->
     <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->

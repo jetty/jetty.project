@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -24,7 +24,7 @@ import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.server.handler.ResourceHandler;
 
-/** 
+/**
  * Simple Jetty FileServer.
  * This is a simple example of Jetty configured as a FileServer.
  */
@@ -39,17 +39,17 @@ public class FileServer
 
         // Create the ResourceHandler. It is the object that will actually handle the request for a given file. It is
         // a Jetty Handler object so it is suitable for chaining with other handlers as you will see in other examples.
-        ResourceHandler resource_handler = new ResourceHandler();
-        
+        ResourceHandler resourceHandler = new ResourceHandler();
+
         // Configure the ResourceHandler. Setting the resource base indicates where the files should be served out of.
         // In this example it is the current directory but it can be configured to anything that the jvm has access to.
-        resource_handler.setDirectoriesListed(true);
-        resource_handler.setWelcomeFiles(new String[]{ "index.html" });
-        resource_handler.setResourceBase(".");
+        resourceHandler.setDirectoriesListed(true);
+        resourceHandler.setWelcomeFiles(new String[]{"index.html"});
+        resourceHandler.setResourceBase(".");
 
         // Add the ResourceHandler to the server.
         HandlerList handlers = new HandlerList();
-        handlers.setHandlers(new Handler[] { resource_handler, new DefaultHandler() });
+        handlers.setHandlers(new Handler[]{resourceHandler, new DefaultHandler()});
         server.setHandler(handlers);
 
         // Start things up! By using the server.join() the server thread will join with the current thread.

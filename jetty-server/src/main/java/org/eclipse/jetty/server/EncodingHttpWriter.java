@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -30,7 +30,6 @@ public class EncodingHttpWriter extends HttpWriter
 {
     final Writer _converter;
 
-    /* ------------------------------------------------------------ */
     public EncodingHttpWriter(HttpOutput out, String encoding)
     {
         super(out);
@@ -44,27 +43,26 @@ public class EncodingHttpWriter extends HttpWriter
         }
     }
 
-    /* ------------------------------------------------------------ */
     @Override
-    public void write (char[] s,int offset, int length) throws IOException
+    public void write(char[] s, int offset, int length) throws IOException
     {
         HttpOutput out = _out;
-        if (length==0 && out.isAllContentWritten())
+        if (length == 0 && out.isAllContentWritten())
         {
             out.close();
             return;
         }
-            
+
         while (length > 0)
         {
             _bytes.reset();
-            int chars = length>MAX_OUTPUT_CHARS?MAX_OUTPUT_CHARS:length;
+            int chars = length > MAX_OUTPUT_CHARS ? MAX_OUTPUT_CHARS : length;
 
             _converter.write(s, offset, chars);
             _converter.flush();
             _bytes.writeTo(out);
-            length-=chars;
-            offset+=chars;
+            length -= chars;
+            offset += chars;
         }
     }
 }

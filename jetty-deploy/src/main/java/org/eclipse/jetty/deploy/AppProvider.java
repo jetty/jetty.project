@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -30,15 +30,15 @@ public interface AppProvider extends LifeCycle
 {
     /**
      * Set the Deployment Manager
-     * 
+     *
      * @param deploymentManager the deployment manager
-     * @throws IllegalStateException
-     *             if the provider {@link #isRunning()}.
+     * @throws IllegalStateException if the provider {@link #isRunning()}.
      */
     void setDeploymentManager(DeploymentManager deploymentManager);
-    
-    /* ------------------------------------------------------------ */
-    /** Create a ContextHandler for an App
+
+    /**
+     * Create a ContextHandler for an App
+     *
      * @param app The App
      * @return A ContextHandler
      * @throws IOException if unable to create context

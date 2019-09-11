@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -22,10 +22,10 @@ import java.util.Map;
 
 /**
  * ConfigurationManager
- * 
+ *
  * Type for allow injection of property values for replacement in jetty xml files during deployment.
  */
 public interface ConfigurationManager
 {
-    public Map<String, String> getProperties();
+    Map<String, String> getProperties();
 }

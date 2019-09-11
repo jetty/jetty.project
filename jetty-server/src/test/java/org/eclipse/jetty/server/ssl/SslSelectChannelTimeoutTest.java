@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -22,7 +22,6 @@ import java.io.FileInputStream;
 import java.io.InputStream;
 import java.net.Socket;
 import java.security.KeyStore;
-
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
 
@@ -38,14 +37,14 @@ public class SslSelectChannelTimeoutTest extends ConnectorTimeoutTest
     @Override
     protected Socket newSocket(String host, int port) throws Exception
     {
-        return __sslContext.getSocketFactory().createSocket(host,port);
+        return __sslContext.getSocketFactory().createSocket(host, port);
     }
 
     @BeforeEach
     public void init() throws Exception
     {
-        String keystorePath = System.getProperty("basedir",".") + "/src/test/resources/keystore";
-        SslContextFactory sslContextFactory = new SslContextFactory();
+        String keystorePath = System.getProperty("basedir", ".") + "/src/test/resources/keystore";
+        SslContextFactory sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setKeyStorePath(keystorePath);
         sslContextFactory.setKeyStorePassword("storepwd");
         sslContextFactory.setKeyManagerPassword("keypwd");
@@ -64,7 +63,5 @@ public class SslSelectChannelTimeoutTest extends ConnectorTimeoutTest
         trustManagerFactory.init(keystore);
         __sslContext = SSLContext.getInstance("SSL");
         __sslContext.init(null, trustManagerFactory.getTrustManagers(), null);
-
     }
-
 }

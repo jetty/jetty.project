@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -29,7 +29,6 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeoutException;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletContext;
@@ -51,6 +50,7 @@ import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.util.HttpCookieStore;
 import org.eclipse.jetty.util.ProcessorUtils;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -85,6 +85,7 @@ public abstract class AbstractProxyServlet extends HttpServlet
 {
     protected static final String CLIENT_REQUEST_ATTRIBUTE = "org.eclipse.jetty.proxy.clientRequest";
     protected static final Set<String> HOP_HEADERS;
+
     static
     {
         Set<String> hopHeaders = new HashSet<>();
@@ -207,7 +208,7 @@ public abstract class AbstractProxyServlet extends HttpServlet
     protected Logger createLogger()
     {
         String servletName = getServletConfig().getServletName();
-        servletName = servletName.replace('-', '.');
+        servletName = StringUtil.replace(servletName, '-', '.');
         if ((getClass().getPackage() != null) && !servletName.startsWith(getClass().getPackage().getName()))
         {
             servletName = getClass().getName() + "." + servletName;
@@ -266,9 +267,10 @@ public abstract class AbstractProxyServlet extends HttpServlet
      * </tr>
      * </tbody>
      * </table>
-     * @see #newHttpClient()
+     *
      * @return a {@link HttpClient} configured from the {@link #getServletConfig() servlet configuration}
      * @throws ServletException if the {@link HttpClient} cannot be created
+     * @see #newHttpClient()
      */
     protected HttpClient createHttpClient() throws ServletException
     {
@@ -287,18 +289,18 @@ public abstract class AbstractProxyServlet extends HttpServlet
         if (value == null || "-".equals(value))
         {
             executor = (Executor)getServletContext().getAttribute("org.eclipse.jetty.server.Executor");
-            if (executor==null)
+            if (executor == null)
                 throw new IllegalStateException("No server executor for proxy");
         }
         else
         {
-            QueuedThreadPool qtp= new QueuedThreadPool(Integer.parseInt(value));
+            QueuedThreadPool qtp = new QueuedThreadPool(Integer.parseInt(value));
             String servletName = config.getServletName();
             int dot = servletName.lastIndexOf('.');
             if (dot >= 0)
                 servletName = servletName.substring(dot + 1);
             qtp.setName(servletName);
-            executor=qtp;
+            executor = qtp;
         }
 
         client.setExecutor(executor);
@@ -349,15 +351,16 @@ public abstract class AbstractProxyServlet extends HttpServlet
     /**
      * The servlet init parameter 'selectors' can be set for the number of
      * selector threads to be used by the HttpClient.
+     *
      * @return a new HttpClient instance
      */
     protected HttpClient newHttpClient()
     {
-        int selectors = Math.max(1,ProcessorUtils.availableProcessors()/2);
+        int selectors = Math.max(1, ProcessorUtils.availableProcessors() / 2);
         String value = getServletConfig().getInitParameter("selectors");
         if (value != null)
             selectors = Integer.parseInt(value);
-        return new HttpClient(new HttpClientTransportOverHTTP(selectors),null);
+        return new HttpClient(new HttpClientTransportOverHTTP(selectors), null);
     }
 
     protected HttpClient getHttpClient()
@@ -440,8 +443,8 @@ public abstract class AbstractProxyServlet extends HttpServlet
     protected boolean hasContent(HttpServletRequest clientRequest)
     {
         return clientRequest.getContentLength() > 0 ||
-                clientRequest.getContentType() != null ||
-                clientRequest.getHeader(HttpHeader.TRANSFER_ENCODING.asString()) != null;
+            clientRequest.getContentType() != null ||
+            clientRequest.getHeader(HttpHeader.TRANSFER_ENCODING.asString()) != null;
     }
 
     protected boolean expects100Continue(HttpServletRequest request)
@@ -456,7 +459,7 @@ public abstract class AbstractProxyServlet extends HttpServlet
 
         Set<String> headersToRemove = findConnectionHeaders(clientRequest);
 
-        for (Enumeration<String> headerNames = clientRequest.getHeaderNames(); headerNames.hasMoreElements();)
+        for (Enumeration<String> headerNames = clientRequest.getHeaderNames(); headerNames.hasMoreElements(); )
         {
             String headerName = headerNames.nextElement();
             String lowerHeaderName = headerName.toLowerCase(Locale.ENGLISH);
@@ -470,7 +473,7 @@ public abstract class AbstractProxyServlet extends HttpServlet
             if (headersToRemove != null && headersToRemove.contains(lowerHeaderName))
                 continue;
 
-            for (Enumeration<String> headerValues = clientRequest.getHeaders(headerName); headerValues.hasMoreElements();)
+            for (Enumeration<String> headerValues = clientRequest.getHeaders(headerName); headerValues.hasMoreElements(); )
             {
                 String headerValue = headerValues.nextElement();
                 if (headerValue != null)
@@ -533,11 +536,11 @@ public abstract class AbstractProxyServlet extends HttpServlet
             if (query != null)
                 builder.append("?").append(query);
             builder.append(" ").append(clientRequest.getProtocol()).append(System.lineSeparator());
-            for (Enumeration<String> headerNames = clientRequest.getHeaderNames(); headerNames.hasMoreElements();)
+            for (Enumeration<String> headerNames = clientRequest.getHeaderNames(); headerNames.hasMoreElements(); )
             {
                 String headerName = headerNames.nextElement();
                 builder.append(headerName).append(": ");
-                for (Enumeration<String> headerValues = clientRequest.getHeaders(headerName); headerValues.hasMoreElements();)
+                for (Enumeration<String> headerValues = clientRequest.getHeaders(headerName); headerValues.hasMoreElements(); )
                 {
                     String headerValue = headerValues.nextElement();
                     if (headerValue != null)
@@ -549,13 +552,13 @@ public abstract class AbstractProxyServlet extends HttpServlet
             }
             builder.append(System.lineSeparator());
 
-            _log.debug("{} proxying to upstream:{}{}{}{}",
-                    getRequestId(clientRequest),
-                    System.lineSeparator(),
-                    builder,
-                    proxyRequest,
-                    System.lineSeparator(),
-                    proxyRequest.getHeaders().toString().trim());
+            _log.debug("{} proxying to upstream:{}{}{}{}{}",
+                getRequestId(clientRequest),
+                System.lineSeparator(),
+                builder,
+                proxyRequest,
+                System.lineSeparator(),
+                proxyRequest.getHeaders().toString().trim());
         }
 
         proxyRequest.send(newProxyResponseListener(clientRequest, proxyResponse));
@@ -568,11 +571,16 @@ public abstract class AbstractProxyServlet extends HttpServlet
         boolean aborted = proxyRequest.abort(failure);
         if (!aborted)
         {
-            int status = failure instanceof TimeoutException ?
-                    HttpStatus.REQUEST_TIMEOUT_408 :
-                    HttpStatus.INTERNAL_SERVER_ERROR_500;
+            int status = clientRequestStatus(failure);
             sendProxyResponseError(clientRequest, proxyResponse, status);
         }
+    }
+
+    protected int clientRequestStatus(Throwable failure)
+    {
+        return failure instanceof TimeoutException
+            ? HttpStatus.REQUEST_TIMEOUT_408
+            : HttpStatus.INTERNAL_SERVER_ERROR_500;
     }
 
     protected void onServerResponseHeaders(HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Response serverResponse)
@@ -595,7 +603,7 @@ public abstract class AbstractProxyServlet extends HttpServlet
         {
             StringBuilder builder = new StringBuilder(System.lineSeparator());
             builder.append(clientRequest.getProtocol()).append(" ").append(proxyResponse.getStatus())
-                    .append(" ").append(serverResponse.getReason()).append(System.lineSeparator());
+                .append(" ").append(serverResponse.getReason()).append(System.lineSeparator());
             for (String headerName : proxyResponse.getHeaderNames())
             {
                 builder.append(headerName).append(": ");
@@ -610,13 +618,13 @@ public abstract class AbstractProxyServlet extends HttpServlet
                 builder.append(System.lineSeparator());
             }
             _log.debug("{} proxying to downstream:{}{}{}{}{}",
-                    getRequestId(clientRequest),
-                    System.lineSeparator(),
-                    serverResponse,
-                    System.lineSeparator(),
-                    serverResponse.getHeaders().toString().trim(),
-                    System.lineSeparator(),
-                    builder);
+                getRequestId(clientRequest),
+                System.lineSeparator(),
+                serverResponse,
+                System.lineSeparator(),
+                serverResponse.getHeaders().toString().trim(),
+                System.lineSeparator(),
+                builder);
         }
     }
 
@@ -639,14 +647,18 @@ public abstract class AbstractProxyServlet extends HttpServlet
         if (_log.isDebugEnabled())
             _log.debug(getRequestId(clientRequest) + " proxying failed", failure);
 
-        int status = failure instanceof TimeoutException ?
-            HttpStatus.GATEWAY_TIMEOUT_504 :
-                HttpStatus.BAD_GATEWAY_502;
+        int status = proxyResponseStatus(failure);
         int serverStatus = serverResponse == null ? status : serverResponse.getStatus();
         if (expects100Continue(clientRequest) && serverStatus >= HttpStatus.OK_200)
             status = serverStatus;
         sendProxyResponseError(clientRequest, proxyResponse, status);
-        
+    }
+
+    protected int proxyResponseStatus(Throwable failure)
+    {
+        return failure instanceof TimeoutException
+            ? HttpStatus.GATEWAY_TIMEOUT_504
+            : HttpStatus.BAD_GATEWAY_502;
     }
 
     protected int getRequestId(HttpServletRequest clientRequest)
@@ -665,9 +677,17 @@ public abstract class AbstractProxyServlet extends HttpServlet
             }
             proxyResponse.sendError(status);
         }
-        catch(Exception e)
+        catch (Exception e)
         {
             _log.ignore(e);
+            try
+            {
+                proxyResponse.sendError(-1);
+            }
+            catch (Exception e2)
+            {
+                _log.ignore(e2);
+            }
         }
         finally
         {

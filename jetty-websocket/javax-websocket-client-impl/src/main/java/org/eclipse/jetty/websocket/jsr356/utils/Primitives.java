@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -33,15 +33,15 @@ public class Primitives
         Map<Class<?>, Class<?>> primitives = new HashMap<>();
 
         // Map of classes to primitive types
-        primitives.put(Boolean.class,Boolean.TYPE);
-        primitives.put(Byte.class,Byte.TYPE);
-        primitives.put(Character.class,Character.TYPE);
-        primitives.put(Double.class,Double.TYPE);
-        primitives.put(Float.class,Float.TYPE);
-        primitives.put(Integer.class,Integer.TYPE);
-        primitives.put(Long.class,Long.TYPE);
-        primitives.put(Short.class,Short.TYPE);
-        primitives.put(Void.class,Void.TYPE);
+        primitives.put(Boolean.class, Boolean.TYPE);
+        primitives.put(Byte.class, Byte.TYPE);
+        primitives.put(Character.class, Character.TYPE);
+        primitives.put(Double.class, Double.TYPE);
+        primitives.put(Float.class, Float.TYPE);
+        primitives.put(Integer.class, Integer.TYPE);
+        primitives.put(Long.class, Long.TYPE);
+        primitives.put(Short.class, Short.TYPE);
+        primitives.put(Void.class, Void.TYPE);
 
         CLASS_PRIMITIVE_MAP = Collections.unmodifiableMap(primitives);
 
@@ -49,7 +49,7 @@ public class Primitives
         Map<Class<?>, Class<?>> types = new HashMap<>();
         for (Map.Entry<Class<?>, Class<?>> classEntry : primitives.entrySet())
         {
-            types.put(classEntry.getValue(),classEntry.getKey());
+            types.put(classEntry.getValue(), classEntry.getKey());
         }
 
         PRIMITIVE_CLASS_MAP = Collections.unmodifiableMap(types);

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -17,10 +17,6 @@
 //
 
 package org.eclipse.jetty.websocket.jsr356.server;
-
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.nullValue;
-import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.net.URI;
 import java.util.concurrent.Future;
@@ -43,6 +39,10 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
+
 public class IdleTimeoutTest
 {
     private static final Logger LOG = Log.getLogger(IdleTimeoutTest.class);
@@ -52,7 +52,7 @@ public class IdleTimeoutTest
     @BeforeAll
     public static void setupServer() throws Exception
     {
-        server = new WSServer(MavenTestingUtils.getTargetTestingDir(IdleTimeoutTest.class.getName()),"app");
+        server = new WSServer(MavenTestingUtils.getTargetTestingDir(IdleTimeoutTest.class.getName()), "app");
         server.copyWebInf("idle-timeout-config-web.xml");
         // the endpoint (extends javax.websocket.Endpoint)
         server.copyClass(OnOpenIdleTimeoutEndpoint.class);
@@ -83,9 +83,9 @@ public class IdleTimeoutTest
             JettyEchoSocket clientEcho = new JettyEchoSocket();
             if (LOG.isDebugEnabled())
                 LOG.debug("Client Attempting to connect");
-            Future<Session> future = client.connect(clientEcho,uri);
+            Future<Session> future = client.connect(clientEcho, uri);
             // wait for connect
-            future.get(1,TimeUnit.SECONDS);
+            future.get(1, TimeUnit.SECONDS);
             if (LOG.isDebugEnabled())
                 LOG.debug("Client Connected");
             // wait 1 second
@@ -103,7 +103,7 @@ public class IdleTimeoutTest
                     LinkedBlockingQueue<String> msgs = clientEcho.incomingMessages;
                     // should not have a message.
                     String received = msgs.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
-                    assertThat("Should not have received messages echoed back",received,is(nullValue()));
+                    assertThat("Should not have received messages echoed back", received, is(nullValue()));
                 }
                 catch (InterruptedException e)
                 {
@@ -120,7 +120,7 @@ public class IdleTimeoutTest
     @Test
     public void testAnnotated() throws Exception
     {
-        try(StacklessLogging ignored = new StacklessLogging(JsrEvents.class))
+        try (StacklessLogging ignored = new StacklessLogging(JsrEvents.class))
         {
             URI uri = server.getServerBaseURI();
             assertConnectionTimeout(uri.resolve("idle-onopen-socket"));

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -38,7 +38,7 @@ public class TypeTree
         if (type instanceof Class<?>)
         {
             Class<?> ctype = (Class<?>)type;
-            System.out.printf("%s (Class) = %s%n",indent,ctype.getName());
+            System.out.printf("%s (Class) = %s%n", indent, ctype.getName());
 
             String name = ctype.getName();
             if (name.startsWith("java.lang.") || name.startsWith("java.io."))
@@ -48,7 +48,7 @@ public class TypeTree
             }
 
             Type superType = ctype.getGenericSuperclass();
-            dumpTree(indent + ".genericSuperClass()",superType);
+            dumpTree(indent + ".genericSuperClass()", superType);
 
             Type[] ifaces = ctype.getGenericInterfaces();
             if ((ifaces != null) && (ifaces.length > 0))
@@ -57,7 +57,7 @@ public class TypeTree
                 for (int i = 0; i < ifaces.length; i++)
                 {
                     Type iface = ifaces[i];
-                    dumpTree(indent + ".genericInterfaces[" + i + "]",iface);
+                    dumpTree(indent + ".genericInterfaces[" + i + "]", iface);
                 }
             }
 
@@ -68,7 +68,7 @@ public class TypeTree
                 for (int i = 0; i < typeParams.length; i++)
                 {
                     TypeVariable<?> typeParam = typeParams[i];
-                    dumpTree(indent + ".typeParameters[" + i + "]",typeParam);
+                    dumpTree(indent + ".typeParameters[" + i + "]", typeParam);
                 }
             }
             return;
@@ -77,17 +77,17 @@ public class TypeTree
         if (type instanceof ParameterizedType)
         {
             ParameterizedType ptype = (ParameterizedType)type;
-            System.out.printf("%s (ParameterizedType) = %s%n",indent,ReflectUtils.toShortName(ptype));
+            System.out.printf("%s (ParameterizedType) = %s%n", indent, ReflectUtils.toShortName(ptype));
             // dumpTree(indent + ".ownerType()",ptype.getOwnerType());
-            dumpTree(indent + ".rawType(" + ReflectUtils.toShortName(ptype.getRawType()) + ")",ptype.getRawType());
-            Type args[] = ptype.getActualTypeArguments();
+            dumpTree(indent + ".rawType(" + ReflectUtils.toShortName(ptype.getRawType()) + ")", ptype.getRawType());
+            Type[] args = ptype.getActualTypeArguments();
             if (args != null)
             {
-                System.out.printf("%s.actualTypeArguments[].length = %d%n",indent,args.length);
+                System.out.printf("%s.actualTypeArguments[].length = %d%n", indent, args.length);
                 for (int i = 0; i < args.length; i++)
                 {
                     Type arg = args[i];
-                    dumpTree(indent + ".actualTypeArguments[" + i + "]",arg);
+                    dumpTree(indent + ".actualTypeArguments[" + i + "]", arg);
                 }
             }
             return;
@@ -96,25 +96,25 @@ public class TypeTree
         if (type instanceof GenericArrayType)
         {
             GenericArrayType gtype = (GenericArrayType)type;
-            System.out.printf("%s (GenericArrayType) = %s%n",indent,gtype);
+            System.out.printf("%s (GenericArrayType) = %s%n", indent, gtype);
             return;
         }
 
         if (type instanceof TypeVariable<?>)
         {
             TypeVariable<?> tvar = (TypeVariable<?>)type;
-            System.out.printf("%s (TypeVariable) = %s%n",indent,tvar);
-            System.out.printf("%s.getName() = %s%n",indent,tvar.getName());
-            System.out.printf("%s.getGenericDeclaration() = %s%n",indent,tvar.getGenericDeclaration());
+            System.out.printf("%s (TypeVariable) = %s%n", indent, tvar);
+            System.out.printf("%s.getName() = %s%n", indent, tvar.getName());
+            System.out.printf("%s.getGenericDeclaration() = %s%n", indent, tvar.getGenericDeclaration());
             return;
         }
 
         if (type instanceof WildcardType)
         {
-            System.out.printf("%s (WildcardType) = %s%n",indent,type);
+            System.out.printf("%s (WildcardType) = %s%n", indent, type);
             return;
         }
 
-        System.out.printf("%s (?) = %s%n",indent,type);
+        System.out.printf("%s (?) = %s%n", indent, type);
     }
 }

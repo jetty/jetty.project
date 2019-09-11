@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -30,7 +30,6 @@ import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.CountingCallback;
-import org.eclipse.jetty.util.Retainable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -107,9 +106,9 @@ public class ResponseNotifier
     public void notifyContent(List<Response.ResponseListener> listeners, Response response, ByteBuffer buffer, Callback callback)
     {
         List<Response.AsyncContentListener> contentListeners = listeners.stream()
-                .filter(Response.AsyncContentListener.class::isInstance)
-                .map(Response.AsyncContentListener.class::cast)
-                .collect(Collectors.toList());
+            .filter(Response.AsyncContentListener.class::isInstance)
+            .map(Response.AsyncContentListener.class::cast)
+            .collect(Collectors.toList());
         notifyContent(response, buffer, callback, contentListeners);
     }
 
@@ -122,11 +121,8 @@ public class ResponseNotifier
         else
         {
             CountingCallback counter = new CountingCallback(callback, contentListeners.size());
-            Retainable retainable = callback instanceof Retainable ? (Retainable)callback : null;
             for (Response.AsyncContentListener listener : contentListeners)
             {
-                if (retainable != null)
-                    retainable.retain();
                 notifyContent(listener, response, buffer.slice(), counter);
             }
         }
@@ -210,7 +206,7 @@ public class ResponseNotifier
     public void forwardSuccess(List<Response.ResponseListener> listeners, Response response)
     {
         notifyBegin(listeners, response);
-        for (Iterator<HttpField> iterator = response.getHeaders().iterator(); iterator.hasNext();)
+        for (Iterator<HttpField> iterator = response.getHeaders().iterator(); iterator.hasNext(); )
         {
             HttpField field = iterator.next();
             if (!notifyHeader(listeners, response, field))
@@ -231,7 +227,7 @@ public class ResponseNotifier
     public void forwardFailure(List<Response.ResponseListener> listeners, Response response, Throwable failure)
     {
         notifyBegin(listeners, response);
-        for (Iterator<HttpField> iterator = response.getHeaders().iterator(); iterator.hasNext();)
+        for (Iterator<HttpField> iterator = response.getHeaders().iterator(); iterator.hasNext(); )
         {
             HttpField field = iterator.next();
             if (!notifyHeader(listeners, response, field))

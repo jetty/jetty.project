@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,11 +20,11 @@ package org.eclipse.jetty.rewrite.handler;
 
 import java.io.IOException;
 import java.util.regex.Matcher;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.Name;
 
 /**
@@ -32,9 +32,9 @@ import org.eclipse.jetty.util.annotation.Name;
  * <p>
  * The replacement string may use $n" to replace the nth capture group.
  * <p>
- * All redirects are part of the <a href="http://tools.ietf.org/html/rfc7231#section-6.4"><code>3xx Redirection</code> status code set</a>.
+ * All redirects are part of the <a href="http://tools.ietf.org/html/rfc7231#section-6.4">{@code 3xx Redirection} status code set</a>.
  * <p>
- * Defaults to <a href="http://tools.ietf.org/html/rfc7231#section-6.4.3"><code>302 Found</code></a>
+ * Defaults to <a href="http://tools.ietf.org/html/rfc7231#section-6.4.3">{@code 302 Found}</a>
  */
 public class RedirectRegexRule extends RegexRule
 {
@@ -43,9 +43,9 @@ public class RedirectRegexRule extends RegexRule
 
     public RedirectRegexRule()
     {
-        this(null,null);
+        this(null, null);
     }
-    
+
     public RedirectRegexRule(@Name("regex") String regex, @Name("location") String location)
     {
         super(regex);
@@ -54,53 +54,57 @@ public class RedirectRegexRule extends RegexRule
         setLocation(location);
     }
 
+    /**
+     * @param replacement the URI to redirect to
+     * @deprecated use {@link #setLocation(String)} instead.
+     */
     @Deprecated
     public void setReplacement(String replacement)
     {
-        _location = replacement;
+        setLocation(replacement);
     }
-    
+
+    /**
+     * Sets the redirect location.
+     *
+     * @param location the URI to redirect to
+     */
     public void setLocation(String location)
     {
         _location = location;
     }
-    
+
     /**
      * Sets the redirect status code.
-     * 
+     *
      * @param statusCode the 3xx redirect status code
      */
     public void setStatusCode(int statusCode)
     {
-        if ((300 <= statusCode) || (statusCode >= 399))
-        {
+        if (statusCode >= 300 && statusCode <= 399)
             _statusCode = statusCode;
-        }
         else
-        {
             throw new IllegalArgumentException("Invalid redirect status code " + statusCode + " (must be a value between 300 and 399)");
-        }
     }
-    
+
     @Override
-    protected String apply(String target, HttpServletRequest request, HttpServletResponse response, Matcher matcher)
-            throws IOException
+    protected String apply(String target, HttpServletRequest request, HttpServletResponse response, Matcher matcher) throws IOException
     {
-        target=_location;
-        for (int g=1;g<=matcher.groupCount();g++)
+        target = _location;
+        for (int g = 1; g <= matcher.groupCount(); g++)
         {
             String group = matcher.group(g);
-            target=target.replaceAll("\\$"+g,group);
+            target = StringUtil.replace(target, "$" + g, group);
         }
-        
+
         target = response.encodeRedirectURL(target);
-        response.setHeader("Location",RedirectUtil.toRedirectURL(request,target));
+        response.setHeader("Location", RedirectUtil.toRedirectURL(request, target));
         response.setStatus(_statusCode);
         response.getOutputStream().flush(); // no output / content
         response.getOutputStream().close();
         return target;
     }
-    
+
     /**
      * Returns the redirect status code and replacement.
      */
@@ -114,5 +118,4 @@ public class RedirectRegexRule extends RegexRule
         str.append(']');
         return str.toString();
     }
-
 }

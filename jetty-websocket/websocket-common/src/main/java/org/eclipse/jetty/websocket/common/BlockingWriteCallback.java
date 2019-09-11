@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -22,7 +22,6 @@ import java.io.IOException;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.SharedBlockingCallback;
-import org.eclipse.jetty.util.thread.Invocable.InvocationType;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 
 /**
@@ -33,19 +32,19 @@ public class BlockingWriteCallback extends SharedBlockingCallback
     public BlockingWriteCallback()
     {
     }
-        
+
     public WriteBlocker acquireWriteBlocker() throws IOException
     {
         return new WriteBlocker(acquire());
     }
-    
+
     public static class WriteBlocker implements WriteCallback, Callback, AutoCloseable
     {
         private final Blocker blocker;
-        
+
         protected WriteBlocker(Blocker blocker)
         {
-            this.blocker=blocker;
+            this.blocker = blocker;
         }
 
         @Override
@@ -54,7 +53,7 @@ public class BlockingWriteCallback extends SharedBlockingCallback
             // The callback does not block, only the writer blocks
             return InvocationType.NON_BLOCKING;
         }
-        
+
         @Override
         public void writeFailed(Throwable x)
         {
@@ -78,13 +77,13 @@ public class BlockingWriteCallback extends SharedBlockingCallback
         {
             blocker.failed(x);
         }
-        
+
         @Override
         public void close()
         {
             blocker.close();
         }
-        
+
         public void block() throws IOException
         {
             blocker.block();

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,7 +19,6 @@
 package org.eclipse.jetty.alpn.java.client;
 
 import java.util.List;
-
 import javax.net.ssl.SSLEngine;
 
 import org.eclipse.jetty.alpn.ALPN;
@@ -37,9 +36,9 @@ public class OpenJDK8ClientALPNProcessor implements ALPNProcessor.Client
     @Override
     public void init()
     {
-        if (JavaVersion.VERSION.getPlatform()!=8)
-            throw new IllegalStateException(this + " not applicable for java "+JavaVersion.VERSION);
-        if (ALPN.class.getClassLoader()!=null)
+        if (JavaVersion.VERSION.getPlatform() != 8)
+            throw new IllegalStateException(this + " not applicable for java " + JavaVersion.VERSION);
+        if (ALPN.class.getClassLoader() != null)
             throw new IllegalStateException(ALPN.class.getName() + " must be on JVM boot classpath");
         if (LOG.isDebugEnabled())
             ALPN.debug = true;

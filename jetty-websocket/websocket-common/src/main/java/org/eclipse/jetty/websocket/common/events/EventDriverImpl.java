@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -27,14 +27,11 @@ public interface EventDriverImpl
 {
     /**
      * Create the EventDriver based on this implementation.
-     * 
-     * @param websocket
-     *            the websocket to wrap
-     * @param policy
-     *            the policy to use
+     *
+     * @param websocket the websocket to wrap
+     * @param policy the policy to use
      * @return the created EventDriver
-     * @throws Throwable
-     *             if unable to create the EventDriver
+     * @throws Throwable if unable to create the EventDriver
      */
     EventDriver create(Object websocket, WebSocketPolicy policy) throws Throwable;
 
@@ -42,16 +39,15 @@ public interface EventDriverImpl
      * human readable string describing the rule that would support this EventDriver.
      * <p>
      * Used to help developer with possible object annotations, listeners, or base classes.
-     * 
+     *
      * @return the human readable description of this event driver rule(s).
      */
     String describeRule();
 
     /**
      * Test for if this implementation can support the provided websocket.
-     * 
-     * @param websocket
-     *            the possible websocket to test
+     *
+     * @param websocket the possible websocket to test
      * @return true if implementation can support it, false if otherwise.
      */
     boolean supports(Object websocket);

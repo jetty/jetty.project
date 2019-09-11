@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -23,12 +23,13 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
-import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -129,10 +130,10 @@ public class ValidatingConnectionPool extends DuplexConnectionPool
     }
 
     @Override
-    public void dump(Appendable out, String indent) throws IOException
+    protected void dump(Appendable out, String indent, Object... items) throws IOException
     {
-        super.dump(out, indent);
-        ContainerLifeCycle.dump(out, indent, quarantine.values());
+        DumpableCollection toDump = new DumpableCollection("quarantine", quarantine.values());
+        super.dump(out, indent, Stream.concat(Stream.of(items), Stream.of(toDump)));
     }
 
     @Override
@@ -202,8 +203,8 @@ public class ValidatingConnectionPool extends DuplexConnectionPool
         public String toString()
         {
             return String.format("%s[validationLeft=%dms]",
-                    connection,
-                    timeout - TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - timestamp)
+                connection,
+                timeout - TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - timestamp)
             );
         }
     }

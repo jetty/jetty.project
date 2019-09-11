@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -92,7 +92,6 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
     {
         return bytesOut.longValue();
     }
-
 
     protected void addBytesOut(long bytesOut)
     {
@@ -209,9 +208,7 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
     {
         if (!closed.get())
             return false;
-        if (sweeps.incrementAndGet() < 4)
-            return false;
-        return true;
+        return sweeps.incrementAndGet() >= 4;
     }
 
     public void remove()
@@ -247,7 +244,9 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
             // Save the old idle timeout to restore it.
             EndPoint endPoint = getEndPoint();
             idleTimeout = endPoint.getIdleTimeout();
-            endPoint.setIdleTimeout(request.getIdleTimeout());
+            long requestIdleTimeout = request.getIdleTimeout();
+            if (requestIdleTimeout >= 0)
+                endPoint.setIdleTimeout(requestIdleTimeout);
 
             // One channel per connection, just delegate the send.
             return send(channel, exchange);

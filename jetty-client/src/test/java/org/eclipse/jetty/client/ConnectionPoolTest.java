@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.client;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -30,7 +27,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -53,6 +49,9 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 @Disabled // Disabled by @gregw on issue #2540 - commit 621b946b10884e7308eacca241dcf8b5d6f6cff2
 public class ConnectionPoolTest
 {
@@ -63,12 +62,16 @@ public class ConnectionPoolTest
     public static Stream<Arguments> pools()
     {
         List<Object[]> pools = new ArrayList<>();
-        pools.add(new Object[] { DuplexConnectionPool.class,
-                (ConnectionPool.Factory)
-                        destination -> new DuplexConnectionPool(destination, 8, destination)});
-        pools.add(new Object[] { RoundRobinConnectionPool.class,
-                (ConnectionPool.Factory)
-                        destination -> new RoundRobinConnectionPool(destination, 8, destination)});
+        pools.add(new Object[]{
+            DuplexConnectionPool.class,
+            (ConnectionPool.Factory)
+                destination -> new DuplexConnectionPool(destination, 8, destination)
+        });
+        pools.add(new Object[]{
+            RoundRobinConnectionPool.class,
+            (ConnectionPool.Factory)
+                destination -> new RoundRobinConnectionPool(destination, 8, destination)
+        });
         return pools.stream().map(Arguments::of);
     }
 
@@ -154,8 +157,8 @@ public class ConnectionPoolTest
         CountDownLatch latch = new CountDownLatch(parallelism * runs);
         List<Throwable> failures = new CopyOnWriteArrayList<>();
         IntStream.range(0, parallelism).parallel().forEach(i ->
-                IntStream.range(0, runs).forEach(j ->
-                        run(latch, iterations, failures)));
+            IntStream.range(0, runs).forEach(j ->
+                run(latch, iterations, failures)));
         assertTrue(latch.await(iterations, TimeUnit.SECONDS));
         assertTrue(failures.isEmpty(), failures.toString());
     }
@@ -164,7 +167,9 @@ public class ConnectionPoolTest
     {
         long begin = System.nanoTime();
         for (int i = 0; i < iterations; ++i)
+        {
             test(failures);
+        }
         long end = System.nanoTime();
         long elapsed = TimeUnit.NANOSECONDS.toMillis(end - begin);
         System.err.printf("%d requests in %d ms, %.3f req/s%n", iterations, elapsed, elapsed > 0 ? iterations * 1000D / elapsed : -1D);
@@ -194,8 +199,8 @@ public class ConnectionPoolTest
     private void test(HttpMethod method, boolean clientClose, boolean serverClose, int contentLength, List<Throwable> failures)
     {
         Request request = client.newRequest("localhost", connector.getLocalPort())
-                .path("/")
-                .method(method);
+            .path("/")
+            .method(method);
 
         if (clientClose)
             request.header(HttpHeader.CONNECTION, "close");

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -22,8 +22,8 @@ import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.deploy.graph.Node;
 import org.eclipse.jetty.server.DebugListener;
 
-
-/** A Deployment binding that installs a DebugListener in all deployed contexts
+/**
+ * A Deployment binding that installs a DebugListener in all deployed contexts
  */
 public class DebugListenerBinding extends DebugBinding
 {
@@ -33,22 +33,21 @@ public class DebugListenerBinding extends DebugBinding
     {
         this(new DebugListener());
     }
-    
+
     public DebugListenerBinding(DebugListener debugListener)
     {
         super(new String[]{"deploying"});
-        _debugListener=debugListener;
+        _debugListener = debugListener;
     }
-    
+
     public DebugListener getDebugListener()
     {
         return _debugListener;
     }
-    
+
     @Override
     public void processBinding(Node node, App app) throws Exception
     {
         app.getContextHandler().addEventListener(_debugListener);
     }
-
 }

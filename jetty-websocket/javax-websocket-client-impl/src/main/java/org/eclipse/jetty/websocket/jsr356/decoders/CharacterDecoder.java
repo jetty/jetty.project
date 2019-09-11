@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,7 +20,6 @@ package org.eclipse.jetty.websocket.jsr356.decoders;
 
 import javax.websocket.DecodeException;
 import javax.websocket.Decoder;
-
 
 /**
  * Default implementation of the {@link javax.websocket.Decoder.Text} Message to {@link Character} decoder
@@ -42,11 +41,7 @@ public class CharacterDecoder extends AbstractDecoder implements Decoder.Text<Ch
         {
             return false;
         }
-        if (s.length() == 1)
-        {
-            return true;
-        }
+        return s.length() == 1;
         // can only parse 1 character
-        return false;
     }
 }

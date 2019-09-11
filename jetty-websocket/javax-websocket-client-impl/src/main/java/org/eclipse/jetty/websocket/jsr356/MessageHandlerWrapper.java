@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -64,7 +64,7 @@ public class MessageHandlerWrapper
      * Flag for a onMessage() that wants partial messages.
      * <p>
      * This indicates the use of MessageHandler.{@link Partial}.
-     * 
+     *
      * @return true for use of MessageHandler.{@link Partial}, false for use of MessageHandler.{@link Whole}
      */
     public boolean wantsPartialMessages()
@@ -74,7 +74,7 @@ public class MessageHandlerWrapper
 
     /**
      * Flag for a onMessage() method that wants MessageHandler.{@link Whole} with a Decoder that is based on {@link javax.websocket.Decoder.TextStream} or {@link javax.websocket.Decoder.BinaryStream}
-     * 
+     *
      * @return true for Streaming based Decoder, false for normal decoder for whole messages.
      */
     public boolean wantsStreams()

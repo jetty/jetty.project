@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,10 +19,11 @@
 package org.eclipse.jetty.rewrite.handler;
 
 import java.io.IOException;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.Name;
 
 /**
@@ -33,13 +34,11 @@ public class ResponsePatternRule extends PatternRule
     private String _code;
     private String _reason;
 
-    /* ------------------------------------------------------------ */
     public ResponsePatternRule()
     {
-        this(null,null,"");
+        this(null, null, "");
     }
 
-    /* ------------------------------------------------------------ */
     public ResponsePatternRule(@Name("pattern") String pattern, @Name("code") String code, @Name("reason") String reason)
     {
         super(pattern);
@@ -49,9 +48,9 @@ public class ResponsePatternRule extends PatternRule
         setReason(reason);
     }
 
-    /* ------------------------------------------------------------ */
     /**
-     * Sets the response status code. 
+     * Sets the response status code.
+     *
      * @param code response code
      */
     public void setCode(String code)
@@ -59,11 +58,10 @@ public class ResponsePatternRule extends PatternRule
         _code = code;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Sets the reason for the response status code. Reasons will only reflect
      * if the code value is greater or equal to 400.
-     * 
+     *
      * @param reason the reason
      */
     public void setReason(String reason)
@@ -71,7 +69,6 @@ public class ResponsePatternRule extends PatternRule
         _reason = reason;
     }
 
-    /* ------------------------------------------------------------ */
     /*
      * (non-Javadoc)
      * @see org.eclipse.jetty.server.server.handler.rules.RuleBase#apply(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
@@ -84,22 +81,30 @@ public class ResponsePatternRule extends PatternRule
         // status code 400 and up are error codes
         if (code >= 400)
         {
-            response.sendError(code, _reason);
+            if (!StringUtil.isBlank(_reason))
+            {
+                // use both setStatusWithReason (to set the reason) and sendError to set the message
+                Request.getBaseRequest(request).getResponse().setStatusWithReason(code, _reason);
+                response.sendError(code, _reason);
+            }
+            else
+            {
+                response.sendError(code);
+            }
         }
         else
         {
-            response.setStatus(code);
+            response.setStatus(code, _reason);
         }
         return target;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Returns the code and reason string.
      */
     @Override
     public String toString()
     {
-        return super.toString()+"["+_code+","+_reason+"]";
+        return super.toString() + "[" + _code + "," + _reason + "]";
     }
 }

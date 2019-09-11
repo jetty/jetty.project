@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -37,16 +37,15 @@ public class JettyHttpContext extends com.sun.net.httpserver.HttpContext
     private HttpSpiContextHandler _jettyContextHandler;
 
     private HttpServer _server;
-    
-    private Map<String,Object> _attributes = new HashMap<String,Object>();
-    
+
+    private Map<String, Object> _attributes = new HashMap<String, Object>();
+
     private List<Filter> _filters = new ArrayList<Filter>();
-    
+
     private Authenticator _authenticator;
 
-
     protected JettyHttpContext(HttpServer server, String path,
-            HttpHandler handler)
+                               HttpHandler handler)
     {
         this._server = server;
         _jettyContextHandler = new HttpSpiContextHandler(this, handler);
@@ -107,5 +106,4 @@ public class JettyHttpContext extends com.sun.net.httpserver.HttpContext
     {
         return _authenticator;
     }
-
 }

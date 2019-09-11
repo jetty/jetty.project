@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,7 +19,6 @@
 package org.eclipse.jetty.annotations;
 
 import java.util.EventListener;
-
 import javax.servlet.ServletContextAttributeListener;
 import javax.servlet.ServletContextListener;
 import javax.servlet.ServletRequestAttributeListener;
@@ -49,7 +48,7 @@ public class WebListenerAnnotation extends DiscoveredAnnotation
     {
         super(context, className);
     }
-    
+
     public WebListenerAnnotation(WebAppContext context, String className, Resource resource)
     {
         super(context, className, resource);
@@ -65,32 +64,30 @@ public class WebListenerAnnotation extends DiscoveredAnnotation
 
         if (clazz == null)
         {
-            LOG.warn(_className+" cannot be loaded");
+            LOG.warn(_className + " cannot be loaded");
             return;
         }
 
         try
         {
             if (ServletContextListener.class.isAssignableFrom(clazz) ||
-                    ServletContextAttributeListener.class.isAssignableFrom(clazz) ||
-                    ServletRequestListener.class.isAssignableFrom(clazz) ||
-                    ServletRequestAttributeListener.class.isAssignableFrom(clazz) ||
-                    HttpSessionListener.class.isAssignableFrom(clazz) ||
-                    HttpSessionAttributeListener.class.isAssignableFrom(clazz) ||
-                    HttpSessionIdListener.class.isAssignableFrom(clazz))
+                ServletContextAttributeListener.class.isAssignableFrom(clazz) ||
+                ServletRequestListener.class.isAssignableFrom(clazz) ||
+                ServletRequestAttributeListener.class.isAssignableFrom(clazz) ||
+                HttpSessionListener.class.isAssignableFrom(clazz) ||
+                HttpSessionAttributeListener.class.isAssignableFrom(clazz) ||
+                HttpSessionIdListener.class.isAssignableFrom(clazz))
             {
-                MetaData metaData = _context.getMetaData();           
-                if (metaData.getOrigin(clazz.getName()+".listener") == Origin.NotSet)
+                MetaData metaData = _context.getMetaData();
+                if (metaData.getOrigin(clazz.getName() + ".listener") == Origin.NotSet)
                 {
-                    java.util.EventListener listener = (java.util.EventListener)_context.getServletContext().createInstance(clazz); 
                     ListenerHolder h = _context.getServletHandler().newListenerHolder(new Source(Source.Origin.ANNOTATION, clazz.getName()));
-                    h.setListener(listener);
+                    h.setHeldClass(clazz);
                     _context.getServletHandler().addListener(h);
-                    _context.addEventListener(listener);
                 }
             }
             else
-                LOG.warn(clazz.getName()+" does not implement one of the servlet listener interfaces");
+                LOG.warn(clazz.getName() + " does not implement one of the servlet listener interfaces");
         }
         catch (Exception e)
         {

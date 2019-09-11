@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ========================================================================
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -52,13 +52,13 @@ Let's look at an example.
 
 ===== Step 1
 
-Configure a Jetty `org.eclipse.jetty.jaas.JAASLoginService` to match the `<realm-name>` in your `web.xml` file. For example, if the `web.xml` contains a realm called "xyz" like so:
+Configure a Jetty `org.eclipse.jetty.jaas.JAASLoginService` to match the `<realm-name>` in your `web.xml` file. For example, if the `web.xml` contains a realm called "Test JAAS Realm" like so:
 
 [source, xml, subs="{sub-order}"]
 ----
 <login-config>
   <auth-method>FORM</auth-method>
-  <realm-name>xyz</realm-name>
+  <realm-name>Test JAAS Realm</realm-name>
   <form-login-config>
     <form-login-page>/login/login</form-login-page>
     <form-error-page>/login/error</form-error-page>
@@ -66,7 +66,7 @@ Configure a Jetty `org.eclipse.jetty.jaas.JAASLoginService` to match the `<realm
 </login-config>
 ----
 
-Then you need to create a `JAASLoginService` with the matching name of "xyz":
+then you need to create a `JAASLoginService` with the matching realm name of "Test JAAS Realm":
 
 [source, xml, subs="{sub-order}"]
 ----
@@ -76,9 +76,10 @@ Then you need to create a `JAASLoginService` with the matching name of "xyz":
 </New>
 ----
 
+The `LoginModuleName` must match the name of your LoginModule as declared in your login module configuration file (see <<jaas-step-2,Step 2>>).
 ____
 [CAUTION]
-The name of the realm-name that you declare in `web.xml` must match exactly the name of your `JAASLoginService`.
+The name of the realm-name that you declare in `web.xml` must match *exactly* the `Name` field of your `JAASLoginService`.
 ____
 
 You can declare your `JAASLoginService` in a couple of different ways:
@@ -135,7 +136,7 @@ xyz {
 
 ____
 [CAUTION]
-It is imperative that the application name on the first line is exactly the same as the `LoginModuleName` of your `JAASLoginService`.
+It is imperative that the application name on the first line is *exactly* the same as the `LoginModuleName` of your `JAASLoginService`.
 ____
 
 You may find it convenient to name this configuration file as `etc/login.conf` because, as we will see below, some of the wiring up for JAAS has been done for you.
@@ -179,7 +180,6 @@ To allow the greatest degree of flexibility in using JAAS with web applications,
 Note that you don't ordinarily need to set these explicitly, as Jetty has defaults which will work in 99% of cases.
 However, should you need to, you can configure:
 
-* a policy for role-based authorization (Default: `org.eclipse.jetty.jaas.StrictRoleCheckPolicy`)
 * a CallbackHandler (Default: `org.eclipse.jetty.jaas.callback.DefaultCallbackHandler`)
 * a list of classnames for the Principal implementation that equate to a user role (Default: `org.eclipse.jetty.jaas.JAASRole`)
 
@@ -190,9 +190,6 @@ Here's an example of setting each of these (to their default values):
 <New class="org.eclipse.jetty.jaas.JAASLoginService">
   <Set name="Name">Test JAAS Realm</Set>
   <Set name="LoginModuleName">xyz</Set>
-  <Set name="RoleCheckPolicy">
-    <New class="org.eclipse.jetty.jaas.StrictRoleCheckPolicy"/>
-  </Set>
   <Set name="CallbackHandlerClass">
        org.eclipse.jetty.jaas.callback.DefaultCallbackHandler
   </Set>
@@ -203,16 +200,6 @@ Here's an example of setting each of these (to their default values):
   </Set>
 </New>
 ----
-
-===== RoleCheckPolicy
-
-The `RoleCheckPolicy` must be an implementation of the `org.eclipse.jetty.jaas.RoleCheckPolicy` interface and its purpose is to help answer the question "is User X in Role Y" for role-based authorization requests.
-The default implementation distributed with Jetty is the `org.eclipse.jetty.jaas.StrictRoleCheckPolicy`, which will assess a user as having a particular role if that role is at the top of the stack of roles that have been temporarily pushed onto the user.
-If the user has no temporarily assigned roles, the role is amongst those configured for the user.
-
-Roles can be temporarily assigned to a user programmatically by using the `pushRole(String rolename)` method of the `org.eclipse.jetty.jaas.JAASUserPrincipal` class.
-
-For the majority of webapps, the default `StrictRoleCheckPolicy` will be quite adequate, however you may provide your own implementation and set it on your `JAASLoginService` instance.
 
 ===== CallbackHandler
 

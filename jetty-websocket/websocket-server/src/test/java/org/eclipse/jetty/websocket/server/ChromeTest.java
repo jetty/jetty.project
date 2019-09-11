@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -17,11 +17,6 @@
 //
 
 package org.eclipse.jetty.websocket.server;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -40,6 +35,11 @@ import org.eclipse.jetty.websocket.server.examples.MyEchoServlet;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 public class ChromeTest
 {
@@ -77,10 +77,10 @@ public class ChromeTest
     public void testUpgradeWithWebkitDeflateExtension() throws Exception
     {
         assumeTrue(server.getWebSocketServletFactory().getExtensionFactory().isAvailable("x-webkit-deflate-frame"),
-                "Server has x-webkit-deflate-frame registered");
+            "Server has x-webkit-deflate-frame registered");
 
         assumeTrue(client.getExtensionFactory().isAvailable("x-webkit-deflate-frame"),
-                "Client has x-webkit-deflate-frame registered");
+            "Client has x-webkit-deflate-frame registered");
 
         BlockheadClientRequest request = client.newWsRequest(server.getServerUri());
         request.header(HttpHeader.SEC_WEBSOCKET_EXTENSIONS, "x-webkit-deflate-frame");
@@ -92,7 +92,7 @@ public class ChromeTest
         {
             HttpFields responseFields = clientConn.getUpgradeResponseHeaders();
             HttpField extensionField = responseFields.getField(HttpHeader.SEC_WEBSOCKET_EXTENSIONS);
-            assertThat("Response", extensionField.getValue(),containsString("x-webkit-deflate-frame"));
+            assertThat("Response", extensionField.getValue(), containsString("x-webkit-deflate-frame"));
 
             // Generate text frame
             String msg = "this is an echo ... cho ... ho ... o";
@@ -101,7 +101,7 @@ public class ChromeTest
             // Read frame (hopefully text frame)
             LinkedBlockingQueue<WebSocketFrame> frames = clientConn.getFrameQueue();
             WebSocketFrame tf = frames.poll(Timeouts.POLL_EVENT, Timeouts.POLL_EVENT_UNIT);
-            assertThat("Text Frame.status code",tf.getPayloadAsUTF8(),is(msg));
+            assertThat("Text Frame.status code", tf.getPayloadAsUTF8(), is(msg));
         }
     }
 }

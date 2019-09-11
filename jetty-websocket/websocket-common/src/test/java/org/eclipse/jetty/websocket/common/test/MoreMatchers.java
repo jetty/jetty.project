@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -26,7 +26,7 @@ public class MoreMatchers
      * Create a matcher for {@link String} that matches against a regex pattern.
      *
      * <p>
-     *     Returns success based on {@code java.util.regex.Pattern.matcher(input).matches();}
+     * Returns success based on {@code java.util.regex.Pattern.matcher(input).matches();}
      * </p>
      *
      * @param pattern the {@link java.util.regex.Pattern} syntax pattern to match against.
