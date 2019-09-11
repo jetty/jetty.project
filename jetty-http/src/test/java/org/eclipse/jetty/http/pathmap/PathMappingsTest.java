@@ -231,6 +231,8 @@ public class PathMappingsTest
         assertTrue(!new ServletPathSpec("/foo/*").matches("/bar/anything"), "!match /foo/*");
         assertTrue(new ServletPathSpec("*.foo").matches("anything.foo"), "match *.foo");
         assertTrue(!new ServletPathSpec("*.foo").matches("anything.bar"), "!match *.foo");
+        assertTrue(new ServletPathSpec("/On*").matches("/On*"), "match /On*");
+        assertTrue(!new ServletPathSpec("/On*").matches("/One"), "!match /One");
 
         assertEquals("10", p.getMatch("/").getResource(), "match / with ''");
 
@@ -287,7 +289,6 @@ public class PathMappingsTest
     @ValueSource(strings = {
         "*",
         "/foo/*/bar",
-        "/foo*",
         "*/foo",
         "*.foo/*"
     })

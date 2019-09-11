@@ -71,8 +71,17 @@ public class ServletPathSpec extends PathSpec
         // prefix based
         if ((servletPathSpec.charAt(0) == '/') && (specLength > 1) && (lastChar == '*'))
         {
-            this.group = PathSpecGroup.PREFIX_GLOB;
-            this.prefix = servletPathSpec.substring(0, specLength - 2);
+            // special case such "/On*" managed in assertValidServletPathSpec method
+            if (this.group == null)
+            {
+                this.group = PathSpecGroup.PREFIX_GLOB;
+                this.prefix = servletPathSpec.substring(0, specLength - 2);
+            }
+            else
+            {
+                this.prefix = servletPathSpec;
+            }
+
         }
         // suffix based
         else if (servletPathSpec.charAt(0) == '*')
@@ -133,7 +142,8 @@ public class ServletPathSpec extends PathSpec
 
             if (idx < 1 || servletPathSpec.charAt(idx - 1) != '/')
             {
-                throw new IllegalArgumentException("Servlet Spec 12.2 violation: suffix glob '*' can only exist after '/': bad spec \"" + servletPathSpec + "\"");
+                this.group = PathSpecGroup.EXACT;
+                return;
             }
         }
         else if (servletPathSpec.startsWith("*."))
