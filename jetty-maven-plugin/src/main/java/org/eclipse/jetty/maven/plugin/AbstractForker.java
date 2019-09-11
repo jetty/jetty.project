@@ -56,9 +56,9 @@ public abstract class AbstractForker extends AbstractLifeCycle
     
     protected boolean waitForChild;
     
-    protected int maxChildChecks;
+    protected int maxChildChecks = 10; //check up to 10 times for child to start
     
-    protected long maxChildCheckInterval;
+    protected long maxChildCheckInterval = 200; //wait 100ms between checks
     
     protected File tokenFile;
     

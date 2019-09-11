@@ -505,6 +505,8 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
     throws Exception
     {
         JettyEmbedder jetty = new JettyEmbedder();
+        jetty.setStopKey(stopKey);
+        jetty.setStopPort(stopPort);
         jetty.setServer(server);
         jetty.setContextHandlers(contextHandlers);
         jetty.setRequestLog(requestLog);
@@ -1106,6 +1108,82 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
         getLog().info("Tmp directory = "+ (webApp.getTempDirectory()== null? " determined at runtime": webApp.getTempDirectory()));
     }
     
+    
+    protected void configureUnassembledWebApp() throws Exception
+    {   
+        //Set up the location of the webapp.
+        //There are 2 parts to this: setWar() and setBaseResource(). On standalone jetty,
+        //the former could be the location of a packed war, while the latter is the location
+        //after any unpacking. With this mojo, you are running an unpacked, unassembled webapp,
+        //so the two locations should be equal.
+        Resource webAppSourceDirectoryResource = Resource.newResource(webAppSourceDirectory.getCanonicalPath());
+        if (webApp.getWar() == null)
+            webApp.setWar(webAppSourceDirectoryResource.toString());
+
+        //The first time we run, remember the original base dir
+        if (originalBaseResource == null)
+        {
+            if (webApp.getBaseResource() == null)
+                originalBaseResource = webAppSourceDirectoryResource;
+            else
+                originalBaseResource = webApp.getBaseResource();
+        }
+
+        //On every subsequent re-run set it back to the original base dir before
+        //we might have applied any war overlays onto it
+        webApp.setBaseResource(originalBaseResource);
+
+        if (classesDirectory != null)
+            webApp.setClasses (classesDirectory);
+
+        if (useTestScope && (testClassesDirectory != null))
+            webApp.setTestClasses (testClassesDirectory);
+
+        webApp.setWebInfLib(getProjectDependencyFiles());
+
+        //if we have not already set web.xml location, need to set one up
+        if (webApp.getDescriptor() == null)
+        {
+            //Has an explicit web.xml file been configured to use?
+            if (webXml != null)
+             {
+                 Resource r = Resource.newResource(webXml);
+                 if (r.exists() && !r.isDirectory())
+                 {
+                     webApp.setDescriptor(r.toString());
+                 }
+             }
+             
+             //Still don't have a web.xml file: try the resourceBase of the webapp, if it is set
+             if (webApp.getDescriptor() == null && webApp.getBaseResource() != null)
+             {
+                 Resource r = webApp.getBaseResource().addPath("WEB-INF/web.xml");
+                 if (r.exists() && !r.isDirectory())
+                 {
+                     webApp.setDescriptor(r.toString());
+                 }
+             }
+             
+             //Still don't have a web.xml file: finally try the configured static resource directory if there is one
+             if (webApp.getDescriptor() == null && (webAppSourceDirectory != null))
+             {
+                 File f = new File (new File (webAppSourceDirectory, "WEB-INF"), "web.xml");
+                 if (f.exists() && f.isFile())
+                 {
+                    webApp.setDescriptor(f.getCanonicalPath());
+                 }
+             }
+        }
+
+        //process any overlays and the war type artifacts
+        unpackOverlays(getOverlays()); //this sets up the base resource collection
+        
+        getLog().info("web.xml file = "+webApp.getDescriptor());       
+        getLog().info("Webapp directory = " + webAppSourceDirectory.getCanonicalPath());
+        getLog().info("Web defaults = "+(webApp.getDefaultsDescriptor()==null?" jetty default":webApp.getDefaultsDescriptor()));
+        getLog().info("Web overrides = "+(webApp.getOverrideDescriptor()==null?" none":webApp.getOverrideDescriptor()));
+    }
+
     
     /**
      * Try and find a jetty-web.xml file, using some

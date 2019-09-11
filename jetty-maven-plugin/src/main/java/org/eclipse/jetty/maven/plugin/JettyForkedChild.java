@@ -108,7 +108,46 @@ public class JettyForkedChild extends AbstractLifeCycle
                 tokenFile = new File(args[++i].trim()); 
                 continue;
             }
-            
+
+            if ("--scan".equals(args[i]))
+            {
+                scanner = new PathWatcher();
+                scanner.setNotifyExistingOnStart(false);
+                scanner.addListener(new PathWatcher.EventListListener()
+                {
+                    @Override
+                    public void onPathWatchEvents(List<PathWatchEvent> events)
+                    {
+                        if (!Objects.isNull(scanner))
+                        {
+                            try
+                            {
+                                scanner.stop();
+                                if (!Objects.isNull(jetty.getWebApp()))
+                                {
+                                    //stop the webapp
+                                    jetty.getWebApp().stop();
+                                    //reload the props
+                                    jetty.setWebAppProperties(loadWebAppProps());
+                                    jetty.setWebApp(jetty.getWebApp());
+                                    //restart the webapp
+                                    jetty.redeployWebApp();
+
+                                    //restart the scanner
+                                    scanner.start();
+                                }
+                            }
+                            catch (Exception e)
+                            {
+                                LOG.warn("Error restarting webapp", e);
+                            }
+                        }
+                    }
+                });
+
+                if (!Objects.isNull(webAppPropsFile))
+                    scanner.watch(webAppPropsFile.toPath());
+            }
 
             //assume everything else is a jetty property to be passed in
             String[] tmp = args[i].trim().split("=");
@@ -137,52 +176,16 @@ public class JettyForkedChild extends AbstractLifeCycle
         
         //Start the embedded jetty instance
         jetty.start();
-        
+
         //touch file to signify start of jetty
         Resource r = Resource.newResource(tokenFile);
         r.getFile().createNewFile();
-        
+
         //Start a watcher on a file that will change if the
         //webapp is regenerated; stop the webapp, apply the
         //properties and restart it.
-        scanner = new PathWatcher();
-        scanner.setNotifyExistingOnStart(false);
-        scanner.addListener(new PathWatcher.EventListListener()
-        {
-            @Override
-            public void onPathWatchEvents(List<PathWatchEvent> events)
-            {
-                if (!Objects.isNull(scanner))
-                {
-                    try
-                    {
-                        scanner.stop();
-                        if (!Objects.isNull(jetty.getWebApp()))
-                        {
-                            //stop the webapp
-                            jetty.getWebApp().stop();
-                            //reload the props
-                            jetty.setWebAppProperties(loadWebAppProps());
-                            jetty.setWebApp(jetty.getWebApp());
-                            //restart the webapp
-                            jetty.redeployWebApp();
-
-                            //restart the scanner
-                            scanner.start();
-                        }
-                    }
-                    catch (Exception e)
-                    {
-                        LOG.warn("Error restarting webapp", e);
-                    }
-                }
-            }
-        });
-
-        if (!Objects.isNull(webAppPropsFile))
-            scanner.watch(webAppPropsFile.toPath());
-
-        scanner.start();
+        if (scanner != null)
+            scanner.start();
 
         //wait for jetty to finish
         jetty.join();

@@ -181,8 +181,6 @@ public class JettyDistroForker extends AbstractForker
         cmd.add("-jar");
         cmd.add(new File(jettyHome, "start.jar").getAbsolutePath());
         
-        cmd.add("-Dorg.eclipse.jetty.webapp.LEVEL=DEBUG");
-        
         cmd.add("-DSTOP.PORT="+stopPort);
         if (stopKey != null)
             cmd.add("-DSTOP.KEY="+stopKey);

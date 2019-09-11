@@ -19,13 +19,13 @@
 
 package org.eclipse.jetty.maven.plugin;
 
-import java.util.List;
+import java.io.File;
 
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Execute;
+import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.ResolutionScope;
-import org.apache.maven.plugins.annotations.LifecyclePhase;
 
 /**
  *  <p>
@@ -43,7 +43,13 @@ import org.apache.maven.plugins.annotations.LifecyclePhase;
 @Execute(phase = LifecyclePhase.VALIDATE)
 public class NewJettyStartMojo extends AbstractWebAppMojo
 {
-
+    @Override
+    protected void configureWebApp() throws Exception
+    {
+        super.configureWebApp();
+        super.configureUnassembledWebApp();
+    }
+    
     /** Starts the webapp - without first compiling the classes -
      * in the same process as maven.
      */
@@ -76,6 +82,7 @@ public class NewJettyStartMojo extends AbstractWebAppMojo
         {
             JettyForker jetty = newJettyForker();
             jetty.setWaitForChild(false); //we never wait for child
+            jetty.setJettyOutputFile(getJettyOutputFile());
             jetty.start(); //forks jetty instance
             
         }
@@ -96,6 +103,7 @@ public class NewJettyStartMojo extends AbstractWebAppMojo
         {
             JettyDistroForker jetty = newJettyDistroForker();
             jetty.setWaitForChild(false); //never wait for child
+            jetty.setJettyOutputFile(getJettyOutputFile());
             jetty.start(); //forks a jetty distro
         }
         catch (Exception e)
@@ -104,4 +112,12 @@ public class NewJettyStartMojo extends AbstractWebAppMojo
         }
     }
 
+    protected File getJettyOutputFile () throws Exception
+    {
+        File outputFile = new File(target, "jetty.out");
+        if (outputFile.exists())
+            outputFile.delete();
+        outputFile.createNewFile();
+        return outputFile;
+    }
 }

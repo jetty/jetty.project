@@ -53,6 +53,26 @@ public class JettyForker extends AbstractForker
     protected File webAppPropsFile;
     
     protected String contextXml;
+    
+    protected boolean scan;
+
+
+    /**
+     * @return the scan
+     */
+    public boolean isScan()
+    {
+        return scan;
+    }
+
+
+    /**
+     * @param scan if true, the forked child will scan for changes
+     */
+    public void setScan(boolean scan)
+    {
+        this.scan = scan;
+    }
 
 
     public File getWebAppPropsFile()
@@ -250,6 +270,11 @@ public class JettyForker extends AbstractForker
         cmd.add("--token");
         cmd.add(tokenFile.getAbsolutePath());
 
+        if (scan)
+        {
+            cmd.add("--scan");
+        }
+        
         if (jettyProperties != null)
         {
             for (Map.Entry<String, String> e:jettyProperties.entrySet())
@@ -257,7 +282,7 @@ public class JettyForker extends AbstractForker
                 cmd.add(e.getKey()+"="+e.getValue());
             }
         }
-
+        
         ProcessBuilder command = new ProcessBuilder(cmd);
         command.directory(workDir);
 
