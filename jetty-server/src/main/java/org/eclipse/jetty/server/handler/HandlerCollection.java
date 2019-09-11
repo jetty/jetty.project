@@ -82,7 +82,7 @@ public class HandlerCollection extends AbstractHandlerContainer
     public void setHandlers(Handler[] handlers)
     {
         if (!_mutableWhenRunning && isStarted())
-            throw new IllegalStateException(STARTED);
+            throw new IllegalStateException(getState());
 
         while (true)
         {

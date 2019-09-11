@@ -172,7 +172,7 @@ public class DeploymentManager extends ContainerLifeCycle
         for (AppProvider provider : providers)
         {
             if (_providers.add(provider))
-                addBean(provider);
+                addBean(provider, true);
         }
     }
 
@@ -186,7 +186,7 @@ public class DeploymentManager extends ContainerLifeCycle
         if (isRunning())
             throw new IllegalStateException();
         _providers.add(provider);
-        addBean(provider);
+        addBean(provider, true);
     }
 
     public void setLifeCycleBindings(Collection<AppLifeCycle.Binding> bindings)
@@ -523,6 +523,7 @@ public class DeploymentManager extends ContainerLifeCycle
         catch (Throwable t)
         {
             LOG.warn("Unable to reach node goal: " + nodeName, t);
+            
             // migrate to FAILED node
             Node failed = _lifecycle.getNodeByName(AppLifeCycle.FAILED);
             appentry.setLifeCycleNode(failed);

@@ -29,9 +29,9 @@ import org.eclipse.jetty.servlet.ServletHolder;
 
 public class ManyServletContexts
 {
-    public static void main(String[] args) throws Exception
+    public static Server createServer(int port)
     {
-        Server server = new Server(8080);
+        Server server = new Server(port);
 
         // Setup JMX
         MBeanContainer mbContainer = new MBeanContainer(
@@ -48,7 +48,7 @@ public class ManyServletContexts
         // Add servlets to root context
         root.addServlet(new ServletHolder(new HelloServlet("Hello")), "/");
         root.addServlet(new ServletHolder(new HelloServlet("Ciao")), "/it/*");
-        root.addServlet(new ServletHolder(new HelloServlet("Bonjoir")), "/fr/*");
+        root.addServlet(new ServletHolder(new HelloServlet("Bonjour")), "/fr/*");
 
         // Configure context "/other" for servlets
         ServletContextHandler other = new ServletContextHandler(contexts,
@@ -57,6 +57,13 @@ public class ManyServletContexts
         other.addServlet(DefaultServlet.class.getCanonicalName(), "/");
         other.addServlet(new ServletHolder(new HelloServlet("YO!")), "*.yo");
 
+        return server;
+    }
+
+    public static void main(String[] args) throws Exception
+    {
+        int port = ExampleUtil.getPort(args, "jetty.http.port", 8080);
+        Server server = createServer(port);
         server.start();
         server.dumpStdErr();
         server.join();

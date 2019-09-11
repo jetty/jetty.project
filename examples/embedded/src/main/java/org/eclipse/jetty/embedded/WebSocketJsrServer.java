@@ -46,25 +46,37 @@ public class WebSocketJsrServer
         }
     }
 
-    public static void main(String[] args) throws Exception
+    public static Server createServer(int port)
     {
-        final Server server = new Server(8080);
+        Server server = new Server(port);
 
         HandlerList handlers = new HandlerList();
 
-        ServletContextHandler contextHandler = new ServletContextHandler(
-            ServletContextHandler.SESSIONS);
-        contextHandler.setContextPath("/");
-        handlers.addHandler(contextHandler);
+        ServletContextHandler context = new ServletContextHandler();
+        context.setContextPath("/");
+        handlers.addHandler(context);
+
+        // Enable javax.websocket configuration for the context
+        JavaxWebSocketServletContainerInitializer.configure(context,
+            (servletContext, serverContainer) ->
+            {
+                // Add your websocket to the javax.websocket.server.ServerContainer
+                serverContainer.addEndpoint(EchoJsrSocket.class);
+            }
+        );
+
         handlers.addHandler(new DefaultHandler());
         server.setHandler(handlers);
 
-        // Enable javax.websocket configuration for the context
-        JavaxWebSocketServletContainerInitializer.configure(contextHandler, (context, container) ->
-            container.addEndpoint(EchoJsrSocket.class));
+        return server;
+    }
+
+    public static void main(String[] args) throws Exception
+    {
+        int port = ExampleUtil.getPort(args, "jetty.http.port", 8080);
+        Server server = createServer(port);
 
         server.start();
-        contextHandler.dumpStdErr();
         server.join();
     }
 }

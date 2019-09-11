@@ -27,6 +27,7 @@ import org.eclipse.jetty.servlet.ListenerHolder;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.webapp.WebAppContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -61,10 +62,11 @@ public class TestQuickStart
         Server server = new Server();
 
         //generate a quickstart-web.xml
-        QuickStartWebApp quickstart = new QuickStartWebApp();
+        WebAppContext quickstart = new WebAppContext();
+        quickstart.addConfiguration(new QuickStartConfiguration());
+        quickstart.setAttribute(QuickStartConfiguration.MODE, QuickStartConfiguration.Mode.GENERATE);
+        quickstart.setAttribute(QuickStartConfiguration.ORIGIN_ATTRIBUTE, "origin");
         quickstart.setResourceBase(testDir.getAbsolutePath());
-        quickstart.setMode(QuickStartConfiguration.Mode.GENERATE);
-        quickstart.setGenerateOrigin(true);
         ServletHolder fooHolder = new ServletHolder();
         fooHolder.setServlet(new FooServlet());
         fooHolder.setName("foo");
@@ -73,19 +75,22 @@ public class TestQuickStart
         lholder.setListener(new FooContextListener());
         quickstart.getServletHandler().addListener(lholder);
         server.setHandler(quickstart);
+        server.setDryRun(true);
         server.start();
-        server.stop();
 
         assertTrue(quickstartXml.exists());
 
         //now run the webapp again purely from the generated quickstart
-        QuickStartWebApp webapp = new QuickStartWebApp();
+        WebAppContext webapp = new WebAppContext();
         webapp.setResourceBase(testDir.getAbsolutePath());
-        webapp.setMode(QuickStartConfiguration.Mode.QUICKSTART);
+        webapp.addConfiguration(new QuickStartConfiguration());
+        webapp.setAttribute(QuickStartConfiguration.MODE, QuickStartConfiguration.Mode.QUICKSTART);
         webapp.setClassLoader(new URLClassLoader(new URL[0], Thread.currentThread().getContextClassLoader()));
         server.setHandler(webapp);
 
+        server.setDryRun(false);
         server.start();
+        server.dumpStdErr();
 
         //verify that FooServlet is now mapped to / and not the DefaultServlet
         ServletHolder sh = webapp.getServletHandler().getMappedServlet("/").getResource();
@@ -104,28 +109,30 @@ public class TestQuickStart
         Server server = new Server();
 
         // generate a quickstart-web.xml
-        QuickStartWebApp quickstart = new QuickStartWebApp();
+        WebAppContext quickstart = new WebAppContext();
         quickstart.setResourceBase(testDir.getAbsolutePath());
-        quickstart.setMode(QuickStartConfiguration.Mode.GENERATE);
-        quickstart.setGenerateOrigin(true);
+        quickstart.addConfiguration(new QuickStartConfiguration());
+        quickstart.setAttribute(QuickStartConfiguration.MODE, QuickStartConfiguration.Mode.GENERATE);
+        quickstart.setAttribute(QuickStartConfiguration.ORIGIN_ATTRIBUTE, "origin");
         quickstart.setDescriptor(MavenTestingUtils.getTestResourceFile("web.xml").getAbsolutePath());
         quickstart.setContextPath("/foo");
         server.setHandler(quickstart);
+        server.setDryRun(true);
         server.start();
-
         assertEquals("/foo", quickstart.getContextPath());
         assertFalse(quickstart.isContextPathDefault());
-        server.stop();
 
         assertTrue(quickstartXml.exists());
 
         // quick start
-        QuickStartWebApp webapp = new QuickStartWebApp();
+        WebAppContext webapp = new WebAppContext();
+        webapp.addConfiguration(new QuickStartConfiguration());
+        quickstart.setAttribute(QuickStartConfiguration.MODE, QuickStartConfiguration.Mode.QUICKSTART);
         webapp.setResourceBase(testDir.getAbsolutePath());
-        webapp.setMode(QuickStartConfiguration.Mode.QUICKSTART);
         webapp.setClassLoader(new URLClassLoader(new URL[0], Thread.currentThread().getContextClassLoader()));
         server.setHandler(webapp);
 
+        server.setDryRun(false);
         server.start();
 
         // verify the context path is the default-context-path

@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
+import org.eclipse.jetty.quickstart.QuickStartConfiguration;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.Resource;
@@ -71,9 +72,10 @@ public class WebAppPropertyConverter
             props.put("web.xml", webApp.getDescriptor());
         }
 
-        if (webApp.getQuickStartWebDescriptor() != null)
+        Object tmp = webApp.getAttribute(QuickStartConfiguration.QUICKSTART_WEB_XML);
+        if (tmp != null)
         {
-            props.put("quickstart.web.xml", webApp.getQuickStartWebDescriptor().getFile().getAbsolutePath());
+            props.put("quickstart.web.xml", tmp.toString());
         }
 
         //sort out the context path
@@ -183,11 +185,10 @@ public class WebAppPropertyConverter
         if (!StringUtil.isBlank(str))
             webApp.setDescriptor(str);
 
-        //TODO the WebAppStarter class doesn't set up the QUICKSTART_CONFIGURATION_CLASSES, but the Starter class does!!!
         str = props.getProperty("quickstart.web.xml");
         if (!StringUtil.isBlank(str))
         {
-            webApp.setQuickStartWebDescriptor(Resource.newResource(new File(str)));
+            webApp.setAttribute(QuickStartConfiguration.QUICKSTART_WEB_XML, Resource.newResource(str));
         }
 
         // - the tmp directory
