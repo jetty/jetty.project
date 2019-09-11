@@ -26,7 +26,6 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.websocket.jsr356.server.ServerContainer;
 import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
 
 /**
@@ -47,29 +46,38 @@ public class WebSocketJsrServer
         }
     }
 
-    public static void main(String[] args) throws Exception
+    public static Server createServer(int port)
     {
-        Server server = new Server(8080);
+        Server server = new Server(port);
 
         HandlerList handlers = new HandlerList();
 
-        ServletContextHandler context = new ServletContextHandler(
-            ServletContextHandler.SESSIONS);
+        ServletContextHandler context = new ServletContextHandler();
         context.setContextPath("/");
         handlers.addHandler(context);
 
         // Enable javax.websocket configuration for the context
-        ServerContainer wsContainer = WebSocketServerContainerInitializer
-            .configureContext(context);
-
-        // Add your websockets to the container
-        wsContainer.addEndpoint(EchoJsrSocket.class);
+        WebSocketServerContainerInitializer.configure(context,
+            (servletContext, serverContainer) ->
+            {
+                // Add your websocket to the javax.websocket.server.ServerContainer
+                serverContainer.addEndpoint(EchoJsrSocket.class);
+            }
+        );
 
         handlers.addHandler(new DefaultHandler());
 
         server.setHandler(handlers);
+
+        return server;
+    }
+
+    public static void main(String[] args) throws Exception
+    {
+        int port = ExampleUtil.getPort(args, "jetty.http.port", 8080);
+        Server server = createServer(port);
+
         server.start();
-        context.dumpStdErr();
         server.join();
     }
 }
