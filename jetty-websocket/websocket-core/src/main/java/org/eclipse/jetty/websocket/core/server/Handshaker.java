@@ -24,14 +24,12 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.server.internal.HandshakerSelector;
-import org.eclipse.jetty.websocket.core.server.internal.RFC6455Handshaker;
-import org.eclipse.jetty.websocket.core.server.internal.RFC8441Handshaker;
 
 public interface Handshaker
 {
     static Handshaker newInstance()
     {
-        return new HandshakerSelector(new RFC6455Handshaker(), new RFC8441Handshaker());
+        return new HandshakerSelector();
     }
 
     boolean upgradeRequest(WebSocketNegotiator negotiator, HttpServletRequest request, HttpServletResponse response, FrameHandler.Customizer defaultCustomizer) throws IOException;

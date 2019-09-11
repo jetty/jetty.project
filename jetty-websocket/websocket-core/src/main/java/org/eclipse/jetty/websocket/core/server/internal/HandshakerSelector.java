@@ -19,40 +19,37 @@
 package org.eclipse.jetty.websocket.core.server.internal;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.server.Handshaker;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 
 public class HandshakerSelector implements Handshaker
 {
-    private List<Handshaker> handshakers = new ArrayList<>();
-
-    public HandshakerSelector(Handshaker... handshakers)
-    {
-        Collections.addAll(this.handshakers, handshakers);
-    }
+    private final RFC6455Handshaker rfc6455 = new RFC6455Handshaker();
+    private final RFC8441Handshaker rfc8441 = new RFC8441Handshaker();
 
     @Override
     public boolean upgradeRequest(WebSocketNegotiator negotiator, HttpServletRequest request, HttpServletResponse response, FrameHandler.Customizer defaultCustomizer) throws IOException
     {
-        // TODO: we don't want to do a lot of work for every request that is not websocket.
-        //  Something like: if (method == CONNECT) only try 8441, else if (method == GET) only try 6455.
-        // TODO: optimise (do pre checks and avoid iterating through handshakers)
-        // TODO: minimum simplest thing to do to return false
-        for (Handshaker handshaker : handshakers)
-        {
-            if (handshaker.upgradeRequest(negotiator, request, response, defaultCustomizer))
-                return true;
+        Request baseRequest = Request.getBaseRequest(request);
+        String method = request.getMethod();
+        HttpVersion httpVersion = baseRequest.getHttpVersion();
 
-            if (response.isCommitted())
-                return false;
+        if (HttpMethod.GET.equals(method) && HttpVersion.HTTP_1_1.equals(httpVersion))
+        {
+            return rfc6455.upgradeRequest(negotiator, request, response, defaultCustomizer);
         }
+        else if (HttpMethod.CONNECT.equals(method) && HttpVersion.HTTP_2.equals(httpVersion))
+        {
+            return rfc8441.upgradeRequest(negotiator, request, response, defaultCustomizer);
+        }
+
         return false;
     }
 }
