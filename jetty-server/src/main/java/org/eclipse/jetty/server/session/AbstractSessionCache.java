@@ -91,6 +91,12 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
      * deleted from the SessionDataStore.
      */
     protected boolean _removeUnloadableSessions;
+    
+    /**
+     * If true, when a response is about to be committed back to the client,
+     * a dirty session will be flushed to the session store.
+     */
+    protected boolean _flushOnResponseCommit;
 
     /**
      * Create a new Session object from pre-existing session data
@@ -302,6 +308,18 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
         _removeUnloadableSessions = removeUnloadableSessions;
     }
 
+    @Override
+    public void setFlushOnResponseCommit(boolean flushOnResponseCommit)
+    {
+        _flushOnResponseCommit = flushOnResponseCommit;
+    }
+
+    @Override
+    public boolean isFlushOnResponseCommit()
+    {
+        return _flushOnResponseCommit;
+    }
+
     /**
      * Get a session object.
      *
@@ -502,6 +520,42 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
             }
             else
                 throw new IllegalStateException("Session " + id + " already in cache");
+        }
+    }
+
+    /**
+     * A response that has accessed this session is about to
+     * be returned to the client. Pass the session to the store
+     * to persist, so that any changes will be visible to
+     * subsequent requests on the same node (if using NullSessionCache),
+     * or on other nodes.
+     */
+    @Override
+    public void commit(Session session) throws Exception
+    {
+        if (session == null)
+            return;
+
+        try (AutoLock lock = session.lock())
+        {
+            //only write the session out at this point if the attributes changed. If only
+            //the lastAccess/expiry time changed defer the write until the last request exits
+            if (session.getSessionData().isDirty() && _flushOnResponseCommit)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Flush session {} on response commit", session);
+                //save the session
+                if (!_sessionDataStore.isPassivating())
+                {
+                    _sessionDataStore.store(session.getId(), session.getSessionData());
+                }
+                else
+                {
+                    session.willPassivate();
+                    _sessionDataStore.store(session.getId(), session.getSessionData());
+                    session.didActivate();
+                }
+            }
         }
     }
 
@@ -730,6 +784,8 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
                         if (_sessionDataStore.isPassivating())
                             session.willPassivate();
 
+                        //Fake being dirty to force the write
+                        session.getSessionData().setDirty(true);
                         _sessionDataStore.store(session.getId(), session.getSessionData());
                     }
 
@@ -739,7 +795,6 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
                 catch (Exception e)
                 {
                     LOG.warn("Passivation of idle session {} failed", session.getId(), e);
-                    //session.updateInactivityTimer();
                 }
             }
         }

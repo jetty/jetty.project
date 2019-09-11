@@ -354,10 +354,9 @@ public class SessionHandler extends ScopedHandler
     }
 
     /**
-     * Called by the {@link Request} when it finally finishes.
+     * Called when a request is finally leaving a session.
      *
      * @param session the session object
-     * @see #access(HttpSession, boolean)
      */
     public void complete(HttpSession session)
     {
@@ -371,6 +370,28 @@ public class SessionHandler extends ScopedHandler
         try
         {
             _sessionCache.release(s.getId(), s);
+        }
+        catch (Exception e)
+        {
+            LOG.warn(e);
+        }
+    }
+    
+    /**
+     * Called when a response is about to be committed.
+     * We might take this opportunity to persist the session
+     * so that any subsequent requests to other servers
+     * will see the modifications.
+     */
+    public void commit(HttpSession session)
+    {
+        if (session == null)
+            return;
+
+        Session s = ((SessionIf)session).getSession();
+        try
+        {
+            _sessionCache.commit(s);
         }
         catch (Exception e)
         {

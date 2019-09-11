@@ -403,7 +403,7 @@ public class MetaData
             p.process(context, getWebXml());
             for (WebDescriptor wd : getOverrideWebs())
             {
-                LOG.debug("process {} {}", context, wd);
+                LOG.debug("process {} {} {}", context, p, wd);
                 p.process(context, wd);
             }
         }

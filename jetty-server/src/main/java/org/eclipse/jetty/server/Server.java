@@ -79,10 +79,11 @@ public class Server extends HandlerWrapper implements Attributes
     private final List<Connector> _connectors = new CopyOnWriteArrayList<>();
     private SessionIdManager _sessionIdManager;
     private boolean _stopAtShutdown;
-    private boolean _dumpAfterStart = false;
-    private boolean _dumpBeforeStop = false;
+    private boolean _dumpAfterStart;
+    private boolean _dumpBeforeStop;
     private ErrorHandler _errorHandler;
     private RequestLog _requestLog;
+    private boolean _dryRun;
     private final AutoLock _dateLock = new AutoLock();
     private volatile DateField _dateField;
 
@@ -128,6 +129,16 @@ public class Server extends HandlerWrapper implements Attributes
         _threadPool = pool != null ? pool : new QueuedThreadPool();
         addBean(_threadPool);
         setServer(this);
+    }
+
+    public boolean isDryRun()
+    {
+        return _dryRun;
+    }
+
+    public void setDryRun(boolean dryRun)
+    {
+        _dryRun = dryRun;
     }
 
     public RequestLog getRequestLog()
@@ -366,24 +377,32 @@ public class Server extends HandlerWrapper implements Attributes
             MultiException mex = new MultiException();
 
             // Open network connector to ensure ports are available
-            _connectors.stream().filter(NetworkConnector.class::isInstance).map(NetworkConnector.class::cast).forEach(connector ->
+            if (!_dryRun)
             {
-                try
+                _connectors.stream().filter(NetworkConnector.class::isInstance).map(NetworkConnector.class::cast).forEach(connector ->
                 {
-                    connector.open();
-                }
-                catch (Throwable th)
-                {
-                    mex.add(th);
-                }
-            });
-
-            // Throw now if verified start sequence and there was an open exception
-            mex.ifExceptionThrow();
+                    try
+                    {
+                        connector.open();
+                    }
+                    catch (Throwable th)
+                    {
+                        mex.add(th);
+                    }
+                });
+                // Throw now if verified start sequence and there was an open exception
+                mex.ifExceptionThrow();
+            }
 
             // Start the server and components, but not connectors!
             // #start(LifeCycle) is overridden so that connectors are not started
             super.doStart();
+
+            if (_dryRun)
+            {
+                LOG.info(String.format("Started(dry run) %s @%dms", this, Uptime.getUptime()));
+                throw new StopException();
+            }
 
             // start connectors
             for (Connector connector : _connectors)
@@ -401,7 +420,7 @@ public class Server extends HandlerWrapper implements Attributes
             }
 
             mex.ifExceptionThrow();
-            LOG.info(String.format("Started @%dms", Uptime.getUptime()));
+            LOG.info(String.format("Started %s @%dms", this, Uptime.getUptime()));
         }
         catch (Throwable th)
         {
@@ -422,7 +441,7 @@ public class Server extends HandlerWrapper implements Attributes
         }
         finally
         {
-            if (isDumpAfterStart())
+            if (isDumpAfterStart() && !(_dryRun && isDumpBeforeStop()))
                 dumpStdErr();
         }
     }
@@ -441,6 +460,7 @@ public class Server extends HandlerWrapper implements Attributes
         if (isDumpBeforeStop())
             dumpStdErr();
 
+        LOG.info(String.format("Stopped %s", this));
         if (LOG.isDebugEnabled())
             LOG.debug("doStop {}", this);
 
