@@ -358,9 +358,9 @@ public class Huffman
         return decode(buffer, buffer.remaining());
     }
 
-    public static String decode(ByteBuffer buffer, int length) throws HpackException.CompressionException
-    {
-        StringBuilder out = new StringBuilder(length * 2);
+    public static String decode(ByteBuffer buffer,int length) throws HpackException.CompressionException
+    {        
+        Utf8StringBuilder utf8 = new Utf8StringBuilder(length*2);
         int node = 0;
         int current = 0;
         int bits = 0;
