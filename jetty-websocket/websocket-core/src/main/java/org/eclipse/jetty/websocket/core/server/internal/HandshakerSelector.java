@@ -22,13 +22,15 @@ import java.io.IOException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.HttpMethod;
-import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.server.Handshaker;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 
+/**
+ * Selects between the two Handshaker implementations,
+ * RFC6455 (HTTP/1.1 WebSocket Upgrades)
+ * and RFC68441 (HTTP/2 WebSocket Upgrades)
+ */
 public class HandshakerSelector implements Handshaker
 {
     private final RFC6455Handshaker rfc6455 = new RFC6455Handshaker();
@@ -37,19 +39,8 @@ public class HandshakerSelector implements Handshaker
     @Override
     public boolean upgradeRequest(WebSocketNegotiator negotiator, HttpServletRequest request, HttpServletResponse response, FrameHandler.Customizer defaultCustomizer) throws IOException
     {
-        Request baseRequest = Request.getBaseRequest(request);
-        String method = request.getMethod();
-        HttpVersion httpVersion = baseRequest.getHttpVersion();
-
-        if (HttpMethod.GET.is(method) && HttpVersion.HTTP_1_1.equals(httpVersion))
-        {
-            return rfc6455.upgradeRequest(negotiator, request, response, defaultCustomizer);
-        }
-        else if (HttpMethod.CONNECT.is(method) && HttpVersion.HTTP_2.equals(httpVersion))
-        {
-            return rfc8441.upgradeRequest(negotiator, request, response, defaultCustomizer);
-        }
-
-        return false;
+        // Try HTTP/1.1 WS upgrade, if this fails try an HTTP/2 WS upgrade if no response was committed.
+        return rfc6455.upgradeRequest(negotiator, request, response, defaultCustomizer) ||
+            !response.isCommitted() && rfc8441.upgradeRequest(negotiator, request, response, defaultCustomizer);
     }
 }
