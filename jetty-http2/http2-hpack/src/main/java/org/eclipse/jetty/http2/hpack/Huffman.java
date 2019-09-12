@@ -523,9 +523,6 @@ public class Huffman
         long current = 0;
         int n = 0;
 
-        byte[] array = buffer.array();
-        int p = buffer.arrayOffset() + buffer.position();
-
         int len = b.length;
         for (int i = 0; i < len; i++)
         {
@@ -540,7 +537,7 @@ public class Huffman
             while (n >= 8)
             {
                 n -= 8;
-                array[p++] = (byte)(current >> n);
+                buffer.put((byte)(current >> n));
             }
         }
 
@@ -548,9 +545,7 @@ public class Huffman
         {
             current <<= (8 - n);
             current |= (0xFF >>> n);
-            array[p++] = (byte)current;
+            buffer.put((byte)(current));
         }
-
-        buffer.position(p - buffer.arrayOffset());
     }
 }
