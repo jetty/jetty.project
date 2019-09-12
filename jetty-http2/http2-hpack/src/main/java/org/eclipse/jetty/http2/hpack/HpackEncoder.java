@@ -404,8 +404,8 @@ public class HpackEncoder
             {
                 // Not iso_8859_1
                 byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
-                NBitInteger.encode(buffer,7,Huffman.octetsNeeded(bytes));
-                Huffman.encode(buffer,bytes);
+                NBitInteger.encode(buffer, 7, Huffman.octetsNeeded(bytes));
+                Huffman.encode(buffer, bytes);
             }
         }
         else
@@ -421,8 +421,8 @@ public class HpackEncoder
                     // Not iso_8859_1, so re-encode as UTF-8
                     buffer.reset();
                     byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
-                    NBitInteger.encode(buffer,7,bytes.length);
-                    buffer.put(bytes,0,bytes.length);
+                    NBitInteger.encode(buffer, 7, bytes.length);
+                    buffer.put(bytes, 0, bytes.length);
                     return;
                 }
                 buffer.put((byte)c);

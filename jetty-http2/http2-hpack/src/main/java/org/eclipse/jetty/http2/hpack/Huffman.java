@@ -358,8 +358,8 @@ public class Huffman
         return decode(buffer, buffer.remaining());
     }
 
-    public static String decode(ByteBuffer buffer,int length) throws HpackException.CompressionException
-    {        
+    public static String decode(ByteBuffer buffer, int length) throws HpackException.CompressionException
+    {
         Utf8StringBuilder utf8 = new Utf8StringBuilder(length * 2);
         int node = 0;
         int current = 0;
@@ -430,20 +430,20 @@ public class Huffman
     }
 
     public static int octetsNeeded(byte[] b)
-    {   
-        return octetsNeeded(CODES,b);
+    {
+        return octetsNeeded(CODES, b);
     }
-    
+
     public static void encode(ByteBuffer buffer, String s)
     {
         encode(CODES, buffer, s);
     }
 
-    public static void encode(ByteBuffer buffer,byte[] b)
+    public static void encode(ByteBuffer buffer, byte[] b)
     {
-        encode(CODES,buffer,b);
+        encode(CODES, buffer, b);
     }
-    
+
     public static int octetsNeededLC(String s)
     {
         return octetsNeeded(LCCODES, s);
@@ -469,7 +469,7 @@ public class Huffman
         return (needed + 7) / 8;
     }
 
-    private static int octetsNeeded(final int[][] table,byte[] b)
+    private static int octetsNeeded(final int[][] table, byte[] b)
     {
         int needed = 0;
         int len = b.length;
@@ -485,7 +485,6 @@ public class Huffman
      * @param table The table to encode by
      * @param buffer The buffer to encode to
      * @param s The string to encode
-     * @return True if the string could be encoded, false otherwise (and the buffer may have been modified).
      */
     private static void encode(final int[][] table, ByteBuffer buffer, String s)
     {
@@ -519,7 +518,7 @@ public class Huffman
         }
     }
 
-    private static void encode(final int[][] table,ByteBuffer buffer,byte[] b)
+    private static void encode(final int[][] table, ByteBuffer buffer, byte[] b)
     {
         long current = 0;
         int n = 0;
