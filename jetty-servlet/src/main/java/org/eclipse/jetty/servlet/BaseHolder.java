@@ -43,11 +43,11 @@ public abstract class BaseHolder<T> extends AbstractLifeCycle implements Dumpabl
 {
     private static final Logger LOG = Log.getLogger(BaseHolder.class);
 
-    protected final Source _source;
-    protected transient Class<? extends T> _class;
-    protected String _className;
-    protected boolean _extInstance;
-    protected ServletHandler _servletHandler;
+    private final Source _source;
+    private Class<? extends T> _class;
+    private String _className;
+    private T _instance;
+    private ServletHandler _servletHandler;
 
     protected BaseHolder(Source source)
     {
@@ -101,7 +101,7 @@ public abstract class BaseHolder<T> extends AbstractLifeCycle implements Dumpabl
     public void doStop()
         throws Exception
     {
-        if (!_extInstance)
+        if (_instance == null)
             _class = null;
     }
 
@@ -163,12 +163,26 @@ public abstract class BaseHolder<T> extends AbstractLifeCycle implements Dumpabl
         }
     }
 
+    protected synchronized void setInstance(T instance)
+    {
+        _instance = instance;
+        if (instance == null)
+            setHeldClass(null);
+        else
+            setHeldClass((Class<T>)instance.getClass());
+    }
+
+    protected synchronized T getInstance()
+    {
+        return _instance;
+    }
+
     /**
      * @return True if this holder was created for a specific instance.
      */
-    public boolean isInstance()
+    public synchronized boolean isInstance()
     {
-        return _extInstance;
+        return _instance != null;
     }
 
     @Override
