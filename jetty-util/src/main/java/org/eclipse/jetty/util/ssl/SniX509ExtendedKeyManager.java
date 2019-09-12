@@ -45,10 +45,17 @@ public class SniX509ExtendedKeyManager extends X509ExtendedKeyManager
     private static final Logger LOG = Log.getLogger(SniX509ExtendedKeyManager.class);
 
     private final X509ExtendedKeyManager _delegate;
+    private final boolean _rejectUnmatchedSNIHost;
 
     public SniX509ExtendedKeyManager(X509ExtendedKeyManager keyManager)
     {
+        this(keyManager, false);
+    }
+
+    public SniX509ExtendedKeyManager(X509ExtendedKeyManager keyManager, boolean rejectUnmatchedSNIHost)
+    {
         _delegate = keyManager;
+        _rejectUnmatchedSNIHost = rejectUnmatchedSNIHost;
     }
 
     @Override
@@ -88,22 +95,22 @@ public class SniX509ExtendedKeyManager extends X509ExtendedKeyManager
         }
 
         if (LOG.isDebugEnabled())
-            LOG.debug("Matched {} with {} from {}", host, x509, Arrays.asList(aliases));
+            LOG.debug("Matched host {} with certificate {} from {}", host, x509, Arrays.asList(aliases));
+
+        // No SNI or SNI host did not match a certificate.
+        if (host == null || x509 == null)
+            return _rejectUnmatchedSNIHost ? null : NO_MATCHERS;
 
         // Check if the SNI selected alias is allowable
-        if (x509 != null)
+        for (String a : aliases)
         {
-            for (String a : aliases)
+            if (a.equals(x509.getAlias()))
             {
-                if (a.equals(x509.getAlias()))
-                {
-                    session.putValue(SNI_X509, x509);
-                    return a;
-                }
+                session.putValue(SNI_X509, x509);
+                return a;
             }
-            return null;
         }
-        return NO_MATCHERS;
+        return null;
     }
 
     @Override

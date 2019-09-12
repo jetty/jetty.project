@@ -1294,7 +1294,7 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
                     for (int idx = 0; idx < managers.length; idx++)
                     {
                         if (managers[idx] instanceof X509ExtendedKeyManager)
-                            managers[idx] = new SniX509ExtendedKeyManager((X509ExtendedKeyManager)managers[idx]);
+                            managers[idx] = newSniX509ExtendedKeyManager((X509ExtendedKeyManager)managers[idx]);
                     }
                 }
             }
@@ -1304,6 +1304,11 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
             LOG.debug("managers={} for {}", managers, this);
 
         return managers;
+    }
+
+    protected X509ExtendedKeyManager newSniX509ExtendedKeyManager(X509ExtendedKeyManager keyManager)
+    {
+        return new SniX509ExtendedKeyManager(keyManager);
     }
 
     protected TrustManager[] getTrustManagers(KeyStore trustStore, Collection<? extends CRL> crls) throws Exception
@@ -2195,12 +2200,12 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
                 }
 
                 if (LOG.isDebugEnabled())
-                    LOG.debug("SNI matched {}->{}", host, _x509);
+                    LOG.debug("SNI host name {} matched certificate {}", host, _x509);
             }
             else
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("SNI no match for {}", serverName);
+                    LOG.debug("No SNI host name for {}", serverName);
             }
 
             // Return true and allow the KeyManager to accept or reject when choosing a certificate.
@@ -2243,6 +2248,8 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
 
     public static class Server extends SslContextFactory
     {
+        private boolean rejectUnmatchedSNIHost;
+
         public Server()
         {
             setEndpointIdentificationAlgorithm(null);
@@ -2269,6 +2276,22 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
         public void setNeedClientAuth(boolean needClientAuth)
         {
             super.setNeedClientAuth(needClientAuth);
+        }
+
+        public boolean isRejectUnmatchedSNIHost()
+        {
+            return rejectUnmatchedSNIHost;
+        }
+
+        public void setRejectUnmatchedSNIHost(boolean rejectUnmatchedSNIHost)
+        {
+            this.rejectUnmatchedSNIHost = rejectUnmatchedSNIHost;
+        }
+
+        @Override
+        protected X509ExtendedKeyManager newSniX509ExtendedKeyManager(X509ExtendedKeyManager keyManager)
+        {
+            return new SniX509ExtendedKeyManager(keyManager, isRejectUnmatchedSNIHost());
         }
     }
 }
