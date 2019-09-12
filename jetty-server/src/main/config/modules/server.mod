@@ -84,3 +84,8 @@ patch-module: servlet.api=lib/jetty-schemas-3.1.jar
 
 ## Dump the state of the Jetty server, components, and webapps before shutdown
 # jetty.server.dumpBeforeStop=false
+
+## Scheduler Configuration
+# jetty.scheduler.name=
+# jetty.scheduler.deamon=false
+# jetty.scheduler.threads=-1
