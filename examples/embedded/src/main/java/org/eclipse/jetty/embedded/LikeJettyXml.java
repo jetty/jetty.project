@@ -18,8 +18,11 @@
 
 package org.eclipse.jetty.embedded;
 
-import java.io.File;
+import java.io.FileNotFoundException;
 import java.lang.management.ManagementFactory;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.deploy.PropertiesConfigurationManager;
@@ -58,21 +61,21 @@ import org.eclipse.jetty.webapp.Configuration;
  */
 public class LikeJettyXml
 {
-    public static void main(String[] args) throws Exception
+    public static Server createServer(int port, int securePort, boolean addDebugListener) throws Exception
     {
         // Path to as-built jetty-distribution directory
-        String jettyHomeBuild = JettyDistribution.DISTRIBUTION.toString();
+        Path jettyHomeBuild = JettyDistribution.get();
 
         // Find jetty home and base directories
-        String homePath = System.getProperty("jetty.home", jettyHomeBuild);
-        File homeDir = new File(homePath);
+        String homePath = System.getProperty("jetty.home", jettyHomeBuild.toString());
+        Path homeDir = Paths.get(homePath);
 
-        String basePath = System.getProperty("jetty.base", homeDir + "/demo-base");
-        File baseDir = new File(basePath);
+        String basePath = System.getProperty("jetty.base", homeDir.resolve("demo-base").toString());
+        Path baseDir = Paths.get(basePath);
 
         // Configure jetty.home and jetty.base system properties
-        String jettyHome = homeDir.getAbsolutePath();
-        String jettyBase = baseDir.getAbsolutePath();
+        String jettyHome = homeDir.toAbsolutePath().toString();
+        String jettyBase = baseDir.toAbsolutePath().toString();
         System.setProperty("jetty.home", jettyHome);
         System.setProperty("jetty.base", jettyBase);
 
@@ -90,7 +93,7 @@ public class LikeJettyXml
         // HTTP Configuration
         HttpConfiguration httpConfig = new HttpConfiguration();
         httpConfig.setSecureScheme("https");
-        httpConfig.setSecurePort(8443);
+        httpConfig.setSecurePort(securePort);
         httpConfig.setOutputBufferSize(32768);
         httpConfig.setRequestHeaderSize(8192);
         httpConfig.setResponseHeaderSize(8192);
@@ -104,11 +107,6 @@ public class LikeJettyXml
         handlers.setHandlers(new Handler[]{contexts, new DefaultHandler()});
         server.setHandler(handlers);
 
-        // Extra options
-        server.setDumpAfterStart(true);
-        server.setDumpBeforeStop(false);
-        server.setStopAtShutdown(true);
-
         // === jetty-jmx.xml ===
         MBeanContainer mbContainer = new MBeanContainer(
             ManagementFactory.getPlatformMBeanServer());
@@ -117,24 +115,21 @@ public class LikeJettyXml
         // === jetty-http.xml ===
         ServerConnector http = new ServerConnector(server,
             new HttpConnectionFactory(httpConfig));
-        http.setPort(8080);
+        http.setPort(port);
         http.setIdleTimeout(30000);
         server.addConnector(http);
 
         // === jetty-https.xml ===
         // SSL Context Factory
+        Path keystorePath = Paths.get("src/main/resources/etc/keystore").toAbsolutePath();
+        if (!Files.exists(keystorePath))
+            throw new FileNotFoundException(keystorePath.toString());
         SslContextFactory sslContextFactory = new SslContextFactory.Server();
-        sslContextFactory.setKeyStorePath(jettyHome + "/../../../jetty-server/src/test/config/etc/keystore");
+        sslContextFactory.setKeyStorePath(keystorePath.toString());
         sslContextFactory.setKeyStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
         sslContextFactory.setKeyManagerPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");
-        sslContextFactory.setTrustStorePath(jettyHome + "/../../../jetty-server/src/test/config/etc/keystore");
+        sslContextFactory.setTrustStorePath(keystorePath.toString());
         sslContextFactory.setTrustStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
-        sslContextFactory.setExcludeCipherSuites("SSL_RSA_WITH_DES_CBC_SHA",
-            "SSL_DHE_RSA_WITH_DES_CBC_SHA", "SSL_DHE_DSS_WITH_DES_CBC_SHA",
-            "SSL_RSA_EXPORT_WITH_RC4_40_MD5",
-            "SSL_RSA_EXPORT_WITH_DES40_CBC_SHA",
-            "SSL_DHE_RSA_EXPORT_WITH_DES40_CBC_SHA",
-            "SSL_DHE_DSS_EXPORT_WITH_DES40_CBC_SHA");
 
         // SSL HTTP Configuration
         HttpConfiguration httpsConfig = new HttpConfiguration(httpConfig);
@@ -144,14 +139,17 @@ public class LikeJettyXml
         ServerConnector sslConnector = new ServerConnector(server,
             new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString()),
             new HttpConnectionFactory(httpsConfig));
-        sslConnector.setPort(8443);
+        sslConnector.setPort(securePort);
         server.addConnector(sslConnector);
 
         // === jetty-deploy.xml ===
         DeploymentManager deployer = new DeploymentManager();
-        DebugListener debug = new DebugListener(System.err, true, true, true);
-        server.addBean(debug);
-        deployer.addLifeCycleBinding(new DebugListenerBinding(debug));
+        if (addDebugListener)
+        {
+            DebugListener debug = new DebugListener(System.err, true, true, true);
+            server.addBean(debug);
+            deployer.addLifeCycleBinding(new DebugListenerBinding(debug));
+        }
         deployer.setContexts(contexts);
         deployer.setContextAttribute(
             "org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern",
@@ -214,6 +212,20 @@ public class LikeJettyXml
         login.setConfig(jettyBase + "/etc/realm.properties");
         login.setHotReload(false);
         server.addBean(login);
+
+        return server;
+    }
+
+    public static void main(String[] args) throws Exception
+    {
+        int port = ExampleUtil.getPort(args, "jetty.http.port", 8080);
+        int securePort = ExampleUtil.getPort(args, "jetty.https.port", 8443);
+        Server server = createServer(port, securePort, true);
+
+        // Extra options
+        server.setDumpAfterStart(true);
+        server.setDumpBeforeStop(false);
+        server.setStopAtShutdown(true);
 
         // Start the server
         server.start();

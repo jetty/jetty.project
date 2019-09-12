@@ -7,7 +7,9 @@
       <Arg>
           <New class="org.eclipse.jetty.server.ServerConnector">
             <Arg><Ref refid="FileServer"/></Arg>
-            <Set name="port">8080</Set>
+            <Set name="port">
+              <Property name="http.port" default="8080" />
+            </Set>
           </New>
       </Arg>
     </Call>
@@ -22,7 +24,9 @@
                 <Set name="welcomeFiles">
                   <Array type="String"><Item>index.html</Item></Array>
                 </Set>
-                <Set name="resourceBase">.</Set>
+                <Set name="resourceBase">
+                  <Property name="fileserver.baseresource" default="." />
+                </Set>
               </New>
             </Item>
             <Item>
