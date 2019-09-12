@@ -19,6 +19,7 @@
 package org.eclipse.jetty.http2.hpack;
 
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Set;
@@ -392,19 +393,38 @@ public class HpackEncoder
         {
             // huffman literal value
             buffer.put((byte)0x80);
-            NBitInteger.encode(buffer, 7, Huffman.octetsNeeded(value));
-            Huffman.encode(buffer, value);
+
+            int needed = Huffman.octetsNeeded(value);
+            if (needed >= 0)
+            {
+                NBitInteger.encode(buffer, 7, needed);
+                Huffman.encode(buffer, value);
+            }
+            else
+            {
+                // Not iso_8859_1
+                byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
+                NBitInteger.encode(buffer, 7, Huffman.octetsNeeded(bytes));
+                Huffman.encode(buffer, bytes);
+            }
         }
         else
         {
             // add literal assuming iso_8859_1
-            buffer.put((byte)0x00);
+            buffer.put((byte)0x00).mark();
             NBitInteger.encode(buffer, 7, value.length());
             for (int i = 0; i < value.length(); i++)
             {
                 char c = value.charAt(i);
                 if (c < ' ' || c > 127)
-                    throw new IllegalArgumentException();
+                {
+                    // Not iso_8859_1, so re-encode as UTF-8
+                    buffer.reset();
+                    byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
+                    NBitInteger.encode(buffer, 7, bytes.length);
+                    buffer.put(bytes, 0, bytes.length);
+                    return;
+                }
                 buffer.put((byte)c);
             }
         }
