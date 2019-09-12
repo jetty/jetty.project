@@ -177,7 +177,7 @@ public class HpackDecoder
                     else
                         name = toASCIIString(buffer, length);
                     check:
-                    for (int i = name.length(); i-- > 0;)
+                    for (int i = name.length(); i-- > 0; )
                     {
                         char c = name.charAt(i);
                         if (c > 0xff)
