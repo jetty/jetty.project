@@ -408,9 +408,10 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
     }
 
     @Override
-    protected void checkAndPrepareUpgrade()
+    protected boolean checkAndPrepareUpgrade()
     {
         // TODO: move the code from HttpConnection.upgrade() here?
+        return false;
     }
 
     /**

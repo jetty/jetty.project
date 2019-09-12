@@ -41,11 +41,11 @@ public class HandshakerSelector implements Handshaker
         String method = request.getMethod();
         HttpVersion httpVersion = baseRequest.getHttpVersion();
 
-        if (HttpMethod.GET.equals(method) && HttpVersion.HTTP_1_1.equals(httpVersion))
+        if (HttpMethod.GET.is(method) && HttpVersion.HTTP_1_1.equals(httpVersion))
         {
             return rfc6455.upgradeRequest(negotiator, request, response, defaultCustomizer);
         }
-        else if (HttpMethod.CONNECT.equals(method) && HttpVersion.HTTP_2.equals(httpVersion))
+        else if (HttpMethod.CONNECT.is(method) && HttpVersion.HTTP_2.equals(httpVersion))
         {
             return rfc8441.upgradeRequest(negotiator, request, response, defaultCustomizer);
         }
