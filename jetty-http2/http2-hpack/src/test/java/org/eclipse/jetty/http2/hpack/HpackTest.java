@@ -155,7 +155,7 @@ public class HpackTest
 
         assertMetaDataSame(original0, decoded0);
     }
-
+    
     @Test
     public void evictReferencedFieldTest() throws Exception
     {
