@@ -68,24 +68,14 @@ public final class RFC6455Handshaker implements Handshaker
     public boolean upgradeRequest(WebSocketNegotiator negotiator, HttpServletRequest request, HttpServletResponse response,
                                   FrameHandler.Customizer defaultCustomizer) throws IOException
     {
-        final Request baseRequest = Request.getBaseRequest(request);
-        final HttpChannel httpChannel = baseRequest.getHttpChannel();
-        final Connector connector = httpChannel.getConnector();
-
-        if (negotiator == null)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("not upgraded: no WebSocketNegotiator {}", baseRequest);
-            return false;
-        }
-
         if (!HttpMethod.GET.is(request.getMethod()))
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("not upgraded method!=GET {}", baseRequest);
+                LOG.debug("not upgraded method!=GET {}", request);
             return false;
         }
 
+        final Request baseRequest = Request.getBaseRequest(request);
         if (!HttpVersion.HTTP_1_1.equals(baseRequest.getHttpVersion()))
         {
             if (LOG.isDebugEnabled())
@@ -93,15 +83,7 @@ public final class RFC6455Handshaker implements Handshaker
             return false;
         }
 
-        ByteBufferPool pool = negotiator.getByteBufferPool();
-        if (pool == null)
-            pool = baseRequest.getHttpChannel().getConnector().getByteBufferPool();
-
-        Negotiation negotiation = new Negotiation(
-            baseRequest,
-            request,
-            response,
-            new WebSocketComponents());
+        Negotiation negotiation = new Negotiation(baseRequest, request, response, new WebSocketComponents());
         if (LOG.isDebugEnabled())
             LOG.debug("negotiation {}", negotiation);
 
@@ -200,6 +182,8 @@ public final class RFC6455Handshaker implements Handshaker
             LOG.debug("session {}", coreSession);
 
         // Create a connection
+        HttpChannel httpChannel = baseRequest.getHttpChannel();
+        Connector connector = httpChannel.getConnector();
         WebSocketConnection connection = newWebSocketConnection(httpChannel.getEndPoint(), connector.getExecutor(), connector.getScheduler(), connector.getByteBufferPool(), coreSession);
         if (LOG.isDebugEnabled())
             LOG.debug("connection {}", connection);

@@ -65,34 +65,20 @@ public class RFC8441Handshaker implements Handshaker
     @Override
     public boolean upgradeRequest(WebSocketNegotiator negotiator, HttpServletRequest request, HttpServletResponse response, FrameHandler.Customizer defaultCustomizer) throws IOException
     {
-        Request baseRequest = Request.getBaseRequest(request);
-        HttpChannel httpChannel = baseRequest.getHttpChannel();
-        Connector connector = httpChannel.getConnector();
+        if (!HttpMethod.CONNECT.is(request.getMethod()))
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("not upgraded method!=GET {}", request.toString());
+            return false;
+        }
 
+        Request baseRequest = Request.getBaseRequest(request);
         if (!HttpVersion.HTTP_2.equals(baseRequest.getHttpVersion()))
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("not upgraded HttpVersion!=2 {}", baseRequest);
             return false;
         }
-
-        if (!HttpMethod.CONNECT.is(request.getMethod()))
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("not upgraded method!=GET {}", baseRequest);
-            return false;
-        }
-
-        if (negotiator == null)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("not upgraded: no WebSocketNegotiator {}", baseRequest);
-            return false;
-        }
-
-        ByteBufferPool pool = negotiator.getByteBufferPool();
-        if (pool == null)
-            pool = baseRequest.getHttpChannel().getConnector().getByteBufferPool();
 
         Negotiation negotiation = new RFC8441Negotiation(baseRequest, request, response, new WebSocketComponents());
         if (LOG.isDebugEnabled())
@@ -189,8 +175,10 @@ public class RFC8441Handshaker implements Handshaker
         if (LOG.isDebugEnabled())
             LOG.debug("coreSession {}", coreSession);
 
-        // Create a connection
-        EndPoint endPoint = baseRequest.getHttpChannel().getTunnellingEndPoint();
+        // Create the Connection
+        HttpChannel httpChannel = baseRequest.getHttpChannel();
+        Connector connector = httpChannel.getConnector();
+        EndPoint endPoint = httpChannel.getTunnellingEndPoint();
         WebSocketConnection connection = newWebSocketConnection(endPoint, connector.getExecutor(), connector.getScheduler(), connector.getByteBufferPool(), coreSession);
         if (LOG.isDebugEnabled())
             LOG.debug("connection {}", connection);
