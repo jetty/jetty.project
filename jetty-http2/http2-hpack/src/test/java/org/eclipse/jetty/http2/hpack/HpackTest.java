@@ -153,7 +153,7 @@ public class HpackTest
         BufferUtil.flipToFlush(buffer, 0);
         Response decoded0 = (Response)decoder.decode(buffer);
 
-        assertMetadataSame(original0, decoded0);
+        assertMetaDataSame(original0, decoded0);
     }
 
     @Test
