@@ -889,9 +889,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
     protected void stopContext() throws Exception
     {
-        // stop all the handler hierarchy
-        super.doStop();
-
         // Call the context listeners
         ServletContextEvent event = new ServletContextEvent(_scontext);
         Collections.reverse(_destroySerletContextListeners);
@@ -907,6 +904,17 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 ex.add(x);
             }
         }
+
+        // stop all the handler hierarchy
+        try
+        {
+            super.doStop();
+        }
+        catch (Exception x)
+        {
+            ex.add(x);
+        }
+
         ex.ifExceptionThrow();
     }
 

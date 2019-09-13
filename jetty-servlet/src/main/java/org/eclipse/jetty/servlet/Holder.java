@@ -45,16 +45,15 @@ public abstract class Holder<T> extends BaseHolder<T>
 {
     private static final Logger LOG = Log.getLogger(Holder.class);
 
-    protected final Map<String, String> _initParams = new HashMap<String, String>(3);
-    protected String _displayName;
-    protected boolean _asyncSupported;
-    protected String _name;
-    protected boolean _initialized = false;
+    private final Map<String, String> _initParams = new HashMap<String, String>(3);
+    private String _displayName;
+    private boolean _asyncSupported;
+    private String _name;
 
     protected Holder(Source source)
     {
         super(source);
-        switch (_source.getOrigin())
+        switch (getSource().getOrigin())
         {
             case JAVAX_API:
             case DESCRIPTOR:
@@ -96,6 +95,14 @@ public abstract class Holder<T> extends BaseHolder<T>
     public String getName()
     {
         return _name;
+    }
+
+    @Override
+    protected synchronized void setInstance(T instance)
+    {
+        super.setInstance(instance);
+        if (getName() == null)
+            setName(String.format("%s@%x", instance.getClass().getName(), instance.hashCode()));
     }
 
     public void destroyInstance(Object instance)
@@ -175,7 +182,7 @@ public abstract class Holder<T> extends BaseHolder<T>
     @Override
     public String toString()
     {
-        return String.format("%s@%x==%s", _name, hashCode(), _className);
+        return String.format("%s@%x==%s", _name, hashCode(), getClassName());
     }
 
     protected class HolderConfig
@@ -183,7 +190,7 @@ public abstract class Holder<T> extends BaseHolder<T>
 
         public ServletContext getServletContext()
         {
-            return _servletHandler.getServletContext();
+            return getServletHandler().getServletContext();
         }
 
         public String getInitParameter(String param)
