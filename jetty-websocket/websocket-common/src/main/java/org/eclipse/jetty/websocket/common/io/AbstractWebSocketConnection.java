@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.LongAdder;
 
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.AbstractEndPoint;
@@ -139,6 +140,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     private final ConnectionState connectionState = new ConnectionState();
     private final FrameFlusher flusher;
     private final String id;
+    private final LongAdder bytesIn = new LongAdder();
     private WebSocketSession session;
     private List<ExtensionConfig> extensions = new ArrayList<>();
     private ByteBuffer prefillBuffer;
@@ -472,6 +474,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
                             return;
                         }
 
+                        bytesIn.add(filled);
                         if (LOG.isDebugEnabled())
                             LOG.debug("Filled {} bytes - {}", filled, BufferUtil.toDetailString(buffer));
                     }
@@ -668,7 +671,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     @Override
     public long getBytesIn()
     {
-        return parser.getBytesIn();
+        return bytesIn.longValue();
     }
 
     /**
