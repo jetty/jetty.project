@@ -518,7 +518,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-invoker-plugin</artifactId>
-          <version>3.2.1-SNAPSHOT</version>
+          <version>3.2.1</version>
           <configuration>
             <mergeUserSettings>true</mergeUserSettings>
             <writeJunitReport>true</writeJunitReport>
