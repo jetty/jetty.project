@@ -22,6 +22,7 @@ import java.io.InputStream;
 import java.io.Serializable;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -49,8 +50,7 @@ public class OpenIdConfiguration implements Serializable
     private final String clientId;
     private final String clientSecret;
     private final Map<String, Object> discoveryDocument;
-
-    private List<String> scopes = new ArrayList<>();
+    private final List<String> scopes = new ArrayList<>();
 
     /**
      * Create an OpenID configuration for a specific OIDC provider.
@@ -131,10 +131,7 @@ public class OpenIdConfiguration implements Serializable
 
     public void addScopes(String... scopes)
     {
-        for (String scope : scopes)
-        {
-            this.scopes.add(scope);
-        }
+        Collections.addAll(this.scopes, scopes);
     }
 
     public List<String> getScopes()

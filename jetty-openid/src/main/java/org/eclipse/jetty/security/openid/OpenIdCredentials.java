@@ -189,22 +189,26 @@ public class OpenIdCredentials implements Serializable
 
         URL url = new URL(configuration.getTokenEndpoint());
         HttpURLConnection connection = (HttpURLConnection)url.openConnection();
-        connection.setDoOutput(true);
-        connection.setRequestMethod("POST");
-        connection.setRequestProperty("Host", configuration.getOpenIdProvider());
-        connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
-
-        try (DataOutputStream wr = new DataOutputStream(connection.getOutputStream()))
+        try
         {
-            wr.write(urlParameters.getBytes(StandardCharsets.UTF_8));
-        }
+            connection.setDoOutput(true);
+            connection.setRequestMethod("POST");
+            connection.setRequestProperty("Host", configuration.getOpenIdProvider());
+            connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
 
-        Map result;
-        try (InputStream content = (InputStream)connection.getContent())
+            try (DataOutputStream wr = new DataOutputStream(connection.getOutputStream()))
+            {
+                wr.write(urlParameters.getBytes(StandardCharsets.UTF_8));
+            }
+
+            try (InputStream content = (InputStream)connection.getContent())
+            {
+                return (Map)JSON.parse(IO.toString(content));
+            }
+        }
+        finally
         {
-            result = (Map)JSON.parse(IO.toString(content));
+            connection.disconnect();
         }
-
-        return result;
     }
 }

@@ -51,6 +51,6 @@ public class OpenIdUserIdentity implements UserIdentity
     @Override
     public boolean isUserInRole(String role, Scope scope)
     {
-        return userIdentity == null ? false : userIdentity.isUserInRole(role, scope);
+        return userIdentity != null && userIdentity.isUserInRole(role, scope);
     }
 }

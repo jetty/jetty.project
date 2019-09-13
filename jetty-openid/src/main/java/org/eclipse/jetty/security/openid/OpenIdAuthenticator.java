@@ -127,7 +127,7 @@ public class OpenIdAuthenticator extends LoginAuthenticator
         _alwaysSaveUri = alwaysSave;
     }
 
-    public boolean getAlwaysSaveUri()
+    public boolean isAlwaysSaveUri()
     {
         return _alwaysSaveUri;
     }
@@ -283,7 +283,8 @@ public class OpenIdAuthenticator extends LoginAuthenticator
                             }
                         }
                         OpenIdAuthentication openIdAuth = new OpenIdAuthentication(getAuthMethod(), user);
-                        LOG.debug("authenticated {}->{}", openIdAuth, nuri);
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("authenticated {}->{}", openIdAuth, nuri);
 
                         response.setContentLength(0);
                         int redirectCode = (baseRequest.getHttpVersion().getVersion() < HttpVersion.HTTP_1_1.getVersion() ? HttpServletResponse.SC_MOVED_TEMPORARILY : HttpServletResponse.SC_SEE_OTHER);
@@ -322,7 +323,8 @@ public class OpenIdAuthenticator extends LoginAuthenticator
                 if (authentication instanceof Authentication.User && _loginService != null &&
                     !_loginService.validate(((Authentication.User)authentication).getUserIdentity()))
                 {
-                    LOG.debug("auth revoked {}", authentication);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("auth revoked {}", authentication);
                     session.removeAttribute(SessionAuthentication.__J_AUTHENTICATED);
                 }
                 else
@@ -334,17 +336,20 @@ public class OpenIdAuthenticator extends LoginAuthenticator
                         {
                             //check if the request is for the same url as the original and restore
                             //params if it was a post
-                            LOG.debug("auth retry {}->{}", authentication, jUri);
+                            if (LOG.isDebugEnabled())
+                                LOG.debug("auth retry {}->{}", authentication, jUri);
                             StringBuffer buf = request.getRequestURL();
                             if (request.getQueryString() != null)
                                 buf.append("?").append(request.getQueryString());
 
                             if (jUri.equals(buf.toString()))
                             {
+                                @SuppressWarnings("unchecked")
                                 MultiMap<String> jPost = (MultiMap<String>)session.getAttribute(J_POST);
                                 if (jPost != null)
                                 {
-                                    LOG.debug("auth rePOST {}->{}", authentication, jUri);
+                                    if (LOG.isDebugEnabled())
+                                        LOG.debug("auth rePOST {}->{}", authentication, jUri);
                                     baseRequest.setContentParameters(jPost);
                                 }
                                 session.removeAttribute(J_URI);
@@ -353,7 +358,8 @@ public class OpenIdAuthenticator extends LoginAuthenticator
                             }
                         }
                     }
-                    LOG.debug("auth {}", authentication);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("auth {}", authentication);
                     return authentication;
                 }
             }
@@ -361,7 +367,8 @@ public class OpenIdAuthenticator extends LoginAuthenticator
             // if we can't send challenge
             if (DeferredAuthentication.isDeferred(response))
             {
-                LOG.debug("auth deferred {}", session == null ? null : session.getId());
+                if (LOG.isDebugEnabled())
+                    LOG.debug("auth deferred {}", session == null ? null : session.getId());
                 return Authentication.UNAUTHENTICATED;
             }
 
@@ -370,7 +377,7 @@ public class OpenIdAuthenticator extends LoginAuthenticator
             synchronized (session)
             {
                 // But only if it is not set already, or we save every uri that leads to a login redirect
-                if (session.getAttribute(J_URI) == null || _alwaysSaveUri)
+                if (session.getAttribute(J_URI) == null || isAlwaysSaveUri())
                 {
                     StringBuffer buf = request.getRequestURL();
                     if (request.getQueryString() != null)
@@ -389,7 +396,8 @@ public class OpenIdAuthenticator extends LoginAuthenticator
 
             // send the the challenge
             String challengeUri = getChallengeUri(request);
-            LOG.debug("challenge {}->{}", session.getId(), challengeUri);
+            if (LOG.isDebugEnabled())
+                LOG.debug("challenge {}->{}", session.getId(), challengeUri);
             int redirectCode = (baseRequest.getHttpVersion().getVersion() < HttpVersion.HTTP_1_1.getVersion() ? HttpServletResponse.SC_MOVED_TEMPORARILY : HttpServletResponse.SC_SEE_OTHER);
             baseResponse.sendRedirect(redirectCode, response.encodeRedirectURL(challengeUri));
 
@@ -445,7 +453,7 @@ public class OpenIdAuthenticator extends LoginAuthenticator
         StringBuilder scopes = new StringBuilder();
         for (String s : _configuration.getScopes())
         {
-            scopes.append(" " + s);
+            scopes.append(" ").append(s);
         }
 
         return _configuration.getAuthEndpoint() +

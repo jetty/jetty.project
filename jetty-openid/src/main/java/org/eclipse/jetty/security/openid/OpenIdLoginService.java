@@ -105,7 +105,7 @@ public class OpenIdLoginService extends ContainerLifeCycle implements LoginServi
             UserIdentity userIdentity = loginService.login(openIdCredentials.getUserId(), "", req);
             if (userIdentity == null)
             {
-                if (authenticateNewUsers)
+                if (isAuthenticateNewUsers())
                     return getIdentityService().newUserIdentity(subject, userPrincipal, new String[0]);
                 return null;
             }
@@ -115,6 +115,11 @@ public class OpenIdLoginService extends ContainerLifeCycle implements LoginServi
         return identityService.newUserIdentity(subject, userPrincipal, new String[0]);
     }
 
+    public boolean isAuthenticateNewUsers()
+    {
+        return authenticateNewUsers;
+    }
+
     /**
      * This setting is only meaningful if a wrapped {@link LoginService} has been set.
      * <p>
@@ -122,9 +127,9 @@ public class OpenIdLoginService extends ContainerLifeCycle implements LoginServi
      * be authenticated but with no roles, if set to false users will not be
      * authenticated unless they are discovered by the wrapped {@link LoginService}.
      * </p>
-     * @param authenticateNewUsers
+     * @param authenticateNewUsers whether to authenticate users not found by a wrapping LoginService
      */
-    public void authenticateNewUsers(boolean authenticateNewUsers)
+    public void setAuthenticateNewUsers(boolean authenticateNewUsers)
     {
         this.authenticateNewUsers = authenticateNewUsers;
     }
