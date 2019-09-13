@@ -97,6 +97,7 @@
     <module>jetty-server</module>
     <module>jetty-xml</module>
     <module>jetty-security</module>
+    <module>jetty-openid</module>
     <module>jetty-servlet</module>
     <module>jetty-webapp</module>
     <module>jetty-fcgi</module>
