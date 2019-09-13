@@ -101,6 +101,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         }
     }
 
+    @Deprecated
     public static class Stats
     {
         private AtomicLong countFillInterestedEvents = new AtomicLong(0);
@@ -402,6 +403,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         return scheduler;
     }
 
+    @Deprecated()
     public Stats getStats()
     {
         return stats;
