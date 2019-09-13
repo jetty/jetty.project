@@ -34,7 +34,6 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.common.CloseInfo;
@@ -46,14 +45,13 @@ import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class WebSocketConnectionStatsTest
+public class WebSocketStatsTest
 {
     public static class MyWebSocketServlet extends WebSocketServlet
     {
@@ -121,7 +119,6 @@ public class WebSocketConnectionStatsTest
         return buffer.position() - pos;
     }
 
-    @Disabled("Flaky test see issue #3982")
     @Test
     public void echoStatsTest() throws Exception
     {
@@ -145,11 +142,10 @@ public class WebSocketConnectionStatsTest
             {
                 session.getRemote().sendString(msgText);
             }
-            session.close(StatusCode.NORMAL, null);
-
-            assertTrue(socket.closed.await(5, TimeUnit.SECONDS));
-            assertTrue(wsConnectionClosed.await(5, TimeUnit.SECONDS));
         }
+
+        assertTrue(socket.closed.await(5, TimeUnit.SECONDS));
+        assertTrue(wsConnectionClosed.await(5, TimeUnit.SECONDS));
 
         assertThat(statistics.getConnectionsMax(), is(1L));
         assertThat(statistics.getConnections(), is(0L));
@@ -163,12 +159,6 @@ public class WebSocketConnectionStatsTest
         final long textFrameSize = getFrameByteSize(textFrame);
         final long closeFrameSize = getFrameByteSize(closeFrame);
         final int maskSize = 4; // We use 4 byte mask for client frames
-
-        // Pointless Sanity Checks
-        // assertThat("Upgrade Sent Bytes", upgradeSentBytes, is(197L));
-        // assertThat("Upgrade Received Bytes", upgradeReceivedBytes, is(261L));
-        // assertThat("Text Frame Size", textFrameSize, is(13L));
-        // assertThat("Close Frame Size", closeFrameSize, is(4L));
 
         final long expectedSent = upgradeSentBytes + numMessages * textFrameSize + closeFrameSize;
         final long expectedReceived = upgradeReceivedBytes + numMessages * (textFrameSize + maskSize) + closeFrameSize + maskSize;
