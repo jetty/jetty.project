@@ -104,13 +104,20 @@ public class HTTP2ServerSession extends HTTP2Session implements ServerParser.Lis
                 }
                 else
                 {
-                    stream = createRemoteStream(streamId);
-                    if (stream != null)
+                    if (isClosed())
                     {
-                        onStreamOpened(stream);
-                        stream.process(frame, Callback.NOOP);
-                        Stream.Listener listener = notifyNewStream(stream, frame);
-                        stream.setListener(listener);
+                        reset(new ResetFrame(streamId, ErrorCode.REFUSED_STREAM_ERROR.code), Callback.NOOP);
+                    }
+                    else
+                    {
+                        stream = createRemoteStream(streamId);
+                        if (stream != null)
+                        {
+                            onStreamOpened(stream);
+                            stream.process(frame, Callback.NOOP);
+                            Stream.Listener listener = notifyNewStream(stream, frame);
+                            stream.setListener(listener);
+                        }
                     }
                 }
             }

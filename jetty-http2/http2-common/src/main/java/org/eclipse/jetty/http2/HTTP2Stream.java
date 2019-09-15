@@ -298,7 +298,8 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
         {
             // It's a bad client, it does not deserve to be
             // treated gently by just resetting the stream.
-            session.close(ErrorCode.FLOW_CONTROL_ERROR.code, "stream_window_exceeded", Callback.NOOP);
+            // TODO: no cast
+            ((HTTP2Session)session).onConnectionFailure(ErrorCode.FLOW_CONTROL_ERROR.code, "stream_window_exceeded");
             callback.failed(new IOException("stream_window_exceeded"));
             return;
         }
@@ -519,6 +520,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
 
     private void updateStreamCount(int deltaStream, int deltaClosing)
     {
+        // TODO: no cast
         ((HTTP2Session)session).updateStreamCount(isLocal(), deltaStream, deltaClosing);
     }
 

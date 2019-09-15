@@ -183,12 +183,17 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     {
         _server = server;
         _executor = executor != null ? executor : _server.getThreadPool();
+        addBean(_executor);
+        if (executor == null)
+            unmanage(_executor); // inherited from server
         if (scheduler == null)
             scheduler = _server.getBean(Scheduler.class);
         _scheduler = scheduler != null ? scheduler : new ScheduledExecutorScheduler(String.format("Connector-Scheduler-%x", hashCode()), false);
+        addBean(_scheduler);
         if (pool == null)
             pool = _server.getBean(ByteBufferPool.class);
         _byteBufferPool = pool != null ? pool : new ArrayByteBufferPool();
+        addBean(_byteBufferPool);
 
         addEventListener(new Container.Listener()
         {
@@ -206,13 +211,6 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
                     _httpChannelListeners = new HttpChannelListeners(getBeans(HttpChannel.Listener.class));
             }
         });
-
-        addBean(_server, false);
-        addBean(_executor);
-        if (executor == null)
-            unmanage(_executor); // inherited from server
-        addBean(_scheduler);
-        addBean(_byteBufferPool);
 
         for (ConnectionFactory factory : factories)
         {
@@ -489,35 +487,23 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
             throw new IllegalStateException(getState());
 
         List<ConnectionFactory> existings = new ArrayList<>(_factories.values());
-        _factories.clear();
+        clearConnectionFactories();
         addConnectionFactory(factory);
         for (ConnectionFactory existing : existings)
         {
             addConnectionFactory(existing);
         }
-        _defaultProtocol = factory.getProtocol();
     }
 
+    // Used from XML, do not remove.
     public void addIfAbsentConnectionFactory(ConnectionFactory factory)
     {
         if (isRunning())
             throw new IllegalStateException(getState());
 
         String key = StringUtil.asciiToLowerCase(factory.getProtocol());
-        if (_factories.containsKey(key))
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("{} addIfAbsent ignored {}", this, factory);
-        }
-        else
-        {
-            _factories.put(key, factory);
-            addBean(factory);
-            if (_defaultProtocol == null)
-                _defaultProtocol = factory.getProtocol();
-            if (LOG.isDebugEnabled())
-                LOG.debug("{} addIfAbsent added {}", this, factory);
-        }
+        if (!_factories.containsKey(key))
+            addConnectionFactory(factory);
     }
 
     public ConnectionFactory removeConnectionFactory(String protocol)
@@ -526,6 +512,8 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
             throw new IllegalStateException(getState());
 
         ConnectionFactory factory = _factories.remove(StringUtil.asciiToLowerCase(protocol));
+        if (_factories.isEmpty())
+            _defaultProtocol = null;
         removeBean(factory);
         return factory;
     }
@@ -551,6 +539,15 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
             if (factory != null)
                 addConnectionFactory(factory);
         }
+    }
+
+    public void clearConnectionFactories()
+    {
+        if (isRunning())
+            throw new IllegalStateException(getState());
+
+        _factories.clear();
+        _defaultProtocol = null;
     }
 
     @ManagedAttribute("The priority delta to apply to acceptor threads")
@@ -586,14 +583,6 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     public List<String> getProtocols()
     {
         return new ArrayList<>(_factories.keySet());
-    }
-
-    public void clearConnectionFactories()
-    {
-        if (isRunning())
-            throw new IllegalStateException(getState());
-
-        _factories.clear();
     }
 
     @ManagedAttribute("This connector's default protocol")
