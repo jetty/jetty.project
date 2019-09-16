@@ -29,7 +29,7 @@ public class FastCloseEndpoint extends AbstractCloseEndpoint
     @Override
     public void onWebSocketConnect(Session sess)
     {
-        LOG.debug("onWebSocketConnect({})", sess);
+        log.debug("onWebSocketConnect({})", sess);
         sess.close(StatusCode.NORMAL, "FastCloseServer");
     }
 }

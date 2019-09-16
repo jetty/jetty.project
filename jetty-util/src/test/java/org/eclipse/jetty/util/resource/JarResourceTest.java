@@ -18,79 +18,84 @@
 
 package org.eclipse.jetty.util.resource;
 
-import java.io.File;
-import java.io.FilenameFilter;
+import java.io.IOException;
+import java.net.URI;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.zip.ZipFile;
 
+import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@ExtendWith(WorkDirExtension.class)
 public class JarResourceTest
 {
-    private String testResURI = MavenTestingUtils.getTestResourcesPath().toUri().toASCIIString();
+    public WorkDir workDir;
 
     @Test
     public void testJarFile()
         throws Exception
     {
-        String s = "jar:" + testResURI + "TestData/test.zip!/subdir/";
+        Path testZip = MavenTestingUtils.getTestResourcePathFile("TestData/test.zip");
+        String s = "jar:" + testZip.toUri().toASCIIString() + "!/subdir/";
         Resource r = Resource.newResource(s);
 
         Set<String> entries = new HashSet<>(Arrays.asList(r.list()));
         assertThat(entries, containsInAnyOrder("alphabet", "numbers", "subsubdir/"));
 
-        File extract = File.createTempFile("extract", null);
-        if (extract.exists())
-            extract.delete();
-        extract.mkdir();
-        extract.deleteOnExit();
+        Path extract = workDir.getPathFile("extract");
+        FS.ensureEmpty(extract);
 
-        r.copyTo(extract);
+        r.copyTo(extract.toFile());
 
-        Resource e = Resource.newResource(extract.getAbsolutePath());
+        Resource e = Resource.newResource(extract.toString());
 
         entries = new HashSet<>(Arrays.asList(e.list()));
         assertThat(entries, containsInAnyOrder("alphabet", "numbers", "subsubdir/"));
 
-        IO.delete(extract);
-
-        s = "jar:" + testResURI + "TestData/test.zip!/subdir/subsubdir/";
+        s = "jar:" + testZip.toUri().toASCIIString() + "!/subdir/subsubdir/";
         r = Resource.newResource(s);
 
         entries = new HashSet<>(Arrays.asList(r.list()));
         assertThat(entries, containsInAnyOrder("alphabet", "numbers"));
 
-        extract = File.createTempFile("extract", null);
-        if (extract.exists())
-            extract.delete();
-        extract.mkdir();
-        extract.deleteOnExit();
+        Path extract2 = workDir.getPathFile("extract2");
+        FS.ensureEmpty(extract2);
 
-        r.copyTo(extract);
+        r.copyTo(extract2.toFile());
 
-        e = Resource.newResource(extract.getAbsolutePath());
+        e = Resource.newResource(extract2.toString());
 
         entries = new HashSet<>(Arrays.asList(e.list()));
         assertThat(entries, containsInAnyOrder("alphabet", "numbers"));
-        IO.delete(extract);
     }
 
     @Test
     public void testJarFileGetAllResoures()
         throws Exception
     {
-        String s = "jar:" + testResURI + "TestData/test.zip!/subdir/";
+        Path testZip = MavenTestingUtils.getTestResourcePathFile("TestData/test.zip");
+        String s = "jar:" + testZip.toUri().toASCIIString() + "!/subdir/";
         Resource r = Resource.newResource(s);
         Collection<Resource> deep = r.getAllResources();
 
@@ -101,16 +106,17 @@ public class JarResourceTest
     public void testJarFileIsContainedIn()
         throws Exception
     {
-        String s = "jar:" + testResURI + "TestData/test.zip!/subdir/";
+        Path testZip = MavenTestingUtils.getTestResourcePathFile("TestData/test.zip");
+        String s = "jar:" + testZip.toUri().toASCIIString() + "!/subdir/";
         Resource r = Resource.newResource(s);
-        Resource container = Resource.newResource(testResURI + "TestData/test.zip");
+        Resource container = Resource.newResource(testZip);
 
-        assertTrue(r instanceof JarFileResource);
+        assertThat(r, instanceOf(JarFileResource.class));
         JarFileResource jarFileResource = (JarFileResource)r;
 
         assertTrue(jarFileResource.isContainedIn(container));
 
-        container = Resource.newResource(testResURI + "TestData");
+        container = Resource.newResource(testZip.getParent());
         assertFalse(jarFileResource.isContainedIn(container));
     }
 
@@ -118,9 +124,11 @@ public class JarResourceTest
     public void testJarFileLastModified()
         throws Exception
     {
-        String s = "jar:" + testResURI + "TestData/test.zip!/subdir/numbers";
+        Path testZip = MavenTestingUtils.getTestResourcePathFile("TestData/test.zip");
 
-        try (ZipFile zf = new ZipFile(MavenTestingUtils.getTestResourceFile("TestData/test.zip")))
+        String s = "jar:" + testZip.toUri().toASCIIString() + "!/subdir/numbers";
+
+        try (ZipFile zf = new ZipFile(testZip.toFile()))
         {
             long last = zf.getEntry("subdir/numbers").getTime();
 
@@ -132,73 +140,143 @@ public class JarResourceTest
     @Test
     public void testJarFileCopyToDirectoryTraversal() throws Exception
     {
-        String s = "jar:" + testResURI + "TestData/extract.zip!/";
+        Path extractZip = MavenTestingUtils.getTestResourcePathFile("TestData/extract.zip");
+
+        String s = "jar:" + extractZip.toUri().toASCIIString() + "!/";
         Resource r = Resource.newResource(s);
 
-        assertTrue(r instanceof JarResource);
+        assertThat(r, instanceOf(JarResource.class));
         JarResource jarResource = (JarResource)r;
 
-        File destParent = File.createTempFile("copyjar", null);
-        if (destParent.exists())
-            destParent.delete();
-        destParent.mkdir();
-        destParent.deleteOnExit();
+        Path destParent = workDir.getPathFile("copyjar");
+        FS.ensureEmpty(destParent);
 
-        File dest = new File(destParent.getCanonicalPath() + "/extract");
-        if (dest.exists())
-            dest.delete();
-        dest.mkdir();
-        dest.deleteOnExit();
+        Path dest = destParent.toRealPath().resolve("extract");
+        FS.ensureEmpty(dest);
 
-        jarResource.copyTo(dest);
+        jarResource.copyTo(dest.toFile());
 
         // dest contains only the valid entry; dest.getParent() contains only the dest directory
-        assertEquals(1, dest.listFiles().length);
-        assertEquals(1, dest.getParentFile().listFiles().length);
+        assertEquals(1, listFiles(dest).size());
+        assertEquals(1, listFiles(dest.getParent()).size());
 
-        FilenameFilter dotdotFilenameFilter = new FilenameFilter()
-        {
-            @Override
-            public boolean accept(File directory, String name)
-            {
-                return name.equals("dotdot.txt");
-            }
-        };
-        assertEquals(0, dest.listFiles(dotdotFilenameFilter).length);
-        assertEquals(0, dest.getParentFile().listFiles(dotdotFilenameFilter).length);
+        DirectoryStream.Filter<? super Path> dotdotFilenameFilter = (path) ->
+            path.getFileName().toString().equalsIgnoreCase("dotdot.dot");
 
-        FilenameFilter extractfileFilenameFilter = new FilenameFilter()
-        {
-            @Override
-            public boolean accept(File directory, String name)
-            {
-                return name.equals("extract-filenotdir");
-            }
-        };
-        assertEquals(0, dest.listFiles(extractfileFilenameFilter).length);
-        assertEquals(0, dest.getParentFile().listFiles(extractfileFilenameFilter).length);
+        assertEquals(0, listFiles(dest, dotdotFilenameFilter).size());
+        assertEquals(0, listFiles(dest.getParent(), dotdotFilenameFilter).size());
 
-        FilenameFilter currentDirectoryFilenameFilter = new FilenameFilter()
-        {
-            @Override
-            public boolean accept(File directory, String name)
-            {
-                return name.equals("current.txt");
-            }
-        };
-        assertEquals(1, dest.listFiles(currentDirectoryFilenameFilter).length);
-        assertEquals(0, dest.getParentFile().listFiles(currentDirectoryFilenameFilter).length);
+        DirectoryStream.Filter<? super Path> extractfileFilenameFilter = (path) ->
+            path.getFileName().toString().equalsIgnoreCase("extract-filenotdir");
 
-        IO.delete(dest);
-        assertFalse(dest.exists());
+        assertEquals(0, listFiles(dest, extractfileFilenameFilter).size());
+        assertEquals(0, listFiles(dest.getParent(), extractfileFilenameFilter).size());
+
+        DirectoryStream.Filter<? super Path> currentDirectoryFilenameFilter = (path) ->
+            path.getFileName().toString().equalsIgnoreCase("current.txt");
+
+        assertEquals(1, listFiles(dest, currentDirectoryFilenameFilter).size());
+        assertEquals(0, listFiles(dest.getParent(), currentDirectoryFilenameFilter).size());
     }
 
     @Test
     public void testEncodedFileName()
         throws Exception
     {
-        String s = "jar:" + testResURI + "TestData/test.zip!/file%20name.txt";
+        Path testZip = MavenTestingUtils.getTestResourcePathFile("TestData/test.zip");
+
+        String s = "jar:" + testZip.toUri().toASCIIString() + "!/file%20name.txt";
         Resource r = Resource.newResource(s);
         assertTrue(r.exists());
+    }
+
+    @Test
+    public void testJarFileResourceList() throws Exception
+    {
+        Path testJar = MavenTestingUtils.getTestResourcePathFile("jar-file-resource.jar");
+        String uri = "jar:" + testJar.toUri().toASCIIString() + "!/";
+
+        Resource resource = new JarFileResource(URI.create(uri).toURL(),false);
+        Resource rez = resource.addPath("rez/");
+
+        assertThat("path /rez/ is a dir", rez.isDirectory(), is(true));
+
+        List<String> actual = Arrays.asList(rez.list());
+        String[] expected = new String[]{
+            "one",
+            "aaa",
+            "bbb",
+            "oddities/",
+            "another dir/",
+            "ccc",
+            "deep/",
+            };
+        assertThat("Dir contents", actual, containsInAnyOrder(expected));
+    }
+
+    /**
+     * Test getting a file listing of a Directory in a JAR
+     * Where the JAR entries contain names that are URI encoded / escaped
+     */
+    @Test
+    public void testJarFileResourceList_PreEncodedEntries() throws Exception
+    {
+        Path testJar = MavenTestingUtils.getTestResourcePathFile("jar-file-resource.jar");
+        String uri = "jar:" + testJar.toUri().toASCIIString() + "!/";
+
+        Resource resource = new JarFileResource(URI.create(uri).toURL(),false);
+        Resource rez = resource.addPath("rez/oddities/");
+
+        assertThat("path /rez/oddities/ is a dir", rez.isDirectory(), is(true));
+
+        List<String> actual = Arrays.asList(rez.list());
+        String[] expected = new String[]{
+            ";",
+            "#hashcode",
+            "index.html#fragment",
+            "other%2fkind%2Fof%2fslash", // pre-encoded / escaped
+            "a file with a space",
+            ";\" onmousedown=\"alert(document.location)\"",
+            "some\\slash\\you\\got\\there" // not encoded, stored as backslash native
+        };
+        assertThat("Dir contents", actual, containsInAnyOrder(expected));
+    }
+
+    @Test
+    public void testJarFileResourceList_DirWithSpace() throws Exception
+    {
+        Path testJar = MavenTestingUtils.getTestResourcePathFile("jar-file-resource.jar");
+        String uri = "jar:" + testJar.toUri().toASCIIString() + "!/";
+
+        Resource resource = new JarFileResource(URI.create(uri).toURL(),false);
+        Resource anotherDir = resource.addPath("rez/another dir/");
+
+        assertThat("path /rez/another dir/ is a dir", anotherDir.isDirectory(), is(true));
+
+        List<String> actual = Arrays.asList(anotherDir.list());
+        String[] expected = new String[]{
+            "a file.txt",
+            "another file.txt",
+            "..\\a different file.txt",
+            };
+        assertThat("Dir contents", actual, containsInAnyOrder(expected));
+    }
+
+    private List<Path> listFiles(Path dir) throws IOException
+    {
+        return Files.list(dir).collect(Collectors.toList());
+    }
+
+    private List<Path> listFiles(Path dir, DirectoryStream.Filter<? super Path> filter) throws IOException
+    {
+        List<Path> results = new ArrayList<>();
+        try (DirectoryStream<Path> filteredDirStream = Files.newDirectoryStream(dir, filter))
+        {
+            for (Path path : filteredDirStream)
+            {
+                results.add(path);
+            }
+            return results;
+        }
     }
 }

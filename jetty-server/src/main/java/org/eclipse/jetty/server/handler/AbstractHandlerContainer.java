@@ -128,7 +128,7 @@ public abstract class AbstractHandlerContainer extends AbstractHandler implement
             return;
 
         if (isStarted())
-            throw new IllegalStateException(STARTED);
+            throw new IllegalStateException(getState());
 
         super.setServer(server);
         Handler[] handlers = getHandlers();

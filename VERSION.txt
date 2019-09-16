@@ -77,8 +77,9 @@ jetty-10.0.0-alpha0 - 11 July 2019
  + 2061 WebSocket hangs in blockingWrite
  + 2075 Deprecating MultiException
  + 2095 Remove FastCGI multiplexing
- + 2103 Server should open connectors early in start sequence 
+ + 2103 Server should open connectors early in start sequence
  + 2108 Update licence headers and plugin for 2018
+ + 2140 Infinispan and hazelcast changes to scavenge zombie expired sessions.
  + 2172 Support javax.websocket 1.1
  + 2175 Refactor WebSocket close handling
  + 2191 JPMS Support
@@ -191,8 +192,51 @@ jetty-10.0.0-alpha0 - 11 July 2019
  + 3840 Byte-range request performance problems with large files
  + 3849 ClosedChannelException from jetty-test-webapp javax websocket chat
    example
- + 467246 null
- + jetty-10 null
+
+jetty-9.4.20.v20190813 - 13 August 2019
+ + 300 Implement Deflater / Inflater Object Pool
+ + 2061 WebSocket hangs in blockingWrite
+ + 3601 HTTP2 stall on reset streams
+ + 3648 javax.websocket client container incorrectly creates Server
+   SslContextFactory
+ + 3698 Missing WebSocket ServerContainer after server restart
+ + 3700 stackoverflow in WebAppClassLoaderUrlStreamTest
+ + 3708 Swap various java.lang.String replace() methods for better performant
+   ones
+ + 3731 Add testing of CDI behaviors
+ + 3736 NPE from WebAppClassLoader during CDI
+ + 3746 ClassCastException in WriteFlusher.java - IdleState cannot be cast to
+   FailedState
+ + 3749 Memory leak while processing AsyncListener annotations
+ + 3755 ServerWithAnnotations doesn't do anything
+ + 3758 Avoid sending empty trailer frames for http/2 requests
+ + 3782 X-Forwarded-Port overrides X-Forwarded-For
+ + 3786 ALPN support for Java 14
+ + 3798 ClasspathPattern match method throws NPE. URI can be null
+ + 3799 Programmatically added listeners from
+   ServletContextListener.contextInitialzed() are not called
+ + 3804 Weld/CDI XML backwards compat
+ + 3805 XmlConfiguration odd behavior for numbers
+ + 3806 The error page handler didn't process correctly in proxy
+ + 3815 PropertyFileLoginModule adds user principle as a role
+ + 3822 trustAll will not work on some servers
+ + 3829 Avoid sending empty trailer frames for http/2 responses
+ + 3835 WebSocketSession are not being stopped properly
+ + 3840 Byte-range request performance problems with large files
+ + 3856 Different behaviour with maxFormContentSize=0 if Content-Length header
+   is present/missing
+ + 3876 WebSocketPartialListener is only called for initial frames, not for
+   continuation frames
+ + 3884 @WebSocket without @OnWebSocketMessage handler fails when receiving a
+   continuation frame
+ + 3888 BufferUtil.toBuffer(Resource resource,boolean direct) does not like
+   large (4G+) Resources
+ + 3906 Fix for #3840 breaks Path encapsulation in PathResource
+ + 3929 Deadlock between new HTTP2Connection() and Server.stop()
+ + 3940 Double initialization of Log
+ + 3957 CustomRequestLog bad usage of MethodHandles.lookup()
+ + 3960 Fix HttpConfiguration copy constructor
+ + 3969 X-Forwarded-Port header customization isn't possible
 
 jetty-9.4.19.v20190610 - 10 June 2019
  + 2909 Remove B64Code
@@ -246,6 +290,7 @@ jetty-9.4.18.v20190429 - 29 April 2019
  + 3609 Fix infinispan start module dependencies
 
 jetty-9.4.17.v20190418 - 18 April 2019
+ + 2140 Infinispan and hazelcast changes to scavenge zombie expired sessions.
  + 3464 Split SslContextFactory into Client and Server
  + 3549 Directory Listing on Windows reveals Resource Base path
  + 3555 DefaultHandler Reveals Base Resource Path of each Context

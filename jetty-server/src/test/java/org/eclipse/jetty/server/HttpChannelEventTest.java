@@ -240,6 +240,37 @@ public class HttpChannelEventTest
         assertThat(elapsed.get(), Matchers.greaterThan(0L));
     }
 
+    @Test
+    public void testTransientListener() throws Exception
+    {
+        start(new TestHandler());
+
+        CountDownLatch latch = new CountDownLatch(1);
+        connector.addBean(new HttpChannel.TransientListeners());
+        connector.addBean(new HttpChannel.Listener()
+        {
+            @Override
+            public void onRequestBegin(Request request)
+            {
+                request.getHttpChannel().addListener(new HttpChannel.Listener()
+                {
+                    @Override
+                    public void onComplete(Request request)
+                    {
+                        latch.countDown();
+                    }
+                });
+            }
+        });
+
+        HttpTester.Request request = HttpTester.newRequest();
+        request.setHeader("Host", "localhost");
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request.toString(), 5, TimeUnit.SECONDS));
+
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
+    }
+
     private static class TestHandler extends AbstractHandler.ErrorDispatchHandler
     {
         @Override

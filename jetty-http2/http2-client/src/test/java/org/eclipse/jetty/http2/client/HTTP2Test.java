@@ -27,7 +27,6 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -46,6 +45,7 @@ import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
+import org.eclipse.jetty.http2.parser.RateControl;
 import org.eclipse.jetty.http2.parser.ServerParser;
 import org.eclipse.jetty.http2.server.RawHTTP2ServerConnectionFactory;
 import org.eclipse.jetty.server.Connector;
@@ -152,7 +152,7 @@ public class HTTP2Test extends AbstractTest
         start(new HttpServlet()
         {
             @Override
-            protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            protected void service(HttpServletRequest req, HttpServletResponse resp) throws IOException
             {
                 resp.getOutputStream().write(content);
             }
@@ -200,7 +200,7 @@ public class HTTP2Test extends AbstractTest
         start(new EmptyHttpServlet()
         {
             @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 IO.copy(request.getInputStream(), response.getOutputStream());
             }
@@ -244,7 +244,7 @@ public class HTTP2Test extends AbstractTest
         start(new HttpServlet()
         {
             @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 int download = request.getIntHeader(downloadBytes);
                 byte[] content = new byte[download];
@@ -287,7 +287,7 @@ public class HTTP2Test extends AbstractTest
         start(new HttpServlet()
         {
             @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void service(HttpServletRequest request, HttpServletResponse response)
             {
                 response.setStatus(status);
             }
@@ -322,7 +322,7 @@ public class HTTP2Test extends AbstractTest
         start(new HttpServlet()
         {
             @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void service(HttpServletRequest request, HttpServletResponse response)
             {
                 assertEquals(host, request.getServerName());
                 assertEquals(port, request.getServerPort());
@@ -747,7 +747,7 @@ public class HTTP2Test extends AbstractTest
         RawHTTP2ServerConnectionFactory connectionFactory = new RawHTTP2ServerConnectionFactory(new HttpConfiguration(), serverListener)
         {
             @Override
-            protected ServerParser newServerParser(Connector connector, ServerParser.Listener listener)
+            protected ServerParser newServerParser(Connector connector, ServerParser.Listener listener, RateControl rateControl)
             {
                 return super.newServerParser(connector, new ServerParser.Listener.Wrapper(listener)
                 {
@@ -757,7 +757,7 @@ public class HTTP2Test extends AbstractTest
                         super.onGoAway(frame);
                         goAwayLatch.countDown();
                     }
-                });
+                }, rateControl);
             }
         };
         prepareServer(connectionFactory);

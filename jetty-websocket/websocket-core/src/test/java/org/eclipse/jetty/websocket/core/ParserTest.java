@@ -98,7 +98,7 @@ public class ParserTest
      * From Autobahn WebSocket Server Testcase 1.2.2
      */
     @Test
-    public void testParse_Binary_125BytePayload() throws InterruptedException
+    public void testParseBinary125BytePayload() throws InterruptedException
     {
         int length = 125;
 
@@ -128,7 +128,7 @@ public class ParserTest
      * From Autobahn WebSocket Server Testcase 1.2.3
      */
     @Test
-    public void testParse_Binary_126BytePayload() throws InterruptedException
+    public void testParseBinary126BytePayload() throws InterruptedException
     {
         int length = 126;
 
@@ -161,7 +161,7 @@ public class ParserTest
      * From Autobahn WebSocket Server Testcase 1.2.4
      */
     @Test
-    public void testParse_Binary_127BytePayload() throws InterruptedException
+    public void testParseBinary127BytePayload() throws InterruptedException
     {
         int length = 127;
 
@@ -193,7 +193,7 @@ public class ParserTest
      * From Autobahn WebSocket Server Testcase 1.2.5
      */
     @Test
-    public void testParse_Binary_128BytePayload() throws InterruptedException
+    public void testParseBinary128BytePayload() throws InterruptedException
     {
         int length = 128;
 
@@ -225,7 +225,7 @@ public class ParserTest
      * From Autobahn WebSocket Server Testcase 1.2.6
      */
     @Test
-    public void testParse_Binary_65535BytePayload() throws InterruptedException
+    public void testParseBinary65535BytePayload() throws InterruptedException
     {
         int length = 65535;
 
@@ -257,7 +257,7 @@ public class ParserTest
      * From Autobahn WebSocket Server Testcase 1.2.7
      */
     @Test
-    public void testParse_Binary_65536BytePayload() throws InterruptedException
+    public void testParseBinary65536BytePayload() throws InterruptedException
     {
         int length = 65536;
 

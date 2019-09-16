@@ -324,14 +324,14 @@ public class PrimitivesTextEchoTest
         addCase(data, LongEchoSocket.class, Long.toString(0), "0");
         addCase(data, LongEchoSocket.class, Long.toString(100_000), "100000");
         addCase(data, LongEchoSocket.class, Long.toString(-2_000_000), "-2000000");
-        addCase(data, LongEchoSocket.class, Long.toString(300_000_000_000l), "300000000000");
+        addCase(data, LongEchoSocket.class, Long.toString(300_000_000_000L), "300000000000");
         addCase(data, LongEchoSocket.class, Long.toString(Long.MAX_VALUE), Long.toString(Long.MAX_VALUE));
         addCase(data, LongEchoSocket.class, Long.toString(Long.MIN_VALUE), Long.toString(Long.MIN_VALUE));
 
         addCase(data, LongObjEchoSocket.class, Long.toString(0), "0");
         addCase(data, LongObjEchoSocket.class, Long.toString(100_000), "100000");
         addCase(data, LongObjEchoSocket.class, Long.toString(-2_000_000), "-2000000");
-        addCase(data, LongObjEchoSocket.class, Long.toString(300_000_000_000l), "300000000000");
+        addCase(data, LongObjEchoSocket.class, Long.toString(300_000_000_000L), "300000000000");
         addCase(data, LongObjEchoSocket.class, Long.toString(Long.MAX_VALUE), Long.toString(Long.MAX_VALUE));
         addCase(data, LongObjEchoSocket.class, Long.toString(Long.MIN_VALUE), Long.toString(Long.MIN_VALUE));
 

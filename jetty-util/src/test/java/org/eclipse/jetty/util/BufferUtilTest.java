@@ -45,7 +45,7 @@ public class BufferUtilTest
     @Test
     public void testToInt() throws Exception
     {
-        ByteBuffer buf[] =
+        ByteBuffer[] buf =
             {
                 BufferUtil.toBuffer("0"),
                 BufferUtil.toBuffer(" 42 "),
@@ -54,9 +54,9 @@ public class BufferUtilTest
                 BufferUtil.toBuffer(" - 45;"),
                 BufferUtil.toBuffer("-2147483648"),
                 BufferUtil.toBuffer("2147483647"),
-                };
+            };
 
-        int val[] =
+        int[] val =
             {
                 0, 42, 43, -44, -45, -2147483648, 2147483647
             };
@@ -70,12 +70,12 @@ public class BufferUtilTest
     @Test
     public void testPutInt() throws Exception
     {
-        int val[] =
+        int[] val =
             {
                 0, 42, 43, -44, -45, Integer.MIN_VALUE, Integer.MAX_VALUE
             };
 
-        String str[] =
+        String[] str =
             {
                 "0", "42", "43", "-44", "-45", "" + Integer.MIN_VALUE, "" + Integer.MAX_VALUE
             };
@@ -94,12 +94,12 @@ public class BufferUtilTest
     @Test
     public void testPutLong() throws Exception
     {
-        long val[] =
+        long[] val =
             {
                 0L, 42L, 43L, -44L, -45L, Long.MIN_VALUE, Long.MAX_VALUE
             };
 
-        String str[] =
+        String[] str =
             {
                 "0", "42", "43", "-44", "-45", "" + Long.MIN_VALUE, "" + Long.MAX_VALUE
             };
@@ -118,12 +118,12 @@ public class BufferUtilTest
     @Test
     public void testPutHexInt() throws Exception
     {
-        int val[] =
+        int[] val =
             {
                 0, 42, 43, -44, -45, -2147483648, 2147483647
             };
 
-        String str[] =
+        String[] str =
             {
                 "0", "2A", "2B", "-2C", "-2D", "-80000000", "7FFFFFFF"
             };

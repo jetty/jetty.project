@@ -20,13 +20,13 @@ package org.eclipse.jetty.embedded;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServlet;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServletFactory;
+import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
 
 /**
  * Example of setting up a Jetty WebSocket server
@@ -61,20 +61,29 @@ public class WebSocketServer
         }
     }
 
-    public static void main(String[] args) throws Exception
+    public static Server createServer(int port)
     {
-        Server server = new Server(8080);
+        Server server = new Server(port);
 
-        ServletContextHandler context = new ServletContextHandler(
-            ServletContextHandler.SESSIONS);
+        ServletContextHandler context = new ServletContextHandler();
         context.setContextPath("/");
         server.setHandler(context);
 
         // Add the echo socket servlet to the /echo path map
-        context.addServlet(new ServletHolder(EchoServlet.class), "/echo");
+        context.addServlet(EchoServlet.class, "/echo");
+
+        // Configure context to support WebSocket
+        JettyWebSocketServletContainerInitializer.configure(context, null);
+
+        return server;
+    }
+
+    public static void main(String[] args) throws Exception
+    {
+        int port = ExampleUtil.getPort(args, "jetty.http.port", 8080);
+        Server server = createServer(port);
 
         server.start();
-        context.dumpStdErr();
         server.join();
     }
 }

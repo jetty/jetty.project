@@ -22,7 +22,7 @@ import java.util.Iterator;
 import java.util.ServiceLoader;
 import javax.websocket.server.ServerEndpointConfig;
 
-import org.eclipse.jetty.websocket.javax.server.ContainerDefaultConfigurator;
+import org.eclipse.jetty.websocket.javax.server.config.ContainerDefaultConfigurator;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;

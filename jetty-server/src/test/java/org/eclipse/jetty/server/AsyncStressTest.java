@@ -70,7 +70,7 @@ public class AsyncStressTest
             {"/path?suspend=<PERIOD>", "TIMEOUT"},
             {"/path?suspend=60000&resume=<PERIOD>", "RESUMED"},
             {"/path?suspend=60000&complete=<PERIOD>", "COMPLETED"},
-            };
+        };
 
     @BeforeEach
     public void init() throws Exception

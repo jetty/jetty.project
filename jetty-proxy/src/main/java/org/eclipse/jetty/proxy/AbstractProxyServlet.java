@@ -693,6 +693,14 @@ public abstract class AbstractProxyServlet extends HttpServlet
         catch (Exception e)
         {
             _log.ignore(e);
+            try
+            {
+                proxyResponse.sendError(-1);
+            }
+            catch (Exception e2)
+            {
+                _log.ignore(e2);
+            }
         }
         finally
         {

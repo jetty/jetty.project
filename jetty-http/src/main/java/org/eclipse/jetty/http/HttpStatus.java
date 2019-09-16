@@ -314,6 +314,20 @@ public class HttpStatus
         }
     }
 
+    public static boolean hasNoBody(int status)
+    {
+        switch (status)
+        {
+            case NO_CONTENT_204:
+            case NOT_MODIFIED_304:
+            case PARTIAL_CONTENT_206:
+                return true;
+
+            default:
+                return status < OK_200;
+        }
+    }
+
     /**
      * Simple test against an code to determine if it falls into the
      * <code>Informational</code> message category as defined in the <a

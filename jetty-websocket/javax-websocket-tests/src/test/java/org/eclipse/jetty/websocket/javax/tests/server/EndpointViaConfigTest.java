@@ -21,16 +21,9 @@ package org.eclipse.jetty.websocket.javax.tests.server;
 import java.net.URI;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import javax.servlet.ServletContextEvent;
-import javax.servlet.ServletContextListener;
-import javax.websocket.DeploymentException;
-import javax.websocket.EndpointConfig;
-import javax.websocket.MessageHandler;
-import javax.websocket.OnOpen;
-import javax.websocket.Session;
-import javax.websocket.server.ServerEndpoint;
-import javax.websocket.server.ServerEndpointConfig;
 
+import com.acme.websocket.BasicEchoEndpoint;
+import com.acme.websocket.BasicEchoEndpointConfigContextListener;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.Callback;
@@ -41,7 +34,6 @@ import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
-import org.eclipse.jetty.websocket.javax.tests.WSEventTracker;
 import org.eclipse.jetty.websocket.javax.tests.WSServer;
 import org.eclipse.jetty.websocket.javax.tests.framehandlers.FrameHandlerTracker;
 import org.junit.jupiter.api.Test;
@@ -58,55 +50,6 @@ import static org.hamcrest.Matchers.is;
 public class EndpointViaConfigTest
 {
     private static final Logger LOG = Log.getLogger(EndpointViaConfigTest.class);
-
-    @ServerEndpoint("/echo")
-    public static class BasicEchoEndpoint extends WSEventTracker implements MessageHandler.Whole<String>
-    {
-        @Override
-        public void onMessage(String msg)
-        {
-            super.onWsText(msg);
-            // reply with echo
-            session.getAsyncRemote().sendText(msg);
-        }
-
-        @OnOpen
-        public void onOpen(Session session, EndpointConfig config)
-        {
-            super.onWsOpen(session, config);
-            this.session.addMessageHandler(this);
-        }
-    }
-
-    public static class BasicEchoEndpointConfigContextListener implements ServletContextListener
-    {
-        @Override
-        public void contextDestroyed(ServletContextEvent sce)
-        {
-            /* do nothing */
-        }
-
-        @Override
-        public void contextInitialized(ServletContextEvent sce)
-        {
-            javax.websocket.server.ServerContainer container = (javax.websocket.server.ServerContainer)sce.getServletContext()
-                .getAttribute(javax.websocket.server.ServerContainer.class.getName());
-            if (container == null)
-                throw new IllegalStateException("No Websocket ServerContainer in " + sce.getServletContext());
-
-            // Build up a configuration with a specific path
-            String path = "/echo";
-            ServerEndpointConfig.Builder builder = ServerEndpointConfig.Builder.create(BasicEchoEndpoint.class, path);
-            try
-            {
-                container.addEndpoint(builder.build());
-            }
-            catch (DeploymentException e)
-            {
-                throw new RuntimeException("Unable to add endpoint via config file", e);
-            }
-        }
-    }
 
     public WorkDir testdir;
 

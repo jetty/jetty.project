@@ -341,6 +341,7 @@ public abstract class AbstractDoSFilterTest
                 }
                 catch (InterruptedException e)
                 {
+                    // no op
                 }
             }
 
@@ -358,6 +359,7 @@ public abstract class AbstractDoSFilterTest
                     }
                     catch (InterruptedException e)
                     {
+                        // no op
                     }
                 }
             }

@@ -38,7 +38,7 @@ import org.eclipse.jetty.util.component.DumpableCollection;
 /**
  * HTTP Configuration.
  * <p>This class is a holder of HTTP configuration for use by the
- * {@link HttpChannel} class.  Typically a HTTPConfiguration instance
+ * {@link HttpChannel} class.  Typically an HTTPConfiguration instance
  * is instantiated and passed to a {@link ConnectionFactory} that can
  * create HTTP channels (e.g. HTTP, AJP or FCGI).</p>
  * <p>The configuration held by this class is not for the wire protocol,
@@ -185,19 +185,19 @@ public class HttpConfiguration implements Dumpable
         return _outputAggregationSize;
     }
 
-    @ManagedAttribute("The maximum allowed size in bytes for a HTTP request header")
+    @ManagedAttribute("The maximum allowed size in bytes for an HTTP request header")
     public int getRequestHeaderSize()
     {
         return _requestHeaderSize;
     }
 
-    @ManagedAttribute("The maximum allowed size in bytes for a HTTP response header")
+    @ManagedAttribute("The maximum allowed size in bytes for an HTTP response header")
     public int getResponseHeaderSize()
     {
         return _responseHeaderSize;
     }
 
-    @ManagedAttribute("The maximum allowed size in bytes for a HTTP header field cache")
+    @ManagedAttribute("The maximum allowed size in bytes for an HTTP header field cache")
     public int getHeaderCacheSize()
     {
         return _headerCacheSize;
@@ -228,20 +228,20 @@ public class HttpConfiguration implements Dumpable
     }
 
     /**
-     * <p>The max idle time is applied to a HTTP request for IO operations and
+     * <p>The max idle time is applied to an HTTP request for IO operations and
      * delayed dispatch.</p>
      *
      * @return the max idle time in ms or if == 0 implies an infinite timeout, &lt;0
      * implies no HTTP channel timeout and the connection timeout is used instead.
      */
-    @ManagedAttribute("The idle timeout in ms for I/O operations during the handling of a HTTP request")
+    @ManagedAttribute("The idle timeout in ms for I/O operations during the handling of an HTTP request")
     public long getIdleTimeout()
     {
         return _idleTimeout;
     }
 
     /**
-     * <p>The max idle time is applied to a HTTP request for IO operations and
+     * <p>The max idle time is applied to an HTTP request for IO operations and
      * delayed dispatch.</p>
      *
      * @param timeoutMs the max idle time in ms or if == 0 implies an infinite timeout, &lt;0

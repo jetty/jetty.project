@@ -489,7 +489,7 @@ public class DoSFilter implements Filter
     /**
      * Invoked when the request handling exceeds {@link #getMaxRequestMs()}.
      * <p>
-     * By default, a HTTP 503 response is returned and the handling thread is interrupted.
+     * By default, an HTTP 503 response is returned and the handling thread is interrupted.
      *
      * @param request the current request
      * @param response the current response
@@ -501,7 +501,16 @@ public class DoSFilter implements Filter
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Timing out {}", request);
-            response.sendError(HttpStatus.SERVICE_UNAVAILABLE_503);
+            try
+            {
+                response.sendError(HttpStatus.SERVICE_UNAVAILABLE_503);
+            }
+            catch (IllegalStateException ise)
+            {
+                LOG.ignore(ise);
+                // abort instead
+                response.sendError(-1);
+            }
         }
         catch (Throwable x)
         {

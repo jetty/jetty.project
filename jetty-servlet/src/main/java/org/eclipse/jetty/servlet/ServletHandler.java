@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.EventListener;
 import java.util.HashMap;
 import java.util.List;
 import java.util.ListIterator;
@@ -115,6 +116,7 @@ public class ServletHandler extends ScopedHandler
     private PathMappings<ServletHolder> _servletPathMap;
 
     private ListenerHolder[] _listeners = new ListenerHolder[0];
+    private boolean _initialized = false;
 
     @SuppressWarnings("unchecked")
     protected final ConcurrentMap<String, FilterChain>[] _chainCache = new ConcurrentMap[FilterMapping.ALL];
@@ -330,6 +332,7 @@ public class ServletHandler extends ScopedHandler
         _filterPathMappings = null;
         _filterNameMappings = null;
         _servletPathMap = null;
+        _initialized = false;
     }
 
     protected IdentityService getIdentityService()
@@ -717,6 +720,8 @@ public class ServletHandler extends ScopedHandler
     public void initialize()
         throws Exception
     {
+        _initialized = true;
+        
         MultiException mx = new MultiException();
 
         Stream.concat(Stream.concat(
@@ -741,6 +746,14 @@ public class ServletHandler extends ScopedHandler
             });
 
         mx.ifExceptionThrow();
+    }
+    
+    /**
+     * @return true if initialized has been called, false otherwise
+     */
+    public boolean isInitialized()
+    {
+        return _initialized;
     }
 
     /**
@@ -1692,6 +1705,12 @@ public class ServletHandler extends ScopedHandler
     {
         if (_contextHandler != null)
             _contextHandler.destroyFilter(filter);
+    }
+
+    void destroyListener(EventListener listener)
+    {
+        if (_contextHandler != null)
+            _contextHandler.destroyListener(listener);
     }
 
     @SuppressWarnings("serial")

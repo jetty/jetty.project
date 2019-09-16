@@ -461,6 +461,8 @@ public class HpackContext
             if (value != null && value.length() > 0)
             {
                 int huffmanLen = Huffman.octetsNeeded(value);
+                if (huffmanLen < 0)
+                    throw new IllegalStateException("bad value");
                 int lenLen = NBitInteger.octectsNeeded(7, huffmanLen);
                 _huffmanValue = new byte[1 + lenLen + huffmanLen];
                 ByteBuffer buffer = ByteBuffer.wrap(_huffmanValue);

@@ -30,7 +30,6 @@ import javax.servlet.http.HttpServletRequest;
  */
 public class NullSessionCache extends AbstractSessionCache
 {
-
     /**
      * @param handler The SessionHandler related to this SessionCache
      */
