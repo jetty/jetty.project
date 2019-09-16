@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.core.client;
 
+import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Base64;
@@ -247,19 +248,18 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
             }
 
             Throwable failure = result.getFailure();
-            boolean wrapFailure = !((failure instanceof java.net.SocketException) ||
-                (failure instanceof java.io.InterruptedIOException) ||
-                (failure instanceof UpgradeException));
+            boolean wrapFailure = !((failure instanceof IOException) || (failure instanceof UpgradeException));
             if (wrapFailure)
                 failure = new UpgradeException(requestURI, responseStatusCode, responseLine, failure);
             handleException(failure);
+            return;
         }
 
         if (responseStatusCode != HttpStatus.SWITCHING_PROTOCOLS_101)
         {
             // Failed to upgrade (other reason)
-            handleException(
-                new UpgradeException(requestURI, responseStatusCode, "Failed to upgrade to websocket: Unexpected HTTP Response Status Code: " + responseLine));
+            handleException(new UpgradeException(requestURI, responseStatusCode,
+                "Failed to upgrade to websocket: Unexpected HTTP Response Status Code: " + responseLine));
         }
     }
 
