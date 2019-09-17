@@ -41,7 +41,20 @@ public class QuickStartGenerator
     private File webAppPropsFile;
     private String contextXml;
     private boolean prepared = false;
-    
+    private Server server;
+    private QueuedThreadPool tpool;
+   
+
+    /**
+     * @param quickstartXml the file to generate quickstart into
+     * @param webApp the webapp for which to generate quickstart
+     */
+    public QuickStartGenerator(File quickstartXml, JettyWebAppContext webApp)
+    {
+        this.quickstartXml = quickstartXml;
+        this.webApp = webApp;
+    }
+
     /**
      * @return the webApp
      */
@@ -51,27 +64,27 @@ public class QuickStartGenerator
     }
 
     /**
-     * @param webApp the webApp to set
-     */
-    public void setWebApp(JettyWebAppContext webApp)
-    {
-        this.webApp = webApp;
-    }
-
-    /**
      * @return the quickstartXml
      */
     public File getQuickstartXml()
     {
         return quickstartXml;
     }
+    
+    /**
+     * @return the server
+     */
+    public Server getServer()
+    {
+        return server;
+    }
 
     /**
-     * @param quickstartXml the quickstartXml to set
+     * @param server the server to set
      */
-    public void setQuickstartXml(File quickstartXml)
+    public void setServer(Server server)
     {
-        this.quickstartXml = quickstartXml;
+        this.server = server;
     }
 
     public File getWebAppPropsFile()
@@ -120,27 +133,30 @@ public class QuickStartGenerator
 
         if (!prepared)
         {
-            prepareWebApp();
             prepared = true;
+            
+            prepareWebApp();
+
+            if (server == null)
+                server = new Server();
+
+            //ensure handler structure enabled
+            ServerSupport.configureHandlers(server, null, null);
+
+            ServerSupport.configureDefaultConfigurationClasses(server);
+
+            //if our server has a thread pool associated we can do annotation scanning multithreaded,
+            //otherwise scanning will be single threaded
+            if (tpool == null)
+                tpool = server.getBean(QueuedThreadPool.class);
+
+            //add webapp to our fake server instance
+            ServerSupport.addWebApplication(server, webApp);
+
+            //leave everything unpacked for the forked process to use
+            webApp.setPersistTempDirectory(true);
         }
-        
-        Server server = new Server();
 
-        //ensure handler structure enabled
-        ServerSupport.configureHandlers(server, null, null);
-
-        ServerSupport.configureDefaultConfigurationClasses(server);
-
-        //if our server has a thread pool associated we can do annotation scanning multithreaded,
-        //otherwise scanning will be single threaded
-        QueuedThreadPool tpool = server.getBean(QueuedThreadPool.class);
-
-        //add webapp to our fake server instance
-        ServerSupport.addWebApplication(server, webApp);
-
-        //leave everything unpacked for the forked process to use
-        webApp.setPersistTempDirectory(true);
-        
         try
         {
             if (tpool != null)

@@ -24,14 +24,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.eclipse.jetty.annotations.AnnotationConfiguration;
-import org.eclipse.jetty.quickstart.QuickStartConfiguration;
-import org.eclipse.jetty.quickstart.QuickStartConfiguration.Mode;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
 /**
  * JettyForker
@@ -55,7 +50,8 @@ public class JettyForker extends AbstractForker
     protected String contextXml;
     
     protected boolean scan;
-
+    
+    QuickStartGenerator generator;
 
     /**
      * @return the scan
@@ -139,43 +135,15 @@ public class JettyForker extends AbstractForker
 
     @Override
     public void doStart ()
-    throws Exception
+        throws Exception
     {
         //Run the webapp to create the quickstart file and properties file
-        prepareWebApp();
+        generator = new QuickStartGenerator(forkWebXml, webApp);
+        generator.setContextXml(contextXml);
+        generator.setWebAppPropsFile(webAppPropsFile);
+        generator.setServer(server);
+        generator.generate();
         super.doStart();
-    }
-    
-    
-    private void prepareWebApp()
-    throws Exception
-    {
-        if (server == null)
-            server = new Server();
-
-        //ensure handler structure enabled
-        ServerSupport.configureHandlers(server, null, null);
-        
-        ServerSupport.configureDefaultConfigurationClasses(server);
-               
-        if (webApp == null)
-            webApp = new JettyWebAppContext();
-        
-        //set the webapp up to do very little other than generate the quickstart-web.xml
-        webApp.addConfiguration(new MavenQuickStartConfiguration());
-        webApp.setAttribute(QuickStartConfiguration.MODE, Mode.GENERATE);
-        webApp.setAttribute(QuickStartConfiguration.QUICKSTART_WEB_XML, Resource.newResource(forkWebXml));
-        webApp.setCopyWebDir(false);
-        webApp.setCopyWebInf(false);
-
-        
-        //add webapp to our fake server instance
-        ServerSupport.addWebApplication(server, webApp);
-        
-        //leave everything unpacked for the forked process to use
-        webApp.setPersistTempDirectory(true);
-        
-        generateQuickStart();
     }
     
     protected void redeployWebApp ()
@@ -183,44 +151,9 @@ public class JettyForker extends AbstractForker
     {
         //regenerating the quickstart will be noticed by the JettyForkedChild process
         //which will redeploy the webapp
-        generateQuickStart();
+        generator.generate();
     }
-    
-    private void generateQuickStart()
-    throws Exception
-    {
-        if (forkWebXml == null)
-            throw new IllegalStateException ("No forkWebXml");
-        
-        if (webAppPropsFile == null)
-            throw new IllegalStateException ("no webAppsPropsFile");
-                   
-        //if our server has a thread pool associated we can do annotation scanning multithreaded,
-        //otherwise scanning will be single threaded
-        QueuedThreadPool tpool = server.getBean(QueuedThreadPool.class);
-
-        try
-        {
-            if (tpool != null)
-                tpool.start();
-            else
-                webApp.setAttribute(AnnotationConfiguration.MULTI_THREADED, Boolean.FALSE.toString());
-
-            webApp.start(); //just enough to generate the quickstart
-
-            //save config of the webapp BEFORE we stop
-            WebAppPropertyConverter.toProperties(webApp, webAppPropsFile, contextXml);
-        }
-        finally
-        {
-            webApp.stop();        
-            if (tpool != null)
-                tpool.stop();
-        }
-    }
-    
-    
-    
+ 
     public ProcessBuilder createCommand ()
     {
         List<String> cmd = new ArrayList<String>();

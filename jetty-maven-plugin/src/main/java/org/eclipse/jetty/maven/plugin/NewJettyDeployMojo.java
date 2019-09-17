@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.maven.plugin;
 
-import java.nio.file.Path;
-import java.nio.file.Paths;
-
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.ResolutionScope;
@@ -53,7 +50,7 @@ public class NewJettyDeployMojo extends AbstractWebAppMojo
     protected JettyEmbedder embedder;
     protected JettyForker forker;
     protected JettyDistroForker distroForker;
-    protected Path war;
+
     
     @Override
     public void configureWebApp() throws Exception
@@ -62,8 +59,7 @@ public class NewJettyDeployMojo extends AbstractWebAppMojo
             throw new MojoExecutionException("No war specified");
 
         super.configureWebApp();
-        war = Paths.get(webApp.getWar());
-        getLog().info("War = "+war);
+        getLog().info("War = "+webApp.getWar());
     }
     
     /**

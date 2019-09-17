@@ -814,7 +814,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
         //only unpack if the overlay is newer
         if (!unpackDir.exists() || (overlay.getResource().lastModified() > unpackDir.lastModified()))
         {
-            boolean made=unpackDir.mkdirs();
+            boolean made = unpackDir.mkdirs();
             overlay.getResource().copyTo(unpackDir);
         }
 

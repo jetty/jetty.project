@@ -19,20 +19,44 @@
 
 package org.eclipse.jetty.maven.plugin;
 
+import java.io.File;
+
 import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.plugins.annotations.Mojo;
+import org.apache.maven.plugins.annotations.Parameter;
+import org.apache.maven.plugins.annotations.ResolutionScope;
+import org.eclipse.jetty.util.StringUtil;
 
 /**
+ * Generate the effective web.xml for a pre-built webapp. This goal will NOT
+ * first build the webapp, it must already exist.
  * 
  *
  */
+@Mojo(name = "neweffective-web-xml", requiresDependencyResolution = ResolutionScope.RUNTIME)
 public class NewJettyEffectiveWebXml extends AbstractWebAppMojo
 {
+    /**
+     * The name of the file to generate into
+     */
+    @Parameter (defaultValue="${project.build.directory}/effective-web.xml")
+    protected File effectiveWebXml;
+    
+    @Override
+    public void configureWebApp() throws Exception
+    {
+        //TODO consider if we want to be able to generate for the unassembled webapp: so that we could
+        //bind this into a build phase, and have it generate the quickstart
+        if (StringUtil.isBlank(webApp.getWar()))
+            throw new MojoExecutionException("No war specified");
 
+        super.configureWebApp();
+    }
 
     @Override
     protected void startJettyEmbedded() throws MojoExecutionException
     {
-       return; //not starting a full jetty
+       generate();
     }
 
     /**
@@ -41,7 +65,7 @@ public class NewJettyEffectiveWebXml extends AbstractWebAppMojo
     @Override
     protected void startJettyForked() throws MojoExecutionException
     {
-       return; //not starting jetty this way
+       generate();
     }
 
     /**
@@ -50,7 +74,19 @@ public class NewJettyEffectiveWebXml extends AbstractWebAppMojo
     @Override
     protected void startJettyDistro() throws MojoExecutionException
     {
-      return; //not starting jetty 
+        generate();
     }
 
+    private void generate() throws MojoExecutionException
+    {
+        try
+        {
+            QuickStartGenerator generator = new QuickStartGenerator(effectiveWebXml, webApp);
+            generator.generate();
+        }
+        catch (Exception e)
+        {
+            throw new MojoExecutionException("Error generating effective web xml", e);
+        }
+    }
 }
