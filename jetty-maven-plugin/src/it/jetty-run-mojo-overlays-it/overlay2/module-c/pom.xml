@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <artifactId>overlay2</artifactId>
+    <groupId>org.mca</groupId>
+    <version>1.0-SNAPSHOT</version>
+  </parent>
+  <artifactId>module-c</artifactId>
+  <packaging>pom</packaging>
+  <name>overlay2 :: module-c</name>
+
+  <modules>
+    <module>module-c-api</module>
+    <module>module-c-impl</module>
+    <module>module-c-war</module>
+  </modules>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.mca</groupId>
+      <artifactId>common</artifactId>
+    </dependency>
+  </dependencies>
+
+</project>

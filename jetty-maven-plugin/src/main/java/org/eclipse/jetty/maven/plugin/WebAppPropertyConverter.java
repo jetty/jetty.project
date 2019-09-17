@@ -97,23 +97,23 @@ public class WebAppPropertyConverter
         //web-inf classes
         if (webApp.getClasses() != null)
         {
-            props.put("classes.dir", webApp.getClasses().getAbsolutePath());
+            props.put("classes.dir", webApp.getClasses().getFile().getAbsolutePath());
         }
 
         if (webApp.getTestClasses() != null)
         {
-            props.put("testClasses.dir", webApp.getTestClasses().getAbsolutePath());
+            props.put("testClasses.dir", webApp.getTestClasses().getFile().getAbsolutePath());
         }
 
         //web-inf lib
-        List<File> deps = webApp.getWebInfLib();
+        List<Resource> deps = webApp.getWebInfLib();
         StringBuilder strbuff = new StringBuilder();
         if (deps != null)
         {
             for (int i = 0; i < deps.size(); i++)
             {
-                File d = deps.get(i);
-                strbuff.append(d.getAbsolutePath());
+                Resource d = deps.get(i);
+                strbuff.append(d.getFile().getAbsolutePath());
                 if (i < deps.size() - 1)
                     strbuff.append(",");
             }
@@ -213,24 +213,24 @@ public class WebAppPropertyConverter
         str = props.getProperty("classes.dir");
         if (!StringUtil.isBlank(str))
         {
-            webApp.setClasses(new File(str));
+            webApp.setClasses(Resource.newResource(new File(str)));
         }
 
         str = props.getProperty("testClasses.dir");
         if (!StringUtil.isBlank(str))
         {
-            webApp.setTestClasses(new File(str));
+            webApp.setTestClasses(Resource.newResource(new File(str)));
         }
 
         // - the equivalent of web-inf lib
         str = props.getProperty("lib.jars");
         if (!StringUtil.isBlank(str))
         {
-            List<File> jars = new ArrayList<File>();
+            List<Resource> jars = new ArrayList<>();
             String[] names = StringUtil.csvSplit(str);
             for (int j = 0; names != null && j < names.length; j++)
             {
-                jars.add(new File(names[j].trim()));
+                jars.add(Resource.newResource(new File(names[j].trim())));
             }
             webApp.setWebInfLib(jars);
         }

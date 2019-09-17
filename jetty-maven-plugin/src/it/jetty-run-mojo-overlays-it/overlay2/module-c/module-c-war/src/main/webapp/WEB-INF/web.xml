@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+
+<!DOCTYPE web-app
+  PUBLIC "-//Sun Microsystems, Inc.//DTD Web Application 2.3//EN"
+  "http://java.sun.com/dtd/web-app_2_3.dtd">
+
+<web-app>
+  <servlet>
+    <servlet-name>moduleC_servlet</servlet-name>
+    <servlet-class>org.mca.jetty.moduleC.ModuleC_servlet</servlet-class>
+  </servlet>
+
+  <listener>
+    <listener-class>org.mca.jetty.common.ClasspathDisplayListener</listener-class>
+  </listener>
+
+  <servlet-mapping>
+    <servlet-name>moduleC_servlet</servlet-name>
+    <url-pattern>/</url-pattern>
+  </servlet-mapping>
+</web-app>

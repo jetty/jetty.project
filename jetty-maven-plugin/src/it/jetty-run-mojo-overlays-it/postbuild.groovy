@@ -1,0 +1,635 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
+String buildLog = new File(basedir, 'build.log').text
+assert buildLog.contains('Started Jetty Server')
+
+def inv2 = new InvocationResult(buildLog, 'invoker#2')
+inv2.locationOf('java.lang.Exception').isJdk()
+inv2.locationOf('javax.servlet.http.HttpServlet').isMavenRepository()
+inv2.locationOf('org.mca.jetty.common.Common').isMavenProject()
+inv2.locationOf('org.mca.jetty.moduleA.ModuleA_api').isMavenProject()
+inv2.locationOf('org.mca.jetty.moduleA.ModuleA_impl').isMavenProject()
+inv2.locationOf('org.mca.jetty.moduleA.ModuleA_servlet').isMavenProject()
+inv2.locationOf('module-a-api.resource').isMavenProject()
+inv2.locationOf('module-a-impl.resource').isMavenProject()
+inv2.locationOf('module-a-war.resource').isMavenProject()
+inv2.locationOf('org.mca.jetty.moduleB.ModuleB_api').isMavenProject()
+inv2.locationOf('org.mca.jetty.moduleB.ModuleB_impl').isMavenProject()
+inv2.locationOf('org.mca.jetty.moduleB.ModuleB_servlet').isMavenProject()
+inv2.locationOf('module-b-api.resource').isMavenProject()
+inv2.locationOf('tp1/module-b-api.resource').isNotFound()
+inv2.locationOf('module-b-impl.resource').isMavenProject()
+inv2.locationOf('tp1/module-b-impl.resource').isNotFound()
+inv2.locationOf('module-b-war.resource').isMavenProject()
+inv2.locationOf('tp1/module-b-war.resource').isNotFound()
+inv2.locationOf('org.mca.jetty.moduleC.ModuleC_api').isNotFound()
+inv2.locationOf('org.mca.jetty.moduleC.ModuleC_impl').isNotFound()
+inv2.locationOf('org.mca.jetty.moduleC.ModuleC_servlet').isNotFound()
+inv2.locationOf('module-c-api.resource').isNotFound()
+inv2.locationOf('module-c-impl.resource').isNotFound()
+inv2.locationOf('module-c-war.resource').isNotFound()
+inv2.locationOf('org.mca.jetty.overlay.Overlay1_servlet').isMavenProject()
+inv2.locationOf('org.mca.jetty.overlay.Overlay2_servlet').isNotFound()
+inv2.locationOf('overlay-me.resource').isMavenProject()
+inv2.locationOf('static-1.resource').isUnpackedInTarget()
+inv2.locationOf('static/static-1.resource').isNotFound()
+inv2.locationOf('tp2/static/static-1.resource').isNotFound()
+
+def inv3 = new InvocationResult(buildLog, 'invoker#3')
+inv3.locationOf('java.lang.Exception').isJdk()
+inv3.locationOf('javax.servlet.http.HttpServlet').isMavenRepository()
+inv3.locationOf('org.mca.jetty.common.Common').isUnpackedInTarget()
+inv3.locationOf('org.mca.jetty.moduleA.ModuleA_api').isUnpackedInTarget()
+inv3.locationOf('org.mca.jetty.moduleA.ModuleA_impl').isUnpackedInTarget()
+inv3.locationOf('org.mca.jetty.moduleA.ModuleA_servlet').isUnpackedInTarget()
+inv3.locationOf('module-a-api.resource').isUnpackedInTarget()
+inv3.locationOf('module-a-impl.resource').isUnpackedInTarget()
+inv3.locationOf('module-a-war.resource').isUnpackedInTarget()
+inv3.locationOf('org.mca.jetty.moduleB.ModuleB_api').isUnpackedInTarget()
+inv3.locationOf('org.mca.jetty.moduleB.ModuleB_impl').isUnpackedInTarget()
+inv3.locationOf('org.mca.jetty.moduleB.ModuleB_servlet').isUnpackedInTarget()
+inv3.locationOf('module-b-api.resource').isUnpackedInTarget()
+inv3.locationOf('tp1/module-b-api.resource').isNotFound()
+inv3.locationOf('module-b-impl.resource').isUnpackedInTarget()
+inv3.locationOf('tp1/module-b-impl.resource').isNotFound()
+inv3.locationOf('module-b-war.resource').isUnpackedInTarget()
+inv3.locationOf('tp1/module-b-war.resource').isNotFound()
+inv3.locationOf('org.mca.jetty.moduleC.ModuleC_api').isNotFound()
+inv3.locationOf('org.mca.jetty.moduleC.ModuleC_impl').isNotFound()
+inv3.locationOf('org.mca.jetty.moduleC.ModuleC_servlet').isNotFound()
+inv3.locationOf('module-c-api.resource').isNotFound()
+inv3.locationOf('module-c-impl.resource').isNotFound()
+inv3.locationOf('module-c-war.resource').isNotFound()
+inv3.locationOf('org.mca.jetty.overlay.Overlay1_servlet').isMavenProject()
+inv3.locationOf('org.mca.jetty.overlay.Overlay2_servlet').isNotFound()
+inv3.locationOf('overlay-me.resource').isMavenProject()
+inv3.locationOf('static-1.resource').isUnpackedInTarget()
+inv3.locationOf('static/static-1.resource').isNotFound()
+inv3.locationOf('tp2/static/static-1.resource').isNotFound()
+
+def inv4 = new InvocationResult(buildLog, 'invoker#4')
+inv4.locationOf('java.lang.Exception').isJdk()
+inv4.locationOf('javax.servlet.http.HttpServlet').isMavenRepository()
+inv4.locationOf('org.mca.jetty.common.Common').isMavenProject()
+inv4.locationOf('org.mca.jetty.moduleA.ModuleA_api').isMavenProject()
+inv4.locationOf('org.mca.jetty.moduleA.ModuleA_impl').isMavenProject()
+inv4.locationOf('org.mca.jetty.moduleA.ModuleA_servlet').isMavenProject()
+inv4.locationOf('module-a-api.resource').isMavenProject()
+inv4.locationOf('module-a-impl.resource').isMavenProject()
+inv4.locationOf('module-a-war.resource').isMavenProject()
+inv4.locationOf('org.mca.jetty.moduleB.ModuleB_api').isMavenProject()
+inv4.locationOf('org.mca.jetty.moduleB.ModuleB_impl').isMavenProject()
+inv4.locationOf('org.mca.jetty.moduleB.ModuleB_servlet').isMavenProject()
+inv4.locationOf('module-b-api.resource').isMavenProject()
+inv4.locationOf('tp1/module-b-api.resource').isNotFound()
+inv4.locationOf('module-b-impl.resource').isMavenProject()
+inv4.locationOf('tp1/module-b-impl.resource').isNotFound()
+inv4.locationOf('module-b-war.resource').isMavenProject()
+inv4.locationOf('tp1/module-b-war.resource').isNotFound()
+inv4.locationOf('org.mca.jetty.moduleC.ModuleC_api').isNotFound()
+inv4.locationOf('org.mca.jetty.moduleC.ModuleC_impl').isNotFound()
+inv4.locationOf('org.mca.jetty.moduleC.ModuleC_servlet').isNotFound()
+inv4.locationOf('module-c-api.resource').isNotFound()
+inv4.locationOf('module-c-impl.resource').isNotFound()
+inv4.locationOf('module-c-war.resource').isNotFound()
+inv4.locationOf('org.mca.jetty.overlay.Overlay1_servlet').isMavenProject()
+inv4.locationOf('org.mca.jetty.overlay.Overlay2_servlet').isNotFound()
+inv4.locationOf('overlay-me.resource').isMavenProject()
+inv4.locationOf('static-1.resource').isUnpackedInTarget()
+inv4.locationOf('static/static-1.resource').isNotFound()
+inv4.locationOf('tp2/static/static-1.resource').isNotFound()
+
+def inv5 = new InvocationResult(buildLog, 'invoker#5')
+inv5.locationOf('java.lang.Exception').isJdk()
+inv5.locationOf('javax.servlet.http.HttpServlet').isMavenRepository()
+inv5.locationOf('org.mca.jetty.common.Common').isUnpackedInTarget()
+inv5.locationOf('org.mca.jetty.moduleA.ModuleA_api').isUnpackedInTarget()
+inv5.locationOf('org.mca.jetty.moduleA.ModuleA_impl').isUnpackedInTarget()
+inv5.locationOf('org.mca.jetty.moduleA.ModuleA_servlet').isUnpackedInTarget()
+inv5.locationOf('module-a-api.resource').isUnpackedInTarget()
+inv5.locationOf('module-a-impl.resource').isUnpackedInTarget()
+inv5.locationOf('module-a-war.resource').isUnpackedInTarget()
+inv5.locationOf('org.mca.jetty.moduleB.ModuleB_api').isUnpackedInTarget()
+inv5.locationOf('org.mca.jetty.moduleB.ModuleB_impl').isUnpackedInTarget()
+inv5.locationOf('org.mca.jetty.moduleB.ModuleB_servlet').isUnpackedInTarget()
+inv5.locationOf('module-b-api.resource').isUnpackedInTarget()
+inv5.locationOf('tp1/module-b-api.resource').isNotFound()
+inv5.locationOf('module-b-impl.resource').isUnpackedInTarget()
+inv5.locationOf('tp1/module-b-impl.resource').isNotFound()
+inv5.locationOf('module-b-war.resource').isUnpackedInTarget()
+inv5.locationOf('tp1/module-b-war.resource').isNotFound()
+inv5.locationOf('org.mca.jetty.moduleC.ModuleC_api').isNotFound()
+inv5.locationOf('org.mca.jetty.moduleC.ModuleC_impl').isNotFound()
+inv5.locationOf('org.mca.jetty.moduleC.ModuleC_servlet').isNotFound()
+inv5.locationOf('module-c-api.resource').isNotFound()
+inv5.locationOf('module-c-impl.resource').isNotFound()
+inv5.locationOf('module-c-war.resource').isNotFound()
+inv5.locationOf('org.mca.jetty.overlay.Overlay1_servlet').isMavenProject()
+inv5.locationOf('org.mca.jetty.overlay.Overlay2_servlet').isNotFound()
+inv5.locationOf('overlay-me.resource').isMavenProject()
+inv5.locationOf('static-1.resource').isUnpackedInTarget()
+inv5.locationOf('static/static-1.resource').isNotFound()
+inv5.locationOf('tp2/static/static-1.resource').isNotFound()
+
+def inv6 = new InvocationResult(buildLog, 'invoker#6')
+inv6.locationOf('java.lang.Exception').isJdk()
+inv6.locationOf('javax.servlet.http.HttpServlet').isMavenRepository()
+inv6.locationOf('org.mca.jetty.common.Common').isMavenProject()
+inv6.locationOf('org.mca.jetty.moduleA.ModuleA_api').isNotFound()
+inv6.locationOf('org.mca.jetty.moduleA.ModuleA_impl').isMavenProject()
+inv6.locationOf('org.mca.jetty.moduleA.ModuleA_servlet').isMavenProject()
+inv6.locationOf('module-a-api.resource').isNotFound()
+inv6.locationOf('module-a-impl.resource').isMavenProject()
+inv6.locationOf('module-a-war.resource').isMavenProject()
+inv6.locationOf('org.mca.jetty.moduleB.ModuleB_api').isNotFound()
+inv6.locationOf('org.mca.jetty.moduleB.ModuleB_impl').isMavenProject()
+inv6.locationOf('org.mca.jetty.moduleB.ModuleB_servlet').isMavenProject()
+inv6.locationOf('module-b-api.resource').isNotFound()
+inv6.locationOf('tp1/module-b-api.resource').isNotFound()
+inv6.locationOf('module-b-impl.resource').isMavenProject()
+inv6.locationOf('tp1/module-b-impl.resource').isNotFound()
+inv6.locationOf('module-b-war.resource').isMavenProject()
+inv6.locationOf('tp1/module-b-war.resource').isNotFound()
+inv6.locationOf('org.mca.jetty.moduleC.ModuleC_api').isNotFound()
+inv6.locationOf('org.mca.jetty.moduleC.ModuleC_impl').isNotFound()
+inv6.locationOf('org.mca.jetty.moduleC.ModuleC_servlet').isNotFound()
+inv6.locationOf('module-c-api.resource').isNotFound()
+inv6.locationOf('module-c-impl.resource').isNotFound()
+inv6.locationOf('module-c-war.resource').isNotFound()
+inv6.locationOf('org.mca.jetty.overlay.Overlay1_servlet').isMavenProject()
+inv6.locationOf('org.mca.jetty.overlay.Overlay2_servlet').isNotFound()
+inv6.locationOf('overlay-me.resource').isMavenProject()
+inv6.locationOf('static-1.resource').isUnpackedInTarget()
+inv6.locationOf('static/static-1.resource').isNotFound()
+inv6.locationOf('tp2/static/static-1.resource').isNotFound()
+
+def inv7 = new InvocationResult(buildLog, 'invoker#7')
+inv7.locationOf('java.lang.Exception').isJdk()
+inv7.locationOf('javax.servlet.http.HttpServlet').isMavenRepository()
+inv7.locationOf('org.mca.jetty.common.Common').isUnpackedInTarget()
+inv7.locationOf('org.mca.jetty.moduleA.ModuleA_api').isNotFound()
+inv7.locationOf('org.mca.jetty.moduleA.ModuleA_impl').isUnpackedInTarget()
+inv7.locationOf('org.mca.jetty.moduleA.ModuleA_servlet').isUnpackedInTarget()
+inv7.locationOf('module-a-api.resource').isNotFound()
+inv7.locationOf('module-a-impl.resource').isUnpackedInTarget()
+inv7.locationOf('module-a-war.resource').isUnpackedInTarget()
+inv7.locationOf('org.mca.jetty.moduleB.ModuleB_api').isNotFound()
+inv7.locationOf('org.mca.jetty.moduleB.ModuleB_impl').isUnpackedInTarget()
+inv7.locationOf('org.mca.jetty.moduleB.ModuleB_servlet').isUnpackedInTarget()
+inv7.locationOf('module-b-api.resource').isNotFound()
+inv7.locationOf('tp1/module-b-api.resource').isNotFound()
+inv7.locationOf('module-b-impl.resource').isUnpackedInTarget()
+inv7.locationOf('tp1/module-b-impl.resource').isNotFound()
+inv7.locationOf('module-b-war.resource').isUnpackedInTarget()
+inv7.locationOf('tp1/module-b-war.resource').isNotFound()
+inv7.locationOf('org.mca.jetty.moduleC.ModuleC_api').isNotFound()
+inv7.locationOf('org.mca.jetty.moduleC.ModuleC_impl').isNotFound()
+inv7.locationOf('org.mca.jetty.moduleC.ModuleC_servlet').isNotFound()
+inv7.locationOf('module-c-api.resource').isNotFound()
+inv7.locationOf('module-c-impl.resource').isNotFound()
+inv7.locationOf('module-c-war.resource').isNotFound()
+inv7.locationOf('org.mca.jetty.overlay.Overlay1_servlet').isMavenProject()
+inv7.locationOf('org.mca.jetty.overlay.Overlay2_servlet').isNotFound()
+inv7.locationOf('overlay-me.resource').isMavenProject()
+inv7.locationOf('static-1.resource').isUnpackedInTarget()
+inv7.locationOf('static/static-1.resource').isNotFound()
+inv7.locationOf('tp2/static/static-1.resource').isNotFound()
+
+def inv8 = new InvocationResult(buildLog, 'invoker#8')
+inv8.locationOf('java.lang.Exception').isJdk()
+inv8.locationOf('javax.servlet.http.HttpServlet').isMavenRepository()
+inv8.locationOf('org.mca.jetty.common.Common').isNotFound()
+inv8.locationOf('org.mca.jetty.moduleA.ModuleA_api').isMavenProject()
+inv8.locationOf('org.mca.jetty.moduleA.ModuleA_impl').isMavenProject()
+inv8.locationOf('org.mca.jetty.moduleA.ModuleA_servlet').isMavenProject()
+inv8.locationOf('module-a-api.resource').isMavenProject()
+inv8.locationOf('module-a-impl.resource').isMavenProject()
+inv8.locationOf('module-a-war.resource').isMavenProject()
+inv8.locationOf('org.mca.jetty.moduleB.ModuleB_api').isNotFound()
+inv8.locationOf('org.mca.jetty.moduleB.ModuleB_impl').isNotFound()
+inv8.locationOf('org.mca.jetty.moduleB.ModuleB_servlet').isNotFound()
+inv8.locationOf('module-b-api.resource').isNotFound()
+inv8.locationOf('tp1/module-b-api.resource').isNotFound()
+inv8.locationOf('module-b-impl.resource').isNotFound()
+inv8.locationOf('tp1/module-b-impl.resource').isNotFound()
+inv8.locationOf('module-b-war.resource').isNotFound()
+inv8.locationOf('tp1/module-b-war.resource').isNotFound()
+inv8.locationOf('org.mca.jetty.moduleC.ModuleC_api').isNotFound()
+inv8.locationOf('org.mca.jetty.moduleC.ModuleC_impl').isNotFound()
+inv8.locationOf('org.mca.jetty.moduleC.ModuleC_servlet').isNotFound()
+inv8.locationOf('module-c-api.resource').isNotFound()
+inv8.locationOf('module-c-impl.resource').isNotFound()
+inv8.locationOf('module-c-war.resource').isNotFound()
+inv8.locationOf('org.mca.jetty.overlay.Overlay1_servlet').isMavenProject()
+inv8.locationOf('org.mca.jetty.overlay.Overlay2_servlet').isNotFound()
+inv8.locationOf('overlay-me.resource').isNotFound()
+inv8.locationOf('static-1.resource').isNotFound()
+inv8.locationOf('static/static-1.resource').isUnpackedInTarget()
+inv8.locationOf('tp2/static/static-1.resource').isNotFound()
+
+def inv9 = new InvocationResult(buildLog, 'invoker#9')
+inv9.locationOf('java.lang.Exception').isJdk()
+inv9.locationOf('javax.servlet.http.HttpServlet').isMavenRepository()
+inv9.locationOf('org.mca.jetty.common.Common').isUnpackedInTarget()
+inv9.locationOf('org.mca.jetty.moduleA.ModuleA_api').isUnpackedInTarget()
+inv9.locationOf('org.mca.jetty.moduleA.ModuleA_impl').isUnpackedInTarget()
+inv9.locationOf('org.mca.jetty.moduleA.ModuleA_servlet').isUnpackedInTarget()
+inv9.locationOf('module-a-api.resource').isUnpackedInTarget()
+inv9.locationOf('module-a-impl.resource').isUnpackedInTarget()
+inv9.locationOf('module-a-war.resource').isUnpackedInTarget()
+inv9.locationOf('org.mca.jetty.moduleB.ModuleB_api').isNotFound()
+inv9.locationOf('org.mca.jetty.moduleB.ModuleB_impl').isNotFound()
+inv9.locationOf('org.mca.jetty.moduleB.ModuleB_servlet').isNotFound()
+inv9.locationOf('module-b-api.resource').isNotFound()
+inv9.locationOf('tp1/module-b-api.resource').isNotFound()
+inv9.locationOf('module-b-impl.resource').isNotFound()
+inv9.locationOf('tp1/module-b-impl.resource').isNotFound()
+inv9.locationOf('module-b-war.resource').isNotFound()
+inv9.locationOf('tp1/module-b-war.resource').isNotFound()
+inv9.locationOf('org.mca.jetty.moduleC.ModuleC_api').isNotFound()
+inv9.locationOf('org.mca.jetty.moduleC.ModuleC_impl').isNotFound()
+inv9.locationOf('org.mca.jetty.moduleC.ModuleC_servlet').isNotFound()
+inv9.locationOf('module-c-api.resource').isNotFound()
+inv9.locationOf('module-c-impl.resource').isNotFound()
+inv9.locationOf('module-c-war.resource').isNotFound()
+inv9.locationOf('org.mca.jetty.overlay.Overlay1_servlet').isMavenProject()
+inv9.locationOf('org.mca.jetty.overlay.Overlay2_servlet').isNotFound()
+inv9.locationOf('overlay-me.resource').isMavenProject()
+inv9.locationOf('static-1.resource').isNotFound()
+inv9.locationOf('static/static-1.resource').isUnpackedInTarget()
+inv9.locationOf('tp2/static/static-1.resource').isNotFound()
+
+def inv10 = new InvocationResult(buildLog, 'invoker#10')
+inv10.locationOf('java.lang.Exception').isJdk()
+inv10.locationOf('javax.servlet.http.HttpServlet').isMavenRepository()
+inv10.locationOf('org.mca.jetty.common.Common').isMavenProject()
+inv10.locationOf('org.mca.jetty.moduleA.ModuleA_api').isMavenProject()
+inv10.locationOf('org.mca.jetty.moduleA.ModuleA_impl').isMavenProject()
+inv10.locationOf('org.mca.jetty.moduleA.ModuleA_servlet').isMavenProject()
+inv10.locationOf('module-a-api.resource').isMavenProject()
+inv10.locationOf('module-a-impl.resource').isMavenProject()
+inv10.locationOf('module-a-war.resource').isMavenProject()
+inv10.locationOf('org.mca.jetty.moduleB.ModuleB_api').isMavenProject()
+inv10.locationOf('org.mca.jetty.moduleB.ModuleB_impl').isMavenProject()
+inv10.locationOf('org.mca.jetty.moduleB.ModuleB_servlet').isMavenProject()
+inv10.locationOf('module-b-api.resource').isMavenProject()
+inv10.locationOf('tp1/module-b-api.resource').isNotFound()
+inv10.locationOf('module-b-impl.resource').isMavenProject()
+inv10.locationOf('tp1/module-b-impl.resource').isNotFound()
+inv10.locationOf('module-b-war.resource').isMavenProject()
+inv10.locationOf('tp1/module-b-war.resource').isNotFound()
+inv10.locationOf('org.mca.jetty.moduleC.ModuleC_api').isMavenProject()
+inv10.locationOf('org.mca.jetty.moduleC.ModuleC_impl').isMavenProject()
+inv10.locationOf('org.mca.jetty.moduleC.ModuleC_servlet').isMavenProject()
+inv10.locationOf('module-c-api.resource').isMavenProject()
+inv10.locationOf('module-c-impl.resource').isMavenProject()
+inv10.locationOf('module-c-war.resource').isMavenProject()
+inv10.locationOf('org.mca.jetty.overlay.Overlay1_servlet').isNotFound()
+inv10.locationOf('org.mca.jetty.overlay.Overlay2_servlet').isMavenProject()
+inv10.locationOf('overlay-me.resource').isMavenProject()
+inv10.locationOf('static-1.resource').isUnpackedInTarget()
+inv10.locationOf('static/static-1.resource').isNotFound()
+inv10.locationOf('tp2/static/static-1.resource').isNotFound()
+
+def inv11 = new InvocationResult(buildLog, 'invoker#11')
+inv11.locationOf('java.lang.Exception').isJdk()
+inv11.locationOf('javax.servlet.http.HttpServlet').isMavenRepository()
+inv11.locationOf('org.mca.jetty.common.Common').isUnpackedInTarget()
+inv11.locationOf('org.mca.jetty.moduleA.ModuleA_api').isUnpackedInTarget()
+inv11.locationOf('org.mca.jetty.moduleA.ModuleA_impl').isUnpackedInTarget()
+inv11.locationOf('org.mca.jetty.moduleA.ModuleA_servlet').isUnpackedInTarget()
+inv11.locationOf('module-a-api.resource').isUnpackedInTarget()
+inv11.locationOf('module-a-impl.resource').isUnpackedInTarget()
+inv11.locationOf('module-a-war.resource').isUnpackedInTarget()
+inv11.locationOf('org.mca.jetty.moduleB.ModuleB_api').isUnpackedInTarget()
+inv11.locationOf('org.mca.jetty.moduleB.ModuleB_impl').isUnpackedInTarget()
+inv11.locationOf('org.mca.jetty.moduleB.ModuleB_servlet').isUnpackedInTarget()
+inv11.locationOf('module-b-api.resource').isUnpackedInTarget()
+inv11.locationOf('tp1/module-b-api.resource').isNotFound()
+inv11.locationOf('module-b-impl.resource').isUnpackedInTarget()
+inv11.locationOf('tp1/module-b-impl.resource').isNotFound()
+inv11.locationOf('module-b-war.resource').isUnpackedInTarget()
+inv11.locationOf('tp1/module-b-war.resource').isNotFound()
+inv11.locationOf('org.mca.jetty.moduleC.ModuleC_api').isUnpackedInTarget()
+inv11.locationOf('org.mca.jetty.moduleC.ModuleC_impl').isUnpackedInTarget()
+inv11.locationOf('org.mca.jetty.moduleC.ModuleC_servlet').isUnpackedInTarget()
+inv11.locationOf('module-c-api.resource').isUnpackedInTarget()
+inv11.locationOf('module-c-impl.resource').isUnpackedInTarget()
+inv11.locationOf('module-c-war.resource').isUnpackedInTarget()
+inv11.locationOf('org.mca.jetty.overlay.Overlay1_servlet').isUnpackedInTarget()
+inv11.locationOf('org.mca.jetty.overlay.Overlay2_servlet').isMavenProject()
+inv11.locationOf('overlay-me.resource').isMavenProject()
+inv11.locationOf('static-1.resource').isNotFound()
+inv11.locationOf('static/static-1.resource').isNotFound()
+inv11.locationOf('tp2/static/static-1.resource').isNotFound()
+
+def inv12 = new InvocationResult(buildLog, 'invoker#12')
+inv12.locationOf('java.lang.Exception').isJdk()
+inv12.locationOf('javax.servlet.http.HttpServlet').isMavenRepository()
+inv12.locationOf('org.mca.jetty.common.Common').isMavenProject()
+inv12.locationOf('org.mca.jetty.moduleA.ModuleA_api').isMavenProject()
+inv12.locationOf('org.mca.jetty.moduleA.ModuleA_impl').isMavenProject()
+inv12.locationOf('org.mca.jetty.moduleA.ModuleA_servlet').isMavenProject()
+inv12.locationOf('module-a-api.resource').isMavenProject()
+inv12.locationOf('module-a-impl.resource').isMavenProject()
+inv12.locationOf('module-a-war.resource').isMavenProject()
+inv12.locationOf('org.mca.jetty.moduleB.ModuleB_api').isMavenProject()
+inv12.locationOf('org.mca.jetty.moduleB.ModuleB_impl').isMavenProject()
+inv12.locationOf('org.mca.jetty.moduleB.ModuleB_servlet').isMavenProject()
+inv12.locationOf('module-b-api.resource').isMavenProject()
+inv12.locationOf('tp1/module-b-api.resource').isNotFound()
+inv12.locationOf('module-b-impl.resource').isMavenProject()
+inv12.locationOf('tp1/module-b-impl.resource').isNotFound()
+inv12.locationOf('module-b-war.resource').isMavenProject()
+inv12.locationOf('tp1/module-b-war.resource').isNotFound()
+inv12.locationOf('org.mca.jetty.moduleC.ModuleC_api').isMavenProject()
+inv12.locationOf('org.mca.jetty.moduleC.ModuleC_impl').isMavenProject()
+inv12.locationOf('org.mca.jetty.moduleC.ModuleC_servlet').isMavenProject()
+inv12.locationOf('module-c-api.resource').isMavenProject()
+inv12.locationOf('module-c-impl.resource').isMavenProject()
+inv12.locationOf('module-c-war.resource').isMavenProject()
+inv12.locationOf('org.mca.jetty.overlay.Overlay1_servlet').isNotFound()
+inv12.locationOf('org.mca.jetty.overlay.Overlay2_servlet').isMavenProject()
+inv12.locationOf('overlay-me.resource').isMavenProject()
+inv12.locationOf('static-1.resource').isUnpackedInTarget()
+inv12.locationOf('static/static-1.resource').isNotFound()
+inv12.locationOf('tp2/static/static-1.resource').isNotFound()
+
+def inv13 = new InvocationResult(buildLog, 'invoker#13')
+inv13.locationOf('java.lang.Exception').isJdk()
+inv13.locationOf('javax.servlet.http.HttpServlet').isMavenRepository()
+inv13.locationOf('org.mca.jetty.common.Common').isUnpackedInTarget()
+inv13.locationOf('org.mca.jetty.moduleA.ModuleA_api').isUnpackedInTarget()
+inv13.locationOf('org.mca.jetty.moduleA.ModuleA_impl').isUnpackedInTarget()
+inv13.locationOf('org.mca.jetty.moduleA.ModuleA_servlet').isUnpackedInTarget()
+inv13.locationOf('module-a-api.resource').isUnpackedInTarget()
+inv13.locationOf('module-a-impl.resource').isUnpackedInTarget()
+inv13.locationOf('module-a-war.resource').isUnpackedInTarget()
+inv13.locationOf('org.mca.jetty.moduleB.ModuleB_api').isUnpackedInTarget()
+inv13.locationOf('org.mca.jetty.moduleB.ModuleB_impl').isUnpackedInTarget()
+inv13.locationOf('org.mca.jetty.moduleB.ModuleB_servlet').isUnpackedInTarget()
+inv13.locationOf('module-b-api.resource').isUnpackedInTarget()
+inv13.locationOf('tp1/module-b-api.resource').isNotFound()
+inv13.locationOf('module-b-impl.resource').isUnpackedInTarget()
+inv13.locationOf('tp1/module-b-impl.resource').isNotFound()
+inv13.locationOf('module-b-war.resource').isUnpackedInTarget()
+inv13.locationOf('tp1/module-b-war.resource').isNotFound()
+inv13.locationOf('org.mca.jetty.moduleC.ModuleC_api').isUnpackedInTarget()
+inv13.locationOf('org.mca.jetty.moduleC.ModuleC_impl').isUnpackedInTarget()
+inv13.locationOf('org.mca.jetty.moduleC.ModuleC_servlet').isUnpackedInTarget()
+inv13.locationOf('module-c-api.resource').isUnpackedInTarget()
+inv13.locationOf('module-c-impl.resource').isUnpackedInTarget()
+inv13.locationOf('module-c-war.resource').isUnpackedInTarget()
+inv13.locationOf('org.mca.jetty.overlay.Overlay1_servlet').isUnpackedInTarget()
+inv13.locationOf('org.mca.jetty.overlay.Overlay2_servlet').isMavenProject()
+inv13.locationOf('overlay-me.resource').isMavenProject()
+inv13.locationOf('static-1.resource').isNotFound()
+inv13.locationOf('static/static-1.resource').isNotFound()
+inv13.locationOf('tp2/static/static-1.resource').isNotFound()
+
+def inv14 = new InvocationResult(buildLog, 'invoker#14')
+inv14.locationOf('java.lang.Exception').isJdk()
+inv14.locationOf('javax.servlet.http.HttpServlet').isMavenRepository()
+inv14.locationOf('org.mca.jetty.common.Common').isMavenProject()
+inv14.locationOf('org.mca.jetty.moduleA.ModuleA_api').isNotFound()
+inv14.locationOf('org.mca.jetty.moduleA.ModuleA_impl').isMavenProject()
+inv14.locationOf('org.mca.jetty.moduleA.ModuleA_servlet').isMavenProject()
+inv14.locationOf('module-a-api.resource').isNotFound()
+inv14.locationOf('module-a-impl.resource').isMavenProject()
+inv14.locationOf('module-a-war.resource').isMavenProject()
+inv14.locationOf('org.mca.jetty.moduleB.ModuleB_api').isNotFound()
+inv14.locationOf('org.mca.jetty.moduleB.ModuleB_impl').isMavenProject()
+inv14.locationOf('org.mca.jetty.moduleB.ModuleB_servlet').isMavenProject()
+inv14.locationOf('module-b-api.resource').isNotFound()
+inv14.locationOf('tp1/module-b-api.resource').isNotFound()
+inv14.locationOf('module-b-impl.resource').isMavenProject()
+inv14.locationOf('tp1/module-b-impl.resource').isNotFound()
+inv14.locationOf('module-b-war.resource').isMavenProject()
+inv14.locationOf('tp1/module-b-war.resource').isNotFound()
+inv14.locationOf('org.mca.jetty.moduleC.ModuleC_api').isMavenProject()
+inv14.locationOf('org.mca.jetty.moduleC.ModuleC_impl').isMavenProject()
+inv14.locationOf('org.mca.jetty.moduleC.ModuleC_servlet').isMavenProject()
+inv14.locationOf('module-c-api.resource').isMavenProject()
+inv14.locationOf('module-c-impl.resource').isMavenProject()
+inv14.locationOf('module-c-war.resource').isMavenProject()
+inv14.locationOf('org.mca.jetty.overlay.Overlay1_servlet').isNotFound()
+inv14.locationOf('org.mca.jetty.overlay.Overlay2_servlet').isMavenProject()
+inv14.locationOf('overlay-me.resource').isMavenProject()
+inv14.locationOf('static-1.resource').isUnpackedInTarget()
+inv14.locationOf('static/static-1.resource').isNotFound()
+inv14.locationOf('tp2/static/static-1.resource').isNotFound()
+
+def inv15 = new InvocationResult(buildLog, 'invoker#15')
+inv15.locationOf('java.lang.Exception').isJdk()
+inv15.locationOf('javax.servlet.http.HttpServlet').isMavenRepository()
+inv15.locationOf('org.mca.jetty.common.Common').isUnpackedInTarget()
+inv15.locationOf('org.mca.jetty.moduleA.ModuleA_api').isNotFound()
+inv15.locationOf('org.mca.jetty.moduleA.ModuleA_impl').isUnpackedInTarget()
+inv15.locationOf('org.mca.jetty.moduleA.ModuleA_servlet').isUnpackedInTarget()
+inv15.locationOf('module-a-api.resource').isNotFound()
+inv15.locationOf('module-a-impl.resource').isUnpackedInTarget()
+inv15.locationOf('module-a-war.resource').isUnpackedInTarget()
+inv15.locationOf('org.mca.jetty.moduleB.ModuleB_api').isNotFound()
+inv15.locationOf('org.mca.jetty.moduleB.ModuleB_impl').isUnpackedInTarget()
+inv15.locationOf('org.mca.jetty.moduleB.ModuleB_servlet').isUnpackedInTarget()
+inv15.locationOf('module-b-api.resource').isNotFound()
+inv15.locationOf('tp1/module-b-api.resource').isNotFound()
+inv15.locationOf('module-b-impl.resource').isUnpackedInTarget()
+inv15.locationOf('tp1/module-b-impl.resource').isNotFound()
+inv15.locationOf('module-b-war.resource').isUnpackedInTarget()
+inv15.locationOf('tp1/module-b-war.resource').isNotFound()
+inv15.locationOf('org.mca.jetty.moduleC.ModuleC_api').isUnpackedInTarget()
+inv15.locationOf('org.mca.jetty.moduleC.ModuleC_impl').isUnpackedInTarget()
+inv15.locationOf('org.mca.jetty.moduleC.ModuleC_servlet').isUnpackedInTarget()
+inv15.locationOf('module-c-api.resource').isUnpackedInTarget()
+inv15.locationOf('module-c-impl.resource').isUnpackedInTarget()
+inv15.locationOf('module-c-war.resource').isUnpackedInTarget()
+inv15.locationOf('org.mca.jetty.overlay.Overlay1_servlet').isUnpackedInTarget()
+inv15.locationOf('org.mca.jetty.overlay.Overlay2_servlet').isMavenProject()
+inv15.locationOf('overlay-me.resource').isMavenProject()
+inv15.locationOf('static-1.resource').isNotFound()
+inv15.locationOf('static/static-1.resource').isNotFound()
+inv15.locationOf('tp2/static/static-1.resource').isNotFound()
+
+def inv16 = new InvocationResult(buildLog, 'invoker#16')
+inv16.locationOf('java.lang.Exception').isJdk()
+inv16.locationOf('javax.servlet.http.HttpServlet').isMavenRepository()
+inv16.locationOf('org.mca.jetty.common.Common').isNotFound()
+inv16.locationOf('org.mca.jetty.moduleA.ModuleA_api').isNotFound()
+inv16.locationOf('org.mca.jetty.moduleA.ModuleA_impl').isNotFound()
+inv16.locationOf('org.mca.jetty.moduleA.ModuleA_servlet').isNotFound()
+inv16.locationOf('module-a-api.resource').isNotFound()
+inv16.locationOf('module-a-impl.resource').isNotFound()
+inv16.locationOf('module-a-war.resource').isNotFound()
+inv16.locationOf('org.mca.jetty.moduleB.ModuleB_api').isNotFound()
+inv16.locationOf('org.mca.jetty.moduleB.ModuleB_impl').isNotFound()
+inv16.locationOf('org.mca.jetty.moduleB.ModuleB_servlet').isNotFound()
+inv16.locationOf('module-b-api.resource').isNotFound()
+inv16.locationOf('tp1/module-b-api.resource').isNotFound()
+inv16.locationOf('module-b-impl.resource').isNotFound()
+inv16.locationOf('tp1/module-b-impl.resource').isNotFound()
+inv16.locationOf('module-b-war.resource').isNotFound()
+inv16.locationOf('tp1/module-b-war.resource').isNotFound()
+inv16.locationOf('org.mca.jetty.moduleC.ModuleC_api').isMavenProject()
+inv16.locationOf('org.mca.jetty.moduleC.ModuleC_impl').isMavenProject()
+inv16.locationOf('org.mca.jetty.moduleC.ModuleC_servlet').isMavenProject()
+inv16.locationOf('module-c-api.resource').isMavenProject()
+inv16.locationOf('module-c-impl.resource').isMavenProject()
+inv16.locationOf('module-c-war.resource').isMavenProject()
+inv16.locationOf('org.mca.jetty.overlay.Overlay1_servlet').isNotFound()
+inv16.locationOf('org.mca.jetty.overlay.Overlay2_servlet').isMavenProject()
+inv16.locationOf('overlay-me.resource').isMavenProject()
+inv16.locationOf('static-1.resource').isUnpackedInTarget()
+inv16.locationOf('static/static-1.resource').isNotFound()
+inv16.locationOf('tp2/static/static-1.resource').isNotFound()
+
+def inv17 = new InvocationResult(buildLog, 'invoker#17')
+inv17.locationOf('java.lang.Exception').isJdk()
+inv17.locationOf('javax.servlet.http.HttpServlet').isMavenRepository()
+inv17.locationOf('org.mca.jetty.common.Common').isUnpackedInTarget() // FIXME: it's a bug
+inv17.locationOf('org.mca.jetty.moduleA.ModuleA_api').isNotFound()
+inv17.locationOf('org.mca.jetty.moduleA.ModuleA_impl').isNotFound()
+inv17.locationOf('org.mca.jetty.moduleA.ModuleA_servlet').isNotFound()
+inv17.locationOf('module-a-api.resource').isNotFound()
+inv17.locationOf('module-a-impl.resource').isNotFound()
+inv17.locationOf('module-a-war.resource').isNotFound()
+inv17.locationOf('org.mca.jetty.moduleB.ModuleB_api').isNotFound()
+inv17.locationOf('org.mca.jetty.moduleB.ModuleB_impl').isNotFound()
+inv17.locationOf('org.mca.jetty.moduleB.ModuleB_servlet').isNotFound()
+inv17.locationOf('module-b-api.resource').isNotFound()
+inv17.locationOf('tp1/module-b-api.resource').isNotFound()
+inv17.locationOf('module-b-impl.resource').isNotFound()
+inv17.locationOf('tp1/module-b-impl.resource').isNotFound()
+inv17.locationOf('module-b-war.resource').isNotFound()
+inv17.locationOf('tp1/module-b-war.resource').isNotFound()
+inv17.locationOf('org.mca.jetty.moduleC.ModuleC_api').isUnpackedInTarget()
+inv17.locationOf('org.mca.jetty.moduleC.ModuleC_impl').isUnpackedInTarget()
+inv17.locationOf('org.mca.jetty.moduleC.ModuleC_servlet').isUnpackedInTarget()
+inv17.locationOf('module-c-api.resource').isUnpackedInTarget()
+inv17.locationOf('module-c-impl.resource').isUnpackedInTarget()
+inv17.locationOf('module-c-war.resource').isUnpackedInTarget()
+inv17.locationOf('org.mca.jetty.overlay.Overlay1_servlet').isNotFound()
+inv17.locationOf('org.mca.jetty.overlay.Overlay2_servlet').isMavenProject()
+inv17.locationOf('overlay-me.resource').isMavenProject()
+inv17.locationOf('static-1.resource').isNotFound() // FIXME: it's a bug
+inv17.locationOf('static/static-1.resource').isNotFound()
+inv17.locationOf('tp2/static/static-1.resource').isNotFound()
+
+/* ----------------------------------- */
+
+class InvocationResult {
+
+    private String invocationName
+    private String buildLog
+    private properties
+
+    InvocationResult(String buildLog, String name) {
+        this.invocationName = name
+        this.buildLog = buildLog
+        init()
+    }
+
+    private void init() {
+        String startKey = "[${invocationName}[["
+        String endKey = "]]${invocationName}]"
+
+        def startIdx = buildLog.indexOf(startKey) + startKey.length()
+        def endIdx = buildLog.indexOf(endKey)
+        if (startIdx == -1 || endIdx == -1) {
+            throw new IllegalStateException("'${invocationName}' not found, check 'invoker.properties' file")
+        }
+        Reader reader = new StringReader(buildLog.substring(startIdx, endIdx));
+        properties = new Properties()
+        properties.load(reader)
+    }
+
+    ResourceLocation locationOf(String str) {
+        return new ResourceLocation(properties, str)
+    }
+
+    class ResourceLocation {
+
+        String resource
+        String location
+
+        private ResourceLocation(Properties properties, String resource) {
+            this.resource = resource;
+            this.location = properties.getProperty(resource)
+            if (this.location == null) {
+                throw new IllegalStateException("${invocationName}, resource '${resource}' is found - check spelling?")
+            }
+        }
+
+        boolean isJdk() {
+            if (!location.contains('/rt.jar!/')) {
+                throw new IllegalStateException("${invocationName}, resource '${resource}' is not retrieved from JDK")
+            }
+            return true
+        }
+
+        boolean isMavenProject() {
+            if (!location.contains('target/classes/')) {
+                throw new IllegalStateException("${invocationName}, resource '${resource}' is not retrieved from maven project")
+            }
+            return true
+        }
+
+        boolean isMavenRepository() {
+            if (!location.contains('target/local-repo')) {
+                throw new IllegalStateException("${invocationName}, resource '${resource}' is not retrieved from maven repository")
+            }
+            return true
+        }
+
+        boolean isUnpackedInTarget() {
+            if (!location.contains('target/jetty_overlays')) {
+                throw new IllegalStateException("${invocationName}, resource '${resource}' is not retrieved from unpacked jetty_overlays directory")
+            }
+            return true
+        }
+
+        boolean isNotFound() {
+            if (location != '(not found)') {
+                throw new IllegalStateException("${invocationName}, resource '${resource}' is expected to be not present on classpath, but it is")
+            }
+            return true
+        }
+    }
+
+}

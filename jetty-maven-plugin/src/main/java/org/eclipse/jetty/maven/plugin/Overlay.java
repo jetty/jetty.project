@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.maven.plugin;
 
-import org.eclipse.jetty.util.resource.Resource;
+import org.apache.maven.artifact.Artifact;
 
 /**
  * Overlay
@@ -26,27 +26,14 @@ import org.eclipse.jetty.util.resource.Resource;
 public class Overlay
 {
     private OverlayConfig _config;
-    private Resource _resource;
+    private Artifact _artifact;
+    private boolean _isMavenProject;
 
-    public Overlay(OverlayConfig config, Resource resource)
+    public Overlay(OverlayConfig config, Artifact artifact, boolean isMavenProject)
     {
         _config = config;
-        _resource = resource;
-    }
-
-    public Overlay(OverlayConfig config)
-    {
-        _config = config;
-    }
-
-    public void setResource(Resource r)
-    {
-        _resource = r;
-    }
-
-    public Resource getResource()
-    {
-        return _resource;
+        _artifact = artifact;
+        _isMavenProject = isMavenProject;
     }
 
     public OverlayConfig getConfig()
@@ -54,12 +41,24 @@ public class Overlay
         return _config;
     }
 
+    public Artifact getArtifact()
+    {
+        return _artifact;
+    }
+
+    public boolean isMavenProject()
+    {
+        return _isMavenProject;
+    }
+
     @Override
     public String toString()
     {
         StringBuilder strbuff = new StringBuilder();
-        if (_resource != null)
-            strbuff.append(_resource);
+        if (_artifact != null)
+        {
+            strbuff.append(_artifact.toString());
+        }
         if (_config != null)
         {
             strbuff.append(" [");

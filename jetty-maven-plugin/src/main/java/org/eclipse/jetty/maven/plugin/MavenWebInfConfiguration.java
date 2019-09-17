@@ -18,14 +18,14 @@
 
 package org.eclipse.jetty.maven.plugin;
 
-import java.io.File;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Locale;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.resource.JarResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.WebAppClassLoader;
 import org.eclipse.jetty.webapp.WebAppContext;
@@ -54,10 +54,15 @@ public class MavenWebInfConfiguration extends WebInfConfiguration
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Setting up classpath ...");
-            Iterator itor = jwac.getClassPathFiles().iterator();
-            while (itor.hasNext())
+            WebAppClassLoader classLoader = (WebAppClassLoader)context.getClassLoader();
+            Set<String> paths = jwac.getClassPathFiles().stream()
+                .map(Resource::toString)
+                .collect(Collectors.toSet());
+            for (String classpath : paths)
             {
-                ((WebAppClassLoader)context.getClassLoader()).addClassPath(((File)itor.next()).getCanonicalPath());
+                if (LOG.isDebugEnabled())
+                    LOG.debug(" - " + classpath);
+                classLoader.addClassPath(classpath);
             }
         }
 
@@ -96,17 +101,17 @@ public class MavenWebInfConfiguration extends WebInfConfiguration
     {
         List<Resource> list = new ArrayList<>();
         JettyWebAppContext jwac = (JettyWebAppContext)context;
-        List<File> files = jwac.getWebInfLib();
-        if (files != null)
+        List<Resource> resources = jwac.getWebInfLib();
+        if (resources != null)
         {
-            files.forEach(file ->
+            resources.forEach(resource ->
             {
-                if (file.getName().toLowerCase(Locale.ENGLISH).endsWith(".jar") || file.isDirectory())
+                if (resource instanceof JarResource || resource.isDirectory())
                 {
                     try
                     {
-                        LOG.debug(" add  resource to resources to examine {}", file);
-                        list.add(Resource.newResource(file.toURI()));
+                        LOG.debug(" add  resource to resources to examine {}", resource);
+                        list.add(resource);
                     }
                     catch (Exception e)
                     {
@@ -133,16 +138,16 @@ public class MavenWebInfConfiguration extends WebInfConfiguration
         List<Resource> list = new ArrayList<>();
 
         JettyWebAppContext jwac = (JettyWebAppContext)context;
-        List<File> files = jwac.getWebInfClasses();
-        if (files != null)
+        List<Resource> resources = jwac.getWebInfClasses();
+        if (resources != null)
         {
-            files.forEach(file ->
+            resources.forEach(res ->
             {
-                if (file.exists() && file.isDirectory())
+                if (res.exists() && res.isDirectory())
                 {
                     try
                     {
-                        list.add(Resource.newResource(file.toURI()));
+                        list.add(res);
                     }
                     catch (Exception e)
                     {

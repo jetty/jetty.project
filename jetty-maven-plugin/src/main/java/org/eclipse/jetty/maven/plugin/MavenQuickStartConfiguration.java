@@ -61,9 +61,9 @@ public class MavenQuickStartConfiguration extends QuickStartConfiguration
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Setting up classpath ...");
-            for (File classPathFile : jwac.getClassPathFiles())
+            for (Resource classPathFile : jwac.getClassPathFiles())
             {
-                ((WebAppClassLoader)context.getClassLoader()).addClassPath(classPathFile.getCanonicalPath());
+                ((WebAppClassLoader)context.getClassLoader()).addClassPath(classPathFile.getName());
             }
         }
 

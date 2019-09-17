@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <artifactId>module-b</artifactId>
+    <groupId>org.mca</groupId>
+    <version>1.0-SNAPSHOT</version>
+  </parent>
+  <artifactId>module-b-war</artifactId>
+  <name>module-b :: war (jetty)</name>
+  <packaging>war</packaging>
+
+  <dependencies>
+    <dependency>
+      <groupId>javax.servlet</groupId>
+      <artifactId>javax.servlet-api</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mca</groupId>
+      <artifactId>module-b-impl</artifactId>
+    </dependency>
+  </dependencies>
+
+  <profiles>
+    <profile>
+      <id>runModuleB</id>
+      <properties>
+        <jetty.skip>false</jetty.skip>
+        <jetty.jettyXml>${project.basedir}/src/config/jetty.xml</jetty.jettyXml>
+        <jetty.port.file>${project.build.directory}/jetty-run-war-mojo-overlays-it.txt</jetty.port.file>
+      </properties>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-maven-plugin</artifactId>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+
+</project>

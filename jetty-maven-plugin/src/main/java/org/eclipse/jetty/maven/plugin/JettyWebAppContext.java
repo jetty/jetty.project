@@ -23,14 +23,18 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.EventListener;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
+import org.eclipse.jetty.maven.plugin.utils.CollectionUtils;
 import org.eclipse.jetty.plus.webapp.EnvConfiguration;
 import org.eclipse.jetty.quickstart.PreconfigureDescriptorProcessor;
 import org.eclipse.jetty.quickstart.QuickStartDescriptorGenerator;
@@ -89,17 +93,19 @@ public class JettyWebAppContext extends WebAppContext
         "org.eclipse.jetty.webapp.JettyWebXmlConfiguration"
     };
 
-    private File _classes = null;
-    private File _testClasses = null;
-    private final List<File> _webInfClasses = new ArrayList<>();
-    private final List<File> _webInfJars = new ArrayList<>();
-    private final Map<String, File> _webInfJarMap = new HashMap<String, File>();
-    private List<File> _classpathFiles; //webInfClasses+testClasses+webInfJars
+    private Resource _classes = null;
+    private Resource _testClasses = null;
+    private final List<Resource> _webInfClasses = new ArrayList<>();
+    private final List<Resource> _webInfJars = new ArrayList<>();
+    private final Map<String, Resource> _webInfJarMap = new HashMap<>();
+    private List<Resource> _classpathFiles; //webInfClasses+testClasses+webInfJars
     private String _jettyEnvXml;
     private List<Overlay> _overlays;
     private Resource _quickStartWebXml;
     private String _originAttribute;
     private boolean _generateOrigin;
+    private Set<URL> _blacklistedURLs = new HashSet<>();
+    private Map<String, List<URL>> _shiftedTargetURLs = new HashMap<>();
 
     /**
      * Set the "org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern" with a pattern for matching jars on
@@ -151,7 +157,7 @@ public class JettyWebAppContext extends WebAppContext
         _webInfIncludeJarPattern = pattern;
     }
 
-    public List<File> getClassPathFiles()
+    public List<Resource> getClassPathFiles()
     {
         return this._classpathFiles;
     }
@@ -166,27 +172,27 @@ public class JettyWebAppContext extends WebAppContext
         return this._jettyEnvXml;
     }
 
-    public void setClasses(File dir)
+    public void setClasses(Resource dir)
     {
         _classes = dir;
     }
 
-    public File getClasses()
+    public Resource getClasses()
     {
         return _classes;
     }
 
-    public void setWebInfLib(List<File> jars)
+    public void setWebInfLib(List<Resource> jars)
     {
         _webInfJars.addAll(jars);
     }
 
-    public void setTestClasses(File dir)
+    public void setTestClasses(Resource dir)
     {
         _testClasses = dir;
     }
 
-    public File getTestClasses()
+    public Resource getTestClasses()
     {
         return _testClasses;
     }
@@ -232,6 +238,27 @@ public class JettyWebAppContext extends WebAppContext
     public void setGenerateOrigin(boolean generateOrigin)
     {
         _generateOrigin = generateOrigin;
+    }
+
+    public void shiftTargetResource(String context, Resource targetResource)
+    {
+        _blacklistedURLs.add(targetResource.getURL());
+        _shiftedTargetURLs.computeIfAbsent(context, e -> new ArrayList<>()).add(targetResource.getURL());
+    }
+
+    public Collection<URL> getShiftedTargetResources(String targetPath)
+    {
+        return CollectionUtils.nullToEmpty(_shiftedTargetURLs.get(targetPath));
+    }
+
+    public Map<String, List<URL>> getShiftedTargetResources()
+    {
+        return _shiftedTargetURLs;
+    }
+
+    public boolean isBlacklisted(URL url)
+    {
+        return _blacklistedURLs.contains(url);
     }
 
     public List<Overlay> getOverlays()
@@ -285,12 +312,12 @@ public class JettyWebAppContext extends WebAppContext
         setBaseResource(new ResourceCollection(resources.toArray(new String[resources.size()])));
     }
 
-    public List<File> getWebInfLib()
+    public List<Resource> getWebInfLib()
     {
         return _webInfJars;
     }
 
-    public List<File> getWebInfClasses()
+    public List<Resource> getWebInfClasses()
     {
         return _webInfClasses;
     }
@@ -382,12 +409,12 @@ public class JettyWebAppContext extends WebAppContext
 
         // Initialize map containing all jars in /WEB-INF/lib
         _webInfJarMap.clear();
-        for (File file : _webInfJars)
+        for (Resource res : _webInfJars)
         {
             // Return all jar files from class path
-            String fileName = file.getName();
+            String fileName = res.getName();
             if (fileName.endsWith(".jar"))
-                _webInfJarMap.put(fileName, file);
+                _webInfJarMap.put(fileName, res);
         }
 
         //check for CDI
@@ -465,9 +492,9 @@ public class JettyWebAppContext extends WebAppContext
                         //exact match for a WEB-INF/classes, so preferentially return the resource matching the web-inf classes
                         //rather than the test classes
                         if (_classes != null)
-                            return Resource.newResource(_classes);
+                            return _classes;
                         else if (_testClasses != null)
-                            return Resource.newResource(_testClasses);
+                            return _testClasses;
                     }
                     else
                     {
@@ -476,7 +503,7 @@ public class JettyWebAppContext extends WebAppContext
                         int i = 0;
                         while (res == null && (i < _webInfClasses.size()))
                         {
-                            String newPath = StringUtil.replace(uri, WEB_INF_CLASSES_PREFIX, _webInfClasses.get(i).getPath());
+                            String newPath = StringUtil.replace(uri, WEB_INF_CLASSES_PREFIX, _webInfClasses.get(i).getFile().getPath());
                             res = Resource.newResource(newPath);
                             if (!res.exists())
                             {
@@ -496,7 +523,7 @@ public class JettyWebAppContext extends WebAppContext
                         jarName = jarName.substring(1);
                     if (jarName.length() == 0)
                         return null;
-                    File jarFile = _webInfJarMap.get(jarName);
+                    File jarFile = _webInfJarMap.get(jarName).getFile();
                     if (jarFile != null)
                         return Resource.newResource(jarFile.getPath());
 
@@ -541,7 +568,7 @@ public class JettyWebAppContext extends WebAppContext
 
                 while (i < _webInfClasses.size())
                 {
-                    String newPath = StringUtil.replace(path, WEB_INF_CLASSES_PREFIX, _webInfClasses.get(i).getPath());
+                    String newPath = StringUtil.replace(path, WEB_INF_CLASSES_PREFIX, _webInfClasses.get(i).getName());
                     allPaths.addAll(super.getResourcePaths(newPath));
                     i++;
                 }

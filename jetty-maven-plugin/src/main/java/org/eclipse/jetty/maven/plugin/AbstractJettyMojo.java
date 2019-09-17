@@ -42,6 +42,7 @@ import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.util.StringUtils;
+import org.eclipse.jetty.maven.plugin.classloader.MavenWebappClassloader;
 import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Server;
@@ -507,7 +508,7 @@ public abstract class AbstractJettyMojo extends AbstractMojo
         //As of jetty-7, you must use a <webApp> element
         if (webApp == null)
             webApp = new JettyWebAppContext();
-
+        webApp.setClassLoader(new MavenWebappClassloader(webApp));
         //Apply any context xml file to set up the webapp
         //CAUTION: if you've defined a <webApp> element then the
         //context xml file can OVERRIDE those settings
