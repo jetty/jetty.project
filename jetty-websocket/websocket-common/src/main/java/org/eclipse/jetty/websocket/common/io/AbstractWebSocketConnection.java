@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.LongAdder;
 
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.AbstractEndPoint;
@@ -43,6 +44,7 @@ import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.CloseException;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.SuspendToken;
+import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
@@ -99,6 +101,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         }
     }
 
+    @Deprecated
     public static class Stats
     {
         private AtomicLong countFillInterestedEvents = new AtomicLong(0);
@@ -138,6 +141,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     private final ConnectionState connectionState = new ConnectionState();
     private final FrameFlusher flusher;
     private final String id;
+    private final LongAdder bytesIn = new LongAdder();
     private WebSocketSession session;
     private List<ExtensionConfig> extensions = new ArrayList<>();
     private ByteBuffer prefillBuffer;
@@ -298,16 +302,24 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     {
         if (connectionState.disconnected())
         {
-            /* Use prior Fatal Close Info if present, otherwise
-             * because if could be from a failed close handshake where
-             * the local initiated, but the remote never responded.
-             */
-            CloseInfo closeInfo = fatalCloseInfo;
-            if (closeInfo == null)
+            if (connectionState.wasOpened())
             {
-                closeInfo = new CloseInfo(StatusCode.ABNORMAL, "Disconnected");
+                /* Use prior Fatal Close Info if present, otherwise
+                 * because if could be from a failed close handshake where
+                 * the local initiated, but the remote never responded.
+                 */
+                CloseInfo closeInfo = fatalCloseInfo;
+                if (closeInfo == null)
+                {
+                    closeInfo = new CloseInfo(StatusCode.ABNORMAL, "Disconnected");
+                }
+                session.callApplicationOnClose(closeInfo);
             }
-            session.callApplicationOnClose(closeInfo);
+            else
+            {
+                session.callApplicationOnError(new WebSocketException("Shutdown"));
+            }
+
             if (LOG.isDebugEnabled())
             {
                 LOG.debug("{} disconnect()", policy.getBehavior());
@@ -391,6 +403,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         return scheduler;
     }
 
+    @Deprecated()
     public Stats getStats()
     {
         return stats;
@@ -463,6 +476,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
                             return;
                         }
 
+                        bytesIn.add(filled);
                         if (LOG.isDebugEnabled())
                             LOG.debug("Filled {} bytes - {}", filled, BufferUtil.toDetailString(buffer));
                     }
@@ -659,7 +673,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     @Override
     public long getBytesIn()
     {
-        return parser.getBytesIn();
+        return bytesIn.longValue();
     }
 
     /**

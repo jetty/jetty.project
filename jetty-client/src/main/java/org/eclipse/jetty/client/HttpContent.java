@@ -32,7 +32,7 @@ import org.eclipse.jetty.util.log.Logger;
 /**
  * {@link HttpContent} is a stateful, linear representation of the request content provided
  * by a {@link ContentProvider} that can be traversed one-way to obtain content buffers to
- * send to a HTTP server.
+ * send to an HTTP server.
  * <p>
  * {@link HttpContent} offers the notion of a one-way cursor to traverse the content.
  * The cursor starts in a virtual "before" position and can be advanced using {@link #advance()}

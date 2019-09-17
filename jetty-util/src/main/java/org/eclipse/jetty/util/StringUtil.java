@@ -644,6 +644,26 @@ public class StringUtil
         return __UTF8.equalsIgnoreCase(charset) || __UTF8.equalsIgnoreCase(normalizeCharset(charset));
     }
 
+    public static boolean isHex(String str, int offset, int length)
+    {
+        if (offset + length > str.length())
+        {
+            return false;
+        }
+
+        for (int i = offset; i < (offset + length); i++)
+        {
+            char c = str.charAt(i);
+            if (!(((c >= 'a') && (c <= 'f')) ||
+                ((c >= 'A') && (c <= 'F')) ||
+                ((c >= '0') && (c <= '9'))))
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
     public static String printable(String name)
     {
         if (name == null)

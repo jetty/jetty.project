@@ -348,6 +348,18 @@ public class ForwardedRequestCustomizerTest
                     .requestURL("http://myhost:2222/")
                     .remoteAddr("[1:2:3:4:5:6:7:8]").remotePort(0)
             ),
+            Arguments.of(new Request("X-Forwarded-For and X-Forwarded-Port (multiple times combined)")
+                    .headers(
+                        "GET / HTTP/1.1",
+                        "Host: myhost",
+                        "X-Forwarded-Port: 2222, 3333",
+                        "X-Forwarded-For: 1:2:3:4:5:6:7:8, 7:7:7:7:7:7:7:7"
+                    ),
+                new Expectations()
+                    .scheme("http").serverName("myhost").serverPort(2222)
+                    .requestURL("http://myhost:2222/")
+                    .remoteAddr("[1:2:3:4:5:6:7:8]").remotePort(0)
+            ),
             Arguments.of(new Request("X-Forwarded-Port")
                     .headers(
                         "GET / HTTP/1.1",

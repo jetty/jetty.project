@@ -9,7 +9,7 @@
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
 
   <!-- =========================================================== -->
-  <!-- Add a SSL Connector with no protocol factories              -->
+  <!-- Add an SSL Connector with no protocol factories              -->
   <!-- =========================================================== -->
   <Call  name="addConnector">
     <Arg>

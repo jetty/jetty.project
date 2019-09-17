@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.embedded;
 
+import java.io.FileNotFoundException;
+import java.net.URL;
 import java.util.Collections;
 
 import org.eclipse.jetty.security.ConstraintMapping;
@@ -30,13 +32,13 @@ import org.eclipse.jetty.util.security.Constraint;
 
 public class SecuredHelloHandler
 {
-    public static void main(String[] args) throws Exception
+    public static Server createServer(int port) throws FileNotFoundException
     {
         // Create a basic jetty server object that will listen on port 8080.
         // Note that if you set this to port 0 then a randomly available port
         // will be assigned that you can either look in the logs for the port,
         // or programmatically obtain it for use in test cases.
-        Server server = new Server(8080);
+        Server server = new Server(port);
 
         // Since this example is for our test webapp, we need to setup a
         // LoginService so this shows how to create a very simple hashmap based
@@ -46,8 +48,14 @@ public class SecuredHelloHandler
         // started and stopped according to the lifecycle of the server itself.
         // In this example the name can be whatever you like since we are not
         // dealing with webapp realms.
+        String realmResourceName = "etc/realm.properties";
+        ClassLoader classLoader = SecuredHelloHandler.class.getClassLoader();
+        URL realmProps = classLoader.getResource(realmResourceName);
+        if (realmProps == null)
+            throw new FileNotFoundException("Unable to find " + realmResourceName);
+
         LoginService loginService = new HashLoginService("MyRealm",
-            "src/test/resources/realm.properties");
+            realmProps.toExternalForm());
         server.addBean(loginService);
 
         // A security handler is a jetty handler that secures content behind a
@@ -68,7 +76,7 @@ public class SecuredHelloHandler
         constraint.setRoles(new String[]{"user", "admin"});
 
         // Binds a url pattern with the previously created constraint. The roles
-        // for this constraing mapping are mined from the Constraint itself
+        // for this constraint mapping are mined from the Constraint itself
         // although methods exist to declare and bind roles separately as well.
         ConstraintMapping mapping = new ConstraintMapping();
         mapping.setPathSpec("/*");
@@ -92,13 +100,19 @@ public class SecuredHelloHandler
         // chain the hello handler into the security handler
         security.setHandler(hh);
 
+        return server;
+    }
+
+    public static void main(String[] args) throws Exception
+    {
+        int port = ExampleUtil.getPort(args, "jetty.http.port", 8080);
+        Server server = createServer(port);
+
         // Start things up!
         server.start();
 
         // The use of server.join() the will make the current thread join and
         // wait until the server is done executing.
-        // See
-        // http://docs.oracle.com/javase/7/docs/api/java/lang/Thread.html#join()
         server.join();
     }
 }

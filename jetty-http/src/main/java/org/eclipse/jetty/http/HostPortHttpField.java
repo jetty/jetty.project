@@ -21,7 +21,7 @@ package org.eclipse.jetty.http;
 import org.eclipse.jetty.util.HostPort;
 
 /**
- * A HttpField holding a preparsed Host and port number
+ * An HttpField holding a preparsed Host and port number
  *
  * @see HostPort
  */

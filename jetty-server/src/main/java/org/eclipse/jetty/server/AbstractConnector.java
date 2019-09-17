@@ -45,6 +45,7 @@ import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.component.Container;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.Graceful;
@@ -115,7 +116,7 @@ import org.eclipse.jetty.util.thread.ThreadPoolBudget;
  * {@link ConnectionFactory}s may also create temporary {@link org.eclipse.jetty.io.Connection} instances that will exchange bytes
  * over the connection to determine what is the next protocol to use.  For example the ALPN protocol is an extension
  * of SSL to allow a protocol to be specified during the SSL handshake. ALPN is used by the HTTP/2 protocol to
- * negotiate the protocol that the client and server will speak.  Thus to accept a HTTP/2 connection, the
+ * negotiate the protocol that the client and server will speak.  Thus to accept an HTTP/2 connection, the
  * connector will be configured with {@link ConnectionFactory}s for "SSL-ALPN", "h2", "http/1.1"
  * with the default protocol being "SSL-ALPN".  Thus a newly accepted connection uses "SSL-ALPN", which specifies a
  * SSLConnectionFactory with "ALPN" as the next protocol.  Thus an SSL connection instance is created chained to an ALPN
@@ -154,6 +155,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     private final Set<EndPoint> _endpoints = Collections.newSetFromMap(new ConcurrentHashMap<>());
     private final Set<EndPoint> _immutableEndPoints = Collections.unmodifiableSet(_endpoints);
     private final Graceful.Shutdown _shutdown = new Graceful.Shutdown();
+    private HttpChannel.Listener _httpChannelListeners = HttpChannel.NOOP_LISTENER;
     private CountDownLatch _stopping;
     private long _idleTimeout = 30000;
     private String _defaultProtocol;
@@ -188,6 +190,23 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
             pool = _server.getBean(ByteBufferPool.class);
         _byteBufferPool = pool != null ? pool : new ArrayByteBufferPool();
 
+        addEventListener(new Container.Listener()
+        {
+            @Override
+            public void beanAdded(Container parent, Object bean)
+            {
+                if (bean instanceof HttpChannel.Listener)
+                    _httpChannelListeners = new HttpChannelListeners(getBeans(HttpChannel.Listener.class));
+            }
+
+            @Override
+            public void beanRemoved(Container parent, Object bean)
+            {
+                if (bean instanceof HttpChannel.Listener)
+                    _httpChannelListeners = new HttpChannelListeners(getBeans(HttpChannel.Listener.class));
+            }
+        });
+
         addBean(_server, false);
         addBean(_executor);
         if (executor == null)
@@ -206,6 +225,24 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
         if (acceptors > cores)
             LOG.warn("Acceptors should be <= availableProcessors: " + this);
         _acceptors = new Thread[acceptors];
+    }
+
+    /**
+     * Get the {@link HttpChannel.Listener}s added to the connector
+     * as a single combined Listener.
+     * This is equivalent to a listener that iterates over the individual
+     * listeners returned from <code>getBeans(HttpChannel.Listener.class);</code>,
+     * except that: <ul>
+     *     <li>The result is precomputed, so it is more efficient</li>
+     *     <li>The result is ordered by the order added.</li>
+     *     <li>The result is immutable.</li>
+     * </ul>
+     * @see #getBeans(Class)
+     * @return An unmodifiable list of EventListener beans
+     */
+    public HttpChannel.Listener getHttpChannelListeners()
+    {
+        return _httpChannelListeners;
     }
 
     @Override

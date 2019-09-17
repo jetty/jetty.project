@@ -18,26 +18,19 @@
 
 package org.eclipse.jetty.server.session;
 
-import java.util.Collections;
 import java.util.Random;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import javax.servlet.http.HttpSession;
-import javax.servlet.http.HttpSessionActivationListener;
-import javax.servlet.http.HttpSessionEvent;
 
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -45,25 +38,21 @@ import static org.junit.jupiter.api.Assertions.fail;
 /**
  * DefaultSessionCacheTest
  */
-public class DefaultSessionCacheTest
+public class DefaultSessionCacheTest extends AbstractSessionCacheTest
 {
 
-    public static class TestSessionActivationListener implements HttpSessionActivationListener
+    @Override
+    public AbstractSessionCacheFactory newSessionCacheFactory(int evictionPolicy, boolean saveOnCreate,
+                                                              boolean saveOnInactiveEvict, boolean removeUnloadableSessions,
+                                                              boolean flushOnResponseCommit)
     {
-        public int passivateCalls = 0;
-        public int activateCalls = 0;
-
-        @Override
-        public void sessionWillPassivate(HttpSessionEvent se)
-        {
-            ++passivateCalls;
-        }
-
-        @Override
-        public void sessionDidActivate(HttpSessionEvent se)
-        {
-            ++activateCalls;
-        }
+        DefaultSessionCacheFactory factory = new DefaultSessionCacheFactory();
+        factory.setEvictionPolicy(evictionPolicy);
+        factory.setSaveOnCreate(saveOnCreate);
+        factory.setSaveOnInactiveEvict(saveOnInactiveEvict);
+        factory.setRemoveUnloadableSessions(removeUnloadableSessions);
+        factory.setFlushOnResponseCommit(flushOnResponseCommit);
+        return factory;
     }
 
     @Test
@@ -73,14 +62,13 @@ public class DefaultSessionCacheTest
         int inactivePeriod = 20;
         int scavengePeriod = 3;
 
-        DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
-        cacheFactory.setSaveOnCreate(true); //ensures that a session is persisted as soon as it is created
-        cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
+        AbstractSessionCacheFactory cacheFactory = newSessionCacheFactory(SessionCache.NEVER_EVICT, false, false, false, false);
+
         SessionDataStoreFactory storeFactory = new TestSessionDataStoreFactory();
         TestServer server = new TestServer(0, inactivePeriod, scavengePeriod, cacheFactory, storeFactory);
         ServletContextHandler contextHandler = server.addContext("/test");
-        TestContextScopeListener scopeListener = new TestContextScopeListener();
-        contextHandler.addEventListener(scopeListener);
+        TestHttpChannelCompleteListener scopeListener = new TestHttpChannelCompleteListener();
+        server.getServerConnector().addBean(scopeListener);
 
         TestHttpSessionListener listener = new TestHttpSessionListener();
         contextHandler.getSessionHandler().addEventListener(listener);
@@ -204,8 +192,7 @@ public class DefaultSessionCacheTest
         context.setContextPath("/test");
         context.setServer(server);
 
-        DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
-        cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
+        AbstractSessionCacheFactory cacheFactory = newSessionCacheFactory(SessionCache.NEVER_EVICT, false, false, false, false);
         DefaultSessionCache cache = (DefaultSessionCache)cacheFactory.getSessionCache(context.getSessionHandler());
 
         TestSessionDataStore store = new TestSessionDataStore(true);//fake passivation
@@ -233,38 +220,6 @@ public class DefaultSessionCacheTest
         assertFalse(cache.contains("1234"));
         assertEquals(2, listener.passivateCalls);
         assertEquals(1, listener.activateCalls);
-    }
-
-    /**
-     * Test that a new Session object can be created from
-     * previously persisted data (SessionData).
-     */
-    @Test
-    public void testNewSessionFromPersistedData()
-        throws Exception
-    {
-        Server server = new Server();
-
-        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
-        context.setContextPath("/test");
-        context.setServer(server);
-
-        DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
-        cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
-        DefaultSessionCache cache = (DefaultSessionCache)cacheFactory.getSessionCache(context.getSessionHandler());
-
-        TestSessionDataStore store = new TestSessionDataStore(true);//fake passivation
-        cache.setSessionDataStore(store);
-        context.getSessionHandler().setSessionCache(cache);
-
-        context.start();
-
-        long now = System.currentTimeMillis();
-        //fake persisted data
-        SessionData data = store.newSessionData("1234", now - 20, now - 10, now - 20, TimeUnit.MINUTES.toMillis(10));
-        Session session = cache.newSession(data);
-        assertNotNull(session);
-        assertEquals("1234", session.getId());
     }
 
     /**
@@ -319,8 +274,7 @@ public class DefaultSessionCacheTest
         context.setContextPath("/test");
         context.setServer(server);
 
-        DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
-        cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
+        AbstractSessionCacheFactory cacheFactory = newSessionCacheFactory(SessionCache.NEVER_EVICT, false, false, false, false);
         DefaultSessionCache cache = (DefaultSessionCache)cacheFactory.getSessionCache(context.getSessionHandler());
 
         TestSessionDataStore store = new TestSessionDataStore();
@@ -339,42 +293,6 @@ public class DefaultSessionCacheTest
         assertTrue(((AbstractSessionCache)cache).contains("1234"));
     }
 
-    /**
-     * Test that the cache can load from the SessionDataStore
-     */
-    @Test
-    public void testGetSessionNotInCache()
-        throws Exception
-    {
-        Server server = new Server();
-
-        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
-        context.setContextPath("/test");
-        context.setServer(server);
-
-        DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
-        cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
-        DefaultSessionCache cache = (DefaultSessionCache)cacheFactory.getSessionCache(context.getSessionHandler());
-
-        TestSessionDataStore store = new TestSessionDataStore();
-        cache.setSessionDataStore(store);
-        context.getSessionHandler().setSessionCache(cache);
-        context.start();
-
-        //put session data into the store
-        long now = System.currentTimeMillis();
-        SessionData data = store.newSessionData("1234", now - 20, now - 10, now - 20, TimeUnit.MINUTES.toMillis(10));
-        store.store("1234", data);
-
-        assertFalse(cache.contains("1234"));
-
-        Session session = cache.get("1234");
-        assertEquals(1, session.getRequests());
-        assertNotNull(session);
-        assertEquals("1234", session.getId());
-        assertEquals(now - 20, session.getCreationTime());
-    }
-
     @Test
     public void testAdd()
         throws Exception
@@ -385,8 +303,7 @@ public class DefaultSessionCacheTest
         context.setContextPath("/test");
         context.setServer(server);
 
-        DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
-        cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
+        AbstractSessionCacheFactory cacheFactory = newSessionCacheFactory(SessionCache.NEVER_EVICT, false, false, false, false);
         DefaultSessionCache cache = (DefaultSessionCache)cacheFactory.getSessionCache(context.getSessionHandler());
 
         TestSessionDataStore store = new TestSessionDataStore();
@@ -419,8 +336,7 @@ public class DefaultSessionCacheTest
         context.setContextPath("/test");
         context.setServer(server);
 
-        DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
-        cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
+        SessionCacheFactory cacheFactory = newSessionCacheFactory(SessionCache.NEVER_EVICT, false, false, false, false);
         DefaultSessionCache cache = (DefaultSessionCache)cacheFactory.getSessionCache(context.getSessionHandler());
 
         TestSessionDataStore store = new TestSessionDataStore();
@@ -459,9 +375,8 @@ public class DefaultSessionCacheTest
         context.setContextPath("/test");
         context.setServer(server);
 
-        DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
-        cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
-        DefaultSessionCache cache = (DefaultSessionCache)cacheFactory.getSessionCache(context.getSessionHandler());
+        SessionCacheFactory cacheFactory = newSessionCacheFactory(SessionCache.NEVER_EVICT, false, false, false, false);
+        SessionCache cache = (SessionCache)cacheFactory.getSessionCache(context.getSessionHandler());
 
         TestSessionDataStore store = new TestSessionDataStore();
         cache.setSessionDataStore(store);
@@ -477,139 +392,6 @@ public class DefaultSessionCacheTest
         Session session = cache.newSession(data);
         cache.add("1234", session);
         assertTrue(cache.contains("1234"));
-    }
-
-    /**
-     * Test the exist method.
-     */
-    @Test
-    public void testExists()
-        throws Exception
-    {
-        Server server = new Server();
-
-        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
-        context.setContextPath("/test");
-        context.setServer(server);
-
-        DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
-        cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
-        DefaultSessionCache cache = (DefaultSessionCache)cacheFactory.getSessionCache(context.getSessionHandler());
-
-        TestSessionDataStore store = new TestSessionDataStore();
-        cache.setSessionDataStore(store);
-        context.getSessionHandler().setSessionCache(cache);
-        context.start();
-
-        //test one that doesn't exist at all
-        assertFalse(cache.exists("1234"));
-
-        //test one that only exists in the store
-        long now = System.currentTimeMillis();
-        SessionData data = store.newSessionData("1234", now - 20, now - 10, now - 20, TimeUnit.MINUTES.toMillis(10));
-        store.store("1234", data);
-        assertTrue(cache.exists("1234"));
-
-        //test one that exists in the cache also
-        Session session = cache.newSession(data);
-        cache.add("1234", session);
-        assertTrue(cache.exists("1234"));
-    }
-
-    /**
-     * Test the delete method.
-     */
-    @Test
-    public void testDelete()
-        throws Exception
-    {
-        Server server = new Server();
-
-        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
-        context.setContextPath("/test");
-        context.setServer(server);
-
-        DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
-        cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
-        cacheFactory.setSaveOnCreate(true);
-        DefaultSessionCache cache = (DefaultSessionCache)cacheFactory.getSessionCache(context.getSessionHandler());
-
-        TestSessionDataStore store = new TestSessionDataStore();
-        cache.setSessionDataStore(store);
-        context.getSessionHandler().setSessionCache(cache);
-        context.start();
-
-        //test remove non-existent session
-        Session session = cache.delete("1234");
-        assertNull(session);
-
-        //test remove of existing session in store only
-        long now = System.currentTimeMillis();
-        SessionData data = store.newSessionData("1234", now - 20, now - 10, now - 20, TimeUnit.MINUTES.toMillis(10));
-        store.store("1234", data);
-        session = cache.delete("1234");
-        assertNotNull(session);
-        assertFalse(store.exists("1234"));
-        assertFalse(cache.contains("1234"));
-
-        //test remove of session in both store and cache
-        session = cache.newSession(null, "1234",now - 20, TimeUnit.MINUTES.toMillis(10));//saveOnCreate ensures write to store
-        cache.add("1234", session);
-        assertTrue(store.exists("1234"));
-        assertTrue(cache.contains("1234"));
-        session = cache.delete("1234");
-        assertNotNull(session);
-        assertFalse(store.exists("1234"));
-        assertFalse(cache.contains("1234"));
-    }
-
-    @Test
-    public void testExpiration()
-        throws Exception
-    {
-        Server server = new Server();
-
-        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
-        context.setContextPath("/test");
-        context.setServer(server);
-
-        DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
-        cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
-        DefaultSessionCache cache = (DefaultSessionCache)cacheFactory.getSessionCache(context.getSessionHandler());
-
-        TestSessionDataStore store = new TestSessionDataStore();
-        cache.setSessionDataStore(store);
-        context.getSessionHandler().setSessionCache(cache);
-        context.start();
-
-        //test no candidates, no data in store
-        Set<String> result = cache.checkExpiration(Collections.emptySet());
-        assertTrue(result.isEmpty());
-
-        //test candidates that are in the cache and NOT expired
-        long now = System.currentTimeMillis();
-        SessionData data = store.newSessionData("1234", now - 20, now - 10, now - 20, TimeUnit.MINUTES.toMillis(10));
-        data.setExpiry(now + TimeUnit.DAYS.toMillis(1));
-        Session session = cache.newSession(data);
-        cache.add("1234", session);
-        cache.release("1234", session);
-        assertTrue(cache.exists("1234"));
-        result = cache.checkExpiration(Collections.singleton("1234"));
-        assertTrue(result.isEmpty());
-
-        //test candidates that are in the cache AND expired
-        data.setExpiry(1);
-        result = cache.checkExpiration(Collections.singleton("1234"));
-        assertEquals(1, result.size());
-        assertEquals("1234", result.iterator().next());
-
-        //test candidates that are not in the cache
-        SessionData data2 = store.newSessionData("567", now - 50, now - 40, now - 30, TimeUnit.MINUTES.toMillis(10));
-        data2.setExpiry(1);
-        store.store("567", data2);
-
-        result = cache.checkExpiration(Collections.emptySet());
-        assertThat(result, containsInAnyOrder("1234", "567"));
     }
 
     @Test
@@ -725,55 +507,5 @@ public class DefaultSessionCacheTest
         assertFalse(session.isResident());
         SessionData retrieved = store.load("1234");
         assertEquals(accessed, retrieved.getAccessed()); //check that we persisted the session before we evicted
-    }
-
-    @Test
-    public void testSaveOnCreateTrue()
-        throws Exception
-    {
-        Server server = new Server();
-
-        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
-        context.setContextPath("/test");
-        context.setServer(server);
-
-        DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
-        cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
-        cacheFactory.setSaveOnCreate(true);
-        DefaultSessionCache cache = (DefaultSessionCache)cacheFactory.getSessionCache(context.getSessionHandler());
-
-        TestSessionDataStore store = new TestSessionDataStore();
-        cache.setSessionDataStore(store);
-        context.getSessionHandler().setSessionCache(cache);
-        context.start();
-
-        long now = System.currentTimeMillis();
-        cache.newSession(null, "1234", now, TimeUnit.MINUTES.toMillis(10));
-        assertTrue(store.exists("1234"));
-    }
-
-    @Test
-    public void testSaveOnCreateFalse()
-        throws Exception
-    {
-        Server server = new Server();
-
-        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
-        context.setContextPath("/test");
-        context.setServer(server);
-
-        DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
-        cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
-        cacheFactory.setSaveOnCreate(false);
-        DefaultSessionCache cache = (DefaultSessionCache)cacheFactory.getSessionCache(context.getSessionHandler());
-
-        TestSessionDataStore store = new TestSessionDataStore();
-        cache.setSessionDataStore(store);
-        context.getSessionHandler().setSessionCache(cache);
-        context.start();
-
-        long now = System.currentTimeMillis();
-        cache.newSession(null, "1234", now, TimeUnit.MINUTES.toMillis(10));
-        assertFalse(store.exists("1234"));
     }
 }

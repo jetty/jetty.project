@@ -94,8 +94,8 @@ public class DirtyAttributeTest
         ServletContextHandler ctxA = server.addContext("/mod");
         ctxA.addServlet(TestDirtyServlet.class, "/test");
 
-        TestContextScopeListener scopeListener = new TestContextScopeListener();
-        ctxA.addEventListener(scopeListener);
+        TestHttpChannelCompleteListener scopeListener = new TestHttpChannelCompleteListener();
+        server.getServerConnector().addBean(scopeListener);
 
         server.start();
         int port = server.getPort();
@@ -125,14 +125,12 @@ public class DirtyAttributeTest
                 assertEquals(HttpServletResponse.SC_OK, response.getStatus());
 
                 //ensure request fully finished processing
-                latch.await(5, TimeUnit.SECONDS);
+                assertTrue(latch.await(5, TimeUnit.SECONDS));
 
                 A_VALUE.assertPassivatesEquals(1);
                 A_VALUE.assertActivatesEquals(1);
                 A_VALUE.assertBindsEquals(1);
                 A_VALUE.assertUnbindsEquals(0);
-                
-
 
                 //do another request using the cookie to try changing the session attribute to the same value again  
                 latch = new CountDownLatch(1);
