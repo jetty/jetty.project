@@ -24,6 +24,8 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnJre;
+import org.junit.jupiter.api.condition.JRE;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -140,6 +142,35 @@ public class DemoBaseTests extends AbstractDistributionTest
             assertEquals(HttpStatus.OK_200, response.getStatus());
             assertThat(response.getContentAsString(), containsString("<span class=\"pass\">PASS</span>"));
             assertThat(response.getContentAsString(), not(containsString("<span class=\"fail\">FAIL</span>")));
+        }
+    }
+
+    @Test
+    @DisabledOnJre(JRE.JAVA_8)
+    public void testJPMS() throws Exception
+    {
+        String jettyVersion = System.getProperty("jettyVersion");
+        DistributionTester distribution = DistributionTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .jettyBase(Paths.get("demo-base"))
+            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
+            .build();
+
+        int httpPort = distribution.freePort();
+        int httpsPort = distribution.freePort();
+        String[] args = {
+            "--jpms",
+            "jetty.http.port=" + httpPort,
+            "jetty.httpConfig.port=" + httpsPort,
+            "jetty.ssl.port=" + httpsPort
+        };
+        try (DistributionTester.Run run = distribution.start(args))
+        {
+            assertTrue(run.awaitConsoleLogsFor("Started @", 10, TimeUnit.SECONDS));
+
+            startHttpClient();
+            ContentResponse response = client.GET("http://localhost:" + httpPort + "/test/hello");
+            assertEquals(HttpStatus.OK_200, response.getStatus());
         }
     }
 }
