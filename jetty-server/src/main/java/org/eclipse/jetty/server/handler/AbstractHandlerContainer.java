@@ -152,7 +152,11 @@ public abstract class AbstractHandlerContainer extends AbstractHandler implement
         // tell the graceful handlers that we are shutting down
         Handler[] gracefuls = getChildHandlersByClass(Graceful.class);
         if (futures == null)
+        {
+            if (gracefuls.length == 0)
+                return;
             futures = new ArrayList<>(gracefuls.length);
+        }
         for (Handler graceful : gracefuls)
         {
             futures.add(((Graceful)graceful).shutdown());
