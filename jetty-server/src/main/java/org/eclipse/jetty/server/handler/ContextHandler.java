@@ -949,7 +949,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         {
             try
             {
-                doShutdown(null);
+                doShutdown();
             }
             catch (MultiException e)
             {

@@ -578,6 +578,7 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
     @Override
     public Future<Void> shutdown()
     {
+        LOG.info("Shutdown {}", this);
         return _shutdown.shutdown();
     }
 

@@ -27,7 +27,6 @@ import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.Future;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -420,15 +419,7 @@ public class Server extends HandlerWrapper implements Attributes
 
         try
         {
-            // list if graceful futures
-            List<Future<Void>> futures = new ArrayList<>();
-            // First shutdown the network connectors to stop accepting new connections
-            for (Connector connector : _connectors)
-            {
-                futures.add(connector.shutdown());
-            }
-            // then shutdown all graceful handlers 
-            doShutdown(futures);
+            doShutdown();
         }
         catch (Throwable e)
         {

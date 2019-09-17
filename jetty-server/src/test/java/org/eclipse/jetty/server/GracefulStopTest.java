@@ -341,7 +341,6 @@ public class GracefulStopTest
         CountDownLatch closed = new CountDownLatch(1);
         ServerConnector connector = new ServerConnector(server, 2, 2, new HttpConnectionFactory()
         {
-
             @Override
             public Connection newConnection(Connector con, EndPoint endPoint)
             {

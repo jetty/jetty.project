@@ -20,16 +20,18 @@ package org.eclipse.jetty.server.handler;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.List;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.io.ManagedSelector;
+import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HandlerContainer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.MultiException;
+import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -141,58 +143,53 @@ public abstract class AbstractHandlerContainer extends AbstractHandler implement
 
     /**
      * Shutdown nested Gracefule handlers
-     *
-     * @param futures A list of Futures which must also be waited on for the shutdown (or null)
-     * returns A MultiException to which any failures are added or null
      */
-    protected void doShutdown(List<Future<Void>> futures) throws MultiException
+    protected void doShutdown() throws MultiException
     {
-        MultiException mex = null;
+        final MultiException mex = new MultiException();
 
         // tell the graceful handlers that we are shutting down
-        Handler[] gracefuls = getChildHandlersByClass(Graceful.class);
-        if (futures == null)
+        // TODO some how need to order these!!!
+        // TODO perhaps Graceful can define phases and they can belong to phases?
+        // TODO for now will get them in a known order
+        List<Graceful> gracefuls = new ArrayList<>(getContainedBeans(Connector.class));
+        getContainedBeans(ContextHandler.class).forEach(gracefuls::add);
+        getContainedBeans(StatisticsHandler.class).forEach(gracefuls::add);
+        getContainedBeans(ManagedSelector.class).forEach(gracefuls::add);
+        getContainedBeans(Graceful.class).forEach(g ->
         {
-            if (gracefuls.length == 0)
-                return;
-            futures = new ArrayList<>(gracefuls.length);
-        }
-        for (Handler graceful : gracefuls)
-        {
-            futures.add(((Graceful)graceful).shutdown());
-        }
+            if (!gracefuls.contains(g))
+                gracefuls.add(g);
+        });
+        gracefuls.stream().forEach(System.err::println);
 
-        // Wait for all futures with a reducing time budget
         long stopTimeout = getStopTimeout();
-        if (stopTimeout > 0)
+        for (Graceful graceful : gracefuls)
         {
-            long stopBy = System.currentTimeMillis() + stopTimeout;
-            if (LOG.isDebugEnabled())
-                LOG.debug("Graceful shutdown {} by ", this, new Date(stopBy));
+            if (graceful instanceof AbstractLifeCycle)
+                ((AbstractLifeCycle)graceful).setStopTimeout(stopTimeout);
 
-            // Wait for shutdowns
-            for (Future<Void> future : futures)
+            if (LOG.isDebugEnabled())
+                LOG.debug("shutdown {}", graceful);
+            Future future = graceful.shutdown();
+            if (stopTimeout > 0)
             {
+                long start = System.nanoTime();
                 try
                 {
-                    if (!future.isDone())
-                        future.get(Math.max(1L, stopBy - System.currentTimeMillis()), TimeUnit.MILLISECONDS);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("graceful {} {} {}", graceful, future, stopTimeout);
+                    future.get(stopTimeout,TimeUnit.MILLISECONDS);
                 }
-                catch (Exception e)
+                catch (Throwable e)
                 {
-                    // If the future is also a callback, fail it here (rather than cancel) so we can capture the exception 
+                    // If the future is also a callback, fail it here (rather than cancel) so we can capture the exception
                     if (future instanceof Callback && !future.isDone())
                         ((Callback)future).failed(e);
-                    if (mex == null)
-                        mex = new MultiException();
                     mex.add(e);
                 }
+                stopTimeout -= TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
             }
-        }
-
-        // Cancel any shutdowns not done
-        for (Future<Void> future : futures)
-        {
             if (!future.isDone())
                 future.cancel(true);
         }

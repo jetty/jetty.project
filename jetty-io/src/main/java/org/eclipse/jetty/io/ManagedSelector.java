@@ -38,15 +38,21 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
+import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
+import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ExecutionStrategy;
@@ -59,7 +65,7 @@ import org.eclipse.jetty.util.thread.strategy.EatWhatYouKill;
  * happen for registered channels. When events happen, it notifies the {@link EndPoint} associated
  * with the channel.</p>
  */
-public class ManagedSelector extends ContainerLifeCycle implements Dumpable
+public class ManagedSelector extends ContainerLifeCycle implements Dumpable, Graceful
 {
     private static final Logger LOG = Log.getLogger(ManagedSelector.class);
     private static final boolean FORCE_SELECT_NOW;
@@ -139,6 +145,59 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         return keys.size();
     }
 
+    AtomicReference<Future> _shutdown = new AtomicReference<>();
+
+    @Override
+    public Future<Void> shutdown()
+    {
+        // Close connections, but only wait a single selector cycle for it to take effect
+        CloseConnections closeConnections = new CloseConnections();
+        submit(closeConnections);
+        Future<Void> future = new Future<Void>()
+        {
+            @Override
+            public boolean cancel(boolean mayInterruptIfRunning)
+            {
+                return false;
+            }
+
+            @Override
+            public boolean isCancelled()
+            {
+                return false;
+            }
+
+            @Override
+            public boolean isDone()
+            {
+                return closeConnections._complete.getCount() == 0;
+            }
+
+            @Override
+            public Void get() throws InterruptedException, ExecutionException
+            {
+                closeConnections._complete.await();
+                return null;
+            }
+
+            @Override
+            public Void get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException
+            {
+                closeConnections._complete.await(timeout, unit);
+                return null;
+            }
+        };
+        _shutdown.set(future);
+        return future;
+    }
+
+    @Override
+    public boolean isShutdown()
+    {
+        Future<Void> future = _shutdown.get();
+        return future != null && future.isDone();
+    }
+
     @Override
     protected void doStop() throws Exception
     {
@@ -146,26 +205,10 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         // We do not want to wait twice, so we only stop once for each start
         if (_started.compareAndSet(true, false) && _selector != null)
         {
-            // Close connections, but only wait a single selector cycle for it to take effect
-            CloseConnections closeConnections = new CloseConnections();
-            submit(closeConnections);
-            long stopTimeout = getStopTimeout();
-            if (stopTimeout <= 0)
-                Thread.yield();
-            else
-            {
-                long start = System.nanoTime();
-                closeConnections._complete.await(stopTimeout, TimeUnit.MILLISECONDS);
-                stopTimeout =  TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
-            }
             // Wait for any remaining endpoints to be closed and the selector to be stopped
             StopSelector stopSelector = new StopSelector();
             submit(stopSelector);
-
-            if (stopTimeout <= 0)
-                Thread.yield();
-            else
-                stopSelector._stopped.await(stopTimeout, TimeUnit.MILLISECONDS);
+            stopSelector._stopped.await();
         }
 
         super.doStop();
@@ -843,62 +886,53 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
 
     private class CloseConnections implements SelectorUpdate
     {
-        final Set<Closeable> _closed;
-        final CountDownLatch _noEndPoints = new CountDownLatch(1);
         final CountDownLatch _complete = new CountDownLatch(1);
-
-        public CloseConnections()
-        {
-            this(null);
-        }
-
-        public CloseConnections(Set<Closeable> closed)
-        {
-            _closed = closed;
-        }
 
         @Override
         public void update(Selector selector)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Closing {} connections on {}", selector.keys().size(), ManagedSelector.this);
-            boolean zero = true;
+            List<Closeable> closeables = new ArrayList<>();
             for (SelectionKey key : selector.keys())
             {
                 if (key != null && key.isValid())
                 {
-                    Closeable closeable = null;
                     Object attachment = key.attachment();
                     if (attachment instanceof EndPoint)
                     {
+                        key.cancel();
                         EndPoint endp = (EndPoint)attachment;
-                        if (!endp.isOutputShutdown())
-                            zero = false;
                         Connection connection = endp.getConnection();
+                        final Closeable closeable;
                         if (connection != null)
-                            closeable = connection;
-                        else
-                            closeable = endp;
-                    }
-
-                    if (closeable != null)
-                    {
-                        if (_closed == null)
-                        {
-                            IO.close(closeable);
-                        }
-                        else if (!_closed.contains(closeable))
-                        {
-                            _closed.add(closeable);
-                            IO.close(closeable);
-                        }
+                            closeables.add(connection);
+                        closeables.add(endp);
                     }
                 }
             }
 
-            if (zero)
-                _noEndPoints.countDown();
-            _complete.countDown();
+            if (closeables.isEmpty())
+                _complete.countDown();
+            else
+            {
+                final AtomicInteger toClose = new AtomicInteger(closeables.size());
+                for (Closeable closeable : closeables)
+                {
+                    execute(() ->
+                    {
+                        try
+                        {
+                            IO.close(closeable);
+                        }
+                        finally
+                        {
+                            if (toClose.decrementAndGet() == 0)
+                                _complete.countDown();
+                        }
+                    });
+                }
+            }
         }
     }
 
@@ -912,11 +946,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             for (SelectionKey key : selector.keys())
             {
                 if (key != null && key.isValid())
-                {
-                    Object attachment = key.attachment();
-                    if (attachment instanceof EndPoint)
-                        IO.close((EndPoint)attachment);
-                }
+                    key.cancel();
             }
 
             _selector = null;
