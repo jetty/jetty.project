@@ -52,7 +52,7 @@ import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.eclipse.jetty.util.thread.Locker;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.ThreadPoolBudget;
@@ -144,8 +144,8 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
 {
     protected static final Logger LOG = Log.getLogger(AbstractConnector.class);
 
-    private final Locker _locker = new Locker();
-    private final Condition _setAccepting = _locker.newCondition();
+    private final AutoLock _lock = new AutoLock();
+    private final Condition _setAccepting = _lock.newCondition();
     private final Map<String, ConnectionFactory> _factories = new LinkedHashMap<>(); // Order is important on server side, so we use a LinkedHashMap
     private final Server _server;
     private final Executor _executor;
@@ -231,7 +231,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
      * Get the {@link HttpChannel.Listener}s added to the connector
      * as a single combined Listener.
      * This is equivalent to a listener that iterates over the individual
-     * listeners returned from <code>getBeans(HttpChannel.Listener.class);</code>,
+     * listeners returned from {@code getBeans(HttpChannel.Listener.class);},
      * except that: <ul>
      *     <li>The result is precomputed, so it is more efficient</li>
      *     <li>The result is ordered by the order added.</li>
@@ -332,7 +332,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
 
     protected void interruptAcceptors()
     {
-        try (Locker.Lock lock = _locker.lock())
+        try (AutoLock lock = _lock.lock())
         {
             for (Thread thread : _acceptors)
             {
@@ -387,7 +387,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
 
     public void join(long timeout) throws InterruptedException
     {
-        try (Locker.Lock lock = _locker.lock())
+        try (AutoLock lock = _lock.lock())
         {
             for (Thread thread : _acceptors)
             {
@@ -404,7 +404,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
      */
     public boolean isAccepting()
     {
-        try (Locker.Lock lock = _locker.lock())
+        try (AutoLock lock = _lock.lock())
         {
             return _accepting;
         }
@@ -412,7 +412,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
 
     public void setAccepting(boolean accepting)
     {
-        try (Locker.Lock lock = _locker.lock())
+        try (AutoLock lock = _lock.lock())
         {
             _accepting = accepting;
             _setAccepting.signalAll();
@@ -422,7 +422,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     @Override
     public ConnectionFactory getConnectionFactory(String protocol)
     {
-        try (Locker.Lock lock = _locker.lock())
+        try (AutoLock lock = _lock.lock())
         {
             return _factories.get(StringUtil.asciiToLowerCase(protocol));
         }
@@ -431,7 +431,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     @Override
     public <T> T getConnectionFactory(Class<T> factoryType)
     {
-        try (Locker.Lock lock = _locker.lock())
+        try (AutoLock lock = _lock.lock())
         {
             for (ConnectionFactory f : _factories.values())
             {
@@ -683,7 +683,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
             {
                 while (isRunning())
                 {
-                    try (Locker.Lock lock = _locker.lock())
+                    try (AutoLock lock = _lock.lock())
                     {
                         if (!_accepting && isRunning())
                         {

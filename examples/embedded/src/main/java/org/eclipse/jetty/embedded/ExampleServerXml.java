@@ -18,21 +18,31 @@
 
 package org.eclipse.jetty.embedded;
 
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.xml.XmlConfiguration;
 
 /**
  * Configures and Starts a Jetty server from an XML declaration.
- * <p>
- * See <a href="https://raw.githubusercontent.com/eclipse/jetty.project/master/examples/embedded/src/main/resources/exampleserver.xml">exampleserver.xml</a>
- * </p>
  */
 public class ExampleServerXml
 {
-    public static void main(String[] args) throws Exception
+    public static Server createServer(int port) throws Exception
     {
         // Find Jetty XML (in classpath) that configures and starts Server.
+        // See src/main/resources/exampleserver.xml
         Resource serverXml = Resource.newSystemResource("exampleserver.xml");
-        XmlConfiguration.main(serverXml.getFile().getAbsolutePath());
+        XmlConfiguration xml = new XmlConfiguration(serverXml);
+        xml.getProperties().put("http.port", Integer.toString(port));
+        Server server = (Server)xml.configure();
+        return server;
+    }
+
+    public static void main(String[] args) throws Exception
+    {
+        int port = ExampleUtil.getPort(args, "jetty.http.port", 8080);
+        Server server = createServer(port);
+        server.start();
+        server.join();
     }
 }

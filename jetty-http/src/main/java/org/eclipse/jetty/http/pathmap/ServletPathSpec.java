@@ -20,9 +20,14 @@ package org.eclipse.jetty.http.pathmap;
 
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 public class ServletPathSpec extends PathSpec
 {
+
+    private static final Logger LOG = Log.getLogger(ServletPathSpec.class);
+
     /**
      * If a servlet or filter path mapping isn't a suffix mapping, ensure
      * it starts with '/'
@@ -213,13 +218,13 @@ public class ServletPathSpec extends PathSpec
         super.pathDepth = 0;
         char lastChar = servletPathSpec.charAt(specLength - 1);
         // prefix based
-        if ((servletPathSpec.charAt(0) == '/') && (specLength > 1) && (lastChar == '*'))
+        if (servletPathSpec.charAt(0) == '/' && servletPathSpec.endsWith("/*"))
         {
             this.group = PathSpecGroup.PREFIX_GLOB;
             this.prefix = servletPathSpec.substring(0, specLength - 2);
         }
         // suffix based
-        else if (servletPathSpec.charAt(0) == '*')
+        else if (servletPathSpec.charAt(0) == '*' && servletPathSpec.length() > 1)
         {
             this.group = PathSpecGroup.SUFFIX_GLOB;
             this.suffix = servletPathSpec.substring(2, specLength);
@@ -228,6 +233,11 @@ public class ServletPathSpec extends PathSpec
         {
             this.group = PathSpecGroup.EXACT;
             this.prefix = servletPathSpec;
+            if (servletPathSpec.endsWith("*"))
+            {
+                LOG.warn("Suspicious URL pattern: '{}'; see sections 12.1 and 12.2 of the Servlet specification",
+                        servletPathSpec);
+            }
         }
 
         for (int i = 0; i < specLength; i++)
@@ -275,11 +285,6 @@ public class ServletPathSpec extends PathSpec
             if (idx != (len - 1))
             {
                 throw new IllegalArgumentException("Servlet Spec 12.2 violation: glob '*' can only exist at end of prefix based matches: bad spec \"" + servletPathSpec + "\"");
-            }
-
-            if (idx < 1 || servletPathSpec.charAt(idx - 1) != '/')
-            {
-                throw new IllegalArgumentException("Servlet Spec 12.2 violation: suffix glob '*' can only exist after '/': bad spec \"" + servletPathSpec + "\"");
             }
         }
         else if (servletPathSpec.startsWith("*."))

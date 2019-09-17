@@ -16,16 +16,35 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.embedded;
+package org.eclipse.jetty.security.openid;
 
-import org.eclipse.jetty.xml.XmlConfiguration;
+import java.io.Serializable;
+import java.security.Principal;
 
-public class TestXml
+public class OpenIdUserPrincipal implements Principal, Serializable
 {
-    public static void main(String[] args) throws Exception
+    private static final long serialVersionUID = 1521094652756670469L;
+    private final OpenIdCredentials _credentials;
+
+    public OpenIdUserPrincipal(OpenIdCredentials credentials)
     {
-        System.setProperty("jetty.home", "../jetty-distribution/target/distribution");
-        XmlConfiguration.main("../jetty-jmx/src/main/config/etc/jetty-jmx.xml",
-            "../jetty-server/src/main/config/etc/jetty.xml");
+        _credentials = credentials;
+    }
+
+    public OpenIdCredentials getCredentials()
+    {
+        return _credentials;
+    }
+
+    @Override
+    public String getName()
+    {
+        return _credentials.getUserId();
+    }
+
+    @Override
+    public String toString()
+    {
+        return _credentials.getUserId();
     }
 }

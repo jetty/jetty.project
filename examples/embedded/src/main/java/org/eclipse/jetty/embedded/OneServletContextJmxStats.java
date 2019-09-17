@@ -28,9 +28,10 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 
 public class OneServletContextJmxStats
 {
-    public static void main(String[] args) throws Exception
+    public static Server createServer(int port)
     {
-        Server server = new Server(8080);
+        Server server = new Server(port);
+
         // Add JMX tracking to Server
         server.addBean(new MBeanContainer(ManagementFactory
             .getPlatformMBeanServer()));
@@ -45,6 +46,13 @@ public class OneServletContextJmxStats
 
         // Add Connector Statistics tracking to all connectors
         ServerConnectionStatistics.addToAllConnectors(server);
+        return server;
+    }
+
+    public static void main(String[] args) throws Exception
+    {
+        int port = ExampleUtil.getPort(args, "jetty.http.port", 8080);
+        Server server = createServer(port);
 
         server.start();
         server.join();
