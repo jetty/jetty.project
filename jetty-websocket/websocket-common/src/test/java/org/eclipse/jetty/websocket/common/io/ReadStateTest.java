@@ -27,7 +27,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ReadStateTest
 {
@@ -50,7 +49,7 @@ public class ReadStateTest
         ReadState readState = new ReadState();
         assertThat("Initially reading", readState.isReading(), is(true));
 
-        assertTrue(readState.suspending());
+        readState.suspending();
         assertThat("Suspending doesn't take effect immediately", readState.isSuspended(), is(false));
 
         assertNull(readState.resume());
@@ -64,7 +63,7 @@ public class ReadStateTest
         ReadState readState = new ReadState();
         assertThat("Initially reading", readState.isReading(), is(true));
 
-        assertThat(readState.suspending(), is(true));
+        readState.suspending();
         assertThat("Suspending doesn't take effect immediately", readState.isSuspended(), is(false));
 
         ByteBuffer content = BufferUtil.toBuffer("content");
@@ -84,8 +83,8 @@ public class ReadStateTest
 
         assertThat(readState.isReading(), is(false));
         assertThat(readState.isSuspended(), is(true));
-        assertThat(readState.suspending(), is(false));
+        assertThrows(IllegalStateException.class, readState::suspending);
         assertThat(readState.getAction(content), is(ReadState.Action.EOF));
-        assertNull(readState.resume());
+        assertThrows(IllegalStateException.class, readState::resume);
     }
 }

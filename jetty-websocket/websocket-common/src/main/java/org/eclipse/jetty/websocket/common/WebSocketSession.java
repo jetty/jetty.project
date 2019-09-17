@@ -68,7 +68,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
     private final EventDriver websocket;
     private final Executor executor;
     private final WebSocketPolicy policy;
-    private final AtomicBoolean closed = new AtomicBoolean();
+    private final AtomicBoolean onCloseCalled = new AtomicBoolean(false);
     private ClassLoader classLoader;
     private ExtensionFactory extensionFactory;
     private RemoteEndpointFactory remoteEndpointFactory;
@@ -80,7 +80,6 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
     private UpgradeRequest upgradeRequest;
     private UpgradeResponse upgradeResponse;
     private CompletableFuture<Session> openFuture;
-    private AtomicBoolean onCloseCalled = new AtomicBoolean(false);
 
     public WebSocketSession(WebSocketContainerScope containerScope, URI requestURI, EventDriver websocket, LogicalConnection connection)
     {
@@ -338,10 +337,9 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
     public boolean isOpen()
     {
         if (this.connection == null)
-        {
             return false;
-        }
-        return !closed.get() && this.connection.isOpen();
+
+        return !onCloseCalled.get() && this.connection.isOpen();
     }
 
     @Override
@@ -546,6 +544,9 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
     @Override
     public SuspendToken suspend()
     {
+        if (!isOpen())
+            throw new IllegalStateException("Not open");
+
         return connection.suspend();
     }
 
