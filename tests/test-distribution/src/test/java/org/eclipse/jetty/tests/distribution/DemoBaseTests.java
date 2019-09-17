@@ -24,8 +24,6 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledOnJre;
-import org.junit.jupiter.api.condition.JRE;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -146,7 +144,6 @@ public class DemoBaseTests extends AbstractDistributionTest
     }
 
     @Test
-    @DisabledOnJre(JRE.JAVA_8)
     public void testJPMS() throws Exception
     {
         String jettyVersion = System.getProperty("jettyVersion");
@@ -166,7 +163,7 @@ public class DemoBaseTests extends AbstractDistributionTest
         };
         try (DistributionTester.Run run = distribution.start(args))
         {
-            assertTrue(run.awaitConsoleLogsFor("Started @", 10, TimeUnit.SECONDS));
+            assertTrue(run.awaitConsoleLogsFor("Started Server@", 10, TimeUnit.SECONDS));
 
             startHttpClient();
             ContentResponse response = client.GET("http://localhost:" + httpPort + "/test/hello");
