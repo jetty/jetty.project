@@ -26,6 +26,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.servlet.AsyncContext;
 import javax.servlet.DispatcherType;
@@ -36,6 +37,7 @@ import javax.servlet.Servlet;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
+import javax.servlet.UnavailableException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -58,6 +60,7 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ErrorPageTest
@@ -67,6 +70,8 @@ public class ErrorPageTest
     private StacklessLogging _stackless;
     private static CountDownLatch __asyncSendErrorCompleted;
     private ErrorPageErrorHandler _errorPageErrorHandler;
+    private static AtomicBoolean __destroyed;
+    private ServletContextHandler _context;
 
     @BeforeEach
     public void init() throws Exception
@@ -75,25 +80,24 @@ public class ErrorPageTest
         _connector = new LocalConnector(_server);
         _server.addConnector(_connector);
 
-        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.NO_SECURITY | ServletContextHandler.NO_SESSIONS);
+        _context = new ServletContextHandler(ServletContextHandler.NO_SECURITY | ServletContextHandler.NO_SESSIONS);
 
-        _server.setHandler(context);
+        _server.setHandler(_context);
 
-        context.setContextPath("/");
-
-        context.addFilter(SingleDispatchFilter.class, "/*", EnumSet.allOf(DispatcherType.class));
-
-        context.addServlet(DefaultServlet.class, "/");
-        context.addServlet(FailServlet.class, "/fail/*");
-        context.addServlet(FailClosedServlet.class, "/fail-closed/*");
-        context.addServlet(ErrorServlet.class, "/error/*");
-        context.addServlet(AppServlet.class, "/app/*");
-        context.addServlet(LongerAppServlet.class, "/longer.app/*");
-        context.addServlet(SyncSendErrorServlet.class, "/sync/*");
-        context.addServlet(AsyncSendErrorServlet.class, "/async/*");
-        context.addServlet(NotEnoughServlet.class, "/notenough/*");
-        context.addServlet(DeleteServlet.class, "/delete/*");
-        context.addServlet(ErrorAndStatusServlet.class, "/error-and-status/*");
+        _context.setContextPath("/");
+        _context.addFilter(SingleDispatchFilter.class, "/*", EnumSet.allOf(DispatcherType.class));
+        _context.addServlet(DefaultServlet.class, "/");
+        _context.addServlet(FailServlet.class, "/fail/*");
+        _context.addServlet(FailClosedServlet.class, "/fail-closed/*");
+        _context.addServlet(ErrorServlet.class, "/error/*");
+        _context.addServlet(AppServlet.class, "/app/*");
+        _context.addServlet(LongerAppServlet.class, "/longer.app/*");
+        _context.addServlet(SyncSendErrorServlet.class, "/sync/*");
+        _context.addServlet(AsyncSendErrorServlet.class, "/async/*");
+        _context.addServlet(NotEnoughServlet.class, "/notenough/*");
+        _context.addServlet(UnavailableServlet.class, "/unavailable/*");
+        _context.addServlet(DeleteServlet.class, "/delete/*");
+        _context.addServlet(ErrorAndStatusServlet.class, "/error-and-status/*");
 
         HandlerWrapper noopHandler = new HandlerWrapper()
         {
@@ -106,10 +110,10 @@ public class ErrorPageTest
                     super.handle(target, baseRequest, request, response);
             }
         };
-        context.insertHandler(noopHandler);
+        _context.insertHandler(noopHandler);
 
         _errorPageErrorHandler = new ErrorPageErrorHandler();
-        context.setErrorHandler(_errorPageErrorHandler);
+        _context.setErrorHandler(_errorPageErrorHandler);
         _errorPageErrorHandler.addErrorPage(595, "/error/595");
         _errorPageErrorHandler.addErrorPage(597, "/sync");
         _errorPageErrorHandler.addErrorPage(599, "/error/599");
@@ -408,6 +412,45 @@ public class ErrorPageTest
         assertThat(response, Matchers.endsWith("SomeBytes"));
     }
 
+    @Test
+    public void testPermanentlyUnavailable() throws Exception
+    {
+        try (StacklessLogging ignore =new StacklessLogging(_context.getLogger()))
+        {
+            try (StacklessLogging ignore2 = new StacklessLogging(HttpChannel.class))
+            {
+                __destroyed = new AtomicBoolean(false);
+                String response = _connector.getResponse("GET /unavailable/info HTTP/1.0\r\n\r\n");
+                assertThat(response, Matchers.containsString("HTTP/1.1 404 "));
+                assertTrue(__destroyed.get());
+            }
+        }
+    }
+    @Test
+    public void testUnavailable() throws Exception
+    {
+        try (StacklessLogging ignore =new StacklessLogging(_context.getLogger()))
+        {
+            try (StacklessLogging ignore2 = new StacklessLogging(HttpChannel.class))
+            {
+                __destroyed = new AtomicBoolean(false);
+                String response = _connector.getResponse("GET /unavailable/info?for=1 HTTP/1.0\r\n\r\n");
+                assertThat(response, Matchers.containsString("HTTP/1.1 503 "));
+                assertFalse(__destroyed.get());
+
+                response = _connector.getResponse("GET /unavailable/info?ok=true HTTP/1.0\r\n\r\n");
+                assertThat(response, Matchers.containsString("HTTP/1.1 503 "));
+                assertFalse(__destroyed.get());
+
+                Thread.sleep(1500);
+
+                response = _connector.getResponse("GET /unavailable/info?ok=true HTTP/1.0\r\n\r\n");
+                assertThat(response, Matchers.containsString("HTTP/1.1 200 "));
+                assertFalse(__destroyed.get());
+            }
+        }
+    }
+
     public static class AppServlet extends HttpServlet implements Servlet
     {
         @Override
@@ -618,6 +661,35 @@ public class ErrorPageTest
         }
     }
 
+
+    public static class UnavailableServlet extends HttpServlet implements Servlet
+    {
+        @Override
+        protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        {
+            String ok = request.getParameter("ok");
+            if (Boolean.parseBoolean(ok))
+            {
+                response.setStatus(200);
+                response.flushBuffer();
+                return;
+            }
+
+            String f = request.getParameter("for");
+            if (f == null)
+                throw new UnavailableException("testing permanent");
+
+            throw new UnavailableException("testing periodic", Integer.parseInt(f));
+        }
+
+        @Override
+        public void destroy()
+        {
+            if (__destroyed != null)
+                __destroyed.set(true);
+        }
+    }
+
     public static class SingleDispatchFilter implements Filter
     {
         ConcurrentMap<Integer, Thread> dispatches = new ConcurrentHashMap<>();
@@ -665,7 +737,6 @@ public class ErrorPageTest
         @Override
         public void destroy()
         {
-
         }
     }
 }

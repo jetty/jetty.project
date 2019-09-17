@@ -64,52 +64,66 @@ public class ListenerHolder extends BaseHolder<EventListener>
      */
     public void setListener(EventListener listener)
     {
-        _listener = listener;
-        _extInstance = true;
-        setHeldClass(_listener.getClass());
+        setInstance(listener);
     }
 
     @Override
     public void doStart() throws Exception
     {
         super.doStart();
-        if (!java.util.EventListener.class.isAssignableFrom(_class))
+        if (!java.util.EventListener.class.isAssignableFrom(getHeldClass()))
         {
-            String msg = _class + " is not a java.util.EventListener";
+            String msg = getHeldClass() + " is not a java.util.EventListener";
             super.stop();
             throw new IllegalStateException(msg);
         }
-        
+
         ContextHandler contextHandler = ContextHandler.getCurrentContext().getContextHandler();
-        if (_listener == null)
+        if (contextHandler != null)
         {
-            //create an instance of the listener and decorate it
-            try
+            _listener = getInstance();
+            if (_listener == null)
             {
-                ServletContext scontext = contextHandler.getServletContext();
-                _listener = (scontext instanceof ServletContextHandler.Context)
-                    ? scontext.createListener(getHeldClass())
-                    : getHeldClass().getDeclaredConstructor().newInstance();
+                //create an instance of the listener and decorate it
+                try
+                {
+                    ServletContext scontext = contextHandler.getServletContext();
+                    _listener = (scontext instanceof ServletContextHandler.Context)
+                        ? scontext.createListener(getHeldClass())
+                        : getHeldClass().getDeclaredConstructor().newInstance();
+                }
+                catch (ServletException ex)
+                {
+                    Throwable cause = ex.getRootCause();
+                    if (cause instanceof InstantiationException)
+                        throw (InstantiationException)cause;
+                    if (cause instanceof IllegalAccessException)
+                        throw (IllegalAccessException)cause;
+                    throw ex;
+                }
             }
-            catch (ServletException ex)
-            {
-                Throwable cause = ex.getRootCause();
-                if (cause instanceof InstantiationException)
-                    throw (InstantiationException)cause;
-                if (cause instanceof IllegalAccessException)
-                    throw (IllegalAccessException)cause;
-                throw ex;
-            }
+            contextHandler.addEventListener(_listener);
         }
-        contextHandler.addEventListener(_listener);
     }
 
     @Override
     public void doStop() throws Exception
     {
         super.doStop();
-        if (!_extInstance)
-            _listener = null;
+        if (_listener != null)
+        {
+            try
+            {
+                ContextHandler contextHandler = ContextHandler.getCurrentContext().getContextHandler();
+                if (contextHandler != null)
+                    contextHandler.removeEventListener(_listener);
+                getServletHandler().destroyListener(_listener);
+            }
+            finally
+            {
+                _listener = null;
+            }
+        }
     }
 
     @Override

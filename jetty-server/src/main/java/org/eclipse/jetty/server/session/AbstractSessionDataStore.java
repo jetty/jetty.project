@@ -81,24 +81,20 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
     public SessionData load(String id) throws Exception
     {
         if (!isStarted())
-            throw new IllegalStateException ("Not started");
+            throw new IllegalStateException("Not started");
 
         final AtomicReference<SessionData> reference = new AtomicReference<SessionData>();
         final AtomicReference<Exception> exception = new AtomicReference<Exception>();
 
-        Runnable r = new Runnable()
+        Runnable r = () ->
         {
-            @Override
-            public void run()
+            try
             {
-                try
-                {
-                    reference.set(doLoad(id));
-                }
-                catch (Exception e)
-                {
-                    exception.set(e);
-                }
+                reference.set(doLoad(id));
+            }
+            catch (Exception e)
+            {
+                exception.set(e);
             }
         };
 
@@ -165,7 +161,7 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
     public Set<String> getExpired(Set<String> candidates)
     {
         if (!isStarted())
-            throw new IllegalStateException ("Not started");
+            throw new IllegalStateException("Not started");
         
         try
         {
