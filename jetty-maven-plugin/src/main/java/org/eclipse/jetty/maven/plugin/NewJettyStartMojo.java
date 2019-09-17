@@ -19,8 +19,6 @@
 
 package org.eclipse.jetty.maven.plugin;
 
-import java.io.File;
-
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Execute;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
@@ -50,7 +48,8 @@ public class NewJettyStartMojo extends AbstractWebAppMojo
         super.configureUnassembledWebApp();
     }
     
-    /** Starts the webapp - without first compiling the classes -
+    /**
+     *  Starts the webapp - without first compiling the classes -
      * in the same process as maven.
      */
     @Override
@@ -58,7 +57,6 @@ public class NewJettyStartMojo extends AbstractWebAppMojo
     {
         try
         {
-            //start jetty
             JettyEmbedder jetty = newJettyEmbedder();        
             jetty.setExitVm(false);
             jetty.setStopAtShutdown(false);
@@ -82,7 +80,7 @@ public class NewJettyStartMojo extends AbstractWebAppMojo
         {
             JettyForker jetty = newJettyForker();
             jetty.setWaitForChild(false); //we never wait for child
-            jetty.setJettyOutputFile(getJettyOutputFile());
+            jetty.setJettyOutputFile(getJettyOutputFile("jetty-start.out"));
             jetty.start(); //forks jetty instance
             
         }
@@ -103,21 +101,12 @@ public class NewJettyStartMojo extends AbstractWebAppMojo
         {
             JettyDistroForker jetty = newJettyDistroForker();
             jetty.setWaitForChild(false); //never wait for child
-            jetty.setJettyOutputFile(getJettyOutputFile());
+            jetty.setJettyOutputFile(getJettyOutputFile("jetty-start.out"));
             jetty.start(); //forks a jetty distro
         }
         catch (Exception e)
         {
             throw new MojoExecutionException("Error starting jetty", e);
         }
-    }
-
-    protected File getJettyOutputFile () throws Exception
-    {
-        File outputFile = new File(target, "jetty.out");
-        if (outputFile.exists())
-            outputFile.delete();
-        outputFile.createNewFile();
-        return outputFile;
     }
 }

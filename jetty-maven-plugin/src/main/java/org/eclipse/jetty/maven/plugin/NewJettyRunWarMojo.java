@@ -19,7 +19,8 @@
 
 package org.eclipse.jetty.maven.plugin;
 
-import java.io.File;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Date;
 import java.util.List;
 
@@ -31,6 +32,7 @@ import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.eclipse.jetty.util.PathWatcher;
 import org.eclipse.jetty.util.PathWatcher.PathWatchEvent;
+import org.eclipse.jetty.util.StringUtil;
 
 /**
 * <p>
@@ -48,15 +50,7 @@ import org.eclipse.jetty.util.PathWatcher.PathWatchEvent;
 @Mojo( name = "newrun-war", requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME)
 @Execute(phase = LifecyclePhase.PACKAGE)
 public class NewJettyRunWarMojo extends AbstractWebAppMojo
-{
-    
-    /**
-     * The location of the war file.
-     *
-     */
-    @Parameter(defaultValue="${project.build.directory}/${project.build.finalName}.war", required = true)
-    private File war;
-    
+{   
     //Start of parameters only valid for runType=inprocess  
     /**
      * The interval in seconds to pause before checking if changes
@@ -74,6 +68,7 @@ public class NewJettyRunWarMojo extends AbstractWebAppMojo
     protected JettyEmbedder embedder;
     protected JettyForker forker;
     protected JettyDistroForker distroForker;
+    protected Path war;
     
     
     /**
@@ -90,18 +85,25 @@ public class NewJettyRunWarMojo extends AbstractWebAppMojo
     public void configureWebApp() throws Exception
     {
         super.configureWebApp();
-        webApp.setWar(war.getCanonicalPath());
+        if (StringUtil.isBlank(webApp.getWar()))
+        {
+            war = target.toPath().resolve(project.getBuild().getFinalName()+".war");
+            webApp.setWar(war.toFile().getAbsolutePath());
+        }
+        else
+            war = Paths.get(webApp.getWar());
+        
+        getLog().info("War = "+war);
     }
 
     /**
-     *
+     * Start a jetty instance in process to run the built war.
      */
     @Override
     public void startJettyEmbedded() throws MojoExecutionException
     {
         try
         {
-            //start jetty
             embedder = newJettyEmbedder();        
             embedder.setExitVm(true);
             embedder.setStopAtShutdown(true);
@@ -115,6 +117,47 @@ public class NewJettyRunWarMojo extends AbstractWebAppMojo
         }
     }
 
+    
+    /**
+     * Fork a jetty instance to run the built war.
+     */
+    @Override
+    public void startJettyForked() throws MojoExecutionException
+    {
+        try
+        {
+            forker = newJettyForker();
+            forker.setWaitForChild(true); //we run at the command line, echo child output and wait for it
+            startScanner();
+            forker.start(); //forks jetty instance
+            
+        }
+        catch (Exception e)
+        {
+            throw new MojoExecutionException("Error starting jetty", e);
+        }
+    }
+
+    /**
+     * Deploy the built war to a jetty distro.
+     */
+    @Override
+    public void startJettyDistro() throws MojoExecutionException
+    {
+        try
+        {
+            distroForker = newJettyDistroForker();
+            distroForker.setWaitForChild(true); //we always run at the command line, echo child output and wait for it
+            startScanner();
+            distroForker.start(); //forks a jetty distro
+
+        }
+        catch (Exception e)
+        {
+            throw new MojoExecutionException("Error starting jetty", e);
+        }
+    }
+    
     public void startScanner()
     throws Exception
     {
@@ -149,57 +192,11 @@ public class NewJettyRunWarMojo extends AbstractWebAppMojo
             cthread.start();
         }
     }
-    
-    /**
-     * Fork a jetty instance to run the war
-     */
-    @Override
-    public void startJettyForked() throws MojoExecutionException
-    {
-        try
-        {
-            forker = newJettyForker();
-            forker.setWaitForChild(true); //we run at the command line, echo child output and wait for it
-
-            startScanner();
-            
-            //TODO is it ok to start the scanner before we start jetty?
-            
-            forker.start(); //forks jetty instance
-            
-        }
-        catch (Exception e)
-        {
-            throw new MojoExecutionException("Error starting jetty", e);
-        }
-    }
-
-    /**
-     *
-     */
-    @Override
-    public void startJettyDistro() throws MojoExecutionException
-    {
-
-        try
-        {
-            distroForker = newJettyDistroForker();
-            distroForker.setWaitForChild(true); //we always run at the command line, echo child output and wait for it
-            startScanner();
-            distroForker.start(); //forks a jetty distro
-
-            //TODO is it ok to start the scanner before we start jetty?
-        }
-        catch (Exception e)
-        {
-            throw new MojoExecutionException("Error starting jetty", e);
-        }
-    }
 
     public void configureScanner() throws MojoExecutionException
     {
         scanner.watch(project.getFile().toPath());
-        scanner.watch(war.toPath());
+        scanner.watch(war);
 
         scanner.addListener(new PathWatcher.EventListListener()
         {
@@ -303,5 +300,4 @@ public class NewJettyRunWarMojo extends AbstractWebAppMojo
         }
         getLog().info("Restart completed.");
     }
-  
 }

@@ -30,6 +30,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -410,6 +411,12 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
     private MavenSession session;
     
     /**
+     * Default supported project type is <code>war</code> packaging.
+     */
+    @Parameter
+    protected List<String> supportedPackagings = Collections.singletonList("war");
+    
+    /**
      * List of deps that are wars
      */
     protected List<Artifact> warArtifacts;
@@ -426,34 +433,35 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
     protected List<File> providedJars;
 
 
+
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException
     {
-        //Doesn't apply to non-webapp projects
-        if ( !"war".equals( project.getPackaging() ) || skip )
-            return;
-
-        getLog().info("Configuring Jetty for project: " + this.project.getName());
-        if (skip)
+        if (isPackagingSupported())
         {
-            getLog().info("Skipping Jetty start: jetty.skip==true");
-            return;
-        }
+            if (skip)
+            {
+                getLog().info("Skipping Jetty start: jetty.skip==true");
+                return;
+            }
 
-        if (isExcludedGoal(execution.getMojoDescriptor().getGoal()))
-        {
-            getLog().info("The goal \""+execution.getMojoDescriptor().getFullGoalName()+
+            if (isExcludedGoal(execution.getMojoDescriptor().getGoal()))
+            {
+                getLog().info("The goal \""+execution.getMojoDescriptor().getFullGoalName()+
                     "\" is unavailable for this web app because of an <excludedGoal> configuration.");
-            return;
+                return;
+            }
+            
+            getLog().info("Configuring Jetty for project: " + getProjectName());
+            warPluginInfo = new WarPluginInfo(project);
+            configureSystemProperties();
+            augmentPluginClasspath();
+            PluginLog.setLog(getLog());
+            verifyPomConfiguration();
+            startJetty();
         }
-
-        warPluginInfo = new WarPluginInfo(project);
-        configureSystemProperties();
-        augmentPluginClasspath();
-        PluginLog.setLog(getLog());
-        verifyPomConfiguration();
-        startJetty();
-        
+        else
+            getLog().info("Packaging type [" + project.getPackaging() + "] is unsupported");
     }
 
 
@@ -1078,9 +1086,25 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
         
         return excluded;
     }
+
+    protected boolean isPackagingSupported()
+    {
+        if (!supportedPackagings.contains(project.getPackaging()))
+            return false;
+        return true;
+    }
+
+    protected String getProjectName()
+    {
+        String projectName = project.getName();
+        if (StringUtils.isBlank(projectName))
+        {
+            projectName = project.getGroupId() + ":" + project.getArtifactId();
+        }
+        return projectName;
+    }
     
-    
-    protected void configureWebApp ()
+    protected void configureWebApp()
     throws Exception
     {
         if (webApp == null)
@@ -1208,5 +1232,18 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
             return f;
         
         return null;
+    }
+    
+    
+    /**
+     * Get a file into which to write output from jetty.
+     */
+    protected File getJettyOutputFile (String name) throws Exception
+    {
+        File outputFile = new File(target, name);
+        if (outputFile.exists())
+            outputFile.delete();
+        outputFile.createNewFile();
+        return outputFile;
     }
 }
