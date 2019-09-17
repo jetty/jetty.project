@@ -56,8 +56,8 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
     private final ISession session;
     private final int bufferSize;
     private final ExecutionStrategy strategy;
-    private boolean useInputDirectBuffers;
-    private boolean useOutputDirectBuffers;
+    private boolean useInputDirectByteBuffers;
+    private boolean useOutputDirectByteBuffers;
 
     public HTTP2Connection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, Parser parser, ISession session, int bufferSize)
     {
@@ -103,22 +103,22 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
 
     public boolean isUseInputDirectByteBuffers()
     {
-        return useInputDirectBuffers;
+        return useInputDirectByteBuffers;
     }
 
-    public void setUseInputDirectByteBuffers(boolean useInputDirectBuffers)
+    public void setUseInputDirectByteBuffers(boolean useInputDirectByteBuffers)
     {
-        this.useInputDirectBuffers = useInputDirectBuffers;
+        this.useInputDirectByteBuffers = useInputDirectByteBuffers;
     }
 
     public boolean isUseOutputDirectByteBuffers()
     {
-        return useOutputDirectBuffers;
+        return useOutputDirectByteBuffers;
     }
 
-    public void setUseOutputDirectByteBuffers(boolean useOutputDirectBuffers)
+    public void setUseOutputDirectByteBuffers(boolean useOutputDirectByteBuffers)
     {
-        this.useOutputDirectBuffers = useOutputDirectBuffers;
+        this.useOutputDirectByteBuffers = useOutputDirectByteBuffers;
     }
 
     @Override

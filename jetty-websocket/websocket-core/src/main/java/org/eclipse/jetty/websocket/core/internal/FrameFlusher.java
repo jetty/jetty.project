@@ -69,7 +69,7 @@ public class FrameFlusher extends IteratingCallback
     private boolean flushed = true;
     private Throwable closedCause;
     private long idleTimeout;
-    private boolean useDirectBuffers;
+    private boolean useDirectByteBuffers;
 
     public FrameFlusher(ByteBufferPool bufferPool, Scheduler scheduler, Generator generator, EndPoint endPoint, int bufferSize, int maxGather)
     {
@@ -87,12 +87,12 @@ public class FrameFlusher extends IteratingCallback
 
     public boolean isUseDirectByteBuffers()
     {
-        return useDirectBuffers;
+        return useDirectByteBuffers;
     }
 
-    public void setUseDirectByteBuffers(boolean useDirectBuffers)
+    public void setUseDirectByteBuffers(boolean useDirectByteBuffers)
     {
-        this.useDirectBuffers = useDirectBuffers;
+        this.useDirectByteBuffers = useDirectByteBuffers;
     }
 
     /**

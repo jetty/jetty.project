@@ -42,11 +42,11 @@ public class Generator
         this(byteBufferPool, true, maxDynamicTableSize, maxHeaderBlockFragment);
     }
 
-    public Generator(ByteBufferPool byteBufferPool, boolean directBuffers, int maxDynamicTableSize, int maxHeaderBlockFragment)
+    public Generator(ByteBufferPool byteBufferPool, boolean useDirectByteBuffers, int maxDynamicTableSize, int maxHeaderBlockFragment)
     {
         this.byteBufferPool = byteBufferPool;
 
-        headerGenerator = new HeaderGenerator(directBuffers);
+        headerGenerator = new HeaderGenerator(useDirectByteBuffers);
         hpackEncoder = new HpackEncoder(maxDynamicTableSize);
 
         this.generators = new FrameGenerator[FrameType.values().length];

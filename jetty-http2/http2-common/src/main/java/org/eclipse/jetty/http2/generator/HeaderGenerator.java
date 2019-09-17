@@ -27,21 +27,21 @@ import org.eclipse.jetty.io.ByteBufferPool;
 public class HeaderGenerator
 {
     private int maxFrameSize = Frame.DEFAULT_MAX_LENGTH;
-    private final boolean directBuffers;
+    private final boolean useDirectByteBuffers;
 
     public HeaderGenerator()
     {
         this(true);
     }
 
-    public HeaderGenerator(boolean directBuffers)
+    public HeaderGenerator(boolean useDirectByteBuffers)
     {
-        this.directBuffers = directBuffers;
+        this.useDirectByteBuffers = useDirectByteBuffers;
     }
 
     public boolean isUseDirectByteBuffers()
     {
-        return directBuffers;
+        return useDirectByteBuffers;
     }
 
     public ByteBuffer generate(ByteBufferPool.Lease lease, FrameType frameType, int capacity, int length, int flags, int streamId)

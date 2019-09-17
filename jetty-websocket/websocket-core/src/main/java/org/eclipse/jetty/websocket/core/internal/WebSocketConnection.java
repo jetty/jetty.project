@@ -68,8 +68,8 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
 
     // Read / Parse variables
     private RetainableByteBuffer networkBuffer;
-    private boolean useInputDirectBuffers;
-    private boolean useOutputDirectBuffers;
+    private boolean useInputDirectByteBuffers;
+    private boolean useOutputDirectByteBuffers;
 
     /**
      * Create a WSConnection.
@@ -136,22 +136,22 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
 
     public boolean isUseInputDirectByteBuffers()
     {
-        return useInputDirectBuffers;
+        return useInputDirectByteBuffers;
     }
 
-    public void setUseInputDirectByteBuffers(boolean useInputDirectBuffers)
+    public void setUseInputDirectByteBuffers(boolean useInputDirectByteBuffers)
     {
-        this.useInputDirectBuffers = useInputDirectBuffers;
+        this.useInputDirectByteBuffers = useInputDirectByteBuffers;
     }
 
     public boolean isUseOutputDirectByteBuffers()
     {
-        return useOutputDirectBuffers;
+        return useOutputDirectByteBuffers;
     }
 
-    public void setUseOutputDirectByteBuffers(boolean useOutputDirectBuffers)
+    public void setUseOutputDirectByteBuffers(boolean useOutputDirectByteBuffers)
     {
-        this.useOutputDirectBuffers = useOutputDirectBuffers;
+        this.useOutputDirectByteBuffers = useOutputDirectByteBuffers;
     }
 
     /**
