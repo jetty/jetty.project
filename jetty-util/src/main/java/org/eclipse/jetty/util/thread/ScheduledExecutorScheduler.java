@@ -24,7 +24,7 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.eclipse.jetty.util.ProcessorUtils;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
@@ -83,7 +83,7 @@ public class ScheduledExecutorScheduler extends AbstractLifeCycle implements Sch
      */
     public ScheduledExecutorScheduler(@Name("name") String name, @Name("daemon") boolean daemon, @Name("classLoader") ClassLoader classLoader, @Name("threadGroup") ThreadGroup threadGroup, @Name("threads") int threads)
     {
-        this.name = name == null ? "Scheduler-" + hashCode() : name;
+        this.name = StringUtil.isBlank(name) ? "Scheduler-" + hashCode() : name;
         this.daemon = daemon;
         this.classloader = classLoader == null ? Thread.currentThread().getContextClassLoader() : classLoader;
         this.threadGroup = threadGroup;
@@ -93,7 +93,7 @@ public class ScheduledExecutorScheduler extends AbstractLifeCycle implements Sch
     @Override
     protected void doStart() throws Exception
     {
-        int size = threads > 0 ? threads : Math.max(1, ProcessorUtils.availableProcessors() / 4);
+        int size = threads > 0 ? threads : 1;
         scheduler = new ScheduledThreadPoolExecutor(size, r ->
         {
             Thread thread = ScheduledExecutorScheduler.this.thread = new Thread(threadGroup, r, name + "-" + count.incrementAndGet());
