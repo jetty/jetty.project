@@ -149,12 +149,23 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             // Close connections, but only wait a single selector cycle for it to take effect
             CloseConnections closeConnections = new CloseConnections();
             submit(closeConnections);
-            closeConnections._complete.await();
-
+            long stopTimeout = getStopTimeout();
+            if (stopTimeout <= 0)
+                Thread.yield();
+            else
+            {
+                long start = System.nanoTime();
+                closeConnections._complete.await(stopTimeout, TimeUnit.MILLISECONDS);
+                stopTimeout =  TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
+            }
             // Wait for any remaining endpoints to be closed and the selector to be stopped
             StopSelector stopSelector = new StopSelector();
             submit(stopSelector);
-            stopSelector._stopped.await();
+
+            if (stopTimeout <= 0)
+                Thread.yield();
+            else
+                stopSelector._stopped.await(stopTimeout, TimeUnit.MILLISECONDS);
         }
 
         super.doStop();

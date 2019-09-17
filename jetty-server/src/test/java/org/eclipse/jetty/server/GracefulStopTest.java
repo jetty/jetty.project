@@ -50,7 +50,6 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matcher;
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 
@@ -334,7 +333,7 @@ public class GracefulStopTest
         }
     }
 
-    public void testSlowClose(long stopTimeout, long closeWait, Matcher<Long> stopTimeMatcher) throws Exception
+    public void testSlowClose(long stopTimeout, long closeDelay, Matcher<Long> stopTimeMatcher) throws Exception
     {
         Server server = new Server();
         server.setStopTimeout(stopTimeout);
@@ -354,21 +353,18 @@ public class GracefulStopTest
                     {
                         try
                         {
-                            new Thread(() ->
+                            try
                             {
-                                try
-                                {
-                                    Thread.sleep(closeWait);
-                                }
-                                catch (InterruptedException e)
-                                {
-                                    // no op
-                                }
-                                finally
-                                {
-                                    super.close();
-                                }
-                            }).start();
+                                Thread.sleep(closeDelay);
+                            }
+                            catch (InterruptedException e)
+                            {
+                                // no op
+                            }
+                            finally
+                            {
+                                super.close();
+                            }
                         }
                         catch (Exception e)
                         {
@@ -416,11 +412,10 @@ public class GracefulStopTest
         try
         {
             server.stop();
-            assertTrue(stopTimeout == 0 || stopTimeout > closeWait);
         }
         catch (Exception e)
         {
-            assertTrue(stopTimeout > 0 && stopTimeout < closeWait);
+            assertTrue(stopTimeout > 0 && stopTimeout < closeDelay);
         }
         long stop = System.nanoTime();
 
@@ -461,10 +456,9 @@ public class GracefulStopTest
      * @throws Exception on test failure
      */
     @Test
-    @Disabled // TODO disable while #2046 is fixed
     public void testSlowCloseTinyGraceful() throws Exception
     {
-        Log.getLogger(QueuedThreadPool.class).info("Expect some threads can't be stopped");
+        Log.getLogger(QueuedThreadPool.class).warn("Expect some threads can't be stopped");
         testSlowClose(1, 5000, lessThan(1500L));
     }
 
@@ -474,7 +468,6 @@ public class GracefulStopTest
      * @throws Exception on test failure
      */
     @Test
-    @Disabled // TODO disable while #2046 is fixed
     public void testSlowCloseGraceful() throws Exception
     {
         testSlowClose(5000, 1000, Matchers.allOf(greaterThan(750L), lessThan(4999L)));
