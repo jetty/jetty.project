@@ -16,16 +16,33 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.embedded;
+package org.eclipse.jetty.http2.frames;
 
-import org.eclipse.jetty.xml.XmlConfiguration;
-
-public class TestXml
+public class ContinuationFrame extends Frame
 {
-    public static void main(String[] args) throws Exception
+    private final int streamId;
+    private final boolean endHeaders;
+
+    public ContinuationFrame(int streamId, boolean endHeaders)
     {
-        System.setProperty("jetty.home", "../jetty-distribution/target/distribution");
-        XmlConfiguration.main("../jetty-jmx/src/main/config/etc/jetty-jmx.xml",
-            "../jetty-server/src/main/config/etc/jetty.xml");
+        super(FrameType.CONTINUATION);
+        this.streamId = streamId;
+        this.endHeaders = endHeaders;
+    }
+
+    public int getStreamId()
+    {
+        return streamId;
+    }
+
+    public boolean isEndHeaders()
+    {
+        return endHeaders;
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s#%d{end=%b}", super.toString(), getStreamId(), isEndHeaders());
     }
 }

@@ -470,28 +470,75 @@ public class URIUtil
                             builder = new Utf8StringBuilder(path.length());
                             builder.append(path, offset, i - offset);
                         }
-                        if ((i + 2) < end)
+
+                        // lenient percent decoding
+                        if (i >= end)
                         {
-                            char u = path.charAt(i + 1);
-                            if (u == 'u')
+                            // [LENIENT] a percent sign at end of string.
+                            builder.append('%');
+                            i = end;
+                        }
+                        else if (end > (i + 1))
+                        {
+                            char type = path.charAt(i + 1);
+                            if (type == 'u')
                             {
-                                int codepoint = 0xffff & TypeUtil.parseInt(path, i + 2, 4, 16);
-                                char[] chars = Character.toChars(codepoint);
-                                for (char ch : chars)
+                                // We have a possible (deprecated) microsoft unicode code point "%u####"
+                                // - not recommended to use as it's limited to 2 bytes.
+                                if ((i + 5) >= end)
                                 {
-                                    builder.append(ch);
+                                    // [LENIENT] we have a partial "%u####" at the end of a string.
+                                    builder.append(path, i, (end - i));
+                                    i = end;
                                 }
-                                i += 5;
+                                else
+                                {
+                                    // this seems wrong, as we are casting to a char, but that's the known
+                                    // limitation of this deprecated encoding (only 2 bytes allowed)
+                                    if (StringUtil.isHex(path, i + 2, 4))
+                                    {
+                                        int codepoint = 0xffff & TypeUtil.parseInt(path, i + 2, 4, 16);
+                                        char[] chars = Character.toChars(codepoint);
+                                        for (char ch : chars)
+                                        {
+                                            builder.append(ch);
+                                        }
+                                        i += 5;
+                                    }
+                                    else
+                                    {
+                                        // [LENIENT] copy the "%u" as-is.
+                                        builder.append(path, i, 2);
+                                        i += 1;
+                                    }
+                                }
+                            }
+                            else if (end > (i + 2))
+                            {
+                                // we have a possible "%##" encoding
+                                if (StringUtil.isHex(path, i + 1, 2))
+                                {
+                                    builder.append((byte)TypeUtil.parseInt(path, i + 1, 2, 16));
+                                    i += 2;
+                                }
+                                else
+                                {
+                                    builder.append(path, i, 3);
+                                    i += 2;
+                                }
                             }
                             else
                             {
-                                builder.append((byte)(0xff & (TypeUtil.convertHexDigit(u) * 16 + TypeUtil.convertHexDigit(path.charAt(i + 2)))));
-                                i += 2;
+                                // [LENIENT] incomplete "%##" sequence at end of string
+                                builder.append(path, i, (end - i));
+                                i = end;
                             }
                         }
                         else
                         {
-                            throw new IllegalArgumentException("Bad URI % encoding");
+                            // [LENIENT] the "%" at the end of the string
+                            builder.append(path, i, (end - i));
+                            i = end;
                         }
 
                         break;
@@ -1161,20 +1208,56 @@ public class URIUtil
             int oa = uriA.charAt(a++);
             int ca = oa;
             if (ca == '%')
-                ca = TypeUtil.convertHexDigit(uriA.charAt(a++)) * 16 + TypeUtil.convertHexDigit(uriA.charAt(a++));
+            {
+                ca = lenientPercentDecode(uriA, a);
+                if (ca == (-1))
+                {
+                    ca = '%';
+                }
+                else
+                {
+                    a += 2;
+                }
+            }
 
             int ob = uriB.charAt(b++);
             int cb = ob;
             if (cb == '%')
-                cb = TypeUtil.convertHexDigit(uriB.charAt(b++)) * 16 + TypeUtil.convertHexDigit(uriB.charAt(b++));
+            {
+                cb = lenientPercentDecode(uriB, b);
+                if (cb == (-1))
+                {
+                    cb = '%';
+                }
+                else
+                {
+                    b += 2;
+                }
+            }
 
+            // Don't match on encoded slash
             if (ca == '/' && oa != ob)
                 return false;
 
             if (ca != cb)
-                return URIUtil.decodePath(uriA).equals(URIUtil.decodePath(uriB));
+                return false;
         }
         return a == lenA && b == lenB;
+    }
+
+    private static int lenientPercentDecode(String str, int offset)
+    {
+        if (offset >= str.length())
+            return -1;
+
+        if (StringUtil.isHex(str, offset, 2))
+        {
+            return TypeUtil.parseInt(str, offset, 2, 16);
+        }
+        else
+        {
+            return -1;
+        }
     }
 
     public static boolean equalsIgnoreEncodings(URI uriA, URI uriB)

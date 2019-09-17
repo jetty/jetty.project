@@ -61,7 +61,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
 
 /**
  * HttpChannel represents a single endpoint for HTTP semantic processing.
- * The HttpChannel is both a HttpParser.RequestHandler, where it passively receives events from
+ * The HttpChannel is both an HttpParser.RequestHandler, where it passively receives events from
  * an incoming HTTP request, and a Runnable, where it actively takes control of the request/response
  * life cycle and calls the application (perhaps suspending and resuming with multiple calls to run).
  * The HttpChannel signals the switch from passive mode to active mode by returning true to one of the
@@ -858,14 +858,14 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             if (response == null)
                 response = _response.newResponseMetaData();
             commit(response);
-
+            _combinedListener.onResponseBegin(_request);
+            _request.onResponseCommit();
+            
             // wrap callback to process 100 responses
             final int status = response.getStatus();
             final Callback committed = (status < HttpStatus.OK_200 && status >= HttpStatus.CONTINUE_100)
                 ? new Send100Callback(callback)
                 : new SendCallback(callback, content, true, complete);
-
-            _combinedListener.onResponseBegin(_request);
 
             // committing write
             _transport.send(_request.getMetaData(), response, content, complete, committed);
@@ -1060,7 +1060,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     /**
      * <p>Listener for {@link HttpChannel} events.</p>
      * <p>HttpChannel will emit events for the various phases it goes through while
-     * processing a HTTP request and response.</p>
+     * processing an HTTP request and response.</p>
      * <p>Implementations of this interface may listen to those events to track
      * timing and/or other values such as request URI, etc.</p>
      * <p>The events parameters, especially the {@link Request} object, may be

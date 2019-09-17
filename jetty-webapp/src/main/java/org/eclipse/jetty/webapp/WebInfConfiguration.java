@@ -38,6 +38,7 @@ public class WebInfConfiguration extends AbstractConfiguration
     private static final Logger LOG = Log.getLogger(WebInfConfiguration.class);
 
     public static final String TEMPDIR_CONFIGURED = "org.eclipse.jetty.tmpdirConfigured";
+    public static final String TEMPORARY_RESOURCE_BASE = "org.eclipse.jetty.webapp.tmpResourceBase";
 
     protected Resource _preUnpackBaseResource;
 
@@ -338,8 +339,11 @@ public class WebInfConfiguration extends AbstractConfiguration
                 }
 
                 if (extractedWebAppDir == null)
+                {
                     // Then extract it if necessary to the temporary location
                     extractedWebAppDir = new File(context.getTempDirectory(), "webapp");
+                    context.setAttribute(TEMPORARY_RESOURCE_BASE, extractedWebAppDir);
+                }
 
                 if (webApp.getFile() != null && webApp.getFile().isDirectory())
                 {

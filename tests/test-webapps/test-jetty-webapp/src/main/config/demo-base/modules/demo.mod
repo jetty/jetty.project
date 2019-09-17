@@ -28,3 +28,5 @@ org.eclipse.jetty.websocket.jsr356=false
 # Create and configure the test realm
 jetty.demo.realm=etc/realm.properties
 
+# JDBC needed by test-jndi and test-spec
+--module=jdbc

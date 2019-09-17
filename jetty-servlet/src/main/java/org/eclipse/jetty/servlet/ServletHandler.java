@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.EventListener;
 import java.util.HashMap;
 import java.util.List;
 import java.util.ListIterator;
@@ -1704,6 +1705,12 @@ public class ServletHandler extends ScopedHandler
     {
         if (_contextHandler != null)
             _contextHandler.destroyFilter(filter);
+    }
+
+    void destroyListener(EventListener listener)
+    {
+        if (_contextHandler != null)
+            _contextHandler.destroyListener(listener);
     }
 
     @SuppressWarnings("serial")

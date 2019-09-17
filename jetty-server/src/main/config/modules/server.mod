@@ -80,3 +80,8 @@ etc/jetty.xml
 
 ## Dump the state of the Jetty server, components, and webapps before shutdown
 # jetty.server.dumpBeforeStop=false
+
+## Scheduler Configuration
+# jetty.scheduler.name=
+# jetty.scheduler.deamon=false
+# jetty.scheduler.threads=-1

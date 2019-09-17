@@ -18,4 +18,4 @@ etc/sessions/session-cache-null.xml
 [ini-template]
 #jetty.session.saveOnCreate=false
 #jetty.session.removeUnloadableSessions=false
-#jetty.session.writeThroughMode=ON_EXIT
+#jetty.session.flushOnResponseCommit=false

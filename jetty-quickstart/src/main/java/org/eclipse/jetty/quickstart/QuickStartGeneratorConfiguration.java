@@ -52,6 +52,7 @@ import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlet.ServletMapping;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
@@ -61,10 +62,11 @@ import org.eclipse.jetty.webapp.MetaData;
 import org.eclipse.jetty.webapp.MetaData.OriginInfo;
 import org.eclipse.jetty.webapp.MetaInfConfiguration;
 import org.eclipse.jetty.webapp.WebAppContext;
+import org.eclipse.jetty.webapp.WebInfConfiguration;
 import org.eclipse.jetty.xml.XmlAppendable;
 
 /**
- * QuickStartDescriptorGenerator
+ * QuickStartGeneratorConfiguration
  * <p>
  * Generate an effective web.xml from a WebAppContext, including all components
  * from web.xml, web-fragment.xmls annotations etc.
@@ -81,10 +83,9 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
 
     protected final boolean _abort;
     protected String _originAttribute;
-    protected boolean _generateOrigin;
     protected int _count;
     protected Resource _quickStartWebXml;
-
+   
     public QuickStartGeneratorConfiguration()
     {
         this(false);
@@ -114,22 +115,6 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
     public String getOriginAttribute()
     {
         return _originAttribute;
-    }
-
-    /**
-     * @return the generateOrigin
-     */
-    public boolean isGenerateOrigin()
-    {
-        return _generateOrigin;
-    }
-
-    /**
-     * @param generateOrigin the generateOrigin to set
-     */
-    public void setGenerateOrigin(boolean generateOrigin)
-    {
-        _generateOrigin = generateOrigin;
     }
 
     public Resource getQuickStartWebXml()
@@ -163,8 +148,6 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
         if (context.getBaseResource() == null)
             throw new IllegalArgumentException("No base resource for " + this);
 
-        LOG.info("Quickstart generating");
-
         MetaData md = context.getMetaData();
 
         Map<String, String> webappAttr = new HashMap<>();
@@ -195,13 +178,13 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
         //the META-INF/resources discovered
         addContextParamFromAttribute(context, out, MetaInfConfiguration.METAINF_RESOURCES, normalizer);
 
-        // the default-context-path, if presernt
+        // the default-context-path, if present
         String defaultContextPath = (String)context.getAttribute("default-context-path");
         if (defaultContextPath != null)
             out.tag("default-context-path", defaultContextPath);
 
         //add the name of the origin attribute, if it is being used
-        if (_generateOrigin)
+        if (StringUtil.isNotBlank(_originAttribute))
         {
             out.openTag("context-param")
                 .tag("param-name", ORIGIN)
@@ -766,7 +749,7 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
      */
     public Map<String, String> origin(MetaData md, String name)
     {
-        if (!(_generateOrigin || LOG.isDebugEnabled()))
+        if (StringUtil.isBlank(_originAttribute))
             return Collections.emptyMap();
         if (name == null)
             return Collections.emptyMap();
@@ -792,13 +775,19 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
     {
         MetaData metadata = context.getMetaData();
         metadata.resolve(context);
-
-        Resource quickStartWebXml = _quickStartWebXml;
-        if (_quickStartWebXml == null)
-            quickStartWebXml = context.getWebInf().addPath("/quickstart-web.xml");
-        try (FileOutputStream fos = new FileOutputStream(quickStartWebXml.getFile(), false))
+        try (FileOutputStream fos = new FileOutputStream(_quickStartWebXml.getFile(), false))
         {
             generateQuickStartWebXml(context, fos);
+            LOG.info("Generated {}", _quickStartWebXml);
+            if (context.getAttribute(WebInfConfiguration.TEMPORARY_RESOURCE_BASE) != null && !context.isPersistTempDirectory())
+                LOG.warn("Generated to non persistent location: " + _quickStartWebXml);
         }
     }
+
+    @Override
+    public void deconfigure(WebAppContext context) throws Exception
+    {
+        super.deconfigure(context);
+    }
+
 }
