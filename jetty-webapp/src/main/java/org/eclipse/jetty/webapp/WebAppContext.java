@@ -968,7 +968,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      */
     public void setConfigurationClasses(String[] configurations)
     {
-        loadConfigurations();
+        if (_configurations == null)
+            _configurations = new Configurations();
         _configurations.set(configurations);
     }
 
@@ -982,7 +983,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      */
     public void setConfigurations(Configuration[] configurations)
     {
-        loadConfigurations();
+        if (_configurations == null)
+            _configurations = new Configurations();
         _configurations.set(configurations);
     }
 
@@ -1005,14 +1007,14 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
     public void removeConfiguration(Configuration... configurations)
     {
-        loadConfigurations();
-        _configurations.remove(configurations);
+        if (_configurations != null)
+            _configurations.remove(configurations);
     }
 
     public void removeConfiguration(Class<? extends Configuration>... configurations)
     {
-        loadConfigurations();
-        _configurations.remove(configurations);
+        if (_configurations != null)
+            _configurations.remove(configurations);
     }
 
     /**
