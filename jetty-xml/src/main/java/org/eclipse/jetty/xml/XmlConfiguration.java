@@ -737,36 +737,32 @@ public class XmlConfiguration
         private Object invokeConstructor(Constructor<?> constructor, Object... args) throws IllegalAccessException, InvocationTargetException, InstantiationException
         {
             Object result = constructor.newInstance(args);
-            if (LOG.isDebugEnabled())
-                if (constructor.getAnnotation(Deprecated.class) != null)
-                    LOG.warn("Deprecated constructor {} in {}", constructor, _configuration);
+            if (constructor.getAnnotation(Deprecated.class) != null)
+                LOG.warn("Deprecated constructor {} in {}", constructor, _configuration);
             return result;
         }
 
         private Object invokeMethod(Method method, Object obj, Object... args) throws IllegalAccessException, InvocationTargetException
         {
             Object result = method.invoke(obj, args);
-            if (LOG.isDebugEnabled())
-                if (method.getAnnotation(Deprecated.class) != null)
-                    LOG.warn("Deprecated method {} in {}", method, _configuration);
+            if (method.getAnnotation(Deprecated.class) != null)
+                LOG.warn("Deprecated method {} in {}", method, _configuration);
             return result;
         }
 
         private Object getField(Field field, Object object) throws IllegalAccessException
         {
             Object result = field.get(object);
-            if (LOG.isDebugEnabled())
-                if (field.getAnnotation(Deprecated.class) != null)
-                    LOG.warn("Deprecated field {} in {}", field, _configuration);
+            if (field.getAnnotation(Deprecated.class) != null)
+                LOG.warn("Deprecated field {} in {}", field, _configuration);
             return result;
         }
 
         private void setField(Field field, Object obj, Object arg) throws IllegalAccessException
         {
             field.set(obj, arg);
-            if (LOG.isDebugEnabled())
-                if (field.getAnnotation(Deprecated.class) != null)
-                    LOG.warn("Deprecated field {} in {}", field, _configuration);
+            if (field.getAnnotation(Deprecated.class) != null)
+                LOG.warn("Deprecated field {} in {}", field, _configuration);
         }
 
         /**
