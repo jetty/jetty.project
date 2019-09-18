@@ -16,15 +16,20 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.its.jetty_run_distro_mojo_it;
+package org.eclipse.jetty.its.jetty_start_distro_mojo_it;
 
 import java.io.IOException;
 import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-public class PingServlet
+/**
+ *
+ */
+@WebServlet("/hello")
+public class HelloServlet
     extends HttpServlet
 {
 
@@ -34,6 +39,6 @@ public class PingServlet
     {
         String who = req.getParameter("name");
 
-        resp.getWriter().write("pong " + (who == null ? "unknown" : who));
+        resp.getWriter().write("Hello " + (who == null ? "unknown" : who));
     }
 }

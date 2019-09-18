@@ -391,11 +391,8 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
     
     /**
      * The project's remote repositories to use for the resolution.
-     *
-     * @parameter default-value="${project.remoteArtifactRepositories}"
-     * @required
-     * @readonly
      */
+    @Parameter (defaultValue="${project.remoteArtifactRepositories}", readonly=true, required=true)
     private List<ArtifactRepository> remoteRepositories;
 
     /**
