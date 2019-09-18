@@ -163,6 +163,9 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
     {
         if (_lease != null)
             _lease.close();
+
+        super.doStop();
+
         while (true)
         {
             ReservedThread thread = _stack.pollFirst();
@@ -171,7 +174,6 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
             _size.decrementAndGet();
             thread.stop();
         }
-        super.doStop();
     }
 
     @Override
@@ -277,7 +279,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
                 LOG.debug("{} waiting", this);
 
             Runnable task = null;
-            while (task == null)
+            while (isRunning() && task == null)
             {
                 boolean idle = false;
 
