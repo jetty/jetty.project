@@ -1075,6 +1075,7 @@ public class XmlConfigurationTest
 
         ByteArrayOutputStream logBytes = null;
         Logger logger = Log.getLogger(XmlConfiguration.class);
+        logger.setDebugEnabled(true);
         if (logger instanceof StdErrLog)
         {
             StdErrLog stdErrLog = (StdErrLog)logger;
@@ -1084,6 +1085,7 @@ public class XmlConfigurationTest
 
         xmlConfiguration.configure();
 
+        logger.setDebugEnabled(false);
         if (logBytes != null)
         {
             String[] lines = logBytes.toString(UTF_8.name()).split(System.lineSeparator());

@@ -591,15 +591,17 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         // handle blocking write
 
         // Should we aggregate?
+        // Yes - if the write is smaller than the commitSize (==aggregate buffer size)
+        //       and the write is not the last one, or is last but will fit in an already allocated aggregate buffer.
         boolean last = isLastContentToWrite(len);
-        if (len <= _commitSize && !(last && len > BufferUtil.space(_aggregate)))
+        if (len <= _commitSize && (!last || len <= BufferUtil.space(_aggregate)))
         {
             acquireBuffer();
 
             // YES - fill the aggregate with content from the buffer
             int filled = BufferUtil.fill(_aggregate, b, off, len);
 
-            // return if we are not complete, not full and filled all the content
+            // return if we are not the last write and have aggregated all of the content
             if (!last && filled == len && !BufferUtil.isFull(_aggregate))
                 return;
 
