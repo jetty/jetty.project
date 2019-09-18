@@ -209,7 +209,7 @@ public class Configurations extends AbstractList<Configuration> implements Dumpa
         if (configurations == null)
         {
             configurations = new Configurations(Configurations.getKnown().stream()
-                .filter(c -> !c.isDisabledByDefault())
+                .filter(c -> c.isEnabledByDefault())
                 .map(c -> c.getClass().getName())
                 .toArray(String[]::new));
         }

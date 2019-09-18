@@ -316,7 +316,7 @@ public class JettyWebAppContext extends WebAppContext
         try
         {
             // inject configurations with config from maven plugin
-            for (Configuration c : getWebAppConfigurations())
+            for (Configuration c : getConfigurations())
             {
                 if (c instanceof EnvConfiguration && getJettyEnvXml() != null)
                     ((EnvConfiguration)c).setJettyEnvResource(new PathResource(new File(getJettyEnvXml())));
