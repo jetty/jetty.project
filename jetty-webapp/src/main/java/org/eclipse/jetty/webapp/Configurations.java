@@ -279,6 +279,27 @@ public class Configurations extends AbstractList<Configuration> implements Dumpa
         }
     }
 
+    public <T> T get(Class<? extends T> configClass)
+    {
+        for (Configuration configuration : _configurations)
+        {
+            if (configClass.isAssignableFrom(configuration.getClass()))
+                return (T)configuration;
+        }
+        return null;
+    }
+
+    public <T> List<T> getConfigurations(Class<? extends T> configClass)
+    {
+        List<T> list = new ArrayList<>();
+        for (Configuration configuration : _configurations)
+        {
+            if (configClass.isAssignableFrom(configuration.getClass()))
+                list.add((T)configuration);
+        }
+        return list;
+    }
+
     public void clear()
     {
         _configurations.clear();

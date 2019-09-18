@@ -997,12 +997,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     public <T> T getConfiguration(Class<? extends T> configClass)
     {
         loadConfigurations();
-        for (Configuration configuration : _configurations)
-        {
-            if (configClass.isAssignableFrom(configuration.getClass()))
-                return (T)configuration;
-        }
-        return null;
+        return _configurations.get(configClass);
     }
 
     public void removeConfiguration(Configuration... configurations)
