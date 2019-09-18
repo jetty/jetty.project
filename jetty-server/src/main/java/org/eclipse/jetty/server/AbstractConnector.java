@@ -812,13 +812,13 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
         @Override
         public boolean isDone()
         {
-            return _count.getCount() == 0;
+            return _count == null || _count.getCount() == 0;
         }
 
         @Override
         public Void get() throws InterruptedException
         {
-            if (_count.getCount() > 0)
+            if (_count !=null && _count.getCount() > 0)
                 _count.await();
             return null;
         }
@@ -826,7 +826,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
         @Override
         public Void get(long timeout, TimeUnit unit) throws InterruptedException
         {
-            if (_count.getCount() > 0)
+            if (_count !=null && _count.getCount() > 0)
                 _count.await(timeout, unit);
             return null;
         }
