@@ -3,9 +3,10 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>org.eclipse.jetty.its.jetty-run-war-exploded-mojo-it</groupId>
+    <groupId>org.eclipse.jetty.its.jetty-start-war-forked-mojo-it</groupId>
     <artifactId>jetty-simple-project</artifactId>
     <version>0.0.1-SNAPSHOT</version>
+    <relativePath>../pom.xml</relativePath>
   </parent>
 
   <artifactId>jetty-simple-webapp</artifactId>
@@ -14,12 +15,13 @@
   <name>Jetty :: Simple :: Webapp</name>
 
   <properties>
-    <jetty.port.file>${project.build.directory}/jetty-run-war-exploded-port.txt</jetty.port.file>
+    <jetty.port.file>${project.build.directory}/jetty-start-war-forked-port.txt</jetty.port.file>
+    <jetty.runType>FORK</jetty.runType>
   </properties>
 
   <dependencies>
     <dependency>
-      <groupId>org.eclipse.jetty.its.jetty-run-war-exploded-mojo-it</groupId>
+      <groupId>org.eclipse.jetty.its.jetty-start-war-forked-mojo-it</groupId>
       <artifactId>jetty-simple-base</artifactId>
     </dependency>
     <dependency>
@@ -63,6 +65,30 @@
         </configuration>
       </plugin>
       <plugin>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>start-jetty</id>
+            <phase>pre-integration-test</phase>
+            <goals>
+              <goal>newstart-war</goal>
+            </goals>
+            <configuration>
+              <webApp>
+                  <war>${project.build.directory}/${project.artifactId}-${project.version}</war>
+              </webApp>
+              <systemProperties>
+                  <jetty.port.file>${jetty.port.file}</jetty.port.file>
+              </systemProperties>
+              <jettyXmls>
+                <jettyXml>${basedir}/src/config/jetty.xml</jettyXml>
+              </jettyXmls>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
         <configuration>
@@ -91,29 +117,6 @@
             <goals>
               <goal>verify</goal>
             </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-maven-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>start-jetty</id>
-            <phase>test-compile</phase>
-            <goals>
-              <goal>run-exploded</goal>
-            </goals>
-            <configuration>
-              <nonBlocking>true</nonBlocking>
-              <systemProperties>
-                <systemProperty>
-                  <name>jetty.port.file</name>
-                  <value>${jetty.port.file}</value>
-                </systemProperty>
-              </systemProperties>
-              <jettyXml>${basedir}/src/config/jetty.xml</jettyXml>
-            </configuration>
           </execution>
         </executions>
       </plugin>

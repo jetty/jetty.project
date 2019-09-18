@@ -6,9 +6,10 @@
     <groupId>org.eclipse.jetty.its</groupId>
     <artifactId>it-parent-pom</artifactId>
     <version>0.0.1-SNAPSHOT</version>
+    <relativePath>../it-parent-pom/pom.xml</relativePath>
   </parent>
 
-  <groupId>org.eclipse.jetty.its.jetty-run-forked-mojo-it</groupId>
+  <groupId>org.eclipse.jetty.its.jetty-start-war-forked-mojo-it</groupId>
   <artifactId>jetty-simple-project</artifactId>
   <version>0.0.1-SNAPSHOT</version>
   <packaging>pom</packaging>
@@ -19,7 +20,6 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <java.version>1.8</java.version>
-    <maven-war-plugin-version>3.0.0</maven-war-plugin-version>
     <jetty.version>@project.version@</jetty.version>
   </properties>
 
@@ -31,7 +31,7 @@
   <dependencyManagement>
     <dependencies>
       <dependency>
-        <groupId>org.eclipse.jetty.its.jetty-run-forked-mojo-it</groupId>
+        <groupId>org.eclipse.jetty.its.jetty-start-war-forked-mojo-it</groupId>
         <artifactId>jetty-simple-base</artifactId>
         <version>${project.version}</version>
       </dependency>

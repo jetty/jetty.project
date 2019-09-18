@@ -44,8 +44,8 @@ import org.eclipse.jetty.util.StringUtil;
  * HTTP client components via binding to the test-integration build phase.
  * </p>
  */
-@Mojo(name = "newdeploy", requiresDependencyResolution = ResolutionScope.RUNTIME)
-public class NewJettyDeployMojo extends AbstractWebAppMojo
+@Mojo(name = "newstart-war", requiresDependencyResolution = ResolutionScope.RUNTIME)
+public class NewJettyStartWarMojo extends AbstractWebAppMojo
 {
     protected JettyEmbedder embedder;
     protected JettyForker forker;
@@ -55,10 +55,10 @@ public class NewJettyDeployMojo extends AbstractWebAppMojo
     @Override
     public void configureWebApp() throws Exception
     {
-        if (StringUtil.isBlank(webApp.getWar()))
-            throw new MojoExecutionException("No war specified");
-
         super.configureWebApp();
+        if (StringUtil.isBlank(webApp.getWar()))
+            configureUnassembledWebApp();
+
         getLog().info("War = "+webApp.getWar());
     }
     
@@ -92,7 +92,7 @@ public class NewJettyDeployMojo extends AbstractWebAppMojo
         {
             forker = newJettyForker();
             forker.setWaitForChild(false); //we never wait for child
-            forker.setJettyOutputFile(getJettyOutputFile("jetty-deploy.out"));
+            forker.setJettyOutputFile(getJettyOutputFile("jetty-start-war.out"));
             forker.start(); //forks jetty instance
  
         }
@@ -112,7 +112,7 @@ public class NewJettyDeployMojo extends AbstractWebAppMojo
         {
             distroForker = newJettyDistroForker();
             distroForker.setWaitForChild(false); //never wait for child
-            distroForker.setJettyOutputFile(getJettyOutputFile("jetty-deploy.out"));
+            distroForker.setJettyOutputFile(getJettyOutputFile("jetty-start-war.out"));
             distroForker.start(); //forks a jetty distro
         }
         catch (Exception e)

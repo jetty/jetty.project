@@ -87,7 +87,7 @@
         <executions>
           <execution>
             <id>start-jetty</id>
-            <phase>test-compile</phase>
+            <phase>process-test-classes</phase>
             <goals>
               <goal>newstart</goal>
             </goals>

@@ -51,7 +51,7 @@ import org.eclipse.jetty.util.StringUtil;
 @Execute(phase = LifecyclePhase.PACKAGE)
 public class NewJettyRunWarMojo extends AbstractWebAppMojo
 {   
-    //Start of parameters only valid for runType=inprocess  
+    //Start of parameters only valid for runType=EMBED  
     /**
      * The interval in seconds to pause before checking if changes
      * have occurred and re-deploying as necessary. A value 

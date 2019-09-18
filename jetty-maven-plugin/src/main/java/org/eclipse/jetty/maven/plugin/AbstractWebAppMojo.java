@@ -1140,6 +1140,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
         //the former could be the location of a packed war, while the latter is the location
         //after any unpacking. With this mojo, you are running an unpacked, unassembled webapp,
         //so the two locations should be equal.
+        System.err.println("SRC WEBAPP: "+webAppSourceDirectory);
         Resource webAppSourceDirectoryResource = Resource.newResource(webAppSourceDirectory.getCanonicalPath());
         if (webApp.getWar() == null)
             webApp.setWar(webAppSourceDirectoryResource.toString());

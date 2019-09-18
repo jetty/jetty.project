@@ -33,12 +33,12 @@ public class ClassLoadingTestingServletContextListener
         try
         {
             Api api = new Api();
+            //System.out.println("Class " + api.getClass().getName() + " is available and loaded by classloader " + api.getClass().getClassLoader().toString() + ". Expected ClassNotFoundException.");
         }
         catch (java.lang.Exception exception)
         {
             exception.printStackTrace();
         }
-        //System.out.println("Class " + api.getClass().getName() + " is available and loaded by classloader " + api.getClass().getClassLoader().toString() + ". Expected ClassNotFoundException.");
     }
 
     @Override

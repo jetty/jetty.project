@@ -16,8 +16,8 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-File buildLog = new File( basedir, 'build.log' )
-assert buildLog.text.contains( 'Started Jetty Server' )
-assert buildLog.text.contains( 'Running org.eclipse.jetty.maven.plugin.it.TestGetContent')
-assert buildLog.text.contains( 'pingServlet ok')
-assert buildLog.text.contains( 'helloServlet')
+File outputLog = new File( basedir, 'jetty-simple-webapp/target/jetty-start-war.out' )
+assert outputLog.text.contains( 'Started Server' )
+assert outputLog.text.contains( 'Running org.eclipse.jetty.maven.plugin.it.TestGetContent')
+assert outputLog.text.contains( 'pingServlet ok')
+assert outputLog.text.contains( 'helloServlet')

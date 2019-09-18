@@ -17,7 +17,7 @@
  * under the License.
  */
 File buildLog = new File( basedir, 'build.log' )
-assert buildLog.text.contains( 'Started Jetty Server' )
+assert buildLog.text.contains( 'Started Server' )
 
 assert buildLog.text.contains( '(1a) >> javax.servlet.ServletContextListener loaded from jar:' )
 

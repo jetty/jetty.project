@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>org.eclipse.jetty.its.jetty-run-forked-mojo-it</groupId>
+    <groupId>org.eclipse.jetty.its.jetty-start-forked-mojo-it</groupId>
     <artifactId>jetty-simple-project</artifactId>
     <version>0.0.1-SNAPSHOT</version>
   </parent>
@@ -15,14 +15,14 @@
 
   <properties>
     <jetty.jvmArgs>@jetty.jvmArgs@</jetty.jvmArgs>
-    <jetty.port.file>${project.build.directory}/jetty-run-forked-port.txt</jetty.port.file>
+    <jetty.port.file>${project.build.directory}/jetty-start-forked-port.txt</jetty.port.file>
     <jetty.runType>FORK</jetty.runType>
   </properties>
 
   <dependencies>
 
     <dependency>
-      <groupId>org.eclipse.jetty.its.jetty-run-forked-mojo-it</groupId>
+      <groupId>org.eclipse.jetty.its.jetty-start-forked-mojo-it</groupId>
       <artifactId>jetty-simple-base</artifactId>
     </dependency>
 
@@ -87,7 +87,7 @@
         <executions>
           <execution>
             <id>start-jetty</id>
-            <phase>test-compile</phase>
+            <phase>process-test-classes</phase>
             <goals>
               <goal>newstart</goal>
             </goals>
@@ -97,7 +97,7 @@
               </jettyXmls>
               <jvmArgs>${jetty.jvmArgs}</jvmArgs>
               <jettyProperties>
-                <jettyProperty>jetty.port.file=${jetty.port.file}</jettyProperty>
+                <jetty.port.file>${jetty.port.file}</jetty.port.file>
               </jettyProperties>
             </configuration>
           </execution>

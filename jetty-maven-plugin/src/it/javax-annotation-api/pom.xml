@@ -18,6 +18,7 @@
     <maven.compiler.target>8</maven.compiler.target>
     <!--maven.compiler.release>11</maven.compiler.release-->
     <jetty.port.file>${project.build.directory}/jetty-run-mojo-annotation.txt</jetty.port.file>
+    <jetty.runType>EMBED</jetty.runType>
   </properties>
 
   <dependencies>
@@ -86,7 +87,9 @@
               <systemProperties>
                   <jetty.port.file>${jetty.port.file}</jetty.port.file>
               </systemProperties>
-              <jettyXml>${basedir}/src/config/jetty.xml</jettyXml>
+              <jettyXmls>
+                <jettyXml>${basedir}/src/config/jetty.xml</jettyXml>
+              </jettyXmls>
             </configuration>
           </execution>
         </executions>

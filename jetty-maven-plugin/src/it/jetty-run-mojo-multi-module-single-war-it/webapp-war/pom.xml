@@ -22,6 +22,7 @@
 
   <properties>
     <jetty.port.file>${project.build.directory}/jetty-run-mojo.txt</jetty.port.file>
+    <jetty.runType>EMBED</jetty.runType>
   </properties>
 
   <build>
@@ -34,17 +35,15 @@
             <id>start-jetty</id>
             <phase>test-compile</phase>
             <goals>
-              <goal>start</goal>
+              <goal>newstart</goal>
             </goals>
             <configuration>
               <systemProperties>
-                <systemProperty>
-                  <name>jetty.port.file</name>
-                  <value>${jetty.port.file}</value>
-                </systemProperty>
+                  <jetty.port.file>${jetty.port.file}</jetty.port.file>
               </systemProperties>
-              <nonBlocking>true</nonBlocking>
-              <jettyXml>${basedir}/src/config/jetty.xml</jettyXml>
+              <jettyXmls>
+                <jettyXml>${basedir}/src/config/jetty.xml</jettyXml>
+              </jettyXmls>
             </configuration>
           </execution>
         </executions>
