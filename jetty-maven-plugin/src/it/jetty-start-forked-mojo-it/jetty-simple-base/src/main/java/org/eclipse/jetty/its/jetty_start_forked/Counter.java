@@ -16,29 +16,28 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.its.jetty_run_forked_mojo_it;
+package org.eclipse.jetty.its.jetty_start_forked;
 
-import java.io.IOException;
-import javax.servlet.ServletException;
-import javax.servlet.annotation.WebServlet;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-/**
- *
- */
-@WebServlet("/hello")
-public class HelloServlet
-    extends HttpServlet
+@SuppressWarnings("serial")
+public class Counter implements java.io.Serializable
 {
+    int counter = 0;
+    String last;
 
-    @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp)
-        throws ServletException, IOException
+    public int getCount()
     {
-        String who = req.getParameter("name");
+        counter++;
+        return counter;
+    }
 
-        resp.getWriter().write("Hello " + (who == null ? "unknown" : who));
+    public void setLast(String uri)
+    {
+        last = uri;
+    }
+
+    public String getLast()
+    {
+        return last;
     }
 }
+

@@ -1,7 +1,7 @@
 <html>
 <%@ page session="true"%>
 <body>
-<jsp:useBean id='counter' scope='session' class='com.acme.Counter' type="com.acme.Counter" />
+<jsp:useBean id='counter' scope='session' class='org.eclipse.jetty.its.jetty_start_forked.Counter' type="org.eclipse.jetty.its.jetty_start_forked.Counter" />
 
 <h1>JSP1.2 Beans: 1</h1>
 

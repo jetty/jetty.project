@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.its.jetty_run_forked_mojo_it;
+package org.eclipse.jetty.its.jetty_start_forked;
 
 import java.io.IOException;
 import javax.servlet.ServletException;

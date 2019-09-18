@@ -70,6 +70,8 @@
             <jetty.port.file>${jetty.port.file}</jetty.port.file>
             <pingServlet>true</pingServlet>
             <helloServlet>true</helloServlet>
+            <contentCheck>Counter accessed 1 times.</contentCheck>
+            <pathToCheck>/jsp/bean1.jsp</pathToCheck>
             <maven.it.name>${project.groupId}:${project.artifactId}</maven.it.name>
           </systemPropertyVariables>
           <dependenciesToScan>
