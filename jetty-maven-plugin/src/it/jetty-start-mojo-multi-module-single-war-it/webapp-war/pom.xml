@@ -2,7 +2,7 @@
 <project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
-    <groupId>test.jetty-run-mojo-multi-module-single-war-it</groupId>
+    <groupId>test.jetty-start-mojo-multi-module-single-war-it</groupId>
     <artifactId>jetty-multi-module-project</artifactId>
     <version>1.0-SNAPSHOT</version>
   </parent>
@@ -15,13 +15,13 @@
       <artifactId>jetty-servlet</artifactId>
     </dependency>
     <dependency>
-      <groupId>test.jetty-run-mojo-multi-module-single-war-it</groupId>
+      <groupId>test.jetty-start-mojo-multi-module-single-war-it</groupId>
       <artifactId>module-impl</artifactId>
     </dependency>
   </dependencies>
 
   <properties>
-    <jetty.port.file>${project.build.directory}/jetty-run-mojo.txt</jetty.port.file>
+    <jetty.port.file>${project.build.directory}/jetty-start-mojo.txt</jetty.port.file>
     <jetty.runType>EMBED</jetty.runType>
   </properties>
 

@@ -90,7 +90,7 @@
             <id>run</id>
             <phase>test-compile</phase>
             <goals>
-              <goal>newrun</goal>
+              <goal>newstart</goal>
             </goals>
             <configuration>
               <systemProperties>

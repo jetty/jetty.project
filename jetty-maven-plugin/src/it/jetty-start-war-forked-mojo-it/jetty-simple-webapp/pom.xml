@@ -78,9 +78,9 @@
               <webApp>
                   <war>${project.build.directory}/${project.artifactId}-${project.version}</war>
               </webApp>
-              <systemProperties>
+              <jettyProperties>
                   <jetty.port.file>${jetty.port.file}</jetty.port.file>
-              </systemProperties>
+              </jettyProperties>
               <jettyXmls>
                 <jettyXml>${basedir}/src/config/jetty.xml</jettyXml>
               </jettyXmls>

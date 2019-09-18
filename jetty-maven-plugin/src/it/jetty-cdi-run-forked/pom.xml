@@ -65,7 +65,7 @@
         <executions>
           <execution>
             <id>start-jetty</id>
-            <phase>test-compile</phase>
+            <phase>process-test-classes</phase>
             <goals>
               <goal>newstart</goal>
             </goals>
@@ -79,7 +79,7 @@
               <stopKey>@jetty.stopKey@</stopKey>
               <jvmArgs>${jetty.jvmArgs}</jvmArgs>
               <jettyProperties>
-                <jettyProperty>jetty.port.file=${jetty.port.file}</jettyProperty>
+                <jetty.port.file>${jetty.port.file}</jetty.port.file>
               </jettyProperties>
             </configuration>
           </execution>

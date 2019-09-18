@@ -8,7 +8,7 @@
     <version>0.0.1-SNAPSHOT</version>
   </parent>
 
-  <groupId>test.jetty-run-mojo-multi-module-single-war-it</groupId>
+  <groupId>test.jetty-start-mojo-multi-module-single-war-it</groupId>
   <artifactId>jetty-multi-module-project</artifactId>
   <version>1.0-SNAPSHOT</version>
   <packaging>pom</packaging>
@@ -31,17 +31,17 @@
   <dependencyManagement>
     <dependencies>
       <dependency>
-        <groupId>test.jetty-run-mojo-multi-module-single-war-it</groupId>
+        <groupId>test.jetty-start-mojo-multi-module-single-war-it</groupId>
         <artifactId>common</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>test.jetty-run-mojo-multi-module-single-war-it</groupId>
+        <groupId>test.jetty-start-mojo-multi-module-single-war-it</groupId>
         <artifactId>module-api</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>test.jetty-run-mojo-multi-module-single-war-it</groupId>
+        <groupId>test.jetty-start-mojo-multi-module-single-war-it</groupId>
         <artifactId>module-impl</artifactId>
         <version>${project.version}</version>
       </dependency>

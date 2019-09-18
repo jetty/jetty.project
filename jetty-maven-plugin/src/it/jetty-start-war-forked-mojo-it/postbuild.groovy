@@ -16,8 +16,8 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-File outputLog = new File( basedir, 'jetty-simple-webapp/target/jetty-start-war.out' )
-assert outputLog.text.contains( 'Started Server' )
+File outputLog = new File( basedir, 'build.log' )
+assert outputLog.text.contains( 'Forked process starting' )
 assert outputLog.text.contains( 'Running org.eclipse.jetty.maven.plugin.it.TestGetContent')
 assert outputLog.text.contains( 'pingServlet ok')
 assert outputLog.text.contains( 'helloServlet')
