@@ -24,6 +24,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
+import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 /**
@@ -32,7 +33,13 @@ import org.eclipse.jetty.webapp.WebAppContext;
 public class MavenQuickStartConfiguration extends QuickStartConfiguration
 {
     private static final Logger LOG = Log.getLogger(QuickStartConfiguration.class);
-
+    
+    @Override
+    public Class<? extends Configuration> replaces()
+    {
+        return QuickStartConfiguration.class;
+    }
+    
     @Override
     public void deconfigure(WebAppContext context) throws Exception
     {

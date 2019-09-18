@@ -108,14 +108,7 @@ public class JettyWebAppContext extends WebAppContext
     {
         super();
         // Turn off copyWebInf option as it is not applicable for plugin.
-        super.setCopyWebInf(false);
-        addConfiguration(new MavenWebInfConfiguration());
-        addConfiguration(new MavenMetaInfConfiguration());
-        addConfiguration(new EnvConfiguration());
-        addConfiguration(new PlusConfiguration());
-        addConfiguration(new AnnotationConfiguration());
-
-        setAttribute(QuickStartConfiguration.ORIGIN_ATTRIBUTE, "origin");
+        super.setCopyWebInf(false);        
     }
 
     public void setContainerIncludeJarPattern(String pattern)

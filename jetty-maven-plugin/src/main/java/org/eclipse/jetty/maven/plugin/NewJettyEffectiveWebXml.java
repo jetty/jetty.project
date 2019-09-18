@@ -45,12 +45,12 @@ public class NewJettyEffectiveWebXml extends AbstractWebAppMojo
     @Override
     public void configureWebApp() throws Exception
     {
-        //TODO consider if we want to be able to generate for the unassembled webapp: so that we could
-        //bind this into a build phase, and have it generate the quickstart
-        if (StringUtil.isBlank(webApp.getWar()))
-            throw new MojoExecutionException("No war specified");
-
+        //Use a nominated war file for which to generate the effective web.xml, or
+        //if that is not set, try to use the details of the current project's 
+        //unassembled webapp
         super.configureWebApp();
+        if (StringUtil.isBlank(webApp.getWar()))
+            configureUnassembledWebApp();
     }
 
     @Override

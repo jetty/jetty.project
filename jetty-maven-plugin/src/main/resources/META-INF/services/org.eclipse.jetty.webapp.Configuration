@@ -1,2 +1,3 @@
 org.eclipse.jetty.maven.plugin.MavenWebInfConfiguration
 org.eclipse.jetty.maven.plugin.MavenMetaInfConfiguration
+org.eclipse.jetty.maven.plugin.MavenQuickStartConfiguration

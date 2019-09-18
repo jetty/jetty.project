@@ -117,6 +117,7 @@ public class QuickStartGenerator
         webApp.addConfiguration(new MavenQuickStartConfiguration());
         webApp.setAttribute(QuickStartConfiguration.MODE, Mode.GENERATE);
         webApp.setAttribute(QuickStartConfiguration.QUICKSTART_WEB_XML, Resource.newResource(quickstartXml));
+        webApp.setAttribute(QuickStartConfiguration.ORIGIN_ATTRIBUTE, "o");
         webApp.setCopyWebDir(false);
         webApp.setCopyWebInf(false);
     }
