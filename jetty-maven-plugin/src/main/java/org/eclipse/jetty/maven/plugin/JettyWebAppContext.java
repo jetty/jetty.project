@@ -42,10 +42,10 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.eclipse.jetty.webapp.Configuration;
+import org.eclipse.jetty.webapp.Configurations;
 import org.eclipse.jetty.webapp.MetaInfConfiguration;
 import org.eclipse.jetty.webapp.WebAppContext;
 
@@ -310,22 +310,27 @@ public class JettyWebAppContext extends WebAppContext
     }
 
     @Override
-    protected void loadConfigurations()
+    protected Configurations newConfigurations()
     {
-        super.loadConfigurations();
-        try
+        Configurations configurations = super.newConfigurations();
+        if (getJettyEnvXml() != null)
         {
-            // inject configurations with config from maven plugin
-            for (Configuration c : getWebAppConfigurations())
+            try
             {
-                if (c instanceof EnvConfiguration && getJettyEnvXml() != null)
-                    ((EnvConfiguration)c).setJettyEnvResource(new PathResource(new File(getJettyEnvXml())));
+                // inject configurations with config from maven plugin
+                for (Configuration c : configurations)
+                {
+                    if (c instanceof EnvConfiguration)
+                        ((EnvConfiguration)c).setJettyEnvResource(Resource.newResource(getJettyEnvXml()));
+                }
+            }
+            catch (IOException e)
+            {
+                throw new RuntimeException(e);
             }
         }
-        catch (Exception e)
-        {
-            throw new RuntimeException(e);
-        }
+
+        return configurations;
     }
 
     @Override

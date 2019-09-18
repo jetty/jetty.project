@@ -85,7 +85,7 @@ public class QuickStartConfiguration extends AbstractConfiguration
 
     public QuickStartConfiguration()
     {
-        super(false);
+        super(true);
         addDependencies(WebInfConfiguration.class);
         addDependents(WebXmlConfiguration.class);
     }
@@ -208,7 +208,7 @@ public class QuickStartConfiguration extends AbstractConfiguration
     {
         LOG.info("Quickstarting {}", context);
         _quickStart = true;
-        context.setConfigurations(context.getWebAppConfigurations().stream()
+        context.setConfigurations(context.getConfigurations().stream()
             .filter(c -> !__replacedConfigurations.contains(c.replaces()) && !__replacedConfigurations.contains(c.getClass()))
             .collect(Collectors.toList()).toArray(new Configuration[]{}));
         context.getMetaData().setWebXml((Resource)context.getAttribute(QUICKSTART_WEB_XML));

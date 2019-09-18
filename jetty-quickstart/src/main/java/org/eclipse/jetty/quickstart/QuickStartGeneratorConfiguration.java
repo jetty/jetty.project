@@ -93,7 +93,7 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
 
     public QuickStartGeneratorConfiguration(boolean abort)
     {
-        super(true);
+        super(false);
         _count = 0;
         _abort = abort;
     }
