@@ -16,6 +16,7 @@
   <properties>
     <jetty.jvmArgs>@jetty.jvmArgs@</jetty.jvmArgs>
     <jetty.port.file>${project.build.directory}/jetty-run-forked-port.txt</jetty.port.file>
+    <jetty.runType>FORK</jetty.runType>
   </properties>
 
   <dependencies>
@@ -88,12 +89,12 @@
             <id>start-jetty</id>
             <phase>test-compile</phase>
             <goals>
-              <goal>run-forked</goal>
+              <goal>newstart</goal>
             </goals>
             <configuration>
-              <nonBlocking>true</nonBlocking>
-              <waitForChild>false</waitForChild>
-              <jettyXml>${basedir}/src/config/jetty.xml</jettyXml>
+              <jettyXmls>
+                <jettyXml>${basedir}/src/config/jetty.xml</jettyXml>
+              </jettyXmls>
               <jvmArgs>${jetty.jvmArgs}</jvmArgs>
               <jettyProperties>
                 <jettyProperty>jetty.port.file=${jetty.port.file}</jettyProperty>

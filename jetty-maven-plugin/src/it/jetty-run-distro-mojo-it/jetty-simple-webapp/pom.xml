@@ -16,6 +16,7 @@
   <properties>
     <jetty.port.file>${project.build.directory}/jetty-run-distro-port.txt</jetty.port.file>
     <jetty.jvmArgs>@jetty.jvmArgs@</jetty.jvmArgs>
+    <jetty.runType>DISTRO</jetty.runType>
   </properties>
 
   <dependencies>
@@ -88,7 +89,7 @@
             <id>start-jetty</id>
             <phase>test-compile</phase>
             <goals>
-              <goal>run-distro</goal>
+              <goal>newstart</goal>
             </goals>
             <configuration>
               <jettyBase>${basedir}/src/base</jettyBase>
@@ -98,12 +99,7 @@
                 <jettyProperty>jetty.port.file=${jetty.port.file}</jettyProperty>
                 <jettyProperty>jetty.http.port=0</jettyProperty>
               </jettyProperties>
-              <waitForChild>false</waitForChild>
-              <modules>
-                <module>jsp</module>
-                <module>jstl</module>
-                <module>testmod</module>
-              </modules>
+              <modules>jsp,jstl,testmod</modules>
             </configuration>
           </execution>
         </executions>
