@@ -27,41 +27,94 @@ import org.eclipse.jetty.util.FutureCallback;
  */
 public interface Graceful
 {
+    Phase getShutdownPhase();
+
     Future<Void> shutdown();
 
     boolean isShutdown();
 
-    class Shutdown implements Graceful
+    enum Phase
     {
-        private final AtomicReference<FutureCallback> _shutdown = new AtomicReference<>();
+        UNAVAILABLE,  // Make the component unavailable for future tasks (eg stop acceptor)
+        GRACEFUL,     // Gracefully wait for current tasks to complete (eg request complete)
+        CLEANUP       // Time limited Shutdown operations (eg connection close)
+    }
 
-        protected FutureCallback newShutdownCallback()
+    abstract class GracefulFuture<T extends Future<Void>> implements Graceful
+    {
+        final AtomicReference<T> _future = new AtomicReference<>();
+        final Phase _phase;
+
+        protected abstract T newFuture();
+
+        protected abstract void doShutdown(T future);
+
+        public GracefulFuture()
         {
-            return FutureCallback.SUCCEEDED;
+            this(Phase.GRACEFUL);
+        }
+
+        public GracefulFuture(Phase phase)
+        {
+            _phase = phase;
+        }
+
+        @Override
+        public Phase getShutdownPhase()
+        {
+            return _phase;
         }
 
         @Override
         public Future<Void> shutdown()
         {
-            return _shutdown.updateAndGet(fcb -> fcb == null ? newShutdownCallback() : fcb);
+            T future = _future.get();
+            if (future == null)
+            {
+                future = newFuture();
+                if (_future.compareAndSet(null, future))
+                    doShutdown(future);
+                else
+                    future = _future.get();
+            }
+            return future;
         }
 
         @Override
         public boolean isShutdown()
         {
-            return _shutdown.get() != null;
+            T future = _future.get();
+            return future != null;
         }
 
-        public void cancel()
+        public T getFuture()
         {
-            FutureCallback shutdown = _shutdown.getAndSet(null);
-            if (shutdown != null && !shutdown.isDone())
-                shutdown.cancel(true);
+            return _future.get();
         }
 
-        public FutureCallback get()
+        public void reset()
         {
-            return _shutdown.get();
+            _future.set(null);
+        }
+
+        @Override
+        public String toString()
+        {
+            T future = _future.get();
+            return String.format("%s@%x{%s}", getClass(), hashCode(), future == null ? null : future.isDone() ? "Shutdown" : "ShuttingDown");
+        }
+    }
+
+    class Shutdown extends GracefulFuture<FutureCallback>
+    {
+        protected FutureCallback newFuture()
+        {
+            return new FutureCallback();
+        }
+
+        protected void doShutdown(FutureCallback future)
+        {
+            future.succeeded();
         }
     }
 }

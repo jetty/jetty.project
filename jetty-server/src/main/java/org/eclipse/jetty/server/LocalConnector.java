@@ -21,6 +21,7 @@ package org.eclipse.jetty.server;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
@@ -33,8 +34,10 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.ByteArrayEndPoint;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.ByteArrayOutputStream2;
+import org.eclipse.jetty.util.ConcurrentHashSet;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.Scheduler;
 
@@ -50,6 +53,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
 public class LocalConnector extends AbstractConnector
 {
     private final BlockingQueue<LocalEndPoint> _connects = new LinkedBlockingQueue<>();
+    private final Set<LocalEndPoint> _endPoints = new ConcurrentHashSet<>();
 
     public LocalConnector(Server server, Executor executor, Scheduler scheduler, ByteBufferPool pool, int acceptors, ConnectionFactory... factories)
     {
@@ -75,6 +79,13 @@ public class LocalConnector extends AbstractConnector
     public LocalConnector(Server server, ConnectionFactory connectionFactory, SslContextFactory sslContextFactory)
     {
         this(server, null, null, null, -1, AbstractConnectionFactory.getFactories(sslContextFactory, connectionFactory));
+    }
+
+    @Override
+    protected void doStop() throws Exception
+    {
+        super.doStop();
+        _endPoints.forEach(EndPoint::close);
     }
 
     @Override
@@ -200,9 +211,13 @@ public class LocalConnector extends AbstractConnector
 
     public LocalEndPoint connect()
     {
-        LocalEndPoint endp = new LocalEndPoint();
-        _connects.add(endp);
-        return endp;
+        if (isStarted() && !isShutdown())
+        {
+            LocalEndPoint endp = new LocalEndPoint();
+            _connects.add(endp);
+            return endp;
+        }
+        return null;
     }
 
     @Override
@@ -333,6 +348,7 @@ public class LocalConnector extends AbstractConnector
         {
             super(LocalConnector.this.getScheduler(), LocalConnector.this.getIdleTimeout());
             setGrowOutput(true);
+            _endPoints.add(this);
         }
 
         @Override
@@ -344,6 +360,7 @@ public class LocalConnector extends AbstractConnector
         @Override
         public void onClose()
         {
+            _endPoints.remove(this);
             Connection connection = getConnection();
             if (connection != null)
                 connection.onClose();

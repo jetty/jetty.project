@@ -747,6 +747,12 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         return new FutureCallback(true);
     }
 
+    @Override
+    public Phase getShutdownPhase()
+    {
+        return Phase.UNAVAILABLE;
+    }
+
     /**
      * @return false if this context is unavailable (sends 503)
      */

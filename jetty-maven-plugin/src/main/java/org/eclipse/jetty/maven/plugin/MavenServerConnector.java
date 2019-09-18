@@ -130,6 +130,12 @@ public class MavenServerConnector extends ContainerLifeCycle implements Connecto
     }
 
     @Override
+    public Phase getShutdownPhase()
+    {
+        return checkDelegate().getShutdownPhase();
+    }
+
+    @Override
     public Future<Void> shutdown()
     {
         return checkDelegate().shutdown();

@@ -154,9 +154,23 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     private final Thread[] _acceptors;
     private final Set<EndPoint> _endpoints = Collections.newSetFromMap(new ConcurrentHashMap<>());
     private final Set<EndPoint> _immutableEndPoints = Collections.unmodifiableSet(_endpoints);
-    private final Graceful.Shutdown _shutdown = new Graceful.Shutdown();
+    private final Graceful.GracefulFuture<NoAcceptorsFuture> _shutdown = new Graceful.GracefulFuture<NoAcceptorsFuture>(Phase.UNAVAILABLE)
+    {
+        @Override
+        protected NoAcceptorsFuture newFuture()
+        {
+            return new NoAcceptorsFuture();
+        }
+
+        @Override
+        protected void doShutdown(NoAcceptorsFuture future)
+        {
+            interruptAcceptors();
+        }
+    };
+
     private HttpChannel.Listener _httpChannelListeners = HttpChannel.NOOP_LISTENER;
-    private CountDownLatch _stopping;
+    private CountDownLatch _acceptorCount;
     private long _idleTimeout = 30000;
     private String _defaultProtocol;
     private ConnectionFactory _defaultConnectionFactory;
@@ -300,7 +314,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     @Override
     protected void doStart() throws Exception
     {
-        _shutdown.cancel();
+        _shutdown.reset();
 
         if (_defaultProtocol == null)
             throw new IllegalStateException("No default protocol for " + this);
@@ -319,10 +333,10 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
         _lease = ThreadPoolBudget.leaseFrom(getExecutor(), this, _acceptors.length);
         super.doStart();
 
-        _stopping = new CountDownLatch(_acceptors.length);
+        _acceptorCount = new CountDownLatch(_acceptors.length);
         for (int i = 0; i < _acceptors.length; i++)
         {
-            Acceptor a = new Acceptor(i);
+            Acceptor a = new Acceptor(i, _acceptorCount);
             addBean(a);
             getExecutor().execute(a);
         }
@@ -340,6 +354,12 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
                     thread.interrupt();
             }
         }
+    }
+
+    @Override
+    public Phase getShutdownPhase()
+    {
+        return _shutdown.getShutdownPhase();
     }
 
     @Override
@@ -361,21 +381,12 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
             _lease.close();
 
         // Tell the acceptors we are stopping
-        interruptAcceptors();
-
-        // If we have a stop timeout
-        long stopTimeout = getStopTimeout();
-        CountDownLatch stopping = _stopping;
-        if (stopTimeout > 0 && stopping != null && getAcceptors() > 0)
-            stopping.await(stopTimeout, TimeUnit.MILLISECONDS);
-        _stopping = null;
+        shutdown();
 
         super.doStop();
 
         for (Acceptor a : getBeans(Acceptor.class))
-        {
             removeBean(a);
-        }
 
         LOG.info("Stopped {}", this);
     }
@@ -619,50 +630,50 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
 
     protected boolean handleAcceptFailure(Throwable ex)
     {
-        if (isRunning())
-        {
-            if (ex instanceof InterruptedException)
-            {
-                LOG.debug(ex);
-                return true;
-            }
-
-            if (ex instanceof ClosedByInterruptException)
-            {
-                LOG.debug(ex);
-                return false;
-            }
-
-            LOG.warn(ex);
-            try
-            {
-                // Arbitrary sleep to avoid spin looping.
-                // Subclasses may decide for a different
-                // sleep policy or closing the connector.
-                Thread.sleep(1000);
-                return true;
-            }
-            catch (Throwable x)
-            {
-                LOG.ignore(x);
-            }
-            return false;
-        }
-        else
+        if (!isRunning() || isShutdown())
         {
             LOG.ignore(ex);
             return false;
         }
+
+        if (ex instanceof InterruptedException)
+        {
+            LOG.debug(ex);
+            return true;
+        }
+
+        if (ex instanceof ClosedByInterruptException)
+        {
+            LOG.debug(ex);
+            return false;
+        }
+
+        LOG.warn(ex);
+        try
+        {
+            // Arbitrary sleep to avoid spin looping.
+            // Subclasses may decide for a different
+            // sleep policy or closing the connector.
+            Thread.sleep(1000);
+            return true;
+        }
+        catch (Throwable x)
+        {
+            LOG.ignore(x);
+        }
+        return false;
     }
 
     private class Acceptor implements Runnable
     {
         private final int _id;
+        private final CountDownLatch _acceptorCount;
         private String _name;
 
-        private Acceptor(int id)
+        private Acceptor(int id, CountDownLatch count)
         {
             _id = id;
+            _acceptorCount = count;
         }
 
         @Override
@@ -693,6 +704,8 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
                     }
                     catch (InterruptedException e)
                     {
+                        if (isShutdown())
+                            break;
                         continue;
                     }
 
@@ -717,9 +730,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
                 {
                     _acceptors[_id] = null;
                 }
-                CountDownLatch stopping = _stopping;
-                if (stopping != null)
-                    stopping.countDown();
+                _acceptorCount.countDown();
             }
         }
 
@@ -780,5 +791,44 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
             _name == null ? getClass().getSimpleName() : _name,
             hashCode(),
             getDefaultProtocol(), getProtocols());
+    }
+
+    private class NoAcceptorsFuture implements Future<Void>
+    {
+        final CountDownLatch _count = _acceptorCount;
+
+        @Override
+        public boolean cancel(boolean mayInterruptIfRunning)
+        {
+            return false;
+        }
+
+        @Override
+        public boolean isCancelled()
+        {
+            return false;
+        }
+
+        @Override
+        public boolean isDone()
+        {
+            return _count.getCount() == 0;
+        }
+
+        @Override
+        public Void get() throws InterruptedException
+        {
+            if (_count.getCount() > 0)
+                _count.await();
+            return null;
+        }
+
+        @Override
+        public Void get(long timeout, TimeUnit unit) throws InterruptedException
+        {
+            if (_count.getCount() > 0)
+                _count.await(timeout, unit);
+            return null;
+        }
     }
 }

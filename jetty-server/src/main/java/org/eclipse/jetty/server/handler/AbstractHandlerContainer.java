@@ -20,12 +20,12 @@ package org.eclipse.jetty.server.handler;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.io.ManagedSelector;
-import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HandlerContainer;
 import org.eclipse.jetty.server.Server;
@@ -148,20 +148,16 @@ public abstract class AbstractHandlerContainer extends AbstractHandler implement
     {
         final MultiException mex = new MultiException();
 
-        // tell the graceful handlers that we are shutting down
-        // TODO some how need to order these!!!
-        // TODO perhaps Graceful can define phases and they can belong to phases?
-        // TODO for now will get them in a known order
-        List<Graceful> gracefuls = new ArrayList<>(getContainedBeans(Connector.class));
-        getContainedBeans(ContextHandler.class).forEach(gracefuls::add);
-        getContainedBeans(StatisticsHandler.class).forEach(gracefuls::add);
-        getContainedBeans(ManagedSelector.class).forEach(gracefuls::add);
-        getContainedBeans(Graceful.class).forEach(g ->
+        List<Graceful> gracefuls = new ArrayList<>(getContainedBeans(Graceful.class));
+        Collections.reverse(gracefuls);
+        Collections.sort(gracefuls, new Comparator<Graceful>()
         {
-            if (!gracefuls.contains(g))
-                gracefuls.add(g);
+            @Override
+            public int compare(Graceful g1, Graceful g2)
+            {
+                return Integer.compare(g1.getShutdownPhase().ordinal(), g2.getShutdownPhase().ordinal());
+            }
         });
-        gracefuls.stream().forEach(System.err::println);
 
         long stopTimeout = getStopTimeout();
         for (Graceful graceful : gracefuls)
@@ -194,7 +190,6 @@ public abstract class AbstractHandlerContainer extends AbstractHandler implement
                 future.cancel(true);
         }
 
-        if (mex != null)
-            mex.ifExceptionThrowMulti();
+        mex.ifExceptionThrowMulti();
     }
 }

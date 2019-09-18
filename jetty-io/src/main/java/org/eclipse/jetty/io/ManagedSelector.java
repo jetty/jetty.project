@@ -36,18 +36,17 @@ import java.util.Deque;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 
+import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
@@ -89,6 +88,20 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable, Gra
     private final SelectorManager _selectorManager;
     private final int _id;
     private final ExecutionStrategy _strategy;
+    private final GracefulFuture<CloseConnections> _shutdown = new Graceful.GracefulFuture<CloseConnections>(Phase.CLEANUP)
+    {
+        @Override
+        protected CloseConnections newFuture()
+        {
+            return new CloseConnections();
+        }
+
+        @Override
+        protected void doShutdown(CloseConnections future)
+        {
+            submit(future);
+        }
+    };
     private Selector _selector;
     private Deque<SelectorUpdate> _updates = new ArrayDeque<>();
     private Deque<SelectorUpdate> _updateable = new ArrayDeque<>();
@@ -112,6 +125,8 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable, Gra
     @Override
     protected void doStart() throws Exception
     {
+        _shutdown.reset();
+
         super.doStart();
 
         _selector = _selectorManager.newSelector();
@@ -145,57 +160,22 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable, Gra
         return keys.size();
     }
 
-    AtomicReference<Future> _shutdown = new AtomicReference<>();
+    @Override
+    public Phase getShutdownPhase()
+    {
+        return Phase.CLEANUP;
+    }
 
     @Override
     public Future<Void> shutdown()
     {
-        // Close connections, but only wait a single selector cycle for it to take effect
-        CloseConnections closeConnections = new CloseConnections();
-        submit(closeConnections);
-        Future<Void> future = new Future<Void>()
-        {
-            @Override
-            public boolean cancel(boolean mayInterruptIfRunning)
-            {
-                return false;
-            }
-
-            @Override
-            public boolean isCancelled()
-            {
-                return false;
-            }
-
-            @Override
-            public boolean isDone()
-            {
-                return closeConnections._complete.getCount() == 0;
-            }
-
-            @Override
-            public Void get() throws InterruptedException, ExecutionException
-            {
-                closeConnections._complete.await();
-                return null;
-            }
-
-            @Override
-            public Void get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException
-            {
-                closeConnections._complete.await(timeout, unit);
-                return null;
-            }
-        };
-        _shutdown.set(future);
-        return future;
+        return _shutdown.shutdown();
     }
 
     @Override
     public boolean isShutdown()
     {
-        Future<Void> future = _shutdown.get();
-        return future != null && future.isDone();
+        return _shutdown.isShutdown();
     }
 
     @Override
@@ -884,16 +864,14 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable, Gra
         }
     }
 
-    private class CloseConnections implements SelectorUpdate
+    private class CloseConnections extends FutureCallback implements SelectorUpdate
     {
-        final CountDownLatch _complete = new CountDownLatch(1);
-
         @Override
         public void update(Selector selector)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Closing {} connections on {}", selector.keys().size(), ManagedSelector.this);
-            List<Closeable> closeables = new ArrayList<>();
+            final Queue<Closeable> closeables = new ConcurrentLinkedQueue<>();
             for (SelectionKey key : selector.keys())
             {
                 if (key != null && key.isValid())
@@ -913,25 +891,20 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable, Gra
             }
 
             if (closeables.isEmpty())
-                _complete.countDown();
+                succeeded();
             else
             {
-                final AtomicInteger toClose = new AtomicInteger(closeables.size());
-                for (Closeable closeable : closeables)
+                Runnable doClose = () ->
                 {
-                    execute(() ->
+                    Closeable closeable;
+                    while ((closeable = closeables.poll()) != null)
                     {
-                        try
-                        {
-                            IO.close(closeable);
-                        }
-                        finally
-                        {
-                            if (toClose.decrementAndGet() == 0)
-                                _complete.countDown();
-                        }
-                    });
-                }
+                        IO.close(closeable);
+                    }
+                    succeeded();
+                };
+                for (int i = Runtime.getRuntime().availableProcessors(); i-- > 0;)
+                    execute(doClose);
             }
         }
     }

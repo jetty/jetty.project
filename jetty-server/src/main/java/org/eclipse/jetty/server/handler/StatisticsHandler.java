@@ -70,9 +70,10 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
     private final Graceful.Shutdown _shutdown = new Graceful.Shutdown()
     {
         @Override
-        protected FutureCallback newShutdownCallback()
+        protected void doShutdown(FutureCallback future)
         {
-            return new FutureCallback(_requestStats.getCurrent() == 0);
+            if (_requestStats.getCurrent() == 0)
+                super.doShutdown(future);
         }
     };
 
@@ -115,7 +116,7 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
             // If we have no more dispatches, should we signal shutdown?
             if (d == 0)
             {
-                FutureCallback shutdown = _shutdown.get();
+                FutureCallback shutdown = _shutdown.getFuture();
                 if (shutdown != null)
                     shutdown.succeeded();
             }
@@ -204,7 +205,7 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
                 updateResponse(baseRequest);
 
                 // If we have no more dispatches, should we signal shutdown?
-                FutureCallback shutdown = _shutdown.get();
+                FutureCallback shutdown = _shutdown.getFuture();
                 if (shutdown != null)
                 {
                     response.flushBuffer();
@@ -251,7 +252,7 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
     @Override
     protected void doStart() throws Exception
     {
-        _shutdown.cancel();
+        _shutdown.reset();
         super.doStart();
         statsReset();
     }
@@ -259,7 +260,6 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
     @Override
     protected void doStop() throws Exception
     {
-        _shutdown.cancel();
         super.doStop();
     }
 
@@ -573,6 +573,12 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
         sb.append("Bytes sent total: ").append(getResponsesBytesTotal()).append("<br />\n");
 
         return sb.toString();
+    }
+
+    @Override
+    public Phase getShutdownPhase()
+    {
+        return _shutdown.getShutdownPhase();
     }
 
     @Override
