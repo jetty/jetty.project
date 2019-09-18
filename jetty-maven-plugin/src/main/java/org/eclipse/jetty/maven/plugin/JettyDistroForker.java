@@ -228,7 +228,9 @@ public class JettyDistroForker extends AbstractForker
 
         ProcessBuilder builder = new ProcessBuilder(cmd);
         builder.directory(workDir);
-
+        
+        PluginLog.getLog().info("Distro process starting");
+        
         //set up extra environment vars if there are any
         if (!env.isEmpty())
             builder.environment().putAll(env);
