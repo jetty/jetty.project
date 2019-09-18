@@ -24,9 +24,11 @@ import javax.websocket.ClientEndpointConfig;
 import javax.websocket.WebSocketContainer;
 
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
+import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.eclipse.jetty.websocket.jsr356.ClientContainer;
+import org.eclipse.jetty.websocket.javax.client.JavaxWebSocketClientContainer;
 
 public class SecureClientContainerExample
 {
@@ -73,11 +75,14 @@ public class SecureClientContainerExample
      */
     public static WebSocketContainer getConfiguredWebSocketContainer() throws Exception
     {
-        SslContextFactory ssl = new SslContextFactory.Client();
+        SslContextFactory.Client ssl = new SslContextFactory.Client();
         ssl.setExcludeCipherSuites(); // echo.websocket.org use WEAK cipher suites
-        HttpClient httpClient = new HttpClient(ssl);
-        ClientContainer clientContainer = new ClientContainer(httpClient);
-        clientContainer.getClient().addManaged(httpClient); // allow clientContainer to own httpClient (for start/stop lifecycle)
+        ClientConnector clientConnector = new ClientConnector();
+        clientConnector.setSslContextFactory(ssl);
+
+        HttpClient httpClient = new HttpClient(new HttpClientTransportOverHTTP(clientConnector));
+        JavaxWebSocketClientContainer clientContainer = new JavaxWebSocketClientContainer(httpClient);
+        clientContainer.addManaged(httpClient); // allow clientContainer to own httpClient (for start/stop lifecycle)
         clientContainer.start();
         return clientContainer;
     }
