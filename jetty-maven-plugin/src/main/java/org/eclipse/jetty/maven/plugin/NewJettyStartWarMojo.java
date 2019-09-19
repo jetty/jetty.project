@@ -19,6 +19,8 @@
 package org.eclipse.jetty.maven.plugin;
 
 import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.plugins.annotations.Execute;
+import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.eclipse.jetty.util.StringUtil;
@@ -57,7 +59,10 @@ public class NewJettyStartWarMojo extends AbstractWebAppMojo
     {
         super.configureWebApp();
         if (StringUtil.isBlank(webApp.getWar()))
+        {
+            super.verifyPomConfiguration();
             configureUnassembledWebApp();
+        }
 
         getLog().info("War = "+webApp.getWar());
     }

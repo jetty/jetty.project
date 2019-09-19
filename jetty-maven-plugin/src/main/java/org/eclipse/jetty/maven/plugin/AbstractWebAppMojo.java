@@ -193,7 +193,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
     /**
      * Root directory for all html/jsp etc files
      */
-    @Parameter (defaultValue="${maven.war.src}")
+    @Parameter (defaultValue="${project.baseDir}/src/main/webapp")
     protected File webAppSourceDirectory;
     
     /**
@@ -219,8 +219,8 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
      * The default location of the web.xml file. Will be used
      * if &lt;webApp&gt;&lt;descriptor&gt; is not set.
      */
-    @Parameter (defaultValue="${maven.war.webxml}", readonly=true)
-    protected String webXml;
+    @Parameter (defaultValue="${project.baseDir}/src/main/webapp/WEB-INF/web.xml")
+    protected File webXml;
     
     /**
      * The target directory
@@ -871,7 +871,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
      * 
      */
     protected void verifyPomConfiguration () throws MojoExecutionException
-    {
+    {        
         // check the location of the static content/jsps etc
         try
         {
@@ -1137,7 +1137,6 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
         //the former could be the location of a packed war, while the latter is the location
         //after any unpacking. With this mojo, you are running an unpacked, unassembled webapp,
         //so the two locations should be equal.
-        System.err.println("SRC WEBAPP: "+webAppSourceDirectory);
         Resource webAppSourceDirectoryResource = Resource.newResource(webAppSourceDirectory.getCanonicalPath());
         if (webApp.getWar() == null)
             webApp.setWar(webAppSourceDirectoryResource.toString());
