@@ -21,6 +21,7 @@ package org.eclipse.jetty.client.api;
 import java.nio.ByteBuffer;
 import java.util.EventListener;
 import java.util.List;
+import java.util.function.LongConsumer;
 
 import org.eclipse.jetty.client.util.BufferingResponseListener;
 import org.eclipse.jetty.http.HttpField;
@@ -109,7 +110,7 @@ public interface Response
     interface HeaderListener extends ResponseListener
     {
         /**
-         * Callback method invoked when a response header has been received,
+         * Callback method invoked when a response header has been received and parsed,
          * returning whether the header should be processed or not.
          *
          * @param response the response containing the response line data and the headers so far
@@ -125,7 +126,7 @@ public interface Response
     interface HeadersListener extends ResponseListener
     {
         /**
-         * Callback method invoked when the response headers have been received and parsed.
+         * Callback method invoked when all the response headers have been received and parsed.
          *
          * @param response the response containing the response line data and the headers
          */
@@ -133,14 +134,16 @@ public interface Response
     }
 
     /**
-     * Listener for the response content events.
+     * Synchronous listener for the response content events.
+     *
+     * @see AsyncContentListener
      */
     interface ContentListener extends ResponseListener
     {
         /**
-         * Callback method invoked when the response content has been received.
-         * This method may be invoked multiple times, and the {@code content} buffer must be consumed
-         * before returning from this method.
+         * Callback method invoked when the response content has been received, parsed and there is demand.
+         * This method may be invoked multiple times, and the {@code content} buffer
+         * must be consumed (or copied) before returning from this method.
          *
          * @param response the response containing the response line data and the headers
          * @param content the content bytes received
@@ -148,16 +151,58 @@ public interface Response
         void onContent(Response response, ByteBuffer content);
     }
 
+    /**
+     * Asynchronous listener for the response content events.
+     *
+     * @see DemandedContentListener
+     */
     interface AsyncContentListener extends ResponseListener
     {
         /**
-         * Callback method invoked asynchronously when the response content has been received.
+         * Callback method invoked when the response content has been received, parsed and there is demand.
+         * The {@code callback} object should be succeeded to signal that the
+         * {@code content} buffer has been consumed and to demand more content.
          *
          * @param response the response containing the response line data and the headers
          * @param content the content bytes received
-         * @param callback the callback to call when the content is consumed.
+         * @param callback the callback to call when the content is consumed and to demand more content
          */
         void onContent(Response response, ByteBuffer content, Callback callback);
+    }
+
+    /**
+     * Asynchronous listener for the response content events.
+     */
+    interface DemandedContentListener extends ResponseListener
+    {
+        /**
+         * Callback method invoked before response content events.
+         * The {@code demand} object should be used to demand content, otherwise
+         * the demand remains at zero (no demand) and
+         * {@link #onContent(Response, LongConsumer, ByteBuffer, Callback)} will
+         * not be invoked even if content has been received and parsed.
+         *
+         * @param response the response containing the response line data and the headers
+         * @param demand the object that allows to demand content buffers
+         */
+        default void onBeforeContent(Response response, LongConsumer demand)
+        {
+            demand.accept(1);
+        }
+
+        /**
+         * Callback method invoked when the response content has been received.
+         * The {@code callback} object should be succeeded to signal that the
+         * {@code content} buffer has been consumed.
+         * The {@code demand} object should be used to demand more content,
+         * similarly to ReactiveStreams's {@code Subscription#request(long)}.
+         *
+         * @param response the response containing the response line data and the headers
+         * @param demand the object that allows to demand content buffers
+         * @param content the content bytes received
+         * @param callback the callback to call when the content is consumed
+         */
+        void onContent(Response response, LongConsumer demand, ByteBuffer content, Callback callback);
     }
 
     /**
@@ -212,7 +257,7 @@ public interface Response
     /**
      * Listener for all response events.
      */
-    interface Listener extends BeginListener, HeaderListener, HeadersListener, ContentListener, AsyncContentListener, SuccessListener, FailureListener, CompleteListener
+    interface Listener extends BeginListener, HeaderListener, HeadersListener, ContentListener, AsyncContentListener, DemandedContentListener, SuccessListener, FailureListener, CompleteListener
     {
         /**
          * An empty implementation of {@link Listener}
@@ -252,6 +297,16 @@ public interface Response
                 {
                     callback.failed(x);
                 }
+            }
+
+            @Override
+            public void onContent(Response response, LongConsumer demand, ByteBuffer content, Callback callback)
+            {
+                onContent(response, content, Callback.from(() ->
+                {
+                    callback.succeeded();
+                    demand.accept(1);
+                }, callback::failed));
             }
 
             @Override

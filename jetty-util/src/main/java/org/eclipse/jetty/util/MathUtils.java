@@ -43,4 +43,23 @@ public class MathUtils
             return true;
         }
     }
+
+    /**
+     * Returns the sum of its arguments, capping to {@link Long#MAX_VALUE} if they overflow.
+     *
+     * @param a the first value
+     * @param b the second value
+     * @return the sum of the values, capped to {@link Long#MAX_VALUE}
+     */
+    public static long cappedAdd(long a, long b)
+    {
+        try
+        {
+            return Math.addExact(a, b);
+        }
+        catch (ArithmeticException x)
+        {
+            return Long.MAX_VALUE;
+        }
+    }
 }
