@@ -26,6 +26,7 @@ import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -40,6 +41,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Random;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.repository.ArtifactRepository;
@@ -58,6 +60,7 @@ import org.apache.maven.shared.artifact.DefaultArtifactCoordinate;
 import org.apache.maven.shared.artifact.resolve.ArtifactResolver;
 import org.apache.maven.shared.artifact.resolve.ArtifactResolverException;
 import org.codehaus.plexus.util.StringUtils;
+import org.eclipse.jetty.maven.plugin.utils.MavenProjectHelper;
 import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Server;
@@ -675,7 +678,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
                 continue; //only add dependencies of scope=test if explicitly required
 
             dependencyFiles.add(artifact.getFile());
-            getLog().debug( "Adding artifact " + artifact.getFile().getName() + " with scope "+artifact.getScope()+" for WEB-INF/lib " );   
+            getLog().info( "Adding artifact " + artifact.getFile().getName() + " with scope "+artifact.getScope()+" for WEB-INF/lib " );   
         }
 
         return dependencyFiles; 
@@ -1160,7 +1163,16 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
         if (useTestScope && (testClassesDirectory != null))
             webApp.setTestClasses (testClassesDirectory);
 
-        webApp.setWebInfLib(getProjectDependencyFiles());
+        MavenProjectHelper mavenProjectHelper = new MavenProjectHelper(project);
+        List<File> webInfLibs = getWebInfLibArtifacts().stream()
+            .map(a ->
+            {
+                Path p = mavenProjectHelper.getArtifactPath(a);
+                getLog().debug("Artifact " + a.getId() + " loaded from " + p + " added to WEB-INF/lib");
+                return p.toFile();
+            }).collect(Collectors.toList());
+
+        webApp.setWebInfLib(webInfLibs);
 
         //if we have not already set web.xml location, need to set one up
         if (webApp.getDescriptor() == null)
@@ -1242,5 +1254,39 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
             outputFile.delete();
         outputFile.createNewFile();
         return outputFile;
+    }
+    
+    /**
+     * Find which dependencies are suitable for addition to the virtual
+     * WEB-INF lib.
+     * 
+     * @param mavenProject this project
+     */
+    private Collection<Artifact> getWebInfLibArtifacts()
+    {
+        String type = project.getArtifact().getType();
+        if (!"war".equalsIgnoreCase(type) && !"zip".equalsIgnoreCase(type))
+            return Collections.emptyList();
+
+        return project.getArtifacts().stream()
+            .filter(this::isArtifactOKForWebInfLib)
+            .collect(Collectors.toList());
+    }
+    
+    private boolean isArtifactOKForWebInfLib(Artifact artifact)
+    {
+        //The dependency cannot be of type war
+        if ("war".equalsIgnoreCase(artifact.getType()))
+            return false;
+
+        //The dependency cannot be scope provided (those should be added to the plugin classpath)
+        if (Artifact.SCOPE_PROVIDED.equals(artifact.getScope()))
+            return false;
+
+        //Test dependencies not added by default
+        if (Artifact.SCOPE_TEST.equals(artifact.getScope()) && !useTestScope)
+            return false;
+
+        return true;
     }
 }
