@@ -48,7 +48,9 @@ import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.SuspendToken;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
+import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
@@ -59,7 +61,7 @@ import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketSessionScope;
 
 @ManagedObject("A Jetty WebSocket Session")
-public class WebSocketSession extends ContainerLifeCycle implements Session, RemoteEndpointFactory, WebSocketSessionScope, IncomingFrames, Connection.Listener
+public class WebSocketSession extends ContainerLifeCycle implements Session, RemoteEndpointFactory, WebSocketSessionScope, IncomingFrames, OutgoingFrames, Connection.Listener
 {
     private static final Logger LOG = Log.getLogger(WebSocketSession.class);
     private final WebSocketContainerScope containerScope;
@@ -335,6 +337,26 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
     }
 
     @Override
+    public void outgoingFrame(Frame frame, WriteCallback callback, BatchMode batchMode)
+    {
+        if (onCloseCalled.get())
+        {
+            try
+            {
+                if (callback != null)
+                    callback.writeFailed(new WebSocketException("Session closed"));
+            }
+            catch (Throwable x)
+            {
+                LOG.debug("Exception while notifying failure of callback " + callback, x);
+            }
+            return;
+        }
+
+        outgoingHandler.outgoingFrame(frame, callback, batchMode);
+    }
+
+    @Override
     public boolean isOpen()
     {
         if (this.connection == null)
@@ -420,7 +442,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
     @Override
     public WebSocketRemoteEndpoint newRemoteEndpoint(LogicalConnection connection, OutgoingFrames outgoingFrames, BatchMode batchMode)
     {
-        return new WebSocketRemoteEndpoint(connection, outgoingHandler, getBatchMode());
+        return new WebSocketRemoteEndpoint(connection, outgoingFrames, getBatchMode());
     }
 
     /**
@@ -443,7 +465,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
             if (connection.opening())
             {
                 // Connect remote
-                remote = remoteEndpointFactory.newRemoteEndpoint(connection, outgoingHandler, getBatchMode());
+                remote = remoteEndpointFactory.newRemoteEndpoint(connection, this, getBatchMode());
                 if (LOG.isDebugEnabled())
                     LOG.debug("[{}] {}.open() remote={}", policy.getBehavior(), this.getClass().getSimpleName(), remote);
 

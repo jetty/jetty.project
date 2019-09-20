@@ -601,7 +601,6 @@ public class WebSocketUpgradeRequest extends HttpRequest implements CompleteList
         session.setUpgradeResponse(new ClientUpgradeResponse(response));
         connection.addListener(session);
 
-        ExtensionStack extensionStack = new ExtensionStack(getExtensionFactory());
         List<ExtensionConfig> extensions = new ArrayList<>();
         HttpField extField = response.getHeaders().getField(HttpHeader.SEC_WEBSOCKET_EXTENSIONS);
         if (extField != null)
@@ -619,8 +618,9 @@ public class WebSocketUpgradeRequest extends HttpRequest implements CompleteList
                 }
             }
         }
-        extensionStack.negotiate(extensions);
 
+        ExtensionStack extensionStack = new ExtensionStack(getExtensionFactory());
+        extensionStack.negotiate(extensions);
         extensionStack.configure(connection.getParser());
         extensionStack.configure(connection.getGenerator());
 
