@@ -22,15 +22,18 @@ import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.io.UnsupportedEncodingException;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
@@ -1061,45 +1064,278 @@ public class XmlConfigurationTest
     }
 
     @Test
-    public void testDeprecated() throws Exception
+    public void testDeprecatedMany() throws Exception
     {
         Class<?> testClass = AnnotatedTestConfiguration.class;
         XmlConfiguration xmlConfiguration = asXmlConfiguration(
             "<Configure class=\"" + testClass.getName() + "\">" +
                 "  <Set name=\"deprecated\">foo</Set>" +
+                "  <Set name=\"timeout\"><Property name=\"test.timeout\" default=\"-1\"/></Set>" +
                 "  <Set name=\"obsolete\">" +
                 "    <Call name=\"setDeprecated\"><Arg><Get name=\"deprecated\" /></Arg></Call>" +
                 "  </Set>" +
                 "  <Get name=\"obsolete\" />" +
                 "</Configure>");
 
-        ByteArrayOutputStream logBytes = null;
-        Logger logger = Log.getLogger(XmlConfiguration.class);
-        logger.setDebugEnabled(true);
-        if (logger instanceof StdErrLog)
+        List<String> logLines;
+        try (StdErrCapture logCapture = new StdErrCapture(XmlConfiguration.class))
         {
-            StdErrLog stdErrLog = (StdErrLog)logger;
-            logBytes = new ByteArrayOutputStream();
-            stdErrLog.setStdErrStream(new PrintStream(logBytes));
+            xmlConfiguration.getProperties().put("test.timeout", "-1");
+            xmlConfiguration.configure();
+            logLines = logCapture.getLines();
         }
 
-        xmlConfiguration.configure();
+        List<String> warnings = logLines.stream()
+            .filter(line -> line.contains(":WARN:"))
+            .filter(line -> line.contains(testClass.getSimpleName()))
+            .collect(Collectors.toList());
+        // 1. Deprecated constructor
+        // 2. Deprecated <Set> method
+        // 3. Deprecated <Get> method
+        // 4. Deprecated <Call> method
+        // 5. Deprecated <Set> field
+        // 6. Deprecated <Get> field
+        assertEquals(6, warnings.size());
+    }
 
-        logger.setDebugEnabled(false);
-        if (logBytes != null)
+    @Test
+    public void testDeprecatedPropertyUnSet() throws Exception
+    {
+        Class<?> testClass = AnnotatedTestConfiguration.class;
+        XmlConfiguration xmlConfiguration = asXmlConfiguration(
+            "<Configure class=\"" + testClass.getName() + "\">" +
+                "  <Set name=\"timeout\"><Property name=\"test.timeout\" default=\"-1\"/></Set>" +
+                "</Configure>");
+        assertDeprecatedPropertyUnSet(testClass, xmlConfiguration);
+    }
+
+    @Test
+    public void testDeprecatedPropertyUnSetWhiteSpace() throws Exception
+    {
+        Class<?> testClass = AnnotatedTestConfiguration.class;
+        XmlConfiguration xmlConfiguration = asXmlConfiguration(
+            "<Configure class=\"" + testClass.getName() + "\">" +
+                "  <Set name=\"timeout\">" +
+                "    <Property name=\"test.timeout\" default=\"-1\"/>" +
+                "  </Set>" +
+                "</Configure>");
+        assertDeprecatedPropertyUnSet(testClass, xmlConfiguration);
+    }
+
+    private void assertDeprecatedPropertyUnSet(Class<?> testClass, XmlConfiguration xmlConfiguration) throws Exception
+    {
+        List<String> logLines;
+        try (StdErrCapture logCapture = new StdErrCapture(XmlConfiguration.class))
         {
+            // Leave this line alone, as this tests what happens if property is unset,
+            // so that it relies on the <Property default=""> value
+            // xmlConfiguration.getProperties().put("test.timeout", "-1");
+            xmlConfiguration.configure();
+            logLines = logCapture.getLines();
+        }
+
+        List<String> warnings = logLines.stream()
+            .filter(LogPredicates.deprecatedWarnings(testClass))
+            .collect(Collectors.toList());
+        String[] expected = {
+            "Deprecated constructor public org.eclipse.jetty.xml.AnnotatedTestConfiguration"
+        };
+
+        assertHasExpectedLines("Warnings", warnings, expected);
+    }
+
+    @Test
+    public void testDeprecatedPropertySetToDefaultValue() throws Exception
+    {
+        Class<?> testClass = AnnotatedTestConfiguration.class;
+        XmlConfiguration xmlConfiguration = asXmlConfiguration(
+            "<Configure class=\"" + testClass.getName() + "\">" +
+                "  <Set name=\"timeout\"><Property name=\"test.timeout\" default=\"-1\"/></Set>" +
+                "</Configure>");
+
+        assertDeprecatedPropertySetToDefaultValue(testClass, xmlConfiguration);
+    }
+
+    @Test
+    public void testDeprecatedPropertySetToDefaultValueWhiteSpace() throws Exception
+    {
+        Class<?> testClass = AnnotatedTestConfiguration.class;
+        XmlConfiguration xmlConfiguration = asXmlConfiguration(
+            "<Configure class=\"" + testClass.getName() + "\">" +
+                "  <Set name=\"timeout\">" +
+                "    <Property name=\"test.timeout\" default=\"-1\"/>" +
+                "  </Set>" +
+                "</Configure>");
+
+        assertDeprecatedPropertySetToDefaultValue(testClass, xmlConfiguration);
+    }
+
+    private void assertDeprecatedPropertySetToDefaultValue(Class<?> testClass, XmlConfiguration xmlConfiguration) throws Exception
+    {
+        List<String> logLines;
+        try (StdErrCapture logCapture = new StdErrCapture(XmlConfiguration.class))
+        {
+            // Leave this line alone, as this tests what happens if property is set,
+            // and has the same value as declared on <Property default="">
+            xmlConfiguration.getProperties().put("test.timeout", "-1");
+            xmlConfiguration.configure();
+            logLines = logCapture.getLines();
+        }
+
+        List<String> warnings = logLines.stream()
+            .filter(LogPredicates.deprecatedWarnings(testClass))
+            .collect(Collectors.toList());
+
+        String[] expected = {
+            "Deprecated constructor public org.eclipse.jetty.xml.AnnotatedTestConfiguration",
+            };
+        assertHasExpectedLines("Warnings", warnings, expected);
+
+        List<String> debugs = logLines.stream()
+            .filter(LogPredicates.deprecatedDebug(testClass))
+            .collect(Collectors.toList());
+
+        expected = new String[]{
+            "Deprecated method public void org.eclipse.jetty.xml.AnnotatedTestConfiguration.setTimeout(long)"
+        };
+
+        assertHasExpectedLines("Debugs", debugs, expected);
+    }
+
+    @Test
+    public void testDeprecatedPropertySetToNewValue() throws Exception
+    {
+        Class<?> testClass = AnnotatedTestConfiguration.class;
+        XmlConfiguration xmlConfiguration = asXmlConfiguration(
+            "<Configure class=\"" + testClass.getName() + "\">" +
+                "  <Set name=\"timeout\"><Property name=\"test.timeout\" default=\"-1\"/></Set>" +
+                "</Configure>");
+
+        List<String> logLines;
+        try (StdErrCapture logCapture = new StdErrCapture(XmlConfiguration.class))
+        {
+            // Leave this line alone, as this tests what happens if property is set,
+            // and has the same value as declared on <Property default="">
+            xmlConfiguration.getProperties().put("test.timeout", "30000");
+            xmlConfiguration.configure();
+            logLines = logCapture.getLines();
+        }
+
+        List<String> warnings = logLines.stream()
+            .filter(LogPredicates.deprecatedWarnings(testClass))
+            .collect(Collectors.toList());
+        String[] expected = {
+            "Deprecated constructor public org.eclipse.jetty.xml.AnnotatedTestConfiguration",
+            "Deprecated method public void org.eclipse.jetty.xml.AnnotatedTestConfiguration.setTimeout(long)"
+        };
+        assertThat("Count of warnings", warnings.size(), is(expected.length));
+        for (int i = 0; i < expected.length; i++)
+        {
+            assertThat("Warning[" + i + "]", warnings.get(i), containsString(expected[i]));
+        }
+    }
+
+    @Test
+    public void testSetDeprecatedMultipleProperties() throws Exception
+    {
+        Class<?> testClass = AnnotatedTestConfiguration.class;
+        XmlConfiguration xmlConfiguration = asXmlConfiguration(
+            "<Configure class=\"" + testClass.getName() + "\">" +
+                "  <Set name=\"obsolete\">" +
+                "    <Property name=\"obs.1\" default=\"foo\"/>" +
+                "    <Property name=\"obs.2\" default=\"bar\"/>" +
+                "  </Set>" +
+                "</Configure>");
+
+        List<String> logLines;
+        try (StdErrCapture logCapture = new StdErrCapture(XmlConfiguration.class))
+        {
+            // Leave this line alone, as this tests what happens if property is set,
+            // and has the same value as declared on <Property default="">
+            // xmlConfiguration.getProperties().put("obs.1", "30000");
+            xmlConfiguration.configure();
+            logLines = logCapture.getLines();
+        }
+
+        List<String> warnings = logLines.stream()
+            .filter(LogPredicates.deprecatedWarnings(testClass))
+            .collect(Collectors.toList());
+        String[] expected = {
+            "Deprecated constructor public org.eclipse.jetty.xml.AnnotatedTestConfiguration",
+            "Deprecated field public java.lang.String org.eclipse.jetty.xml.AnnotatedTestConfiguration.obsolete"
+        };
+        assertThat("Count of warnings", warnings.size(), is(expected.length));
+        for (int i = 0; i < expected.length; i++)
+        {
+            assertThat("Warning[" + i + "]", warnings.get(i), containsString(expected[i]));
+        }
+    }
+
+    private static class LogPredicates
+    {
+        public static Predicate<String> deprecatedWarnings(Class<?> testClass)
+        {
+            return (line) -> line.contains(":WARN:") &&
+                line.contains(": Deprecated ") &&
+                line.contains(testClass.getName());
+        }
+
+        public static Predicate<String> deprecatedDebug(Class<?> testClass)
+        {
+            return (line) -> line.contains(":DBUG:") &&
+                line.contains(": Deprecated ") &&
+                line.contains(testClass.getName());
+        }
+    }
+
+    private void assertHasExpectedLines(String type, List<String> actualLines, String[] expectedLines)
+    {
+        assertThat("Count of " + type, actualLines.size(), is(expectedLines.length));
+        for (int i = 0; i < expectedLines.length; i++)
+        {
+            assertThat(type + "[" + i + "]", actualLines.get(i), containsString(expectedLines[i]));
+        }
+    }
+
+    private static class StdErrCapture implements AutoCloseable
+    {
+        private ByteArrayOutputStream logBytes;
+        private List<Logger> loggers = new ArrayList<>();
+        private final PrintStream logStream;
+
+        public StdErrCapture(Class<?>... classes)
+        {
+            for (Class<?> clazz : classes)
+            {
+                Logger logger = Log.getLogger(clazz);
+                loggers.add(logger);
+            }
+
+            logBytes = new ByteArrayOutputStream();
+            logStream = new PrintStream(logBytes);
+
+            loggers.forEach((logger) ->
+            {
+                logger.setDebugEnabled(true);
+                if (logger instanceof StdErrLog)
+                {
+                    StdErrLog stdErrLog = (StdErrLog)logger;
+                    stdErrLog.setStdErrStream(logStream);
+                }
+            });
+        }
+
+        public List<String> getLines() throws UnsupportedEncodingException
+        {
+            logStream.flush();
             String[] lines = logBytes.toString(UTF_8.name()).split(System.lineSeparator());
-            List<String> warnings = Arrays.stream(lines)
-                .filter(line -> line.contains(":WARN:"))
-                .filter(line -> line.contains(testClass.getSimpleName()))
-                .collect(Collectors.toList());
-            // 1. Deprecated constructor
-            // 2. Deprecated <Set> method
-            // 3. Deprecated <Get> method
-            // 4. Deprecated <Call> method
-            // 5. Deprecated <Set> field
-            // 6. Deprecated <Get> field
-            assertEquals(6, warnings.size());
+            return Arrays.asList(lines);
+        }
+
+        @Override
+        public void close()
+        {
+            loggers.forEach((logger) -> logger.setDebugEnabled(false));
         }
     }
 }
