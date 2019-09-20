@@ -1085,13 +1085,10 @@ public class XmlConfigurationTest
             logLines = logCapture.getLines();
         }
 
-        logLines.forEach(System.err::println); // dump capture logs
-
         List<String> warnings = logLines.stream()
             .filter(line -> line.contains(":WARN:"))
             .filter(line -> line.contains(testClass.getSimpleName()))
             .collect(Collectors.toList());
-        warnings.forEach(System.out::println); // dump warnings captured
         // 1. Deprecated constructor
         // 2. Deprecated <Set> method
         // 3. Deprecated <Get> method
@@ -1137,12 +1134,9 @@ public class XmlConfigurationTest
             logLines = logCapture.getLines();
         }
 
-        logLines.forEach(System.err::println); // dump capture logs
-
         List<String> warnings = logLines.stream()
             .filter(LogPredicates.deprecatedWarnings(testClass))
             .collect(Collectors.toList());
-        // warnings.forEach(System.out::println); // dump warnings captured
         String[] expected = {
             "Deprecated constructor public org.eclipse.jetty.xml.AnnotatedTestConfiguration"
         };
@@ -1188,12 +1182,9 @@ public class XmlConfigurationTest
             logLines = logCapture.getLines();
         }
 
-        logLines.forEach(System.err::println); // dump capture logs
-
         List<String> warnings = logLines.stream()
             .filter(LogPredicates.deprecatedWarnings(testClass))
             .collect(Collectors.toList());
-        warnings.forEach(System.out::println); // dump captured WARN
 
         String[] expected = {
             "Deprecated constructor public org.eclipse.jetty.xml.AnnotatedTestConfiguration",
@@ -1208,7 +1199,6 @@ public class XmlConfigurationTest
             "Deprecated method public void org.eclipse.jetty.xml.AnnotatedTestConfiguration.setTimeout(long)"
         };
 
-        debugs.forEach(System.out::println); // dump captured DEBUG
         assertHasExpectedLines("Debugs", debugs, expected);
     }
 
@@ -1231,12 +1221,9 @@ public class XmlConfigurationTest
             logLines = logCapture.getLines();
         }
 
-        logLines.forEach(System.err::println); // dump capture logs
-
         List<String> warnings = logLines.stream()
             .filter(LogPredicates.deprecatedWarnings(testClass))
             .collect(Collectors.toList());
-        // warnings.forEach(System.out::println); // dump warnings captured
         String[] expected = {
             "Deprecated constructor public org.eclipse.jetty.xml.AnnotatedTestConfiguration",
             "Deprecated method public void org.eclipse.jetty.xml.AnnotatedTestConfiguration.setTimeout(long)"
@@ -1265,17 +1252,14 @@ public class XmlConfigurationTest
         {
             // Leave this line alone, as this tests what happens if property is set,
             // and has the same value as declared on <Property default="">
-            // xmlConfiguration.getProperties().put("test.timeout", "30000");
+            // xmlConfiguration.getProperties().put("obs.1", "30000");
             xmlConfiguration.configure();
             logLines = logCapture.getLines();
         }
 
-        logLines.forEach(System.err::println); // dump capture logs
-
         List<String> warnings = logLines.stream()
             .filter(LogPredicates.deprecatedWarnings(testClass))
             .collect(Collectors.toList());
-        // warnings.forEach(System.out::println); // dump warnings captured
         String[] expected = {
             "Deprecated constructor public org.eclipse.jetty.xml.AnnotatedTestConfiguration",
             "Deprecated field public java.lang.String org.eclipse.jetty.xml.AnnotatedTestConfiguration.obsolete"
