@@ -63,6 +63,17 @@ pipeline {
           }
         }
 
+        stage("Build / Test - JDK13") {
+          agent { node { label 'linux' } }
+          steps {
+            timeout(time: 120, unit: 'MINUTES') {
+              mavenBuild("jdk13", "-Pmongodb install", "maven3", true)
+              warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'Java']]
+              junit testResults: '**/target/surefire-reports/*.xml,**/target/invoker-reports/TEST*.xml'
+            }
+          }
+        }
+
         stage("Build Javadoc") {
           agent { node { label 'linux' } }
           steps {
