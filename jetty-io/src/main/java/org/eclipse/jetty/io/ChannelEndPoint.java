@@ -176,12 +176,6 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
     }
 
     @Override
-    public boolean isOptimizedForDirectBuffers()
-    {
-        return true;
-    }
-
-    @Override
     public boolean isOpen()
     {
         return _channel.isOpen();

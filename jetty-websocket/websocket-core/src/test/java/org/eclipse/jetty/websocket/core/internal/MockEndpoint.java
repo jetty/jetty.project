@@ -165,12 +165,6 @@ public class MockEndpoint implements EndPoint
     }
 
     @Override
-    public boolean isOptimizedForDirectBuffers()
-    {
-        throw new UnsupportedOperationException(NOT_SUPPORTED);
-    }
-
-    @Override
     public void upgrade(Connection newConnection)
     {
         throw new UnsupportedOperationException(NOT_SUPPORTED);

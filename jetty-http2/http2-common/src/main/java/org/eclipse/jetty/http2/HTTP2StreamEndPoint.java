@@ -494,12 +494,6 @@ public abstract class HTTP2StreamEndPoint implements EndPoint
     }
 
     @Override
-    public boolean isOptimizedForDirectBuffers()
-    {
-        return true;
-    }
-
-    @Override
     public void upgrade(Connection newConnection)
     {
         Connection oldConnection = getConnection();
