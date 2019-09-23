@@ -127,10 +127,15 @@ public interface ByteBufferPool
             {
                 ByteBuffer buffer = buffers.get(i);
                 if (recycles.get(i))
-                    byteBufferPool.release(buffer);
+                    release(buffer);
             }
             buffers.clear();
             recycles.clear();
+        }
+
+        public void release(ByteBuffer buffer)
+        {
+            byteBufferPool.release(buffer);
         }
     }
 

@@ -36,6 +36,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 
 public class HpackTest
@@ -249,6 +250,27 @@ public class HpackTest
         assertEquals(2, output.size());
         assertEquals(teValue, output.get(HttpHeader.TE));
         assertEquals(trailerValue, output.get(HttpHeader.TRAILER));
+    }
+
+    @Test
+    public void testColonHeaders() throws Exception
+    {
+        HpackEncoder encoder = new HpackEncoder();
+        HpackDecoder decoder = new HpackDecoder(4096, 16384);
+
+        HttpFields input = new HttpFields();
+        input.put(":status", "200");
+        input.put(":custom", "special");
+
+        ByteBuffer buffer = BufferUtil.allocate(2048);
+        BufferUtil.clearToFill(buffer);
+        assertThrows(HpackException.StreamException.class, () -> encoder.encode(buffer, new MetaData(HttpVersion.HTTP_2, input)));
+
+        encoder.setValidateEncoding(false);
+        encoder.encode(buffer, new MetaData(HttpVersion.HTTP_2, input));
+
+        BufferUtil.flipToFlush(buffer, 0);
+        assertThrows(HpackException.StreamException.class, () -> decoder.decode(buffer));
     }
 
     private void assertMetaDataResponseSame(MetaData.Response expected, MetaData.Response actual)

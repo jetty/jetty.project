@@ -35,6 +35,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
@@ -295,7 +296,34 @@ public class TrailersTest extends AbstractTest
     }
 
     @Test
-    public void testRequestTrailerInvalidHpack() throws Exception
+    public void testRequestTrailerInvalidHpackSent() throws Exception
+    {
+        start(new EmptyHttpServlet());
+
+        Session session = newClient(new Session.Listener.Adapter());
+        MetaData.Request request = newRequest("POST", new HttpFields());
+        HeadersFrame requestFrame = new HeadersFrame(request, null, false);
+        FuturePromise<Stream> promise = new FuturePromise<>();
+        session.newStream(requestFrame, promise, new Stream.Listener.Adapter());
+        Stream stream = promise.get(5, TimeUnit.SECONDS);
+        ByteBuffer data = ByteBuffer.wrap(StringUtil.getUtf8Bytes("hello"));
+        Callback.Completable completable = new Callback.Completable();
+        stream.data(new DataFrame(stream.getId(), data, false), completable);
+        CountDownLatch failureLatch = new CountDownLatch(1);
+        completable.thenRun(() ->
+        {
+            // Invalid trailer: cannot contain pseudo headers.
+            HttpFields trailerFields = new HttpFields();
+            trailerFields.put(HttpHeader.C_METHOD, "GET");
+            MetaData trailer = new MetaData(HttpVersion.HTTP_2, trailerFields);
+            HeadersFrame trailerFrame = new HeadersFrame(stream.getId(), trailer, null, true);
+            stream.headers(trailerFrame, Callback.from(Callback.NOOP::succeeded, x -> failureLatch.countDown()));
+        });
+        assertTrue(failureLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testRequestTrailerInvalidHpackReceived() throws Exception
     {
         CountDownLatch serverLatch = new CountDownLatch(1);
         start(new HttpServlet()
@@ -341,6 +369,8 @@ public class TrailersTest extends AbstractTest
         stream.data(new DataFrame(stream.getId(), data, false), completable);
         completable.thenRun(() ->
         {
+            // Disable checks for invalid headers.
+            ((HTTP2Session)session).getGenerator().setValidateHpackEncoding(false);
             // Invalid trailer: cannot contain pseudo headers.
             HttpFields trailerFields = new HttpFields();
             trailerFields.put(HttpHeader.C_METHOD, "GET");
