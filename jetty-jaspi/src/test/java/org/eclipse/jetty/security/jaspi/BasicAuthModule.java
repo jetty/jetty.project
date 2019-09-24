@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.security.jaspi.modules;
+package org.eclipse.jetty.security.jaspi;
 
 import java.io.IOException;
 import java.util.Map;
@@ -31,11 +31,11 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.security.jaspi.modules.BaseAuthModule;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.security.Constraint;
 
-@Deprecated
 public class BasicAuthModule extends BaseAuthModule
 {
     private static final Logger LOG = Log.getLogger(BasicAuthModule.class);
