@@ -49,18 +49,22 @@ public interface Graceful
 
     boolean isShutdown();
 
+    /**
+     The Phase of a Graceful is used to sort the discovered Gracefuls so that
+     UNAVAILABE Gracefuls are shutdown before COMPLETING Gracefuls,
+     which are shutdown before CLEANUP Gracefuls.
+     */
     enum Phase
     {
         UNAVAILABLE,  // Make the component unavailable for future tasks (eg stop acceptor)
-        GRACEFUL,     // Gracefully wait for current tasks to complete (eg request complete)
+        COMPLETING,   // Gracefully wait for current tasks to complete (eg request complete)
         CLEANUP       // Time limited Shutdown operations (eg connection close)
     }
 
     /**
-     * A utility Graceful that uses a {@link FutureCallback} to indicate if shutdown is completed.
-     * By default the {@link FutureCallback} is returned as already completed, but the {@link #newShutdownCallback()} method
-     * can be overloaded to return a non-completed callback that will require a {@link Callback#succeeded()} or
-     * {@link Callback#failed(Throwable)} call to be completed.
+     * A utility Graceful that uses an {@link AtomicReference to a } {@link Future}.
+     * A call to {@link #shutdown()} will initialize the future by calling
+     * the abstract {@link #newFuture()} method.
      */
     abstract class GracefulFuture<T extends Future<Void>> implements Graceful
     {
@@ -73,7 +77,7 @@ public interface Graceful
 
         public GracefulFuture()
         {
-            this(Phase.GRACEFUL);
+            this(Phase.COMPLETING);
         }
 
         public GracefulFuture(Phase phase)
@@ -127,6 +131,12 @@ public interface Graceful
         }
     }
 
+    /**
+     * A utility Graceful that uses a {@link FutureCallback} to indicate if shutdown is completed.
+     * By default a new uncompleted  {@link FutureCallback} is returned, but the {@link #newFuture()} method
+     * can be overloaded to return a specific FutureCallback (eg an already completed one).
+     * {@link Callback#failed(Throwable)} call to be completed.
+     */
     class Shutdown extends GracefulFuture<FutureCallback>
     {
         protected FutureCallback newFuture()

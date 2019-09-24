@@ -826,8 +826,9 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                     }
                     case DONE:
                     {
-                        // If shutdown after commit, we can still close here.
-                        if (_generator.isEnd() && getConnector().isShutdown())
+                        // If this is the end of the response and the connector was shutdown after response was committed,
+                        // we can't add the Connection:close header, but we are still allowed to close the connection.
+                        if (getConnector().isShutdown() && _generator.isEnd() && _generator.isPersistent())
                             _shutdownOut = true;
 
                         return Action.SUCCEEDED;
