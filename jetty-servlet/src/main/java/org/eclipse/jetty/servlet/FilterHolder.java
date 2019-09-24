@@ -91,11 +91,10 @@ public class FilterHolder extends Holder<Filter>
     {
         super.doStart();
 
-        if (!javax.servlet.Filter.class
-            .isAssignableFrom(_class))
+        if (!javax.servlet.Filter.class.isAssignableFrom(getHeldClass()))
         {
-            String msg = _class + " is not a javax.servlet.Filter";
-            super.stop();
+            String msg = getHeldClass() + " is not a javax.servlet.Filter";
+            doStop();
             throw new IllegalStateException(msg);
         }
     }
@@ -103,15 +102,18 @@ public class FilterHolder extends Holder<Filter>
     @Override
     public void initialize() throws Exception
     {
-        if (!_initialized)
+        synchronized (this)
         {
-            super.initialize();
+            if (_filter != null)
+                return;
 
+            super.initialize();
+            _filter = getInstance();
             if (_filter == null)
             {
                 try
                 {
-                    ServletContext context = _servletHandler.getServletContext();
+                    ServletContext context = getServletHandler().getServletContext();
                     _filter = (context instanceof ServletContextHandler.Context)
                         ? context.createFilter(getHeldClass())
                         : getHeldClass().getDeclaredConstructor().newInstance();
@@ -126,37 +128,30 @@ public class FilterHolder extends Holder<Filter>
                     throw ex;
                 }
             }
-
             _config = new Config();
             if (LOG.isDebugEnabled())
                 LOG.debug("Filter.init {}", _filter);
             _filter.init(_config);
         }
-
-        _initialized = true;
     }
 
     @Override
     public void doStop()
         throws Exception
     {
+        super.doStop();
+        _config = null;
         if (_filter != null)
         {
             try
             {
                 destroyInstance(_filter);
             }
-            catch (Exception e)
+            finally
             {
-                LOG.warn(e);
+                _filter = null;
             }
         }
-        if (!_extInstance)
-            _filter = null;
-
-        _config = null;
-        _initialized = false;
-        super.doStop();
     }
 
     @Override
@@ -172,11 +167,7 @@ public class FilterHolder extends Holder<Filter>
 
     public synchronized void setFilter(Filter filter)
     {
-        _filter = filter;
-        _extInstance = true;
-        setHeldClass(filter.getClass());
-        if (getName() == null)
-            setName(filter.getClass().getName());
+        setInstance(filter);
     }
 
     public Filter getFilter()
@@ -187,19 +178,19 @@ public class FilterHolder extends Holder<Filter>
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        if (_initParams.isEmpty())
+        if (getInitParameters().isEmpty())
             Dumpable.dumpObjects(out, indent, this,
                 _filter == null ? getHeldClass() : _filter);
         else
             Dumpable.dumpObjects(out, indent, this,
                 _filter == null ? getHeldClass() : _filter,
-                new DumpableCollection("initParams", _initParams.entrySet()));
+                new DumpableCollection("initParams", getInitParameters().entrySet()));
     }
 
     @Override
     public String toString()
     {
-        return String.format("%s@%x==%s,inst=%b,async=%b", _name, hashCode(), _className, _filter != null, isAsyncSupported());
+        return String.format("%s@%x==%s,inst=%b,async=%b", getName(), hashCode(), getClassName(), _filter != null, isAsyncSupported());
     }
 
     public FilterRegistration.Dynamic getRegistration()
@@ -220,9 +211,9 @@ public class FilterHolder extends Holder<Filter>
             mapping.setServletNames(servletNames);
             mapping.setDispatcherTypes(dispatcherTypes);
             if (isMatchAfter)
-                _servletHandler.addFilterMapping(mapping);
+                getServletHandler().addFilterMapping(mapping);
             else
-                _servletHandler.prependFilterMapping(mapping);
+                getServletHandler().prependFilterMapping(mapping);
         }
 
         @Override
@@ -234,15 +225,15 @@ public class FilterHolder extends Holder<Filter>
             mapping.setPathSpecs(urlPatterns);
             mapping.setDispatcherTypes(dispatcherTypes);
             if (isMatchAfter)
-                _servletHandler.addFilterMapping(mapping);
+                getServletHandler().addFilterMapping(mapping);
             else
-                _servletHandler.prependFilterMapping(mapping);
+                getServletHandler().prependFilterMapping(mapping);
         }
 
         @Override
         public Collection<String> getServletNameMappings()
         {
-            FilterMapping[] mappings = _servletHandler.getFilterMappings();
+            FilterMapping[] mappings = getServletHandler().getFilterMappings();
             List<String> names = new ArrayList<String>();
             for (FilterMapping mapping : mappings)
             {
@@ -258,7 +249,7 @@ public class FilterHolder extends Holder<Filter>
         @Override
         public Collection<String> getUrlPatternMappings()
         {
-            FilterMapping[] mappings = _servletHandler.getFilterMappings();
+            FilterMapping[] mappings = getServletHandler().getFilterMappings();
             List<String> patterns = new ArrayList<String>();
             for (FilterMapping mapping : mappings)
             {
@@ -277,7 +268,7 @@ public class FilterHolder extends Holder<Filter>
         @Override
         public String getFilterName()
         {
-            return _name;
+            return getName();
         }
     }
 }

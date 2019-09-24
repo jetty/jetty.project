@@ -50,6 +50,8 @@ public class FrameFlusher extends IteratingCallback
     private static final Logger LOG = Log.getLogger(FrameFlusher.class);
     private static final Throwable CLOSED_CHANNEL = new ClosedChannelException();
 
+    private final LongAdder messagesOut = new LongAdder();
+    private final LongAdder bytesOut = new LongAdder();
     private final ByteBufferPool bufferPool;
     private final EndPoint endPoint;
     private final int bufferSize;
@@ -62,13 +64,12 @@ public class FrameFlusher extends IteratingCallback
     private final List<Entry> previousEntries;
     private final List<Entry> failedEntries;
 
-    private ByteBuffer batchBuffer = null;
+    private ByteBuffer batchBuffer;
     private boolean canEnqueue = true;
     private boolean flushed = true;
     private Throwable closedCause;
-    private LongAdder messagesOut = new LongAdder();
-    private LongAdder bytesOut = new LongAdder();
-    private long idleTimeout = 0;
+    private long idleTimeout;
+    private boolean useDirectByteBuffers;
 
     public FrameFlusher(ByteBufferPool bufferPool, Scheduler scheduler, Generator generator, EndPoint endPoint, int bufferSize, int maxGather)
     {
@@ -82,6 +83,16 @@ public class FrameFlusher extends IteratingCallback
         this.failedEntries = new ArrayList<>(maxGather);
         this.buffers = new ArrayList<>((maxGather * 2) + 1);
         this.timeoutScheduler = scheduler;
+    }
+
+    public boolean isUseDirectByteBuffers()
+    {
+        return useDirectByteBuffers;
+    }
+
+    public void setUseDirectByteBuffers(boolean useDirectByteBuffers)
+    {
+        this.useDirectByteBuffers = useDirectByteBuffers;
     }
 
     /**
@@ -225,7 +236,7 @@ public class FrameFlusher extends IteratingCallback
                     // Acquire a batchBuffer if we don't have one
                     if (batchBuffer == null)
                     {
-                        batchBuffer = bufferPool.acquire(bufferSize, true);
+                        batchBuffer = acquireBuffer(bufferSize);
                         buffers.add(batchBuffer);
                     }
 
@@ -249,7 +260,10 @@ public class FrameFlusher extends IteratingCallback
                 else
                 {
                     // Add headers and payload to the list of buffers
-                    buffers.add(entry.generateHeaderBytes());
+                    // TODO: release this buffer.
+                    ByteBuffer buffer = acquireBuffer(Generator.MAX_HEADER_LENGTH);
+                    buffers.add(buffer);
+                    entry.generateHeaderBytes(buffer);
                     flush = true;
                     ByteBuffer payload = entry.frame.getPayload();
                     if (BufferUtil.hasContent(payload))
@@ -306,6 +320,11 @@ public class FrameFlusher extends IteratingCallback
         }
 
         return Action.SCHEDULED;
+    }
+
+    private ByteBuffer acquireBuffer(int capacity)
+    {
+        return bufferPool.acquire(capacity, isUseDirectByteBuffers());
     }
 
     private int getQueueSize()
@@ -472,11 +491,6 @@ public class FrameFlusher extends IteratingCallback
         private Entry(Frame frame, Callback callback, boolean batch)
         {
             super(frame, callback, batch);
-        }
-
-        private ByteBuffer generateHeaderBytes()
-        {
-            return headerBuffer = generator.generateHeaderBytes(frame);
         }
 
         private void generateHeaderBytes(ByteBuffer buffer)

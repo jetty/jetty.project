@@ -664,7 +664,7 @@ public class ServletContextHandlerTest
     }
 
     @Test
-    public void testAddServletFromFilter() throws Exception
+    public void testAddServletByClassFromFilter() throws Exception
     {
         //A servlet cannot be added from a Filter
         Logger logger = Log.getLogger(ContextHandler.class.getName() + "ROOT");
@@ -714,6 +714,110 @@ public class ServletContextHandlerTest
             }
         }
     }
+
+    @Test
+    public void testAddServletByInstanceFromFilter() throws Exception
+    {
+        //A servlet cannot be added from a Filter
+        Logger logger = Log.getLogger(ContextHandler.class.getName() + "ROOT");
+
+        try (StacklessLogging stackless = new StacklessLogging(logger))
+        {
+            ServletContextHandler context = new ServletContextHandler();
+            context.setLogger(logger);
+            FilterHolder holder = new FilterHolder(new Filter()
+            {
+                @Override
+                public void init(FilterConfig filterConfig) throws ServletException
+                {
+                    ServletRegistration rego = filterConfig.getServletContext().addServlet("hello", new HelloServlet());
+                    rego.addMapping("/hello/*");
+                }
+
+                @Override
+                public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+                    throws IOException, ServletException
+                {
+                }
+
+                @Override
+                public void destroy()
+                { 
+                }
+
+            });
+            context.addFilter(holder, "/*", EnumSet.of(DispatcherType.REQUEST));
+            context.getServletHandler().setStartWithUnavailable(false);
+            context.setContextPath("/");
+            _server.setHandler(context);
+            _server.start();
+            fail("Servlet can only be added from SCI or SCL");
+        }
+        catch (Exception e)
+        {
+            if (!(e instanceof IllegalStateException))
+            {
+                if (e instanceof ServletException)
+                {
+                    assertTrue(e.getCause() instanceof IllegalStateException);
+                }
+                else
+                    fail(e);
+            }
+        }
+    }
+
+    @Test
+    public void testAddServletByClassNameFromFilter() throws Exception
+    {
+        //A servlet cannot be added from a Filter
+        Logger logger = Log.getLogger(ContextHandler.class.getName() + "ROOT");
+
+        try (StacklessLogging stackless = new StacklessLogging(logger))
+        {
+            ServletContextHandler context = new ServletContextHandler();
+            context.setLogger(logger);
+            FilterHolder holder = new FilterHolder(new Filter()
+            {
+                @Override
+                public void init(FilterConfig filterConfig) throws ServletException
+                {
+                    ServletRegistration rego = filterConfig.getServletContext().addServlet("hello", HelloServlet.class.getName());
+                    rego.addMapping("/hello/*");
+                }
+
+                @Override
+                public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+                    throws IOException, ServletException
+                {
+                }
+
+                @Override
+                public void destroy()
+                { 
+                }
+
+            });
+            context.addFilter(holder, "/*", EnumSet.of(DispatcherType.REQUEST));
+            context.getServletHandler().setStartWithUnavailable(false);
+            context.setContextPath("/");
+            _server.setHandler(context);
+            _server.start();
+            fail("Servlet can only be added from SCI or SCL");
+        }
+        catch (Exception e)
+        {
+            if (!(e instanceof IllegalStateException))
+            {
+                if (e instanceof ServletException)
+                {
+                    assertTrue(e.getCause() instanceof IllegalStateException);
+                }
+                else
+                    fail(e);
+            }
+        }
+    }    
 
     @Test
     public void testAddServletFromSCL() throws Exception
@@ -767,6 +871,7 @@ public class ServletContextHandlerTest
                 rego.addMapping("/hello/*");
             }
         }
+        
         root.addBean(new MySCIStarter(root.getServletContext(), new ServletAddingSCI()), true);
         _server.start();
        
@@ -794,7 +899,6 @@ public class ServletContextHandlerTest
         request.append("\n");
 
         String response = _connector.getResponse(request.toString());
-        int result;
         assertThat("Response", response, containsString("Test"));
 
         context.addServlet(HelloServlet.class, "/hello");
@@ -947,7 +1051,6 @@ public class ServletContextHandlerTest
         request.append("\n");
 
         String response = _connector.getResponse(request.toString());
-        int result;
         assertThat("Response", response, containsString("Test"));
 
         assertEquals(extra, context.getSessionHandler().getHandler());
@@ -992,7 +1095,6 @@ public class ServletContextHandlerTest
         request.append("\n");
 
         String response = _connector.getResponse(request.toString());
-        int result;
         assertThat("Response", response, containsString("Test"));
 
         context.stop();
@@ -1013,7 +1115,7 @@ public class ServletContextHandlerTest
     @Test
     public void testSetSecurityHandler() throws Exception
     {
-        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS|ServletContextHandler.SECURITY|ServletContextHandler.GZIP);
+        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS | ServletContextHandler.SECURITY | ServletContextHandler.GZIP);
         assertNotNull(context.getSessionHandler());
         SessionHandler sessionHandler = context.getSessionHandler();
         assertNotNull(context.getSecurityHandler());
@@ -1091,7 +1193,6 @@ public class ServletContextHandlerTest
         request.append("\n");
 
         String response = _connector.getResponse(request.toString());
-        int result;
         assertThat("Response", response, containsString("Test"));
 
         context.stop();

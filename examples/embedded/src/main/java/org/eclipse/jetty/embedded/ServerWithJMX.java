@@ -19,6 +19,7 @@
 package org.eclipse.jetty.embedded;
 
 import java.lang.management.ManagementFactory;
+import java.net.MalformedURLException;
 import javax.management.remote.JMXServiceURL;
 
 import org.eclipse.jetty.jmx.ConnectorServer;
@@ -26,17 +27,16 @@ import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.server.Server;
 
 /**
- * The simplest possible Jetty server.
+ * A Jetty Server with JMX enabled for remote connections
  */
 public class ServerWithJMX
 {
-    public static void main(String[] args) throws Exception
+    public static Server createServer(int port) throws MalformedURLException
     {
-        // === jetty-jmx.xml ===
+        Server server = new Server(port);
+
         MBeanContainer mbContainer = new MBeanContainer(
             ManagementFactory.getPlatformMBeanServer());
-
-        Server server = new Server(8080);
         server.addBean(mbContainer);
 
         ConnectorServer jmx = new ConnectorServer(
@@ -47,6 +47,14 @@ public class ServerWithJMX
                 "/jndi/rmi://localhost:1999/jmxrmi"),
             "org.eclipse.jetty.jmx:name=rmiconnectorserver");
         server.addBean(jmx);
+
+        return server;
+    }
+
+    public static void main(String[] args) throws Exception
+    {
+        int port = ExampleUtil.getPort(args, "jetty.http.port", 8080);
+        Server server = createServer(port);
 
         server.start();
         server.dumpStdErr();

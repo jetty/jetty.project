@@ -248,8 +248,8 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
 
     private class ReservedThread implements Runnable
     {
-        private final Locker _locker = new Locker();
-        private final Condition _wakeup = _locker.newCondition();
+        private final AutoLock _lock = new AutoLock();
+        private final Condition _wakeup = _lock.newCondition();
         private boolean _starting = true;
         private Runnable _task = null;
 
@@ -258,7 +258,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
             if (LOG.isDebugEnabled())
                 LOG.debug("{} offer {}", this, task);
 
-            try (Locker.Lock lock = _locker.lock())
+            try (AutoLock lock = _lock.lock())
             {
                 _task = task;
                 _wakeup.signal();
@@ -280,7 +280,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
             {
                 boolean idle = false;
 
-                try (Locker.Lock lock = _locker.lock())
+                try (AutoLock lock = _lock.lock())
                 {
                     if (_task == null)
                     {

@@ -38,7 +38,7 @@ import org.eclipse.jetty.util.component.DumpableCollection;
 /**
  * HTTP Configuration.
  * <p>This class is a holder of HTTP configuration for use by the
- * {@link HttpChannel} class.  Typically a HTTPConfiguration instance
+ * {@link HttpChannel} class.  Typically an HTTPConfiguration instance
  * is instantiated and passed to a {@link ConnectionFactory} that can
  * create HTTP channels (e.g. HTTP, AJP or FCGI).</p>
  * <p>The configuration held by this class is not for the wire protocol,
@@ -67,7 +67,8 @@ public class HttpConfiguration implements Dumpable
     private boolean _delayDispatchUntilContent = true;
     private boolean _persistentConnectionsEnabled = true;
     private int _maxErrorDispatches = 10;
-    private boolean _useDirectByteBuffers = false;
+    private boolean _useInputDirectByteBuffers = true;
+    private boolean _useOutputDirectByteBuffers = true;
     private long _minRequestDataRate;
     private long _minResponseDataRate;
     private HttpCompliance _httpCompliance = HttpCompliance.RFC7230;
@@ -134,7 +135,8 @@ public class HttpConfiguration implements Dumpable
         _delayDispatchUntilContent = config._delayDispatchUntilContent;
         _persistentConnectionsEnabled = config._persistentConnectionsEnabled;
         _maxErrorDispatches = config._maxErrorDispatches;
-        _useDirectByteBuffers = config._useDirectByteBuffers;
+        _useInputDirectByteBuffers = config._useInputDirectByteBuffers;
+        _useOutputDirectByteBuffers = config._useOutputDirectByteBuffers;
         _minRequestDataRate = config._minRequestDataRate;
         _minResponseDataRate = config._minResponseDataRate;
         _httpCompliance = config._httpCompliance;
@@ -183,19 +185,19 @@ public class HttpConfiguration implements Dumpable
         return _outputAggregationSize;
     }
 
-    @ManagedAttribute("The maximum allowed size in bytes for a HTTP request header")
+    @ManagedAttribute("The maximum allowed size in bytes for an HTTP request header")
     public int getRequestHeaderSize()
     {
         return _requestHeaderSize;
     }
 
-    @ManagedAttribute("The maximum allowed size in bytes for a HTTP response header")
+    @ManagedAttribute("The maximum allowed size in bytes for an HTTP response header")
     public int getResponseHeaderSize()
     {
         return _responseHeaderSize;
     }
 
-    @ManagedAttribute("The maximum allowed size in bytes for a HTTP header field cache")
+    @ManagedAttribute("The maximum allowed size in bytes for an HTTP header field cache")
     public int getHeaderCacheSize()
     {
         return _headerCacheSize;
@@ -226,20 +228,20 @@ public class HttpConfiguration implements Dumpable
     }
 
     /**
-     * <p>The max idle time is applied to a HTTP request for IO operations and
+     * <p>The max idle time is applied to an HTTP request for IO operations and
      * delayed dispatch.</p>
      *
      * @return the max idle time in ms or if == 0 implies an infinite timeout, &lt;0
      * implies no HTTP channel timeout and the connection timeout is used instead.
      */
-    @ManagedAttribute("The idle timeout in ms for I/O operations during the handling of a HTTP request")
+    @ManagedAttribute("The idle timeout in ms for I/O operations during the handling of an HTTP request")
     public long getIdleTimeout()
     {
         return _idleTimeout;
     }
 
     /**
-     * <p>The max idle time is applied to a HTTP request for IO operations and
+     * <p>The max idle time is applied to an HTTP request for IO operations and
      * delayed dispatch.</p>
      *
      * @param timeoutMs the max idle time in ms or if == 0 implies an infinite timeout, &lt;0
@@ -327,17 +329,31 @@ public class HttpConfiguration implements Dumpable
     }
 
     /**
-     * @param useDirectByteBuffers if true, use direct byte buffers for requests
+     * @param useInputDirectByteBuffers whether to use direct ByteBuffers for reading
      */
-    public void setUseDirectByteBuffers(boolean useDirectByteBuffers)
+    public void setUseInputDirectByteBuffers(boolean useInputDirectByteBuffers)
     {
-        _useDirectByteBuffers = useDirectByteBuffers;
+        _useInputDirectByteBuffers = useInputDirectByteBuffers;
     }
 
-    @ManagedAttribute("Whether to use direct byte buffers for requests")
-    public boolean isUseDirectByteBuffers()
+    @ManagedAttribute("Whether to use direct ByteBuffers for reading")
+    public boolean isUseInputDirectByteBuffers()
     {
-        return _useDirectByteBuffers;
+        return _useInputDirectByteBuffers;
+    }
+
+    /**
+     * @param useOutputDirectByteBuffers whether to use direct ByteBuffers for writing
+     */
+    public void setUseOutputDirectByteBuffers(boolean useOutputDirectByteBuffers)
+    {
+        _useOutputDirectByteBuffers = useOutputDirectByteBuffers;
+    }
+
+    @ManagedAttribute("Whether to use direct ByteBuffers for writing")
+    public boolean isUseOutputDirectByteBuffers()
+    {
+        return _useOutputDirectByteBuffers;
     }
 
     /**

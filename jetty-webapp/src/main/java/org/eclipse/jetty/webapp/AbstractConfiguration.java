@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
 
 public class AbstractConfiguration implements Configuration
 {
-    private final boolean _disabledByDefault;
+    private final boolean _enabledByDefault;
     private final List<String> _after = new ArrayList<>();
     private final List<String> _beforeThis = new ArrayList<>();
     private final ClassMatcher _system = new ClassMatcher();
@@ -34,12 +34,12 @@ public class AbstractConfiguration implements Configuration
 
     protected AbstractConfiguration()
     {
-        this(false);
+        this(true);
     }
 
-    protected AbstractConfiguration(boolean disabledByDefault)
+    protected AbstractConfiguration(boolean enabledByDefault)
     {
-        _disabledByDefault = disabledByDefault;
+        _enabledByDefault = enabledByDefault;
     }
 
     /**
@@ -196,9 +196,9 @@ public class AbstractConfiguration implements Configuration
     }
 
     @Override
-    public boolean isDisabledByDefault()
+    public boolean isEnabledByDefault()
     {
-        return _disabledByDefault;
+        return _enabledByDefault;
     }
 
     @Override

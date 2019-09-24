@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.eclipse.jetty.quickstart.QuickStartConfiguration;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ShutdownMonitor;
@@ -71,14 +72,9 @@ public class Starter
 
         //configure webapp from properties file describing unassembled webapp
         configureWebApp();
-
-        //make it a quickstart if the quickstart-web.xml file exists
-        if (webApp.getTempDirectory() != null)
-        {
-            File qs = new File(webApp.getTempDirectory(), "quickstart-web.xml");
-            if (qs.exists() && qs.isFile())
-                webApp.setQuickStartWebDescriptor(Resource.newResource(qs));
-        }
+        
+        webApp.addConfiguration(new QuickStartConfiguration());
+        webApp.setAttribute(QuickStartConfiguration.MODE, QuickStartConfiguration.Mode.QUICKSTART);
 
         ServerSupport.addWebApplication(server, webApp);
 
@@ -232,7 +228,9 @@ public class Starter
     public static final void main(String[] args)
     {
         if (args == null)
+        {
             System.exit(1);
+        }
 
         Starter starter = null;
         try

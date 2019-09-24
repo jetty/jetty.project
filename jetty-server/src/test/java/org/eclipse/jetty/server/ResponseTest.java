@@ -174,12 +174,6 @@ public class ResponseTest
             {
                 _channelError = failure;
             }
-
-            @Override
-            public boolean isOptimizedForDirectBuffers()
-            {
-                return false;
-            }
         });
     }
 

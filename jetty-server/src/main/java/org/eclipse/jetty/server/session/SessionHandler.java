@@ -58,7 +58,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
 import org.eclipse.jetty.util.statistic.SampleStatistic;
-import org.eclipse.jetty.util.thread.Locker.Lock;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
 
@@ -347,10 +347,9 @@ public class SessionHandler extends ScopedHandler
     }
 
     /**
-     * Called by the {@link Request} when it finally finishes.
+     * Called when a request is finally leaving a session.
      *
      * @param session the session object
-     * @see #access(HttpSession, boolean)
      */
     public void complete(HttpSession session)
     {
@@ -364,6 +363,28 @@ public class SessionHandler extends ScopedHandler
         try
         {
             _sessionCache.release(s.getId(), s);
+        }
+        catch (Exception e)
+        {
+            LOG.warn(e);
+        }
+    }
+    
+    /**
+     * Called when a response is about to be committed.
+     * We might take this opportunity to persist the session
+     * so that any subsequent requests to other servers
+     * will see the modifications.
+     */
+    public void commit(HttpSession session)
+    {
+        if (session == null)
+            return;
+
+        Session s = ((SessionIf)session).getSession();
+        try
+        {
+            _sessionCache.commit(s);
         }
         catch (Exception e)
         {
@@ -546,7 +567,7 @@ public class SessionHandler extends ScopedHandler
     /**
      * @return same as SessionCookieConfig.getSecure(). If true, session
      * cookies are ALWAYS marked as secure. If false, a session cookie is
-     * ONLY marked as secure if _secureRequestOnly == true and it is a HTTPS request.
+     * ONLY marked as secure if _secureRequestOnly == true and it is an HTTPS request.
      */
     @ManagedAttribute("if true, secure cookie flag is set on session cookies")
     public boolean getSecureCookies()
@@ -1255,7 +1276,7 @@ public class SessionHandler extends ScopedHandler
         //1. valid
         //2. expired
         //3. idle
-        try (Lock lock = session.lock())
+        try (AutoLock lock = session.lock())
         {
             if (session.getRequests() > 0)
                 return; //session can't expire or be idle if there is a request in it

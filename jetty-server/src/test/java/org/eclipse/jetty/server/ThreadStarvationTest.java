@@ -359,7 +359,7 @@ public class ThreadStarvationTest
         byte[] content = new byte[BUFFER_SIZE];
 
         {
-            // Using a character that will not show up in a HTTP response header
+            // Using a character that will not show up in an HTTP response header
             Arrays.fill(content, (byte)'!');
         }
 

@@ -58,7 +58,7 @@ public class PushPromiseGenerator extends FrameGenerator
         int extraSpace = 4;
         maxFrameSize -= extraSpace;
 
-        ByteBuffer hpacked = lease.acquire(maxFrameSize, false);
+        ByteBuffer hpacked = lease.acquire(maxFrameSize, isUseDirectByteBuffers());
         BufferUtil.clearToFill(hpacked);
         encoder.encode(hpacked, metaData);
         int hpackedLength = hpacked.position();

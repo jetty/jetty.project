@@ -26,19 +26,15 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class LockerTest
+public class AutoLockTest
 {
-    public LockerTest()
-    {
-    }
-
     @Test
     public void testLocked()
     {
-        Locker lock = new Locker();
+        AutoLock lock = new AutoLock();
         assertFalse(lock.isLocked());
 
-        try (Locker.Lock l = lock.lock())
+        try (AutoLock l = lock.lock())
         {
             assertTrue(lock.isLocked());
         }
@@ -53,10 +49,10 @@ public class LockerTest
     @Test
     public void testLockedException()
     {
-        Locker lock = new Locker();
+        AutoLock lock = new AutoLock();
         assertFalse(lock.isLocked());
 
-        try (Locker.Lock l = lock.lock())
+        try (AutoLock l = lock.lock())
         {
             assertTrue(lock.isLocked());
             throw new Exception();
@@ -76,27 +72,23 @@ public class LockerTest
     @Test
     public void testContend() throws Exception
     {
-        final Locker lock = new Locker();
+        AutoLock lock = new AutoLock();
 
         final CountDownLatch held0 = new CountDownLatch(1);
         final CountDownLatch hold0 = new CountDownLatch(1);
 
-        Thread thread0 = new Thread()
+        Thread thread0 = new Thread(() ->
         {
-            @Override
-            public void run()
+            try (AutoLock l = lock.lock())
             {
-                try (Locker.Lock l = lock.lock())
-                {
-                    held0.countDown();
-                    hold0.await();
-                }
-                catch (InterruptedException e)
-                {
-                    e.printStackTrace();
-                }
+                held0.countDown();
+                hold0.await();
             }
-        };
+            catch (InterruptedException e)
+            {
+                e.printStackTrace();
+            }
+        });
         thread0.start();
         held0.await();
 
@@ -104,22 +96,18 @@ public class LockerTest
 
         final CountDownLatch held1 = new CountDownLatch(1);
         final CountDownLatch hold1 = new CountDownLatch(1);
-        Thread thread1 = new Thread()
+        Thread thread1 = new Thread(() ->
         {
-            @Override
-            public void run()
+            try (AutoLock l = lock.lock())
             {
-                try (Locker.Lock l = lock.lock())
-                {
-                    held1.countDown();
-                    hold1.await();
-                }
-                catch (InterruptedException e)
-                {
-                    e.printStackTrace();
-                }
+                held1.countDown();
+                hold1.await();
             }
-        };
+            catch (InterruptedException e)
+            {
+                e.printStackTrace();
+            }
+        });
         thread1.start();
         // thread1 will be spinning here
         assertFalse(held1.await(100, TimeUnit.MILLISECONDS));

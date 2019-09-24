@@ -68,6 +68,8 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
 
     // Read / Parse variables
     private RetainableByteBuffer networkBuffer;
+    private boolean useInputDirectByteBuffers;
+    private boolean useOutputDirectByteBuffers;
 
     /**
      * Create a WSConnection.
@@ -130,6 +132,26 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
     public InetSocketAddress getRemoteAddress()
     {
         return getEndPoint().getRemoteAddress();
+    }
+
+    public boolean isUseInputDirectByteBuffers()
+    {
+        return useInputDirectByteBuffers;
+    }
+
+    public void setUseInputDirectByteBuffers(boolean useInputDirectByteBuffers)
+    {
+        this.useInputDirectByteBuffers = useInputDirectByteBuffers;
+    }
+
+    public boolean isUseOutputDirectByteBuffers()
+    {
+        return useOutputDirectByteBuffers;
+    }
+
+    public void setUseOutputDirectByteBuffers(boolean useOutputDirectByteBuffers)
+    {
+        this.useOutputDirectByteBuffers = useOutputDirectByteBuffers;
     }
 
     /**
@@ -222,7 +244,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         synchronized (this)
         {
             if (networkBuffer == null)
-                networkBuffer = new RetainableByteBuffer(bufferPool, getInputBufferSize());
+                networkBuffer = newNetworkBuffer(getInputBufferSize());
         }
     }
 
@@ -237,8 +259,13 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
                 throw new IllegalStateException();
 
             networkBuffer.release();
-            networkBuffer = new RetainableByteBuffer(bufferPool, getInputBufferSize());
+            networkBuffer = newNetworkBuffer(getInputBufferSize());
         }
+    }
+
+    private RetainableByteBuffer newNetworkBuffer(int capacity)
+    {
+        return new RetainableByteBuffer(bufferPool, capacity, isUseInputDirectByteBuffers());
     }
 
     private void releaseNetworkBuffer()
@@ -445,7 +472,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         {
             synchronized (this)
             {
-                networkBuffer = new RetainableByteBuffer(bufferPool, prefilled.remaining());
+                networkBuffer = newNetworkBuffer(prefilled.remaining());
             }
             ByteBuffer buffer = networkBuffer.getBuffer();
             BufferUtil.clearToFill(buffer);
@@ -572,6 +599,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         private Flusher(Scheduler scheduler, int bufferSize, Generator generator, EndPoint endpoint)
         {
             super(bufferPool, scheduler, generator, endpoint, bufferSize, 8);
+            setUseDirectByteBuffers(isUseOutputDirectByteBuffers());
         }
 
         @Override

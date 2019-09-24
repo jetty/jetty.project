@@ -200,6 +200,11 @@ public final class RFC6455Handshaker implements Handshaker
 
         // Create a connection
         WebSocketConnection connection = newWebSocketConnection(httpChannel.getEndPoint(), connector.getExecutor(), connector.getScheduler(), connector.getByteBufferPool(), coreSession);
+        // TODO: perhaps use of direct buffers should be WebSocket specific
+        //  rather than inheriting the setting from HttpConfiguration.
+        HttpConfiguration httpConfig = httpChannel.getHttpConfiguration();
+        connection.setUseInputDirectByteBuffers(httpConfig.isUseInputDirectByteBuffers());
+        connection.setUseOutputDirectByteBuffers(httpChannel.isUseOutputDirectByteBuffers());
         if (LOG.isDebugEnabled())
             LOG.debug("connection {}", connection);
         if (connection == null)

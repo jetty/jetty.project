@@ -50,7 +50,7 @@ import org.eclipse.jetty.util.log.Logger;
  * Handler for Error pages
  * An ErrorHandler is registered with {@link ContextHandler#setErrorHandler(ErrorHandler)} or
  * {@link Server#setErrorHandler(ErrorHandler)}.
- * It is called by the HttpResponse.sendError method to write a error page via {@link #handle(String, Request, HttpServletRequest, HttpServletResponse)}
+ * It is called by the HttpResponse.sendError method to write an error page via {@link #handle(String, Request, HttpServletRequest, HttpServletResponse)}
  * or via {@link #badMessageError(int, String, HttpFields)} for bad requests for which a dispatch cannot be done.
  */
 public class ErrorHandler extends AbstractHandler
@@ -467,7 +467,7 @@ public class ErrorHandler extends AbstractHandler
 
     /**
      * Bad Message Error body
-     * <p>Generate a error response body to be sent for a bad message.
+     * <p>Generate an error response body to be sent for a bad message.
      * In this case there is something wrong with the request, so either
      * a request cannot be built, or it is not safe to build a request.
      * This method allows for a simple error page body to be returned

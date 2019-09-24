@@ -18,11 +18,11 @@
 
 package org.eclipse.jetty.servlet;
 
-import javax.servlet.ServletException;
+import java.util.Collections;
+import java.util.Set;
+import javax.servlet.ServletRegistration;
 import javax.servlet.UnavailableException;
 import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.MultiException;
@@ -32,18 +32,41 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import java.io.IOException;
-
 public class ServletHolderTest
 {
-    
     public static class FakeServlet extends HttpServlet
     {
     }
-    
+
+    @Test
+    public void testInitParams() throws Exception
+    {
+        ServletHolder holder = new ServletHolder(Source.JAVAX_API);
+        ServletRegistration reg = holder.getRegistration();
+
+        assertThrows(IllegalArgumentException.class, () -> reg.setInitParameter(null, "foo"));
+
+        assertThrows(IllegalArgumentException.class, () -> reg.setInitParameter("foo", null));
+
+        reg.setInitParameter("foo", "bar");
+        assertFalse(reg.setInitParameter("foo", "foo"));
+
+        Set<String> clash = reg.setInitParameters(Collections.singletonMap("foo", "bax"));
+        assertTrue(clash != null && clash.size() == 1, "should be one clash");
+
+        assertThrows(IllegalArgumentException.class, () -> reg.setInitParameters(Collections.singletonMap((String)null, "bax")));
+        assertThrows(IllegalArgumentException.class, () -> reg.setInitParameters(Collections.singletonMap("foo", (String)null)));
+
+        Set<String> clash2 = reg.setInitParameters(Collections.singletonMap("FOO", "bax"));
+        assertTrue(clash2.isEmpty(), "should be no clash");
+        assertEquals(2, reg.getInitParameters().size(), "setInitParameters should not replace existing non-clashing init parameters");
+    }
 
     @Test
     public void testTransitiveCompareTo() throws Exception
@@ -78,26 +101,16 @@ public class ServletHolderTest
         ServletHolder h = new ServletHolder();
         h.setName("test");
 
-        assertEquals(null, h.getClassNameForJsp(null));
-
-        assertEquals(null, h.getClassNameForJsp(""));
-
-        assertEquals(null, h.getClassNameForJsp("/blah/"));
-
-        assertEquals(null, h.getClassNameForJsp("//blah///"));
-
-        assertEquals(null, h.getClassNameForJsp("/a/b/c/blah/"));
-
+        assertNull(h.getClassNameForJsp(null));
+        assertNull(h.getClassNameForJsp(""));
+        assertNull(h.getClassNameForJsp("/blah/"));
+        assertNull(h.getClassNameForJsp("//blah///"));
+        assertNull(h.getClassNameForJsp("/a/b/c/blah/"));
         assertEquals("org.apache.jsp.a.b.c.blah", h.getClassNameForJsp("/a/b/c/blah"));
-
         assertEquals("org.apache.jsp.blah_jsp", h.getClassNameForJsp("/blah.jsp"));
-
         assertEquals("org.apache.jsp.blah_jsp", h.getClassNameForJsp("//blah.jsp"));
-
         assertEquals("org.apache.jsp.blah_jsp", h.getClassNameForJsp("blah.jsp"));
-
         assertEquals("org.apache.jsp.a.b.c.blah_jsp", h.getClassNameForJsp("/a/b/c/blah.jsp"));
-
         assertEquals("org.apache.jsp.a.b.c.blah_jsp", h.getClassNameForJsp("a/b/c/blah.jsp"));
     }
 

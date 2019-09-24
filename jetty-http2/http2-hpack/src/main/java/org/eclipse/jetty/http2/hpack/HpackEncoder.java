@@ -19,9 +19,10 @@
 package org.eclipse.jetty.http2.hpack;
 
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -34,24 +35,23 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http2.hpack.HpackContext.Entry;
 import org.eclipse.jetty.http2.hpack.HpackContext.StaticEntry;
-import org.eclipse.jetty.util.ArrayTrie;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.Trie;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 public class HpackEncoder
 {
-    public static final Logger LOG = Log.getLogger(HpackEncoder.class);
-    private static final HttpField[] __status = new HttpField[599];
-    static final EnumSet<HttpHeader> __DO_NOT_HUFFMAN =
+    private static final Logger LOG = Log.getLogger(HpackEncoder.class);
+    private static final HttpField[] STATUSES = new HttpField[599];
+    static final EnumSet<HttpHeader> DO_NOT_HUFFMAN =
         EnumSet.of(
             HttpHeader.AUTHORIZATION,
             HttpHeader.CONTENT_MD5,
             HttpHeader.PROXY_AUTHENTICATE,
             HttpHeader.PROXY_AUTHORIZATION);
-    static final EnumSet<HttpHeader> __DO_NOT_INDEX =
+    static final EnumSet<HttpHeader> DO_NOT_INDEX =
         EnumSet.of(
             // HttpHeader.C_PATH,  // TODO more data needed
             // HttpHeader.DATE,    // TODO more data needed
@@ -71,23 +71,21 @@ public class HpackEncoder
             HttpHeader.LAST_MODIFIED,
             HttpHeader.SET_COOKIE,
             HttpHeader.SET_COOKIE2);
-    static final EnumSet<HttpHeader> __NEVER_INDEX =
+    static final EnumSet<HttpHeader> NEVER_INDEX =
         EnumSet.of(
             HttpHeader.AUTHORIZATION,
             HttpHeader.SET_COOKIE,
             HttpHeader.SET_COOKIE2);
-    private static final PreEncodedHttpField CONNECTION_TE = new PreEncodedHttpField(HttpHeader.CONNECTION, "te");
+    private static final EnumSet<HttpHeader> IGNORED_HEADERS = EnumSet.of(HttpHeader.CONNECTION, HttpHeader.KEEP_ALIVE,
+        HttpHeader.PROXY_CONNECTION, HttpHeader.TRANSFER_ENCODING, HttpHeader.UPGRADE);
     private static final PreEncodedHttpField TE_TRAILERS = new PreEncodedHttpField(HttpHeader.TE, "trailers");
-    private static final Trie<Boolean> specialHopHeaders = new ArrayTrie<>(6);
 
     static
     {
         for (HttpStatus.Code code : HttpStatus.Code.values())
         {
-            __status[code.getCode()] = new PreEncodedHttpField(HttpHeader.C_STATUS, Integer.toString(code.getCode()));
+            STATUSES[code.getCode()] = new PreEncodedHttpField(HttpHeader.C_STATUS, Integer.toString(code.getCode()));
         }
-        specialHopHeaders.put("close", true);
-        specialHopHeaders.put("te", true);
     }
 
     private final HpackContext _context;
@@ -182,33 +180,37 @@ public class HpackEncoder
         {
             MetaData.Response response = (MetaData.Response)metadata;
             int code = response.getStatus();
-            HttpField status = code < __status.length ? __status[code] : null;
+            HttpField status = code < STATUSES.length ? STATUSES[code] : null;
             if (status == null)
                 status = new HttpField.IntValueHttpField(HttpHeader.C_STATUS, code);
             encode(buffer, status);
         }
 
-        // Add all non-connection fields.
+        // Remove fields as specified in RFC 7540, 8.1.2.2.
         HttpFields fields = metadata.getFields();
         if (fields != null)
         {
-            Set<String> hopHeaders = fields.getCSV(HttpHeader.CONNECTION, false).stream()
-                .filter(v -> specialHopHeaders.get(v) == Boolean.TRUE)
-                .map(StringUtil::asciiToLowerCase)
-                .collect(Collectors.toSet());
+            // For example: Connection: Close, TE, Upgrade, Custom.
+            Set<String> hopHeaders = null;
+            for (String value : fields.getCSV(HttpHeader.CONNECTION, false))
+            {
+                if (hopHeaders == null)
+                    hopHeaders = new HashSet<>();
+                hopHeaders.add(StringUtil.asciiToLowerCase(value));
+            }
             for (HttpField field : fields)
             {
-                if (field.getHeader() == HttpHeader.CONNECTION)
+                HttpHeader header = field.getHeader();
+                if (header != null && IGNORED_HEADERS.contains(header))
                     continue;
-                if (!hopHeaders.isEmpty() && hopHeaders.contains(StringUtil.asciiToLowerCase(field.getName())))
-                    continue;
-                if (field.getHeader() == HttpHeader.TE)
+                if (header == HttpHeader.TE)
                 {
-                    if (!field.contains("trailers"))
-                        continue;
-                    encode(buffer, CONNECTION_TE);
-                    encode(buffer, TE_TRAILERS);
+                    if (field.contains("trailers"))
+                        encode(buffer, TE_TRAILERS);
+                    continue;
                 }
+                if (hopHeaders != null && hopHeaders.contains(StringUtil.asciiToLowerCase(field.getName())))
+                    continue;
                 encode(buffer, field);
             }
         }
@@ -318,12 +320,12 @@ public class HpackEncoder
                     if (_debug)
                         encoding = indexed ? "PreEncodedIdx" : "PreEncoded";
                 }
-                else if (__DO_NOT_INDEX.contains(header))
+                else if (DO_NOT_INDEX.contains(header))
                 {
                     // Non indexed field
                     indexed = false;
-                    boolean neverIndex = __NEVER_INDEX.contains(header);
-                    boolean huffman = !__DO_NOT_HUFFMAN.contains(header);
+                    boolean neverIndex = NEVER_INDEX.contains(header);
+                    boolean huffman = !DO_NOT_HUFFMAN.contains(header);
                     encodeName(buffer, neverIndex ? (byte)0x10 : (byte)0x00, 4, header.asString(), name);
                     encodeValue(buffer, huffman, field.getValue());
 
@@ -346,7 +348,7 @@ public class HpackEncoder
                 {
                     // indexed
                     indexed = true;
-                    boolean huffman = !__DO_NOT_HUFFMAN.contains(header);
+                    boolean huffman = !DO_NOT_HUFFMAN.contains(header);
                     encodeName(buffer, (byte)0x40, 6, header.asString(), name);
                     encodeValue(buffer, huffman, field.getValue());
                     if (_debug)
@@ -362,9 +364,8 @@ public class HpackEncoder
 
         if (_debug)
         {
-            int e = buffer.position();
             if (LOG.isDebugEnabled())
-                LOG.debug("encode {}:'{}' to '{}'", encoding, field, TypeUtil.toHexString(buffer.array(), buffer.arrayOffset() + p, e - p));
+                LOG.debug("encode {}:'{}' to '{}'", encoding, field, BufferUtil.toHexString(buffer));
         }
     }
 
@@ -400,19 +401,38 @@ public class HpackEncoder
         {
             // huffman literal value
             buffer.put((byte)0x80);
-            NBitInteger.encode(buffer, 7, Huffman.octetsNeeded(value));
-            Huffman.encode(buffer, value);
+
+            int needed = Huffman.octetsNeeded(value);
+            if (needed >= 0)
+            {
+                NBitInteger.encode(buffer, 7, needed);
+                Huffman.encode(buffer, value);
+            }
+            else
+            {
+                // Not iso_8859_1
+                byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
+                NBitInteger.encode(buffer, 7, Huffman.octetsNeeded(bytes));
+                Huffman.encode(buffer, bytes);
+            }
         }
         else
         {
             // add literal assuming iso_8859_1
-            buffer.put((byte)0x00);
+            buffer.put((byte)0x00).mark();
             NBitInteger.encode(buffer, 7, value.length());
             for (int i = 0; i < value.length(); i++)
             {
                 char c = value.charAt(i);
                 if (c < ' ' || c > 127)
-                    throw new IllegalArgumentException();
+                {
+                    // Not iso_8859_1, so re-encode as UTF-8
+                    buffer.reset();
+                    byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
+                    NBitInteger.encode(buffer, 7, bytes.length);
+                    buffer.put(bytes, 0, bytes.length);
+                    return;
+                }
                 buffer.put((byte)c);
             }
         }

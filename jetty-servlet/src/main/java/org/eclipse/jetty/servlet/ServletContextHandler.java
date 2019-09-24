@@ -121,8 +121,6 @@ public class ServletContextHandler extends ContextHandler
 
     public interface ServletContainerInitializerCaller extends LifeCycle {}
 
-    ;
-
     protected final DecoratedObjectFactory _objFactory;
     protected Class<? extends SecurityHandler> _defaultSecurityHandlerClass = org.eclipse.jetty.security.ConstraintSecurityHandler.class;
     protected SessionHandler _sessionHandler;
@@ -740,6 +738,11 @@ public class ServletContextHandler extends ContextHandler
         _objFactory.destroy(filter);
     }
 
+    void destroyListener(EventListener listener)
+    {
+        _objFactory.destroy(listener);
+    }
+
     public static class JspPropertyGroup implements JspPropertyGroupDescriptor
     {
         private List<String> _urlPatterns = new ArrayList<String>();
@@ -1283,6 +1286,11 @@ public class ServletContextHandler extends ContextHandler
             }
         }
 
+        public <T extends Filter> void destroyFilter(T f)
+        {
+            _objFactory.destroy(f);
+        }
+
         @Override
         public <T extends Servlet> T createServlet(Class<T> c) throws ServletException
         {
@@ -1296,6 +1304,11 @@ public class ServletContextHandler extends ContextHandler
             {
                 throw new ServletException(e);
             }
+        }
+
+        public <T extends Servlet> void destroyServlet(T s)
+        {
+            _objFactory.destroy(s);
         }
 
         @Override

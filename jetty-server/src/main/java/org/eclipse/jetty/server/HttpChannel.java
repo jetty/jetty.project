@@ -44,7 +44,6 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.ChannelEndPoint;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.QuietException;
@@ -61,7 +60,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
 
 /**
  * HttpChannel represents a single endpoint for HTTP semantic processing.
- * The HttpChannel is both a HttpParser.RequestHandler, where it passively receives events from
+ * The HttpChannel is both an HttpParser.RequestHandler, where it passively receives events from
  * an incoming HTTP request, and a Runnable, where it actively takes control of the request/response
  * life cycle and calls the application (perhaps suspending and resuming with multiple calls to run).
  * The HttpChannel signals the switch from passive mode to active mode by returning true to one of the
@@ -248,12 +247,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     public HttpConfiguration getHttpConfiguration()
     {
         return _configuration;
-    }
-
-    @Override
-    public boolean isOptimizedForDirectBuffers()
-    {
-        return getHttpTransport().isOptimizedForDirectBuffers();
     }
 
     public Server getServer()
@@ -857,14 +850,14 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             if (response == null)
                 response = _response.newResponseMetaData();
             commit(response);
-
+            _combinedListener.onResponseBegin(_request);
+            _request.onResponseCommit();
+            
             // wrap callback to process 100 responses
             final int status = response.getStatus();
             final Callback committed = (status < HttpStatus.OK_200 && status >= HttpStatus.CONTINUE_100)
                 ? new Send100Callback(callback)
                 : new SendCallback(callback, content, true, complete);
-
-            _combinedListener.onResponseBegin(_request);
 
             // committing write
             _transport.send(_request.getMetaData(), response, content, complete, committed);
@@ -970,12 +963,9 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         return _connector.getScheduler();
     }
 
-    /**
-     * @return true if the HttpChannel can efficiently use direct buffer (typically this means it is not over SSL or a multiplexed protocol)
-     */
-    public boolean useDirectBuffers()
+    public boolean isUseOutputDirectByteBuffers()
     {
-        return getEndPoint() instanceof ChannelEndPoint;
+        return getHttpConfiguration().isUseOutputDirectByteBuffers();
     }
 
     /**
@@ -1059,7 +1049,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     /**
      * <p>Listener for {@link HttpChannel} events.</p>
      * <p>HttpChannel will emit events for the various phases it goes through while
-     * processing a HTTP request and response.</p>
+     * processing an HTTP request and response.</p>
      * <p>Implementations of this interface may listen to those events to track
      * timing and/or other values such as request URI, etc.</p>
      * <p>The events parameters, especially the {@link Request} object, may be
