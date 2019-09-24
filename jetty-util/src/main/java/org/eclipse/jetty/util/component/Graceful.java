@@ -25,7 +25,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
 
 /**
- * <p><Jetty components that wish to be part of a Graceful shutdown implement this interface so that
+ * <p>Jetty components that wish to be part of a Graceful shutdown implement this interface so that
  * the {@link Graceful#shutdown()} method will be called to initiate a shutdown.    Shutdown operations
  * can fall into the following categories:</p>
  * <ul>

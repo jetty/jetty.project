@@ -858,11 +858,14 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
             if (LOG.isDebugEnabled())
                 LOG.debug("Runner started for {}", QueuedThreadPool.this);
 
-            // Start with fake NOOP job so we go idle on first iteration
-            Runnable job = NOOP;
+            Runnable job = null;
 
             try
             {
+                // All threads start idle (not yet taken a job)
+                if (!addCounts(0, 1))
+                    return;
+
                 while (true)
                 {
                     // If we had a job, signal that we are idle again
