@@ -39,7 +39,7 @@ import org.apache.maven.plugins.annotations.Parameter;
  * configure which jetty to stop.
  */
 @Mojo(name = "stop")
-public class NewJettyStopMojo extends AbstractWebAppMojo
+public class JettyStopMojo extends AbstractWebAppMojo
 {
     /**
      * Max time in seconds that the plugin will wait for confirmation that jetty has stopped.

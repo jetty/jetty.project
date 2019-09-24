@@ -39,7 +39,7 @@ import org.apache.maven.plugins.annotations.ResolutionScope;
  */
 @Mojo(name = "start", requiresDependencyResolution = ResolutionScope.TEST)
 @Execute(phase = LifecyclePhase.VALIDATE)
-public class NewJettyStartMojo extends AbstractWebAppMojo
+public class JettyStartMojo extends AbstractWebAppMojo
 {
     @Override
     protected void configureWebApp() throws Exception

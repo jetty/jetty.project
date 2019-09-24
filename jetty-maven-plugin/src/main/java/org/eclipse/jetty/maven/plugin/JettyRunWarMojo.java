@@ -49,7 +49,7 @@ import org.eclipse.jetty.util.StringUtil;
 */
 @Mojo( name = "run-war", requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME)
 @Execute(phase = LifecyclePhase.PACKAGE)
-public class NewJettyRunWarMojo extends AbstractWebAppMojo
+public class JettyRunWarMojo extends AbstractWebAppMojo
 {   
     //Start of parameters only valid for runType=EMBED  
     /**

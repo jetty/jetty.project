@@ -47,7 +47,7 @@ import org.eclipse.jetty.util.StringUtil;
  * </p>
  */
 @Mojo(name = "start-war", requiresDependencyResolution = ResolutionScope.RUNTIME)
-public class NewJettyStartWarMojo extends AbstractWebAppMojo
+public class JettyStartWarMojo extends AbstractWebAppMojo
 {
     protected JettyEmbedder embedder;
     protected JettyForker forker;
