@@ -585,6 +585,7 @@ public class GracefulStopTest
                 e.printStackTrace();
             }
         });
+        stopper.start();
 
         final int port = connector.getLocalPort();
         try(Socket client = new Socket("127.0.0.1", port))
@@ -595,8 +596,6 @@ public class GracefulStopTest
                     "\r\n"
             ).getBytes());
             client.getOutputStream().flush();
-
-            stopper.start();
 
             while (!connector.isShutdown())
                 Thread.sleep(10);

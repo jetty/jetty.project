@@ -21,9 +21,25 @@ package org.eclipse.jetty.util.component;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
 
-/* A Lifecycle that can be gracefully shutdown.
+/**
+ * <p>Jetty components that wish to be part of a Graceful shutdown implement this interface so that
+ * the {@link Graceful#shutdown()} method will be called to initiate a shutdown.    Shutdown operations
+ * can fall into the following categories:</p>
+ * <ul>
+ *     <li>Preventing new load from being accepted (eg connectors stop accepting connections)</li>
+ *     <li>Preventing existing load expanding (eg stopping existing connections accepting new requests)</li>
+ *     <li>Waiting for existing load to complete (eg waiting for active request count to reduce to 0)</li>
+ *     <li>Performing cleanup operations that may take time (eg closing an SSL connection)</li>
+ * </ul>
+ * <p>The {@link Future} returned by the the shutdown call will be completed to indicate the shutdown operation is completed.
+ * Some shutdown operations may be instantaneous and always return a completed future.
+ * </p><p>
+ * Graceful shutdown is typically orchestrated by the doStop methods of Server or ContextHandler (for a full or partial
+ * shutdown respectively).
+ * </p>
  */
 public interface Graceful
 {
@@ -40,6 +56,12 @@ public interface Graceful
         CLEANUP       // Time limited Shutdown operations (eg connection close)
     }
 
+    /**
+     * A utility Graceful that uses a {@link FutureCallback} to indicate if shutdown is completed.
+     * By default the {@link FutureCallback} is returned as already completed, but the {@link #newShutdownCallback()} method
+     * can be overloaded to return a non-completed callback that will require a {@link Callback#succeeded()} or
+     * {@link Callback#failed(Throwable)} call to be completed.
+     */
     abstract class GracefulFuture<T extends Future<Void>> implements Graceful
     {
         final AtomicReference<T> _future = new AtomicReference<>();
