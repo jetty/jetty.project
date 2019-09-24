@@ -70,6 +70,12 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
     }
 
     @Override
+    public boolean isUseOutputDirectByteBuffers()
+    {
+        return _httpConnection.isUseOutputDirectByteBuffers();
+    }
+
+    @Override
     protected HttpInput newHttpInput(HttpChannelState state)
     {
         return new HttpInputOverHTTP(state);

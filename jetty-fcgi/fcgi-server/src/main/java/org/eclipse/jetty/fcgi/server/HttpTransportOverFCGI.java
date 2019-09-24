@@ -51,12 +51,6 @@ public class HttpTransportOverFCGI implements HttpTransport
     }
 
     @Override
-    public boolean isOptimizedForDirectBuffers()
-    {
-        return false;
-    }
-
-    @Override
     public void send(MetaData.Request request, MetaData.Response response, ByteBuffer content, boolean lastContent, Callback callback)
     {
         boolean head = HttpMethod.HEAD.is(request.getMethod());

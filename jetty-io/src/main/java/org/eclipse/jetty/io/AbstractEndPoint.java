@@ -327,12 +327,6 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
         _connection = connection;
     }
 
-    @Override
-    public boolean isOptimizedForDirectBuffers()
-    {
-        return false;
-    }
-
     protected void reset()
     {
         _state.set(State.OPEN);

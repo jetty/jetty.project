@@ -67,7 +67,8 @@ public class HttpConfiguration implements Dumpable
     private boolean _delayDispatchUntilContent = true;
     private boolean _persistentConnectionsEnabled = true;
     private int _maxErrorDispatches = 10;
-    private boolean _useDirectByteBuffers = false;
+    private boolean _useInputDirectByteBuffers = true;
+    private boolean _useOutputDirectByteBuffers = true;
     private long _minRequestDataRate;
     private long _minResponseDataRate;
     private HttpCompliance _httpCompliance = HttpCompliance.RFC7230;
@@ -134,7 +135,8 @@ public class HttpConfiguration implements Dumpable
         _delayDispatchUntilContent = config._delayDispatchUntilContent;
         _persistentConnectionsEnabled = config._persistentConnectionsEnabled;
         _maxErrorDispatches = config._maxErrorDispatches;
-        _useDirectByteBuffers = config._useDirectByteBuffers;
+        _useInputDirectByteBuffers = config._useInputDirectByteBuffers;
+        _useOutputDirectByteBuffers = config._useOutputDirectByteBuffers;
         _minRequestDataRate = config._minRequestDataRate;
         _minResponseDataRate = config._minResponseDataRate;
         _httpCompliance = config._httpCompliance;
@@ -327,17 +329,31 @@ public class HttpConfiguration implements Dumpable
     }
 
     /**
-     * @param useDirectByteBuffers if true, use direct byte buffers for requests
+     * @param useInputDirectByteBuffers whether to use direct ByteBuffers for reading
      */
-    public void setUseDirectByteBuffers(boolean useDirectByteBuffers)
+    public void setUseInputDirectByteBuffers(boolean useInputDirectByteBuffers)
     {
-        _useDirectByteBuffers = useDirectByteBuffers;
+        _useInputDirectByteBuffers = useInputDirectByteBuffers;
     }
 
-    @ManagedAttribute("Whether to use direct byte buffers for requests")
-    public boolean isUseDirectByteBuffers()
+    @ManagedAttribute("Whether to use direct ByteBuffers for reading")
+    public boolean isUseInputDirectByteBuffers()
     {
-        return _useDirectByteBuffers;
+        return _useInputDirectByteBuffers;
+    }
+
+    /**
+     * @param useOutputDirectByteBuffers whether to use direct ByteBuffers for writing
+     */
+    public void setUseOutputDirectByteBuffers(boolean useOutputDirectByteBuffers)
+    {
+        _useOutputDirectByteBuffers = useOutputDirectByteBuffers;
+    }
+
+    @ManagedAttribute("Whether to use direct ByteBuffers for writing")
+    public boolean isUseOutputDirectByteBuffers()
+    {
+        return _useOutputDirectByteBuffers;
     }
 
     /**

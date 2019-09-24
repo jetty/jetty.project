@@ -95,7 +95,6 @@ public class SslClientConnectionFactory implements ClientConnectionFactory
         context.put(SSL_ENGINE_CONTEXT_KEY, engine);
 
         SslConnection sslConnection = newSslConnection(byteBufferPool, executor, endPoint, engine);
-        endPoint.setConnection(sslConnection);
 
         EndPoint appEndPoint = sslConnection.getDecryptedEndPoint();
         appEndPoint.setConnection(connectionFactory.newConnection(appEndPoint, context));
