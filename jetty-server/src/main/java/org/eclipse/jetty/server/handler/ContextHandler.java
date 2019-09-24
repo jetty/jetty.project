@@ -685,8 +685,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     
     public boolean isDurableListener(EventListener listener)
     {
+        // The durable listeners are those set when the context is started
         if (isStarted())
             return _durableListeners.contains(listener);
+        // If we are not yet started then all set listeners are durable
         return getEventListeners().contains(listener);
     }
 

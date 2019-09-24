@@ -92,7 +92,7 @@ public interface Container
 
     /**
      * Add an event listener.
-     *
+     * EventListeners added by this method are also added as beans.
      * @param listener the listener to add
      * @return true if the listener was added
      * @see Container.Listener
@@ -142,10 +142,10 @@ public interface Container
     <T> Collection<T> getContainedBeans(Class<T> clazz);
 
     /**
-     * Get the beans added to the connector that are EventListeners.
+     * Get the beans added to the container that are EventListeners.
      * This is essentially equivalent to <code>getBeans(EventListener.class);</code>,
      * except that: <ul>
-     *     <li>The result is precomputed, so it is more efficient</li>
+     *     <li>The result may be precomputed, so it can be more efficient</li>
      *     <li>The result is ordered by the order added.</li>
      *     <li>The result is immutable.</li>
      * </ul>

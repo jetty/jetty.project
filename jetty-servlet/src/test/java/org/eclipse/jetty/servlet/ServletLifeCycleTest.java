@@ -124,6 +124,16 @@ public class ServletLifeCycleTest
         List<EventListener> listeners = context.getEventListeners();
         assertThat(listeners.size(), is(1));
         assertThat(listeners.get(0).getClass(), is(TestListener2.class));
+
+        server.start();
+        context.addEventListener(new EventListener() {});listeners = context.getEventListeners();
+        listeners = context.getEventListeners();
+        assertThat(listeners.size(), is(3));
+
+        server.stop();
+        listeners = context.getEventListeners();
+        assertThat(listeners.size(), is(1));
+        assertThat(listeners.get(0).getClass(), is(TestListener2.class));
     }
 
     public static class TestDecorator implements Decorator

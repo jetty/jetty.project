@@ -614,8 +614,9 @@ public class AntWebAppContext extends WebAppContext
             TaskLog.logWithTimestamp("Stopping web application " + this);
             Thread.currentThread().sleep(500L);
             super.doStop();
-            //remove all filters and servlets and listeners. They will be recreated
-            //either via application of a context xml file or web.xml or annotation or servlet api
+            // remove all filters and servlets. They will be recreated
+            // either via application of a context xml file or web.xml or annotation or servlet api.
+            // Event listeners are reset in ContextHandler.doStop()
             getServletHandler().setFilters(new FilterHolder[0]);
             getServletHandler().setFilterMappings(new FilterMapping[0]);
             getServletHandler().setServlets(new ServletHolder[0]);
