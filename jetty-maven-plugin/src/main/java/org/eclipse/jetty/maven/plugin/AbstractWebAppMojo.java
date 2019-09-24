@@ -80,7 +80,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
     public static final String FAKE_WEBAPP = "webapp-tmp";
     
 
-    public enum RunTypes
+    public enum DeploymentMode
     {
         EMBED,
         FORK,
@@ -271,10 +271,10 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
     protected Map<String,String> systemProperties;
     
     /** 
-     * Controls how to run jetty. Valid values are EMBED,FORKED,DISTRO.
+     * Controls how to run jetty. Valid values are EMBED,FORK,DISTRO.
      */
-    @Parameter (property="jetty.runType", defaultValue="EMBED") 
-    protected RunTypes runType;
+    @Parameter (property="jetty.deployMode", defaultValue="EMBED") 
+    protected DeploymentMode deployMode;
     
     
     /**
@@ -316,7 +316,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
     //End of EMBED only
     
 
-    //Start of parameters only valid for FORKED/DISTRO
+    //Start of parameters only valid for FORK/DISTRO
     /**
      * Extra environment variables to be passed to the forked process
      */
@@ -345,7 +345,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
      */
     @Parameter
     protected String stopKey;
-    //End of FORKED or DISTRO parameters
+    //End of FORK or DISTRO parameters
     
     
     //Start of parameters only valid for DISTRO
@@ -370,14 +370,14 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
     //End of DISTRO only parameters
     
     
-    //Start of parameters only valid for FORKED
+    //Start of parameters only valid for FORK
     /**
      * The file into which to generate the quickstart web xml for the forked process to use
      * 
      */
     @Parameter (defaultValue="${project.build.directory}/fork-web.xml")
     protected File forkWebXml;
-    //End of FORKED only parameters
+    //End of FORK only parameters
     
     /**
      * maven-war-plugin reference
@@ -432,6 +432,10 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
      */
     protected List<File> providedJars;
 
+    /**
+     * System properties from both systemPropertyFile and systemProperties.
+     */
+    protected Map<String,String> mergedSystemProperties;
 
 
     @Override
@@ -454,6 +458,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
             
             getLog().info("Configuring Jetty for project: " + getProjectName());
             warPluginInfo = new WarPluginInfo(project);
+            mergedSystemProperties = mergeSystemProperties();
             configureSystemProperties();
             augmentPluginClasspath();
             PluginLog.setLog(getLog());
@@ -477,7 +482,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
             throw new MojoExecutionException("Webapp config failure", e);
         }
         
-        switch (runType)
+        switch (deployMode)
         {
             case EMBED: 
             {
@@ -495,7 +500,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
                 break;
             }
             default:
-                throw new MojoExecutionException("Unrecognized runType="+runType);
+                throw new MojoExecutionException("Unrecognized runType="+deployMode);
         }
 
     }
@@ -533,7 +538,6 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
     protected JettyForker newJettyForker()
         throws Exception
     {
-
         JettyForker jetty = new JettyForker();
         jetty.setServer(server);
         jetty.setWorkDir(project.getBasedir());
@@ -541,7 +545,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
         jetty.setStopPort(stopPort);
         jetty.setEnv(env);
         jetty.setJvmArgs(jvmArgs);
-        //TODO systemproperties systempropertiesfile
+        jetty.setSystemProperties(mergedSystemProperties);
         jetty.setContainerClassPath(getContainerClassPath());
         jetty.setJettyXmlFiles(jettyXmls);
         jetty.setJettyProperties(jettyProperties);
@@ -559,8 +563,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
     protected JettyDistroForker newJettyDistroForker()
     throws Exception
     {
-        JettyDistroForker jetty = new JettyDistroForker();
-       
+        JettyDistroForker jetty = new JettyDistroForker();  
         jetty.setStopKey(stopKey);
         jetty.setStopPort(stopPort);
         jetty.setEnv(env);
@@ -568,7 +571,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
         jetty.setJettyXmlFiles(jettyXmls);
         jetty.setJettyProperties(jettyProperties);
         jetty.setModules(modules);
-        //TODO systemproperties systempropertiesfile
+        jetty.setSystemProperties(mergedSystemProperties);
         Random random = new Random();
         String token = Long.toString(random.nextLong()^System.currentTimeMillis(), 36).toUpperCase(Locale.ENGLISH);
         jetty.setTokenFile(target.toPath().resolve(token+".txt").toFile());
@@ -921,34 +924,49 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
         }
     }
 
-
-    protected void configureSystemProperties ()
-    throws MojoExecutionException
+    /**
+     * Unite system properties set via systemPropertiesFile element and the systemProperties element.
+     */
+    protected Map<String,String> mergeSystemProperties()
+        throws MojoExecutionException
     {
-        //Apply the file first
+        Map<String,String> properties = new HashMap<>();
+        
+        //Get the properties from any file first
         if (systemPropertiesFile != null)
         {
-            Properties properties = new Properties();
+            Properties tmp = new Properties();
             try (InputStream propFile = new FileInputStream(systemPropertiesFile))
             {
-                properties.load(propFile);
-                System.setProperties(properties);
+                tmp.load(propFile);
+                for (Object k:tmp.keySet())
+                    properties.put(k.toString(), tmp.get(k).toString());
             }
             catch (Exception e)
             {
                 throw new MojoExecutionException("Problem applying system properties from file "+systemPropertiesFile.getName(),e);
             }
-
         }
-        
-        //Then any system properties in pom.xml
+        //Allow systemProperties defined in the pom to override the file
         if (systemProperties != null)
         {
-            for (Map.Entry<String, String> e:systemProperties.entrySet())
-            {
-                System.setProperty(e.getKey(), e.getValue());
-            }
+            properties.putAll(systemProperties);
         }
+        return properties;
+    }
+
+    protected void configureSystemProperties ()
+    throws MojoExecutionException
+    {
+       if (mergedSystemProperties != null)
+       {
+           for (Map.Entry<String,String> e : mergedSystemProperties.entrySet())
+           {
+               System.setProperty(e.getKey(), e.getValue());
+               if (getLog().isDebugEnabled())
+                   getLog().debug("Set system property " + e.getKey()+"=" + e.getValue());
+           }
+       }
     }
 
     /**

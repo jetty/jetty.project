@@ -37,7 +37,7 @@ import org.apache.maven.plugins.annotations.ResolutionScope;
  *  </p>
  *
  */
-@Mojo(name = "newstart", requiresDependencyResolution = ResolutionScope.TEST)
+@Mojo(name = "start", requiresDependencyResolution = ResolutionScope.TEST)
 @Execute(phase = LifecyclePhase.VALIDATE)
 public class NewJettyStartMojo extends AbstractWebAppMojo
 {

@@ -196,6 +196,14 @@ public class JettyDistroForker extends AbstractForker
             }
         }
         
+        if (systemProperties != null)
+        {
+            for (Map.Entry<String,String> e:systemProperties.entrySet())
+            {
+                cmd.add("-D"+e.getKey()+"="+e.getValue());
+            }
+        }
+        
         //set up enabled jetty modules
         StringBuilder tmp = new StringBuilder();
         tmp.append("--module=");

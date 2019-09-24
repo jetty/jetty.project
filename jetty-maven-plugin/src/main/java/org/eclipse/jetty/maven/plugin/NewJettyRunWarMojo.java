@@ -47,7 +47,7 @@ import org.eclipse.jetty.util.StringUtil;
 *  </p>
 *  Runs jetty on a war file
 */
-@Mojo( name = "newrun-war", requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME)
+@Mojo( name = "run-war", requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME)
 @Execute(phase = LifecyclePhase.PACKAGE)
 public class NewJettyRunWarMojo extends AbstractWebAppMojo
 {   
@@ -231,7 +231,7 @@ public class NewJettyRunWarMojo extends AbstractWebAppMojo
         if (scanner != null)
             scanner.stop();
         
-        switch (runType)
+        switch (deployMode)
         {
             case EMBED:
             {
@@ -295,7 +295,7 @@ public class NewJettyRunWarMojo extends AbstractWebAppMojo
             }
             default:
             {
-                throw new IllegalStateException("Unrecognized run type "+runType);
+                throw new IllegalStateException("Unrecognized run type "+deployMode);
             }
         }
         getLog().info("Restart completed.");

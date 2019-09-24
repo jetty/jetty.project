@@ -51,7 +51,7 @@ import org.eclipse.jetty.webapp.WebAppContext;
  *  immediately and transparently reflected in the running web container, eliminating development time that is wasted on rebuilding, reassembling and redeploying.
  *  Alternatively, you can configure the plugin to wait for an %lt;enter&gt; at the command line to manually control redeployment.
  */
-@Mojo (name="newrun", requiresDependencyResolution = ResolutionScope.TEST)
+@Mojo (name="run", requiresDependencyResolution = ResolutionScope.TEST)
 @Execute (phase = LifecyclePhase.TEST_COMPILE)
 public class NewJettyRunMojo extends AbstractWebAppMojo
 {
@@ -357,7 +357,7 @@ public class NewJettyRunMojo extends AbstractWebAppMojo
         if (scanner != null)
             scanner.stop();
         
-        switch (runType)
+        switch (deployMode)
         {
             case EMBED:
             {
@@ -433,7 +433,7 @@ public class NewJettyRunMojo extends AbstractWebAppMojo
             }
             default:
             {
-                throw new IllegalStateException("Unrecognized run type "+runType);
+                throw new IllegalStateException("Unrecognized run type "+deployMode);
             }
         }
     }

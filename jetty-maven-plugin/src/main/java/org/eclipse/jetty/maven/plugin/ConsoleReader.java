@@ -25,6 +25,13 @@ import java.util.HashSet;
 import java.util.Set;
 
 
+/**
+ * ConsoleReader
+ * 
+ * Reads lines from the System console and supplies them
+ * to ConsoleReader.Listeners.
+ *
+ */
 public class ConsoleReader implements Runnable
 {
     

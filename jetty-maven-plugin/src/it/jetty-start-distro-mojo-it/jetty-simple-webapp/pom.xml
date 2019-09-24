@@ -16,7 +16,7 @@
   <properties>
     <jetty.port.file>${project.build.directory}/jetty-start-distro-port.txt</jetty.port.file>
     <jetty.jvmArgs>@jetty.jvmArgs@</jetty.jvmArgs>
-    <jetty.runType>DISTRO</jetty.runType>
+    <jetty.deployMode>DISTRO</jetty.deployMode>
   </properties>
 
   <dependencies>
@@ -89,7 +89,7 @@
             <id>start-jetty</id>
             <phase>process-test-classes</phase>
             <goals>
-              <goal>newstart</goal>
+              <goal>start</goal>
             </goals>
             <configuration>
               <jettyBase>${basedir}/src/base</jettyBase>

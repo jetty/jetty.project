@@ -10,7 +10,7 @@
   <packaging>war</packaging>
 
   <properties>
-      <jetty.runType>EMBED</jetty.runType>
+      <jetty.deployMode>EMBED</jetty.deployMode>
   </properties>
 
   <dependencies>
@@ -47,7 +47,7 @@
             <id>start-jetty</id>
             <phase>pre-integration-test</phase>
             <goals>
-              <goal>newstart</goal>
+              <goal>start</goal>
             </goals>
             <configuration>
               <jettyXmls>

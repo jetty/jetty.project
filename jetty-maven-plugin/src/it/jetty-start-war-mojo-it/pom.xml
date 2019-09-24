@@ -75,7 +75,7 @@
             <id>start-jetty</id>
             <phase>test-compile</phase>
             <goals>
-              <goal>newstart-war</goal>
+              <goal>start-war</goal>
             </goals>
             <configuration>
               <supportedPackagings>

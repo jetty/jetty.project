@@ -46,7 +46,7 @@ import org.eclipse.jetty.util.StringUtil;
  * HTTP client components via binding to the test-integration build phase.
  * </p>
  */
-@Mojo(name = "newstart-war", requiresDependencyResolution = ResolutionScope.RUNTIME)
+@Mojo(name = "start-war", requiresDependencyResolution = ResolutionScope.RUNTIME)
 public class NewJettyStartWarMojo extends AbstractWebAppMojo
 {
     protected JettyEmbedder embedder;

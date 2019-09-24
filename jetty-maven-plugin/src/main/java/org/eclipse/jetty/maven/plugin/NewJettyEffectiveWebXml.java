@@ -30,10 +30,9 @@ import org.eclipse.jetty.util.StringUtil;
 /**
  * Generate the effective web.xml for a pre-built webapp. This goal will NOT
  * first build the webapp, it must already exist.
- * 
  *
  */
-@Mojo(name = "neweffective-web-xml", requiresDependencyResolution = ResolutionScope.RUNTIME)
+@Mojo(name = "effective-web-xml", requiresDependencyResolution = ResolutionScope.RUNTIME)
 public class NewJettyEffectiveWebXml extends AbstractWebAppMojo
 {
     /**

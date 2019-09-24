@@ -38,7 +38,7 @@ import org.apache.maven.plugins.annotations.Parameter;
  * The <b>stopPort</b> and <b>stopKey</b> parameters can be used to
  * configure which jetty to stop.
  */
-@Mojo(name = "newstop")
+@Mojo(name = "stop")
 public class NewJettyStopMojo extends AbstractWebAppMojo
 {
     /**

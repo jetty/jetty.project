@@ -169,6 +169,14 @@ public class JettyForker extends AbstractForker
             }
         }     
 
+        if (systemProperties != null)
+        {
+            for (Map.Entry<String,String> e:systemProperties.entrySet())
+            {
+                cmd.add("-D"+e.getKey()+"="+e.getValue());
+            }
+        }
+        
         if (containerClassPath != null && containerClassPath.length() > 0)
         {
             cmd.add("-cp");

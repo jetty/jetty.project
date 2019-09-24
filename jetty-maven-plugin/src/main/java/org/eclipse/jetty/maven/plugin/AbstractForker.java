@@ -64,7 +64,10 @@ public abstract class AbstractForker extends AbstractLifeCycle
     
     protected File workDir;
     
+    protected Map<String,String> systemProperties;
+    
     protected abstract ProcessBuilder  createCommand();
+    
     protected abstract void redeployWebApp() throws Exception;
     
     public File getWorkDir()
@@ -77,6 +80,20 @@ public abstract class AbstractForker extends AbstractLifeCycle
         this.workDir = workDir;
     }
 
+    /**
+     * @return the systemProperties
+     */
+    public Map<String, String> getSystemProperties()
+    {
+        return systemProperties;
+    }
+    /**
+     * @param systemProperties the systemProperties to set
+     */
+    public void setSystemProperties(Map<String, String> systemProperties)
+    {
+        this.systemProperties = systemProperties;
+    }
     public Map<String, String> getEnv()
     {
         return env;

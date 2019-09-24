@@ -22,7 +22,7 @@
 
   <properties>
     <jetty.port.file>${project.build.directory}/jetty-start-mojo.txt</jetty.port.file>
-    <jetty.runType>EMBED</jetty.runType>
+    <jetty.deployMode>EMBED</jetty.deployMode>
   </properties>
 
   <build>
@@ -35,7 +35,7 @@
             <id>start-jetty</id>
             <phase>test-compile</phase>
             <goals>
-              <goal>newstart</goal>
+              <goal>start</goal>
             </goals>
             <configuration>
               <systemProperties>
