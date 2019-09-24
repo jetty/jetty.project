@@ -544,7 +544,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
     @Override
     public SuspendToken suspend()
     {
-        if (!isOpen())
+        if (onCloseCalled.get())
             throw new IllegalStateException("Not open");
 
         return connection.suspend();
