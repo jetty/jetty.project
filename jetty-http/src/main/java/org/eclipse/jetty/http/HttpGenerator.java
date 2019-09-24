@@ -78,7 +78,7 @@ public class HttpGenerator
         FLUSH,                  // The buffers previously generated should be flushed 
         CONTINUE,               // Continue generating the message
         SHUTDOWN_OUT,           // Need EOF to be signaled
-        DONE                    // Generation complete
+        DONE                    // The current phase of generation is complete
     }
 
     // other statics
