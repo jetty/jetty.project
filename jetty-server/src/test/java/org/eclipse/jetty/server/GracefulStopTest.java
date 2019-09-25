@@ -56,11 +56,13 @@ import org.junit.jupiter.api.condition.DisabledOnOs;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -164,6 +166,66 @@ public class GracefulStopTest
         assertThat(handler.thrown.get(), instanceOf(ClosedChannelException.class));
 
         client.close();
+    }
+
+
+    /**
+     * Test completed writes during shutdown do not close output
+     * @throws Exception on test failure
+     */
+    @Test
+    public void testWriteDuringShutdown() throws Exception
+    {
+        Server server = new Server();
+        server.setStopTimeout(1000);
+
+        ServerConnector connector = new ServerConnector(server);
+        connector.setPort(0);
+        server.addConnector(connector);
+
+        ABHandler handler = new ABHandler();
+        StatisticsHandler stats = new StatisticsHandler();
+        server.setHandler(stats);
+        stats.setHandler(handler);
+
+        server.start();
+
+        Thread stopper = new Thread(() ->
+        {
+            try
+            {
+                handler.latchA.await();
+                server.stop();
+            }
+            catch (Exception e)
+            {
+                e.printStackTrace();
+            }
+        });
+        stopper.start();
+
+        final int port = connector.getLocalPort();
+        try(Socket client = new Socket("127.0.0.1", port))
+        {
+            client.getOutputStream().write((
+                "GET / HTTP/1.1\r\n" +
+                    "Host: localhost:" + port + "\r\n" +
+                    "\r\n"
+            ).getBytes());
+            client.getOutputStream().flush();
+
+            while (!connector.isShutdown())
+                Thread.sleep(10);
+
+            handler.latchB.countDown();
+
+            String response = IO.toString(client.getInputStream());
+            assertThat(response, startsWith("HTTP/1.1 200 "));
+            assertThat(response, containsString("Content-Length: 2"));
+            assertThat(response, containsString("Connection: close"));
+            assertThat(response, endsWith("ab"));
+        }
+        stopper.join();
     }
 
     /**
@@ -733,6 +795,30 @@ public class GracefulStopTest
         {
             baseRequest.setHandled(true);
             latch.countDown();
+        }
+    }
+
+    static class ABHandler extends AbstractHandler
+    {
+        final CountDownLatch latchA = new CountDownLatch(1);
+        final CountDownLatch latchB = new CountDownLatch(1);
+
+        @Override
+        public void handle(String s, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+        {
+            response.setContentLength(2);
+            response.getOutputStream().write("a".getBytes());
+            try
+            {
+                latchA.countDown();
+                latchB.await();
+            }
+            catch (InterruptedException e)
+            {
+                throw new RuntimeException(e);
+            }
+            response.flushBuffer();
+            response.getOutputStream().write("b".getBytes());
         }
     }
 

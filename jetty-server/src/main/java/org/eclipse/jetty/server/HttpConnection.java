@@ -732,9 +732,9 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             {
                 HttpGenerator.Result result = _generator.generateResponse(_info, _head, _header, chunk, _content, _lastContent);
                 if (LOG.isDebugEnabled())
-                    LOG.debug("{} generate: {} ({},{},{})@{}",
-                        this,
+                    LOG.debug("generate: {} for {} ({},{},{})@{}",
                         result,
+                        this,
                         BufferUtil.toSummaryString(_header),
                         BufferUtil.toSummaryString(_content),
                         _lastContent,
@@ -826,8 +826,10 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                     }
                     case DONE:
                     {
-                        // If shutdown after commit, we can still close here.
-                        if (getConnector().isShutdown())
+                        // If this is the end of the response and the connector was shutdown after response was committed,
+                        // we can't add the Connection:close header, but we are still allowed to close the connection
+                        // by shutting down the output.
+                        if (getConnector().isShutdown() && _generator.isEnd() && _generator.isPersistent())
                             _shutdownOut = true;
 
                         return Action.SUCCEEDED;
