@@ -179,6 +179,7 @@ public abstract class AbstractHandlerContainer extends AbstractHandler implement
                 }
                 catch (Throwable e)
                 {
+                    LOG.warn("Failed to gracefully shutdown {}", graceful);
                     // If the future is also a callback, fail it here (rather than cancel) so we can capture the exception
                     if (future instanceof Callback && !future.isDone())
                         ((Callback)future).failed(e);
