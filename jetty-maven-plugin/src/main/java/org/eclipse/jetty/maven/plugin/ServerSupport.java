@@ -62,7 +62,7 @@ public class ServerSupport
      * @param requestLog the request log
      * @throws Exception if unable to configure the handlers
      */
-    public static void configureHandlers (Server server, ContextHandler[] contextHandlers, RequestLog requestLog) throws Exception 
+    public static void configureHandlers (Server server, List<ContextHandler> contextHandlers, RequestLog requestLog) throws Exception 
     {
         if (server == null)
             throw new IllegalArgumentException("Server is null");
@@ -143,7 +143,7 @@ public class ServerSupport
      * @param server the server
      * @param loginServices the login services
      */
-    public static void configureLoginServices(Server server, LoginService[] loginServices)
+    public static void configureLoginServices(Server server, List<LoginService> loginServices)
     {
         if (server == null)
             throw new IllegalArgumentException("Server is null");

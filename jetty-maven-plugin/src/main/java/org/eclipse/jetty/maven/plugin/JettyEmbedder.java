@@ -19,6 +19,7 @@
 package org.eclipse.jetty.maven.plugin;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -30,8 +31,6 @@ import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ShutdownMonitor;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.server.handler.ContextHandlerCollection;
-import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -47,9 +46,9 @@ public class JettyEmbedder extends AbstractLifeCycle
 {
     private static final Logger LOG = Log.getLogger(JettyEmbedder.class);
 
-    protected ContextHandler[] contextHandlers;
+    protected List<ContextHandler> contextHandlers;
     
-    protected LoginService[] loginServices;
+    protected List<LoginService> loginServices;
 
     protected RequestLog requestLog;
     
@@ -77,24 +76,30 @@ public class JettyEmbedder extends AbstractLifeCycle
 
     private Properties webAppProperties;
 
-    public ContextHandler[] getContextHandlers()
+    public List<ContextHandler> getContextHandlers()
     {
         return contextHandlers;
     }
 
-    public void setContextHandlers(ContextHandler[] contextHandlers)
+    public void setContextHandlers(List<ContextHandler> contextHandlers)
     {
-        this.contextHandlers = contextHandlers;
+        if (contextHandlers == null)
+            this.contextHandlers = null;
+        else
+            this.contextHandlers = new ArrayList<>(contextHandlers);
     }
 
-    public LoginService[] getLoginServices()
+    public List<LoginService> getLoginServices()
     {
         return loginServices;
     }
 
-    public void setLoginServices(LoginService[] loginServices)
+    public void setLoginServices(List<LoginService> loginServices)
     {
-        this.loginServices = loginServices;
+        if (loginServices == null)
+            this.loginServices = null;
+        else
+            this.loginServices = new ArrayList<>(loginServices);
     }
 
     public RequestLog getRequestLog()
@@ -275,6 +280,8 @@ public class JettyEmbedder extends AbstractLifeCycle
 
         if (server == null)
             server = new Server();
+        
+        server.setStopAtShutdown(stopAtShutdown);
 
         //ensure there's a connector
         if (httpConnector != null)
@@ -297,7 +304,7 @@ public class JettyEmbedder extends AbstractLifeCycle
 
         applyWebAppProperties();
 
-        //TODO- this might be duplicating WebAppPropertyConverter. make it a quickstart if the quickstart-web.xml file exists
+        //If there is a quickstart file, then quickstart the webapp.
         if (webApp.getTempDirectory() != null)
         {
             File qs = new File(webApp.getTempDirectory(), "quickstart-web.xml");

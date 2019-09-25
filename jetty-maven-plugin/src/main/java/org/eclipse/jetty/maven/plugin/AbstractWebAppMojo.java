@@ -283,7 +283,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
      * Optional.
      */
     @Parameter
-    protected ContextHandler[] contextHandlers;
+    protected List<ContextHandler> contextHandlers;
     
     /**
      * List of security realms to set up. Consider using instead
@@ -291,7 +291,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
      * Optional.
      */
     @Parameter
-    protected LoginService[] loginServices;
+    protected List<LoginService> loginServices;
 
     /**
      * A RequestLog implementation to use for the webapp at runtime.
@@ -526,7 +526,6 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
         jetty.setJettyXmlFiles(jettyXmls);
         jetty.setHttpConnector(httpConnector);
         jetty.setJettyProperties(jettyProperties);
-        jetty.setRequestLog(requestLog);
         jetty.setLoginServices(loginServices);
         jetty.setContextXml(contextXml);
         jetty.setWebApp(webApp);
@@ -817,7 +816,6 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
         //only unpack if the overlay is newer
         if (!unpackDir.exists() || (overlay.getResource().lastModified() > unpackDir.lastModified()))
         {
-            boolean made = unpackDir.mkdirs();
             overlay.getResource().copyTo(unpackDir);
         }
 
