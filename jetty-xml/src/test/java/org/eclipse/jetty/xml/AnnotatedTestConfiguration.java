@@ -27,6 +27,10 @@ public class AnnotatedTestConfiguration
     private String third;
     private String deprecated;
     private AnnotatedTestConfiguration nested;
+
+    // Do not remove deprecation, used in tests.
+    @Deprecated
+    private long timeout = -1;
     // Do not remove deprecation, used in tests.
     @Deprecated
     public String obsolete;
@@ -96,5 +100,19 @@ public class AnnotatedTestConfiguration
     public String getDeprecated()
     {
         return deprecated;
+    }
+
+    // Do not remove deprecation, used in tests.
+    @Deprecated
+    public long getTimeout()
+    {
+        return timeout;
+    }
+
+    // Do not remove deprecation, used in tests.
+    @Deprecated
+    public void setTimeout(long value)
+    {
+        this.timeout = value;
     }
 }
