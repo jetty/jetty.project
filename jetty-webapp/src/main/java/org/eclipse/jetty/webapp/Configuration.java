@@ -34,12 +34,12 @@ import org.eclipse.jetty.util.TopologicalSort;
  * </p>
  * <p>Configuration instances are discovered by the {@link Configurations} class using either the
  * {@link ServiceLoader} mechanism or by an explicit call to {@link Configurations#setKnown(String...)}.
- * By default, all Configurations that do not implement the {@link #isDisabledByDefault()} interface
+ * By default, all Configurations that do not return false from {@link #isEnabledByDefault()}
  * are applied to all {@link WebAppContext}s within the JVM.  However a Server wide default {@link Configurations}
  * collection may also be defined with {@link Configurations#setServerDefault(org.eclipse.jetty.server.Server)}.
  * Furthermore, each individual Context may have its Configurations list explicitly set and/or amended with
  * {@link WebAppContext#setConfigurations(Configuration[])}, {@link WebAppContext#addConfiguration(Configuration...)}
- * or {@link WebAppContext#getWebAppConfigurations()}.
+ * or {@link WebAppContext#getConfigurations()}.
  * </p>
  * <p>Since Jetty-9.4, Configurations are self ordering using the {@link #getDependencies()} and
  * {@link #getDependents()} methods for a {@link TopologicalSort} initiated by {@link Configurations#sort()}
@@ -171,9 +171,9 @@ public interface Configuration
     void destroy(WebAppContext context) throws Exception;
 
     /**
-     * @return true if configuration is disabled by default
+     * @return true if configuration is enabled by default
      */
-    boolean isDisabledByDefault();
+    boolean isEnabledByDefault();
 
     /**
      * @return true if configuration should be aborted

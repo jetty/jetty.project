@@ -67,7 +67,7 @@ public class HeadersGenerator extends FrameGenerator
             flags = Flags.PRIORITY;
 
         int maxFrameSize = getMaxFrameSize();
-        ByteBuffer hpacked = lease.acquire(maxFrameSize, false);
+        ByteBuffer hpacked = lease.acquire(maxFrameSize, isUseDirectByteBuffers());
         BufferUtil.clearToFill(hpacked);
         encoder.encode(hpacked, metaData);
         int hpackedLength = hpacked.position();

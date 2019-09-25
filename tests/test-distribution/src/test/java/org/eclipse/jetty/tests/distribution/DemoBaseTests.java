@@ -142,4 +142,32 @@ public class DemoBaseTests extends AbstractDistributionTest
             assertThat(response.getContentAsString(), not(containsString("<span class=\"fail\">FAIL</span>")));
         }
     }
+
+    @Test
+    public void testJPMS() throws Exception
+    {
+        String jettyVersion = System.getProperty("jettyVersion");
+        DistributionTester distribution = DistributionTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .jettyBase(Paths.get("demo-base"))
+            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
+            .build();
+
+        int httpPort = distribution.freePort();
+        int httpsPort = distribution.freePort();
+        String[] args = {
+            "--jpms",
+            "jetty.http.port=" + httpPort,
+            "jetty.httpConfig.port=" + httpsPort,
+            "jetty.ssl.port=" + httpsPort
+        };
+        try (DistributionTester.Run run = distribution.start(args))
+        {
+            assertTrue(run.awaitConsoleLogsFor("Started Server@", 10, TimeUnit.SECONDS));
+
+            startHttpClient();
+            ContentResponse response = client.GET("http://localhost:" + httpPort + "/test/hello");
+            assertEquals(HttpStatus.OK_200, response.getStatus());
+        }
+    }
 }

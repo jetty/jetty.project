@@ -44,7 +44,6 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.ChannelEndPoint;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.QuietException;
@@ -249,12 +248,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     public HttpConfiguration getHttpConfiguration()
     {
         return _configuration;
-    }
-
-    @Override
-    public boolean isOptimizedForDirectBuffers()
-    {
-        return getHttpTransport().isOptimizedForDirectBuffers();
     }
 
     public Server getServer()
@@ -971,12 +964,9 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         return _connector.getScheduler();
     }
 
-    /**
-     * @return true if the HttpChannel can efficiently use direct buffer (typically this means it is not over SSL or a multiplexed protocol)
-     */
-    public boolean useDirectBuffers()
+    public boolean isUseOutputDirectByteBuffers()
     {
-        return getEndPoint() instanceof ChannelEndPoint;
+        return getHttpConfiguration().isUseOutputDirectByteBuffers();
     }
 
     /**

@@ -497,27 +497,6 @@ public class HttpClient extends ContainerLifeCycle
         return uri;
     }
 
-    /**
-     * Returns a {@link Destination} for the given scheme, host and port.
-     * Applications may use {@link Destination}s to create {@link Connection}s
-     * that will be outside HttpClient's pooling mechanism, to explicitly
-     * control the connection lifecycle (in particular their termination with
-     * {@link Connection#close()}).
-     *
-     * @param scheme the destination scheme
-     * @param host the destination host
-     * @param port the destination port
-     * @return the destination
-     * @see #getDestinations()
-     * @deprecated use {@link #resolveDestination(Request)} instead
-     */
-    @Deprecated
-    public Destination getDestination(String scheme, String host, int port)
-    {
-        Origin origin = createOrigin(scheme, host, port);
-        return resolveDestination(new HttpDestination.Key(origin, null));
-    }
-
     public Destination resolveDestination(Request request)
     {
         Origin origin = createOrigin(request.getScheme(), request.getHost(), request.getPort());

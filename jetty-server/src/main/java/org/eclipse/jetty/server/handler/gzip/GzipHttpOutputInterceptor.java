@@ -94,12 +94,6 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
     }
 
     @Override
-    public boolean isOptimizedForDirectBuffers()
-    {
-        return false; // No point as deflator is in user space.
-    }
-
-    @Override
     public void write(ByteBuffer content, boolean complete, Callback callback)
     {
         switch (_state.get())

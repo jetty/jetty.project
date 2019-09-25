@@ -22,7 +22,10 @@ import java.io.IOException;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
+import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 
@@ -40,6 +43,8 @@ public class ScheduledExecutorScheduler extends AbstractLifeCycle implements Sch
     private final boolean daemon;
     private final ClassLoader classloader;
     private final ThreadGroup threadGroup;
+    private final int threads;
+    private final AtomicInteger count = new AtomicInteger();
     private volatile ScheduledThreadPoolExecutor scheduler;
     private volatile Thread thread;
 
@@ -50,28 +55,48 @@ public class ScheduledExecutorScheduler extends AbstractLifeCycle implements Sch
 
     public ScheduledExecutorScheduler(String name, boolean daemon)
     {
-        this(name, daemon, Thread.currentThread().getContextClassLoader());
+        this(name, daemon, null);
     }
 
-    public ScheduledExecutorScheduler(String name, boolean daemon, ClassLoader threadFactoryClassLoader)
+    public ScheduledExecutorScheduler(@Name("name") String name, @Name("daemon") boolean daemon, @Name("threads") int threads)
     {
-        this(name, daemon, threadFactoryClassLoader, null);
+        this(name, daemon, null, null, threads);
     }
 
-    public ScheduledExecutorScheduler(String name, boolean daemon, ClassLoader threadFactoryClassLoader, ThreadGroup threadGroup)
+    public ScheduledExecutorScheduler(String name, boolean daemon, ClassLoader classLoader)
     {
-        this.name = name == null ? "Scheduler-" + hashCode() : name;
+        this(name, daemon, classLoader, null);
+    }
+
+    public ScheduledExecutorScheduler(String name, boolean daemon, ClassLoader classLoader, ThreadGroup threadGroup)
+    {
+        this(name, daemon, classLoader, threadGroup, -1);
+    }
+
+    /**
+     * @param name The name of the scheduler threads or null for automatic name
+     * @param daemon True if scheduler threads should be daemon
+     * @param classLoader The classloader to run the threads with or null to use the current thread context classloader
+     * @param threadGroup The threadgroup to use or null for no thread group
+     * @param threads The number of threads to pass to the the core {@link ScheduledThreadPoolExecutor} or -1 for a
+     * heuristic determined number of threads.
+     */
+    public ScheduledExecutorScheduler(@Name("name") String name, @Name("daemon") boolean daemon, @Name("classLoader") ClassLoader classLoader, @Name("threadGroup") ThreadGroup threadGroup, @Name("threads") int threads)
+    {
+        this.name = StringUtil.isBlank(name) ? "Scheduler-" + hashCode() : name;
         this.daemon = daemon;
-        this.classloader = threadFactoryClassLoader == null ? Thread.currentThread().getContextClassLoader() : threadFactoryClassLoader;
+        this.classloader = classLoader == null ? Thread.currentThread().getContextClassLoader() : classLoader;
         this.threadGroup = threadGroup;
+        this.threads = threads;
     }
 
     @Override
     protected void doStart() throws Exception
     {
-        scheduler = new ScheduledThreadPoolExecutor(1, r ->
+        int size = threads > 0 ? threads : 1;
+        scheduler = new ScheduledThreadPoolExecutor(size, r ->
         {
-            Thread thread = ScheduledExecutorScheduler.this.thread = new Thread(threadGroup, r, name);
+            Thread thread = ScheduledExecutorScheduler.this.thread = new Thread(threadGroup, r, name + "-" + count.incrementAndGet());
             thread.setDaemon(daemon);
             thread.setContextClassLoader(classloader);
             return thread;

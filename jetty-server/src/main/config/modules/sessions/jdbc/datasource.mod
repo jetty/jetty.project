@@ -3,5 +3,8 @@ DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-m
 [description]
 JDBC Datasource connections for session storage
 
+[depends]
+jdbc
+
 [xml]
 etc/sessions/jdbc/datasource.xml

@@ -270,13 +270,6 @@ public interface EndPoint extends Closeable
     void onClose(Throwable cause);
 
     /**
-     * Is the endpoint optimized for DirectBuffer usage
-     *
-     * @return True if direct buffers can be used optimally.
-     */
-    boolean isOptimizedForDirectBuffers();
-
-    /**
      * Upgrade connections.
      * Close the old connection, update the endpoint and open the new connection.
      * If the oldConnection is an instance of {@link Connection.UpgradeFrom} then
