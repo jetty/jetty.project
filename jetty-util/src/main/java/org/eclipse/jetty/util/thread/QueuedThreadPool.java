@@ -176,7 +176,6 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
         removeBean(_tryExecutor);
         _tryExecutor = TryExecutor.NO_TRY;
 
-
         // Signal the Runner threads that we are stopping
         int threads = _counts.getAndSetHi(Integer.MIN_VALUE);
 
@@ -483,7 +482,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
     public void execute(Runnable job)
     {
         // Determine if we need to start a thread, use and idle thread or just queue this job
-        boolean startThread;
+        int startThread;
         while (true)
         {
             // Get the atomic counts
@@ -501,10 +500,10 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
 
             // Start a thread if we have insufficient idle threads to meet demand
             // and we are not at max threads.
-            startThread = (idle <= 0 && threads < _maxThreads);
+            startThread = (idle <= 0 && threads < _maxThreads) ? 1 : 0;
 
             // The job will be run by an idle thread when available
-            if (!_counts.compareAndSet(counts, threads + (startThread ? 1 : 0), idle - 1))
+            if (!_counts.compareAndSet(counts, threads + startThread, idle + startThread - 1))
                 continue;
 
             break;
@@ -513,7 +512,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
         if (!_jobs.offer(job))
         {
             // reverse our changes to _counts.
-            if (addCounts(startThread ? -1 : 0, 1))
+            if (addCounts(-startThread, 1 - startThread))
                 LOG.warn("{} rejected {}", this, job);
             throw new RejectedExecutionException(job.toString());
         }
@@ -522,7 +521,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
             LOG.debug("queue {} startThread={}", job, startThread);
 
         // Start a thread if one was needed
-        if (startThread)
+        while (startThread-- > 0)
             startThread();
     }
 
@@ -617,7 +616,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
             if (threads < _minThreads || (idle < 0 && threads < _maxThreads))
             {
                 // Then try to start a thread.
-                if (_counts.compareAndSet(counts, threads + 1, idle))
+                if (_counts.compareAndSet(counts, threads + 1, idle + 1))
                     startThread();
                 // Otherwise continue to check state again.
                 continue;
@@ -645,7 +644,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
         finally
         {
             if (!started)
-                addCounts(-1, 0); // threads, idle
+                addCounts(-1, -1); // threads, idle
         }
     }
 
@@ -859,13 +858,8 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
                 LOG.debug("Runner started for {}", QueuedThreadPool.this);
 
             Runnable job = null;
-
             try
             {
-                // All threads start idle (not yet taken a job)
-                if (!addCounts(0, 1))
-                    return;
-
                 while (true)
                 {
                     // If we had a job, signal that we are idle again
@@ -873,6 +867,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
                     {
                         if (!addCounts(0, 1))
                             break;
+                        job = null;
                     }
                     // else check we are still running
                     else if (_counts.getHi() == Integer.MIN_VALUE)
