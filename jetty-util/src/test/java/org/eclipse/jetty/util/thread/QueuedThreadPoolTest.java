@@ -526,8 +526,6 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         RunningJob job1 = new RunningJob();
         RunningJob job2 = new RunningJob();
         RunningJob job3 = new RunningJob();
-        RunningJob job4 = new RunningJob();
-
         tp.execute(job1);
         tp.execute(job2);
         tp.execute(job3);
@@ -535,18 +533,25 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         waitForThreads(tp, 3);
         waitForIdle(tp, 0);
 
+        // We stop job3, the thread becomes idle, thread decides to shrink, and then blocks in removeThread().
         job3.stop();
         assertTrue(enteredRemoveThread.await(5, TimeUnit.SECONDS));
         waitForThreads(tp, 3);
         waitForIdle(tp, 1);
 
-        // we execute job4 we have an idle thread which is stopping so we fail to start new thread
+        // Executing job4 will not start a new thread because we already have 1 idle thread.
+        RunningJob job4 = new RunningJob();
         tp.execute(job4);
 
-        // complete the stop
+        // Allow thread to exit from removeThread().
+        // The 4th thread is not actually started in our startThread() until tp.superStartThread() is called.
+        // Delay by 1000ms to check that ensureThreads is only starting one thread even though it is slow to start.
+        assertThat(started.get(), is(3));
         exitRemoveThread.countDown();
         Thread.sleep(1000);
 
+        // Now startThreads() should have been called 4 times.
+        // Actually start the thread, and job4 should be run.
         assertThat(started.get(), is(4));
         tp.superStartThread();
         assertTrue(job4._run.await(5, TimeUnit.SECONDS));
