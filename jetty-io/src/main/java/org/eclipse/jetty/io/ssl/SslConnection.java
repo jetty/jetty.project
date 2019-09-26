@@ -452,14 +452,10 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                     LOG.debug("onFillableFail {}", SslConnection.this, failure);
 
                 _fillState = FillState.IDLE;
-                switch (_flushState)
+                if (_flushState == FlushState.WAIT_FOR_FILL)
                 {
-                    case WAIT_FOR_FILL:
-                        _flushState = FlushState.IDLE;
-                        fail = true;
-                        break;
-                    default:
-                        break;
+                    _flushState = FlushState.IDLE;
+                    fail = true;
                 }
             }
 
@@ -530,7 +526,9 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                                 case NEED_WRAP:
                                     if (_flushState == FlushState.IDLE && flush(BufferUtil.EMPTY_BUFFER))
                                     {
-                                        rethrow(_failure);
+                                        Throwable failure = _failure;
+                                        if (failure != null)
+                                            rethrow(failure);
                                         if (_sslEngine.isInboundDone())
                                             return filled = -1;
                                         continue;
@@ -599,7 +597,9 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                             switch (unwrap)
                             {
                                 case CLOSED:
-                                    rethrow(_failure);
+                                    Throwable failure = _failure;
+                                    if (failure != null)
+                                        rethrow(failure);
                                     return filled = -1;
 
                                 case BUFFER_UNDERFLOW:
@@ -608,9 +608,14 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                                     _underflown = true;
                                     if (netFilled < 0 && _sslEngine.getUseClientMode())
                                     {
-                                        closeInbound();
+                                        Throwable closeFailure = closeInbound();
                                         if (_flushState == FlushState.WAIT_FOR_FILL)
-                                            throw new SSLHandshakeException("Abruptly closed by peer");
+                                        {
+                                            Throwable handshakeFailure = new SSLHandshakeException("Abruptly closed by peer");
+                                            if (closeFailure != null)
+                                                handshakeFailure.initCause(closeFailure);
+                                            throw handshakeFailure;
+                                        }
                                         return filled = -1;
                                     }
                                     return filled = netFilled;
@@ -681,7 +686,8 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
             {
                 close(x);
                 rethrow(x);
-                return -1;
+                // Never reached.
+                throw new AssertionError();
             }
         }
 
@@ -804,23 +810,25 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
             }
         }
 
-        private void closeInbound() throws SSLException
+        private Throwable closeInbound() throws SSLException
         {
             HandshakeStatus handshakeStatus = _sslEngine.getHandshakeStatus();
             try
             {
                 _sslEngine.closeInbound();
+                return null;
             }
             catch (SSLException x)
             {
                 if (handshakeStatus == HandshakeStatus.NOT_HANDSHAKING && !isAllowMissingCloseMessage())
                     throw x;
-                else
-                    LOG.ignore(x);
+                LOG.ignore(x);
+                return x;
             }
             catch (Throwable x)
             {
                 LOG.ignore(x);
+                return x;
             }
         }
 
@@ -987,7 +995,8 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
             {
                 close(x);
                 rethrow(x);
-                return false;
+                // Never reached.
+                throw new AssertionError();
             }
         }
 
@@ -1305,8 +1314,6 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
 
         private void rethrow(Throwable x) throws IOException
         {
-            if (x == null)
-                return;
             if (x instanceof RuntimeException)
                 throw (RuntimeException)x;
             if (x instanceof Error)
