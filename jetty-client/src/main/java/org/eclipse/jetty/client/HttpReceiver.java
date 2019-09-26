@@ -410,6 +410,9 @@ public abstract class HttpReceiver
         if (exchange == null)
             return false;
 
+        if (LOG.isDebugEnabled())
+            LOG.debug("Response failure " + exchange.getResponse(), failure);
+
         // Mark atomically the response as completed, with respect
         // to concurrency between response success and response failure.
         if (exchange.responseComplete(failure))
@@ -514,7 +517,7 @@ public abstract class HttpReceiver
 
         HttpResponse response = exchange.getResponse();
         if (LOG.isDebugEnabled())
-            LOG.debug("Response failure {} {} on {}: {}", response, exchange, getHttpChannel(), failure);
+            LOG.debug("Response abort {} {} on {}: {}", response, exchange, getHttpChannel(), failure);
         List<Response.ResponseListener> listeners = exchange.getConversation().getResponseListeners();
         ResponseNotifier notifier = getHttpDestination().getResponseNotifier();
         notifier.notifyFailure(listeners, response, failure);
