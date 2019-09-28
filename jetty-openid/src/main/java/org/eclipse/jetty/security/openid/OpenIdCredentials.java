@@ -25,6 +25,7 @@ import java.io.Serializable;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.Map;
 
@@ -158,9 +159,9 @@ public class OpenIdCredentials implements Serializable
         if (sections.length != 3)
             throw new IllegalArgumentException("JWT does not contain 3 sections");
 
-        Base64.Decoder decoder = Base64.getDecoder();
-        String jwtHeaderString = new String(decoder.decode(sections[0]), StandardCharsets.UTF_8);
-        String jwtClaimString = new String(decoder.decode(sections[1]), StandardCharsets.UTF_8);
+        Base64.Decoder decoder = Base64.getUrlDecoder();
+        String jwtHeaderString = new String(decoder.decode(padJWTSection(sections[0])), StandardCharsets.UTF_8);
+        String jwtClaimString = new String(decoder.decode(padJWTSection(sections[1])), StandardCharsets.UTF_8);
         String jwtSignature = sections[2];
 
         Map<String, Object> jwtHeader = (Map)JSON.parse(jwtHeaderString);
@@ -173,6 +174,32 @@ public class OpenIdCredentials implements Serializable
             LOG.debug("JWT signature not validated {}", jwtSignature);
 
         return (Map)JSON.parse(jwtClaimString);
+    }
+
+    private static byte[] padJWTSection(String unpaddedEncodedJwtSection)
+    {
+        int length = unpaddedEncodedJwtSection.length();
+        int remainder = length % 4;
+
+        if (remainder == 1)
+            // A valid base64-encoded string will never be have an odd number of characters.
+            throw new IllegalArgumentException("Not valid Base64-encoded string");
+
+        byte[] paddedEncodedJwtSection;
+
+        if (remainder > 0)
+        {
+            int paddingNeeded = (4 - remainder) % 4;
+
+            paddedEncodedJwtSection = Arrays.copyOf(unpaddedEncodedJwtSection.getBytes(), length + paddingNeeded);
+            Arrays.fill(paddedEncodedJwtSection, length, paddedEncodedJwtSection.length, (byte)'=');
+        }
+        else
+        {
+            paddedEncodedJwtSection = unpaddedEncodedJwtSection.getBytes();
+        }
+
+        return paddedEncodedJwtSection;
     }
 
     private Map<String, Object> claimAuthCode(String authCode) throws IOException
