@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.ajax.JSON;
@@ -43,13 +44,11 @@ public class OpenIdConfiguration implements Serializable
     private static final long serialVersionUID = 2227941990601349102L;
     private static final String CONFIG_PATH = "/.well-known/openid-configuration";
 
-    private final String openIdProvider;
     private final String issuer;
     private final String authEndpoint;
     private final String tokenEndpoint;
     private final String clientId;
     private final String clientSecret;
-    private final Map<String, Object> discoveryDocument;
     private final List<String> scopes = new ArrayList<>();
 
     /**
@@ -60,10 +59,50 @@ public class OpenIdConfiguration implements Serializable
      */
     public OpenIdConfiguration(String provider, String clientId, String clientSecret)
     {
-        this.openIdProvider = provider;
+        this(provider, null, null, clientId, clientSecret);
+    }
+
+    /**
+     * Create an OpenID configuration for a specific OIDC provider.
+     * @param issuer The URL of the OpenID provider.
+     * @param authorizationEndpoint the URL of the OpenID provider's authorization endpoint if configured.
+     * @param tokenEndpoint the URL of the OpenID provider's token endpoint if configured.
+     * @param clientId OAuth 2.0 Client Identifier valid at the Authorization Server.
+     * @param clientSecret The client secret known only by the Client and the Authorization Server.
+     */
+    public OpenIdConfiguration(String issuer, String authorizationEndpoint, String tokenEndpoint, String clientId, String clientSecret)
+    {
+        this.issuer = issuer;
         this.clientId = clientId;
         this.clientSecret = clientSecret;
 
+        if (issuer == null)
+            throw new IllegalArgumentException("Provider was not configured");
+
+        if (tokenEndpoint == null || authorizationEndpoint == null)
+        {
+            Map<String, Object> discoveryDocument = fetchOpenIdConnectMetadata(issuer);
+
+            this.authEndpoint = (String)discoveryDocument.get("authorization_endpoint");
+            if (this.authEndpoint == null)
+                throw new IllegalArgumentException("authorization_endpoint");
+
+            this.tokenEndpoint = (String)discoveryDocument.get("token_endpoint");
+            if (this.tokenEndpoint == null)
+                throw new IllegalArgumentException("token_endpoint");
+
+            if (!Objects.equals(discoveryDocument.get("issuer"), issuer))
+                LOG.warn("The provider in the metadata is not correct.");
+        }
+        else
+        {
+            this.authEndpoint = authorizationEndpoint;
+            this.tokenEndpoint = tokenEndpoint;
+        }
+    }
+
+    private static Map<String, Object> fetchOpenIdConnectMetadata(String provider)
+    {
         try
         {
             if (provider.endsWith("/"))
@@ -72,31 +111,16 @@ public class OpenIdConfiguration implements Serializable
             URI providerUri = URI.create(provider + CONFIG_PATH);
             InputStream inputStream = providerUri.toURL().openConnection().getInputStream();
             String content = IO.toString(inputStream);
-            discoveryDocument = (Map)JSON.parse(content);
+            Map<String, Object> discoveryDocument = (Map)JSON.parse(content);
             if (LOG.isDebugEnabled())
                 LOG.debug("discovery document {}", discoveryDocument);
+
+            return discoveryDocument;
         }
         catch (Throwable e)
         {
             throw new IllegalArgumentException("invalid identity provider", e);
         }
-
-        issuer = (String)discoveryDocument.get("issuer");
-        if (issuer == null)
-            throw new IllegalArgumentException();
-
-        authEndpoint = (String)discoveryDocument.get("authorization_endpoint");
-        if (authEndpoint == null)
-            throw new IllegalArgumentException("authorization_endpoint");
-
-        tokenEndpoint = (String)discoveryDocument.get("token_endpoint");
-        if (tokenEndpoint == null)
-            throw new IllegalArgumentException("token_endpoint");
-    }
-
-    public Map<String, Object> getDiscoveryDocument()
-    {
-        return discoveryDocument;
     }
 
     public String getAuthEndpoint()
@@ -117,11 +141,6 @@ public class OpenIdConfiguration implements Serializable
     public String getIssuer()
     {
         return issuer;
-    }
-
-    public String getOpenIdProvider()
-    {
-        return openIdProvider;
     }
 
     public String getTokenEndpoint()
