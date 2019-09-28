@@ -25,7 +25,9 @@ import java.io.Serializable;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Base64;
+import java.util.List;
 import java.util.Map;
 
 import org.eclipse.jetty.util.IO;
@@ -122,13 +124,34 @@ public class OpenIdCredentials implements Serializable
             throw new IllegalArgumentException("Issuer Identifier MUST exactly match the iss Claim");
 
         // The aud (audience) Claim MUST contain the client_id value.
-        if (!configuration.getClientId().equals(claims.get("aud")))
-            throw new IllegalArgumentException("Audience Claim MUST contain the client_id value");
+        validateAudience();
 
         // If an azp (authorized party) Claim is present, verify that its client_id is the Claim Value.
         Object azp = claims.get("azp");
         if (azp != null && !configuration.getClientId().equals(azp))
             throw new IllegalArgumentException("Authorized party claim value should be the client_id");
+    }
+
+    private void validateAudience()
+    {
+        Object aud = claims.get("aud");
+        String clientId = configuration.getClientId();
+        boolean isString = aud instanceof String;
+        boolean isList = aud instanceof Object[];
+        boolean isValidType = isString || isList;
+
+        if (isString && !clientId.equals(aud))
+            throw new IllegalArgumentException("Audience Claim MUST contain the client_id value");
+        else if (isList)
+        {
+            if (!Arrays.asList((Object[])aud).contains(clientId))
+                throw new IllegalArgumentException("Audience Claim MUST contain the client_id value");
+
+            if (claims.get("azp") == null)
+                throw new IllegalArgumentException("A multi-audience ID token needs to contain an azp claim");
+        }
+        else if (!isValidType)
+            throw new IllegalArgumentException("Audience claim was not valid");
     }
 
     public boolean isExpired()
