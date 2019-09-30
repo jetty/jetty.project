@@ -5,6 +5,7 @@ Adds OpenId Connect authentication.
 
 [depend]
 security
+client
 
 [lib]
 lib/jetty-openid-${jetty.version}.jar
@@ -20,6 +21,9 @@ etc/jetty-openid.xml
 [ini-template]
 ## The OpenID Identity Provider's issuer ID (the entire URL *before* ".well-known/openid-configuration")
 # jetty.openid.provider=https://id.example.com/~
+
+## Whether or not all certificates of the OpenID Connect provider's should be trusted. Only set to true during testing.
+# jetty.openid.trustAllCertificates=false
 
 ## The OpenID Identity Provider's authorization endpoint (optional if the metadata of the OP is accessible)
 # jetty.openid.provider.authorizationEndpoint=https://id.example.com/authorization

@@ -1,12 +1,16 @@
 <?xml version="1.0"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
+  <New id="HttpClientFactory" class="org.eclipse.jetty.security.openid.OpenIdHttpClientFactory">
+    <Arg type="Boolean"><Property name="jetty.openid.trustAllCertificates" default="false"/></Arg>
+  </New>
   <New id="OpenIdConfiguration" class="org.eclipse.jetty.security.openid.OpenIdConfiguration">
     <Arg><Property name="jetty.openid.provider" deprecated="jetty.openid.openIdProvider"/></Arg>
     <Arg><Property name="jetty.openid.provider.authorizationEndpoint"/></Arg>
     <Arg><Property name="jetty.openid.provider.tokenEndpoint"/></Arg>
     <Arg><Property name="jetty.openid.clientId"/></Arg>
     <Arg><Property name="jetty.openid.clientSecret"/></Arg>
+    <Arg><Ref refid="HttpClientFactory"/></Arg>
     <Call name="addScopes">
       <Arg>
         <Call class="org.eclipse.jetty.util.StringUtil" name="csvSplit">
@@ -20,6 +24,7 @@
       <New class="org.eclipse.jetty.security.openid.OpenIdLoginService">
         <Arg><Ref refid="OpenIdConfiguration"/></Arg>
         <Arg><Ref refid="BaseLoginService"/></Arg>
+        <Arg><Ref refid="HttpClientFactory"/></Arg>
         <Call name="setAuthenticateNewUsers">
           <Arg type="boolean">
             <Property name="jetty.openid.authenticateNewUsers" default="false"/>
