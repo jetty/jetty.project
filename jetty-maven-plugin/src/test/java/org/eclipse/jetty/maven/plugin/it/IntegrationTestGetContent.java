@@ -35,7 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  *
  */
-public class TestGetContent
+public class IntegrationTestGetContent
 {
     @Test
     public void get_content_response()

@@ -41,7 +41,7 @@ import org.junit.jupiter.api.Test;
 public class TestJettyEmbedder
 {
 
-    //@Test
+    @Test
     public void testJettyEmbedderFromDefaults()
     throws Exception
     {

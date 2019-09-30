@@ -12,6 +12,6 @@ s.close()
 
 File buildLog = new File( basedir, 'build.log' )
 assert buildLog.text.contains( 'Forked process starting' )
-assert buildLog.text.contains( 'Running org.eclipse.jetty.maven.plugin.it.TestGetContent')
+assert buildLog.text.contains( 'Running org.eclipse.jetty.maven.plugin.it.IntegrationTestGetContent')
 assert buildLog.text.contains( 'helloServlet')
 
