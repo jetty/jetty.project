@@ -533,7 +533,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                                             return filled = -1;
                                         continue;
                                     }
-                                     // Handle in needsFillInterest().
+                                    // Handle in needsFillInterest().
                                     return filled = 0;
 
                                 default:
