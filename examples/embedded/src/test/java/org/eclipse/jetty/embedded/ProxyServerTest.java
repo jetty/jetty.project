@@ -27,6 +27,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Server;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -53,6 +54,7 @@ public class ProxyServerTest extends AbstractEmbeddedTest
         server.stop();
     }
 
+    @Tag("external")
     @Test
     public void testGetProxiedRFC() throws Exception
     {
