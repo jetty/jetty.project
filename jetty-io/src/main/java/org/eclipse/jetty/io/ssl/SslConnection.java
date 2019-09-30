@@ -146,7 +146,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
         @Override
         public InvocationType getInvocationType()
         {
-            return getDecryptedEndPoint().getFillInterest().getCallbackInvocationType();
+            return _decryptedEndPoint.getFillInterest().getCallbackInvocationType();
         }
     };
 
@@ -364,6 +364,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
     public class DecryptedEndPoint extends AbstractEndPoint
     {
         private final Callback _incompleteWriteCallback = new IncompleteWriteCallback();
+        private Throwable _failure;
 
         public DecryptedEndPoint()
         {
@@ -451,14 +452,10 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                     LOG.debug("onFillableFail {}", SslConnection.this, failure);
 
                 _fillState = FillState.IDLE;
-                switch (_flushState)
+                if (_flushState == FlushState.WAIT_FOR_FILL)
                 {
-                    case WAIT_FOR_FILL:
-                        _flushState = FlushState.IDLE;
-                        fail = true;
-                        break;
-                    default:
-                        break;
+                    _flushState = FlushState.IDLE;
+                    fail = true;
                 }
             }
 
@@ -529,12 +526,14 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                                 case NEED_WRAP:
                                     if (_flushState == FlushState.IDLE && flush(BufferUtil.EMPTY_BUFFER))
                                     {
+                                        Throwable failure = _failure;
+                                        if (failure != null)
+                                            rethrow(failure);
                                         if (_sslEngine.isInboundDone())
-                                            // TODO this is probably a JVM bug, work around it by -1
-                                            return -1;
+                                            return filled = -1;
                                         continue;
                                     }
-                                    // handle in needsFillInterest
+                                    // Handle in needsFillInterest().
                                     return filled = 0;
 
                                 default:
@@ -598,6 +597,9 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                             switch (unwrap)
                             {
                                 case CLOSED:
+                                    Throwable failure = _failure;
+                                    if (failure != null)
+                                        rethrow(failure);
                                     return filled = -1;
 
                                 case BUFFER_UNDERFLOW:
@@ -606,7 +608,14 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                                     _underflown = true;
                                     if (netFilled < 0 && _sslEngine.getUseClientMode())
                                     {
-                                        closeInbound();
+                                        Throwable closeFailure = closeInbound();
+                                        if (_flushState == FlushState.WAIT_FOR_FILL)
+                                        {
+                                            Throwable handshakeFailure = new SSLHandshakeException("Abruptly closed by peer");
+                                            if (closeFailure != null)
+                                                handshakeFailure.initCause(closeFailure);
+                                            throw handshakeFailure;
+                                        }
                                         return filled = -1;
                                     }
                                     return filled = netFilled;
@@ -639,15 +648,14 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                     }
                     catch (Throwable x)
                     {
-                        handshakeFailed(x);
-
+                        Throwable failure = handleException(x, "fill");
+                        handshakeFailed(failure);
                         if (_flushState == FlushState.WAIT_FOR_FILL)
                         {
                             _flushState = FlushState.IDLE;
-                            getExecutor().execute(() -> _decryptedEndPoint.getWriteFlusher().onFail(x));
+                            getExecutor().execute(() -> _decryptedEndPoint.getWriteFlusher().onFail(failure));
                         }
-
-                        throw x;
+                        throw failure;
                     }
                     finally
                     {
@@ -676,10 +684,10 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
             }
             catch (Throwable x)
             {
-                if (LOG.isDebugEnabled())
-                    LOG.debug(SslConnection.this.toString(), x);
                 close(x);
-                throw x;
+                rethrow(x);
+                // Never reached.
+                throw new AssertionError();
             }
         }
 
@@ -694,15 +702,18 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                 synchronized (_decryptedEndPoint)
                 {
                     if (LOG.isDebugEnabled())
-                    {
-                        LOG.debug(">needFillInterest uf={} {}", _underflown, SslConnection.this);
-                        LOG.debug("ei={} di={}", BufferUtil.toDetailString(_encryptedInput), BufferUtil.toDetailString(_decryptedInput));
-                    }
+                        LOG.debug(">needFillInterest s={}/{} uf={} ei={} di={} {}",
+                            _flushState,
+                            _fillState,
+                            _underflown,
+                            BufferUtil.toDetailString(_encryptedInput),
+                            BufferUtil.toDetailString(_decryptedInput),
+                            SslConnection.this);
 
                     if (_fillState != FillState.IDLE)
                         return;
 
-                    // Fillable if we have decrypted Input OR encrypted input that has not yet been underflown.
+                    // Fillable if we have decrypted input OR enough encrypted input.
                     fillable = BufferUtil.hasContent(_decryptedInput) || (BufferUtil.hasContent(_encryptedInput) && !_underflown);
 
                     HandshakeStatus status = _sslEngine.getHandshakeStatus();
@@ -799,23 +810,25 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
             }
         }
 
-        private void closeInbound() throws SSLException
+        private Throwable closeInbound() throws SSLException
         {
             HandshakeStatus handshakeStatus = _sslEngine.getHandshakeStatus();
             try
             {
                 _sslEngine.closeInbound();
+                return null;
             }
             catch (SSLException x)
             {
                 if (handshakeStatus == HandshakeStatus.NOT_HANDSHAKING && !isAllowMissingCloseMessage())
                     throw x;
-                else
-                    LOG.ignore(x);
+                LOG.ignore(x);
+                return x;
             }
             catch (Throwable x)
             {
                 LOG.ignore(x);
+                return x;
             }
         }
 
@@ -966,8 +979,9 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                     }
                     catch (Throwable x)
                     {
-                        handshakeFailed(x);
-                        throw x;
+                        Throwable failure = handleException(x, "flush");
+                        handshakeFailed(failure);
+                        throw failure;
                     }
                     finally
                     {
@@ -979,10 +993,10 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
             }
             catch (Throwable x)
             {
-                if (LOG.isDebugEnabled())
-                    LOG.debug(SslConnection.this.toString(), x);
                 close(x);
-                throw x;
+                rethrow(x);
+                // Never reached.
+                throw new AssertionError();
             }
         }
 
@@ -1092,7 +1106,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                     boolean ishut = endp.isInputShutdown();
                     boolean oshut = endp.isOutputShutdown();
                     if (LOG.isDebugEnabled())
-                        LOG.debug("shutdownOutput: {} oshut={}, ishut={} {}", SslConnection.this, oshut, ishut);
+                        LOG.debug("shutdownOutput: {} oshut={}, ishut={}", SslConnection.this, oshut, ishut);
 
                     closeOutbound();
 
@@ -1110,15 +1124,11 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                 {
                     if (!flush(BufferUtil.EMPTY_BUFFER) && !close)
                     {
-                        Thread.yield();
-                        // if we still can't flush, but we are not closing the endpoint,
+                        // If we still can't flush, but we are not closing the endpoint,
                         // let's just flush the encrypted output in the background.
-                        // and continue as if we are closed. The assumption here is that
-                        // the encrypted buffer will contain the entire close handshake
-                        // and that a call to flush(EMPTY_BUFFER) is not needed.
-                        endp.write(Callback.from(() ->
-                        {
-                        }, t -> endp.close()), _encryptedOutput);
+                        ByteBuffer write = _encryptedOutput;
+                        if (BufferUtil.hasContent(write))
+                            endp.write(Callback.from(Callback.NOOP::succeeded, t -> endp.close()), write);
                     }
                 }
 
@@ -1282,6 +1292,37 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
         {
             String protocol = _sslEngine.getSession().getProtocol();
             return TLS_1_3.equals(protocol);
+        }
+
+        private Throwable handleException(Throwable x, String context)
+        {
+            synchronized (_decryptedEndPoint)
+            {
+                if (_failure == null)
+                {
+                    _failure = x;
+                    if (LOG.isDebugEnabled())
+                        LOG.debug(this + " stored " + context + " exception", x);
+                }
+                else if (x != _failure)
+                {
+                    _failure.addSuppressed(x);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug(this + " suppressed " + context + " exception", x);
+                }
+                return _failure;
+            }
+        }
+
+        private void rethrow(Throwable x) throws IOException
+        {
+            if (x instanceof RuntimeException)
+                throw (RuntimeException)x;
+            if (x instanceof Error)
+                throw (Error)x;
+            if (x instanceof IOException)
+                throw (IOException)x;
+            throw new IOException(x);
         }
 
         @Override

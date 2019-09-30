@@ -10,7 +10,7 @@
             <protected>true</protected>
             <serverAuthContext>
                 <serverAuthModule>
-                    <className>org.eclipse.jetty.security.jaspi.modules.BasicAuthModule</className>
+                    <className>org.eclipse.jetty.security.jaspi.BasicAuthModule</className>
                     <options>
                        org.eclipse.jetty.security.jaspi.modules.RealmName=TestRealm
                     </options>
