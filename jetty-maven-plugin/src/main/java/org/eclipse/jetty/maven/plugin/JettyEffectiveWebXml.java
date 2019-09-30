@@ -16,7 +16,6 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.maven.plugin;
 
 import java.io.File;
@@ -38,7 +37,7 @@ public class JettyEffectiveWebXml extends AbstractWebAppMojo
     /**
      * The name of the file to generate into
      */
-    @Parameter (defaultValue="${project.build.directory}/effective-web.xml")
+    @Parameter (defaultValue = "${project.build.directory}/effective-web.xml")
     protected File effectiveWebXml;
     
     @Override
@@ -55,7 +54,7 @@ public class JettyEffectiveWebXml extends AbstractWebAppMojo
     @Override
     protected void startJettyEmbedded() throws MojoExecutionException
     {
-       generate();
+        generate();
     }
 
     /**
@@ -64,7 +63,7 @@ public class JettyEffectiveWebXml extends AbstractWebAppMojo
     @Override
     protected void startJettyForked() throws MojoExecutionException
     {
-       generate();
+        generate();
     }
 
     /**

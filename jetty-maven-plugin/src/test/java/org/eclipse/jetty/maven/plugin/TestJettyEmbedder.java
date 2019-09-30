@@ -16,12 +16,7 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.maven.plugin;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -34,6 +29,10 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.resource.Resource;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  * 
  *
@@ -42,8 +41,7 @@ public class TestJettyEmbedder
 {
 
     @Test
-    public void testJettyEmbedderFromDefaults()
-    throws Exception
+    public void testJettyEmbedderFromDefaults() throws Exception
     {
         JettyWebAppContext webApp = new JettyWebAppContext();
         
@@ -75,7 +73,7 @@ public class TestJettyEmbedder
         }
     }
     
-    //@Test
+    @Test
     public void testJettyEmbedder()
         throws Exception
     {

@@ -16,7 +16,6 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.maven.plugin;
 
 import java.io.File;
@@ -87,6 +86,7 @@ public abstract class AbstractForker extends AbstractLifeCycle
     {
         return systemProperties;
     }
+    
     /**
      * @param systemProperties the systemProperties to set
      */
@@ -94,6 +94,7 @@ public abstract class AbstractForker extends AbstractLifeCycle
     {
         this.systemProperties = systemProperties;
     }
+    
     public Map<String, String> getEnv()
     {
         return env;
@@ -223,13 +224,12 @@ public abstract class AbstractForker extends AbstractLifeCycle
     {
         this.tokenFile = tokenFile;
     }
-    
 
-    public void doStart ()
-    throws Exception
+    public void doStart()
+        throws Exception
     {
         super.doStart();
-        
+
         //Create the command to fork
         ProcessBuilder command = createCommand();
         Process process = command.start();
@@ -248,7 +248,7 @@ public abstract class AbstractForker extends AbstractLifeCycle
                 Thread.currentThread().sleep(maxChildCheckInterval);
                 --attempts;
             }
-            if (attempts <=0 )
+            if (attempts <= 0)
                 LOG.info("Couldn't verify success of child startup");
         }
     }

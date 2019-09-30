@@ -16,7 +16,6 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.maven.plugin;
 
 import java.nio.file.Path;
@@ -47,7 +46,7 @@ import org.eclipse.jetty.util.StringUtil;
 *  </p>
 *  Runs jetty on a war file
 */
-@Mojo( name = "run-war", requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME)
+@Mojo(name = "run-war", requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME)
 @Execute(phase = LifecyclePhase.PACKAGE)
 public class JettyRunWarMojo extends AbstractWebAppMojo
 {   
@@ -58,7 +57,7 @@ public class JettyRunWarMojo extends AbstractWebAppMojo
      * of 0 indicates no re-deployment will be done. In that case, you
      * can force redeployment by typing a linefeed character at the command line.
      */
-    @Parameter(defaultValue="0", property="jetty.scan", required=true)
+    @Parameter(defaultValue = "0", property = "jetty.scan", required = true)
     protected int scan; 
     
     /**
@@ -78,7 +77,7 @@ public class JettyRunWarMojo extends AbstractWebAppMojo
     @Override
     public List<Overlay> getOverlays() throws Exception
     {
-       return null;
+        return null;
     }
     
     @Override
@@ -87,13 +86,13 @@ public class JettyRunWarMojo extends AbstractWebAppMojo
         super.configureWebApp();
         if (StringUtil.isBlank(webApp.getWar()))
         {
-            war = target.toPath().resolve(project.getBuild().getFinalName()+".war");
+            war = target.toPath().resolve(project.getBuild().getFinalName() + ".war");
             webApp.setWar(war.toFile().getAbsolutePath());
         }
         else
             war = Paths.get(webApp.getWar());
         
-        getLog().info("War = "+war);
+        getLog().info("War = " + war);
     }
 
     /**
@@ -157,15 +156,15 @@ public class JettyRunWarMojo extends AbstractWebAppMojo
             throw new MojoExecutionException("Error starting jetty", e);
         }
     }
-    
+
     public void startScanner()
-    throws Exception
+        throws Exception
     {
         // start scanning for changes, or wait for linefeed on stdin
         if (scan > 0)
         {
             scanner = new PathWatcher();
-            configureScanner ();
+            configureScanner();
             scanner.setNotifyExistingOnStart(false);
             scanner.start();
         }
@@ -251,7 +250,7 @@ public class JettyRunWarMojo extends AbstractWebAppMojo
                 configureWebApp();
                 embedder.redeployWebApp();
                 scanner.start();
-                getLog().info("Restart completed at "+new Date().toString());
+                getLog().info("Restart completed at " + new Date().toString());
                 
                 break;
             }
@@ -295,7 +294,7 @@ public class JettyRunWarMojo extends AbstractWebAppMojo
             }
             default:
             {
-                throw new IllegalStateException("Unrecognized run type "+deployMode);
+                throw new IllegalStateException("Unrecognized run type " +deployMode);
             }
         }
         getLog().info("Restart completed.");

@@ -16,7 +16,6 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.maven.plugin;
 
 import org.apache.maven.plugin.MojoExecutionException;

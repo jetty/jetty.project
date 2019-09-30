@@ -62,7 +62,7 @@ public class ServerSupport
      * @param requestLog the request log
      * @throws Exception if unable to configure the handlers
      */
-    public static void configureHandlers (Server server, List<ContextHandler> contextHandlers, RequestLog requestLog) throws Exception 
+    public static void configureHandlers(Server server, List<ContextHandler> contextHandlers, RequestLog requestLog) throws Exception 
     {
         if (server == null)
             throw new IllegalArgumentException("Server is null");
@@ -105,7 +105,7 @@ public class ServerSupport
      * @param connector the connector
      * @param properties jetty properties
      */
-    public static void configureConnectors (Server server, Connector connector, Map<String,String> properties)
+    public static void configureConnectors(Server server, Connector connector, Map<String,String> properties)
     {
         if (server == null)
             throw new IllegalArgumentException("Server is null");
@@ -128,7 +128,7 @@ public class ServerSupport
             if (port == null)
                 port = System.getProperty("jetty.port");
             if (port == null)
-                port = (properties != null? properties.get(MavenServerConnector.PORT_SYSPROPERTY):null);
+                port = (properties != null ? properties.get(MavenServerConnector.PORT_SYSPROPERTY) : null);
             if (port == null)
                 port = MavenServerConnector.DEFAULT_PORT_STR;
             tmp.setPort(Integer.parseInt(port.trim()));

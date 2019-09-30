@@ -16,7 +16,6 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.maven.plugin;
 
 import java.io.File;
@@ -51,7 +50,7 @@ import org.eclipse.jetty.webapp.WebAppContext;
  *  immediately and transparently reflected in the running web container, eliminating development time that is wasted on rebuilding, reassembling and redeploying.
  *  Alternatively, you can configure the plugin to wait for an %lt;enter&gt; at the command line to manually control redeployment.
  */
-@Mojo (name="run", requiresDependencyResolution = ResolutionScope.TEST)
+@Mojo (name = "run", requiresDependencyResolution = ResolutionScope.TEST)
 @Execute (phase = LifecyclePhase.TEST_COMPILE)
 public class JettyRunMojo extends AbstractWebAppMojo
 {
@@ -62,7 +61,7 @@ public class JettyRunMojo extends AbstractWebAppMojo
      * of 0 indicates no re-deployment will be done. In that case, you
      * can force redeployment by typing a linefeed character at the command line.
      */
-    @Parameter(defaultValue="0", property="jetty.scan", required=true)
+    @Parameter(defaultValue = "0", property = "jetty.scan", required = true)
     protected int scan; 
     
     /**
@@ -78,15 +77,12 @@ public class JettyRunMojo extends AbstractWebAppMojo
     protected JettyForker forker;
     protected JettyDistroForker distroForker;
 
-
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException
     {
         super.execute();
     }
     
-    
-
     /**
      *
      */
@@ -96,8 +92,6 @@ public class JettyRunMojo extends AbstractWebAppMojo
         super.configureWebApp();
         super.configureUnassembledWebApp();
     }
-
-
 
     @Override
     public void startJettyEmbedded() throws MojoExecutionException
@@ -158,14 +152,14 @@ public class JettyRunMojo extends AbstractWebAppMojo
         }
     }
 
-    private void startScanner ()
-    throws Exception
+    private void startScanner()
+        throws Exception
     {
         // start scanning for changes, or wait for linefeed on stdin
         if (scan > 0)
         {
             scanner = new PathWatcher();
-            configureScanner ();
+            configureScanner();
             scanner.setNotifyExistingOnStart(false);
             scanner.start();
         }
@@ -193,8 +187,8 @@ public class JettyRunMojo extends AbstractWebAppMojo
         }
     }
 
-    protected void configureScanner ()
-    throws MojoExecutionException
+    protected void configureScanner()
+        throws MojoExecutionException
     {
         try
         {
@@ -235,7 +229,6 @@ public class JettyRunMojo extends AbstractWebAppMojo
         });
     }
 
-    
     public void gatherScannables() throws Exception
     {
         if (webApp.getDescriptor() != null)
@@ -352,7 +345,7 @@ public class JettyRunMojo extends AbstractWebAppMojo
      */
     public void restartWebApp(boolean reconfigure) throws Exception 
     {
-        getLog().info("Restarting "+webApp);
+        getLog().info("Restarting " + webApp);
         getLog().debug("Stopping webapp ...");
         if (scanner != null)
             scanner.stop();
@@ -382,7 +375,7 @@ public class JettyRunMojo extends AbstractWebAppMojo
                 embedder.redeployWebApp();
                 if (scanner != null)
                     scanner.start();
-                getLog().info("Restart completed at "+new Date().toString());
+                getLog().info("Restart completed at " + new Date().toString());
                 
                 break;
             }
@@ -433,7 +426,7 @@ public class JettyRunMojo extends AbstractWebAppMojo
             }
             default:
             {
-                throw new IllegalStateException("Unrecognized run type "+deployMode);
+                throw new IllegalStateException("Unrecognized run type " + deployMode);
             }
         }
     }

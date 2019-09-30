@@ -16,7 +16,6 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.maven.plugin;
 
 import java.io.File;
@@ -30,12 +29,13 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
 /**
  * Run enough of jetty in order to generate a quickstart file for a
- * webapp.
+ * webapp. Optionally, some essential elements of the WebAppContext
+ * configuration can also be converted to properties and saved to
+ * a file after the quickstart generation.
  *
  */
 public class QuickStartGenerator
 {
-
     private File quickstartXml;
     private JettyWebAppContext webApp;
     private File webAppPropsFile;
@@ -130,7 +130,7 @@ public class QuickStartGenerator
         throws Exception
     {
         if (quickstartXml == null)
-            throw new IllegalStateException ("No quickstart xml output file");
+            throw new IllegalStateException("No quickstart xml output file");
 
         if (!prepared)
         {

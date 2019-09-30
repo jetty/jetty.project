@@ -19,8 +19,6 @@
 package org.eclipse.jetty.maven.plugin;
 
 import org.apache.maven.plugin.MojoExecutionException;
-import org.apache.maven.plugins.annotations.Execute;
-import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.eclipse.jetty.util.StringUtil;
@@ -53,7 +51,6 @@ public class JettyStartWarMojo extends AbstractWebAppMojo
     protected JettyForker forker;
     protected JettyDistroForker distroForker;
 
-    
     @Override
     public void configureWebApp() throws Exception
     {
@@ -64,7 +61,7 @@ public class JettyStartWarMojo extends AbstractWebAppMojo
             configureUnassembledWebApp();
         }
 
-        getLog().info("War = "+webApp.getWar());
+        getLog().info("War = " + webApp.getWar());
     }
     
     /**

@@ -16,7 +16,6 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.maven.plugin;
 
 import java.io.Console;
@@ -37,7 +36,7 @@ public class ConsoleReader implements Runnable
     
     public interface Listener extends EventListener
     {
-        public void consoleEvent (String line);
+        public void consoleEvent(String line);
     }
 
     public Set<ConsoleReader.Listener> listeners = new HashSet<>();
@@ -58,7 +57,7 @@ public class ConsoleReader implements Runnable
         if (console == null)
             return;
 
-        String line ="";
+        String line = "";
         while (true && line != null)
         {
             line = console.readLine("%nHit <enter> to redeploy:%n%n");
@@ -67,8 +66,7 @@ public class ConsoleReader implements Runnable
         }
     }
     
-    
-    public void signalEvent(String line)
+    private void signalEvent(String line)
     {
         for (ConsoleReader.Listener l:listeners)
             l.consoleEvent(line);

@@ -43,7 +43,22 @@ import org.eclipse.jetty.xml.XmlConfiguration;
  */
 public class WebAppPropertyConverter
 {
-
+    public static String WEB_XML = "web.xml";
+    public static String QUICKSTART_WEB_XML = "quickstart.web.xml";
+    public static String CONTEXT_XML = "context.xml";
+    public static String CONTEXT_PATH = "context.path";
+    public static String TMP_DIR = "tmp.dir";
+    public static String TMP_DIR_PERSIST = "tmp.dir.persist";
+    public static String BASE_DIRS = "base.dirs";
+    public static String WAR_FILE = "war.file";
+    public static String CLASSES_DIR = "classes.dir";
+    public static String TEST_CLASSES_DIR = "testClasses.dir";
+    public static String LIB_JARS = "lib.jars";
+    public static String DEFAULTS_DESCRIPTOR = "web.default.xml";
+    public static String OVERRIDE_DESCRIPTORS = "web.overrides.xml";
+    
+    //TODO :Support defaults descriptor!
+    
     /**
      * Convert a webapp to properties stored in a file.
      *
@@ -70,46 +85,46 @@ public class WebAppPropertyConverter
         //web.xml
         if (webApp.getDescriptor() != null)
         {
-            props.put("web.xml", webApp.getDescriptor());
+            props.put(WEB_XML, webApp.getDescriptor());
         }
 
         Object tmp = webApp.getAttribute(QuickStartConfiguration.QUICKSTART_WEB_XML);
         if (tmp != null)
         {
-            props.put("quickstart.web.xml", tmp.toString());
+            props.put(QUICKSTART_WEB_XML, tmp.toString());
         }
 
         //sort out the context path
         if (webApp.getContextPath() != null)
         {
-            props.put("context.path", webApp.getContextPath());
+            props.put(CONTEXT_PATH, webApp.getContextPath());
         }
 
         //tmp dir
-        props.put("tmp.dir", webApp.getTempDirectory().getAbsolutePath());
+        props.put(TMP_DIR, webApp.getTempDirectory().getAbsolutePath());
         //props.put("tmp.dir.persist", Boolean.toString(originalPersistTemp));
-        props.put("tmp.dir.persist", Boolean.toString(webApp.isPersistTempDirectory()));
+        props.put(TMP_DIR_PERSIST, Boolean.toString(webApp.isPersistTempDirectory()));
 
         //send over the calculated resource bases that includes unpacked overlays
         Resource baseResource = webApp.getBaseResource();
         if (baseResource instanceof ResourceCollection)
-            props.put("base.dirs", toCSV(((ResourceCollection)webApp.getBaseResource()).getResources()));
+            props.put(BASE_DIRS, toCSV(((ResourceCollection)webApp.getBaseResource()).getResources()));
         else if (baseResource instanceof Resource)
-            props.put("base.dirs", webApp.getBaseResource().toString());
+            props.put(BASE_DIRS, webApp.getBaseResource().toString());
         
         //if there is a war file, use that
         if (webApp.getWar() != null)
-            props.put("war.file", webApp.getWar());
+            props.put(WAR_FILE, webApp.getWar());
 
         //web-inf classes
         if (webApp.getClasses() != null)
         {
-            props.put("classes.dir", webApp.getClasses().getAbsolutePath());
+            props.put(CLASSES_DIR, webApp.getClasses().getAbsolutePath());
         }
 
         if (webApp.getTestClasses() != null)
         {
-            props.put("testClasses.dir", webApp.getTestClasses().getAbsolutePath());
+            props.put(TEST_CLASSES_DIR, webApp.getTestClasses().getAbsolutePath());
         }
 
         //web-inf lib
@@ -125,15 +140,23 @@ public class WebAppPropertyConverter
                     strbuff.append(",");
             }
         }
-        props.put("lib.jars", strbuff.toString());
+        props.put(LIB_JARS, strbuff.toString());
 
         //context xml to apply
         if (contextXml != null)
-            props.put("context.xml", contextXml);
+            props.put(CONTEXT_XML, contextXml);
+        
+        if (webApp.getDefaultsDescriptor() != null)
+            props.put(DEFAULTS_DESCRIPTOR, webApp.getDefaultsDescriptor());
+        
+        if (webApp.getOverrideDescriptors() != null)
+        {
+            props.put(OVERRIDE_DESCRIPTORS, String.join(",", webApp.getOverrideDescriptors()));
+        }
 
         try (BufferedWriter out = Files.newBufferedWriter(propsFile.toPath()))
         {
-            props.store(out, "properties for forked webapp");
+            props.store(out, "properties for webapp");
         }
     }
 
@@ -165,7 +188,7 @@ public class WebAppPropertyConverter
      * 
      * @throws Exception
      */
-    public static void fromProperties (JettyWebAppContext webApp, Properties webAppProperties, Server server, Map<String,String> jettyProperties)
+    public static void fromProperties(JettyWebAppContext webApp, Properties webAppProperties, Server server, Map<String,String> jettyProperties)
         throws Exception
     {
         if (webApp == null)
@@ -174,33 +197,33 @@ public class WebAppPropertyConverter
         if (webAppProperties == null)
             return;
 
-        String str = webAppProperties.getProperty("context.path");
+        String str = webAppProperties.getProperty(CONTEXT_PATH);
         if (!StringUtil.isBlank(str))
             webApp.setContextPath(str);
 
         // - web.xml
-        str = webAppProperties.getProperty("web.xml");
+        str = webAppProperties.getProperty(WEB_XML);
         if (!StringUtil.isBlank(str))
             webApp.setDescriptor(str);
 
         //if there is a pregenerated quickstart file
-        str = webAppProperties.getProperty("quickstart.web.xml");
+        str = webAppProperties.getProperty(QUICKSTART_WEB_XML);
         if (!StringUtil.isBlank(str))
         {
             webApp.setAttribute(QuickStartConfiguration.QUICKSTART_WEB_XML, Resource.newResource(str));
         }
 
         // - the tmp directory
-        str = webAppProperties.getProperty("tmp.dir");
+        str = webAppProperties.getProperty(TMP_DIR);
         if (!StringUtil.isBlank(str))
             webApp.setTempDirectory(new File(str.trim()));
 
-        str = webAppProperties.getProperty("tmp.dir.persist");
+        str = webAppProperties.getProperty(TMP_DIR_PERSIST);
         if (!StringUtil.isBlank(str))
             webApp.setPersistTempDirectory(Boolean.valueOf(str));
 
         //Get the calculated base dirs which includes the overlays
-        str = webAppProperties.getProperty("base.dirs");
+        str = webAppProperties.getProperty(BASE_DIRS);
         if (!StringUtil.isBlank(str))
         {
             ResourceCollection bases = new ResourceCollection(StringUtil.csvSplit(str));
@@ -208,27 +231,27 @@ public class WebAppPropertyConverter
             webApp.setBaseResource(bases);
         }
 
-        str = webAppProperties.getProperty("war.file");
+        str = webAppProperties.getProperty(WAR_FILE);
         if (!StringUtil.isBlank(str))
         {
             webApp.setWar(str);
         }
         
         // - the equivalent of web-inf classes
-        str = webAppProperties.getProperty("classes.dir");
+        str = webAppProperties.getProperty(CLASSES_DIR);
         if (!StringUtil.isBlank(str))
         {
             webApp.setClasses(new File(str));
         }
 
-        str = webAppProperties.getProperty("testClasses.dir");
+        str = webAppProperties.getProperty(TEST_CLASSES_DIR);
         if (!StringUtil.isBlank(str))
         {
             webApp.setTestClasses(new File(str));
         }
 
         // - the equivalent of web-inf lib
-        str = webAppProperties.getProperty("lib.jars");
+        str = webAppProperties.getProperty(LIB_JARS);
         if (!StringUtil.isBlank(str))
         {
             List<File> jars = new ArrayList<File>();
@@ -240,13 +263,31 @@ public class WebAppPropertyConverter
             webApp.setWebInfLib(jars);
         }
 
+        //any defaults descriptor
+        str = (String)webAppProperties.getProperty(DEFAULTS_DESCRIPTOR);
+        if (!StringUtil.isBlank(str))
+        {
+            webApp.setDefaultsDescriptor(str);
+        }
+        
+        //any override descriptors
+        str = (String)webAppProperties.getProperty(OVERRIDE_DESCRIPTORS);
+        if (!StringUtil.isBlank(str))
+        {
+            String[] names = StringUtil.csvSplit(str);
+            for (int j = 0; names != null && j < names.length; j++)
+            {
+                webApp.addOverrideDescriptor(names[j]);
+            }
+        }
+        
         //set up the webapp from the context xml file provided
         //NOTE: just like jetty:run mojo this means that the context file can
         //potentially override settings made in the pom. Ideally, we'd like
         //the pom to override the context xml file, but as the other mojos all
         //configure a WebAppContext in the pom (the <webApp> element), it is 
         //already configured by the time the context xml file is applied.
-        str = (String)webAppProperties.getProperty("context.xml");
+        str = (String)webAppProperties.getProperty(CONTEXT_XML);
         if (!StringUtil.isBlank(str))
         {
             XmlConfiguration xmlConfiguration = new XmlConfiguration(Resource.newResource(str));
@@ -271,15 +312,15 @@ public class WebAppPropertyConverter
      * @param jettyProperties jetty properties to use if there is a context xml file to apply
      * @throws Exception
      */
-    public static void fromProperties (JettyWebAppContext webApp, File propsFile, Server server, Map<String,String> jettyProperties)
-    throws Exception
+    public static void fromProperties(JettyWebAppContext webApp, File propsFile, Server server, Map<String,String> jettyProperties)
+        throws Exception
     {
 
         if (propsFile == null)
             throw new IllegalArgumentException("No properties file");
         
         if (!propsFile.exists())
-            throw new IllegalArgumentException (propsFile.getCanonicalPath()+" does not exist");
+            throw new IllegalArgumentException(propsFile.getCanonicalPath() + " does not exist");
         
         Properties props = new Properties();
         try (InputStream in = new FileInputStream(propsFile))

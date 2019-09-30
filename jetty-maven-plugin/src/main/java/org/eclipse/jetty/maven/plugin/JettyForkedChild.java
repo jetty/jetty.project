@@ -16,7 +16,6 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.maven.plugin;
 
 import java.io.File;
@@ -53,20 +52,19 @@ public class JettyForkedChild extends AbstractLifeCycle
     protected PathWatcher scanner;
     protected File webAppPropsFile;
 
-    public JettyForkedChild (String[] args)
-    throws Exception
+    public JettyForkedChild(String[] args)
+        throws Exception
     {
         jetty = new JettyEmbedder();
         configure(args);
     }
-    
-    
-    public void configure (String[] args)
-    throws Exception
+
+    public void configure(String[] args)
+        throws Exception
     {
-        Map<String,String>jettyProperties = new HashMap<>();
+        Map<String,String> jettyProperties = new HashMap<>();
         
-        for (int i=0; i<args.length; i++)
+        for (int i = 0; i < args.length; i++)
         {
             //--stop-port
             if ("--stop-port".equals(args[i]))
@@ -85,9 +83,9 @@ public class JettyForkedChild extends AbstractLifeCycle
             //--jettyXml
             if ("--jetty-xml".equals(args[i]))
             {
-                List<File>jettyXmls = new ArrayList<>();
+                List<File> jettyXmls = new ArrayList<>();
                 String[] names = StringUtil.csvSplit(args[++i]);
-                for (int j=0; names!= null && j < names.length; j++)
+                for (int j = 0; names != null && j < names.length; j++)
                 {
                     jettyXmls.add(new File(names[j].trim()));
                 }
@@ -161,16 +159,16 @@ public class JettyForkedChild extends AbstractLifeCycle
         jetty.setExitVm(true);
     }
 
-    private Properties loadWebAppProps () throws FileNotFoundException, IOException
+    private Properties loadWebAppProps() throws FileNotFoundException, IOException
     {
         Properties props = new Properties();
         if (Objects.nonNull(webAppPropsFile))
             props.load(new FileInputStream(webAppPropsFile));
         return props;
     }
-    
+
     public void doStart()
-    throws Exception
+        throws Exception
     {
         super.doStart();
         
@@ -197,7 +195,7 @@ public class JettyForkedChild extends AbstractLifeCycle
      * @throws Exception 
      */
     public static void main(String[] args)
-    throws Exception
+        throws Exception
     {
         if (args == null)
             System.exit(1);

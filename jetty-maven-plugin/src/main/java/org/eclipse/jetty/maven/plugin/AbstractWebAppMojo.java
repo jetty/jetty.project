@@ -16,7 +16,6 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.maven.plugin;
 
 import java.io.File;
@@ -67,6 +66,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
+
 /**
  * AbstractWebAppMojo
  *
@@ -76,16 +76,15 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
     
     public static final String JETTY_HOME_GROUPID = "org.eclipse.jetty";
     public static final String JETTY_HOME_ARTIFACTID = "jetty-home";
-    public static final String DEFAULT_WEBAPP_SRC = "src"+File.separator+"main"+File.separator+"webapp";
+    public static final String DEFAULT_WEBAPP_SRC = "src" + File.separator + "main" + File.separator + "webapp";
     public static final String FAKE_WEBAPP = "webapp-tmp";
-    
 
-    public enum DeploymentMode
+    public enum DeploymentMode 
     {
         EMBED,
         FORK,
         DISTRO
-    };
+    }
     
     
     /**
@@ -94,7 +93,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
      * 
      * @since jetty-7.5.2
      */
-    @Parameter (defaultValue="false")
+    @Parameter (defaultValue = "false")
     protected boolean useProvidedScope;
     
 
@@ -119,7 +118,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
     /**  
      * Skip this mojo execution.
      */
-    @Parameter (property="jetty.skip", defaultValue="false")
+    @Parameter (property  = "jetty.skip", defaultValue = "false")
     protected boolean skip;
     
     
@@ -134,27 +133,27 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
     /**
      * The maven project.
      */
-    @Parameter(defaultValue="${project}", readonly=true)
+    @Parameter(defaultValue = "${project}", readonly = true)
     protected MavenProject project;
 
     
     /**
      * The artifacts for the project.
      */
-    @Parameter (defaultValue="${project.artifacts}", readonly=true)
+    @Parameter (defaultValue = "${project.artifacts}", readonly = true)
     protected Set<Artifact> projectArtifacts;
     
     /** 
      * The maven build executing.
      */    
-    @Parameter (defaultValue="${mojoExecution}", readonly=true)
+    @Parameter (defaultValue = "${mojoExecution}", readonly = true)
     protected org.apache.maven.plugin.MojoExecution execution;
     
 
     /**
      * The artifacts for the plugin itself.
      */    
-    @Parameter (defaultValue="${plugin.artifacts}", readonly=true)
+    @Parameter (defaultValue = "${plugin.artifacts}", readonly = true)
     protected List<Artifact> pluginArtifacts;
     
 
@@ -163,14 +162,14 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
      * and the dependencies of &lt;scope&gt;test&lt;scope&gt;
      * will be put first on the runtime classpath.
      */    
-    @Parameter (defaultValue="false")
+    @Parameter (defaultValue = "false")
     protected boolean useTestScope;
     
     /**
      * The directory containing generated test classes.
      * 
      */
-    @Parameter (defaultValue="${project.build.testOutputDirectory}", required=true)
+    @Parameter (defaultValue = "${project.build.testOutputDirectory}", required = true)
     protected File testClassesDirectory;
     
     /**
@@ -182,7 +181,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
     /**
      * The directory containing generated classes.
      */
-    @Parameter (defaultValue="${project.build.outputDirectory}", required=true)
+    @Parameter (defaultValue = "${project.build.outputDirectory}", required = true)
     protected File classesDirectory;
     
 
@@ -196,7 +195,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
     /**
      * Root directory for all html/jsp etc files
      */
-    @Parameter (defaultValue="${project.baseDir}/src/main/webapp")
+    @Parameter (defaultValue = "${project.baseDir}/src/main/webapp")
     protected File webAppSourceDirectory;
     
     /**
@@ -205,7 +204,6 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
     @Parameter
     protected File[] scanTargets;
     
-
     /**
      * List of directories with ant-style &lt;include&gt; and &lt;exclude&gt; patterns
      * for extra targets to periodically scan for changes. Can be used instead of,
@@ -214,21 +212,20 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
      */
     protected ScanTargetPattern[] scanTargetPatterns;
     
-
-    @Parameter(defaultValue = "${reactorProjects}", readonly=true, required=true)
+    @Parameter(defaultValue = "${reactorProjects}", readonly = true, required = true)
     protected List<MavenProject> reactorProjects;
     
     /**
      * The default location of the web.xml file. Will be used
      * if &lt;webApp&gt;&lt;descriptor&gt; is not set.
      */
-    @Parameter (defaultValue="${project.baseDir}/src/main/webapp/WEB-INF/web.xml")
+    @Parameter (defaultValue = "${project.baseDir}/src/main/webapp/WEB-INF/web.xml")
     protected File webXml;
     
     /**
      * The target directory
      */
-    @Parameter (defaultValue="${project.build.directory}", required=true, readonly=true)
+    @Parameter (defaultValue = "${project.build.directory}", required = true, readonly = true)
     protected File target;
     
     
@@ -256,7 +253,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
      * 
      * 
      */
-    @Parameter (property="jetty.systemPropertiesFile")
+    @Parameter (property = "jetty.systemPropertiesFile")
     protected File systemPropertiesFile;
 
     
@@ -273,7 +270,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
     /** 
      * Controls how to run jetty. Valid values are EMBED,FORK,DISTRO.
      */
-    @Parameter (property="jetty.deployMode", defaultValue="EMBED") 
+    @Parameter (property = "jetty.deployMode", defaultValue = "EMBED") 
     protected DeploymentMode deployMode;
     
     
@@ -326,7 +323,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
     /**
      * Arbitrary jvm args to pass to the forked process
      */
-    @Parameter (property="jetty.jvmArgs")
+    @Parameter (property = "jetty.jvmArgs")
     protected String jvmArgs;
     
     /**
@@ -375,7 +372,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
      * The file into which to generate the quickstart web xml for the forked process to use
      * 
      */
-    @Parameter (defaultValue="${project.build.directory}/fork-web.xml")
+    @Parameter (defaultValue = "${project.build.directory}/fork-web.xml")
     protected File forkWebXml;
     //End of FORK only parameters
     
@@ -389,13 +386,13 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
      * 
      * @required
      */
-    @Parameter (defaultValue="${plugin}", readonly=true, required=true)
+    @Parameter (defaultValue = "${plugin}", readonly = true, required = true)
     protected PluginDescriptor plugin;
     
     /**
      * The project's remote repositories to use for the resolution.
      */
-    @Parameter (defaultValue="${project.remoteArtifactRepositories}", readonly=true, required=true)
+    @Parameter (defaultValue = "${project.remoteArtifactRepositories}", readonly = true, required = true)
     private List<ArtifactRepository> remoteRepositories;
 
     /**
@@ -407,7 +404,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
     /**
      * The current maven session
      */
-    @Parameter (defaultValue="${session}", required=true, readonly=true)
+    @Parameter (defaultValue = "${session}", required = true, readonly = true)
     private MavenSession session;
     
     /**
@@ -437,7 +434,6 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
      */
     protected Map<String,String> mergedSystemProperties;
 
-
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException
     {
@@ -451,7 +447,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
 
             if (isExcludedGoal(execution.getMojoDescriptor().getGoal()))
             {
-                getLog().info("The goal \""+execution.getMojoDescriptor().getFullGoalName()+
+                getLog().info("The goal \"" + execution.getMojoDescriptor().getFullGoalName() + 
                     "\" is unavailable for this web app because of an <excludedGoal> configuration.");
                 return;
             }
@@ -469,9 +465,8 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
             getLog().info("Packaging type [" + project.getPackaging() + "] is unsupported");
     }
 
-
     protected void startJetty()
-    throws MojoExecutionException, MojoFailureException
+        throws MojoExecutionException, MojoFailureException
     {
         try
         {
@@ -500,11 +495,10 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
                 break;
             }
             default:
-                throw new MojoExecutionException("Unrecognized runType="+deployMode);
+                throw new MojoExecutionException("Unrecognized runType=" + deployMode);
         }
 
     }
-    
 
     protected abstract void startJettyEmbedded() throws MojoExecutionException;
     
@@ -512,10 +506,8 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
     
     protected abstract void startJettyDistro() throws MojoExecutionException;
 
-
-
     protected JettyEmbedder newJettyEmbedder()
-    throws Exception
+        throws Exception
     {
         JettyEmbedder jetty = new JettyEmbedder();
         jetty.setStopKey(stopKey);
@@ -531,8 +523,6 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
         jetty.setWebApp(webApp);
         return jetty;
     }
-
-
 
     protected JettyForker newJettyForker()
         throws Exception
@@ -552,15 +542,14 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
         jetty.setContextXml(contextXml);
         jetty.setWebAppPropsFile(new File(target, "webApp.props"));
         Random random = new Random();
-        String token = Long.toString(random.nextLong()^System.currentTimeMillis(), 36).toUpperCase(Locale.ENGLISH);
-        jetty.setTokenFile(target.toPath().resolve(token+".txt").toFile());
+        String token = Long.toString(random.nextLong() ^ System.currentTimeMillis(), 36).toUpperCase(Locale.ENGLISH);
+        jetty.setTokenFile(target.toPath().resolve(token + ".txt").toFile());
         jetty.setWebApp(webApp);
         return jetty;
     }
 
-    
     protected JettyDistroForker newJettyDistroForker()
-    throws Exception
+        throws Exception
     {
         JettyDistroForker jetty = new JettyDistroForker();  
         jetty.setStopKey(stopKey);
@@ -572,11 +561,11 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
         jetty.setModules(modules);
         jetty.setSystemProperties(mergedSystemProperties);
         Random random = new Random();
-        String token = Long.toString(random.nextLong()^System.currentTimeMillis(), 36).toUpperCase(Locale.ENGLISH);
-        jetty.setTokenFile(target.toPath().resolve(token+".txt").toFile());
-       
+        String token = Long.toString(random.nextLong() ^ System.currentTimeMillis(), 36).toUpperCase(Locale.ENGLISH);
+        jetty.setTokenFile(target.toPath().resolve(token + ".txt").toFile());
+
         List<File> libExtJars = new ArrayList<>();
-        
+
         List<Dependency> pdeps = plugin.getPlugin().getDependencies();
         if (pdeps != null && !pdeps.isEmpty())
         {
@@ -612,21 +601,20 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
         return jetty;
     }
 
-
-    public File resolveArtifact (Artifact a)
-    throws ArtifactResolverException
+    public File resolveArtifact(Artifact a)
+        throws ArtifactResolverException
     {
-        return resolve (a.getGroupId(), a.getArtifactId(), a.getVersion(), a.getType());
+        return resolve(a.getGroupId(), a.getArtifactId(), a.getVersion(), a.getType());
     }
-    
-    public File resolveDependency (Dependency d)
-    throws ArtifactResolverException
+
+    public File resolveDependency(Dependency d)
+        throws ArtifactResolverException
     {
-        return resolve (d.getGroupId(), d.getArtifactId(), d.getVersion(), d.getType());
+        return resolve(d.getGroupId(), d.getArtifactId(), d.getVersion(), d.getType());
     }
 
     public File resolve(String groupId, String artifactId, String version, String type)
-    throws ArtifactResolverException
+        throws ArtifactResolverException
     {
 
         DefaultArtifactCoordinate coordinate = new DefaultArtifactCoordinate();
@@ -640,14 +628,12 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
 
         buildingRequest.setRemoteRepositories(remoteRepositories);
 
-        Artifact a = artifactResolver.resolveArtifact( buildingRequest, coordinate ).getArtifact();
+        Artifact a = artifactResolver.resolveArtifact(buildingRequest, coordinate).getArtifact();
 
         if (a != null)
             return a.getFile();
         return null;
     }
-
-    
 
     /**
      * @return
@@ -655,21 +641,21 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
     protected List<File> getProjectDependencyFiles()
     {
         List<File> dependencyFiles = new ArrayList<>();
-        for ( Iterator<Artifact> iter = projectArtifacts.iterator(); iter.hasNext(); )
+        for (Iterator<Artifact> iter = projectArtifacts.iterator(); iter.hasNext(); )
         {
             Artifact artifact = iter.next();
             
             // Include runtime and compile time libraries, and possibly test libs too
-            if(artifact.getType().equals("war"))
+            if (artifact.getType().equals("war"))
             {
                 continue;
             }
-            MavenProject mavenProject = getProjectReferences( artifact, project );
+            MavenProject mavenProject = getProjectReferences(artifact, project);
             if (mavenProject != null)
             {
                 File projectPath = Paths.get(mavenProject.getBuild().getOutputDirectory()).toFile();
-                getLog().debug( "Adding project directory " + projectPath.toString() );
-                dependencyFiles.add( projectPath );
+                getLog().debug("Adding project directory " + projectPath.toString());
+                dependencyFiles.add(projectPath);
                 continue;
             }
 
@@ -680,23 +666,22 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
                 continue; //only add dependencies of scope=test if explicitly required
 
             dependencyFiles.add(artifact.getFile());
-            getLog().info( "Adding artifact " + artifact.getFile().getName() + " with scope "+artifact.getScope()+" for WEB-INF/lib " );   
+            getLog().info("Adding artifact " + artifact.getFile().getName() + " with scope " + artifact.getScope() + " for WEB-INF/lib ");   
         }
 
         return dependencyFiles; 
     }
 
-
-    protected MavenProject getProjectReferences( Artifact artifact, MavenProject project )
+    protected MavenProject getProjectReferences(Artifact artifact, MavenProject project)
     {
-        if ( project.getProjectReferences() == null || project.getProjectReferences().isEmpty() )
+        if (project.getProjectReferences() == null || project.getProjectReferences().isEmpty())
         {
             return null;
         }
         Collection<MavenProject> mavenProjects = project.getProjectReferences().values();
-        for ( MavenProject mavenProject : mavenProjects )
+        for (MavenProject mavenProject : mavenProjects)
         {
-            if ( StringUtils.equals( mavenProject.getId(), artifact.getId() ) )
+            if (StringUtils.equals(mavenProject.getId(), artifact.getId()))
             {
                 return mavenProject;
             }
@@ -729,7 +714,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
             if (a != null)
             {
                 matchedWarArtifacts.add(a);
-                SelectiveJarResource r = new SelectiveJarResource(new URL("jar:"+Resource.toURL(a.getFile()).toString()+"!/"));
+                SelectiveJarResource r = new SelectiveJarResource(new URL("jar:" + Resource.toURL(a.getFile()).toString() + "!/"));
                 r.setIncludes(config.getIncludes());
                 r.setExcludes(config.getExcludes());
                 Overlay overlay = new Overlay(config, r);
@@ -742,16 +727,15 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
         {
             if (!matchedWarArtifacts.contains(a))
             {
-                Overlay overlay = new Overlay(null, Resource.newResource(new URL("jar:"+Resource.toURL(a.getFile()).toString()+"!/")));
+                Overlay overlay = new Overlay(null, Resource.newResource(new URL("jar:" + Resource.toURL(a.getFile()).toString() + "!/")));
                 overlays.add(overlay);
             }
         }
         return overlays;
     }
 
-
-    protected void unpackOverlays (List<Overlay> overlays)
-    throws Exception
+    protected void unpackOverlays(List<Overlay> overlays)
+        throws Exception
     {
         if (overlays == null || overlays.isEmpty())
             return;
@@ -786,11 +770,8 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
         webApp.setBaseResource(new ResourceCollection(resourceBaseCollection.toArray(new Resource[resourceBaseCollection.size()])));
     }
 
-
-
-
-    protected  Resource unpackOverlay (Overlay overlay)
-    throws IOException
+    protected  Resource unpackOverlay(Overlay overlay)
+        throws IOException
     {        
         if (overlay.getResource() == null)
             return null; //nothing to unpack
@@ -799,19 +780,19 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
         //same name in the temporary directory
         String name = overlay.getResource().getName();
         if (name.endsWith("!/"))
-            name = name.substring(0,name.length()-2);
+            name = name.substring(0, name.length() - 2);
         int i = name.lastIndexOf('/');
-        if (i>0)
-            name = name.substring(i+1,name.length());
+        if (i > 0)
+            name = name.substring(i + 1, name.length());
         name = name.replace('.', '_');
         //name = name+(++COUNTER); //add some digits to ensure uniqueness
-        File overlaysDir = new File (project.getBuild().getDirectory(), "jetty_overlays");
+        File overlaysDir = new File(project.getBuild().getDirectory(), "jetty_overlays");
         File dir = new File(overlaysDir, name);
 
         //if specified targetPath, unpack to that subdir instead
         File unpackDir = dir;
         if (overlay.getConfig() != null && overlay.getConfig().getTargetPath() != null)
-            unpackDir = new File (dir, overlay.getConfig().getTargetPath());
+            unpackDir = new File(dir, overlay.getConfig().getTargetPath());
 
         //only unpack if the overlay is newer
         if (!unpackDir.exists() || (overlay.getResource().lastModified() > unpackDir.lastModified()))
@@ -823,17 +804,13 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
         return Resource.newResource(dir.getCanonicalPath());
     }
 
-
-    /**
-     * @return
-     */
-    protected List<Artifact> getWarArtifacts ()
+    protected List<Artifact> getWarArtifacts()
     {
         if (warArtifacts != null)
             return warArtifacts;       
 
         warArtifacts = new ArrayList<>();
-        for ( Iterator<Artifact> iter = projectArtifacts.iterator(); iter.hasNext(); )
+        for (Iterator<Artifact> iter = projectArtifacts.iterator(); iter.hasNext(); )
         {
             Artifact artifact = iter.next();
             if (artifact.getType().equals("war") || artifact.getType().equals("zip"))
@@ -841,9 +818,9 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
                 try
                 {                  
                     warArtifacts.add(artifact);
-                    getLog().info("Dependent war artifact "+artifact.getId());
+                    getLog().info("Dependent war artifact " + artifact.getId());
                 }
-                catch(Exception e)
+                catch (Exception e)
                 {
                     throw new RuntimeException(e);
                 }
@@ -852,14 +829,14 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
         return warArtifacts;
     }
 
-    private Artifact getArtifactForOverlay (OverlayConfig o, List<Artifact> warArtifacts)
+    private Artifact getArtifactForOverlay(OverlayConfig o, List<Artifact> warArtifacts)
     {
         if (o == null || warArtifacts == null || warArtifacts.isEmpty())
             return null;
 
         for (Artifact a:warArtifacts)
         {
-            if (o.matchesArtifact (a.getGroupId(), a.getArtifactId(), a.getClassifier()))
+            if (o.matchesArtifact(a.getGroupId(), a.getArtifactId(), a.getClassifier()))
             {
                 return a;
             }
@@ -874,18 +851,18 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
      * 
      * 
      */
-    protected void verifyPomConfiguration () throws MojoExecutionException
+    protected void verifyPomConfiguration() throws MojoExecutionException
     {        
         // check the location of the static content/jsps etc
         try
         {
             if ((webAppSourceDirectory == null) || !webAppSourceDirectory.exists())
             {  
-                getLog().info("webAppSourceDirectory"+(webAppSourceDirectory == null ? " not set." : (webAppSourceDirectory.getAbsolutePath()+" does not exist."))+" Trying "+DEFAULT_WEBAPP_SRC);
-                webAppSourceDirectory = new File (project.getBasedir(), DEFAULT_WEBAPP_SRC);             
+                getLog().info("webAppSourceDirectory" + (webAppSourceDirectory == null ? " not set." : (webAppSourceDirectory.getAbsolutePath() + " does not exist.")) + " Trying " + DEFAULT_WEBAPP_SRC);
+                webAppSourceDirectory = new File(project.getBasedir(), DEFAULT_WEBAPP_SRC);             
                 if (!webAppSourceDirectory.exists())
                 {
-                    getLog().info("webAppSourceDirectory "+webAppSourceDirectory.getAbsolutePath()+" does not exist. Trying "+project.getBuild().getDirectory()+File.separator+FAKE_WEBAPP);
+                    getLog().info("webAppSourceDirectory " + webAppSourceDirectory.getAbsolutePath() + " does not exist. Trying " + project.getBuild().getDirectory() + File.separator + FAKE_WEBAPP);
 
                     //try last resort of making a fake empty dir
                     File target = new File(project.getBuild().getDirectory());
@@ -895,7 +872,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
                 }
             }
             else
-                getLog().info( "Webapp source directory = " + webAppSourceDirectory.getCanonicalPath());
+                getLog().info("Webapp source directory = " + webAppSourceDirectory.getCanonicalPath());
         }
         catch (IOException e)
         {
@@ -909,7 +886,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
             if (classesDirectory != null)
             {
                 if (!classesDirectory.exists())
-                    getLog().info( "Classes directory "+ classesDirectory.getCanonicalPath()+ " does not exist");
+                    getLog().info("Classes directory " + classesDirectory.getCanonicalPath() + " does not exist");
                 else
                     getLog().info("Classes = " + classesDirectory.getCanonicalPath());
             }
@@ -942,7 +919,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
             }
             catch (Exception e)
             {
-                throw new MojoExecutionException("Problem applying system properties from file "+systemPropertiesFile.getName(),e);
+                throw new MojoExecutionException("Problem applying system properties from file " + systemPropertiesFile.getName(),e);
             }
         }
         //Allow systemProperties defined in the pom to override the file
@@ -953,18 +930,18 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
         return properties;
     }
 
-    protected void configureSystemProperties ()
-    throws MojoExecutionException
+    protected void configureSystemProperties()
+        throws MojoExecutionException
     {
-       if (mergedSystemProperties != null)
-       {
-           for (Map.Entry<String,String> e : mergedSystemProperties.entrySet())
-           {
-               System.setProperty(e.getKey(), e.getValue());
-               if (getLog().isDebugEnabled())
-                   getLog().debug("Set system property " + e.getKey()+"=" + e.getValue());
-           }
-       }
+        if (mergedSystemProperties != null)
+        {
+            for (Map.Entry<String,String> e : mergedSystemProperties.entrySet())
+            {
+                System.setProperty(e.getKey(), e.getValue());
+                if (getLog().isDebugEnabled())
+                    getLog().debug("Set system property " + e.getKey() + "=" + e.getValue());
+            }
+        }
     }
 
     /**
@@ -984,12 +961,12 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
             try
             {
                 URL[] urls = new URL[providedJars.size()];
-                int i=0;
+                int i = 0;
                 for (File providedJar:providedJars)
                     urls[i++] = providedJar.toURI().toURL();
                 URLClassLoader loader  = new URLClassLoader(urls, getClass().getClassLoader());
                 Thread.currentThread().setContextClassLoader(loader);
-                getLog().info("Plugin classpath augmented with <scope>provided</scope> dependencies: "+Arrays.toString(urls));
+                getLog().info("Plugin classpath augmented with <scope>provided</scope> dependencies: " + Arrays.toString(urls));
             }
             catch (MalformedURLException e)
             {
@@ -1007,7 +984,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
         if (useProvidedScope)
         {
             List<File> provided = new ArrayList<>();        
-            for ( Iterator<Artifact> iter = project.getArtifacts().iterator(); iter.hasNext(); )
+            for (Iterator<Artifact> iter = project.getArtifacts().iterator(); iter.hasNext(); )
             {                   
                 Artifact artifact = iter.next();
                 if (Artifact.SCOPE_PROVIDED.equals(artifact.getScope()) && !isPluginArtifact(artifact))
@@ -1025,7 +1002,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
         StringBuilder classPath = new StringBuilder();
         for (Object obj : pluginArtifacts)
         {
-            Artifact artifact = (Artifact) obj;
+            Artifact artifact = (Artifact)obj;
             if ("jar".equals(artifact.getType()) && !artifact.getGroupId().contains("slf4j"))
             {
                 if (classPath.length() > 0)
@@ -1046,7 +1023,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
             {
                 classPath.append(File.pathSeparator);
                 classPath.append(jar.getAbsolutePath());
-                if (getLog().isDebugEnabled()) getLog().debug("Adding provided jar: "+jar);
+                if (getLog().isDebugEnabled()) getLog().debug("Adding provided jar: " + jar);
             }
         }
 
@@ -1069,7 +1046,8 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
         boolean isPluginArtifact = false;
         for (Artifact pluginArtifact: pluginArtifacts)
         {
-            if (getLog().isDebugEnabled()) { getLog().debug("Checking "+pluginArtifact);}
+            if (getLog().isDebugEnabled())
+                getLog().debug("Checking " + pluginArtifact);
             if (pluginArtifact.getGroupId().equals(artifact.getGroupId()) && pluginArtifact.getArtifactId().equals(artifact.getArtifactId()))
                 break;
         }
@@ -1084,7 +1062,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
      * @param goal the goal to check
      * @return true if the goal is excluded, false otherwise
      */
-    protected boolean isExcludedGoal (String goal)
+    protected boolean isExcludedGoal(String goal)
     {
         if (excludedGoals == null || goal == null)
             return false;
@@ -1094,7 +1072,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
             return false;
         
         boolean excluded = false;
-        for (int i=0; i<excludedGoals.length && !excluded; i++)
+        for (int i = 0; i < excludedGoals.length && !excluded; i++)
         {
             if (excludedGoals[i].equalsIgnoreCase(goal))
                 excluded = true;
@@ -1119,9 +1097,9 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
         }
         return projectName;
     }
-    
+
     protected void configureWebApp()
-    throws Exception
+        throws Exception
     {
         if (webApp == null)
             webApp = new JettyWebAppContext();
@@ -1130,7 +1108,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
         String cp = webApp.getContextPath();
         if (cp == null || "".equals(cp))
         {
-            cp = "/"+project.getArtifactId();
+            cp = "/" +  project.getArtifactId();
             webApp.setContextPath(cp);
         }        
 
@@ -1145,9 +1123,8 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
         }
 
         getLog().info("Context path = " + webApp.getContextPath());
-        getLog().info("Tmp directory = "+ (webApp.getTempDirectory()== null? " determined at runtime": webApp.getTempDirectory()));
+        getLog().info("Tmp directory = " + (webApp.getTempDirectory() == null ? " determined at runtime" : webApp.getTempDirectory()));
     }
-    
     
     protected void configureUnassembledWebApp() throws Exception
     {   
@@ -1174,10 +1151,10 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
         webApp.setBaseResource(originalBaseResource);
 
         if (classesDirectory != null)
-            webApp.setClasses (classesDirectory);
+            webApp.setClasses(classesDirectory);
 
         if (useTestScope && (testClassesDirectory != null))
-            webApp.setTestClasses (testClassesDirectory);
+            webApp.setTestClasses(testClassesDirectory);
 
         MavenProjectHelper mavenProjectHelper = new MavenProjectHelper(project);
         List<File> webInfLibs = getWebInfLibArtifacts().stream()
@@ -1195,42 +1172,42 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
         {
             //Has an explicit web.xml file been configured to use?
             if (webXml != null)
-             {
-                 Resource r = Resource.newResource(webXml);
-                 if (r.exists() && !r.isDirectory())
-                 {
-                     webApp.setDescriptor(r.toString());
-                 }
-             }
-             
-             //Still don't have a web.xml file: try the resourceBase of the webapp, if it is set
-             if (webApp.getDescriptor() == null && webApp.getBaseResource() != null)
-             {
-                 Resource r = webApp.getBaseResource().addPath("WEB-INF/web.xml");
-                 if (r.exists() && !r.isDirectory())
-                 {
-                     webApp.setDescriptor(r.toString());
-                 }
-             }
-             
-             //Still don't have a web.xml file: finally try the configured static resource directory if there is one
-             if (webApp.getDescriptor() == null && (webAppSourceDirectory != null))
-             {
-                 File f = new File (new File (webAppSourceDirectory, "WEB-INF"), "web.xml");
-                 if (f.exists() && f.isFile())
-                 {
+            {
+                Resource r = Resource.newResource(webXml);
+                if (r.exists() && !r.isDirectory())
+                {
+                    webApp.setDescriptor(r.toString());
+                }
+            }
+
+            //Still don't have a web.xml file: try the resourceBase of the webapp, if it is set
+            if (webApp.getDescriptor() == null && webApp.getBaseResource() != null)
+            {
+                Resource r = webApp.getBaseResource().addPath("WEB-INF/web.xml");
+                if (r.exists() && !r.isDirectory())
+                {
+                    webApp.setDescriptor(r.toString());
+                }
+            }
+
+            //Still don't have a web.xml file: finally try the configured static resource directory if there is one
+            if (webApp.getDescriptor() == null && (webAppSourceDirectory != null))
+            {
+                File f = new File(new File(webAppSourceDirectory, "WEB-INF"), "web.xml");
+                if (f.exists() && f.isFile())
+                {
                     webApp.setDescriptor(f.getCanonicalPath());
-                 }
-             }
+                }
+            }
         }
 
         //process any overlays and the war type artifacts
         unpackOverlays(getOverlays()); //this sets up the base resource collection
         
-        getLog().info("web.xml file = "+webApp.getDescriptor());       
+        getLog().info("web.xml file = " + webApp.getDescriptor());       
         getLog().info("Webapp directory = " + webAppSourceDirectory.getCanonicalPath());
-        getLog().info("Web defaults = "+(webApp.getDefaultsDescriptor()==null?" jetty default":webApp.getDefaultsDescriptor()));
-        getLog().info("Web overrides = "+(webApp.getOverrideDescriptor()==null?" none":webApp.getOverrideDescriptor()));
+        getLog().info("Web defaults = " + (webApp.getDefaultsDescriptor() == null ? " jetty default" : webApp.getDefaultsDescriptor()));
+        getLog().info("Web overrides = " + (webApp.getOverrideDescriptor() == null ? " none" : webApp.getOverrideDescriptor()));
     }
 
     
@@ -1240,30 +1217,29 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
      * @param webInfDir the web inf directory
      * @return the jetty web xml file
      */
-    protected File findJettyWebXmlFile (File webInfDir)
+    protected File findJettyWebXmlFile(File webInfDir)
     {
         if (webInfDir == null)
             return null;
         if (!webInfDir.exists())
             return null;
 
-        File f = new File (webInfDir, "jetty-web.xml");
+        File f = new File(webInfDir, "jetty-web.xml");
         if (f.exists())
             return f;
 
         //try some historical alternatives
-        f = new File (webInfDir, "web-jetty.xml");
+        f = new File(webInfDir, "web-jetty.xml");
         if (f.exists())
             return f;
         
         return null;
     }
     
-    
     /**
      * Get a file into which to write output from jetty.
      */
-    protected File getJettyOutputFile (String name) throws Exception
+    protected File getJettyOutputFile(String name) throws Exception
     {
         File outputFile = new File(target, name);
         if (outputFile.exists())

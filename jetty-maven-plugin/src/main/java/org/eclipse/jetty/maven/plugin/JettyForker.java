@@ -16,7 +16,6 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.maven.plugin;
 
 import java.io.File;
@@ -70,24 +69,20 @@ public class JettyForker extends AbstractForker
         this.scan = scan;
     }
 
-
     public File getWebAppPropsFile()
     {
         return webAppPropsFile;
     }
-
 
     public void setWebAppPropsFile(File webAppPropsFile)
     {
         this.webAppPropsFile = webAppPropsFile;
     }
 
-
     public File getForkWebXml()
     {
         return forkWebXml;
     }
-
 
     public void setForkWebXml(File forkWebXml)
     {
@@ -109,14 +104,12 @@ public class JettyForker extends AbstractForker
         return containerClassPath;
     }
 
-
     public void setContainerClassPath(String containerClassPath)
     {
         this.containerClassPath = containerClassPath;
     }
 
-
-    public void setWebApp (JettyWebAppContext app)
+    public void setWebApp(JettyWebAppContext app)
     {
         webApp = app;
     }
@@ -126,15 +119,13 @@ public class JettyForker extends AbstractForker
         return server;
     }
 
-
     public void setServer(Server server)
     {
         this.server = server;
     }
 
-
     @Override
-    public void doStart ()
+    public void doStart()
         throws Exception
     {
         //Run the webapp to create the quickstart file and properties file
@@ -145,16 +136,16 @@ public class JettyForker extends AbstractForker
         generator.generate();
         super.doStart();
     }
-    
-    protected void redeployWebApp ()
-    throws Exception 
+
+    protected void redeployWebApp()
+        throws Exception 
     {
         //regenerating the quickstart will be noticed by the JettyForkedChild process
         //which will redeploy the webapp
         generator.generate();
     }
  
-    public ProcessBuilder createCommand ()
+    public ProcessBuilder createCommand()
     {
         List<String> cmd = new ArrayList<String>();
         cmd.add(getJavaBin());
@@ -162,9 +153,9 @@ public class JettyForker extends AbstractForker
         if (jvmArgs != null)
         {
             String[] args = jvmArgs.split(" ");
-            for (int i=0;args != null && i<args.length;i++)
+            for (int i = 0;args != null && i < args.length;i++)
             {
-                if (args[i] !=null && !"".equals(args[i]))
+                if (args[i] != null && !"".equals(args[i]))
                     cmd.add(args[i].trim());
             }
         }     
@@ -173,7 +164,7 @@ public class JettyForker extends AbstractForker
         {
             for (Map.Entry<String,String> e:systemProperties.entrySet())
             {
-                cmd.add("-D"+e.getKey()+"="+e.getValue());
+                cmd.add("-D" + e.getKey() + "=" + e.getValue());
             }
         }
         
@@ -198,7 +189,7 @@ public class JettyForker extends AbstractForker
             StringBuilder tmp = new StringBuilder();
             for (File jettyXml:jettyXmlFiles)
             {
-                if (tmp.length()!=0)
+                if (tmp.length() != 0)
                     tmp.append(",");
                 tmp.append(jettyXml.getAbsolutePath());
             }
@@ -220,7 +211,7 @@ public class JettyForker extends AbstractForker
         {
             for (Map.Entry<String, String> e:jettyProperties.entrySet())
             {
-                cmd.add(e.getKey()+"="+e.getValue());
+                cmd.add(e.getKey() + "=" + e.getValue());
             }
         }
         
@@ -228,7 +219,7 @@ public class JettyForker extends AbstractForker
         command.directory(workDir);
 
         if (PluginLog.getLog().isDebugEnabled())
-            PluginLog.getLog().debug("Forked cli:"+command.command());
+            PluginLog.getLog().debug("Forked cli:" + command.command());
 
         PluginLog.getLog().info("Forked process starting");
 
@@ -250,12 +241,11 @@ public class JettyForker extends AbstractForker
 
 
     /**
-     * @return
+     * @return the location of the java binary
      */
     private String getJavaBin()
     {
-        String javaexes[] = new String[]
-        { "java", "java.exe" };
+        String[] javaexes = new String[]{"java", "java.exe"};
 
         File javaHomeDir = new File(System.getProperty("java.home"));
         for (String javaexe : javaexes)
@@ -269,9 +259,7 @@ public class JettyForker extends AbstractForker
 
         return "java";
     }
-    
-    
-    
+
     public static String fileSeparators(String path)
     {
         StringBuilder ret = new StringBuilder();
