@@ -45,6 +45,61 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
     private static final Logger LOG = Log.getLogger(QueuedThreadPoolTest.class);
     private final AtomicInteger _jobs = new AtomicInteger();
 
+    private static class TestQueuedThreadPool extends QueuedThreadPool
+    {
+        private final AtomicInteger _started;
+        private final CountDownLatch _enteredRemoveThread;
+        private final CountDownLatch _exitRemoveThread;
+
+        public TestQueuedThreadPool(AtomicInteger started, CountDownLatch enteredRemoveThread, CountDownLatch exitRemoveThread)
+        {
+            _started = started;
+            _enteredRemoveThread = enteredRemoveThread;
+            _exitRemoveThread = exitRemoveThread;
+        }
+
+        public void superStartThread()
+        {
+            super.startThread();
+        }
+
+        @Override
+        protected void startThread()
+        {
+            switch (_started.incrementAndGet())
+            {
+                case 1:
+                case 2:
+                case 3:
+                    super.startThread();
+                    break;
+
+                case 4:
+                    // deliberately not start thread
+                    break;
+
+                default:
+                    throw new IllegalStateException("too many threads started");
+            }
+        }
+
+        @Override
+        protected void removeThread(Thread thread)
+        {
+            try
+            {
+                _enteredRemoveThread.countDown();
+                _exitRemoveThread.await();
+            }
+            catch (Exception e)
+            {
+                throw new RuntimeException(e);
+            }
+
+            super.removeThread(thread);
+        }
+    }
+
     private class RunningJob implements Runnable
     {
         final CountDownLatch _run = new CountDownLatch(1);
@@ -447,6 +502,63 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         }
         waitForThreads(tp, 2);
         waitForIdle(tp, 2);
+        tp.stop();
+    }
+
+    @Test
+    public void testEnsureThreads() throws Exception
+    {
+        AtomicInteger started = new AtomicInteger(0);
+
+        CountDownLatch enteredRemoveThread = new CountDownLatch(1);
+        CountDownLatch exitRemoveThread = new CountDownLatch(1);
+        TestQueuedThreadPool tp = new TestQueuedThreadPool(started, enteredRemoveThread, exitRemoveThread);
+
+        tp.setMinThreads(2);
+        tp.setMaxThreads(10);
+        tp.setIdleTimeout(400);
+        tp.setThreadsPriority(Thread.NORM_PRIORITY - 1);
+
+        tp.start();
+        waitForIdle(tp, 2);
+        waitForThreads(tp, 2);
+
+        RunningJob job1 = new RunningJob();
+        RunningJob job2 = new RunningJob();
+        RunningJob job3 = new RunningJob();
+        tp.execute(job1);
+        tp.execute(job2);
+        tp.execute(job3);
+
+        waitForThreads(tp, 3);
+        waitForIdle(tp, 0);
+
+        // We stop job3, the thread becomes idle, thread decides to shrink, and then blocks in removeThread().
+        job3.stop();
+        assertTrue(enteredRemoveThread.await(5, TimeUnit.SECONDS));
+        waitForThreads(tp, 3);
+        waitForIdle(tp, 1);
+
+        // Executing job4 will not start a new thread because we already have 1 idle thread.
+        RunningJob job4 = new RunningJob();
+        tp.execute(job4);
+
+        // Allow thread to exit from removeThread().
+        // The 4th thread is not actually started in our startThread() until tp.superStartThread() is called.
+        // Delay by 1000ms to check that ensureThreads is only starting one thread even though it is slow to start.
+        assertThat(started.get(), is(3));
+        exitRemoveThread.countDown();
+        Thread.sleep(1000);
+
+        // Now startThreads() should have been called 4 times.
+        // Actually start the thread, and job4 should be run.
+        assertThat(started.get(), is(4));
+        tp.superStartThread();
+        assertTrue(job4._run.await(5, TimeUnit.SECONDS));
+
+        job1.stop();
+        job2.stop();
+        job4.stop();
         tp.stop();
     }
 
