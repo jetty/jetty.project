@@ -155,6 +155,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
     public void doStart() throws Exception
     {
         _lease = ThreadPoolBudget.leaseFrom(getExecutor(), this, _capacity);
+        _size.set(0);
         super.doStart();
     }
 
@@ -163,15 +164,29 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
     {
         if (_lease != null)
             _lease.close();
+
+        super.doStop();
+
         while (true)
         {
+            int size = _size.get();
+            // If no reserved threads left try setting size to -1 to
+            // atomically prevent other threads adding themselves to stack.
+            if (size == 0 && _size.compareAndSet(size, -1))
+                break;
+
             ReservedThread thread = _stack.pollFirst();
             if (thread == null)
-                break;
+            {
+                // Reserved thread must have incremented size but not yet added itself to queue.
+                // We will spin until it is added.
+                Thread.onSpinWait();
+                continue;
+            }
+
             _size.decrementAndGet();
             thread.stop();
         }
-        super.doStop();
     }
 
     @Override
@@ -275,11 +290,12 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
             if (LOG.isDebugEnabled())
                 LOG.debug("{} waiting", this);
 
-            Runnable task = null;
-            while (task == null)
+            while (true)
             {
-                boolean idle = false;
+                if (!isRunning())
+                    return STOP;
 
+                boolean idle = false;
                 try (AutoLock lock = _lock.lock())
                 {
                     if (_task == null)
@@ -296,8 +312,16 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
                             LOG.ignore(e);
                         }
                     }
-                    task = _task;
-                    _task = null;
+                    else
+                    {
+                        Runnable task = _task;
+                        _task = null;
+
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("{} task={}", this, task);
+
+                        return task;
+                    }
                 }
 
                 if (idle)
@@ -312,11 +336,6 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
                     tryExecute(STOP);
                 }
             }
-
-            if (LOG.isDebugEnabled())
-                LOG.debug("{} task={}", this, task);
-
-            return task;
         }
 
         @Override
@@ -329,6 +348,8 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
                 while (true)
                 {
                     int size = _size.get();
+                    if (size < 0)
+                        return;
                     if (size >= _capacity)
                     {
                         if (LOG.isDebugEnabled())

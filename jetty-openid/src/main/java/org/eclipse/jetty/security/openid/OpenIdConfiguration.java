@@ -131,7 +131,8 @@ public class OpenIdConfiguration implements Serializable
 
     public void addScopes(String... scopes)
     {
-        Collections.addAll(this.scopes, scopes);
+        if (scopes != null)
+            Collections.addAll(this.scopes, scopes);
     }
 
     public List<String> getScopes()
