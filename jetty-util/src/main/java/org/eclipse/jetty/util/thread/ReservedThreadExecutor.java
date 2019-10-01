@@ -81,8 +81,8 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
         _executor = executor;
         _capacity = reservedThreads(executor, capacity);
         _stack = new ConcurrentLinkedDeque<>();
-
-        LOG.debug("{}", this);
+        if (LOG.isDebugEnabled())
+            LOG.debug("{}", this);
     }
 
     /**
@@ -180,7 +180,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
             {
                 // Reserved thread must have incremented size but not yet added itself to queue.
                 // We will spin until it is added.
-                Thread.yield(); // TODO: use Thread.onSpinWait() in jetty-10
+                Thread.yield();
                 continue;
             }
 
