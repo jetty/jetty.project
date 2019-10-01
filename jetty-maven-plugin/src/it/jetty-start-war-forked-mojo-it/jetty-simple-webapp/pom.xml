@@ -75,6 +75,8 @@
               <goal>start-war</goal>
             </goals>
             <configuration>
+              <stopPort>@jetty.stopPort@</stopPort>
+              <stopKey>@jetty.stopKey@</stopKey>
               <webApp>
                   <war>${project.build.directory}/${project.artifactId}-${project.version}</war>
               </webApp>

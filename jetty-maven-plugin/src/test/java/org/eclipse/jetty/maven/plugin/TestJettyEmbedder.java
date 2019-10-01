@@ -44,14 +44,16 @@ public class TestJettyEmbedder
     public void testJettyEmbedderFromDefaults() throws Exception
     {
         JettyWebAppContext webApp = new JettyWebAppContext();
+        MavenServerConnector connector = new MavenServerConnector();
+        connector.setPort(0);
         
         JettyEmbedder jetty = new JettyEmbedder();
+        jetty.setHttpConnector(connector);
         jetty.setExitVm(false);
         jetty.setServer(null);
         jetty.setContextHandlers(null);
         jetty.setRequestLog(null);
         jetty.setJettyXmlFiles(null);
-        jetty.setHttpConnector(null);
         jetty.setJettyProperties(null);
         jetty.setLoginServices(null);
         jetty.setContextXml(MavenTestingUtils.getTestResourceFile("embedder-context.xml").getAbsolutePath());
@@ -86,13 +88,16 @@ public class TestJettyEmbedder
         otherHandler.setContextPath("/other");
         otherHandler.setBaseResource(Resource.newResource(MavenTestingUtils.getTestResourceDir("root")));
         
+        MavenServerConnector connector = new MavenServerConnector();
+        connector.setPort(0);
+        
         JettyEmbedder jetty = new JettyEmbedder();
+        jetty.setHttpConnector(connector);
         jetty.setExitVm(false);
         jetty.setServer(server);
         jetty.setContextHandlers(Arrays.asList(otherHandler));
         jetty.setRequestLog(null);
         jetty.setJettyXmlFiles(Arrays.asList(MavenTestingUtils.getTestResourceFile("embedder-jetty.xml")));
-        jetty.setHttpConnector(null);
         jetty.setJettyProperties(jettyProperties);
         jetty.setLoginServices(null);
         jetty.setContextXml(MavenTestingUtils.getTestResourceFile("embedder-context.xml").getAbsolutePath());

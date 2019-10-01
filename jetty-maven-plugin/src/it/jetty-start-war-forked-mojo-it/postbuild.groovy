@@ -16,6 +16,17 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+System.out.println( "running postbuild.groovy port " + jettyStopPort + ", key:" + jettyStopKey )
+
+int port = Integer.parseInt( jettyStopPort )
+
+Socket s=new Socket(InetAddress.getByName("127.0.0.1"),port )
+
+OutputStream out=s.getOutputStream()
+out.write(( jettyStopKey +"\r\nforcestop\r\n").getBytes())
+out.flush()
+s.close()
+
 File outputLog = new File( basedir, 'build.log' )
 assert outputLog.text.contains( 'Forked process starting' )
 assert outputLog.text.contains( 'Running org.eclipse.jetty.maven.plugin.it.IntegrationTestGetContent')
