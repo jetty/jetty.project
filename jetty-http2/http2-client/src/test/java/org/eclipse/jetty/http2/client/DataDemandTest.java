@@ -45,6 +45,7 @@ import org.eclipse.jetty.util.FuturePromise;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -168,6 +169,66 @@ public class DataDemandTest extends AbstractTest
     }
 
     @Test
+    public void testBeforeData() throws Exception
+    {
+        start(new ServerSessionListener.Adapter()
+        {
+            @Override
+            public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
+            {
+                MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, new HttpFields());
+                stream.headers(new HeadersFrame(stream.getId(), response, null, false), Callback.from(() -> sendData(stream), x -> {}));
+                return null;
+            }
+
+            private void sendData(Stream stream)
+            {
+                stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(1024 * 1024), true), Callback.NOOP);
+            }
+        });
+
+        Session client = newClient(new Session.Listener.Adapter());
+        MetaData.Request post = newRequest("GET", new HttpFields());
+        FuturePromise<Stream> promise = new FuturePromise<>();
+        CountDownLatch responseLatch = new CountDownLatch(1);
+        CountDownLatch beforeDataLatch = new CountDownLatch(1);
+        CountDownLatch latch = new CountDownLatch(1);
+        client.newStream(new HeadersFrame(post, null, true), promise, new Stream.Listener.Adapter()
+        {
+            @Override
+            public void onHeaders(Stream stream, HeadersFrame frame)
+            {
+                MetaData.Response response = (MetaData.Response)frame.getMetaData();
+                assertEquals(HttpStatus.OK_200, response.getStatus());
+                responseLatch.countDown();
+            }
+
+            @Override
+            public void onBeforeData(Stream stream)
+            {
+                beforeDataLatch.countDown();
+                // Don't demand.
+            }
+
+            @Override
+            public void onData(Stream stream, DataFrame frame, Callback callback)
+            {
+                callback.succeeded();
+                if (frame.isEndStream())
+                    latch.countDown();
+            }
+        });
+        Stream clientStream = promise.get(5, TimeUnit.SECONDS);
+        assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(beforeDataLatch.await(5, TimeUnit.SECONDS));
+        // Should not receive DATA frames until demanded.
+        assertFalse(latch.await(1, TimeUnit.SECONDS));
+        // Now demand the first DATA frame.
+        clientStream.demand(1);
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
     public void testSynchronousDemandDoesNotStackOverflow() throws Exception
     {
         start(new ServerSessionListener.Adapter()
@@ -180,8 +241,8 @@ public class DataDemandTest extends AbstractTest
                     @Override
                     public void onDataDemanded(Stream stream, DataFrame frame, Callback callback)
                     {
-                        stream.demand(1);
                         callback.succeeded();
+                        stream.demand(1);
                         if (frame.isEndStream())
                         {
                             MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, new HttpFields());

@@ -181,6 +181,17 @@ public interface Stream
         public Listener onPush(Stream stream, PushPromiseFrame frame);
 
         /**
+         * <p>Callback method invoked before notifying the first DATA frame.</p>
+         * <p>The default implementation initializes the demand for DATA frames.</p>
+         *
+         * @param stream the stream
+         */
+        public default void onBeforeData(Stream stream)
+        {
+            stream.demand(1);
+        }
+
+        /**
          * <p>Callback method invoked when a DATA frame has been received.</p>
          *
          * @param stream the stream
