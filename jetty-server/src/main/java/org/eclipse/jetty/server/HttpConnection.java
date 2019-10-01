@@ -272,11 +272,6 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                 // Parse the request buffer.
                 boolean handle = parseRequestBuffer();
 
-                // If there was a connection upgrade, the other
-                // connection took over, nothing more to do here.
-                if (getEndPoint().getConnection() != this)
-                    break;
-
                 // Handle channel event
                 if (handle)
                 {
