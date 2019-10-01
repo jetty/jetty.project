@@ -56,7 +56,7 @@ public class DemoBaseTests extends AbstractDistributionTest
 
         try (DistributionTester.Run run1 = distribution.start(args))
         {
-            assertTrue(run1.awaitConsoleLogsFor("Started @", 20, TimeUnit.SECONDS));
+            assertTrue(run1.awaitConsoleLogsFor("Started Server@", 20, TimeUnit.SECONDS));
 
             startHttpClient();
             ContentResponse response = client.GET("http://localhost:" + httpPort + "/test/jsp/dump.jsp");
@@ -88,7 +88,7 @@ public class DemoBaseTests extends AbstractDistributionTest
 
         try (DistributionTester.Run run1 = distribution.start(args))
         {
-            assertTrue(run1.awaitConsoleLogsFor("Started @", 20, TimeUnit.SECONDS));
+            assertTrue(run1.awaitConsoleLogsFor("Started Server@", 20, TimeUnit.SECONDS));
 
             startHttpClient();
             ContentResponse response;
@@ -133,13 +133,41 @@ public class DemoBaseTests extends AbstractDistributionTest
 
         try (DistributionTester.Run run1 = distribution.start(args))
         {
-            assertTrue(run1.awaitConsoleLogsFor("Started @", 20, TimeUnit.SECONDS));
+            assertTrue(run1.awaitConsoleLogsFor("Started Server@", 20, TimeUnit.SECONDS));
 
             startHttpClient();
             ContentResponse response = client.POST("http://localhost:" + httpPort + "/test-spec/asy/xx").send();
             assertEquals(HttpStatus.OK_200, response.getStatus());
             assertThat(response.getContentAsString(), containsString("<span class=\"pass\">PASS</span>"));
             assertThat(response.getContentAsString(), not(containsString("<span class=\"fail\">FAIL</span>")));
+        }
+    }
+
+    @Test
+    public void testJPMS() throws Exception
+    {
+        String jettyVersion = System.getProperty("jettyVersion");
+        DistributionTester distribution = DistributionTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .jettyBase(Paths.get("demo-base"))
+            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
+            .build();
+
+        int httpPort = distribution.freePort();
+        int httpsPort = distribution.freePort();
+        String[] args = {
+            "--jpms",
+            "jetty.http.port=" + httpPort,
+            "jetty.httpConfig.port=" + httpsPort,
+            "jetty.ssl.port=" + httpsPort
+        };
+        try (DistributionTester.Run run = distribution.start(args))
+        {
+            assertTrue(run.awaitConsoleLogsFor("Started Server@", 10, TimeUnit.SECONDS));
+
+            startHttpClient();
+            ContentResponse response = client.GET("http://localhost:" + httpPort + "/test/hello");
+            assertEquals(HttpStatus.OK_200, response.getStatus());
         }
     }
 }

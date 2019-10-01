@@ -44,4 +44,9 @@ public abstract class FrameGenerator
     {
         return headerGenerator.getMaxFrameSize();
     }
+
+    public boolean isUseDirectByteBuffers()
+    {
+        return headerGenerator.isUseDirectByteBuffers();
+    }
 }

@@ -10,6 +10,7 @@ session
 session-store
 
 [depend]
+jdbc
 sessions
 sessions/jdbc/${db-connection-type}
 
@@ -54,7 +55,3 @@ db-connection-type=datasource
 #jetty.session.jdbc.schema.maxIntervalColumn=maxInterval
 #jetty.session.jdbc.schema.mapColumn=map
 #jetty.session.jdbc.schema.table=JettySessions
-
-
-
-

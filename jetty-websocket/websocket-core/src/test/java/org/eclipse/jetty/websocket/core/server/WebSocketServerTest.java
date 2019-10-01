@@ -24,7 +24,6 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -43,8 +42,6 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -207,29 +204,6 @@ public class WebSocketServerTest extends WebSocketTester
             }
             assertThat(serverHandler.receivedFrames.size(), is(5));
             assertThat(receivedCallbacks.size(), is(5));
-
-            byte[] first = serverHandler.receivedFrames.poll().getPayload().array();
-            assertThat(serverHandler.receivedFrames.poll().getPayload().array(), sameInstance(first));
-            assertThat(serverHandler.receivedFrames.poll().getPayload().array(), sameInstance(first));
-            byte[] second = serverHandler.receivedFrames.poll().getPayload().array();
-            assertThat(serverHandler.receivedFrames.poll().getPayload().array(), sameInstance(second));
-            assertThat(first, not(sameInstance(second)));
-
-            ByteBufferPool pool = server.getServer().getConnectors()[0].getByteBufferPool();
-
-            assertThat(pool.acquire(first.length, false).array(), not(sameInstance(first)));
-            receivedCallbacks.poll().succeeded();
-            assertThat(pool.acquire(first.length, false).array(), not(sameInstance(first)));
-            receivedCallbacks.poll().succeeded();
-            assertThat(pool.acquire(first.length, false).array(), not(sameInstance(first)));
-            receivedCallbacks.poll().succeeded();
-            assertThat(pool.acquire(first.length, false).array(), sameInstance(first));
-
-            assertThat(pool.acquire(second.length, false).array(), not(sameInstance(second)));
-            receivedCallbacks.poll().succeeded();
-            assertThat(pool.acquire(second.length, false).array(), not(sameInstance(second)));
-            receivedCallbacks.poll().succeeded();
-            assertThat(pool.acquire(second.length, false).array(), sameInstance(second));
         }
     }
 

@@ -209,7 +209,7 @@ public class Configurations extends AbstractList<Configuration> implements Dumpa
         if (configurations == null)
         {
             configurations = new Configurations(Configurations.getKnown().stream()
-                .filter(c -> !c.isDisabledByDefault())
+                .filter(c -> c.isEnabledByDefault())
                 .map(c -> c.getClass().getName())
                 .toArray(String[]::new));
         }
@@ -277,6 +277,27 @@ public class Configurations extends AbstractList<Configuration> implements Dumpa
         {
             addConfiguration(newConfiguration(name));
         }
+    }
+
+    public <T> T get(Class<? extends T> configClass)
+    {
+        for (Configuration configuration : _configurations)
+        {
+            if (configClass.isAssignableFrom(configuration.getClass()))
+                return (T)configuration;
+        }
+        return null;
+    }
+
+    public <T> List<T> getConfigurations(Class<? extends T> configClass)
+    {
+        List<T> list = new ArrayList<>();
+        for (Configuration configuration : _configurations)
+        {
+            if (configClass.isAssignableFrom(configuration.getClass()))
+                list.add((T)configuration);
+        }
+        return list;
     }
 
     public void clear()

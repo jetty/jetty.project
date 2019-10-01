@@ -27,11 +27,13 @@ import org.eclipse.jetty.servlet.ServletHolder;
 
 public class ProxyServer
 {
-    public static void main(String[] args) throws Exception
+    public static Server createServer(int port)
     {
         Server server = new Server();
+
+        // Establish listening connector
         ServerConnector connector = new ServerConnector(server);
-        connector.setPort(8888);
+        connector.setPort(port);
         server.addConnector(connector);
 
         // Setup proxy handler to handle CONNECT methods
@@ -45,6 +47,15 @@ public class ProxyServer
         proxyServlet.setInitParameter("blackList", "www.eclipse.org");
         context.addServlet(proxyServlet, "/*");
 
+        return server;
+    }
+
+    public static void main(String[] args) throws Exception
+    {
+        int port = ExampleUtil.getPort(args, "jetty.http.port", 8080);
+        Server server = createServer(port);
+
         server.start();
+        server.join();
     }
 }

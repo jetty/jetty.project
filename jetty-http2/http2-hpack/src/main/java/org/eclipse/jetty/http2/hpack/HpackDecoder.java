@@ -25,7 +25,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTokens;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.hpack.HpackContext.Entry;
-import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -77,13 +77,8 @@ public class HpackDecoder
 
         while (buffer.hasRemaining())
         {
-            if (LOG.isDebugEnabled() && buffer.hasArray())
-            {
-                int l = Math.min(buffer.remaining(), 32);
-                LOG.debug("decode {}{}",
-                    TypeUtil.toHexString(buffer.array(), buffer.arrayOffset() + buffer.position(), l),
-                    l < buffer.remaining() ? "..." : "");
-            }
+            if (LOG.isDebugEnabled())
+                LOG.debug("decode {}", BufferUtil.toHexString(buffer));
 
             byte b = buffer.get();
             if (b < 0)
@@ -177,7 +172,7 @@ public class HpackDecoder
                     else
                         name = toASCIIString(buffer, length);
                     check:
-                    for (int i = name.length(); i-- > 0;)
+                    for (int i = name.length(); i-- > 0; )
                     {
                         char c = name.charAt(i);
                         if (c > 0xff)
@@ -280,14 +275,9 @@ public class HpackDecoder
     public static String toASCIIString(ByteBuffer buffer, int length)
     {
         StringBuilder builder = new StringBuilder(length);
-        int position = buffer.position();
-        int start = buffer.arrayOffset() + position;
-        int end = start + length;
-        buffer.position(position + length);
-        byte[] array = buffer.array();
-        for (int i = start; i < end; i++)
+        for (int i = 0; i < length; ++i)
         {
-            builder.append((char)(0x7f & array[i]));
+            builder.append((char)(0x7F & buffer.get()));
         }
         return builder.toString();
     }

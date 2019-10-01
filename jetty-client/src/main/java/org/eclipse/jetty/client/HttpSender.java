@@ -344,6 +344,9 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
         if (exchange == null)
             return;
 
+        if (LOG.isDebugEnabled())
+            LOG.debug("Request failure " + exchange.getRequest(), failure);
+
         // Mark atomically the request as completed, with respect
         // to concurrency between request success and request failure.
         if (exchange.requestComplete(failure))
@@ -559,7 +562,7 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
 
         Request request = exchange.getRequest();
         if (LOG.isDebugEnabled())
-            LOG.debug("Request failure {} {} on {}: {}", request, exchange, getHttpChannel(), failure);
+            LOG.debug("Request abort {} {} on {}: {}", request, exchange, getHttpChannel(), failure);
         HttpDestination destination = getHttpChannel().getHttpDestination();
         destination.getRequestNotifier().notifyFailure(request, failure);
 

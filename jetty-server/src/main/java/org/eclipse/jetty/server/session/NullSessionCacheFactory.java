@@ -18,75 +18,51 @@
 
 package org.eclipse.jetty.server.session;
 
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+
 /**
  * NullSessionCacheFactory
  *
  * Factory for NullSessionCaches.
  */
-public class NullSessionCacheFactory implements SessionCacheFactory
+public class NullSessionCacheFactory extends AbstractSessionCacheFactory
 {
-    boolean _saveOnCreate;
-    boolean _removeUnloadableSessions;
-    NullSessionCache.WriteThroughMode _writeThroughMode;
-
-    /**
-     * @return the writeThroughMode
-     */
-    public NullSessionCache.WriteThroughMode getWriteThroughMode()
+    private static final Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
+    
+    @Override
+    public int getEvictionPolicy()
     {
-        return _writeThroughMode;
+        return SessionCache.EVICT_ON_SESSION_EXIT; //never actually stored
     }
 
-    /**
-     * @param writeThroughMode the writeThroughMode to set
-     */
-    public void setWriteThroughMode(NullSessionCache.WriteThroughMode writeThroughMode)
+    @Override
+    public void setEvictionPolicy(int evictionPolicy)
     {
-        _writeThroughMode = writeThroughMode;
+        if (LOG.isDebugEnabled())
+            LOG.debug("Ignoring eviction policy setting for NullSessionCaches");
     }
 
-    /**
-     * @return the saveOnCreate
-     */
-    public boolean isSaveOnCreate()
+    @Override
+    public boolean isSaveOnInactiveEvict()
     {
-        return _saveOnCreate;
+        return false; //never kept in cache
     }
 
-    /**
-     * @param saveOnCreate the saveOnCreate to set
-     */
-    public void setSaveOnCreate(boolean saveOnCreate)
+    @Override
+    public void setSaveOnInactiveEvict(boolean saveOnInactiveEvict)
     {
-        _saveOnCreate = saveOnCreate;
+        if (LOG.isDebugEnabled())
+            LOG.debug("Ignoring eviction policy setting for NullSessionCaches");
     }
 
-    /**
-     * @return the removeUnloadableSessions
-     */
-    public boolean isRemoveUnloadableSessions()
-    {
-        return _removeUnloadableSessions;
-    }
-
-    /**
-     * @param removeUnloadableSessions the removeUnloadableSessions to set
-     */
-    public void setRemoveUnloadableSessions(boolean removeUnloadableSessions)
-    {
-        _removeUnloadableSessions = removeUnloadableSessions;
-    }
-
-    /**
-     * @see org.eclipse.jetty.server.session.SessionCacheFactory#getSessionCache(org.eclipse.jetty.server.session.SessionHandler)
-     */
     @Override
     public SessionCache getSessionCache(SessionHandler handler)
     {
         NullSessionCache cache = new NullSessionCache(handler);
         cache.setSaveOnCreate(isSaveOnCreate());
         cache.setRemoveUnloadableSessions(isRemoveUnloadableSessions());
-        cache.setWriteThroughMode(_writeThroughMode);
+        cache.setFlushOnResponseCommit(isFlushOnResponseCommit());
         return cache;
     }
 }

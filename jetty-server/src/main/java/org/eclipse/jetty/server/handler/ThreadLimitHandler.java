@@ -48,7 +48,7 @@ import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.thread.Locker;
+import org.eclipse.jetty.util.thread.AutoLock;
 
 /**
  * <p>Handler to limit the threads per IP address for DOS protection</p>
@@ -241,7 +241,7 @@ public class ThreadLimitHandler extends HandlerWrapper
         }
     }
 
-    protected Remote getRemote(Request baseRequest)
+    private Remote getRemote(Request baseRequest)
     {
         Remote remote = (Remote)baseRequest.getAttribute(REMOTE);
         if (remote != null)
@@ -329,11 +329,11 @@ public class ThreadLimitHandler extends HandlerWrapper
         return (comma >= 0) ? forwardedFor.substring(comma + 1).trim() : forwardedFor;
     }
 
-    private final class Remote implements Closeable
+    private static final class Remote implements Closeable
     {
         private final String _ip;
         private final int _limit;
-        private final Locker _locker = new Locker();
+        private final AutoLock _lock = new AutoLock();
         private int _permits;
         private Deque<CompletableFuture<Closeable>> _queue = new ArrayDeque<>();
         private final CompletableFuture<Closeable> _permitted = CompletableFuture.completedFuture(this);
@@ -346,7 +346,7 @@ public class ThreadLimitHandler extends HandlerWrapper
 
         public CompletableFuture<Closeable> acquire()
         {
-            try (Locker.Lock lock = _locker.lock())
+            try (AutoLock lock = _lock.lock())
             {
                 // Do we have available passes?
                 if (_permits < _limit)
@@ -358,16 +358,16 @@ public class ThreadLimitHandler extends HandlerWrapper
                 }
 
                 // No pass available, so queue a new future 
-                CompletableFuture<Closeable> pass = new CompletableFuture<Closeable>();
+                CompletableFuture<Closeable> pass = new CompletableFuture<>();
                 _queue.addLast(pass);
                 return pass;
             }
         }
 
         @Override
-        public void close() throws IOException
+        public void close()
         {
-            try (Locker.Lock lock = _locker.lock())
+            try (AutoLock lock = _lock.lock())
             {
                 // reduce the allocated passes
                 _permits--;
@@ -396,14 +396,14 @@ public class ThreadLimitHandler extends HandlerWrapper
         @Override
         public String toString()
         {
-            try (Locker.Lock lock = _locker.lock())
+            try (AutoLock lock = _lock.lock())
             {
                 return String.format("R[ip=%s,p=%d,l=%d,q=%d]", _ip, _permits, _limit, _queue.size());
             }
         }
     }
 
-    private final class RFC7239 extends QuotedCSV
+    private static final class RFC7239 extends QuotedCSV
     {
         String _for;
 

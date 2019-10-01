@@ -193,7 +193,7 @@ public class DeploymentErrorTest
         assertThat("ContextHandler.isAvailable", context.isAvailable(), is(false));
         WebAppContext webapp = (WebAppContext)context;
         TrackedConfiguration trackedConfiguration = null;
-        for (Configuration webappConfig : webapp.getWebAppConfigurations())
+        for (Configuration webappConfig : webapp.getConfigurations())
         {
             if (webappConfig instanceof TrackedConfiguration)
                 trackedConfiguration = (TrackedConfiguration)webappConfig;
@@ -239,7 +239,7 @@ public class DeploymentErrorTest
         assertThat("ContextHandler.isAvailable", context.isAvailable(), is(false));
         WebAppContext webapp = (WebAppContext)context;
         TrackedConfiguration trackedConfiguration = null;
-        for (Configuration webappConfig : webapp.getWebAppConfigurations())
+        for (Configuration webappConfig : webapp.getConfigurations())
         {
             if (webappConfig instanceof TrackedConfiguration)
                 trackedConfiguration = (TrackedConfiguration)webappConfig;
@@ -285,7 +285,7 @@ public class DeploymentErrorTest
         assertThat("ContextHandler.isAvailable", context.isAvailable(), is(false));
         WebAppContext webapp = (WebAppContext)context;
         TrackedConfiguration trackedConfiguration = null;
-        for (Configuration webappConfig : webapp.getWebAppConfigurations())
+        for (Configuration webappConfig : webapp.getConfigurations())
         {
             if (webappConfig instanceof TrackedConfiguration)
                 trackedConfiguration = (TrackedConfiguration)webappConfig;

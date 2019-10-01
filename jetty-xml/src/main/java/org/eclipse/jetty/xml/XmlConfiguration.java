@@ -36,6 +36,7 @@ import java.nio.file.Paths;
 import java.security.AccessController;
 import java.security.PrivilegedExceptionAction;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -1747,6 +1748,8 @@ public class XmlConfiguration
                 properties.putAll(System.getProperties());
 
                 // For all arguments, load properties
+                if (LOG.isDebugEnabled())
+                    LOG.debug("args={}", Arrays.asList(args));
                 for (String arg : args)
                 {
                     if (arg.indexOf('=') >= 0)
@@ -1785,17 +1788,34 @@ public class XmlConfiguration
                     }
                 }
 
+                if (LOG.isDebugEnabled())
+                    LOG.debug("objects={}", Arrays.asList(objects));
+
                 // For all objects created by XmlConfigurations, start them if they are lifecycles.
+                List<LifeCycle> started = new ArrayList<>(objects.size());
                 for (Object obj : objects)
                 {
                     if (obj instanceof LifeCycle)
                     {
                         LifeCycle lc = (LifeCycle)obj;
                         if (!lc.isRunning())
+                        {
                             lc.start();
+                            if (lc.isStarted())
+                                started.add(lc);
+                            else
+                            {
+                                // Failed to start a component, so stop all started components
+                                Collections.reverse(started);
+                                for (LifeCycle slc : started)
+                                {
+                                    slc.stop();
+                                }
+                                break;
+                            }
+                        }
                     }
                 }
-
                 return null;
             });
         }
