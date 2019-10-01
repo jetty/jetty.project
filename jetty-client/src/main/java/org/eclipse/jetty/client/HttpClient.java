@@ -523,25 +523,15 @@ public class HttpClient extends ContainerLifeCycle
 
     HttpDestination resolveDestination(HttpDestination.Key key)
     {
-        HttpDestination destination = destinations.get(key);
-        if (destination == null)
+        return destinations.computeIfAbsent(key, k ->
         {
-            destination = getTransport().newHttpDestination(key);
+            HttpDestination destination = getTransport().newHttpDestination(k);
             // Start the destination before it's published to other threads.
             addManaged(destination);
-            HttpDestination existing = destinations.putIfAbsent(key, destination);
-            if (existing != null)
-            {
-                removeBean(destination);
-                destination = existing;
-            }
-            else
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Created {}", destination);
-            }
-        }
-        return destination;
+            if (LOG.isDebugEnabled())
+                LOG.debug("Created {}", destination);
+            return destination;
+        });
     }
 
     protected boolean removeDestination(HttpDestination destination)
