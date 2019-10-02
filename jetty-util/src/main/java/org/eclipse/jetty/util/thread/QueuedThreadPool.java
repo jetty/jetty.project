@@ -159,6 +159,8 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
         }
         addBean(_tryExecutor);
 
+        _lastShrink.set(System.nanoTime());
+
         super.doStart();
         // The threads count set to MIN_VALUE is used to signal to Runners that the pool is stopped.
         _counts.set(0, 0); // threads, idle
@@ -290,6 +292,9 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
     public void setIdleTimeout(int idleTimeout)
     {
         _idleTimeout = idleTimeout;
+        ReservedThreadExecutor reserved = getBean(ReservedThreadExecutor.class);
+        if (reserved != null)
+            reserved.setIdleTimeout(idleTimeout, TimeUnit.MILLISECONDS);
     }
 
     /**
@@ -857,17 +862,19 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
             if (LOG.isDebugEnabled())
                 LOG.debug("Runner started for {}", QueuedThreadPool.this);
 
-            Runnable job = null;
+            boolean idle = true;
             try
             {
+                Runnable job = null;
                 while (true)
                 {
-                    // If we had a job, signal that we are idle again
+                    // If we had a job,
                     if (job != null)
                     {
+                        // signal that we are idle again
                         if (!addCounts(0, 1))
                             break;
-                        job = null;
+                        idle = true;
                     }
                     // else check we are still running
                     else if (_counts.getHi() == Integer.MIN_VALUE)
@@ -881,32 +888,33 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
                         job = _jobs.poll();
                         if (job == null)
                         {
-                            // Wait for a job
+                            // No job immediately available maybe we should shrink?
                             long idleTimeout = getIdleTimeout();
+                            if (getThreads() > _minThreads && idleTimeout > 0)
+                            {
+                                long last = _lastShrink.get();
+                                long now = System.nanoTime();
+                                if ((now - last) > TimeUnit.MILLISECONDS.toNanos(idleTimeout))
+                                {
+                                    if (_lastShrink.compareAndSet(last, now))
+                                    {
+                                        if (LOG.isDebugEnabled())
+                                            LOG.debug("shrinking {}", QueuedThreadPool.this);
+                                        break;
+                                    }
+                                }
+                            }
+
+                            // Wait for a job
                             job = idleJobPoll(idleTimeout);
 
                             // If still no job?
                             if (job == null)
-                            {
-                                // maybe we should shrink
-                                if (getThreads() > _minThreads && idleTimeout > 0)
-                                {
-                                    long last = _lastShrink.get();
-                                    long now = System.nanoTime();
-                                    if (last == 0 || (now - last) > TimeUnit.MILLISECONDS.toNanos(idleTimeout))
-                                    {
-                                        if (_lastShrink.compareAndSet(last, now))
-                                        {
-                                            if (LOG.isDebugEnabled())
-                                                LOG.debug("shrinking {}", QueuedThreadPool.this);
-                                            break;
-                                        }
-                                    }
-                                }
                                 // continue to try again
                                 continue;
-                            }
                         }
+
+                        idle = false;
 
                         // run job
                         if (LOG.isDebugEnabled())
@@ -936,7 +944,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
                 removeThread(thread);
 
                 // Decrement the total thread count and the idle count if we had no job
-                addCounts(-1, job == null ? -1 : 0);
+                addCounts(-1, idle ? -1 : 0);
                 if (LOG.isDebugEnabled())
                     LOG.debug("{} exited for {}", thread, QueuedThreadPool.this);
 

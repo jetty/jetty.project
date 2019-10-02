@@ -34,6 +34,7 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.core.StringContains.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -251,7 +252,7 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         job1._stopping.countDown();
         assertTrue(job1._stopped.await(10, TimeUnit.SECONDS));
         waitForIdle(tp, 1);
-        assertThat(tp.getThreads(), is(4));
+        waitForThreads(tp, 4);
 
         // finish job 2,3,4
         job2._stopping.countDown();
@@ -261,12 +262,12 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         assertTrue(job3._stopped.await(10, TimeUnit.SECONDS));
         assertTrue(job4._stopped.await(10, TimeUnit.SECONDS));
 
-        waitForIdle(tp, 4);
-        assertThat(tp.getThreads(), is(4));
+        waitForIdle(tp, 3);
+        assertThat(tp.getThreads(), is(3));
 
         long duration = System.nanoTime();
-        waitForThreads(tp, 3);
-        assertThat(tp.getIdleThreads(), is(3));
+        waitForThreads(tp, 2);
+        assertThat(tp.getIdleThreads(), is(2));
         duration = System.nanoTime() - duration;
         assertThat(TimeUnit.NANOSECONDS.toMillis(duration), Matchers.greaterThan(tp.getIdleTimeout() / 2L));
         assertThat(TimeUnit.NANOSECONDS.toMillis(duration), Matchers.lessThan(tp.getIdleTimeout() * 2L));
@@ -503,6 +504,57 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         waitForThreads(tp, 2);
         waitForIdle(tp, 2);
         tp.stop();
+    }
+
+    @Test
+    public void testSteadyShrink() throws Exception
+    {
+        CountDownLatch latch = new CountDownLatch(1);
+        Runnable job = () ->
+        {
+            try
+            {
+                latch.await();
+            }
+            catch(InterruptedException e)
+            {
+                e.printStackTrace();
+            }
+        };
+
+        QueuedThreadPool tp = new QueuedThreadPool();
+        tp.setMinThreads(2);
+        tp.setMaxThreads(10);
+        tp.setIdleTimeout(500);
+        tp.setThreadsPriority(Thread.NORM_PRIORITY - 1);
+
+        tp.start();
+        waitForIdle(tp, 2);
+        waitForThreads(tp, 2);
+
+        for (int i = 0; i < 10; i++)
+            tp.execute(job);
+
+        waitForThreads(tp, 10);
+        int threads = tp.getThreads();
+        // let the jobs run
+        latch.countDown();
+
+        for (int i = 5; i-- > 0; )
+        {
+            Thread.sleep(250);
+            tp.execute(job);
+        }
+
+        // Assert that steady rate of jobs doesn't prevent some idling out
+        assertThat(tp.getThreads(), lessThan(threads));
+        threads = tp.getThreads();
+        for (int i = 5; i-- > 0; )
+        {
+            Thread.sleep(250);
+            tp.execute(job);
+        }
+        assertThat(tp.getThreads(), lessThan(threads));
     }
 
     @Test
