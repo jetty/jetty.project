@@ -50,7 +50,6 @@ import org.eclipse.jetty.util.StringUtil;
 @Execute(phase = LifecyclePhase.PACKAGE)
 public class JettyRunWarMojo extends AbstractWebAppMojo
 {   
-    //Start of parameters only valid for runType=EMBED  
     /**
      * The interval in seconds to pause before checking if changes
      * have occurred and re-deploying as necessary. A value 
@@ -185,7 +184,10 @@ public class JettyRunWarMojo extends AbstractWebAppMojo
     {
         scanner.watch(project.getFile().toPath());
         scanner.watch(war);
-
+        
+        //set up any extra files or dirs to watch
+        configureScanTargetsAndPatterns(scanner);
+        
         scanner.addListener(new PathWatcher.EventListListener()
         {
             @Override
@@ -250,7 +252,7 @@ public class JettyRunWarMojo extends AbstractWebAppMojo
                 {
                     getLog().info("Reconfiguring scanner after change to pom.xml ...");
                     scanner.reset();
-                    warArtifacts = null; ///TODO if the pom changes for the forked case, how would we get the forked process to stop and restart?
+                    warArtifacts = null;
                     configureScanner();
                 }
                 
@@ -269,8 +271,7 @@ public class JettyRunWarMojo extends AbstractWebAppMojo
                 {
                     getLog().info("Reconfiguring scanner after change to pom.xml ...");
                     scanner.reset();
-                    warArtifacts = null; //TODO if there are any changes to the pom, then we would have to tell the
-                    //existing forked distro process to stop, then rerun the configuration and then refork - too complicated??!
+                    warArtifacts = null;
                     configureScanner();
                 }
                 configureWebApp();

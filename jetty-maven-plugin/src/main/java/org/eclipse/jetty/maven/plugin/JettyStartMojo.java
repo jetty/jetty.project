@@ -26,15 +26,14 @@ import org.apache.maven.plugins.annotations.ResolutionScope;
 
 /**
  *  <p>
- *  This goal is similar to the jetty:run goal, EXCEPT that it is designed to be bound to an execution inside your pom, rather
- *  than being run from the command line. 
+ *  This goal is similar to the jetty:run goal in that it it starts jetty on an unassembled webapp, 
+ *  EXCEPT that it is designed to be bound to an execution inside your pom. Thus, this goal does NOT
+ *  run a parallel build cycle, so you must be careful to ensure that you bind it to a phase in 
+ *  which all necessary generated files and classes for the webapp have been created.
  *  </p>
- *  <p>
- *  When using it, be careful to ensure that you bind it to a phase in which all necessary generated files and classes for the webapp
- *  will have been created. If you run it from the command line, then also ensure that all necessary generated files and classes for
- *  the webapp ALREADY exist.
- *  </p>
- *
+ * <p>
+ * This goal will NOT scan for changes in either the webapp project or any scanTargets or scanTargetPatterns.
+ * </p>
  */
 @Mojo(name = "start", requiresDependencyResolution = ResolutionScope.TEST)
 @Execute(phase = LifecyclePhase.VALIDATE)
@@ -67,7 +66,6 @@ public class JettyStartMojo extends AbstractWebAppMojo
         }
     }
 
-
     /**
      * Start the webapp in a forked jetty process. Use the
      * jetty:stop goal to terminate.
@@ -81,7 +79,6 @@ public class JettyStartMojo extends AbstractWebAppMojo
             jetty.setWaitForChild(false); //we never wait for child
             jetty.setJettyOutputFile(getJettyOutputFile("jetty-start.out"));
             jetty.start(); //forks jetty instance
-            
         }
         catch (Exception e)
         {

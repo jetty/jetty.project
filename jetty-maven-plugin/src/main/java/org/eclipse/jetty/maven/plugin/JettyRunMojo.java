@@ -120,13 +120,9 @@ public class JettyRunMojo extends AbstractWebAppMojo
             forker = newJettyForker();
             forker.setWaitForChild(true); //we run at the command line, echo child output and wait for it
             forker.setScan(true); //have the forked child notice changes to the webapp
-            
-            startScanner();
-            
             //TODO is it ok to start the scanner before we start jetty?
-            
-            forker.start(); //forks jetty instance
-            
+            startScanner();
+            forker.start(); //forks jetty instance 
         }
         catch (Exception e)
         {
@@ -141,10 +137,9 @@ public class JettyRunMojo extends AbstractWebAppMojo
         {
             distroForker = newJettyDistroForker();
             distroForker.setWaitForChild(true); //we always run at the command line, echo child output and wait for it
+            //TODO is it ok to start the scanner before we start jetty?
             startScanner();
             distroForker.start(); //forks a jetty distro
-
-            //TODO is it ok to start the scanner before we start jetty?
         }
         catch (Exception e)
         {
@@ -263,37 +258,8 @@ public class JettyRunMojo extends AbstractWebAppMojo
             scanner.watch(a.getFile().toPath());
         }
         
-        //handle the explicit extra scan targets
-        if (scanTargets != null)
-        {
-            for (File f:scanTargets)
-            {
-                if (f.isDirectory())
-                {
-                    PathWatcher.Config config = new PathWatcher.Config(f.toPath());
-                    config.setRecurseDepth(PathWatcher.Config.UNLIMITED_DEPTH);
-                    scanner.watch(config);
-                }
-                else
-                    scanner.watch(f.toPath());
-            }
-        }
-        
-        //handle the extra scan patterns
-        if (scanTargetPatterns != null)
-        {
-            for (ScanTargetPattern p:scanTargetPatterns)
-            {
-                PathWatcher.Config config = new PathWatcher.Config(p.getDirectory().toPath());
-                config.setRecurseDepth(PathWatcher.Config.UNLIMITED_DEPTH);
-                for (String pattern:p.getExcludes())
-                    config.addExcludeGlobRelative(pattern);
-                for (String pattern:p.getIncludes())
-                    config.addIncludeGlobRelative(pattern);
-                scanner.watch(config);
-            }
-        }
-      
+        //set up any extra files or dirs to watch
+        configureScanTargetsAndPatterns(scanner);
 
         scanner.watch(project.getFile().toPath());
 

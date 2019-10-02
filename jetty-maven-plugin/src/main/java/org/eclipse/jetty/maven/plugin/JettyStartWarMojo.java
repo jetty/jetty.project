@@ -83,7 +83,6 @@ public class JettyStartWarMojo extends AbstractWebAppMojo
         }
     }
 
-    
     /**
      * Fork a jetty instance to run the given war.
      */
@@ -123,13 +122,11 @@ public class JettyStartWarMojo extends AbstractWebAppMojo
         }
     }
    
-    /**
-     *
-     */
     @Override
     protected void verifyPomConfiguration() throws MojoExecutionException
     {
-        //Do not verify the configuration of the webapp, as we are deploying
-        //a random war instead.
+        //Do nothing here, as we want the user to configure a war to deploy,
+        //or we default to the webapp that is running the jetty plugin, but
+        //we need to delay that decision until configureWebApp().
     }
 }

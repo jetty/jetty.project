@@ -57,18 +57,12 @@ public class JettyEffectiveWebXml extends AbstractWebAppMojo
         generate();
     }
 
-    /**
-     *
-     */
     @Override
     protected void startJettyForked() throws MojoExecutionException
     {
         generate();
     }
 
-    /**
-     *
-     */
     @Override
     protected void startJettyDistro() throws MojoExecutionException
     {

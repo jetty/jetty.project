@@ -57,8 +57,8 @@ import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.PathWatcher;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.resource.ResourceCollection;
 
 /**
  * AbstractWebAppMojo
@@ -196,15 +196,15 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
      * List of files or directories to additionally periodically scan for changes. Optional.
      */
     @Parameter
-    protected File[] scanTargets;
+    protected List<File> scanTargets;
     
     /**
      * List of directories with ant-style &lt;include&gt; and &lt;exclude&gt; patterns
      * for extra targets to periodically scan for changes. Can be used instead of,
      * or in conjunction with &lt;scanTargets&gt;.Optional.
-     * @parameter
      */
-    protected ScanTargetPattern[] scanTargetPatterns;
+    @Parameter
+    protected List<ScanTargetPattern> scanTargetPatterns;
     
     @Parameter(defaultValue = "${reactorProjects}", readonly = true, required = true)
     protected List<MavenProject> reactorProjects;
@@ -594,49 +594,9 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
         
         return jetty;
     }
-
-    /**
-     * Unpack all included overlays, using the unpacked
-     * location as resource bases for the webapp.
-     */
-    protected void unpackOverlays()
-        throws Exception
-    {
-        OverlayManager overlayManager =  mavenProjectHelper.getOverlayManager();
-        
-        List<Overlay> overlays = overlayManager.getOverlays();
-        if (overlays.isEmpty())
-            return;
-
-        List<Resource> resourceBaseCollection = new ArrayList<Resource>();
-
-        for (Overlay o:overlays)
-        {
-            //can refer to the current project in list of overlays for ordering purposes
-            if (o.getConfig() != null && o.getConfig().isCurrentProject() && webApp.getBaseResource().exists())
-            {
-                resourceBaseCollection.add(webApp.getBaseResource()); 
-                continue;
-            }
-
-            Resource unpacked = overlayManager.unpackOverlay(o);
-            resourceBaseCollection.add(unpacked); //add in the selectively unpacked overlay in the correct order to the webapps resource base
-        }
-
-        if (!resourceBaseCollection.contains(webApp.getBaseResource()) && webApp.getBaseResource().exists())
-        {
-            if (webApp.getBaseAppFirst())
-                resourceBaseCollection.add(0, webApp.getBaseResource());
-            else
-                resourceBaseCollection.add(webApp.getBaseResource());
-        }
-        webApp.setBaseResource(new ResourceCollection(resourceBaseCollection.toArray(new Resource[resourceBaseCollection.size()])));
-    }
     
     /**
-     * Verify the configuration given in the pom.
-     * 
-     * 
+     * Verify some basic configuration is present, supplying defaults if not.
      */
     protected void verifyPomConfiguration() throws MojoExecutionException
     {        
@@ -772,15 +732,23 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
     {  
         if (useProvidedScope)
         {
-            return project.getArtifacts().
-                stream().
-                filter(a->Artifact.SCOPE_PROVIDED.equals(a.getScope()) && !isPluginArtifact(a)).
-                map(a->a.getFile()).collect(Collectors.toList());
+            return project.getArtifacts()
+                .stream()
+                .filter(a -> Artifact.SCOPE_PROVIDED.equals(a.getScope()) && !isPluginArtifact(a))
+                .map(a -> a.getFile()).collect(Collectors.toList());
         }
         else
             return Collections.emptyList();
     }
 
+    /**
+     * Synthesize a classpath appropriate for a forked jetty based off
+     * the artifacts associated with the jetty plugin, plus any dependencies
+     * that are marked as provided and useProvidedScope is true.
+     * 
+     * @return jetty classpath
+     * @throws Exception
+     */
     protected String getContainerClassPath() throws Exception
     {
         //Add in all the plugin artifacts
@@ -815,8 +783,6 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
         return classPath.toString();
     }
 
-    
-    
     /**
      * Check to see if the given artifact is one of the dependency artifacts for this plugin.
      * 
@@ -828,9 +794,8 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
         if (pluginArtifacts == null)
             return false;
         
-        return pluginArtifacts.stream().anyMatch(pa->pa.getGroupId().equals(artifact.getGroupId()) && pa.getArtifactId().equals(artifact.getArtifactId()));
+        return pluginArtifacts.stream().anyMatch(pa -> pa.getGroupId().equals(artifact.getGroupId()) && pa.getArtifactId().equals(artifact.getArtifactId()));
     }
-    
     
     /**
      * Check if the goal that we're executing as is excluded or not.
@@ -874,6 +839,12 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
         return projectName;
     }
 
+    /**
+     * Ensure there is a webapp, and that some basic defaults are applied
+     * if the user has not supplied them.
+     * 
+     * @throws Exception
+     */
     protected void configureWebApp()
         throws Exception
     {
@@ -902,6 +873,11 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
         getLog().info("Tmp directory = " + (webApp.getTempDirectory() == null ? " determined at runtime" : webApp.getTempDirectory()));
     }
     
+    /**
+     * Configure a webapp that has not been assembled into a war. 
+     * 
+     * @throws Exception
+     */
     protected void configureUnassembledWebApp() throws Exception
     {   
         //Set up the location of the webapp.
@@ -932,7 +908,6 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
         if (useTestScope && (testClassesDirectory != null))
             webApp.setTestClasses(testClassesDirectory);
 
-       
         List<File> webInfLibs = getWebInfLibArtifacts().stream()
             .map(a ->
             {
@@ -977,8 +952,9 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
             }
         }
 
-        //process any overlays and the war type artifacts
-        unpackOverlays(); //this sets up the base resource collection
+        //process any overlays and the war type artifacts, and
+        //sets up the base resource collection for the webapp
+        mavenProjectHelper.getOverlayManager().applyOverlays(webApp);
         
         getLog().info("web.xml file = " + webApp.getDescriptor());       
         getLog().info("Webapp directory = " + webAppSourceDirectory.getCanonicalPath());
@@ -1014,6 +990,10 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
     
     /**
      * Get a file into which to write output from jetty.
+     * 
+     * @param name
+     * @return
+     * @throws Exception
      */
     protected File getJettyOutputFile(String name) throws Exception
     {
@@ -1025,10 +1005,48 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
     }
     
     /**
+     * Configure any extra files, directories or patterns thereof for the
+     * scanner to watch for changes.
+     * 
+     * @param scanner PathWatcher that notices changes in files and dirs.
+     */
+    protected void configureScanTargetsAndPatterns (PathWatcher scanner)
+    {
+        //handle the explicit extra scan targets
+        if (scanTargets != null)
+        {
+            for (File f:scanTargets)
+            {
+                if (f.isDirectory())
+                {
+                    PathWatcher.Config config = new PathWatcher.Config(f.toPath());
+                    config.setRecurseDepth(PathWatcher.Config.UNLIMITED_DEPTH);
+                    scanner.watch(config);
+                }
+                else
+                    scanner.watch(f.toPath());
+            }
+        }
+        
+        //handle the extra scan patterns
+        if (scanTargetPatterns != null)
+        {
+            for (ScanTargetPattern p:scanTargetPatterns)
+            {
+                PathWatcher.Config config = new PathWatcher.Config(p.getDirectory().toPath());
+                config.setRecurseDepth(PathWatcher.Config.UNLIMITED_DEPTH);
+                for (String pattern:p.getExcludes())
+                    config.addExcludeGlobRelative(pattern);
+                for (String pattern:p.getIncludes())
+                    config.addIncludeGlobRelative(pattern);
+                scanner.watch(config);
+            }
+        }
+    }
+    
+    /**
      * Find which dependencies are suitable for addition to the virtual
      * WEB-INF lib.
-     * 
-     * @param mavenProject this project
      */
     private Collection<Artifact> getWebInfLibArtifacts()
     {
