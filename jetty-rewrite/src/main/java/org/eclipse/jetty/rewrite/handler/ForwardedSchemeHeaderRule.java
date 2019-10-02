@@ -46,7 +46,8 @@ public class ForwardedSchemeHeaderRule extends HeaderRule
     @Override
     protected String apply(String target, String value, HttpServletRequest request, HttpServletResponse response)
     {
-        ((Request)request).setScheme(_scheme);
+        Request baseRequest = Request.getBaseRequest(request);
+        baseRequest.setScheme(_scheme);
         return target;
     }
 }
