@@ -922,9 +922,6 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
                         runJob(job);
                         if (LOG.isDebugEnabled())
                             LOG.debug("ran {} in {}", job, QueuedThreadPool.this);
-
-                        // Clear any interrupted status
-                        Thread.interrupted();
                     }
                     catch (InterruptedException e)
                     {
@@ -935,6 +932,11 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
                     catch (Throwable e)
                     {
                         LOG.warn(e);
+                    }
+                    finally
+                    {
+                        // Clear any interrupted status
+                        Thread.interrupted();
                     }
                 }
             }
