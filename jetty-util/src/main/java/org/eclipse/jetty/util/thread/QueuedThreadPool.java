@@ -55,8 +55,10 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
     /**
      * Encodes thread counts:
      * <dl>
-     * <dt>Hi</dt><dd>Total thread count or Integer.MIN_VALUE if stopping</dd>
-     * <dt>Lo</dt><dd>Net idle threads == idle threads - job queue size</dd>
+     * <dt>Hi</dt><dd>Total thread count or Integer.MIN_VALUE if the pool is stopping</dd>
+     * <dt>Lo</dt><dd>Net idle threads == idle threads - job queue size.  Essentially if positive,
+     * this represents the effective number of idle threads, and if negative it represents the
+     * demand for more threads</dd>
      * </dl>
      */
     private final AtomicBiInteger _counts = new AtomicBiInteger(Integer.MIN_VALUE, 0);
@@ -448,7 +450,9 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
     @ManagedAttribute("size of the job queue")
     public int getQueueSize()
     {
-        return _jobs.size();
+        // The idle counter encodes demand, which is the effective queue size
+        int idle = _counts.getLo();
+        return Math.max(0, -idle);
     }
 
     /**
@@ -891,22 +895,19 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
                         {
                             // No job immediately available maybe we should shrink?
                             long idleTimeout = getIdleTimeout();
-                            if (getThreads() > _minThreads && idleTimeout > 0)
+                            if (idleTimeout > 0 && getThreads() > _minThreads)
                             {
                                 long last = _lastShrink.get();
                                 long now = System.nanoTime();
-                                if ((now - last) > TimeUnit.MILLISECONDS.toNanos(idleTimeout))
+                                if ((now - last) > TimeUnit.MILLISECONDS.toNanos(idleTimeout) && _lastShrink.compareAndSet(last, now))
                                 {
-                                    if (_lastShrink.compareAndSet(last, now))
-                                    {
-                                        if (LOG.isDebugEnabled())
-                                            LOG.debug("shrinking {}", QueuedThreadPool.this);
-                                        break;
-                                    }
+                                    if (LOG.isDebugEnabled())
+                                        LOG.debug("shrinking {}", QueuedThreadPool.this);
+                                    break;
                                 }
                             }
 
-                            // Wait for a job
+                            // Wait for a job, only after we have checked if we should shrink
                             job = idleJobPoll(idleTimeout);
 
                             // If still no job?
