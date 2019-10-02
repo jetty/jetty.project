@@ -48,6 +48,7 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -103,6 +104,7 @@ public class WebSocketNegotiationTest extends WebSocketTester
                         negotiation.setSubprotocol(null);
                         break;
 
+                    case "test":
                     case "testExtensionThatDoesNotExist":
                     case "testInvalidExtensionParameter":
                     case "testAcceptTwoExtensionsOfSameName":
@@ -242,32 +244,18 @@ public class WebSocketNegotiationTest extends WebSocketTester
     @Test
     public void testExtensionThatDoesNotExist() throws Exception
     {
-        TestFrameHandler clientHandler = new TestFrameHandler();
+        Socket client = new Socket();
+        client.connect(new InetSocketAddress("127.0.0.1", server.getLocalPort()));
 
-        ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(client, server.getUri(), clientHandler);
-        upgradeRequest.setSubProtocols("testExtensionThatDoesNotExist");
-        upgradeRequest.addExtensions("nonExistentExtensionName");
+        HttpFields httpFields = newUpgradeRequest("nonExistentExtensionName");
+        String upgradeRequest = "GET / HTTP/1.1\r\n" + httpFields;
+        client.getOutputStream().write(upgradeRequest.getBytes(StandardCharsets.ISO_8859_1));
+        String response = getUpgradeResponse(client.getInputStream());
 
-        CompletableFuture<String> extensionHeader = new CompletableFuture<>();
-        upgradeRequest.addListener(new UpgradeListener()
-        {
-            @Override
-            public void onHandshakeResponse(HttpRequest request, HttpResponse response)
-            {
-                extensionHeader.complete(response.getHeaders().get(HttpHeader.SEC_WEBSOCKET_EXTENSIONS));
-            }
-        });
-
-        CompletableFuture<CoreSession> connect = client.connect(upgradeRequest);
-        connect.get(5, TimeUnit.SECONDS);
-
-        clientHandler.sendText("hello world");
-        clientHandler.sendClose();
-        assertTrue(clientHandler.closed.await(5, TimeUnit.SECONDS));
-        assertThat(clientHandler.receivedFrames.size(), is(2));
-        assertNull(clientHandler.getError());
-
-        assertNull(extensionHeader.get(5, TimeUnit.SECONDS));
+        assertThat(response, startsWith("HTTP/1.1 101 Switching Protocols"));
+        assertThat(response, containsString("Sec-WebSocket-Protocol: test"));
+        assertThat(response, containsString("Sec-WebSocket-Accept: +WahVcVmeMLKQUMm0fvPrjSjwzI="));
+        assertThat(response, not(containsString(HttpHeader.SEC_WEBSOCKET_EXTENSIONS.asString())));
     }
 
     @Test
