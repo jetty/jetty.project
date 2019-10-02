@@ -636,9 +636,6 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
         try
         {
             Thread thread = newThread(_runnable);
-            thread.setDaemon(isDaemon());
-            thread.setPriority(getThreadsPriority());
-            thread.setName(_name + "-" + thread.getId());
             if (LOG.isDebugEnabled())
                 LOG.debug("Starting {}", thread);
             _threads.add(thread);
@@ -670,7 +667,11 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
 
     protected Thread newThread(Runnable runnable)
     {
-        return new Thread(_threadGroup, runnable);
+        Thread thread = new Thread(_threadGroup, runnable);
+        thread.setDaemon(isDaemon());
+        thread.setPriority(getThreadsPriority());
+        thread.setName(_name + "-" + thread.getId());
+        return thread;
     }
 
     protected void removeThread(Thread thread)
