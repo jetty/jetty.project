@@ -103,7 +103,7 @@ public class WebSocketNegotiationTest extends WebSocketTester
                         negotiation.setSubprotocol(null);
                         break;
 
-                    case "test":
+                    case "testExtensionThatDoesNotExist":
                     case "testInvalidExtensionParameter":
                     case "testAcceptTwoExtensionsOfSameName":
                     case "testInvalidUpgradeRequest":
@@ -216,6 +216,37 @@ public class WebSocketNegotiationTest extends WebSocketTester
         ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(client, server.getUri(), clientHandler);
         upgradeRequest.setSubProtocols("testNotAcceptingExtensions");
         upgradeRequest.addExtensions("permessage-deflate;server_no_context_takeover", "permessage-deflate;client_no_context_takeover");
+
+        CompletableFuture<String> extensionHeader = new CompletableFuture<>();
+        upgradeRequest.addListener(new UpgradeListener()
+        {
+            @Override
+            public void onHandshakeResponse(HttpRequest request, HttpResponse response)
+            {
+                extensionHeader.complete(response.getHeaders().get(HttpHeader.SEC_WEBSOCKET_EXTENSIONS));
+            }
+        });
+
+        CompletableFuture<CoreSession> connect = client.connect(upgradeRequest);
+        connect.get(5, TimeUnit.SECONDS);
+
+        clientHandler.sendText("hello world");
+        clientHandler.sendClose();
+        assertTrue(clientHandler.closed.await(5, TimeUnit.SECONDS));
+        assertThat(clientHandler.receivedFrames.size(), is(2));
+        assertNull(clientHandler.getError());
+
+        assertNull(extensionHeader.get(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testExtensionThatDoesNotExist() throws Exception
+    {
+        TestFrameHandler clientHandler = new TestFrameHandler();
+
+        ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(client, server.getUri(), clientHandler);
+        upgradeRequest.setSubProtocols("testExtensionThatDoesNotExist");
+        upgradeRequest.addExtensions("nonExistentExtensionName");
 
         CompletableFuture<String> extensionHeader = new CompletableFuture<>();
         upgradeRequest.addListener(new UpgradeListener()

@@ -45,6 +45,8 @@ import org.eclipse.jetty.websocket.api.Session;
  * <p>
  * <u>Binary Message Versions</u>
  * <ol>
+ * <li>{@code public void methodName(ByteBuffer message)}</li>
+ * <li><code>public void methodName({@link Session} session, ByteBuffer message)</code></li>
  * <li>{@code public void methodName(byte buf[], int offset, int length)}</li>
  * <li><code>public void methodName({@link Session} session, byte buf[], int offset, int length)</code></li>
  * <li>{@code public void methodName(InputStream stream)}</li>

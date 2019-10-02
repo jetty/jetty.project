@@ -236,6 +236,18 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
     }
 
     @Override
+    public long getMaxFrameSize()
+    {
+        return configurationCustomizer.getMaxFrameSize();
+    }
+
+    @Override
+    public boolean isAutoFragment()
+    {
+        return configurationCustomizer.isAutoFragment();
+    }
+
+    @Override
     public void setIdleTimeout(Duration duration)
     {
         configurationCustomizer.setIdleTimeout(duration);
@@ -263,6 +275,18 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
     public void setMaxTextMessageSize(long size)
     {
         configurationCustomizer.setMaxTextMessageSize(size);
+    }
+
+    @Override
+    public void setMaxFrameSize(long maxFrameSize)
+    {
+        configurationCustomizer.setMaxFrameSize(maxFrameSize);
+    }
+
+    @Override
+    public void setAutoFragment(boolean autoFragment)
+    {
+        configurationCustomizer.setAutoFragment(autoFragment);
     }
 
     public SocketAddress getBindAddress()
