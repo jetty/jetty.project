@@ -74,6 +74,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
     private boolean remoteReset;
     private long dataLength;
     private long dataDemand;
+    private boolean dataInitial;
     private boolean dataProcess;
 
     public HTTP2Stream(Scheduler scheduler, ISession session, int streamId, MetaData.Request request, boolean local)
@@ -84,7 +85,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
         this.request = request;
         this.local = local;
         this.dataLength = Long.MIN_VALUE;
-        this.dataDemand = -1;
+        this.dataInitial = true;
     }
 
     @Override
@@ -358,17 +359,30 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
         try (AutoLock l = lock.lock())
         {
             dataQueue.offer(entry);
-            initial = dataDemand < 0;
+            initial = dataInitial;
             if (initial)
-                dataDemand = 0;
+            {
+                dataInitial = false;
+                // Fake that we are processing data so we return
+                // from onBeforeData() before calling onData().
+                dataProcess = true;
+            }
             else if (!dataProcess)
+            {
                 dataProcess = proceed = dataDemand > 0;
+            }
         }
         if (LOG.isDebugEnabled())
             LOG.debug("{} data processing of {} for {}", initial ? "Starting" : proceed ? "Proceeding" : "Stalling", frame, this);
         if (initial)
+        {
             notifyBeforeData(this);
-        else if (proceed)
+            try (AutoLock l = lock.lock())
+            {
+                dataProcess = proceed = dataDemand > 0;
+            }
+        }
+        if (proceed)
             processData();
     }
 

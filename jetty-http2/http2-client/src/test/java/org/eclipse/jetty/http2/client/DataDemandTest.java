@@ -42,6 +42,7 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
+import org.eclipse.jetty.util.Promise;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -169,7 +170,7 @@ public class DataDemandTest extends AbstractTest
     }
 
     @Test
-    public void testBeforeData() throws Exception
+    public void testOnBeforeData() throws Exception
     {
         start(new ServerSessionListener.Adapter()
         {
@@ -225,6 +226,99 @@ public class DataDemandTest extends AbstractTest
         assertFalse(latch.await(1, TimeUnit.SECONDS));
         // Now demand the first DATA frame.
         clientStream.demand(1);
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testDemandFromOnHeaders() throws Exception
+    {
+        start(new ServerSessionListener.Adapter()
+        {
+            @Override
+            public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
+            {
+                MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, new HttpFields());
+                stream.headers(new HeadersFrame(stream.getId(), response, null, false), Callback.from(() -> sendData(stream), x -> {}));
+                return null;
+            }
+
+            private void sendData(Stream stream)
+            {
+                stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(1024 * 1024), true), Callback.NOOP);
+            }
+        });
+
+        Session client = newClient(new Session.Listener.Adapter());
+        MetaData.Request post = newRequest("GET", new HttpFields());
+        CountDownLatch latch = new CountDownLatch(1);
+        client.newStream(new HeadersFrame(post, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
+        {
+            @Override
+            public void onHeaders(Stream stream, HeadersFrame frame)
+            {
+                stream.demand(1);
+            }
+
+            @Override
+            public void onBeforeData(Stream stream)
+            {
+                // Do not demand from here, we have already demanded in onHeaders().
+            }
+
+            @Override
+            public void onData(Stream stream, DataFrame frame, Callback callback)
+            {
+                callback.succeeded();
+                if (frame.isEndStream())
+                    latch.countDown();
+            }
+        });
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testOnBeforeDataDoesNotReenter() throws Exception
+    {
+        start(new ServerSessionListener.Adapter()
+        {
+            @Override
+            public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
+            {
+                MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, new HttpFields());
+                stream.headers(new HeadersFrame(stream.getId(), response, null, false), Callback.from(() -> sendData(stream), x -> {}));
+                return null;
+            }
+
+            private void sendData(Stream stream)
+            {
+                stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(1024 * 1024), true), Callback.NOOP);
+            }
+        });
+
+        Session client = newClient(new Session.Listener.Adapter());
+        MetaData.Request post = newRequest("GET", new HttpFields());
+        CountDownLatch latch = new CountDownLatch(1);
+        client.newStream(new HeadersFrame(post, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
+        {
+            private boolean inBeforeData;
+
+            @Override
+            public void onBeforeData(Stream stream)
+            {
+                inBeforeData = true;
+                stream.demand(1);
+                inBeforeData = false;
+            }
+
+            @Override
+            public void onData(Stream stream, DataFrame frame, Callback callback)
+            {
+                assertFalse(inBeforeData);
+                callback.succeeded();
+                if (frame.isEndStream())
+                    latch.countDown();
+            }
+        });
         assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
