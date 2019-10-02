@@ -1385,14 +1385,15 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         {
             if (req.isAsyncSupported())
             {
+                Request baseRequest = Request.getBaseRequest(req);
                 try
                 {
-                    ((Request)req).setAsyncSupported(false, this.toString());
+                    baseRequest.setAsyncSupported(false, this.toString());
                     _servlet.service(req, res);
                 }
                 finally
                 {
-                    ((Request)req).setAsyncSupported(true, null);
+                    baseRequest.setAsyncSupported(true, null);
                 }
             }
             else
