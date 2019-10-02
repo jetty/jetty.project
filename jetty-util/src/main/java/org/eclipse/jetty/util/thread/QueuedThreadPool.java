@@ -26,6 +26,7 @@ import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -45,7 +46,7 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ThreadPool.SizedThreadPool;
 
 @ManagedObject("A thread pool")
-public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadPool, Dumpable, TryExecutor
+public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactory, SizedThreadPool, Dumpable, TryExecutor
 {
     private static final Logger LOG = Log.getLogger(QueuedThreadPool.class);
     private static Runnable NOOP = () ->
@@ -67,6 +68,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
     private final Object _joinLock = new Object();
     private final BlockingQueue<Runnable> _jobs;
     private final ThreadGroup _threadGroup;
+    private final ThreadFactory _threadFactory;
     private String _name = "qtp" + hashCode();
     private int _idleTimeout;
     private int _maxThreads;
@@ -114,7 +116,17 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
         this(maxThreads, minThreads, idleTimeout, -1, queue, threadGroup);
     }
 
-    public QueuedThreadPool(@Name("maxThreads") int maxThreads, @Name("minThreads") int minThreads, @Name("idleTimeout") int idleTimeout, @Name("reservedThreads") int reservedThreads, @Name("queue") BlockingQueue<Runnable> queue, @Name("threadGroup") ThreadGroup threadGroup)
+    public QueuedThreadPool(@Name("maxThreads") int maxThreads, @Name("minThreads") int minThreads,
+                            @Name("idleTimeout") int idleTimeout, @Name("reservedThreads") int reservedThreads,
+                            @Name("queue") BlockingQueue<Runnable> queue, @Name("threadGroup") ThreadGroup threadGroup)
+    {
+        this(maxThreads, minThreads, idleTimeout, reservedThreads, queue, threadGroup, null);
+    }
+
+    public QueuedThreadPool(@Name("maxThreads") int maxThreads, @Name("minThreads") int minThreads,
+                            @Name("idleTimeout") int idleTimeout, @Name("reservedThreads") int reservedThreads,
+                            @Name("queue") BlockingQueue<Runnable> queue, @Name("threadGroup") ThreadGroup threadGroup,
+                            @Name("threadFactory") ThreadFactory threadFactory)
     {
         if (maxThreads < minThreads)
             throw new IllegalArgumentException("max threads (" + maxThreads + ") less than min threads (" + minThreads + ")");
@@ -131,6 +143,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
         _jobs = queue;
         _threadGroup = threadGroup;
         setThreadPoolBudget(new ThreadPoolBudget(this));
+        _threadFactory = threadFactory == null ? this : threadFactory;
     }
 
     @Override
@@ -639,7 +652,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
         boolean started = false;
         try
         {
-            Thread thread = newThread(_runnable);
+            Thread thread = _threadFactory.newThread(_runnable);
             if (LOG.isDebugEnabled())
                 LOG.debug("Starting {}", thread);
             _threads.add(thread);
@@ -669,7 +682,8 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
         }
     }
 
-    protected Thread newThread(Runnable runnable)
+    @Override
+    public Thread newThread(Runnable runnable)
     {
         Thread thread = new Thread(_threadGroup, runnable);
         thread.setDaemon(isDaemon());
