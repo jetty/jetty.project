@@ -523,7 +523,8 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         QueuedThreadPool tp = new QueuedThreadPool();
         tp.setMinThreads(2);
         tp.setMaxThreads(10);
-        tp.setIdleTimeout(500);
+        int timeout = 500;
+        tp.setIdleTimeout(timeout);
         tp.setThreadsPriority(Thread.NORM_PRIORITY - 1);
 
         tp.start();
@@ -540,7 +541,7 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
 
         for (int i = 5; i-- > 0; )
         {
-            Thread.sleep(250);
+            Thread.sleep(timeout / 2);
             tp.execute(job);
         }
 
@@ -549,7 +550,7 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         threads = tp.getThreads();
         for (int i = 5; i-- > 0; )
         {
-            Thread.sleep(250);
+            Thread.sleep(timeout / 2);
             tp.execute(job);
         }
         assertThat(tp.getThreads(), lessThan(threads));
