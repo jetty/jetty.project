@@ -19,7 +19,6 @@
 package org.eclipse.jetty.util.thread;
 
 import java.io.Closeable;
-import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -117,11 +116,6 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
             this(name, false);
         }
 
-        public RunningJob(boolean fail)
-        {
-            this(null, fail);
-        }
-
         public RunningJob(String name, boolean fail)
         {
             _name = name;
@@ -175,7 +169,7 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         final CountDownLatch _closed = new CountDownLatch(1);
 
         @Override
-        public void close() throws IOException
+        public void close()
         {
             _closed.countDown();
         }
@@ -252,7 +246,7 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         assertThat(tp.getIdleThreads(), is(0));
         assertThat(tp.getQueueSize(), is(0));
 
-        // finish job 1, and it's thread will become idle
+        // finish job 1, and its thread will become idle
         job1._stopping.countDown();
         assertTrue(job1._stopped.await(10, TimeUnit.SECONDS));
         waitForIdle(tp, 1);
@@ -266,7 +260,15 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         assertTrue(job3._stopped.await(10, TimeUnit.SECONDS));
         assertTrue(job4._stopped.await(10, TimeUnit.SECONDS));
 
-        // Eventually all will have 3 idle threads
+        // At beginning of the test we waited 1.5*idleTimeout, but
+        // never actually shrunk the pool because it was at minThreads.
+        // Now that all jobs are finished, one thread will figure out
+        // that it will go idle and will shrink itself out of the pool.
+        // Give it some time to detect that, but not too much to shrink
+        // two threads.
+        Thread.sleep(tp.getIdleTimeout() / 4);
+
+        // Now we have 3 idle threads.
         waitForIdle(tp, 3);
         assertThat(tp.getThreads(), is(3));
 
@@ -617,20 +619,19 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
     public void testMaxStopTime() throws Exception
     {
         QueuedThreadPool tp = new QueuedThreadPool();
-        tp.setStopTimeout(500);
+        long stopTimeout = 500;
+        tp.setStopTimeout(stopTimeout);
         tp.start();
+        CountDownLatch interruptedLatch = new CountDownLatch(1);
         tp.execute(() ->
         {
-            while (true)
+            try
             {
-                try
-                {
-                    Thread.sleep(10000);
-                }
-                catch (InterruptedException expected)
-                {
-                    // no op
-                }
+                Thread.sleep(10 * stopTimeout);
+            }
+            catch (InterruptedException expected)
+            {
+                interruptedLatch.countDown();
             }
         });
 
@@ -639,6 +640,7 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         long afterStop = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
         assertTrue(tp.isStopped());
         assertTrue(afterStop - beforeStop < 1000);
+        assertTrue(interruptedLatch.await(5, TimeUnit.SECONDS));
     }
 
     private void waitForIdle(QueuedThreadPool tp, int idle)
@@ -746,10 +748,7 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
     @Test
     public void testConstructorMinMaxThreadsValidation()
     {
-        assertThrows(IllegalArgumentException.class, () ->
-        {
-            new QueuedThreadPool(4, 8);
-        });
+        assertThrows(IllegalArgumentException.class, () -> new QueuedThreadPool(4, 8));
     }
 
     @Test
