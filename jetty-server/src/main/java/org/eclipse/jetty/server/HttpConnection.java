@@ -257,12 +257,19 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                 // Parse the request buffer.
                 boolean handle = parseRequestBuffer();
 
+                // There could be a connection upgrade before handling
+                // the HTTP/1.1 request, for example PRI * HTTP/2.
+                // If there was a connection upgrade, the other
+                // connection took over, nothing more to do here.
+                if (getEndPoint().getConnection() != this)
+                    break;
+
                 // Handle channel event
                 if (handle)
                 {
                     boolean suspended = !_channel.handle();
 
-                    // We should break iteration if we have suspended or changed connection or this is not the handling thread.
+                    // We should break iteration if we have suspended or upgraded the connection.
                     if (suspended || getEndPoint().getConnection() != this)
                         break;
                 }
