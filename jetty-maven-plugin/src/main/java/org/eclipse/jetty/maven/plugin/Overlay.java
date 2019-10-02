@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.maven.plugin;
 
+import java.io.File;
+import java.io.IOException;
+
 import org.eclipse.jetty.util.resource.Resource;
 
 /**
@@ -67,5 +70,21 @@ public class Overlay
             strbuff.append("]");
         }
         return strbuff.toString();
+    }
+    
+    /**
+     * Unpack the overlay into the given directory. Only
+     * unpack if the directory does not exist, or the overlay
+     * has been modified since the dir was created.
+     * @param dir the directory into which to unpack the overlay
+     * @throws IOException 
+     */
+    public void unpackTo (File dir) throws IOException
+    {
+        if (dir == null)
+            throw new IllegalStateException("No overly unpack directory");
+        //only unpack if the overlay is newer
+        if (!dir.exists() || (getResource().lastModified() > dir.lastModified()))
+            getResource().copyTo(dir);
     }
 }

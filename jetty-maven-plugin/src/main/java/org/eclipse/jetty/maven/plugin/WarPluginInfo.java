@@ -22,7 +22,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
+import org.apache.maven.artifact.Artifact;
 import org.apache.maven.model.Plugin;
 import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
@@ -30,7 +34,7 @@ import org.eclipse.jetty.util.StringUtil;
 
 /**
  * WarPluginInfo
- * <p>
+ * 
  * Information about the maven-war-plugin contained in the pom
  */
 public class WarPluginInfo
@@ -40,31 +44,71 @@ public class WarPluginInfo
     private List<String> _dependentMavenWarIncludes;
     private List<String> _dependentMavenWarExcludes;
     private List<OverlayConfig> _overlayConfigs;
+    private Set<Artifact> _warArtifacts;
 
     public WarPluginInfo(MavenProject project)
     {
         _project = project;
+        if (_project.getArtifacts() != null)
+        {
+             _warArtifacts = _project.getArtifacts().stream()
+                .filter(a->"war".equals(a.getType()) || "zip".equals(a.getType())).collect(Collectors.toSet());
+        }
+        else
+            _warArtifacts = Collections.emptySet();
+    }
+    
+    /**
+     * @return the project
+     */
+    public MavenProject getProject()
+    {
+        return _project;
     }
 
+    /**
+     * Get all dependent artifacts that are wars.
+     * @return all artifacts of type "war" or "zip"
+     */
+    public Set<Artifact> getWarArtifacts()
+    {
+        return _warArtifacts;
+    }
+    
+    /**
+     * Get an artifact of type war that matches the given coordinates.
+     * @param groupId the groupId to match
+     * @param artifactId the artifactId to match
+     * @param classifier the classified to match
+     * @return the matching Artifact or null if no match
+     */
+    public Artifact getWarArtifact(String groupId, String artifactId, String classifier)
+    {
+        Optional<Artifact> o = _warArtifacts.stream()
+            .filter(a->match(a, groupId, artifactId, classifier)).findFirst();
+        return o.orElse(null);
+    }
+    
     /**
      * Find the maven-war-plugin, if one is configured
      *
      * @return the plugin
      */
-    public Plugin getPlugin()
+    public Plugin getWarPlugin()
     {
         if (_plugin == null)
         {
-            List plugins = _project.getBuildPlugins();
+            List<Plugin> plugins = _project.getBuildPlugins();
             if (plugins == null)
                 return null;
 
-            Iterator itor = plugins.iterator();
-            while (itor.hasNext() && _plugin == null)
+            for (Plugin p : plugins)
             {
-                Plugin plugin = (Plugin)itor.next();
-                if ("maven-war-plugin".equals(plugin.getArtifactId()))
-                    _plugin = plugin;
+                if ("maven-war-plugin".equals(p.getArtifactId()))
+                {
+                    _plugin = p;
+                    break;
+                }
             }
         }
         return _plugin;
@@ -79,7 +123,7 @@ public class WarPluginInfo
     {
         if (_dependentMavenWarIncludes == null)
         {
-            getPlugin();
+            getWarPlugin();
 
             if (_plugin == null)
                 return null;
@@ -106,7 +150,7 @@ public class WarPluginInfo
     {
         if (_dependentMavenWarExcludes == null)
         {
-            getPlugin();
+            getWarPlugin();
 
             if (_plugin == null)
                 return null;
@@ -133,7 +177,7 @@ public class WarPluginInfo
     {
         if (_overlayConfigs == null)
         {
-            getPlugin();
+            getWarPlugin();
 
             if (_plugin == null)
                 return Collections.emptyList();
@@ -163,20 +207,37 @@ public class WarPluginInfo
 
         return _overlayConfigs;
     }
+    
+    public boolean match(Artifact a, String gid, String aid, String cls)
+    {
+        if (a == null)
+            return (gid == null && aid == null && cls == null);
+        
+        if (((a.getGroupId() == null && gid == null) || (a.getGroupId() != null && a.getGroupId().equals(gid))) &&
+            ((a.getArtifactId() == null && aid == null) || (a.getArtifactId() != null && a.getArtifactId().equals(aid))) &&
+            ((a.getClassifier() == null) || (a.getClassifier().equals(cls))))
+            return true;
+
+        return false;
+    }
 
     /**
-     * @return the xml as a string
+     * Check if the given artifact matches the group and artifact coordinates.
+     * 
+     * @param gid the group id
+     * @param aid the artifact id
+     * @return true if matched false otherwise
      */
-    public String getMavenWarOverlayConfigAsString()
+    public boolean match(Artifact a, String gid, String aid)
     {
-        getPlugin();
+        if (a == null)
+            return (gid == null && aid == null);
+        
+        if (((a.getGroupId() == null && gid == null) || (a.getGroupId() != null && a.getGroupId().equals(gid))) &&
+            ((a.getArtifactId() == null && aid == null) || (a.getArtifactId() != null && a.getArtifactId().equals(aid))))
+            return true;
 
-        if (_plugin == null)
-            return "";
-
-        Xpp3Dom node = (Xpp3Dom)_plugin.getConfiguration();
-        if (node == null)
-            return "";
-        return node.toString();
+        return false;
     }
+
 }

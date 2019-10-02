@@ -26,14 +26,11 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -52,12 +49,8 @@ import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugin.descriptor.PluginDescriptor;
 import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.Parameter;
-import org.apache.maven.project.DefaultProjectBuildingRequest;
 import org.apache.maven.project.MavenProject;
-import org.apache.maven.project.ProjectBuildingRequest;
-import org.apache.maven.shared.artifact.DefaultArtifactCoordinate;
 import org.apache.maven.shared.artifact.resolve.ArtifactResolver;
-import org.apache.maven.shared.artifact.resolve.ArtifactResolverException;
 import org.codehaus.plexus.util.StringUtils;
 import org.eclipse.jetty.maven.plugin.utils.MavenProjectHelper;
 import org.eclipse.jetty.security.LoginService;
@@ -70,6 +63,7 @@ import org.eclipse.jetty.util.resource.ResourceCollection;
 /**
  * AbstractWebAppMojo
  *
+ * Base class for common behaviour of jetty mojos.
  */
 public abstract class AbstractWebAppMojo extends AbstractMojo
 {
@@ -377,9 +371,9 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
     //End of FORK only parameters
     
     /**
-     * maven-war-plugin reference
+     * Helper for interacting with the maven project space
      */
-    protected WarPluginInfo warPluginInfo;
+    protected MavenProjectHelper mavenProjectHelper;
     
     /**
      * This plugin
@@ -453,7 +447,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
             }
             
             getLog().info("Configuring Jetty for project: " + getProjectName());
-            warPluginInfo = new WarPluginInfo(project);
+            mavenProjectHelper = new MavenProjectHelper(project, artifactResolver, remoteRepositories, session);
             mergedSystemProperties = mergeSystemProperties();
             configureSystemProperties();
             augmentPluginClasspath();
@@ -582,7 +576,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
                 }
                 else
                 {
-                    libExtJars.add(resolveDependency(d));
+                    libExtJars.add(mavenProjectHelper.resolveArtifact(d.getGroupId(), d.getArtifactId(), d.getVersion(), d.getType()));
                 }
             }
             jetty.setLibExtJarFiles(libExtJars);
@@ -592,7 +586,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
         jetty.setContextXml(contextXml);
 
         if (jettyHome == null)
-            jetty.setJettyDistro(resolve(JETTY_HOME_GROUPID, JETTY_HOME_ARTIFACTID, plugin.getVersion(), "zip"));
+            jetty.setJettyDistro(mavenProjectHelper.resolveArtifact(JETTY_HOME_GROUPID, JETTY_HOME_ARTIFACTID, plugin.getVersion(), "zip"));
 
         jetty.setJettyHome(jettyHome);
         jetty.setJettyBase(jettyBase);
@@ -601,143 +595,17 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
         return jetty;
     }
 
-    public File resolveArtifact(Artifact a)
-        throws ArtifactResolverException
-    {
-        return resolve(a.getGroupId(), a.getArtifactId(), a.getVersion(), a.getType());
-    }
-
-    public File resolveDependency(Dependency d)
-        throws ArtifactResolverException
-    {
-        return resolve(d.getGroupId(), d.getArtifactId(), d.getVersion(), d.getType());
-    }
-
-    public File resolve(String groupId, String artifactId, String version, String type)
-        throws ArtifactResolverException
-    {
-
-        DefaultArtifactCoordinate coordinate = new DefaultArtifactCoordinate();
-        coordinate.setGroupId(groupId);
-        coordinate.setArtifactId(artifactId);
-        coordinate.setVersion(version);
-        coordinate.setExtension(type);
-
-        ProjectBuildingRequest buildingRequest =
-                new DefaultProjectBuildingRequest(session.getProjectBuildingRequest());
-
-        buildingRequest.setRemoteRepositories(remoteRepositories);
-
-        Artifact a = artifactResolver.resolveArtifact(buildingRequest, coordinate).getArtifact();
-
-        if (a != null)
-            return a.getFile();
-        return null;
-    }
-
     /**
-     * @return
+     * Unpack all included overlays, using the unpacked
+     * location as resource bases for the webapp.
      */
-    protected List<File> getProjectDependencyFiles()
-    {
-        List<File> dependencyFiles = new ArrayList<>();
-        for (Iterator<Artifact> iter = projectArtifacts.iterator(); iter.hasNext(); )
-        {
-            Artifact artifact = iter.next();
-            
-            // Include runtime and compile time libraries, and possibly test libs too
-            if (artifact.getType().equals("war"))
-            {
-                continue;
-            }
-            MavenProject mavenProject = getProjectReferences(artifact, project);
-            if (mavenProject != null)
-            {
-                File projectPath = Paths.get(mavenProject.getBuild().getOutputDirectory()).toFile();
-                getLog().debug("Adding project directory " + projectPath.toString());
-                dependencyFiles.add(projectPath);
-                continue;
-            }
-
-            if (Artifact.SCOPE_PROVIDED.equals(artifact.getScope()))
-                continue; //never add dependencies of scope=provided to the webapp's classpath (see also <useProvidedScope> param)
-
-            if (Artifact.SCOPE_TEST.equals(artifact.getScope()) && !useTestScope)
-                continue; //only add dependencies of scope=test if explicitly required
-
-            dependencyFiles.add(artifact.getFile());
-            getLog().info("Adding artifact " + artifact.getFile().getName() + " with scope " + artifact.getScope() + " for WEB-INF/lib ");   
-        }
-
-        return dependencyFiles; 
-    }
-
-    protected MavenProject getProjectReferences(Artifact artifact, MavenProject project)
-    {
-        if (project.getProjectReferences() == null || project.getProjectReferences().isEmpty())
-        {
-            return null;
-        }
-        Collection<MavenProject> mavenProjects = project.getProjectReferences().values();
-        for (MavenProject mavenProject : mavenProjects)
-        {
-            if (StringUtils.equals(mavenProject.getId(), artifact.getId()))
-            {
-                return mavenProject;
-            }
-        }
-        return null;
-    }
-
-    protected List<Overlay> getOverlays()
-            throws Exception
-    {
-        //get copy of a list of war artifacts
-        Set<Artifact> matchedWarArtifacts = new HashSet<Artifact>();
-        List<Overlay> overlays = new ArrayList<Overlay>();
-        for (OverlayConfig config:warPluginInfo.getMavenWarOverlayConfigs())
-        {
-            //overlays can be individually skipped
-            if (config.isSkip())
-                continue;
-
-            //an empty overlay refers to the current project - important for ordering
-            if (config.isCurrentProject())
-            {
-                Overlay overlay = new Overlay(config, null);
-                overlays.add(overlay);
-                continue;
-            }
-
-            //if a war matches an overlay config
-            Artifact a = getArtifactForOverlay(config, getWarArtifacts());
-            if (a != null)
-            {
-                matchedWarArtifacts.add(a);
-                SelectiveJarResource r = new SelectiveJarResource(new URL("jar:" + Resource.toURL(a.getFile()).toString() + "!/"));
-                r.setIncludes(config.getIncludes());
-                r.setExcludes(config.getExcludes());
-                Overlay overlay = new Overlay(config, r);
-                overlays.add(overlay);
-            }
-        }
-
-        //iterate over the left over war artifacts and unpack them (without include/exclude processing) as necessary
-        for (Artifact a: getWarArtifacts())
-        {
-            if (!matchedWarArtifacts.contains(a))
-            {
-                Overlay overlay = new Overlay(null, Resource.newResource(new URL("jar:" + Resource.toURL(a.getFile()).toString() + "!/")));
-                overlays.add(overlay);
-            }
-        }
-        return overlays;
-    }
-
-    protected void unpackOverlays(List<Overlay> overlays)
+    protected void unpackOverlays()
         throws Exception
     {
-        if (overlays == null || overlays.isEmpty())
+        OverlayManager overlayManager =  mavenProjectHelper.getOverlayManager();
+        
+        List<Overlay> overlays = overlayManager.getOverlays();
+        if (overlays.isEmpty())
             return;
 
         List<Resource> resourceBaseCollection = new ArrayList<Resource>();
@@ -751,100 +619,19 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
                 continue;
             }
 
-            Resource unpacked = unpackOverlay(o);
-            //_unpackedOverlayResources.add(unpacked); //remember the unpacked overlays for later so we can delete the tmp files
+            Resource unpacked = overlayManager.unpackOverlay(o);
             resourceBaseCollection.add(unpacked); //add in the selectively unpacked overlay in the correct order to the webapps resource base
         }
 
         if (!resourceBaseCollection.contains(webApp.getBaseResource()) && webApp.getBaseResource().exists())
         {
             if (webApp.getBaseAppFirst())
-            {
                 resourceBaseCollection.add(0, webApp.getBaseResource());
-            }
             else
-            {
                 resourceBaseCollection.add(webApp.getBaseResource());
-            }
         }
         webApp.setBaseResource(new ResourceCollection(resourceBaseCollection.toArray(new Resource[resourceBaseCollection.size()])));
     }
-
-    protected  Resource unpackOverlay(Overlay overlay)
-        throws IOException
-    {        
-        if (overlay.getResource() == null)
-            return null; //nothing to unpack
-
-        //Get the name of the overlayed war and unpack it to a dir of the
-        //same name in the temporary directory
-        String name = overlay.getResource().getName();
-        if (name.endsWith("!/"))
-            name = name.substring(0, name.length() - 2);
-        int i = name.lastIndexOf('/');
-        if (i > 0)
-            name = name.substring(i + 1, name.length());
-        name = name.replace('.', '_');
-        //name = name+(++COUNTER); //add some digits to ensure uniqueness
-        File overlaysDir = new File(project.getBuild().getDirectory(), "jetty_overlays");
-        File dir = new File(overlaysDir, name);
-
-        //if specified targetPath, unpack to that subdir instead
-        File unpackDir = dir;
-        if (overlay.getConfig() != null && overlay.getConfig().getTargetPath() != null)
-            unpackDir = new File(dir, overlay.getConfig().getTargetPath());
-
-        //only unpack if the overlay is newer
-        if (!unpackDir.exists() || (overlay.getResource().lastModified() > unpackDir.lastModified()))
-        {
-            overlay.getResource().copyTo(unpackDir);
-        }
-
-        //use top level of unpacked content
-        return Resource.newResource(dir.getCanonicalPath());
-    }
-
-    protected List<Artifact> getWarArtifacts()
-    {
-        if (warArtifacts != null)
-            return warArtifacts;       
-
-        warArtifacts = new ArrayList<>();
-        for (Iterator<Artifact> iter = projectArtifacts.iterator(); iter.hasNext(); )
-        {
-            Artifact artifact = iter.next();
-            if (artifact.getType().equals("war") || artifact.getType().equals("zip"))
-            {
-                try
-                {                  
-                    warArtifacts.add(artifact);
-                    getLog().info("Dependent war artifact " + artifact.getId());
-                }
-                catch (Exception e)
-                {
-                    throw new RuntimeException(e);
-                }
-            }
-        }
-        return warArtifacts;
-    }
-
-    private Artifact getArtifactForOverlay(OverlayConfig o, List<Artifact> warArtifacts)
-    {
-        if (o == null || warArtifacts == null || warArtifacts.isEmpty())
-            return null;
-
-        for (Artifact a:warArtifacts)
-        {
-            if (o.matchesArtifact(a.getGroupId(), a.getArtifactId(), a.getClassifier()))
-            {
-                return a;
-            }
-        }
-
-        return null;
-    }
-    
     
     /**
      * Verify the configuration given in the pom.
@@ -956,7 +743,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
         //create a new classloader that we setup in the parent chain.
         providedJars = getProvidedJars();
 
-        if (providedJars != null && !providedJars.isEmpty())
+        if (!providedJars.isEmpty())
         {
             try
             {
@@ -975,25 +762,23 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
         }
     }
 
+    /**
+     * Get any dependencies that are scope "provided" if useProvidedScope == true. Ensure
+     * that only those dependencies that are not already present via the plugin are
+     * included.
+     * @return provided scope dependencies that are not also plugin dependencies.
+     */
     protected List<File> getProvidedJars() throws MojoExecutionException
     {  
-        //if we are configured to include the provided dependencies on the plugin's classpath
-        //(which mimics being on jetty's classpath vs being on the webapp's classpath), we first
-        //try and filter out ones that will clash with jars that are plugin dependencies, then
-        //create a new classloader that we setup in the parent chain.
         if (useProvidedScope)
         {
-            List<File> provided = new ArrayList<>();        
-            for (Iterator<Artifact> iter = project.getArtifacts().iterator(); iter.hasNext(); )
-            {                   
-                Artifact artifact = iter.next();
-                if (Artifact.SCOPE_PROVIDED.equals(artifact.getScope()) && !isPluginArtifact(artifact))
-                    provided.add(artifact.getFile());
-            }
-            return provided;
+            return project.getArtifacts().
+                stream().
+                filter(a->Artifact.SCOPE_PROVIDED.equals(a.getScope()) && !isPluginArtifact(a)).
+                map(a->a.getFile()).collect(Collectors.toList());
         }
         else
-            return null;
+            return Collections.emptyList();
     }
 
     protected String getContainerClassPath() throws Exception
@@ -1040,19 +825,10 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
      */
     protected boolean isPluginArtifact(Artifact artifact)
     {
-        if (pluginArtifacts == null || pluginArtifacts.isEmpty())
+        if (pluginArtifacts == null)
             return false;
         
-        boolean isPluginArtifact = false;
-        for (Artifact pluginArtifact: pluginArtifacts)
-        {
-            if (getLog().isDebugEnabled())
-                getLog().debug("Checking " + pluginArtifact);
-            if (pluginArtifact.getGroupId().equals(artifact.getGroupId()) && pluginArtifact.getArtifactId().equals(artifact.getArtifactId()))
-                break;
-        }
-        
-        return isPluginArtifact;
+        return pluginArtifacts.stream().anyMatch(pa->pa.getGroupId().equals(artifact.getGroupId()) && pa.getArtifactId().equals(artifact.getArtifactId()));
     }
     
     
@@ -1156,11 +932,11 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
         if (useTestScope && (testClassesDirectory != null))
             webApp.setTestClasses(testClassesDirectory);
 
-        MavenProjectHelper mavenProjectHelper = new MavenProjectHelper(project);
+       
         List<File> webInfLibs = getWebInfLibArtifacts().stream()
             .map(a ->
             {
-                Path p = mavenProjectHelper.getArtifactPath(a);
+                Path p = mavenProjectHelper.getPathFor(a);
                 getLog().debug("Artifact " + a.getId() + " loaded from " + p + " added to WEB-INF/lib");
                 return p.toFile();
             }).collect(Collectors.toList());
@@ -1202,7 +978,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
         }
 
         //process any overlays and the war type artifacts
-        unpackOverlays(getOverlays()); //this sets up the base resource collection
+        unpackOverlays(); //this sets up the base resource collection
         
         getLog().info("web.xml file = " + webApp.getDescriptor());       
         getLog().info("Webapp directory = " + webAppSourceDirectory.getCanonicalPath());
@@ -1256,6 +1032,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
      */
     private Collection<Artifact> getWebInfLibArtifacts()
     {
+        //if this project isn't a war, then don't calculate web-inf lib
         String type = project.getArtifact().getType();
         if (!"war".equalsIgnoreCase(type) && !"zip".equalsIgnoreCase(type))
             return Collections.emptyList();

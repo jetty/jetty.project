@@ -18,56 +18,115 @@
 
 package org.eclipse.jetty.maven.plugin.utils;
 
+import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.apache.maven.artifact.Artifact;
+import org.apache.maven.artifact.repository.ArtifactRepository;
+import org.apache.maven.execution.MavenSession;
+import org.apache.maven.project.DefaultProjectBuildingRequest;
 import org.apache.maven.project.MavenProject;
+import org.apache.maven.project.ProjectBuildingRequest;
+import org.apache.maven.shared.artifact.DefaultArtifactCoordinate;
+import org.apache.maven.shared.artifact.resolve.ArtifactResolver;
+import org.apache.maven.shared.artifact.resolve.ArtifactResolverException;
+import org.eclipse.jetty.maven.plugin.OverlayManager;
+import org.eclipse.jetty.maven.plugin.WarPluginInfo;
 
+/**
+ * MavenProjectHelper
+ * 
+ * A class to facilitate interacting with the build time maven environment.
+ *
+ */
 public class MavenProjectHelper
 {
-
-    private final Map<String, MavenProject> artifactToLocalProjectMap;
-
-    public MavenProjectHelper(MavenProject project)
+    private MavenProject project;
+    private ArtifactResolver artifactResolver;
+    private List<ArtifactRepository> remoteRepositories;
+    private MavenSession session;
+    private final Map<String, MavenProject> artifactToReactorProjectMap;
+    /**
+     * maven-war-plugin reference
+     */
+    private WarPluginInfo warPluginInfo;
+    
+    /**
+     * Helper for wrangling war overlays
+     */
+    private OverlayManager overlayManager;
+    
+    /**
+     * @param project the project being built
+     * @param artifactResolver a resolve for artifacts
+     * @param remoteRepositories repositories from which to resolve artifacts
+     * @param session the current maven build session
+     */
+    public MavenProjectHelper(MavenProject project, ArtifactResolver artifactResolver, List<ArtifactRepository> remoteRepositories, MavenSession session)
     {
-        Set<MavenProject> mavenProjects = resolveProjectDependencies(project, new HashSet<>());
-        artifactToLocalProjectMap = mavenProjects.stream()
+        this.project = project;
+        this.artifactResolver = artifactResolver;
+        this.remoteRepositories = remoteRepositories;
+        this.session = session;
+        //work out which dependent projects are in the reactor
+        Set<MavenProject> mavenProjects = findDependenciesInReactor(project, new HashSet<>());
+        artifactToReactorProjectMap = mavenProjects.stream()
             .collect(Collectors.toMap(MavenProject::getId, Function.identity()));
-        artifactToLocalProjectMap.put(project.getArtifact().getId(), project);
+        artifactToReactorProjectMap.put(project.getArtifact().getId(), project);
+        warPluginInfo = new WarPluginInfo(project);
+        overlayManager = new OverlayManager(warPluginInfo);
+    }
+    
+    public MavenProject getProject()
+    {
+        return this.project;
+    }
+    
+    public WarPluginInfo getWarPluginInfo()
+    {
+        return warPluginInfo;
     }
 
+    public OverlayManager getOverlayManager()
+    {
+        return overlayManager;
+    }
+    
     /**
-     * Gets maven project if referenced in reactor
+     * Gets the maven project represented by the artifact iff it is in
+     * the reactor.
      *
-     * @param artifact - maven artifact
+     * @param artifact the artifact of the project to get
      * @return {@link MavenProject} if artifact is referenced in reactor, otherwise null
      */
-    public MavenProject getMavenProject(Artifact artifact)
+    public MavenProject getMavenProjectFor(Artifact artifact)
     {
-        return artifactToLocalProjectMap.get(artifact.getId());
+        return artifactToReactorProjectMap.get(artifact.getId());
     }
 
     /**
      * Gets path to artifact.
-     * If artifact is referenced in reactor, returns path to ${project.build.outputDirectory}.
+     * If the artifact is referenced in the reactor, returns path to ${project.build.outputDirectory}.
      * Otherwise, returns path to location in local m2 repo.
      *
-     * Cannot return null - maven will complain about unsatisfied dependency during project built.
+     * Cannot return null - maven will complain about unsatisfied dependency during project build.
      *
-     * @param artifact maven artifact
+     * @param artifact maven artifact to check
      * @return path to artifact
      */
-    public Path getArtifactPath(Artifact artifact)
+    public Path getPathFor(Artifact artifact)
     {
         Path path = artifact.getFile().toPath();
-        MavenProject mavenProject = getMavenProject(artifact);
+        MavenProject mavenProject = getMavenProjectFor(artifact);
         if (mavenProject != null)
         {
             if ("test-jar".equals(artifact.getType()))
@@ -81,18 +140,57 @@ public class MavenProjectHelper
         }
         return path;
     }
+    
+    /**
+     * Given the coordinates for an artifact, resolve the artifact from the
+     * remote repositories.
+     * 
+     * @param groupId the groupId of the artifact to resolve
+     * @param artifactId the artifactId of the artifact to resolve
+     * @param version the version of the artifact to resolve
+     * @param type the type of the artifact to resolve
+     * @return a File representing the location of the artifact or null if not resolved
+     * @throws ArtifactResolverException
+     */
+    public File resolveArtifact(String groupId, String artifactId, String version, String type)
+        throws ArtifactResolverException
+    {
+        DefaultArtifactCoordinate coordinate = new DefaultArtifactCoordinate();
+        coordinate.setGroupId(groupId);
+        coordinate.setArtifactId(artifactId);
+        coordinate.setVersion(version);
+        coordinate.setExtension(type);
 
-    private static Set<MavenProject> resolveProjectDependencies(MavenProject project, Set<MavenProject> visitedProjects)
+        ProjectBuildingRequest buildingRequest =
+                new DefaultProjectBuildingRequest(session.getProjectBuildingRequest());
+
+        buildingRequest.setRemoteRepositories(remoteRepositories);
+
+        Artifact a = artifactResolver.resolveArtifact(buildingRequest, coordinate).getArtifact();
+
+        if (a != null)
+            return a.getFile();
+        return null;
+    }
+    
+    /**
+     * Recursively find projects in the reactor for all dependencies of the given project.
+     * 
+     * @param project the project for which to find dependencies that are in the reactor
+     * @param visitedProjects the set of projects already seen
+     * @return unified set of all related projects in the reactor
+     */
+    private static Set<MavenProject> findDependenciesInReactor(MavenProject project, Set<MavenProject> visitedProjects)
     {
         if (visitedProjects.contains(project))
-        {
             return Collections.emptySet();
-        }
+
         visitedProjects.add(project);
-        Set<MavenProject> availableProjects = new HashSet<>(project.getProjectReferences().values());
-        for (MavenProject ref : project.getProjectReferences().values())
+        Collection<MavenProject> refs = project.getProjectReferences().values();
+        Set<MavenProject> availableProjects = new HashSet<>(refs);
+        for (MavenProject ref : refs)
         {
-            availableProjects.addAll(resolveProjectDependencies(ref, visitedProjects));
+            availableProjects.addAll(findDependenciesInReactor(ref, visitedProjects));
         }
         return availableProjects;
     }

@@ -258,7 +258,7 @@ public class JettyRunMojo extends AbstractWebAppMojo
         }
         
         //make sure each of the war artifacts is added to the scanner
-        for (Artifact a:getWarArtifacts())
+        for (Artifact a:mavenProjectHelper.getWarPluginInfo().getWarArtifacts())
         {
             scanner.watch(a.getFile().toPath());
         }

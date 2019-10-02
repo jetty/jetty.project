@@ -69,17 +69,6 @@ public class JettyRunWarMojo extends AbstractWebAppMojo
     protected JettyDistroForker distroForker;
     protected Path war;
     
-    
-    /**
-     * Do not re-process the war overlays, this will already
-     * have been done by the build phase of this mojo.
-     */
-    @Override
-    public List<Overlay> getOverlays() throws Exception
-    {
-        return null;
-    }
-    
     @Override
     public void configureWebApp() throws Exception
     {

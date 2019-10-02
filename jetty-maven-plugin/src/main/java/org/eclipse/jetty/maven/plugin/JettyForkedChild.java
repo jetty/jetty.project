@@ -41,7 +41,7 @@ import org.eclipse.jetty.util.resource.Resource;
  * JettyForkedChild
  *
  * This is the class that is executed when the jetty maven plugin 
- * forks a process when runType=forked.
+ * forks a process when DeploymentMode=FORKED.
  */
 public class JettyForkedChild extends AbstractLifeCycle
 {

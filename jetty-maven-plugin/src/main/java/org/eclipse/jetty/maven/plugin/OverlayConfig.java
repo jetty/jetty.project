@@ -28,6 +28,9 @@ import org.eclipse.jetty.util.StringUtil;
 
 /**
  * OverlayConfig
+ * 
+ * The configuration of a war overlay in a pom. Used to help determine which resources
+ * from a project's dependent war should be included.
  */
 public class OverlayConfig
 {

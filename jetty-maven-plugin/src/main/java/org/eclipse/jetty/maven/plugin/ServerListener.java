@@ -30,7 +30,6 @@ import org.eclipse.jetty.util.resource.Resource;
  */
 public class ServerListener implements LifeCycle.Listener
 {
-
     private String _tokenFile;
 
     public void setTokenFile(String file)
@@ -43,18 +42,11 @@ public class ServerListener implements LifeCycle.Listener
         return _tokenFile;
     }
 
-    /**
-     * @see org.eclipse.jetty.util.component.LifeCycle.Listener#lifeCycleStarting(org.eclipse.jetty.util.component.LifeCycle)
-     */
     @Override
     public void lifeCycleStarting(LifeCycle event)
     {
-
     }
 
-    /**
-     * @see org.eclipse.jetty.util.component.LifeCycle.Listener#lifeCycleStarted(org.eclipse.jetty.util.component.LifeCycle)
-     */
     @Override
     public void lifeCycleStarted(LifeCycle event)
     {
@@ -72,30 +64,18 @@ public class ServerListener implements LifeCycle.Listener
         }
     }
 
-    /**
-     * @see org.eclipse.jetty.util.component.LifeCycle.Listener#lifeCycleFailure(org.eclipse.jetty.util.component.LifeCycle, java.lang.Throwable)
-     */
     @Override
     public void lifeCycleFailure(LifeCycle event, Throwable cause)
     {
-
     }
 
-    /**
-     * @see org.eclipse.jetty.util.component.LifeCycle.Listener#lifeCycleStopping(org.eclipse.jetty.util.component.LifeCycle)
-     */
     @Override
     public void lifeCycleStopping(LifeCycle event)
     {
-
     }
 
-    /**
-     * @see org.eclipse.jetty.util.component.LifeCycle.Listener#lifeCycleStopped(org.eclipse.jetty.util.component.LifeCycle)
-     */
     @Override
     public void lifeCycleStopped(LifeCycle event)
     {
-
     }
 }

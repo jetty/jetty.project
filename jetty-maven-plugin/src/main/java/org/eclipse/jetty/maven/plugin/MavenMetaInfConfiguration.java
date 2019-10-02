@@ -90,8 +90,6 @@ public class MavenMetaInfConfiguration extends MetaInfConfiguration
 
     /**
      * Add in the classes dirs from test/classes and target/classes
-     *
-     * @see org.eclipse.jetty.webapp.MetaInfConfiguration#findClassDirs(org.eclipse.jetty.webapp.WebAppContext)
      */
     @Override
     protected List<Resource> findClassDirs(WebAppContext context) throws Exception
