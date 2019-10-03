@@ -257,6 +257,8 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                 // Parse the request buffer.
                 boolean handle = parseRequestBuffer();
 
+                // There could be a connection upgrade before handling
+                // the HTTP/1.1 request, for example PRI * HTTP/2.
                 // If there was a connection upgrade, the other
                 // connection took over, nothing more to do here.
                 if (getEndPoint().getConnection() != this)
@@ -267,7 +269,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                 {
                     boolean suspended = !_channel.handle();
 
-                    // We should break iteration if we have suspended or changed connection or this is not the handling thread.
+                    // We should break iteration if we have suspended or upgraded the connection.
                     if (suspended || getEndPoint().getConnection() != this)
                         break;
                 }
@@ -732,9 +734,9 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             {
                 HttpGenerator.Result result = _generator.generateResponse(_info, _head, _header, chunk, _content, _lastContent);
                 if (LOG.isDebugEnabled())
-                    LOG.debug("{} generate: {} ({},{},{})@{}",
-                        this,
+                    LOG.debug("generate: {} for {} ({},{},{})@{}",
                         result,
+                        this,
                         BufferUtil.toSummaryString(_header),
                         BufferUtil.toSummaryString(_content),
                         _lastContent,
@@ -826,8 +828,10 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                     }
                     case DONE:
                     {
-                        // If shutdown after commit, we can still close here.
-                        if (getConnector().isShutdown())
+                        // If this is the end of the response and the connector was shutdown after response was committed,
+                        // we can't add the Connection:close header, but we are still allowed to close the connection
+                        // by shutting down the output.
+                        if (getConnector().isShutdown() && _generator.isEnd() && _generator.isPersistent())
                             _shutdownOut = true;
 
                         return Action.SUCCEEDED;

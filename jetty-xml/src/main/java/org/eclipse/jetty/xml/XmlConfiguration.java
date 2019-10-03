@@ -566,6 +566,7 @@ public class XmlConfiguration
             String attr = node.getAttribute("name");
             String name = "set" + attr.substring(0, 1).toUpperCase(Locale.ENGLISH) + attr.substring(1);
             Object value = value(obj, node);
+            String defaultValue = defaultValue(obj, node);
             Object[] arg = {value};
 
             Class<?> oClass = nodeClass(node);
@@ -578,8 +579,16 @@ public class XmlConfiguration
             if (value != null)
                 vClass[0] = value.getClass();
 
+            boolean isUsingDefaultValue = ((value != null) && (defaultValue.equalsIgnoreCase(value.toString())));
+
             if (LOG.isDebugEnabled())
-                LOG.debug("XML " + (obj != null ? obj.toString() : oClass.getName()) + "." + name + "(" + value + ")");
+            {
+                LOG.debug("XML {}.{}({}) [{}]",
+                    (obj != null ? obj.toString() : oClass.getName()),
+                    name,
+                    value,
+                    isUsingDefaultValue ? "DEFAULT" : "NEW");
+            }
 
             MultiException me = new MultiException();
 
@@ -587,7 +596,7 @@ public class XmlConfiguration
             try
             {
                 Method set = oClass.getMethod(name, vClass);
-                invokeMethod(set, obj, arg);
+                invokeMethod(set, obj, arg, isUsingDefaultValue);
                 return;
             }
             catch (IllegalArgumentException | IllegalAccessException | NoSuchMethodException e)
@@ -602,7 +611,7 @@ public class XmlConfiguration
                 Field type = vClass[0].getField("TYPE");
                 vClass[0] = (Class<?>)type.get(null);
                 Method set = oClass.getMethod(name, vClass);
-                invokeMethod(set, obj, arg);
+                invokeMethod(set, obj, arg, isUsingDefaultValue);
                 return;
             }
             catch (NoSuchFieldException | IllegalArgumentException | IllegalAccessException | NoSuchMethodException e)
@@ -619,7 +628,7 @@ public class XmlConfiguration
                 {
                     try
                     {
-                        setField(field, obj, value);
+                        setField(field, obj, value, isUsingDefaultValue);
                         return;
                     }
                     catch (IllegalArgumentException e)
@@ -630,7 +639,7 @@ public class XmlConfiguration
                             try
                             {
                                 value = TypeUtil.valueOf(field.getType(), ((String)value).trim());
-                                setField(field, obj, value);
+                                setField(field, obj, value, isUsingDefaultValue);
                                 return;
                             }
                             catch (Exception e2)
@@ -664,7 +673,7 @@ public class XmlConfiguration
                     try
                     {
                         set = setter;
-                        invokeMethod(set, obj, arg);
+                        invokeMethod(set, obj, arg, isUsingDefaultValue);
                         return;
                     }
                     catch (IllegalArgumentException | IllegalAccessException e)
@@ -679,7 +688,8 @@ public class XmlConfiguration
                         {
                             if (paramTypes[0].isAssignableFrom(c))
                             {
-                                invokeMethod(setter, obj, convertArrayToCollection(value, c));
+                                Object[] args = {convertArrayToCollection(value, c)};
+                                invokeMethod(setter, obj, args, isUsingDefaultValue);
                                 return;
                             }
                         }
@@ -712,7 +722,7 @@ public class XmlConfiguration
                     Constructor<?> cons = sClass.getConstructor(vClass);
                     arg[0] = cons.newInstance(arg);
                     _configuration.initializeDefaults(arg[0]);
-                    invokeMethod(set, obj, arg);
+                    invokeMethod(set, obj, arg, isUsingDefaultValue);
                     return;
                 }
                 catch (NoSuchMethodException | IllegalAccessException | InstantiationException e)
@@ -742,11 +752,21 @@ public class XmlConfiguration
             return result;
         }
 
-        private Object invokeMethod(Method method, Object obj, Object... args) throws IllegalAccessException, InvocationTargetException
+        private Object invokeMethod(Method method, Object obj, Object[] args) throws IllegalAccessException, InvocationTargetException
+        {
+            return invokeMethod(method, obj, args, false);
+        }
+
+        private Object invokeMethod(Method method, Object obj, Object[] args, boolean isUsingDefaultValue) throws IllegalAccessException, InvocationTargetException
         {
             Object result = method.invoke(obj, args);
             if (method.getAnnotation(Deprecated.class) != null)
-                LOG.warn("Deprecated method {} in {}", method, _configuration);
+            {
+                if (isUsingDefaultValue)
+                    LOG.debug("Deprecated method {} in {}", method, _configuration);
+                else
+                    LOG.warn("Deprecated method {} in {}", method, _configuration);
+            }
             return result;
         }
 
@@ -758,11 +778,16 @@ public class XmlConfiguration
             return result;
         }
 
-        private void setField(Field field, Object obj, Object arg) throws IllegalAccessException
+        private void setField(Field field, Object obj, Object arg, boolean isUsingDefaultValue) throws IllegalAccessException
         {
             field.set(obj, arg);
             if (field.getAnnotation(Deprecated.class) != null)
-                LOG.warn("Deprecated field {} in {}", field, _configuration);
+            {
+                if (isUsingDefaultValue)
+                    LOG.debug("Deprecated field {} in {}", field, _configuration);
+                else
+                    LOG.warn("Deprecated field {} in {}", field, _configuration);
+            }
         }
 
         /**
@@ -851,7 +876,7 @@ public class XmlConfiguration
                 {
                     // Try calling a getXxx method.
                     Method method = oClass.getMethod("get" + name.substring(0, 1).toUpperCase(Locale.ENGLISH) + name.substring(1));
-                    obj = invokeMethod(method, obj);
+                    obj = invokeMethod(method, obj, null, false);
                 }
                 if (id != null)
                     _configuration.getIdMap().put(id, obj);
@@ -1392,6 +1417,45 @@ public class XmlConfiguration
                 _configuration.getIdMap().put(id, value);
 
             return value;
+        }
+
+        /**
+         * Check children for all {@code <Property>} and {@code <SystemProperty>} and return
+         * the String representation of any declared {@code default="value"} attributes.
+         *
+         * @param obj the enclosing obj
+         * @param node the XML node
+         * @return a String representing all {@code <Property default="...">} and {@code <SystemProperty default="...">} values appended together
+         */
+        private String defaultValue(Object obj, XmlParser.Node node) throws Exception
+        {
+            StringBuilder ret = new StringBuilder();
+
+            appendDefaultPropertyValues(ret, node);
+
+            return ret.toString();
+        }
+
+        private void appendDefaultPropertyValues(StringBuilder defValues, XmlParser.Node node) throws Exception
+        {
+            for (Object child : node)
+            {
+                if (child instanceof XmlParser.Node)
+                {
+                    XmlParser.Node childNode = (XmlParser.Node)child;
+                    String tag = childNode.getTag();
+                    if ("Property".equals(tag) || "SystemProperty".equals(tag))
+                    {
+                        AttrOrElementNode aoeNode = new AttrOrElementNode(childNode, "Id", "Name", "Deprecated", "Default");
+                        String dftValue = aoeNode.getString("Default");
+                        if (dftValue != null)
+                        {
+                            defValues.append(dftValue);
+                        }
+                    }
+                    appendDefaultPropertyValues(defValues, childNode);
+                }
+            }
         }
 
         /**

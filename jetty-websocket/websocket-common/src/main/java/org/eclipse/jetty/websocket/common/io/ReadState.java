@@ -87,10 +87,8 @@ class ReadState
 
     /**
      * Requests that reads from the connection be suspended.
-     *
-     * @return whether the suspending was successful
      */
-    boolean suspending()
+    void suspending()
     {
         synchronized (this)
         {
@@ -101,9 +99,7 @@ class ReadState
             {
                 case READING:
                     state = State.SUSPENDING;
-                    return true;
-                case EOF:
-                    return false;
+                    break;
                 default:
                     throw new IllegalStateException(toString(state));
             }
@@ -131,8 +127,6 @@ class ReadState
                     ByteBuffer bb = buffer;
                     buffer = null;
                     return bb;
-                case EOF:
-                    return null;
                 default:
                     throw new IllegalStateException(toString(state));
             }
