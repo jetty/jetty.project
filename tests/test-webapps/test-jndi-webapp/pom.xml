@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>test-webapps-parent</artifactId>
-    <version>10.0.0.alpha1</version>
+    <version>10.0.0-SNAPSHOT</version>
   </parent>
   <artifactId>test-jndi-webapp</artifactId>
   <name>Jetty Tests :: WebApp :: JNDI</name>
