@@ -1,0 +1,151 @@
+//
+//  ========================================================================
+//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
+package org.eclipse.jetty.servlet;
+
+import java.io.IOException;
+import java.util.EnumSet;
+import javax.servlet.DispatcherType;
+import javax.servlet.Filter;
+import javax.servlet.FilterChain;
+import javax.servlet.FilterConfig;
+import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletRequestWrapper;
+import javax.servlet.http.HttpServletResponse;
+
+import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.server.LocalConnector;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.handler.DefaultHandler;
+import org.eclipse.jetty.server.handler.HandlerList;
+import org.eclipse.jetty.util.component.LifeCycle;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+
+public class ServletWrapperTest
+{
+    private Server server;
+    private LocalConnector localConnector;
+
+    @BeforeEach
+    public void startServer() throws Exception
+    {
+        server = new Server();
+
+        localConnector = new LocalConnector(server);
+        server.addConnector(localConnector);
+
+        ServerConnector connector = new ServerConnector(server);
+        connector.setPort(0);
+        server.addConnector(connector);
+
+        ServletContextHandler context = new ServletContextHandler();
+        context.setContextPath("/");
+
+        ServletHolder servletHolder = context.addServlet(HelloServlet.class, "/hello");
+        servletHolder.setAsyncSupported(false);
+        FilterHolder filterHolder = context.addFilter(WrapFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
+        filterHolder.setAsyncSupported(true);
+
+        HandlerList handlers = new HandlerList();
+        handlers.addHandler(context);
+        handlers.addHandler(new DefaultHandler());
+
+        server.setHandler(handlers);
+        server.start();
+    }
+
+    @AfterEach
+    public void stopServer()
+    {
+        LifeCycle.stop(server);
+    }
+
+    @Test
+    public void testWrapper() throws Exception
+    {
+        StringBuilder req = new StringBuilder();
+        req.append("GET /hello HTTP/1.1\r\n");
+        req.append("Host: local\r\n");
+        req.append("Connection: close\r\n");
+        req.append("\r\n");
+
+        String rawResponse = localConnector.getResponse(req.toString());
+        HttpTester.Response resp = HttpTester.parseResponse(rawResponse);
+        assertThat("Response.status", resp.getStatus(), is(200));
+    }
+
+    public static class HelloServlet extends HttpServlet
+    {
+        @Override
+        protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+        {
+            resp.setContentType("text/plain");
+            resp.setCharacterEncoding("utf-8");
+            resp.getWriter().println("Hello Test");
+        }
+    }
+
+    public static class WrapFilter implements Filter
+    {
+        @Override
+        public void init(FilterConfig filterConfig) throws ServletException
+        {
+            // ignore
+        }
+
+        @Override
+        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
+        {
+            if (!(request instanceof HttpServletRequest) || !(response instanceof HttpServletResponse))
+            {
+                chain.doFilter(request, response);
+                return;
+            }
+
+            HttpServletRequest httpRequest = (HttpServletRequest)request;
+            HttpServletResponse httpResponse = (HttpServletResponse)response;
+
+            httpRequest = new NoopRequestWrapper(httpRequest);
+            chain.doFilter(httpRequest, httpResponse);
+        }
+
+        @Override
+        public void destroy()
+        {
+            // ignore
+        }
+    }
+
+    public static class NoopRequestWrapper extends HttpServletRequestWrapper
+    {
+        public NoopRequestWrapper(HttpServletRequest request)
+        {
+            super(request);
+        }
+    }
+}

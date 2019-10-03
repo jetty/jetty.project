@@ -41,6 +41,7 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class SuspendResumeTest
@@ -195,8 +196,7 @@ public class SuspendResumeTest
         assertThat(clientSocket.closeCode, is(StatusCode.NORMAL));
         assertThat(serverSocket.closeCode, is(StatusCode.NORMAL));
 
-        // suspend the client so that no read events occur
-        SuspendToken suspendToken = clientSocket.session.suspend();
-        suspendToken.resume();
+        // suspend after closed throws ISE
+        assertThrows(IllegalStateException.class, () -> clientSocket.session.suspend());
     }
 }

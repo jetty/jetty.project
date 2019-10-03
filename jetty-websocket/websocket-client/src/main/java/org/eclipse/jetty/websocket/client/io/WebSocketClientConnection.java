@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.websocket.client.io;
 
-import java.net.InetSocketAddress;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -28,7 +27,6 @@ import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
-import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
 import org.eclipse.jetty.websocket.client.masks.Masker;
 import org.eclipse.jetty.websocket.client.masks.RandomMasker;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
@@ -47,18 +45,6 @@ public class WebSocketClientConnection extends AbstractWebSocketConnection
         this.masker = new RandomMasker();
     }
 
-    @Override
-    public InetSocketAddress getLocalAddress()
-    {
-        return getEndPoint().getLocalAddress();
-    }
-
-    @Override
-    public InetSocketAddress getRemoteAddress()
-    {
-        return getEndPoint().getRemoteAddress();
-    }
-
     /**
      * Override to set the masker.
      */
@@ -70,11 +56,5 @@ public class WebSocketClientConnection extends AbstractWebSocketConnection
             masker.setMask((WebSocketFrame)frame);
         }
         super.outgoingFrame(frame, callback, batchMode);
-    }
-
-    @Override
-    public void setNextIncomingFrames(IncomingFrames incoming)
-    {
-        getParser().setIncomingFramesHandler(incoming);
     }
 }

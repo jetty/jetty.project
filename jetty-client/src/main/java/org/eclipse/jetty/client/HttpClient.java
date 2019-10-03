@@ -540,24 +540,14 @@ public class HttpClient extends ContainerLifeCycle
         port = normalizePort(scheme, port);
 
         Origin origin = new Origin(scheme, host, port);
-        HttpDestination destination = destinations.get(origin);
-        if (destination == null)
+        return destinations.computeIfAbsent(origin, o ->
         {
-            destination = transport.newHttpDestination(origin);
-            addManaged(destination);
-            HttpDestination existing = destinations.putIfAbsent(origin, destination);
-            if (existing != null)
-            {
-                removeBean(destination);
-                destination = existing;
-            }
-            else
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Created {}", destination);
-            }
-        }
-        return destination;
+            HttpDestination newDestination = getTransport().newHttpDestination(o);
+            addManaged(newDestination);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Created {}", newDestination);
+            return newDestination;
+        });
     }
 
     protected boolean removeDestination(HttpDestination destination)

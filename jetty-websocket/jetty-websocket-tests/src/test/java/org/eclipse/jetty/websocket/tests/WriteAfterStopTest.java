@@ -19,20 +19,17 @@
 package org.eclipse.jetty.websocket.tests;
 
 import java.net.URI;
-import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
+import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.common.WebSocketSession;
-import org.eclipse.jetty.websocket.common.extensions.compress.CompressExtension;
 import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 import org.junit.jupiter.api.AfterEach;
@@ -105,12 +102,8 @@ public class WriteAfterStopTest
         assertThat(clientSocket.closeCode, is(StatusCode.NORMAL));
         assertThat(serverSocket.closeCode, is(StatusCode.NORMAL));
 
-        ((WebSocketSession)session).stop();
-
-        try (StacklessLogging stacklessLogging = new StacklessLogging(CompressExtension.class))
-        {
-            assertThrows(ClosedChannelException.class,
-                () -> session.getRemote().sendString("hello world"));
-        }
+        WebSocketException failure = assertThrows(WebSocketException.class, () ->
+            clientSocket.session.getRemote().sendString("this should fail before ExtensionStack"));
+        assertThat(failure.getMessage(), is("Session closed"));
     }
 }
