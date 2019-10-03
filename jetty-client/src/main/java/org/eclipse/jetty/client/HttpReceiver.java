@@ -650,6 +650,10 @@ public abstract class HttpReceiver
         FAILURE
     }
 
+    /**
+     * <p>Wraps a list of content listeners, notifies them about content events and
+     * tracks individual listener demand to produce a global demand for content.</p>
+     */
     private class ContentListeners
     {
         private final Map<Object, Long> demands = new ConcurrentHashMap<>();
@@ -722,6 +726,9 @@ public abstract class HttpReceiver
         }
     }
 
+    /**
+     * <p>Implements the decoding of content, producing decoded buffers only if there is demand for content.</p>
+     */
     private class Decoder implements Destroyable
     {
         private final HttpResponse response;
