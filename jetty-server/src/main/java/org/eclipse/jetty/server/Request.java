@@ -1565,7 +1565,8 @@ public class Request implements HttpServletRequest
             if (sessionHandler == ss.getSessionHandler())
             {
                 session = s;
-                break;
+                if (ss.isValid())
+                    return session;
             }
         }
         return session;
