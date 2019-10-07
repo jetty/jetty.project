@@ -32,6 +32,13 @@ Using Maven for Jetty implementations is a popular choice, but users encouraged 
 Other popular tools include Ant and Gradle. 
 ____
 
+____
+[IMPORTANT]
+Various Jetty sub-projects may define configuration files with the same name.
+When two projects declare the same files, these files should be _merged_ rather than overwritten.
+This will happen automatically if you use Maven with the shade plugin and https://maven.apache.org/plugins/maven-shade-plugin/examples/resource-transformers.html#ServicesResourceTransformer[ServicesResourceTransformer].
+____
+
 First we'll have a look at a very simple HelloWorld java application that embeds Jetty, then a simple webapp which makes use of the link:#jetty-maven-plugin[jetty-maven-plugin] to speed up the development cycle.
 
 [[configuring-embedded-jetty-with-maven]]
