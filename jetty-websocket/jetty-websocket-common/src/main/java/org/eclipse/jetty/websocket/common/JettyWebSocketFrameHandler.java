@@ -48,7 +48,8 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     {
         DEMANDING,
         SUSPENDING,
-        SUSPENDED
+        SUSPENDED,
+        CLOSED
     }
 
     private final Logger log;
@@ -191,7 +192,6 @@ public class JettyWebSocketFrameHandler implements FrameHandler
                     state = SuspendState.SUSPENDED;
                     return;
 
-                case SUSPENDED:
                 default:
                     throw new IllegalStateException();
             }
@@ -280,6 +280,12 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     @Override
     public void onClosed(CloseStatus closeStatus, Callback callback)
     {
+        synchronized (this)
+        {
+            // We are now closed and cannot suspend or resume
+            state = SuspendState.CLOSED;
+        }
+
         try
         {
             if (closeHandle != null)
@@ -405,18 +411,15 @@ public class JettyWebSocketFrameHandler implements FrameHandler
                     state = SuspendState.SUSPENDING;
                     break;
 
-                case SUSPENDED:
-                case SUSPENDING:
-                    throw new IllegalStateException("Already Suspended");
-
                 default:
-                    throw new IllegalStateException();
+                    throw new IllegalStateException(state.name());
             }
         }
     }
 
     public void resume()
     {
+        boolean needDemand = false;
         Runnable delayedFrame = null;
         synchronized (this)
         {
@@ -426,6 +429,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
                     throw new IllegalStateException("Already Resumed");
 
                 case SUSPENDED:
+                    needDemand = true;
                     delayedFrame = delayedOnFrame;
                     delayedOnFrame = null;
                     state = SuspendState.DEMANDING;
@@ -438,14 +442,17 @@ public class JettyWebSocketFrameHandler implements FrameHandler
                     break;
 
                 default:
-                    throw new IllegalStateException();
+                    throw new IllegalStateException(state.name());
             }
         }
 
-        if (delayedFrame != null)
-            delayedFrame.run();
-        else
-            session.getCoreSession().demand(1);
+        if (needDemand)
+        {
+            if (delayedFrame != null)
+                delayedFrame.run();
+            else
+                session.getCoreSession().demand(1);
+        }
     }
 
     private void demand()
@@ -459,15 +466,12 @@ public class JettyWebSocketFrameHandler implements FrameHandler
                     demand = true;
                     break;
 
-                case SUSPENDED:
-                    throw new IllegalStateException("Suspended");
-
                 case SUSPENDING:
                     state = SuspendState.SUSPENDED;
                     break;
 
                 default:
-                    throw new IllegalStateException();
+                    throw new IllegalStateException(state.name());
             }
         }
 
