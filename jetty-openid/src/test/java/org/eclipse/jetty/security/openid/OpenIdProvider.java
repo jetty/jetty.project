@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -137,7 +136,7 @@ public class OpenIdProvider extends ContainerLifeCycle
             }
 
             String authCode = UUID.randomUUID().toString().replace("-", "");
-            User user = new User(123456789, "FirstName", "LastName");
+            User user = new User(123456789, "Alice");
             issuedAuthCodes.put(authCode, user);
 
             final Request baseRequest = Request.getBaseRequest(req);
@@ -173,20 +172,11 @@ public class OpenIdProvider extends ContainerLifeCycle
                 return;
             }
 
-            String jwtHeader = "{\"INFO\": \"this is not used or checked in our implementation\"}";
-            String jwtBody = user.getIdToken();
-            String jwtSignature = "we do not validate signature as we use the authorization code flow";
-
-            Base64.Encoder encoder = Base64.getEncoder();
-            String jwt = encoder.encodeToString(jwtHeader.getBytes()) + "." +
-                encoder.encodeToString(jwtBody.getBytes()) + "." +
-                encoder.encodeToString(jwtSignature.getBytes());
-
             String accessToken = "ABCDEFG";
             long expiry = System.currentTimeMillis() + Duration.ofMinutes(10).toMillis();
             String response = "{" +
                 "\"access_token\": \"" + accessToken + "\"," +
-                "\"id_token\": \"" + jwt + "\"," +
+                "\"id_token\": \"" + JwtEncoder.encode(user.getIdToken()) + "\"," +
                 "\"expires_in\": " + expiry + "," +
                 "\"token_type\": \"Bearer\"" +
                 "}";
@@ -214,41 +204,28 @@ public class OpenIdProvider extends ContainerLifeCycle
     public class User
     {
         private long subject;
-        private String firstName;
-        private String lastName;
+        private String name;
 
-        public User(String firstName, String lastName)
+        public User(String name)
         {
-            this(new Random().nextLong(), firstName, lastName);
+            this(new Random().nextLong(), name);
         }
 
-        public User(long subject, String firstName, String lastName)
+        public User(long subject, String name)
         {
             this.subject = subject;
-            this.firstName = firstName;
-            this.lastName = lastName;
+            this.name = name;
         }
 
-        public String getFirstName()
+        public String getName()
         {
-            return firstName;
-        }
-
-        public String getLastName()
-        {
-            return lastName;
+            return name;
         }
 
         public String getIdToken()
         {
-            return "{" +
-                "\"iss\": \"" + provider + "\"," +
-                "\"sub\": \"" + subject + "\"," +
-                "\"aud\": \"" + clientId + "\"," +
-                "\"exp\": " + System.currentTimeMillis() + Duration.ofMinutes(1).toMillis() + "," +
-                "\"name\": \"" + firstName + " " + lastName + "\"," +
-                "\"email\": \"" + firstName + "@fake-email.com" + "\"" +
-                "}";
+            long expiry = System.currentTimeMillis() + Duration.ofMinutes(1).toMillis();
+            return JwtEncoder.createIdToken(provider, clientId, Long.toString(subject), name, expiry);
         }
     }
 }
