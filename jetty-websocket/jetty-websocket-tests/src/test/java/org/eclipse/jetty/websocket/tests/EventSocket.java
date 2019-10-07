@@ -37,7 +37,7 @@ public class EventSocket
 {
     private static Logger LOG = Log.getLogger(EventSocket.class);
 
-    protected Session session;
+    public Session session;
     private String behavior;
     public volatile Throwable failure = null;
     public volatile int closeCode = -1;

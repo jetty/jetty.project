@@ -49,6 +49,7 @@ import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
+import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
 import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.Generator;
 import org.eclipse.jetty.websocket.common.LogicalConnection;
@@ -393,6 +394,12 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     }
 
     @Override
+    public InetSocketAddress getLocalAddress()
+    {
+        return getEndPoint().getLocalAddress();
+    }
+
+    @Override
     public InetSocketAddress getRemoteAddress()
     {
         return getEndPoint().getRemoteAddress();
@@ -647,6 +654,12 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         }
 
         setInitialBuffer(prefilled);
+    }
+
+    @Override
+    public void setNextIncomingFrames(IncomingFrames incoming)
+    {
+        getParser().setIncomingFramesHandler(incoming);
     }
 
     /**

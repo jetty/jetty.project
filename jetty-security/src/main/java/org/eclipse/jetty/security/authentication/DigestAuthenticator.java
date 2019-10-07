@@ -121,6 +121,8 @@ public class DigestAuthenticator extends LoginAuthenticator
 
         try
         {
+            Request baseRequest = Request.getBaseRequest(request);
+
             boolean stale = false;
             if (credentials != null)
             {
@@ -173,7 +175,7 @@ public class DigestAuthenticator extends LoginAuthenticator
                     }
                 }
 
-                int n = checkNonce(digest, (Request)request);
+                int n = checkNonce(digest, baseRequest);
 
                 if (n > 0)
                 {
@@ -195,7 +197,7 @@ public class DigestAuthenticator extends LoginAuthenticator
                     domain = "/";
                 response.setHeader(HttpHeader.WWW_AUTHENTICATE.asString(), "Digest realm=\"" + _loginService.getName() +
                     "\", domain=\"" + domain +
-                    "\", nonce=\"" + newNonce((Request)request) +
+                    "\", nonce=\"" + newNonce(baseRequest) +
                     "\", algorithm=MD5" +
                     ", qop=\"auth\"" +
                     ", stale=" + stale);
