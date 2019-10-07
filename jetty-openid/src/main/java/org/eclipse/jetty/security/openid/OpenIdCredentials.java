@@ -101,7 +101,7 @@ public class OpenIdCredentials implements Serializable
                 if (!"Bearer".equalsIgnoreCase(tokenType))
                     throw new IllegalArgumentException("invalid token_type");
 
-                claims = CredentialsDecoder.decode(idToken);
+                claims = JwtDecoder.decode(idToken);
                 if (LOG.isDebugEnabled())
                     LOG.debug("claims {}", claims);
                 validateClaims();

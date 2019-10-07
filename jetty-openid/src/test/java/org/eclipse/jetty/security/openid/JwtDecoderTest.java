@@ -30,14 +30,18 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class CredentialsDecoderTest
+public class JwtDecoderTest
 {
     public static Stream<Arguments> paddingExamples()
     {
         return Stream.of(
             Arguments.of("XXXX", "XXXX"),
             Arguments.of("XXX", "XXX="),
-            Arguments.of("XX", "XX==")
+            Arguments.of("XX", "XX=="),
+            Arguments.of("XXX=", "XXX="),
+            Arguments.of("X-X", "X-X="),
+            Arguments.of("@#", "@#==")
+            // Arguments.of("X=", "?") // TODO: what to expect in this case
             );
     }
 
@@ -53,7 +57,7 @@ public class CredentialsDecoderTest
     @MethodSource("paddingExamples")
     public void testPaddingBase64(String input, String expected)
     {
-        byte[] actual = CredentialsDecoder.padJWTSection(input);
+        byte[] actual = JwtDecoder.padJWTSection(input);
         assertThat(actual, is(expected.getBytes()));
     }
 
@@ -62,7 +66,7 @@ public class CredentialsDecoderTest
     public void testPaddingInvalidBase64(String input)
     {
         IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
-            () -> CredentialsDecoder.padJWTSection(input));
+            () -> JwtDecoder.padJWTSection(input));
 
         assertThat(error.getMessage(), is("Not a valid Base64-encoded string"));
     }
@@ -81,7 +85,7 @@ public class CredentialsDecoderTest
         String idToken = JwtEncoder.encode(claims);
 
         // Decode the ID Token and verify the claims are the same.
-        Map<String, Object> decodedClaims = CredentialsDecoder.decode(idToken);
+        Map<String, Object> decodedClaims = JwtDecoder.decode(idToken);
         assertThat(decodedClaims.get("iss"), is(issuer));
         assertThat(decodedClaims.get("sub"), is(subject));
         assertThat(decodedClaims.get("aud"), is(clientId));

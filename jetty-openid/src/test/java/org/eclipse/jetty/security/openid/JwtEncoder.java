@@ -46,7 +46,7 @@ public class JwtEncoder
             "\"aud\": \"" + clientId + "\"," +
             "\"exp\": " + expiry + "," +
             "\"name\": \"" + name + "\"," +
-            "\"email\": \"" + name + "@fake-email.com" + "\"" +
+            "\"email\": \"" + name + "@example.com" + "\"" +
             "}";
     }
 }

@@ -30,10 +30,9 @@ import org.eclipse.jetty.util.log.Logger;
 /**
  * Used to decode the ID Token from the base64 encrypted JSON Web Token (JWT).
  */
-public class CredentialsDecoder
+public class JwtDecoder
 {
-    private static final Logger LOG = Log.getLogger(CredentialsDecoder.class);
-    private static final Base64.Decoder decoder = Base64.getUrlDecoder();
+    private static final Logger LOG = Log.getLogger(JwtDecoder.class);
 
     /**
      * Decodes a JSON Web Token (JWT) into a Map of claims.
@@ -49,6 +48,7 @@ public class CredentialsDecoder
         if (sections.length != 3)
             throw new IllegalArgumentException("JWT does not contain 3 sections");
 
+        Base64.Decoder decoder = Base64.getUrlDecoder();
         String jwtHeaderString = new String(decoder.decode(padJWTSection(sections[0])), StandardCharsets.UTF_8);
         String jwtClaimString = new String(decoder.decode(padJWTSection(sections[1])), StandardCharsets.UTF_8);
         String jwtSignature = sections[2];

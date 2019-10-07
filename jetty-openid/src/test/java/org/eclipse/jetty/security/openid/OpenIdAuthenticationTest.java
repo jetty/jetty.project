@@ -150,7 +150,7 @@ public class OpenIdAuthenticationTest
         assertThat(content.length, is(3));
         assertThat(content[0], is("userId: 123456789"));
         assertThat(content[1], is("name: Alice"));
-        assertThat(content[2], is("email: Alice@fake-email.com"));
+        assertThat(content[2], is("email: Alice@example.com"));
 
         // Request to admin page gives 403 as we do not have admin role
         response = client.GET(appUriString + "/admin");
