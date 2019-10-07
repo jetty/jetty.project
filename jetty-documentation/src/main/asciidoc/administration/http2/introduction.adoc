@@ -42,3 +42,22 @@ The Jetty HTTP/2 implementation consists of the following sub-projects (each pro
 4.  `http2-client`: Provides the implementation of HTTP/2 client with a low level HTTP/2 API, dealing with HTTP/2 streams, frames, etc.
 5.  `http2-http-client-transport`: Provides the implementation of the HTTP/2 transport for `HttpClient` (see xref:http-client[]).
 Applications can use the higher level API provided by `HttpClient` to send HTTP requests and receive HTTP responses, and the HTTP/2 transport will take care of converting them in HTTP/2 format (see also https://webtide.com/http2-support-for-httpclient/[this blog entry]).
+
+[[http2-merge-config]]
+==== Merging Configuration Files
+If you plan to run your Jetty HTTP/2 application from a jar file, you will need to merge some jetty configuration files when building your jar.
+Both jetty-http and http2-hpack declare the file: `META-INF/services/org.eclipse.jetty.http.HttpFieldPreEncoder`
+
+The jetty-http version contains the single line:
+```text
+org.eclipse.jetty.http.Http1FieldPreEncoder
+```
+
+The http2-hpack version contains a different line:
+```text
+org.eclipse.jetty.http2.hpack.HpackFieldPreEncoder
+```
+
+Your jar file must include a version of that file containing _both_ lines.
+The easiest way to accomplish this with Maven is to use the shade plugin with the https://maven.apache.org/plugins/maven-shade-plugin/examples/resource-transformers.html#ServicesResourceTransformer[ServicesResourceTransformer] to do this automatically.
+Other Jetty components may require the ServicesResourceTransformer to work together properly as well.
