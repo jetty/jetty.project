@@ -45,6 +45,7 @@ import javax.servlet.http.HttpSessionEvent;
 import javax.servlet.http.HttpSessionIdListener;
 import javax.servlet.http.HttpSessionListener;
 
+import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
@@ -1627,13 +1628,21 @@ public class SessionHandler extends ScopedHandler
                 {
                     if (sessionCookie.equalsIgnoreCase(cookies[i].getName()))
                     {
-                        requestedSessionId = cookies[i].getValue();
+                        String id = cookies[i].getValue();
                         requestedSessionIdFromCookie = true;
                         if (LOG.isDebugEnabled())
-                            LOG.debug("Got Session ID {} from cookie {}", requestedSessionId, sessionCookie);
-                        if (requestedSessionId != null)
+                            LOG.debug("Got Session ID {} from cookie {}", id, sessionCookie);
+
+                        HttpSession s = getHttpSession(id);
+                        if (s != null && isValid(s))
                         {
-                            break;
+                            if (requestedSessionId != null)
+                                throw new BadMessageException("Duplicate valid session cookies: " + requestedSessionId + "," + id);
+                            else
+                            {
+                                requestedSessionId = id;
+                                session = s;
+                            }
                         }
                     }
                 }
@@ -1664,6 +1673,7 @@ public class SessionHandler extends ScopedHandler
                     requestedSessionIdFromCookie = false;
                     if (LOG.isDebugEnabled())
                         LOG.debug("Got Session ID {} from URL", requestedSessionId);
+                    session = getHttpSession(requestedSessionId);
                 }
             }
         }
@@ -1673,11 +1683,10 @@ public class SessionHandler extends ScopedHandler
 
         if (requestedSessionId != null)
         {
-            session = getHttpSession(requestedSessionId);
             if (session != null && isValid(session))
             {
                 baseRequest.enterSession(session); //request enters this session for first time
-                baseRequest.setSession(session);
+                baseRequest.setSession(session);  //associate the session with the request
             }
         }
     }
