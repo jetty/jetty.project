@@ -23,6 +23,7 @@ import java.net.ConnectException;
 import java.net.Socket;
 import java.net.URI;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -216,7 +217,7 @@ public class ForwardProxyTLSServerTest
             ContentResponse response = httpClient.newRequest(host, serverConnector.getLocalPort())
                 .scheme(HttpScheme.HTTPS.asString())
                 .method(HttpMethod.GET)
-                .path("/echo?body=" + URLEncoder.encode(body, "UTF-8"))
+                .path("/echo?body=" + URLEncoder.encode(body, StandardCharsets.UTF_8))
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
 
@@ -248,7 +249,7 @@ public class ForwardProxyTLSServerTest
             ContentResponse response1 = httpClient.newRequest("localhost", serverConnector.getLocalPort())
                 .scheme(HttpScheme.HTTPS.asString())
                 .method(HttpMethod.GET)
-                .path("/echo?body=" + URLEncoder.encode(body, "UTF-8"))
+                .path("/echo?body=" + URLEncoder.encode(body, StandardCharsets.UTF_8))
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
 
@@ -297,7 +298,7 @@ public class ForwardProxyTLSServerTest
             ContentResponse response1 = httpClient.newRequest("localhost", serverConnector.getLocalPort())
                 .scheme(HttpScheme.HTTPS.asString())
                 .method(HttpMethod.GET)
-                .path("/echo?body=" + URLEncoder.encode(content1, "UTF-8"))
+                .path("/echo?body=" + URLEncoder.encode(content1, StandardCharsets.UTF_8))
                 .onRequestCommit(request ->
                 {
                     Destination destination = httpClient.resolveDestination(request);
@@ -384,7 +385,7 @@ public class ForwardProxyTLSServerTest
             ContentResponse response = httpClient.newRequest(host, serverConnector.getLocalPort())
                 .scheme(HttpScheme.HTTPS.asString())
                 .method(HttpMethod.GET)
-                .path("/echo?body=" + URLEncoder.encode(body, "UTF-8"))
+                .path("/echo?body=" + URLEncoder.encode(body, StandardCharsets.UTF_8))
                 // Long idle timeout for the request.
                 .idleTimeout(10 * idleTimeout, TimeUnit.MILLISECONDS)
                 .timeout(5, TimeUnit.SECONDS)
@@ -420,7 +421,7 @@ public class ForwardProxyTLSServerTest
             httpClient.newRequest("localhost", serverConnector.getLocalPort())
                 .scheme(HttpScheme.HTTPS.asString())
                 .method(HttpMethod.GET)
-                .path("/echo?body=" + URLEncoder.encode(body, "UTF-8"))
+                .path("/echo?body=" + URLEncoder.encode(body, StandardCharsets.UTF_8))
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
         });
@@ -449,7 +450,7 @@ public class ForwardProxyTLSServerTest
             httpClient.newRequest("localhost", serverPort)
                 .scheme(HttpScheme.HTTPS.asString())
                 .method(HttpMethod.GET)
-                .path("/echo?body=" + URLEncoder.encode(body, "UTF-8"))
+                .path("/echo?body=" + URLEncoder.encode(body, StandardCharsets.UTF_8))
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
         });
@@ -611,7 +612,7 @@ public class ForwardProxyTLSServerTest
             ContentResponse response = httpClient.newRequest(host, serverConnector.getLocalPort())
                 .scheme(HttpScheme.HTTPS.asString())
                 .method(HttpMethod.GET)
-                .path("/echo?body=" + URLEncoder.encode(body, "UTF-8"))
+                .path("/echo?body=" + URLEncoder.encode(body, StandardCharsets.UTF_8))
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
 
