@@ -162,7 +162,7 @@ This will block until the message is sent, possibly throwing an IOException if u
 
 To be correct in your usage of Pong frames, you should return the same byte array data that you received in the Ping frame.
 
-[[async]]
+[[websocket-async-send]]
 ==== Async Send Message
 
 However there are also 2 Async send message methods available:
