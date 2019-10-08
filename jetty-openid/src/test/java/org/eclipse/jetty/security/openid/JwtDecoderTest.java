@@ -40,8 +40,12 @@ public class JwtDecoderTest
             Arguments.of("XX", "XX=="),
             Arguments.of("XXX=", "XXX="),
             Arguments.of("X-X", "X-X="),
-            Arguments.of("@#", "@#==")
-            // Arguments.of("X=", "?") // TODO: what to expect in this case
+            Arguments.of("@#", "@#=="),
+            Arguments.of("X=", "X="),
+            Arguments.of("XX=", "XX="),
+            Arguments.of("XX==", "XX=="),
+            Arguments.of("XXX=", "XXX="),
+            Arguments.of("", "")
             );
     }
 

@@ -68,9 +68,14 @@ public class JwtDecoder
 
     static byte[] padJWTSection(String unpaddedEncodedJwtSection)
     {
+        // If already padded just use what we are given.
+        if (unpaddedEncodedJwtSection.endsWith("="))
+            return unpaddedEncodedJwtSection.getBytes();
+
         int length = unpaddedEncodedJwtSection.length();
         int remainder = length % 4;
 
+        // A valid base-64-encoded string will have a remainder of 0, 2 or 3. Never 1!
         if (remainder == 1)
             throw new IllegalArgumentException("Not a valid Base64-encoded string");
 
