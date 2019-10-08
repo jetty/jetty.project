@@ -21,6 +21,7 @@ package org.eclipse.jetty.client.api;
 import java.nio.ByteBuffer;
 import java.util.EventListener;
 import java.util.List;
+import java.util.concurrent.Flow;
 import java.util.function.LongConsumer;
 
 import org.eclipse.jetty.client.util.BufferingResponseListener;
@@ -195,7 +196,7 @@ public interface Response
          * The {@code callback} object should be succeeded to signal that the
          * {@code content} buffer has been consumed.
          * The {@code demand} object should be used to demand more content,
-         * similarly to ReactiveStreams's {@code Subscription#request(long)}.
+         * similarly to {@link Flow.Subscription#request(long)}.
          *
          * @param response the response containing the response line data and the headers
          * @param demand the object that allows to demand content buffers
