@@ -1634,14 +1634,26 @@ public class SessionHandler extends ScopedHandler
                             LOG.debug("Got Session ID {} from cookie {}", id, sessionCookie);
 
                         HttpSession s = getHttpSession(id);
-                        if (s != null && isValid(s))
+                        
+                        if (requestedSessionId == null)
                         {
-                            if (requestedSessionId != null)
-                                throw new BadMessageException("Duplicate valid session cookies: " + requestedSessionId + "," + id);
-                            else
+                            //no previous id, always accept this one
+                            requestedSessionId = id;
+                            session = s;
+                        }
+                        else
+                        {
+                            if (session == null || !isValid(session))
                             {
+                                //no previous session or invalid, accept this one
                                 requestedSessionId = id;
                                 session = s;
+                            }
+                            else
+                            {
+                                //previous session is valid, use it unless both valid
+                                if (s != null && isValid(s))
+                                    throw new BadMessageException("Duplicate valid session cookies: " + requestedSessionId + "," + id);
                             }
                         }
                     }
