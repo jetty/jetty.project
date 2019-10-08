@@ -628,8 +628,8 @@ public class ForwardProxyTLSServerTest
 
     @ParameterizedTest
     @MethodSource("scenarios")
-    @Tag("Unstable")
-    @Disabled("External Proxy Server no longer stable enough for testing")
+    @Tag("external")
+    @Disabled
     public void testExternalProxy(SslContextFactory.Server scenario) throws Exception
     {
         init(scenario);
