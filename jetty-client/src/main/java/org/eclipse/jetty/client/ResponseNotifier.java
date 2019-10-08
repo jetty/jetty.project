@@ -21,6 +21,8 @@ package org.eclipse.jetty.client;
 import java.nio.ByteBuffer;
 import java.util.Iterator;
 import java.util.List;
+import java.util.function.LongConsumer;
+import java.util.function.ObjLongConsumer;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.client.api.ContentResponse;
@@ -103,36 +105,54 @@ public class ResponseNotifier
         }
     }
 
-    public void notifyContent(List<Response.ResponseListener> listeners, Response response, ByteBuffer buffer, Callback callback)
+    public void notifyBeforeContent(Response response, ObjLongConsumer<Object> demand, List<Response.DemandedContentListener> contentListeners)
     {
-        List<Response.AsyncContentListener> contentListeners = listeners.stream()
-            .filter(Response.AsyncContentListener.class::isInstance)
-            .map(Response.AsyncContentListener.class::cast)
-            .collect(Collectors.toList());
-        notifyContent(response, buffer, callback, contentListeners);
+        for (Response.DemandedContentListener listener : contentListeners)
+        {
+            notifyBeforeContent(listener, response, d -> demand.accept(listener, d));
+        }
     }
 
-    public void notifyContent(Response response, ByteBuffer buffer, Callback callback, List<Response.AsyncContentListener> contentListeners)
+    private void notifyBeforeContent(Response.DemandedContentListener listener, Response response, LongConsumer demand)
     {
-        if (contentListeners.isEmpty())
+        try
+        {
+            listener.onBeforeContent(response, demand);
+        }
+        catch (Throwable x)
+        {
+            LOG.info("Exception while notifying listener " + listener, x);
+        }
+    }
+
+    public void notifyContent(Response response, ObjLongConsumer<Object> demand, ByteBuffer buffer, Callback callback, List<Response.DemandedContentListener> contentListeners)
+    {
+        int count = contentListeners.size();
+        if (count == 0)
         {
             callback.succeeded();
+            demand.accept(null, 1);
+        }
+        else if (count == 1)
+        {
+            Response.DemandedContentListener listener = contentListeners.get(0);
+            notifyContent(listener, response, d -> demand.accept(listener, d), buffer.slice(), callback);
         }
         else
         {
-            CountingCallback counter = new CountingCallback(callback, contentListeners.size());
-            for (Response.AsyncContentListener listener : contentListeners)
+            callback = new CountingCallback(callback, count);
+            for (Response.DemandedContentListener listener : contentListeners)
             {
-                notifyContent(listener, response, buffer.slice(), counter);
+                notifyContent(listener, response, d -> demand.accept(listener, d), buffer.slice(), callback);
             }
         }
     }
 
-    private void notifyContent(Response.AsyncContentListener listener, Response response, ByteBuffer buffer, Callback callback)
+    private void notifyContent(Response.DemandedContentListener listener, Response response, LongConsumer demand, ByteBuffer buffer, Callback callback)
     {
         try
         {
-            listener.onContent(response, buffer, callback);
+            listener.onContent(response, demand, buffer, callback);
         }
         catch (Throwable x)
         {
@@ -205,16 +225,7 @@ public class ResponseNotifier
 
     public void forwardSuccess(List<Response.ResponseListener> listeners, Response response)
     {
-        notifyBegin(listeners, response);
-        for (Iterator<HttpField> iterator = response.getHeaders().iterator(); iterator.hasNext(); )
-        {
-            HttpField field = iterator.next();
-            if (!notifyHeader(listeners, response, field))
-                iterator.remove();
-        }
-        notifyHeaders(listeners, response);
-        if (response instanceof ContentResponse)
-            notifyContent(listeners, response, ByteBuffer.wrap(((ContentResponse)response).getContent()), Callback.NOOP);
+        forwardEvents(listeners, response);
         notifySuccess(listeners, response);
     }
 
@@ -226,8 +237,15 @@ public class ResponseNotifier
 
     public void forwardFailure(List<Response.ResponseListener> listeners, Response response, Throwable failure)
     {
+        forwardEvents(listeners, response);
+        notifyFailure(listeners, response, failure);
+    }
+
+    private void forwardEvents(List<Response.ResponseListener> listeners, Response response)
+    {
         notifyBegin(listeners, response);
-        for (Iterator<HttpField> iterator = response.getHeaders().iterator(); iterator.hasNext(); )
+        Iterator<HttpField> iterator = response.getHeaders().iterator();
+        while (iterator.hasNext())
         {
             HttpField field = iterator.next();
             if (!notifyHeader(listeners, response, field))
@@ -235,8 +253,19 @@ public class ResponseNotifier
         }
         notifyHeaders(listeners, response);
         if (response instanceof ContentResponse)
-            notifyContent(listeners, response, ByteBuffer.wrap(((ContentResponse)response).getContent()), Callback.NOOP);
-        notifyFailure(listeners, response, failure);
+        {
+            byte[] content = ((ContentResponse)response).getContent();
+            if (content != null && content.length > 0)
+            {
+                List<Response.DemandedContentListener> contentListeners = listeners.stream()
+                    .filter(Response.DemandedContentListener.class::isInstance)
+                    .map(Response.DemandedContentListener.class::cast)
+                    .collect(Collectors.toList());
+                ObjLongConsumer<Object> demand = (context, value) -> {};
+                notifyBeforeContent(response, demand, contentListeners);
+                notifyContent(response, demand, ByteBuffer.wrap(content), Callback.NOOP, contentListeners);
+            }
+        }
     }
 
     public void forwardFailureComplete(List<Response.ResponseListener> listeners, Request request, Throwable requestFailure, Response response, Throwable responseFailure)

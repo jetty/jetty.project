@@ -34,6 +34,12 @@ public class HttpReceiverOverFCGI extends HttpReceiver
     }
 
     @Override
+    protected HttpChannelOverFCGI getHttpChannel()
+    {
+        return (HttpChannelOverFCGI)super.getHttpChannel();
+    }
+
+    @Override
     protected boolean responseBegin(HttpExchange exchange)
     {
         return super.responseBegin(exchange);
@@ -67,5 +73,11 @@ public class HttpReceiverOverFCGI extends HttpReceiver
     protected boolean responseFailure(Throwable failure)
     {
         return super.responseFailure(failure);
+    }
+
+    @Override
+    protected void receive()
+    {
+        getHttpChannel().receive();
     }
 }
