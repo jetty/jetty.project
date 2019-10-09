@@ -626,6 +626,9 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
 
             if (inflate)
             {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("{} inflate {}", this, request);
+
                 baseRequest.getHttpInput().addInterceptor(new GzipHttpInputInterceptor(baseRequest.getHttpChannel().getByteBufferPool(), _inflateBufferSize));
 
                 for (ListIterator<HttpField> i = baseRequest.getHttpFields().listIterator(); i.hasNext(); )
@@ -951,5 +954,11 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     protected DeflaterPool newDeflaterPool(int capacity)
     {
         return new DeflaterPool(capacity, Deflater.DEFAULT_COMPRESSION, true);
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%x{%s,min=%s,inflate=%s}", getClass().getSimpleName(), hashCode(), getState(), _minGzipSize, _inflateBufferSize);
     }
 }

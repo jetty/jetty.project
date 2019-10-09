@@ -884,7 +884,7 @@ public class SessionHandler extends ScopedHandler
      * @param id The session ID stripped of any worker name.
      * @return A Session or null if none exists.
      */
-    protected Session getSession(String id)
+    public Session getSession(String id)
     {
         try
         {

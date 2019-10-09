@@ -19,6 +19,7 @@
 package org.eclipse.jetty.client;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
@@ -34,6 +35,7 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.ClientConnectionFactory;
+import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.log.Log;
@@ -206,7 +208,12 @@ public class HttpProxy extends ProxyConfiguration.Proxy
                 HttpDestination destination = (HttpDestination)context.get(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY);
                 ClientConnectionFactory connectionFactory = this.connectionFactory;
                 if (destination.isSecure())
+                {
+                    // Don't want to do DNS resolution here.
+                    InetSocketAddress address = InetSocketAddress.createUnresolved(destination.getHost(), destination.getPort());
+                    context.put(ClientConnector.REMOTE_SOCKET_ADDRESS_CONTEXT_KEY, address);
                     connectionFactory = destination.newSslClientConnectionFactory(connectionFactory);
+                }
                 var oldConnection = endPoint.getConnection();
                 var newConnection = connectionFactory.newConnection(endPoint, context);
                 endPoint.upgrade(newConnection);
