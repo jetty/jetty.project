@@ -43,6 +43,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
@@ -742,7 +743,7 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
     private boolean nativeWatchService;
 
     private final List<Config> configs = new ArrayList<>();
-    private final Map<WatchKey, Config> keys = new HashMap<>();
+    private final Map<WatchKey, Config> keys = new ConcurrentHashMap<>();
     private final List<EventListener> listeners = new CopyOnWriteArrayList<>(); //a listener may modify the listener list directly or by stopping the PathWatcher
 
     private final Map<Path, PathWatchEvent> pending = new LinkedHashMap<>(32, (float)0.75, false);
