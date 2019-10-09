@@ -20,6 +20,7 @@ package org.eclipse.jetty.http2.hpack;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Set;
@@ -27,6 +28,7 @@ import java.util.Set;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
@@ -77,12 +79,19 @@ public class HpackEncoder
     private static final EnumSet<HttpHeader> IGNORED_HEADERS = EnumSet.of(HttpHeader.CONNECTION, HttpHeader.KEEP_ALIVE,
         HttpHeader.PROXY_CONNECTION, HttpHeader.TRANSFER_ENCODING, HttpHeader.UPGRADE);
     private static final PreEncodedHttpField TE_TRAILERS = new PreEncodedHttpField(HttpHeader.TE, "trailers");
+    private static final PreEncodedHttpField C_SCHEME_HTTP = new PreEncodedHttpField(HttpHeader.C_SCHEME, "http");
+    private static final PreEncodedHttpField C_SCHEME_HTTPS = new PreEncodedHttpField(HttpHeader.C_SCHEME, "https");
+    private static final EnumMap<HttpMethod, PreEncodedHttpField> C_METHODS = new EnumMap<>(HttpMethod.class);
 
     static
     {
         for (HttpStatus.Code code : HttpStatus.Code.values())
         {
             STATUSES[code.getCode()] = new PreEncodedHttpField(HttpHeader.C_STATUS, Integer.toString(code.getCode()));
+        }
+        for (HttpMethod method : HttpMethod.values())
+        {
+            C_METHODS.put(method, new PreEncodedHttpField(HttpHeader.C_METHOD, method.asString()));
         }
     }
 
@@ -161,19 +170,15 @@ public class HpackEncoder
                 LOG.debug(String.format("CtxTbl[%x] encoding", _context.hashCode()));
 
             HttpFields fields = metadata.getFields();
-            if (isValidateEncoding())
+            // Verify that we can encode without errors.
+            if (isValidateEncoding() && fields != null)
             {
-                // Verify that we can encode without errors.
-                if (fields != null)
+                for (HttpField field : fields)
                 {
-                    for (HttpField field : fields)
-                    {
-                        String name = field.getName();
-                        String lowName = StringUtil.asciiToLowerCase(name);
-                        char firstChar = lowName.charAt(0);
-                        if (firstChar <= ' ' || firstChar == ':')
-                            throw new HpackException.StreamException("Invalid header name: '%s'", name);
-                    }
+                    String name = field.getName();
+                    char firstChar = name.charAt(0);
+                    if (firstChar <= ' ' || firstChar == ':')
+                        throw new HpackException.StreamException("Invalid header name: '%s'", name);
                 }
             }
 
@@ -190,10 +195,12 @@ public class HpackEncoder
             {
                 MetaData.Request request = (MetaData.Request)metadata;
 
-                // TODO optimise these to avoid HttpField creation
                 String scheme = request.getURI().getScheme();
-                encode(buffer, new HttpField(HttpHeader.C_SCHEME, scheme == null ? HttpScheme.HTTP.asString() : scheme));
-                encode(buffer, new HttpField(HttpHeader.C_METHOD, request.getMethod()));
+                encode(buffer, HttpScheme.HTTPS.is(scheme) ? C_SCHEME_HTTPS : C_SCHEME_HTTP);
+                String method = request.getMethod();
+                HttpMethod httpMethod = HttpMethod.fromString(method);
+                HttpField methodField = C_METHODS.get(httpMethod);
+                encode(buffer, methodField == null ? new HttpField(HttpHeader.C_METHOD, method) : methodField);
                 encode(buffer, new HttpField(HttpHeader.C_AUTHORITY, request.getURI().getAuthority()));
                 encode(buffer, new HttpField(HttpHeader.C_PATH, request.getURI().getPathQuery()));
             }
@@ -229,7 +236,7 @@ public class HpackEncoder
                             encode(buffer, TE_TRAILERS);
                         continue;
                     }
-                    String name = StringUtil.asciiToLowerCase(field.getName());
+                    String name = field.getLowCaseName();
                     if (hopHeaders != null && hopHeaders.contains(name))
                         continue;
                     encode(buffer, field);
