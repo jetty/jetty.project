@@ -29,7 +29,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.ServletException;
 import javax.servlet.SessionCookieConfig;
@@ -1641,20 +1640,21 @@ public class SessionHandler extends ScopedHandler
                             requestedSessionId = id;
                             session = s;
                         }
+                        else if (requestedSessionId.equals(id))
+                        {
+                            //really a bad request, but will forgive the duplication
+                        }
+                        else if (session == null || !isValid(session))
+                        {
+                            //no previous session or invalid, accept this one
+                            requestedSessionId = id;
+                            session = s;
+                        }
                         else
                         {
-                            if (session == null || !isValid(session))
-                            {
-                                //no previous session or invalid, accept this one
-                                requestedSessionId = id;
-                                session = s;
-                            }
-                            else
-                            {
-                                //previous session is valid, use it unless both valid
-                                if (s != null && isValid(s))
-                                    throw new BadMessageException("Duplicate valid session cookies: " + requestedSessionId + "," + id);
-                            }
+                            //previous session is valid, use it unless both valid
+                            if (s != null && isValid(s))
+                                throw new BadMessageException("Duplicate valid session cookies: " + requestedSessionId + "," + id);
                         }
                     }
                 }
