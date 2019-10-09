@@ -1160,9 +1160,11 @@ public class HttpClient extends ContainerLifeCycle
         return HttpScheme.HTTPS.is(scheme) || HttpScheme.WSS.is(scheme);
     }
 
-    protected ClientConnectionFactory newSslClientConnectionFactory(ClientConnectionFactory connectionFactory)
+    protected ClientConnectionFactory newSslClientConnectionFactory(SslContextFactory sslContextFactory, ClientConnectionFactory connectionFactory)
     {
-        return new SslClientConnectionFactory(getSslContextFactory(), getByteBufferPool(), getExecutor(), connectionFactory);
+        if (sslContextFactory == null)
+            sslContextFactory = getSslContextFactory();
+        return new SslClientConnectionFactory(sslContextFactory, getByteBufferPool(), getExecutor(), connectionFactory);
     }
 
     private class ContentDecoderFactorySet implements Set<ContentDecoder.Factory>

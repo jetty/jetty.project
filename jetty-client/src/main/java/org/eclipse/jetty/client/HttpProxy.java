@@ -54,6 +54,11 @@ public class HttpProxy extends ProxyConfiguration.Proxy
         super(address, secure);
     }
 
+    public HttpProxy(Origin.Address address, SslContextFactory.Client sslContextFactory)
+    {
+        super(address, sslContextFactory);
+    }
+
     @Override
     public ClientConnectionFactory newClientConnectionFactory(ClientConnectionFactory connectionFactory)
     {
@@ -204,7 +209,7 @@ public class HttpProxy extends ProxyConfiguration.Proxy
                 context.put(HttpClientTransport.HTTP_CONNECTION_PROMISE_CONTEXT_KEY, promise);
                 HttpDestination destination = (HttpDestination)context.get(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY);
                 HttpClient client = destination.getHttpClient();
-                ClientConnectionFactory sslConnectionFactory = client.newSslClientConnectionFactory(connectionFactory);
+                ClientConnectionFactory sslConnectionFactory = client.newSslClientConnectionFactory(null, connectionFactory);
                 HttpConnectionOverHTTP oldConnection = (HttpConnectionOverHTTP)endPoint.getConnection();
                 context.put(SslClientConnectionFactory.SSL_PEER_HOST_CONTEXT_KEY, destination.getHost());
                 context.put(SslClientConnectionFactory.SSL_PEER_PORT_CONTEXT_KEY, destination.getPort());
