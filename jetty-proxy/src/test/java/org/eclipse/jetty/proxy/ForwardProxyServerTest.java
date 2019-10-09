@@ -60,20 +60,20 @@ public class ForwardProxyServerTest
         return Stream.of(null, newServerSslContextFactory());
     }
 
+    private static SslContextFactory.Server newServerSslContextFactory()
+    {
+        SslContextFactory.Server serverTLS = new SslContextFactory.Server();
+        String keyStorePath = MavenTestingUtils.getTestResourceFile("server_keystore.p12").getAbsolutePath();
+        serverTLS.setKeyStorePath(keyStorePath);
+        serverTLS.setKeyStorePassword("storepwd");
+        return serverTLS;
+    }
+
     private Server server;
     private ServerConnector serverConnector;
     private SslContextFactory.Server serverSslContextFactory;
     private Server proxy;
     private ServerConnector proxyConnector;
-
-    private static SslContextFactory.Server newServerSslContextFactory()
-    {
-        SslContextFactory.Server proxyTLS = new SslContextFactory.Server();
-        String keyStorePath = MavenTestingUtils.getTestResourceFile("server_keystore.p12").getAbsolutePath();
-        proxyTLS.setKeyStorePath(keyStorePath);
-        proxyTLS.setKeyStorePassword("storepwd");
-        return proxyTLS;
-    }
 
     protected void startServer(SslContextFactory.Server serverTLS, ConnectionFactory connectionFactory) throws Exception
     {
