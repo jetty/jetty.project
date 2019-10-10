@@ -198,7 +198,7 @@ public class HpackEncoder
                 String scheme = request.getURI().getScheme();
                 encode(buffer, HttpScheme.HTTPS.is(scheme) ? C_SCHEME_HTTPS : C_SCHEME_HTTP);
                 String method = request.getMethod();
-                HttpMethod httpMethod = HttpMethod.fromString(method);
+                HttpMethod httpMethod = method == null ? null : HttpMethod.fromString(method);
                 HttpField methodField = C_METHODS.get(httpMethod);
                 encode(buffer, methodField == null ? new HttpField(HttpHeader.C_METHOD, method) : methodField);
                 encode(buffer, new HttpField(HttpHeader.C_AUTHORITY, request.getURI().getAuthority()));
@@ -236,7 +236,7 @@ public class HpackEncoder
                             encode(buffer, TE_TRAILERS);
                         continue;
                     }
-                    String name = field.getLowCaseName();
+                    String name = field.getLowerCaseName();
                     if (hopHeaders != null && hopHeaders.contains(name))
                         continue;
                     encode(buffer, field);
