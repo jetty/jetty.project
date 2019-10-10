@@ -86,7 +86,7 @@ public class Response implements HttpServletResponse
 
     private final HttpChannel _channel;
     private final HttpFields _fields = new HttpFields();
-    private final AtomicBiInteger _errorSentFlagAndIncludes = new AtomicBiInteger(); // hi is errorSent flag, lo is include count
+    private final AtomicBiInteger _errorSentAndIncludes = new AtomicBiInteger(); // hi is errorSent flag, lo is include count
     private final HttpOutput _out;
     private int _status = HttpStatus.OK_200;
     private String _reason;
@@ -156,27 +156,27 @@ public class Response implements HttpServletResponse
      */
     private boolean isMutable()
     {
-        return _errorSentFlagAndIncludes.get() == 0;
+        return _errorSentAndIncludes.get() == 0;
     }
 
     private void setErrorSent(boolean errorSent)
     {
-        _errorSentFlagAndIncludes.getAndSetHi(errorSent ? 1 : 0);
+        _errorSentAndIncludes.getAndSetHi(errorSent ? 1 : 0);
     }
 
     public boolean isIncluding()
     {
-        return _errorSentFlagAndIncludes.getLo() > 0;
+        return _errorSentAndIncludes.getLo() > 0;
     }
 
     public void include()
     {
-        _errorSentFlagAndIncludes.add(0, 1);
+        _errorSentAndIncludes.add(0, 1);
     }
 
     public void included()
     {
-        _errorSentFlagAndIncludes.add(0, -1);
+        _errorSentAndIncludes.add(0, -1);
         if (_outputType == OutputType.WRITER)
         {
             _writer.reopen();
@@ -543,7 +543,7 @@ public class Response implements HttpServletResponse
     @Override
     public void setHeader(String name, String value)
     {
-        long biInt = _errorSentFlagAndIncludes.get();
+        long biInt = _errorSentAndIncludes.get();
         if (biInt != 0)
         {
             boolean errorSent = AtomicBiInteger.getHi(biInt) != 0;
@@ -593,7 +593,7 @@ public class Response implements HttpServletResponse
     @Override
     public void addHeader(String name, String value)
     {
-        long biInt = _errorSentFlagAndIncludes.get();
+        long biInt = _errorSentAndIncludes.get();
         if (biInt != 0)
         {
             boolean errorSent = AtomicBiInteger.getHi(biInt) != 0;
