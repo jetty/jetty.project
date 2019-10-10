@@ -49,8 +49,8 @@ import org.eclipse.jetty.websocket.core.server.WebSocketUpgradeHandler;
  * Running Autobahn Fuzzing Client (against this server implementation):
  * </p>
  * <pre>
- *     # Change to jetty-websocket directory first.
- *     $ cd jetty-websocket
+ *     # Change to websocket-core first
+ *     $ cd jetty-websocket/websocket-core
  *     $ wstest --mode=fuzzingclient --spec=fuzzingclient.json
  *
  *     # Report output is configured (in the fuzzingclient.json) at location:

@@ -49,8 +49,8 @@ import org.eclipse.jetty.websocket.javax.server.config.JavaxWebSocketServletCont
  * Running Autobahn Fuzzing Client (against this server implementation):
  * </p>
  * <pre>
- *     # Change to jetty-websocket directory first.
- *     $ cd jetty-websocket
+ *     # Change to javax-websocket-tests directory first.
+ *     $ cd jetty-websocket/javax-websocket-tests/
  *     $ wstest --mode=fuzzingclient --spec=fuzzingclient.json
  *
  *     # Report output is configured (in the fuzzingclient.json) at location:
