@@ -900,8 +900,8 @@ public class HttpChannelState
             if (_outputState != OutputState.OPEN)
                 throw new IllegalStateException("Response is " + _outputState);
 
-            response.getHttpOutput().closedBySendError();
             response.setStatus(code);
+            response.closedBySendError();
 
             request.setAttribute(ErrorHandler.ERROR_CONTEXT, request.getErrorContext());
             request.setAttribute(ERROR_REQUEST_URI, request.getRequestURI());
