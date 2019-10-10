@@ -73,7 +73,7 @@ public class ProxyConfiguration
             this(address, secure, null);
         }
 
-        public Proxy(Origin.Address address, SslContextFactory.Client sslContextFactory)
+        protected Proxy(Origin.Address address, SslContextFactory.Client sslContextFactory)
         {
             this(address, true, Objects.requireNonNull(sslContextFactory));
         }

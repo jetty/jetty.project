@@ -195,10 +195,9 @@ public class Socks4Proxy extends ProxyConfiguration.Proxy
             try
             {
                 HttpDestination destination = (HttpDestination)context.get(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY);
-                HttpClient client = destination.getHttpClient();
                 ClientConnectionFactory connectionFactory = this.connectionFactory;
                 if (destination.isSecure())
-                    connectionFactory = client.newSslClientConnectionFactory(null, connectionFactory);
+                    connectionFactory = destination.newSslClientConnectionFactory(null, connectionFactory);
                 org.eclipse.jetty.io.Connection newConnection = connectionFactory.newConnection(getEndPoint(), context);
                 getEndPoint().upgrade(newConnection);
                 if (LOG.isDebugEnabled())

@@ -208,8 +208,7 @@ public class HttpProxy extends ProxyConfiguration.Proxy
                 // Replace the promise back with the original
                 context.put(HttpClientTransport.HTTP_CONNECTION_PROMISE_CONTEXT_KEY, promise);
                 HttpDestination destination = (HttpDestination)context.get(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY);
-                HttpClient client = destination.getHttpClient();
-                ClientConnectionFactory sslConnectionFactory = client.newSslClientConnectionFactory(null, connectionFactory);
+                ClientConnectionFactory sslConnectionFactory = destination.newSslClientConnectionFactory(null, connectionFactory);
                 HttpConnectionOverHTTP oldConnection = (HttpConnectionOverHTTP)endPoint.getConnection();
                 context.put(SslClientConnectionFactory.SSL_PEER_HOST_CONTEXT_KEY, destination.getHost());
                 context.put(SslClientConnectionFactory.SSL_PEER_PORT_CONTEXT_KEY, destination.getPort());
