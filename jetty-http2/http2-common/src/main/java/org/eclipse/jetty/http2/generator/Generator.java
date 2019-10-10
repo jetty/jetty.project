@@ -22,6 +22,7 @@ import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.http2.hpack.HpackEncoder;
+import org.eclipse.jetty.http2.hpack.HpackException;
 import org.eclipse.jetty.io.ByteBufferPool;
 
 public class Generator
@@ -65,6 +66,11 @@ public class Generator
         return byteBufferPool;
     }
 
+    public void setValidateHpackEncoding(boolean validateEncoding)
+    {
+        hpackEncoder.setValidateEncoding(validateEncoding);
+    }
+
     public void setHeaderTableSize(int headerTableSize)
     {
         hpackEncoder.setRemoteMaxDynamicTableSize(headerTableSize);
@@ -75,7 +81,7 @@ public class Generator
         headerGenerator.setMaxFrameSize(maxFrameSize);
     }
 
-    public int control(ByteBufferPool.Lease lease, Frame frame)
+    public int control(ByteBufferPool.Lease lease, Frame frame) throws HpackException
     {
         return generators[frame.getType().getType()].generate(lease, frame);
     }
