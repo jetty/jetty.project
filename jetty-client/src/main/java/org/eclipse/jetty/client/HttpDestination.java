@@ -53,6 +53,7 @@ import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.Sweeper;
 
@@ -108,12 +109,12 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
         {
             connectionFactory = proxy.newClientConnectionFactory(connectionFactory);
             if (proxy.isSecure())
-                connectionFactory = newSslClientConnectionFactory(connectionFactory);
+                connectionFactory = newSslClientConnectionFactory(proxy.getSslContextFactory(), connectionFactory);
         }
         else
         {
             if (isSecure())
-                connectionFactory = newSslClientConnectionFactory(connectionFactory);
+                connectionFactory = newSslClientConnectionFactory(null, connectionFactory);
         }
         return connectionFactory;
     }
@@ -149,9 +150,9 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
         return new BlockingArrayQueue<>(client.getMaxRequestsQueuedPerDestination());
     }
 
-    protected ClientConnectionFactory newSslClientConnectionFactory(ClientConnectionFactory connectionFactory)
+    protected ClientConnectionFactory newSslClientConnectionFactory(SslContextFactory sslContextFactory, ClientConnectionFactory connectionFactory)
     {
-        return client.newSslClientConnectionFactory(connectionFactory);
+        return client.newSslClientConnectionFactory(sslContextFactory, connectionFactory);
     }
 
     public boolean isSecure()

@@ -704,6 +704,74 @@ public class ForwardProxyTLSServerTest
     }
 
     @Test
+    public void testBothProxyAndServerNeedClientAuthWithDifferentKeyStores() throws Exception
+    {
+        SslContextFactory.Server serverTLS = newServerSslContextFactory();
+        serverTLS.setEndpointIdentificationAlgorithm(null);
+        serverTLS.setNeedClientAuth(true);
+        startTLSServer(serverTLS, new ServerHandler());
+        int serverPort = serverConnector.getLocalPort();
+
+        SslContextFactory.Server proxyServerTLS = newProxySslContextFactory();
+        proxyServerTLS.setEndpointIdentificationAlgorithm(null);
+        proxyServerTLS.setNeedClientAuth(true);
+        startProxy(proxyServerTLS);
+        int proxyPort = proxyConnector.getLocalPort();
+
+        SslContextFactory.Client clientTLS = new SslContextFactory.Client()
+        {
+            @Override
+            public SSLEngine newSSLEngine(String host, int port)
+            {
+                if (port != serverPort)
+                    throw new IllegalStateException();
+                return super.newSSLEngine(host, port);
+            }
+        };
+        clientTLS.setKeyStorePath(MavenTestingUtils.getTestResourceFile("client_server_keystore.p12").getAbsolutePath());
+        clientTLS.setKeyStorePassword("storepwd");
+        clientTLS.setEndpointIdentificationAlgorithm(null);
+        HttpClient httpClient = new HttpClient(clientTLS);
+
+        SslContextFactory.Client proxyClientTLS = new SslContextFactory.Client()
+        {
+            @Override
+            public SSLEngine newSSLEngine(String host, int port)
+            {
+                if (port != proxyPort)
+                    throw new IllegalStateException();
+                return super.newSSLEngine(host, port);
+            }
+        };
+        proxyClientTLS.setKeyStorePath(MavenTestingUtils.getTestResourceFile("client_proxy_keystore.p12").getAbsolutePath());
+        proxyClientTLS.setKeyStorePassword("storepwd");
+        proxyClientTLS.setEndpointIdentificationAlgorithm(null);
+        proxyClientTLS.start();
+        HttpProxy httpProxy = new HttpProxy(new Origin.Address("localhost", proxyConnector.getLocalPort()), proxyClientTLS);
+        httpClient.getProxyConfiguration().getProxies().add(httpProxy);
+        httpClient.start();
+
+        try
+        {
+            String body = "BODY";
+            ContentResponse response = httpClient.newRequest("localhost", serverConnector.getLocalPort())
+                .scheme(HttpScheme.HTTPS.asString())
+                .method(HttpMethod.GET)
+                .path("/echo?body=" + URLEncoder.encode(body, "UTF-8"))
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
+
+            assertEquals(HttpStatus.OK_200, response.getStatus());
+            String content = response.getContentAsString();
+            assertEquals(body, content);
+        }
+        finally
+        {
+            httpClient.stop();
+        }
+    }
+
+    @Test
     @Tag("external")
     @Disabled
     public void testExternalProxy() throws Exception

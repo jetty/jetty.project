@@ -60,6 +60,16 @@ public class HttpProxy extends ProxyConfiguration.Proxy
         super(address, secure, Objects.requireNonNull(protocol));
     }
 
+    public HttpProxy(Origin.Address address, SslContextFactory.Client sslContextFactory)
+    {
+        super(address, sslContextFactory);
+    }
+
+    public HttpProxy(Origin.Address address, SslContextFactory.Client sslContextFactory, HttpDestination.Protocol protocol)
+    {
+        super(address, sslContextFactory, Objects.requireNonNull(protocol));
+    }
+
     @Override
     public ClientConnectionFactory newClientConnectionFactory(ClientConnectionFactory connectionFactory)
     {
@@ -212,7 +222,7 @@ public class HttpProxy extends ProxyConfiguration.Proxy
                     // Don't want to do DNS resolution here.
                     InetSocketAddress address = InetSocketAddress.createUnresolved(destination.getHost(), destination.getPort());
                     context.put(ClientConnector.REMOTE_SOCKET_ADDRESS_CONTEXT_KEY, address);
-                    connectionFactory = destination.newSslClientConnectionFactory(connectionFactory);
+                    connectionFactory = destination.newSslClientConnectionFactory(null, connectionFactory);
                 }
                 var oldConnection = endPoint.getConnection();
                 var newConnection = connectionFactory.newConnection(endPoint, context);

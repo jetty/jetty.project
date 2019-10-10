@@ -482,9 +482,9 @@ public class HttpClientTLSTest
             client = new HttpClient(new HttpClientTransportOverHTTP(clientConnector))
             {
                 @Override
-                protected ClientConnectionFactory newSslClientConnectionFactory(ClientConnectionFactory connectionFactory)
+                protected ClientConnectionFactory newSslClientConnectionFactory(SslContextFactory sslContextFactory, ClientConnectionFactory connectionFactory)
                 {
-                    SslClientConnectionFactory ssl = (SslClientConnectionFactory)super.newSslClientConnectionFactory(connectionFactory);
+                    SslClientConnectionFactory ssl = (SslClientConnectionFactory)super.newSslClientConnectionFactory(sslContextFactory, connectionFactory);
                     ssl.setAllowMissingCloseMessage(false);
                     return ssl;
                 }
