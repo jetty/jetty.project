@@ -694,7 +694,7 @@ public class ResponseTest
         assertEquals(code, response.getStatus());
         assertEquals(null, response.getReason());
 
-        response.setHeader("Should-Be-Ignored","value");
+        response.setHeader("Should-Be-Ignored", "value");
         assertFalse(response.getHttpFields().containsKey("Should-Be-Ignored"));
 
         assertEquals(expectedMessage, response.getHttpChannel().getRequest().getAttribute(RequestDispatcher.ERROR_MESSAGE));

@@ -86,7 +86,7 @@ public class Response implements HttpServletResponse
 
     private final HttpChannel _channel;
     private final HttpFields _fields = new HttpFields();
-    private final AtomicBiInteger _state = new AtomicBiInteger();
+    private final AtomicBiInteger _errorSentFlagAndIncludeCount = new AtomicBiInteger(); // hi is errorSent flag, lo is include count
     private final HttpOutput _out;
     private int _status = HttpStatus.OK_200;
     private String _reason;
@@ -141,44 +141,42 @@ public class Response implements HttpServletResponse
 
     public void reopen()
     {
-        setMutable(true);
+        setErrorSent(false);
         _out.reopen();
     }
 
     public void closedBySendError()
     {
-        setMutable(false);
+        setErrorSent(true);
         _out.closedBySendError();
     }
 
-    private boolean isMutableAndNotIncluded()
-    {
-        return _state.get() == 0;
-    }
-
-    private void setMutable(boolean mutable)
-    {
-        _state.getAndSetHi(mutable ? 0 : 1);
-    }
-
+    /**
+     * @return true if the response is mutable, ie not errorSent and not included
+     */
     private boolean isMutable()
     {
-        return _state.getHi() == 0;
+        return _errorSentFlagAndIncludeCount.get() == 0;
+    }
+
+    private void setErrorSent(boolean errorSent)
+    {
+        _errorSentFlagAndIncludeCount.getAndSetHi(errorSent ? 1 : 0);
     }
 
     public boolean isIncluding()
     {
-        return _state.getLo() > 0;
+        return _errorSentFlagAndIncludeCount.getLo() > 0;
     }
 
     public void include()
     {
-        _state.add(0,1);
+        _errorSentFlagAndIncludeCount.add(0, 1);
     }
 
     public void included()
     {
-        _state.add(0,-1);
+        _errorSentFlagAndIncludeCount.add(0, -1);
         if (_outputType == OutputType.WRITER)
         {
             _writer.reopen();
@@ -464,7 +462,7 @@ public class Response implements HttpServletResponse
         if ((code < HttpServletResponse.SC_MULTIPLE_CHOICES) || (code >= HttpServletResponse.SC_BAD_REQUEST))
             throw new IllegalArgumentException("Not a 3xx redirect code");
 
-        if (!isMutableAndNotIncluded())
+        if (!isMutable())
             return;
 
         if (location == null)
@@ -510,20 +508,20 @@ public class Response implements HttpServletResponse
     @Override
     public void setDateHeader(String name, long date)
     {
-        if (isMutableAndNotIncluded())
+        if (isMutable())
             _fields.putDateField(name, date);
     }
 
     @Override
     public void addDateHeader(String name, long date)
     {
-        if (isMutableAndNotIncluded())
+        if (isMutable())
             _fields.addDateField(name, date);
     }
 
     public void setHeader(HttpHeader name, String value)
     {
-        if (isMutableAndNotIncluded())
+        if (isMutable())
         {
             if (HttpHeader.CONTENT_TYPE == name)
                 setContentType(value);
@@ -545,9 +543,12 @@ public class Response implements HttpServletResponse
     @Override
     public void setHeader(String name, String value)
     {
-        if (!isMutableAndNotIncluded())
+        long biInt = _errorSentFlagAndIncludeCount.get();
+        if (biInt != 0)
         {
-            if (isMutable() && isIncluding() && name.startsWith(SET_INCLUDE_HEADER_PREFIX))
+            boolean errorSent = AtomicBiInteger.getHi(biInt) != 0;
+            boolean including = AtomicBiInteger.getLo(biInt) > 0;
+            if (!errorSent && including && name.startsWith(SET_INCLUDE_HEADER_PREFIX))
                 name = name.substring(SET_INCLUDE_HEADER_PREFIX.length());
             else
                 return;
@@ -592,9 +593,12 @@ public class Response implements HttpServletResponse
     @Override
     public void addHeader(String name, String value)
     {
-        if (!isMutableAndNotIncluded())
+        long biInt = _errorSentFlagAndIncludeCount.get();
+        if (biInt != 0)
         {
-            if (isMutable() && isIncluding() && name.startsWith(SET_INCLUDE_HEADER_PREFIX))
+            boolean errorSent = AtomicBiInteger.getHi(biInt) != 0;
+            boolean including = AtomicBiInteger.getLo(biInt) > 0;
+            if (!errorSent && including && name.startsWith(SET_INCLUDE_HEADER_PREFIX))
                 name = name.substring(SET_INCLUDE_HEADER_PREFIX.length());
             else
                 return;
@@ -618,7 +622,7 @@ public class Response implements HttpServletResponse
     @Override
     public void setIntHeader(String name, int value)
     {
-        if (isMutableAndNotIncluded())
+        if (isMutable())
         {
             _fields.putLongField(name, value);
             if (HttpHeader.CONTENT_LENGTH.is(name))
@@ -629,7 +633,7 @@ public class Response implements HttpServletResponse
     @Override
     public void addIntHeader(String name, int value)
     {
-        if (isMutableAndNotIncluded())
+        if (isMutable())
         {
             _fields.add(name, Integer.toString(value));
             if (HttpHeader.CONTENT_LENGTH.is(name))
@@ -642,7 +646,7 @@ public class Response implements HttpServletResponse
     {
         if (sc <= 0)
             throw new IllegalArgumentException();
-        if (isMutableAndNotIncluded())
+        if (isMutable())
         {
             // Null the reason only if the status is different. This allows
             // a specific reason to be sent with setStatusWithReason followed by sendError.
@@ -663,7 +667,7 @@ public class Response implements HttpServletResponse
     {
         if (sc <= 0)
             throw new IllegalArgumentException();
-        if (isMutableAndNotIncluded())
+        if (isMutable())
         {
             _status = sc;
             _reason = sm;
@@ -769,7 +773,7 @@ public class Response implements HttpServletResponse
         // Protect from setting after committed as default handling
         // of a servlet HEAD request ALWAYS sets _content length, even
         // if the getHandling committed the response!
-        if (isCommitted() || !isMutableAndNotIncluded())
+        if (isCommitted() || !isMutable())
             return;
 
         if (len > 0)
@@ -845,7 +849,7 @@ public class Response implements HttpServletResponse
         // Protect from setting after committed as default handling
         // of a servlet HEAD request ALWAYS sets _content length, even
         // if the getHandling committed the response!
-        if (isCommitted() || !isMutableAndNotIncluded())
+        if (isCommitted() || !isMutable())
             return;
         _contentLength = len;
         _fields.putLongField(HttpHeader.CONTENT_LENGTH.toString(), len);
@@ -865,7 +869,7 @@ public class Response implements HttpServletResponse
 
     private void setCharacterEncoding(String encoding, EncodingFrom from)
     {
-        if (!isMutableAndNotIncluded() || isWriting())
+        if (!isMutable() || isWriting())
             return;
 
         if (_outputType != OutputType.WRITER && !isCommitted())
@@ -918,7 +922,7 @@ public class Response implements HttpServletResponse
     @Override
     public void setContentType(String contentType)
     {
-        if (isCommitted() || !isMutableAndNotIncluded())
+        if (isCommitted() || !isMutable())
             return;
 
         if (contentType == null)
@@ -1173,7 +1177,7 @@ public class Response implements HttpServletResponse
     @Override
     public void setLocale(Locale locale)
     {
-        if (locale == null || isCommitted() || !isMutableAndNotIncluded())
+        if (locale == null || isCommitted() || !isMutable())
             return;
 
         _locale = locale;
