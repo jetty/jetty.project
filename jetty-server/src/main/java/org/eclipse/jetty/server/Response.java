@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.server;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.channels.IllegalSelectorException;
@@ -29,7 +28,6 @@ import java.util.Iterator;
 import java.util.ListIterator;
 import java.util.Locale;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.ServletResponse;
@@ -59,6 +57,7 @@ import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.server.session.SessionHandler;
+import org.eclipse.jetty.util.AtomicBiInteger;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
@@ -88,7 +87,7 @@ public class Response implements HttpServletResponse
 
     private final HttpChannel _channel;
     private final HttpFields _fields = new HttpFields();
-    private final AtomicInteger _include = new AtomicInteger();
+    private final AtomicBiInteger _errorSentAndIncludes = new AtomicBiInteger(); // hi is errorSent flag, lo is include count
     private final HttpOutput _out;
     private int _status = HttpStatus.OK_200;
     private String _reason;
@@ -141,19 +140,44 @@ public class Response implements HttpServletResponse
         return _out;
     }
 
+    public void reopen()
+    {
+        setErrorSent(false);
+        _out.reopen();
+    }
+
+    public void closedBySendError()
+    {
+        setErrorSent(true);
+        _out.closedBySendError();
+    }
+
+    /**
+     * @return true if the response is mutable, ie not errorSent and not included
+     */
+    private boolean isMutable()
+    {
+        return _errorSentAndIncludes.get() == 0;
+    }
+
+    private void setErrorSent(boolean errorSent)
+    {
+        _errorSentAndIncludes.getAndSetHi(errorSent ? 1 : 0);
+    }
+
     public boolean isIncluding()
     {
-        return _include.get() > 0;
+        return _errorSentAndIncludes.getLo() > 0;
     }
 
     public void include()
     {
-        _include.incrementAndGet();
+        _errorSentAndIncludes.add(0, 1);
     }
 
     public void included()
     {
-        _include.decrementAndGet();
+        _errorSentAndIncludes.add(0, -1);
         if (_outputType == OutputType.WRITER)
         {
             _writer.reopen();
@@ -212,7 +236,7 @@ public class Response implements HttpServletResponse
 
             if (field.getHeader() == HttpHeader.SET_COOKIE)
             {
-                final CookieCompliance compliance = getHttpChannel().getHttpConfiguration().getResponseCookieCompliance();
+                CookieCompliance compliance = getHttpChannel().getHttpConfiguration().getResponseCookieCompliance();
 
                 HttpCookie oldCookie;
                 if (field instanceof SetCookieHttpField)
@@ -439,7 +463,7 @@ public class Response implements HttpServletResponse
         if ((code < HttpServletResponse.SC_MULTIPLE_CHOICES) || (code >= HttpServletResponse.SC_BAD_REQUEST))
             throw new IllegalArgumentException("Not a 3xx redirect code");
 
-        if (isIncluding())
+        if (!isMutable())
             return;
 
         if (location == null)
@@ -485,34 +509,34 @@ public class Response implements HttpServletResponse
     @Override
     public void setDateHeader(String name, long date)
     {
-        if (!isIncluding())
+        if (isMutable())
             _fields.putDateField(name, date);
     }
 
     @Override
     public void addDateHeader(String name, long date)
     {
-        if (!isIncluding())
+        if (isMutable())
             _fields.addDateField(name, date);
     }
 
     public void setHeader(HttpHeader name, String value)
     {
-        if (HttpHeader.CONTENT_TYPE == name)
-            setContentType(value);
-        else
+        if (isMutable())
         {
-            if (isIncluding())
-                return;
-
-            _fields.put(name, value);
-
-            if (HttpHeader.CONTENT_LENGTH == name)
+            if (HttpHeader.CONTENT_TYPE == name)
+                setContentType(value);
+            else
             {
-                if (value == null)
-                    _contentLength = -1L;
-                else
-                    _contentLength = Long.parseLong(value);
+                _fields.put(name, value);
+
+                if (HttpHeader.CONTENT_LENGTH == name)
+                {
+                    if (value == null)
+                        _contentLength = -1L;
+                    else
+                        _contentLength = Long.parseLong(value);
+                }
             }
         }
     }
@@ -520,17 +544,21 @@ public class Response implements HttpServletResponse
     @Override
     public void setHeader(String name, String value)
     {
+        long biInt = _errorSentAndIncludes.get();
+        if (biInt != 0)
+        {
+            boolean errorSent = AtomicBiInteger.getHi(biInt) != 0;
+            boolean including = AtomicBiInteger.getLo(biInt) > 0;
+            if (!errorSent && including && name.startsWith(SET_INCLUDE_HEADER_PREFIX))
+                name = name.substring(SET_INCLUDE_HEADER_PREFIX.length());
+            else
+                return;
+        }
+
         if (HttpHeader.CONTENT_TYPE.is(name))
             setContentType(value);
         else
         {
-            if (isIncluding())
-            {
-                if (name.startsWith(SET_INCLUDE_HEADER_PREFIX))
-                    name = name.substring(SET_INCLUDE_HEADER_PREFIX.length());
-                else
-                    return;
-            }
             _fields.put(name, value);
             if (HttpHeader.CONTENT_LENGTH.is(name))
             {
@@ -566,9 +594,12 @@ public class Response implements HttpServletResponse
     @Override
     public void addHeader(String name, String value)
     {
-        if (isIncluding())
+        long biInt = _errorSentAndIncludes.get();
+        if (biInt != 0)
         {
-            if (name.startsWith(SET_INCLUDE_HEADER_PREFIX))
+            boolean errorSent = AtomicBiInteger.getHi(biInt) != 0;
+            boolean including = AtomicBiInteger.getLo(biInt) > 0;
+            if (!errorSent && including && name.startsWith(SET_INCLUDE_HEADER_PREFIX))
                 name = name.substring(SET_INCLUDE_HEADER_PREFIX.length());
             else
                 return;
@@ -592,7 +623,7 @@ public class Response implements HttpServletResponse
     @Override
     public void setIntHeader(String name, int value)
     {
-        if (!isIncluding())
+        if (isMutable())
         {
             _fields.putLongField(name, value);
             if (HttpHeader.CONTENT_LENGTH.is(name))
@@ -603,7 +634,7 @@ public class Response implements HttpServletResponse
     @Override
     public void addIntHeader(String name, int value)
     {
-        if (!isIncluding())
+        if (isMutable())
         {
             _fields.add(name, Integer.toString(value));
             if (HttpHeader.CONTENT_LENGTH.is(name))
@@ -616,7 +647,7 @@ public class Response implements HttpServletResponse
     {
         if (sc <= 0)
             throw new IllegalArgumentException();
-        if (!isIncluding())
+        if (isMutable())
         {
             // Null the reason only if the status is different. This allows
             // a specific reason to be sent with setStatusWithReason followed by sendError.
@@ -637,7 +668,7 @@ public class Response implements HttpServletResponse
     {
         if (sc <= 0)
             throw new IllegalArgumentException();
-        if (!isIncluding())
+        if (isMutable())
         {
             _status = sc;
             _reason = message;
@@ -743,7 +774,7 @@ public class Response implements HttpServletResponse
         // Protect from setting after committed as default handling
         // of a servlet HEAD request ALWAYS sets _content length, even
         // if the getHandling committed the response!
-        if (isCommitted() || isIncluding())
+        if (isCommitted() || !isMutable())
             return;
 
         if (len > 0)
@@ -819,7 +850,7 @@ public class Response implements HttpServletResponse
         // Protect from setting after committed as default handling
         // of a servlet HEAD request ALWAYS sets _content length, even
         // if the getHandling committed the response!
-        if (isCommitted() || isIncluding())
+        if (isCommitted() || !isMutable())
             return;
         _contentLength = len;
         _fields.putLongField(HttpHeader.CONTENT_LENGTH.toString(), len);
@@ -839,7 +870,7 @@ public class Response implements HttpServletResponse
 
     private void setCharacterEncoding(String encoding, EncodingFrom from)
     {
-        if (isIncluding() || isWriting())
+        if (!isMutable() || isWriting())
             return;
 
         if (_outputType != OutputType.WRITER && !isCommitted())
@@ -892,7 +923,7 @@ public class Response implements HttpServletResponse
     @Override
     public void setContentType(String contentType)
     {
-        if (isCommitted() || isIncluding())
+        if (isCommitted() || !isMutable())
             return;
 
         if (contentType == null)
@@ -1160,7 +1191,7 @@ public class Response implements HttpServletResponse
     @Override
     public void setLocale(Locale locale)
     {
-        if (locale == null || isCommitted() || isIncluding())
+        if (locale == null || isCommitted() || !isMutable())
             return;
 
         _locale = locale;
