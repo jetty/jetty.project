@@ -731,7 +731,10 @@ public class ForwardProxyTLSServerTest
         clientTLS.setKeyStorePath(MavenTestingUtils.getTestResourceFile("client_server_keystore.p12").getAbsolutePath());
         clientTLS.setKeyStorePassword("storepwd");
         clientTLS.setEndpointIdentificationAlgorithm(null);
-        HttpClient httpClient = new HttpClient(clientTLS);
+        ClientConnector clientConnector = new ClientConnector();
+        clientConnector.setSelectors(1);
+        clientConnector.setSslContextFactory(clientTLS);
+        HttpClient httpClient = new HttpClient(new HttpClientTransportOverHTTP(clientConnector));
 
         SslContextFactory.Client proxyClientTLS = new SslContextFactory.Client()
         {
@@ -757,7 +760,7 @@ public class ForwardProxyTLSServerTest
             ContentResponse response = httpClient.newRequest("localhost", serverConnector.getLocalPort())
                 .scheme(HttpScheme.HTTPS.asString())
                 .method(HttpMethod.GET)
-                .path("/echo?body=" + URLEncoder.encode(body, "UTF-8"))
+                .path("/echo?body=" + URLEncoder.encode(body, StandardCharsets.UTF_8))
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
 

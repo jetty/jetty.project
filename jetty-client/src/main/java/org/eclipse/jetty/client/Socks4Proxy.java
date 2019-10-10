@@ -45,7 +45,7 @@ public class Socks4Proxy extends ProxyConfiguration.Proxy
 
     public Socks4Proxy(Origin.Address address, boolean secure)
     {
-        super(address, secure, null);
+        super(address, secure, null, null);
     }
 
     @Override

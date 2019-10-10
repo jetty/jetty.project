@@ -40,6 +40,7 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 public class HttpProxy extends ProxyConfiguration.Proxy
 {
@@ -52,22 +53,27 @@ public class HttpProxy extends ProxyConfiguration.Proxy
 
     public HttpProxy(Origin.Address address, boolean secure)
     {
-        this(address, secure, new HttpDestination.Protocol(List.of("http/1.1"), false));
+        this(address, secure, null, new HttpDestination.Protocol(List.of("http/1.1"), false));
     }
 
     public HttpProxy(Origin.Address address, boolean secure, HttpDestination.Protocol protocol)
     {
-        super(address, secure, Objects.requireNonNull(protocol));
+        this(address, secure, null, Objects.requireNonNull(protocol));
     }
 
     public HttpProxy(Origin.Address address, SslContextFactory.Client sslContextFactory)
     {
-        super(address, sslContextFactory);
+        this(address, true, sslContextFactory, new HttpDestination.Protocol(List.of("http/1.1"), false));
     }
 
     public HttpProxy(Origin.Address address, SslContextFactory.Client sslContextFactory, HttpDestination.Protocol protocol)
     {
-        super(address, sslContextFactory, Objects.requireNonNull(protocol));
+        this(address, true, sslContextFactory, Objects.requireNonNull(protocol));
+    }
+
+    private HttpProxy(Origin.Address address, boolean secure, SslContextFactory.Client sslContextFactory, HttpDestination.Protocol protocol)
+    {
+        super(address, secure, sslContextFactory, Objects.requireNonNull(protocol));
     }
 
     @Override

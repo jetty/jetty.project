@@ -22,7 +22,6 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 
 import org.eclipse.jetty.io.ClientConnectionFactory;
@@ -69,17 +68,7 @@ public class ProxyConfiguration
         private final SslContextFactory.Client sslContextFactory;
         private final HttpDestination.Protocol protocol;
 
-        protected Proxy(Origin.Address address, boolean secure)
-        {
-            this(address, secure, null);
-        }
-
-        public Proxy(Origin.Address address, SslContextFactory.Client sslContextFactory)
-        {
-            this(address, true, Objects.requireNonNull(sslContextFactory));
-        }
-
-        private Proxy(Origin.Address address, boolean secure, SslContextFactory.Client sslContextFactory)
+        protected Proxy(Origin.Address address, boolean secure, SslContextFactory.Client sslContextFactory, HttpDestination.Protocol protocol)
         {
             this.address = address;
             this.secure = secure;
@@ -111,6 +100,9 @@ public class ProxyConfiguration
             return sslContextFactory;
         }
 
+        /**
+         * @return the protocol spoken by this proxy
+         */
         public HttpDestination.Protocol getProtocol()
         {
             return protocol;
