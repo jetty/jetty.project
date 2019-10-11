@@ -9,6 +9,17 @@
         <Set name="maxConcurrentStreams"><Property name="jetty.http2.maxConcurrentStreams" deprecated="http2.maxConcurrentStreams" default="128"/></Set>
         <Set name="initialStreamRecvWindow"><Property name="jetty.http2.initialStreamRecvWindow" default="524288"/></Set>
         <Set name="initialSessionRecvWindow"><Property name="jetty.http2.initialSessionRecvWindow" default="1048576"/></Set>
+        <Set name="maxSettingsKeys"><Property name="jetty.http2.maxSettingsKeys" default="64"/></Set>
+        <Set name="rateControl">
+          <New class="org.eclipse.jetty.http2.parser.WindowRateControl">
+            <Arg type="int"><Property name="jetty.http2.rateControl" default="20"/></Arg>
+            <Arg>
+              <Call class="java.time.Duration" name="ofSeconds" id="duration">
+                <Arg type="long">1</Arg>
+              </Call>
+            </Arg>
+          </New>
+        </Set>
       </New>
     </Arg>
   </Call>
