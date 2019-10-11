@@ -150,7 +150,7 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
         return new BlockingArrayQueue<>(client.getMaxRequestsQueuedPerDestination());
     }
 
-    protected ClientConnectionFactory newSslClientConnectionFactory(SslContextFactory sslContextFactory, ClientConnectionFactory connectionFactory)
+    protected ClientConnectionFactory newSslClientConnectionFactory(SslContextFactory.Client sslContextFactory, ClientConnectionFactory connectionFactory)
     {
         return client.newSslClientConnectionFactory(sslContextFactory, connectionFactory);
     }
