@@ -26,6 +26,7 @@ import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.hpack.HpackEncoder;
+import org.eclipse.jetty.http2.hpack.HpackException;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 
@@ -40,13 +41,13 @@ public class PushPromiseGenerator extends FrameGenerator
     }
 
     @Override
-    public int generate(ByteBufferPool.Lease lease, Frame frame)
+    public int generate(ByteBufferPool.Lease lease, Frame frame) throws HpackException
     {
         PushPromiseFrame pushPromiseFrame = (PushPromiseFrame)frame;
         return generatePushPromise(lease, pushPromiseFrame.getStreamId(), pushPromiseFrame.getPromisedStreamId(), pushPromiseFrame.getMetaData());
     }
 
-    public int generatePushPromise(ByteBufferPool.Lease lease, int streamId, int promisedStreamId, MetaData metaData)
+    public int generatePushPromise(ByteBufferPool.Lease lease, int streamId, int promisedStreamId, MetaData metaData) throws HpackException
     {
         if (streamId < 0)
             throw new IllegalArgumentException("Invalid stream id: " + streamId);
@@ -58,9 +59,7 @@ public class PushPromiseGenerator extends FrameGenerator
         int extraSpace = 4;
         maxFrameSize -= extraSpace;
 
-        ByteBuffer hpacked = lease.acquire(maxFrameSize, false);
-        BufferUtil.clearToFill(hpacked);
-        encoder.encode(hpacked, metaData);
+        ByteBuffer hpacked = encode(encoder, lease, metaData, maxFrameSize);
         int hpackedLength = hpacked.position();
         BufferUtil.flipToFlush(hpacked, 0);
 

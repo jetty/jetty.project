@@ -45,7 +45,6 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -54,36 +53,29 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 
 public class ForwardProxyServerTest
 {
-    @SuppressWarnings("Duplicates")
-    public static Stream<Arguments> scenarios()
+    public static Stream<SslContextFactory.Server> serverTLS()
     {
-        String keyStorePath = MavenTestingUtils.getTestResourceFile("keystore").getAbsolutePath();
-
-        // no server SSL
-        SslContextFactory scenario1 = null;
-        // basic server SSL
-        SslContextFactory scenario2 = new SslContextFactory.Server();
-        scenario2.setKeyStorePath(keyStorePath);
-        scenario2.setKeyStorePassword("storepwd");
-        scenario2.setKeyManagerPassword("keypwd");
-        // TODO: add more SslContextFactory configurations/scenarios?
-
-        return Stream.of(scenario1, scenario2).map(Arguments::of);
+        return Stream.of(null, newServerSslContextFactory());
     }
 
-    private SslContextFactory serverSslContextFactory;
+    private static SslContextFactory.Server newServerSslContextFactory()
+    {
+        SslContextFactory.Server serverTLS = new SslContextFactory.Server();
+        String keyStorePath = MavenTestingUtils.getTestResourceFile("server_keystore.p12").getAbsolutePath();
+        serverTLS.setKeyStorePath(keyStorePath);
+        serverTLS.setKeyStorePassword("storepwd");
+        return serverTLS;
+    }
+
     private Server server;
     private ServerConnector serverConnector;
+    private SslContextFactory.Server serverSslContextFactory;
     private Server proxy;
     private ServerConnector proxyConnector;
 
-    public void init(SslContextFactory scenario)
+    protected void startServer(SslContextFactory.Server serverTLS, ConnectionFactory connectionFactory) throws Exception
     {
-        serverSslContextFactory = scenario;
-    }
-
-    protected void startServer(ConnectionFactory connectionFactory) throws Exception
-    {
+        serverSslContextFactory = serverTLS;
         QueuedThreadPool serverThreads = new QueuedThreadPool();
         serverThreads.setName("server");
         server = new Server(serverThreads);
@@ -126,28 +118,20 @@ public class ForwardProxyServerTest
     protected void stopServer() throws Exception
     {
         if (server != null)
-        {
             server.stop();
-            server.join();
-        }
     }
 
     protected void stopProxy() throws Exception
     {
         if (proxy != null)
-        {
             proxy.stop();
-            proxy.join();
-        }
     }
 
     @ParameterizedTest
-    @MethodSource("scenarios")
-    public void testRequestTarget(SslContextFactory scenario) throws Exception
+    @MethodSource("serverTLS")
+    public void testRequestTarget(SslContextFactory.Server serverTLS) throws Exception
     {
-        init(scenario);
-
-        startServer(new AbstractConnectionFactory("http/1.1")
+        startServer(serverTLS, new AbstractConnectionFactory("http/1.1")
         {
             @Override
             public Connection newConnection(Connector connector, EndPoint endPoint)
@@ -204,14 +188,8 @@ public class ForwardProxyServerTest
         });
         startProxy();
 
-        String keyStorePath = MavenTestingUtils.getTestResourceFile("keystore").getAbsolutePath();
-        SslContextFactory clientSsl = new SslContextFactory.Client();
-        clientSsl.setKeyStorePath(keyStorePath);
-        clientSsl.setKeyStorePassword("storepwd");
-        clientSsl.setKeyManagerPassword("keypwd");
-        clientSsl.setEndpointIdentificationAlgorithm(null);
-
-        HttpClient httpClient = new HttpClient(clientSsl);
+        SslContextFactory.Client clientTLS = new SslContextFactory.Client(true);
+        HttpClient httpClient = new HttpClient(clientTLS);
         httpClient.getProxyConfiguration().getProxies().add(newHttpProxy());
         httpClient.start();
 

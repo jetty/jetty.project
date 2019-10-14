@@ -85,8 +85,8 @@ public abstract class AbstractConnectorHttpClientTransport extends AbstractHttpC
                 channel.bind(bindAddress);
             configure(client, channel);
 
-            context.put(SslClientConnectionFactory.SSL_PEER_HOST_CONTEXT_KEY, destination.getHost());
-            context.put(SslClientConnectionFactory.SSL_PEER_PORT_CONTEXT_KEY, destination.getPort());
+            context.put(SslClientConnectionFactory.SSL_PEER_HOST_CONTEXT_KEY, address.getHostString());
+            context.put(SslClientConnectionFactory.SSL_PEER_PORT_CONTEXT_KEY, address.getPort());
 
             boolean connected = true;
             if (client.isConnectBlocking())

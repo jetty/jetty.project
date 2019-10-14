@@ -27,6 +27,7 @@ import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PriorityFrame;
 import org.eclipse.jetty.http2.hpack.HpackEncoder;
+import org.eclipse.jetty.http2.hpack.HpackException;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 
@@ -50,13 +51,13 @@ public class HeadersGenerator extends FrameGenerator
     }
 
     @Override
-    public int generate(ByteBufferPool.Lease lease, Frame frame)
+    public int generate(ByteBufferPool.Lease lease, Frame frame) throws HpackException
     {
         HeadersFrame headersFrame = (HeadersFrame)frame;
         return generateHeaders(lease, headersFrame.getStreamId(), headersFrame.getMetaData(), headersFrame.getPriority(), headersFrame.isEndStream());
     }
 
-    public int generateHeaders(ByteBufferPool.Lease lease, int streamId, MetaData metaData, PriorityFrame priority, boolean endStream)
+    public int generateHeaders(ByteBufferPool.Lease lease, int streamId, MetaData metaData, PriorityFrame priority, boolean endStream) throws HpackException
     {
         if (streamId < 0)
             throw new IllegalArgumentException("Invalid stream id: " + streamId);
@@ -66,10 +67,7 @@ public class HeadersGenerator extends FrameGenerator
         if (priority != null)
             flags = Flags.PRIORITY;
 
-        int maxFrameSize = getMaxFrameSize();
-        ByteBuffer hpacked = lease.acquire(maxFrameSize, false);
-        BufferUtil.clearToFill(hpacked);
-        encoder.encode(hpacked, metaData);
+        ByteBuffer hpacked = encode(encoder, lease, metaData, getMaxFrameSize());
         int hpackedLength = hpacked.position();
         BufferUtil.flipToFlush(hpacked, 0);
 

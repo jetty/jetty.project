@@ -41,6 +41,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
+import java.util.function.LongConsumer;
 import java.util.function.Supplier;
 
 import org.eclipse.jetty.client.api.ContentProvider;
@@ -501,15 +502,16 @@ public class HttpRequest implements Request
     @Override
     public Request onResponseContent(final Response.ContentListener listener)
     {
-        this.responseListeners.add(new Response.AsyncContentListener()
+        this.responseListeners.add(new Response.DemandedContentListener()
         {
             @Override
-            public void onContent(Response response, ByteBuffer content, Callback callback)
+            public void onContent(Response response, LongConsumer demand, ByteBuffer content, Callback callback)
             {
                 try
                 {
                     listener.onContent(response, content);
                     callback.succeeded();
+                    demand.accept(1);
                 }
                 catch (Throwable x)
                 {
@@ -523,12 +525,30 @@ public class HttpRequest implements Request
     @Override
     public Request onResponseContentAsync(final Response.AsyncContentListener listener)
     {
-        this.responseListeners.add(new Response.AsyncContentListener()
+        this.responseListeners.add(new Response.DemandedContentListener()
         {
             @Override
-            public void onContent(Response response, ByteBuffer content, Callback callback)
+            public void onContent(Response response, LongConsumer demand, ByteBuffer content, Callback callback)
             {
-                listener.onContent(response, content, callback);
+                listener.onContent(response, content, Callback.from(() ->
+                {
+                    callback.succeeded();
+                    demand.accept(1);
+                }, callback::failed));
+            }
+        });
+        return this;
+    }
+
+    @Override
+    public Request onResponseContentDemanded(Response.DemandedContentListener listener)
+    {
+        this.responseListeners.add(new Response.DemandedContentListener()
+        {
+            @Override
+            public void onContent(Response response, LongConsumer demand, ByteBuffer content, Callback callback)
+            {
+                listener.onContent(response, demand, content, callback);
             }
         });
         return this;
@@ -878,6 +898,6 @@ public class HttpRequest implements Request
     @Override
     public String toString()
     {
-        return String.format("%s[%s %s %s]@%x", HttpRequest.class.getSimpleName(), getMethod(), getPath(), getVersion(), hashCode());
+        return String.format("%s[%s %s %s]@%x", getClass().getSimpleName(), getMethod(), getPath(), getVersion(), hashCode());
     }
 }

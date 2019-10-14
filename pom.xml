@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-project</artifactId>
-  <version>9.4.21-SNAPSHOT</version>
+  <version>9.4.22-SNAPSHOT</version>
   <name>Jetty :: Project</name>
   <description>The Eclipse Jetty Project</description>
   <packaging>pom</packaging>
@@ -94,6 +94,7 @@
     <module>jetty-server</module>
     <module>jetty-xml</module>
     <module>jetty-security</module>
+    <module>jetty-openid</module>
     <module>jetty-servlet</module>
     <module>jetty-webapp</module>
     <module>jetty-fcgi</module>
@@ -518,7 +519,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-invoker-plugin</artifactId>
-          <version>3.2.1-SNAPSHOT</version>
+          <version>3.2.1</version>
           <configuration>
             <mergeUserSettings>true</mergeUserSettings>
             <writeJunitReport>true</writeJunitReport>

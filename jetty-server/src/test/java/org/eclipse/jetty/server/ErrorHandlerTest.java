@@ -58,32 +58,6 @@ public class ErrorHandlerTest
             @Override
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
-                if (baseRequest.getDispatcherType() == DispatcherType.ERROR)
-                {
-                    baseRequest.setHandled(true);
-                    response.sendError(((Integer)request.getAttribute(RequestDispatcher.ERROR_STATUS_CODE)).intValue());
-                    return;
-                }
-
-                if (target.startsWith("/charencoding/"))
-                {
-                    baseRequest.setHandled(true);
-                    response.setCharacterEncoding("utf-8");
-                    response.sendError(404);
-                    return;
-                }
-
-                if (target.startsWith("/badmessage/"))
-                {
-                    throw new ServletException(new BadMessageException(Integer.valueOf(target.substring(12))));
-                }
-            }
-        });
-        server.setHandler(new AbstractHandler()
-        {
-            @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
-            {
 
                 if (baseRequest.getDispatcherType() == DispatcherType.ERROR)
                 {

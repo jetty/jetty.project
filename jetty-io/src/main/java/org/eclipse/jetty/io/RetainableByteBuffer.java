@@ -81,14 +81,24 @@ public class RetainableByteBuffer implements Retainable
         return ref;
     }
 
+    public int remaining()
+    {
+        return buffer.remaining();
+    }
+
     public boolean hasRemaining()
     {
-        return buffer.hasRemaining();
+        return remaining() > 0;
     }
 
     public boolean isEmpty()
     {
-        return !buffer.hasRemaining();
+        return !hasRemaining();
+    }
+
+    public void clear()
+    {
+        BufferUtil.clear(buffer);
     }
 
     @Override

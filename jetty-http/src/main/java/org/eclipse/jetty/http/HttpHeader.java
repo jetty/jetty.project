@@ -149,6 +149,7 @@ public enum HttpHeader
     }
 
     private final String _string;
+    private final String _lowerCase;
     private final byte[] _bytes;
     private final byte[] _bytesColonSpace;
     private final ByteBuffer _buffer;
@@ -156,9 +157,15 @@ public enum HttpHeader
     HttpHeader(String s)
     {
         _string = s;
+        _lowerCase = StringUtil.asciiToLowerCase(s);
         _bytes = StringUtil.getBytes(s);
         _bytesColonSpace = StringUtil.getBytes(s + ": ");
         _buffer = ByteBuffer.wrap(_bytes);
+    }
+
+    public String lowerCaseName()
+    {
+        return _lowerCase;
     }
 
     public ByteBuffer toBuffer()

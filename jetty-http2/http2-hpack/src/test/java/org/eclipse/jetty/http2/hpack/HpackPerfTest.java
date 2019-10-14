@@ -20,7 +20,6 @@ package org.eclipse.jetty.http2.hpack;
 
 import java.io.File;
 import java.io.FileReader;
-import java.io.FilenameFilter;
 import java.nio.ByteBuffer;
 import java.util.Map;
 
@@ -33,6 +32,8 @@ import org.eclipse.jetty.util.ajax.JSON;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class HpackPerfTest
 {
@@ -56,28 +57,22 @@ public class HpackPerfTest
     @Test
     public void simpleTest() throws Exception
     {
-        runStories(_maxDynamicTableSize);
+        runStories();
     }
 
-    private void runStories(int maxDynamicTableSize) throws Exception
+    private void runStories() throws Exception
     {
         // Find files
         File data = MavenTestingUtils.getTestResourceDir("data");
-        String[] files = data.list(new FilenameFilter()
-        {
-            @Override
-            public boolean accept(File dir, String name)
-            {
-                return name.startsWith("story_");
-            }
-        });
+        String[] files = data.list((dir, name) -> name.startsWith("story_"));
+        assertNotNull(files);
 
         // Parse JSON
-        Map<String, Object>[] stories = new Map[files.length];
+        Map[] stories = new Map[files.length];
         int i = 0;
         for (String story : files)
         {
-            stories[i++] = (Map<String, Object>)JSON.parse(new FileReader(new File(data, story)));
+            stories[i++] = (Map)JSON.parse(new FileReader(new File(data, story)));
         }
 
         ByteBuffer buffer = BufferUtil.allocate(256 * 1024);
@@ -93,25 +88,27 @@ public class HpackPerfTest
         encodeStories(buffer, stories, "response");
     }
 
-    private void encodeStories(ByteBuffer buffer, Map<String, Object>[] stories, String type) throws Exception
+    private void encodeStories(ByteBuffer buffer, Map[] stories, String type) throws Exception
     {
-        for (Map<String, Object> story : stories)
+        for (Map story : stories)
         {
             if (type.equals(story.get("context")))
             {
                 HpackEncoder encoder = new HpackEncoder(_maxDynamicTableSize, _maxDynamicTableSize);
+                encoder.setValidateEncoding(false);
 
                 // System.err.println(story);
                 Object[] cases = (Object[])story.get("cases");
                 for (Object c : cases)
                 {
                     // System.err.println("  "+c);
-                    Object[] headers = (Object[])((Map<String, Object>)c).get("headers");
+                    Object[] headers = (Object[])((Map)c).get("headers");
                     // System.err.println("    "+headers);
                     HttpFields fields = new HttpFields();
                     for (Object header : headers)
                     {
-                        Map<String, String> h = (Map<String, String>)header;
+                        @SuppressWarnings("unchecked")
+                        Map<String, String> h = (Map)header;
                         Map.Entry<String, String> e = h.entrySet().iterator().next();
                         fields.add(e.getKey(), e.getValue());
                         _unencodedSize += e.getKey().length() + e.getValue().length();

@@ -81,6 +81,11 @@ public class HttpChannelOverFCGI extends HttpChannel
         return sender.isFailed() || receiver.isFailed();
     }
 
+    void receive()
+    {
+        connection.process();
+    }
+
     @Override
     public void send(HttpExchange exchange)
     {

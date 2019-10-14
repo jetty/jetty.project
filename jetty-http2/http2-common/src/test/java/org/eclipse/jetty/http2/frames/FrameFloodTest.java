@@ -74,7 +74,7 @@ public class FrameFloodTest
     }
 
     @Test
-    public void testInvalidHeadersFrameFlood()
+    public void testInvalidHeadersFrameFlood() throws Exception
     {
         // Invalid MetaData (no method, no scheme, etc).
         MetaData.Request metadata = new MetaData.Request(null, (String)null, null, null, HttpVersion.HTTP_2, null, -1);

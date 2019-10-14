@@ -65,7 +65,6 @@ public class Parser
 
     // Stats (where a message is defined as a WebSocket frame)
     private final LongAdder messagesIn = new LongAdder();
-    private final LongAdder bytesIn = new LongAdder();
 
     // State specific
     private State state = State.START;
@@ -250,8 +249,6 @@ public class Parser
 
         try
         {
-            int startingBytes = buffer.remaining();
-
             // attempt to parse a frame from the buffer
             if (parseFrame(buffer))
             {
@@ -266,8 +263,6 @@ public class Parser
                 }
                 reset();
             }
-
-            bytesIn.add(startingBytes - buffer.remaining());
         }
         catch (Throwable t)
         {
@@ -655,11 +650,6 @@ public class Parser
     public long getMessagesIn()
     {
         return messagesIn.longValue();
-    }
-
-    public long getBytesIn()
-    {
-        return bytesIn.longValue();
     }
 
     @Override

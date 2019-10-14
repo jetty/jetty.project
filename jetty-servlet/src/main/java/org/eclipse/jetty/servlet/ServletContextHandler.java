@@ -733,6 +733,11 @@ public class ServletContextHandler extends ContextHandler
         _objFactory.destroy(filter);
     }
 
+    void destroyListener(EventListener listener)
+    {
+        _objFactory.destroy(listener);
+    }
+
     public static ServletContextHandler getServletContextHandler(ServletContext context)
     {
         ContextHandler handler = getContextHandler(context);
@@ -1286,6 +1291,11 @@ public class ServletContextHandler extends ContextHandler
             }
         }
 
+        public <T extends Filter> void destroyFilter(T f)
+        {
+            _objFactory.destroy(f);
+        }
+
         @Override
         public <T extends Servlet> T createServlet(Class<T> c) throws ServletException
         {
@@ -1299,6 +1309,11 @@ public class ServletContextHandler extends ContextHandler
             {
                 throw new ServletException(e);
             }
+        }
+
+        public <T extends Servlet> void destroyServlet(T s)
+        {
+            _objFactory.destroy(s);
         }
 
         @Override

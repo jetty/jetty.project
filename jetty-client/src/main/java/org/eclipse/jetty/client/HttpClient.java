@@ -540,24 +540,14 @@ public class HttpClient extends ContainerLifeCycle
         port = normalizePort(scheme, port);
 
         Origin origin = new Origin(scheme, host, port);
-        HttpDestination destination = destinations.get(origin);
-        if (destination == null)
+        return destinations.computeIfAbsent(origin, o ->
         {
-            destination = transport.newHttpDestination(origin);
-            addManaged(destination);
-            HttpDestination existing = destinations.putIfAbsent(origin, destination);
-            if (existing != null)
-            {
-                removeBean(destination);
-                destination = existing;
-            }
-            else
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Created {}", destination);
-            }
-        }
-        return destination;
+            HttpDestination newDestination = getTransport().newHttpDestination(o);
+            addManaged(newDestination);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Created {}", newDestination);
+            return newDestination;
+        });
     }
 
     protected boolean removeDestination(HttpDestination destination)
@@ -1170,9 +1160,24 @@ public class HttpClient extends ContainerLifeCycle
         return HttpScheme.HTTPS.is(scheme) || HttpScheme.WSS.is(scheme);
     }
 
+    /**
+     * Creates a new {@code SslClientConnectionFactory} wrapping the given connection factory.
+     *
+     * @param connectionFactory the connection factory to wrap
+     * @return a new SslClientConnectionFactory
+     * @deprecated use {@link #newSslClientConnectionFactory(SslContextFactory, ClientConnectionFactory)} instead
+     */
+    @Deprecated
     protected ClientConnectionFactory newSslClientConnectionFactory(ClientConnectionFactory connectionFactory)
     {
         return new SslClientConnectionFactory(getSslContextFactory(), getByteBufferPool(), getExecutor(), connectionFactory);
+    }
+
+    protected ClientConnectionFactory newSslClientConnectionFactory(SslContextFactory sslContextFactory, ClientConnectionFactory connectionFactory)
+    {
+        if (sslContextFactory == null)
+            return newSslClientConnectionFactory(connectionFactory);
+        return new SslClientConnectionFactory(sslContextFactory, getByteBufferPool(), getExecutor(), connectionFactory);
     }
 
     private class ContentDecoderFactorySet implements Set<ContentDecoder.Factory>

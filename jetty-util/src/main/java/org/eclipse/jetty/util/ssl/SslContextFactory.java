@@ -26,6 +26,8 @@ import java.net.Socket;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.KeyStore;
 import java.security.NoSuchAlgorithmException;
+import java.security.Principal;
+import java.security.PrivateKey;
 import java.security.SecureRandom;
 import java.security.Security;
 import java.security.cert.CRL;
@@ -99,69 +101,24 @@ import org.eclipse.jetty.util.security.Password;
 @ManagedObject
 public class SslContextFactory extends AbstractLifeCycle implements Dumpable
 {
-    public static final TrustManager[] TRUST_ALL_CERTS = new X509TrustManager[]{
-        new X509ExtendedTrustManager()
-        {
-            @Override
-            public X509Certificate[] getAcceptedIssuers()
-            {
-                return new X509Certificate[0];
-            }
-
-            @Override
-            public void checkClientTrusted(X509Certificate[] certs, String authType)
-            {
-            }
-
-            @Override
-            public void checkClientTrusted(X509Certificate[] chain, String authType, Socket socket)
-            {
-            }
-
-            @Override
-            public void checkClientTrusted(X509Certificate[] chain, String authType, SSLEngine engine)
-            {
-            }
-
-            @Override
-            public void checkServerTrusted(X509Certificate[] certs, String authType)
-            {
-            }
-
-            @Override
-            public void checkServerTrusted(X509Certificate[] chain, String authType, Socket socket)
-            {
-            }
-
-            @Override
-            public void checkServerTrusted(X509Certificate[] chain, String authType, SSLEngine engine)
-            {
-            }
-        }
-    };
-
-    private static final Logger LOG = Log.getLogger(SslContextFactory.class);
-    private static final Logger LOG_CONFIG = LOG.getLogger("config");
-
+    public static final TrustManager[] TRUST_ALL_CERTS = new X509TrustManager[]{new X509ExtendedTrustManagerWrapper(null)};
     public static final String DEFAULT_KEYMANAGERFACTORY_ALGORITHM = KeyManagerFactory.getDefaultAlgorithm();
-
     public static final String DEFAULT_TRUSTMANAGERFACTORY_ALGORITHM = TrustManagerFactory.getDefaultAlgorithm();
-
     /**
      * String name of key password property.
      */
     public static final String KEYPASSWORD_PROPERTY = "org.eclipse.jetty.ssl.keypassword";
-
     /**
      * String name of keystore password property.
      */
     public static final String PASSWORD_PROPERTY = "org.eclipse.jetty.ssl.password";
 
+    private static final Logger LOG = Log.getLogger(SslContextFactory.class);
+    private static final Logger LOG_CONFIG = LOG.getLogger("config");
     /**
      * Default Excluded Protocols List
      */
     private static final String[] DEFAULT_EXCLUDED_PROTOCOLS = {"SSL", "SSLv2", "SSLv2Hello", "SSLv3"};
-
     /**
      * Default Excluded Cipher Suite List
      */
@@ -2292,6 +2249,128 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
         protected X509ExtendedKeyManager newSniX509ExtendedKeyManager(X509ExtendedKeyManager keyManager)
         {
             return new SniX509ExtendedKeyManager(keyManager, isRejectUnmatchedSNIHost());
+        }
+    }
+
+    /**
+     * <p>A wrapper that delegates to another (if not {@code null}) X509ExtendedKeyManager.</p>
+     */
+    public static class X509ExtendedKeyManagerWrapper extends X509ExtendedKeyManager
+    {
+        private final X509ExtendedKeyManager keyManager;
+
+        public X509ExtendedKeyManagerWrapper(X509ExtendedKeyManager keyManager)
+        {
+            this.keyManager = keyManager;
+        }
+
+        @Override
+        public String[] getClientAliases(String keyType, Principal[] issuers)
+        {
+            return keyManager == null ? null : keyManager.getClientAliases(keyType, issuers);
+        }
+
+        @Override
+        public String chooseClientAlias(String[] keyType, Principal[] issuers, Socket socket)
+        {
+            return keyManager == null ? null : keyManager.chooseClientAlias(keyType, issuers, socket);
+        }
+
+        @Override
+        public String chooseEngineClientAlias(String[] keyType, Principal[] issuers, SSLEngine engine)
+        {
+            return keyManager == null ? null : keyManager.chooseEngineClientAlias(keyType, issuers, engine);
+        }
+
+        @Override
+        public String[] getServerAliases(String keyType, Principal[] issuers)
+        {
+            return keyManager == null ? null : keyManager.getServerAliases(keyType, issuers);
+        }
+
+        @Override
+        public String chooseServerAlias(String keyType, Principal[] issuers, Socket socket)
+        {
+            return keyManager == null ? null : keyManager.chooseServerAlias(keyType, issuers, socket);
+        }
+
+        @Override
+        public String chooseEngineServerAlias(String keyType, Principal[] issuers, SSLEngine engine)
+        {
+            return keyManager == null ? null : keyManager.chooseEngineServerAlias(keyType, issuers, engine);
+        }
+
+        @Override
+        public X509Certificate[] getCertificateChain(String alias)
+        {
+            return keyManager == null ? null : keyManager.getCertificateChain(alias);
+        }
+
+        @Override
+        public PrivateKey getPrivateKey(String alias)
+        {
+            return keyManager == null ? null : keyManager.getPrivateKey(alias);
+        }
+    }
+
+    /**
+     * <p>A wrapper that delegates to another (if not {@code null}) X509ExtendedTrustManager.</p>
+     */
+    public static class X509ExtendedTrustManagerWrapper extends X509ExtendedTrustManager
+    {
+        private final X509ExtendedTrustManager trustManager;
+
+        public X509ExtendedTrustManagerWrapper(X509ExtendedTrustManager trustManager)
+        {
+            this.trustManager = trustManager;
+        }
+
+        @Override
+        public X509Certificate[] getAcceptedIssuers()
+        {
+            return trustManager == null ? new X509Certificate[0] : trustManager.getAcceptedIssuers();
+        }
+
+        @Override
+        public void checkClientTrusted(X509Certificate[] certs, String authType) throws CertificateException
+        {
+            if (trustManager != null)
+                trustManager.checkClientTrusted(certs, authType);
+        }
+
+        @Override
+        public void checkClientTrusted(X509Certificate[] chain, String authType, Socket socket) throws CertificateException
+        {
+            if (trustManager != null)
+                trustManager.checkClientTrusted(chain, authType, socket);
+        }
+
+        @Override
+        public void checkClientTrusted(X509Certificate[] chain, String authType, SSLEngine engine) throws CertificateException
+        {
+            if (trustManager != null)
+                trustManager.checkClientTrusted(chain, authType, engine);
+        }
+
+        @Override
+        public void checkServerTrusted(X509Certificate[] certs, String authType) throws CertificateException
+        {
+            if (trustManager != null)
+                trustManager.checkServerTrusted(certs, authType);
+        }
+
+        @Override
+        public void checkServerTrusted(X509Certificate[] chain, String authType, Socket socket) throws CertificateException
+        {
+            if (trustManager != null)
+                trustManager.checkServerTrusted(chain, authType, socket);
+        }
+
+        @Override
+        public void checkServerTrusted(X509Certificate[] chain, String authType, SSLEngine engine) throws CertificateException
+        {
+            if (trustManager != null)
+                trustManager.checkServerTrusted(chain, authType, engine);
         }
     }
 }
