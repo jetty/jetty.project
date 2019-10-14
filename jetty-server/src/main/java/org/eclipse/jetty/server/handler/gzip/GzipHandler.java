@@ -26,7 +26,6 @@ import java.util.ListIterator;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.zip.Deflater;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
@@ -156,7 +155,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
 {
     public static final String GZIP = "gzip";
     public static final String DEFLATE = "deflate";
-    public static final int DEFAULT_MIN_GZIP_SIZE = 16;
+    public static final int DEFAULT_MIN_GZIP_SIZE = 23;
     private static final Logger LOG = Log.getLogger(GzipHandler.class);
     private static final HttpField X_CE_GZIP = new PreEncodedHttpField("X-Content-Encoding", "gzip");
     private static final HttpField TE_CHUNKED = new PreEncodedHttpField(HttpHeader.TRANSFER_ENCODING, HttpHeaderValue.CHUNKED.asString());
@@ -946,13 +945,17 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     }
 
     /**
-     * Set the minimum response size to trigger dynamic compression
+     * Set the minimum response size to trigger dynamic compression.
+     * <p>
+     *     Sizes below 23 will result a compressed response that is larger then the
+     *     original data.
+     * </p>
      *
-     * @param minGzipSize minimum response size in bytes
+     * @param minGzipSize minimum response size in bytes (not allowed to be lower then 23)
      */
     public void setMinGzipSize(int minGzipSize)
     {
-        _minGzipSize = minGzipSize;
+        _minGzipSize = Math.max(DEFAULT_MIN_GZIP_SIZE, minGzipSize);
     }
 
     /**
