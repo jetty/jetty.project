@@ -471,7 +471,10 @@ public class MultiMapTest
 
         mm.putValues("food", "apple", "cherry", "raspberry");
 
-        assertEquals("{color=red, food=[apple, cherry, raspberry]}", mm.toString());
+        String expected1 = "{color=red, food=[apple, cherry, raspberry]}";
+        String expected2 = "{food=[apple, cherry, raspberry], color=red}";
+        String actual = mm.toString();
+        assertTrue(actual.equals(expected1) || actual.equals(expected2));
     }
 
     /**
