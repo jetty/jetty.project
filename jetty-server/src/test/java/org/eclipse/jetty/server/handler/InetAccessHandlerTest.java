@@ -18,11 +18,16 @@
 
 package org.eclipse.jetty.server.handler;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import java.io.IOException;
 import java.net.Socket;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.stream.Stream;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -40,22 +45,23 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 public class InetAccessHandlerTest
 {
     private static Server _server;
-    private static ServerConnector _connector;
+    private static ServerConnector _connector1;
+    private static ServerConnector _connector2;
     private static InetAccessHandler _handler;
 
     @BeforeAll
     public static void setUp() throws Exception
     {
         _server = new Server();
-        _connector = new ServerConnector(_server);
-        _connector.setName("http");
+        _connector1 = new ServerConnector(_server);
+        _connector1.setName("http_connector1");
+        _connector2 = new ServerConnector(_server);
+        _connector2.setName("http_connector2");
         _server.setConnectors(new Connector[]
-            {_connector});
+            {_connector1, _connector2});
 
         _handler = new InetAccessHandler();
         _handler.setHandler(new AbstractHandler()
@@ -113,7 +119,21 @@ public class InetAccessHandlerTest
             }
         }
 
-        try (Socket socket = new Socket("127.0.0.1", _connector.getLocalPort());)
+        List<String> codePerConnector = new ArrayList<>();
+        for (String nextCode : code.split(";", -1))
+        {
+            if (nextCode.length() > 0)
+            {
+                codePerConnector.add(nextCode);
+            }
+        }
+
+        testConnector(_connector1.getLocalPort(), include, exclude, includeConnectors, excludeConnectors, codePerConnector.get(0));
+        testConnector(_connector2.getLocalPort(), include, exclude, includeConnectors, excludeConnectors, codePerConnector.get(1));
+    }
+
+    private void testConnector(int port, String include, String exclude, String includeConnectors, String excludeConnectors, String code) throws IOException {
+        try (Socket socket = new Socket("127.0.0.1", port);)
         {
             socket.setSoTimeout(5000);
 
@@ -136,39 +156,62 @@ public class InetAccessHandlerTest
         }
     }
 
+    /**
+     * Data for this test.
+     * @return Format of data: include;exclude;includeConnectors;excludeConnectors;assertionStatusCodePerConnector
+     */
     public static Stream<Arguments> data()
     {
         Object[][] data = new Object[][]
             {
-                // Empty lists
-                {"", "", "", "", "200"},
+                // Empty lists 1
+                {"", "", "", "", "200;200"},
 
-                // test simple filters
-                {"127.0.0.1", "", "", "", "200"},
-                {"127.0.0.1-127.0.0.254", "", "", "", "200"},
-                {"192.0.0.1", "", "", "", "403"},
-                {"192.0.0.1-192.0.0.254", "", "", "", "403"},
+                // test simple filters 2 - 5
+                {"127.0.0.1", "", "", "", "200;200"},
+                {"127.0.0.1-127.0.0.254", "", "", "", "200;200"},
+                {"192.0.0.1", "", "", "", "403;403"},
+                {"192.0.0.1-192.0.0.254", "", "", "", "403;403"},
 
-                // test connector name filters
-                {"127.0.0.1", "", "http", "", "200"},
-                {"127.0.0.1-127.0.0.254", "", "http", "", "200"},
-                {"192.0.0.1", "", "http", "", "403"},
-                {"192.0.0.1-192.0.0.254", "", "http", "", "403"},
+                // 6 - 9 - test includeConnector
+                {"127.0.0.1", "", "http_connector1", "", "200;200"},
+                {"127.0.0.1-127.0.0.254", "", "http_connector1", "", "200;200"},
+                {"192.0.0.1", "", "http_connector1", "", "403;200"},
+                {"192.0.0.1-192.0.0.254", "", "http_connector1", "", "403;200"},
+                {"192.0.0.1", "", "http_connector2", "", "200;403"},
+                {"192.0.0.1-192.0.0.254", "", "http_connector2", "", "200;403"},
 
-                {"127.0.0.1", "", "nothttp", "", "403"},
-                {"127.0.0.1-127.0.0.254", "", "nothttp", "", "403"},
-                {"192.0.0.1", "", "nothttp", "", "403"},
-                {"192.0.0.1-192.0.0.254", "", "nothttp", "", "403"},
+                // 10 - 13 - test includeConnector names where none of them match
+                {"127.0.0.1", "", "nothttp", "", "200;200"},
+                {"127.0.0.1-127.0.0.254", "", "nothttp", "", "200;200"},
+                {"192.0.0.1", "", "nothttp", "", "200;200"},
+                {"192.0.0.1-192.0.0.254", "", "nothttp", "", "200;200"},
 
-                {"127.0.0.1", "", "", "http", "403"},
-                {"127.0.0.1-127.0.0.254", "", "", "http", "403"},
-                {"192.0.0.1", "", "", "http", "403"},
-                {"192.0.0.1-192.0.0.254", "", "", "http", "403"},
+                // 14 - 17 - text excludeConnector
+                {"127.0.0.1", "", "", "http_connector1", "200;200"},
+                {"127.0.0.1-127.0.0.254", "", "", "http_connector1", "200;200"},
+                {"192.0.0.1", "", "", "http_connector1", "200;403"},
+                {"192.0.0.1-192.0.0.254", "", "", "http_connector1", "200;403"},
+                {"192.0.0.1", "", "", "http_connector2", "403;200"},
+                {"192.0.0.1-192.0.0.254", "", "", "http_connector2", "403;200"},
 
-                {"127.0.0.1", "", "", "nothttp", "200"},
-                {"127.0.0.1-127.0.0.254", "", "", "nothttp", "200"},
-                {"192.0.0.1", "", "", "nothttp", "403"},
-                {"192.0.0.1-192.0.0.254", "", "", "nothttp", "403"},
+                // 18 - 21 - test excludeConnector where none of them match.
+                {"127.0.0.1", "", "", "nothttp", "200;200"},
+                {"127.0.0.1-127.0.0.254", "", "", "nothttp", "200;200"},
+                {"192.0.0.1", "", "", "nothttp", "403;403"},
+                {"192.0.0.1-192.0.0.254", "", "", "nothttp", "403;403"},
+
+                // 22 - 25 - both connectors are excluded
+                {"127.0.0.1", "", "", "http_connector1;http_connector2", "200;200"},
+                {"127.0.0.1-127.0.0.254", "", "", "http_connector1;http_connector2", "200;200"},
+                {"192.0.0.1", "", "", "http_connector1;http_connector2", "200;200"},
+                {"192.0.0.1-192.0.0.254", "", "", "http_connector1;http_connector2", "200;200"},
+
+                // 26 - 29 - both connectors are included
+                {"127.0.0.1", "", "http_connector1;http_connector2", "", "200;200"},
+                {"127.0.0.1-127.0.0.254", "", "http_connector1;http_connector2", "", "200;200"},
+                {"192.0.0.1", "", "http_connector1;http_connector2", "", "403;403"},
+                {"192.0.0.1-192.0.0.254", "", "http_connector1;http_connector2", "", "403;403"},
             };
         return Arrays.asList(data).stream().map(Arguments::of);
     }
