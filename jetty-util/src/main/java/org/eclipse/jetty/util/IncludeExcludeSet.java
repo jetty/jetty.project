@@ -180,7 +180,10 @@ public class IncludeExcludeSet<T, P> implements Predicate<P>
      */
     public Boolean isIncludedAndNotExcluded(P item)
     {
-        return (_includes.size() == 0 || _includePredicate.test(item)) && !_excludePredicate.test(item);
+        if (_excludePredicate.test(item)) {
+            return Boolean.FALSE;
+        }
+        return _includes.size() == 0 || _includePredicate.test(item);
     }
 
     public boolean hasIncludes()
