@@ -69,6 +69,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class SniSslConnectionFactoryTest
@@ -79,7 +80,7 @@ public class SniSslConnectionFactoryTest
     private int _port;
 
     @BeforeEach
-    public void before() throws Exception
+    public void before()
     {
         _server = new Server();
 
@@ -234,7 +235,15 @@ public class SniSslConnectionFactoryTest
         start(ssl ->
         {
             ssl.setKeyStorePath("src/test/resources/keystore_sni.p12");
+            // Do not allow unmatched SNI.
             ssl.setRejectUnmatchedSNIHost(true);
+            ssl.setSNISelector((keyType, issuers, session, sniHost, certificates) ->
+            {
+                // Do not allow missing SNI.
+                if (sniHost == null)
+                    throw new SSLHandshakeException("Missing SNI");
+                return ssl.sniSelect(keyType, issuers, session, sniHost, certificates);
+            });
         });
 
         // Wrong SNI host.
@@ -272,6 +281,7 @@ public class SniSslConnectionFactoryTest
 
             InputStream input = sslSocket.getInputStream();
             HttpTester.Response response = HttpTester.parseResponse(input);
+            assertNotNull(response);
             assertThat(response.getStatus(), is(200));
 
             // Same socket, send a request for a different domain but same alias.
@@ -282,6 +292,7 @@ public class SniSslConnectionFactoryTest
             output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
             response = HttpTester.parseResponse(input);
+            assertNotNull(response);
             assertThat(response.getStatus(), is(200));
 
             // Same socket, send a request for a different domain but different alias.
@@ -293,6 +304,7 @@ public class SniSslConnectionFactoryTest
             output.flush();
 
             response = HttpTester.parseResponse(input);
+            assertNotNull(response);
             assertThat(response.getStatus(), is(400));
             assertThat(response.getContent(), containsString("Host does not match SNI"));
         }
@@ -328,6 +340,7 @@ public class SniSslConnectionFactoryTest
 
             InputStream input = sslSocket.getInputStream();
             HttpTester.Response response = HttpTester.parseResponse(input);
+            assertNotNull(response);
             assertThat(response.getStatus(), is(200));
 
             // Now, on the same socket, send a request for a different valid domain.
@@ -339,6 +352,7 @@ public class SniSslConnectionFactoryTest
             output.flush();
 
             response = HttpTester.parseResponse(input);
+            assertNotNull(response);
             assertThat(response.getStatus(), is(200));
 
             // Now make a request for an invalid domain for this connection.
@@ -350,6 +364,7 @@ public class SniSslConnectionFactoryTest
             output.flush();
 
             response = HttpTester.parseResponse(input);
+            assertNotNull(response);
             assertThat(response.getStatus(), is(400));
             assertThat(response.getContent(), containsString("Host does not match SNI"));
         }

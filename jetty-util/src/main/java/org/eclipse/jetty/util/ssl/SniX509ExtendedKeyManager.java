@@ -22,6 +22,7 @@ import java.net.Socket;
 import java.security.Principal;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import javax.net.ssl.SNIMatcher;
@@ -45,17 +46,17 @@ public class SniX509ExtendedKeyManager extends X509ExtendedKeyManager
     private static final Logger LOG = Log.getLogger(SniX509ExtendedKeyManager.class);
 
     private final X509ExtendedKeyManager _delegate;
-    private final boolean _rejectUnmatchedSNIHost;
+    private final SslContextFactory.Server _sslContextFactory;
 
     public SniX509ExtendedKeyManager(X509ExtendedKeyManager keyManager)
     {
-        this(keyManager, false);
+        this(keyManager, null);
     }
 
-    public SniX509ExtendedKeyManager(X509ExtendedKeyManager keyManager, boolean rejectUnmatchedSNIHost)
+    public SniX509ExtendedKeyManager(X509ExtendedKeyManager keyManager, SslContextFactory.Server sslContextFactory)
     {
         _delegate = keyManager;
-        _rejectUnmatchedSNIHost = rejectUnmatchedSNIHost;
+        _sslContextFactory = sslContextFactory;
     }
 
     @Override
@@ -72,14 +73,13 @@ public class SniX509ExtendedKeyManager extends X509ExtendedKeyManager
 
     protected String chooseServerAlias(String keyType, Principal[] issuers, Collection<SNIMatcher> matchers, SSLSession session)
     {
-        // Look for the aliases that are suitable for the keytype and issuers
+        // Look for the aliases that are suitable for the keyType and issuers.
         String[] aliases = _delegate.getServerAliases(keyType, issuers);
         if (aliases == null || aliases.length == 0)
             return null;
 
         // Look for the SNI information.
         String host = null;
-        X509 x509 = null;
         if (matchers != null)
         {
             for (SNIMatcher m : matchers)
@@ -88,29 +88,51 @@ public class SniX509ExtendedKeyManager extends X509ExtendedKeyManager
                 {
                     SslContextFactory.AliasSNIMatcher matcher = (SslContextFactory.AliasSNIMatcher)m;
                     host = matcher.getHost();
-                    x509 = matcher.getX509();
                     break;
                 }
             }
         }
 
-        if (LOG.isDebugEnabled())
-            LOG.debug("Matched host {} with certificate {} from {}", host, x509, Arrays.asList(aliases));
+        SslContextFactory.SNISelector sniSelector = _sslContextFactory.getSNISelector();
+        if (sniSelector == null)
+            sniSelector = _sslContextFactory;
 
-        // No SNI or SNI host did not match a certificate.
-        if (host == null || x509 == null)
-            return _rejectUnmatchedSNIHost ? null : NO_MATCHERS;
-
-        // Check if the SNI selected alias is allowable
-        for (String a : aliases)
+        try
         {
-            if (a.equals(x509.getAlias()))
+            // Filter the certificates by alias.
+            Collection<X509> certificates = new ArrayList<>();
+            for (String alias : aliases)
             {
+                X509 x509 = _sslContextFactory.getX509(alias);
+                if (x509 != null)
+                    certificates.add(x509);
+            }
+            X509 x509 = sniSelector.sniSelect(keyType, issuers, session, host, certificates);
+            if (x509 == null)
+            {
+                return NO_MATCHERS;
+            }
+            else
+            {
+                // Make sure we got back an X509 from the collection we passed in.
+                if (!certificates.contains(x509))
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Invalid X509 match for SNI {}: {}", host, x509);
+                    return null;
+                }
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Matched SNI {} with X509 {} from {}", host, x509, Arrays.asList(aliases));
                 session.putValue(SNI_X509, x509);
-                return a;
+                return x509.getAlias();
             }
         }
-        return null;
+        catch (Throwable x)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Failure matching X509 for SNI " + host, x);
+            return null;
+        }
     }
 
     @Override

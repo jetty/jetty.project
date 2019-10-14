@@ -65,6 +65,7 @@ import javax.net.ssl.SNIMatcher;
 import javax.net.ssl.SNIServerName;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLHandshakeException;
 import javax.net.ssl.SSLParameters;
 import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLServerSocket;
@@ -2203,9 +2204,11 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
         }
     }
 
-    public static class Server extends SslContextFactory
+    @ManagedObject
+    public static class Server extends SslContextFactory implements SNISelector
     {
         private boolean rejectUnmatchedSNIHost;
+        private SNISelector _sniSelector;
 
         public Server()
         {
@@ -2235,21 +2238,93 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
             super.setNeedClientAuth(needClientAuth);
         }
 
+        /**
+         * @return whether to reject the TLS handshake if the SNI host is present but does not match
+         */
+        @ManagedAttribute("Whether the TLS handshake is rejected if the SNI host is present but does not match")
         public boolean isRejectUnmatchedSNIHost()
         {
             return rejectUnmatchedSNIHost;
         }
 
+        /**
+         * @param rejectUnmatchedSNIHost whether to reject the TLS handshake if the SNI host is present but does not match
+         */
         public void setRejectUnmatchedSNIHost(boolean rejectUnmatchedSNIHost)
         {
             this.rejectUnmatchedSNIHost = rejectUnmatchedSNIHost;
         }
 
+        /**
+         * @return the custom function to select certificates based on SNI information
+         */
+        public SNISelector getSNISelector()
+        {
+            return _sniSelector;
+        }
+
+        /**
+         * <p>Sets a custom function to select certificates based on SNI information.</p>
+         *
+         * @param sniSelector the selection function
+         */
+        public void setSNISelector(SNISelector sniSelector)
+        {
+            _sniSelector = sniSelector;
+        }
+
+        @Override
+        public X509 sniSelect(String keyType, Principal[] issuers, SSLSession session, String sniHost, Collection<X509> certificates) throws SSLHandshakeException
+        {
+            if (sniHost == null)
+            {
+                // No SNI, find the default certificate to send, or let the JDK decide.
+                return certificates.stream()
+                    .filter(x509 -> Objects.equals(x509.getAlias(), getCertAlias()))
+                    .findAny()
+                    .orElse(null);
+            }
+            else
+            {
+                // Match the SNI host, or let the JDK decide unless unmatched SNIs are rejected.
+                X509 result = certificates.stream()
+                    .filter(x509 -> x509.matches(sniHost))
+                    .findAny()
+                    .orElse(null);
+                if (result == null && isRejectUnmatchedSNIHost())
+                    throw new SSLHandshakeException("Unmatched Server Name Indication for: " + sniHost);
+                return result;
+            }
+        }
+
         @Override
         protected X509ExtendedKeyManager newSniX509ExtendedKeyManager(X509ExtendedKeyManager keyManager)
         {
-            return new SniX509ExtendedKeyManager(keyManager, isRejectUnmatchedSNIHost());
+            return new SniX509ExtendedKeyManager(keyManager, this);
         }
+    }
+
+    /**
+     * <p>Selects a certificate based on SNI information.</p>
+     */
+    @FunctionalInterface
+    public interface SNISelector
+    {
+        /**
+         * <p>Selects a certificate based on SNI information.</p>
+         * <p>This method may be invoked multiple times during the TLS handshake, with different parameters.
+         * For example, the {@code keyType} could be different, and subsequently the collection of certificates
+         * (because they need to match the {@code keyType}.</p>
+         *
+         * @param keyType the key algorithm type name
+         * @param issuers the list of acceptable CA issuer subject names or null if it does not matter which issuers are used
+         * @param session the TLS handshake session
+         * @param sniHost the server name indication sent by the client, or null if the client did not send the server name indication
+         * @param certificates the list of certificates matching {@code keyType} and {@code issuers} known to this SslContextFactory
+         * @return the {@code X509} certificate to return to the client, from the {@code certificates} list
+         * @throws SSLHandshakeException if the TLS handshake should be aborted
+         */
+        public X509 sniSelect(String keyType, Principal[] issuers, SSLSession session, String sniHost, Collection<X509> certificates) throws SSLHandshakeException;
     }
 
     /**
