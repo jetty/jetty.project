@@ -397,7 +397,10 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
         }
         if (openFuture != null && !openFuture.isDone())
             openFuture.completeExceptionally(cause);
-        websocket.onError(cause);
+
+        // Only notify onError if onClose has not been called.
+        if (!onCloseCalled.get())
+            websocket.onError(cause);
     }
 
     /**

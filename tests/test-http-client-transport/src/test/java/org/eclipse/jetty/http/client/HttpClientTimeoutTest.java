@@ -254,9 +254,11 @@ public class HttpClientTimeoutTest extends AbstractTest<TransportScenario>
         scenario.client = new HttpClient(scenario.provideClientTransport(), sslContextFactory)
         {
             @Override
-            public ClientConnectionFactory newSslClientConnectionFactory(ClientConnectionFactory connectionFactory)
+            public ClientConnectionFactory newSslClientConnectionFactory(SslContextFactory sslContextFactory, ClientConnectionFactory connectionFactory)
             {
-                return new SslClientConnectionFactory(getSslContextFactory(), getByteBufferPool(), getExecutor(), connectionFactory)
+                if (sslContextFactory == null)
+                    sslContextFactory = getSslContextFactory();
+                return new SslClientConnectionFactory(sslContextFactory, getByteBufferPool(), getExecutor(), connectionFactory)
                 {
                     @Override
                     protected SslConnection newSslConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, SSLEngine engine)

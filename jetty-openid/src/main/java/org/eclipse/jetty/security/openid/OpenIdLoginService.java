@@ -67,7 +67,7 @@ public class OpenIdLoginService extends ContainerLifeCycle implements LoginServi
     @Override
     public String getName()
     {
-        return _configuration.getOpenIdProvider();
+        return _configuration.getIssuer();
     }
 
     public OpenIdConfiguration getConfiguration()

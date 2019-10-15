@@ -48,6 +48,7 @@ import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.Sweeper;
 
@@ -86,12 +87,12 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
         {
             connectionFactory = proxy.newClientConnectionFactory(connectionFactory);
             if (proxy.isSecure())
-                connectionFactory = newSslClientConnectionFactory(connectionFactory);
+                connectionFactory = newSslClientConnectionFactory(proxy.getSslContextFactory(), connectionFactory);
         }
         else
         {
             if (isSecure())
-                connectionFactory = newSslClientConnectionFactory(connectionFactory);
+                connectionFactory = newSslClientConnectionFactory(null, connectionFactory);
         }
         this.connectionFactory = connectionFactory;
 
@@ -132,9 +133,24 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
         return new BlockingArrayQueue<>(client.getMaxRequestsQueuedPerDestination());
     }
 
+    /**
+     * Creates a new {@code SslClientConnectionFactory} wrapping the given connection factory.
+     *
+     * @param connectionFactory the connection factory to wrap
+     * @return a new SslClientConnectionFactory
+     * @deprecated use {@link #newSslClientConnectionFactory(SslContextFactory, ClientConnectionFactory)} instead
+     */
+    @Deprecated
     protected ClientConnectionFactory newSslClientConnectionFactory(ClientConnectionFactory connectionFactory)
     {
-        return client.newSslClientConnectionFactory(connectionFactory);
+        return client.newSslClientConnectionFactory(null, connectionFactory);
+    }
+
+    protected ClientConnectionFactory newSslClientConnectionFactory(SslContextFactory sslContextFactory, ClientConnectionFactory connectionFactory)
+    {
+        if (sslContextFactory == null)
+            return newSslClientConnectionFactory(connectionFactory);
+        return client.newSslClientConnectionFactory(sslContextFactory, connectionFactory);
     }
 
     public boolean isSecure()

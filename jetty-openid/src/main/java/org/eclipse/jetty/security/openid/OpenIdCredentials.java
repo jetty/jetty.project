@@ -242,7 +242,7 @@ public class OpenIdCredentials implements Serializable
         {
             connection.setDoOutput(true);
             connection.setRequestMethod("POST");
-            connection.setRequestProperty("Host", configuration.getOpenIdProvider());
+            connection.setRequestProperty("Host", configuration.getIssuer());
             connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
 
             try (DataOutputStream wr = new DataOutputStream(connection.getOutputStream()))

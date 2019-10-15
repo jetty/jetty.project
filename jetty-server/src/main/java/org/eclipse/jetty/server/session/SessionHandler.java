@@ -886,7 +886,7 @@ public class SessionHandler extends ScopedHandler
      * @param id The session ID stripped of any worker name.
      * @return A Session or null if none exists.
      */
-    protected Session getSession(String id)
+    public Session getSession(String id)
     {
         try
         {
@@ -1523,19 +1523,22 @@ public class SessionHandler extends ScopedHandler
                     oldSessionHandler = baseRequest.getSessionHandler();
                     oldSession = baseRequest.getSession(false);
 
-                    //find any existing session for this request that has already been accessed
-                    existingSession = baseRequest.getSession(this);
-                    if (existingSession == null)
+                    if (oldSessionHandler != this)
                     {
-                        //session for this context has not been visited previously,
-                        //try getting it
-                        baseRequest.setSession(null);
-                        checkRequestedSessionId(baseRequest, request);
-                        existingSession = baseRequest.getSession(false);
-                    }
+                        //find any existing session for this request that has already been accessed
+                        existingSession = baseRequest.getSession(this);
+                        if (existingSession == null)
+                        {
+                            //session for this context has not been visited previously,
+                            //try getting it
+                            baseRequest.setSession(null);
+                            checkRequestedSessionId(baseRequest, request);
+                            existingSession = baseRequest.getSession(false);
+                        }
 
-                    baseRequest.setSession(existingSession);
-                    baseRequest.setSessionHandler(this);
+                        baseRequest.setSession(existingSession);
+                        baseRequest.setSessionHandler(this);
+                    }
                     break;
                 }
                 default:
