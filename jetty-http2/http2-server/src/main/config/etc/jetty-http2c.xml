@@ -10,7 +10,7 @@
         <Set name="initialStreamRecvWindow"><Property name="jetty.http2c.initialStreamRecvWindow" default="65535"/></Set>
         <Set name="maxSettingsKeys"><Property name="jetty.http2.maxSettingsKeys" default="64"/></Set>
         <Set name="rateControl">
-          <Call class="org.eclipse.jetty.http2.parser.WindowRateControl" name="ofSecond">
+          <Call class="org.eclipse.jetty.http2.parser.WindowRateControl" name="fromEventsPerSecond">
             <Arg type="int"><Property name="jetty.http2.rateControlWindow" default="20"/></Arg>
           </Call>
         </Set>
