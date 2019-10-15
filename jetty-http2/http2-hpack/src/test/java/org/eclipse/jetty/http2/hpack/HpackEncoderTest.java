@@ -32,13 +32,10 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-/**
- *
- */
 public class HpackEncoderTest
 {
     @Test
-    public void testUnknownFieldsContextManagement()
+    public void testUnknownFieldsContextManagement() throws Exception
     {
         HpackEncoder encoder = new HpackEncoder(38 * 5);
         HttpFields fields = new HttpFields();
@@ -149,7 +146,7 @@ public class HpackEncoderTest
     }
 
     @Test
-    public void testNeverIndexSetCookie()
+    public void testNeverIndexSetCookie() throws Exception
     {
         HpackEncoder encoder = new HpackEncoder(38 * 5);
         ByteBuffer buffer = BufferUtil.allocate(4096);
@@ -181,7 +178,7 @@ public class HpackEncoderTest
     }
 
     @Test
-    public void testFieldLargerThanTable()
+    public void testFieldLargerThanTable() throws Exception
     {
         HttpFields fields = new HttpFields();
 
@@ -199,6 +196,7 @@ public class HpackEncoderTest
         BufferUtil.flipToFlush(buffer1, pos);
 
         encoder = new HpackEncoder(128);
+        encoder.setValidateEncoding(false);
         fields.add(new HttpField(":path",
             "This is a very large field, whose size is larger than the dynamic table so it should not be indexed as it will not fit in the table ever!" +
                 "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX " +
@@ -210,6 +208,7 @@ public class HpackEncoderTest
         BufferUtil.flipToFlush(buffer2, pos);
 
         encoder = new HpackEncoder(128);
+        encoder.setValidateEncoding(false);
         fields.add(new HttpField("host", "somehost"));
         ByteBuffer buffer = BufferUtil.allocate(4096);
         pos = BufferUtil.flipToFill(buffer);
@@ -243,7 +242,7 @@ public class HpackEncoderTest
     }
 
     @Test
-    public void testResize()
+    public void testResize() throws Exception
     {
         HttpFields fields = new HttpFields();
         fields.add("host", "localhost0");

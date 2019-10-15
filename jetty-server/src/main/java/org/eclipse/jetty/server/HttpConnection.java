@@ -272,6 +272,8 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                 // Parse the request buffer.
                 boolean handle = parseRequestBuffer();
 
+                // There could be a connection upgrade before handling
+                // the HTTP/1.1 request, for example PRI * HTTP/2.
                 // If there was a connection upgrade, the other
                 // connection took over, nothing more to do here.
                 if (getEndPoint().getConnection() != this)
@@ -282,7 +284,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                 {
                     boolean suspended = !_channel.handle();
 
-                    // We should break iteration if we have suspended or changed connection or this is not the handling thread.
+                    // We should break iteration if we have suspended or upgraded the connection.
                     if (suspended || getEndPoint().getConnection() != this)
                         break;
                 }
@@ -869,19 +871,22 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             }
         }
 
-        private void releaseHeader()
+        private Callback release()
         {
-            ByteBuffer h = _header;
+            Callback complete = _callback;
+            _callback = null;
+            _info = null;
+            _content = null;
+            if (_header != null)
+                _bufferPool.release(_header);
             _header = null;
-            if (h != null)
-                _bufferPool.release(h);
+            return complete;
         }
 
         @Override
         protected void onCompleteSuccess()
         {
-            releaseHeader();
-            _callback.succeeded();
+            release().succeeded();
             if (_shutdownOut)
                 getEndPoint().shutdownOutput();
         }
@@ -889,8 +894,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         @Override
         public void onCompleteFailure(final Throwable x)
         {
-            releaseHeader();
-            failedCallback(_callback, x);
+            failedCallback(release(), x);
             if (_shutdownOut)
                 getEndPoint().shutdownOutput();
         }

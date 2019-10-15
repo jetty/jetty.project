@@ -50,6 +50,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.LongConsumer;
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
@@ -1112,6 +1113,13 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
             @Override
             public void onContent(Response response, ByteBuffer content, Callback callback)
+            {
+                // Should not be invoked
+                counter.incrementAndGet();
+            }
+
+            @Override
+            public void onContent(Response response, LongConsumer demand, ByteBuffer content, Callback callback)
             {
                 // Should not be invoked
                 counter.incrementAndGet();

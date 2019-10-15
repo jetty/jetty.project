@@ -36,7 +36,6 @@ import org.eclipse.jetty.websocket.server.JettyWebSocketServletFactory;
 import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -170,7 +169,6 @@ public class SuspendResumeTest
         assertNull(serverSocket.error);
     }
 
-    @Disabled
     @Test
     public void testSuspendAfterClose() throws Exception
     {

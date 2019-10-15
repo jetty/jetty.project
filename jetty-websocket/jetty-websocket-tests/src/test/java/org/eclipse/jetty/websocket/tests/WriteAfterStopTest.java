@@ -19,20 +19,16 @@
 package org.eclipse.jetty.websocket.tests;
 
 import java.net.URI;
-import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.common.WebSocketSession;
-import org.eclipse.jetty.websocket.core.internal.compress.CompressExtension;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServlet;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServletFactory;
 import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
@@ -108,7 +104,8 @@ public class WriteAfterStopTest
         assertThat(clientSocket.statusCode, is(StatusCode.NORMAL));
         assertThat(serverSocket.statusCode, is(StatusCode.NORMAL));
 
-        ((WebSocketSession)session).stop();
-        assertThrows(IllegalStateException.class, () -> session.getRemote().sendString("hello world"));
+        IllegalStateException failure = assertThrows(IllegalStateException.class,
+            () -> session.getRemote().sendString("this should fail before ExtensionStack"));
+        assertThat(failure.getMessage(), is("CLOSED"));
     }
 }

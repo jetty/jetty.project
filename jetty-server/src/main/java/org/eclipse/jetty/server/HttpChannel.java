@@ -366,7 +366,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                         if (!_request.hasMetaData())
                             throw new IllegalStateException("state=" + _state);
                         _request.setHandled(false);
-                        _response.getHttpOutput().reopen();
+                        _response.reopen();
 
                         dispatch(DispatcherType.REQUEST, () ->
                         {
@@ -385,7 +385,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                     case ASYNC_DISPATCH:
                     {
                         _request.setHandled(false);
-                        _response.getHttpOutput().reopen();
+                        _response.reopen();
 
                         dispatch(DispatcherType.ASYNC,() -> getServer().handleAsync(this));
                         break;
@@ -402,7 +402,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                             // Get ready to send an error response
                             _request.setHandled(false);
                             _response.resetContent();
-                            _response.getHttpOutput().reopen();
+                            _response.reopen();
 
                             // the following is needed as you cannot trust the response code and reason
                             // as those could have been modified after calling sendError
