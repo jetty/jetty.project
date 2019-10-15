@@ -270,6 +270,7 @@ public class HttpConnectionTest
     static final int CHUNKED = -1;
     static final int DQUOTED_CHUNKED = -2;
     static final int BAD_CHUNKED = -3;
+    static final int UNKNOWN_TE = -4;
 
     public static Stream<Arguments> http11ContentLengthAndChunkedData()
     {
@@ -282,7 +283,11 @@ public class HttpConnectionTest
             Arguments.of(new int[]{8, DQUOTED_CHUNKED, 8}),
             Arguments.of(new int[]{BAD_CHUNKED, 8}),
             Arguments.of(new int[]{8, BAD_CHUNKED}),
-            Arguments.of(new int[]{8, BAD_CHUNKED, 8})
+            Arguments.of(new int[]{8, BAD_CHUNKED, 8}),
+            Arguments.of(new int[]{UNKNOWN_TE, 8}),
+            Arguments.of(new int[]{8, UNKNOWN_TE}),
+            Arguments.of(new int[]{8, UNKNOWN_TE, 8}),
+            Arguments.of(new int[]{8, UNKNOWN_TE, CHUNKED, DQUOTED_CHUNKED, BAD_CHUNKED, 8})
         );
     }
 
@@ -311,6 +316,9 @@ public class HttpConnectionTest
                     break;
                 case BAD_CHUNKED:
                     request.append("Transfer-Encoding: 'chunked'\r\n");
+                    break;
+                case UNKNOWN_TE:
+                    request.append("Transfer-Encoding: bogus\r\n");
                     break;
                 default:
                     request.append("Content-Length: ").append(contentLengths[n]).append("\r\n");

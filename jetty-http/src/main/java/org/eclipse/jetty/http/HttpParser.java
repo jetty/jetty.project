@@ -169,6 +169,7 @@ public class HttpParser
     private Utf8StringBuilder _uri = new Utf8StringBuilder(INITIAL_URI_LENGTH); // Tune?
     private EndOfContent _endOfContent;
     private boolean _hasContentLength;
+    private boolean _hasTransferEncoding;
     private long _contentLength = -1;
     private long _contentPosition;
     private int _chunkLength;
@@ -955,6 +956,9 @@ public class HttpParser
                 switch (_header)
                 {
                     case CONTENT_LENGTH:
+                        if (_hasTransferEncoding && complianceViolation(TRANSFER_ENCODING_WITH_CONTENT_LENGTH))
+                            throw new BadMessageException(HttpStatus.BAD_REQUEST_400, "Transfer-Encoding and Content-Length");
+
                         if (_hasContentLength)
                         {
                             if (complianceViolation(MULTIPLE_CONTENT_LENGTHS))
@@ -978,6 +982,8 @@ public class HttpParser
                         break;
 
                     case TRANSFER_ENCODING:
+                        _hasTransferEncoding = true;
+
                         if (_hasContentLength && complianceViolation(TRANSFER_ENCODING_WITH_CONTENT_LENGTH))
                             throw new BadMessageException(HttpStatus.BAD_REQUEST_400, "Transfer-Encoding and Content-Length");
 
