@@ -118,15 +118,14 @@ This will block until each part of the message is sent, possibly throwing an IOE
 [[websocket-async-send]]
 ==== Async Send Message
 
-There are also 4 Async send message methods available:
+There are also four (4) async send message methods available:
 
 * link:{JDURL}/org/eclipse/jetty/websocket/api/RemoteEndpoint.html#sendBytes(java.nio.ByteBuffer,org.eclipse.jetty.websocket.api.WriteCallback)[`RemoteEndpoint.sendBytes(ByteBuffer message, WriteCallback callback)`]
 * link:{JDURL}/org/eclipse/jetty/websocket/api/RemoteEndpoint.html#sendPartialBytes(java.nio.ByteBuffer,boolean,org.eclipse.jetty.websocket.api.WriteCallback)[`RemoteEndpoint.sendPartialBytes(ByteBuffer message, boolean isLast, WriteCallback callback)`]
 * link:{JDURL}/org/eclipse/jetty/websocket/api/RemoteEndpoint.html#sendString(java.lang.String,org.eclipse.jetty.websocket.api.WriteCallback)[`RemoteEndpoint.sendString(String message, WriteCallback callback)`]
 * link:{JDURL}/org/eclipse/jetty/websocket/api/RemoteEndpoint.html#sendPartialString(java.lang.String,boolean,org.eclipse.jetty.websocket.api.WriteCallback)[`RemoteEndpoint.sendPartialString(String message, boolean isLast, WriteCallback callback)`]
 
-All these async send methods use WriteCallback, this allows you to be
-notified when the write either succeeds or fails.
+All these async send methods use `WriteCallback`, which allows you to be notified when the write either succeeds or fails.
 
 [source, java, subs="{sub-order}"]
 ----
@@ -147,11 +146,9 @@ WriteCallback callback = new WriteCallback()
 };
 ----
 
-The async send methods can be used in a similar way to the blocking
-send methods, however the method will return before the message is transmitted,
-and you are notified of the final result of the message transmission through
-the WriteCallback. The static `WriteCallback.NOOP` can be used to do nothing
-on success / failure of the callback.
+The async send methods can be used in a similar way to the blocking send methods, however the method will return before the message is transmitted, and you are notified of the final result of the message transmission through the `WriteCallback`.
+The static `WriteCallback.NOOP` can be used to do nothing on success / failure of the callback.
+
 [source, java, subs="{sub-order}"]
 ----
 RemoteEndpoint remote = session.getRemote();
@@ -165,7 +162,7 @@ remote.sendBytes(message, callback);
 [[pingpong]]
 ==== Send Ping / Pong Control Frame
 
-You can also send Ping and Pong control frames using the RemoteEndpoint.
+You can also send Ping and Pong control frames using the `RemoteEndpoint`.
 
 [source, java, subs="{sub-order}"]
 ----
@@ -185,7 +182,7 @@ catch (IOException e)
 ----
 
 How to send a Ping control frame, with a payload of `"You There?"` (arriving at Remote Endpoint as a byte array payload).
-This will block until the message is sent, possibly throwing an IOException if unable to send the ping frame.
+This will block until the message is sent, possibly throwing an `IOException` if unable to send the ping frame.
 
 [source, java, subs="{sub-order}"]
 ----
@@ -205,12 +202,12 @@ catch (IOException e)
 ----
 
 How to send a Pong control frame, with a payload of `"Yup I'm here"` (arriving at Remote Endpoint as a byte array payload).
-This will block until the message is sent, possibly throwing an IOException if unable to send the pong frame.
+This will block until the message is sent, possibly throwing an `IOException` if unable to send the pong frame.
 
 To be correct in your usage of Pong frames, you should return the same byte array data that you received in the Ping frame.
 
-You can also asynchronously send Ping and Pong frames using the WriteCallback, this will return before the Ping/Pong is
-transmitted and notify you of the result in WriteCallback `writeSuccess()` or `writeFailed()`.
+You can also asynchronously send Ping and Pong frames using the `WriteCallback`, this will return before the Ping/Pong is
+transmitted and notify you of the result in `WriteCallback` `writeSuccess()` or `writeFailed()`.
 
 [source, java, subs="{sub-order}"]
 ----

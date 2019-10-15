@@ -25,8 +25,7 @@ The Connection State (is it open or not).
 
 [source, java, subs="{sub-order}"]
 ----
-if(session.isOpen())
-{
+if(session.isOpen()) {
   // send message
 }
 ----
@@ -35,8 +34,7 @@ Is the Connection Secure.
 
 [source, java, subs="{sub-order}"]
 ----
-if(session.isSecure())
-{
+if(session.isSecure()) {
   // connection is using 'wss://'
 }
 ----
