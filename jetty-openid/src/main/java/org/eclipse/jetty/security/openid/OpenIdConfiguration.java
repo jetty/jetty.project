@@ -18,16 +18,15 @@
 
 package org.eclipse.jetty.security.openid;
 
-import java.io.InputStream;
 import java.io.Serializable;
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
-import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.util.ajax.JSON;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -59,7 +58,7 @@ public class OpenIdConfiguration implements Serializable
      */
     public OpenIdConfiguration(String provider, String clientId, String clientSecret)
     {
-        this(provider, null, null, clientId, clientSecret);
+        this(provider, null, null, clientId, clientSecret, null);
     }
 
     /**
@@ -69,8 +68,10 @@ public class OpenIdConfiguration implements Serializable
      * @param tokenEndpoint the URL of the OpenID provider's token endpoint if configured.
      * @param clientId OAuth 2.0 Client Identifier valid at the Authorization Server.
      * @param clientSecret The client secret known only by the Client and the Authorization Server.
+     * @param factory A factory that can create the {@link HttpClient} which will discover the provider's metadata.
      */
-    public OpenIdConfiguration(String issuer, String authorizationEndpoint, String tokenEndpoint, String clientId, String clientSecret)
+    public OpenIdConfiguration(String issuer, String authorizationEndpoint, String tokenEndpoint,
+                               String clientId, String clientSecret, OpenIdHttpClientFactory factory)
     {
         this.issuer = issuer;
         this.clientId = clientId;
@@ -81,7 +82,8 @@ public class OpenIdConfiguration implements Serializable
 
         if (tokenEndpoint == null || authorizationEndpoint == null)
         {
-            Map<String, Object> discoveryDocument = fetchOpenIdConnectMetadata(issuer);
+            Map<String, Object> discoveryDocument = fetchOpenIdConnectMetadata(issuer, factory == null ?
+                new HttpClient() : factory.createHttpClient());
 
             this.authEndpoint = (String)discoveryDocument.get("authorization_endpoint");
             if (this.authEndpoint == null)
@@ -101,23 +103,37 @@ public class OpenIdConfiguration implements Serializable
         }
     }
 
-    private static Map<String, Object> fetchOpenIdConnectMetadata(String provider)
+    private static Map<String, Object> fetchOpenIdConnectMetadata(String provider, HttpClient httpClient)
     {
         try
         {
             if (provider.endsWith("/"))
                 provider = provider.substring(0, provider.length() - 1);
 
-            URI providerUri = URI.create(provider + CONFIG_PATH);
-            InputStream inputStream = providerUri.toURL().openConnection().getInputStream();
-            String content = IO.toString(inputStream);
-            Map<String, Object> discoveryDocument = (Map)JSON.parse(content);
-            if (LOG.isDebugEnabled())
-                LOG.debug("discovery document {}", discoveryDocument);
+            Map<String, Object> result;
+            String responseBody = httpClient.GET(provider + CONFIG_PATH)
+                    .getContentAsString();
+            Object parsedResult = JSON.parse(responseBody);
 
-            return discoveryDocument;
+            if (parsedResult instanceof Map)
+            {
+                Map<?, ?> rawResult = (Map)parsedResult;
+
+                result = rawResult.entrySet().stream()
+                        .collect(Collectors.toMap(it -> it.getKey().toString(), Map.Entry::getValue));
+            }
+            else
+            {
+                LOG.warn("OpenID provider did not return a proper JSON object response. Result was '{}'", responseBody);
+
+                throw new IllegalStateException("Could not parse OpenID provider's malformed response");
+            }
+
+            LOG.debug("discovery document {}", result);
+
+            return result;
         }
-        catch (Throwable e)
+        catch (Exception e)
         {
             throw new IllegalArgumentException("invalid identity provider", e);
         }

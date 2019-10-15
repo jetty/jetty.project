@@ -27,9 +27,18 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Base64;
-import java.util.List;
+import java.util.Collections;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
 
+import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.client.util.FormContentProvider;
+import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.UrlEncoded;
 import org.eclipse.jetty.util.ajax.JSON;
@@ -42,7 +51,7 @@ import org.eclipse.jetty.util.log.Logger;
  *
  * <p>
  * This is constructed with an authorization code from the authentication request. This authorization code
- * is then exchanged using {@link #redeemAuthCode()} for a response containing the ID Token and Access Token.
+ * is then exchanged using {@link #claimAuthCode} for a response containing the ID Token and Access Token.
  * The response is then validated against the {@link OpenIdConfiguration}.
  * </p>
  */
@@ -79,7 +88,7 @@ public class OpenIdCredentials implements Serializable
         return response;
     }
 
-    public void redeemAuthCode() throws IOException
+    public void redeemAuthCode(HttpClient httpClient) throws IOException
     {
         if (LOG.isDebugEnabled())
             LOG.debug("redeemAuthCode() {}", this);
@@ -88,7 +97,7 @@ public class OpenIdCredentials implements Serializable
         {
             try
             {
-                response = claimAuthCode(authCode);
+                response = claimAuthCode(httpClient, authCode);
                 if (LOG.isDebugEnabled())
                     LOG.debug("response: {}", response);
 
@@ -120,8 +129,14 @@ public class OpenIdCredentials implements Serializable
     private void validateClaims()
     {
         // Issuer Identifier for the OpenID Provider MUST exactly match the value of the iss (issuer) Claim.
-        if (!configuration.getIssuer().equals(claims.get("iss")))
+        Object assertedIssuer = claims.get("iss");
+        String configuredIssuer = configuration.getIssuer();
+
+        if (!configuredIssuer.equals(assertedIssuer))
+        {
+            LOG.warn("Issuers don't match. Configured = {}, asserted = {}", configuredIssuer, assertedIssuer);
             throw new IllegalArgumentException("Issuer Identifier MUST exactly match the iss Claim");
+        }
 
         // The aud (audience) Claim MUST contain the client_id value.
         validateAudience();
@@ -224,40 +239,57 @@ public class OpenIdCredentials implements Serializable
         return paddedEncodedJwtSection;
     }
 
-    private Map<String, Object> claimAuthCode(String authCode) throws IOException
+    private Map<String, Object> claimAuthCode(HttpClient httpClient, String authCode)
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("claimAuthCode {}", authCode);
+        Map<String, Object> result;
 
-        // Use the authorization code to get the id_token from the OpenID Provider
-        String urlParameters = "code=" + authCode +
-            "&client_id=" + UrlEncoded.encodeString(configuration.getClientId(), StandardCharsets.UTF_8) +
-            "&client_secret=" + UrlEncoded.encodeString(configuration.getClientSecret(), StandardCharsets.UTF_8) +
-            "&redirect_uri=" + UrlEncoded.encodeString(redirectUri, StandardCharsets.UTF_8) +
-            "&grant_type=authorization_code";
-
-        URL url = new URL(configuration.getTokenEndpoint());
-        HttpURLConnection connection = (HttpURLConnection)url.openConnection();
         try
         {
-            connection.setDoOutput(true);
-            connection.setRequestMethod("POST");
-            connection.setRequestProperty("Host", configuration.getIssuer());
-            connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+            Fields fields = new Fields();
+            fields.add("code", authCode);
+            fields.add("client_id", configuration.getClientId());
+            fields.add("client_secret", configuration.getClientSecret());
+            fields.add("redirect_uri", redirectUri);
+            fields.add("grant_type", "authorization_code");
+            FormContentProvider formContentProvider = new FormContentProvider(fields);
+            Request request = httpClient.POST(configuration.getTokenEndpoint())
+                    .content(formContentProvider)
+                    .timeout(10, TimeUnit.SECONDS);
+            ContentResponse response = request.send();
+            String responseBody = response.getContentAsString();
+            Object parsedResult = JSON.parse(responseBody);
 
-            try (DataOutputStream wr = new DataOutputStream(connection.getOutputStream()))
+            if (parsedResult instanceof Map)
             {
-                wr.write(urlParameters.getBytes(StandardCharsets.UTF_8));
+                Map<?, ?> rawResult = (Map)parsedResult;
+
+                result = rawResult.entrySet().stream().collect(Collectors.toMap(it -> it.getKey().toString(), Map.Entry::getValue));
+
+                LOG.debug("Got result from token server: {}", result);
             }
-
-            try (InputStream content = (InputStream)connection.getContent())
+            else
             {
-                return (Map)JSON.parse(IO.toString(content));
+                LOG.warn("OpenID provider did not return a proper JSON object response. Result was '{}'", responseBody);
+
+                throw new IllegalStateException("Could not parse OpenID provider's malformed response");
             }
         }
-        finally
+        catch (InterruptedException e)
         {
-            connection.disconnect();
+            LOG.debug("Call to token endpoint was interrupted", e);
+            result = Collections.emptyMap();
         }
+        catch (ExecutionException e)
+        {
+            LOG.warn("Call to token endpoint was failed", e);
+            result = Collections.emptyMap();
+        }
+        catch (TimeoutException e)
+        {
+            LOG.warn("Call to token endpoint was did not complete in a timely manner", e);
+            result = Collections.emptyMap();
+        }
+
+        return result;
     }
 }

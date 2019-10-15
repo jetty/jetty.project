@@ -58,7 +58,6 @@
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-client</artifactId>
       <version>${project.version}</version>
-      <scope>test</scope>
     </dependency>
   </dependencies>
 </project>
