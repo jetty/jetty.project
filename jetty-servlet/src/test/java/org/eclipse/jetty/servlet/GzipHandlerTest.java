@@ -388,6 +388,31 @@ public class GzipHandlerTest
     }
 
     @Test
+    public void testAsyncEmptyResponse() throws Exception
+    {
+        int writes = 0;
+        _server.getChildHandlerByClass(GzipHandler.class).setMinGzipSize(0);
+
+        // generated and parsed test
+        HttpTester.Request request = HttpTester.newRequest();
+        HttpTester.Response response;
+
+        request.setMethod("GET");
+        request.setURI("/ctx/async/info?writes=" + writes);
+        request.setVersion("HTTP/1.0");
+        request.setHeader("Host", "tester");
+        request.setHeader("accept-encoding", "gzip");
+
+        response = HttpTester.parseResponse(_connector.getResponse(request.generate()));
+
+        assertThat(response.getStatus(), is(200));
+        assertThat(response.get("Content-Encoding"), Matchers.equalToIgnoringCase("gzip"));
+        assertThat(response.getCSV("Vary", false), Matchers.contains("Accept-Encoding"));
+
+
+    }
+
+    @Test
     public void testGzipHandlerWithMultipleAcceptEncodingHeaders() throws Exception
     {
         // generated and parsed test
