@@ -382,7 +382,7 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
                         _crc.update(array, off, len);
                         _deflater.setInput(array, off, len);
                         BufferUtil.clear(slice);
-                        if (_last)
+                        if (_last && BufferUtil.isEmpty(_content))
                             _deflater.finish();
                     }
                 }
