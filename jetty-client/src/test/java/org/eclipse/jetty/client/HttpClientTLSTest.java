@@ -24,13 +24,18 @@ import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLException;
+import javax.net.ssl.SSLHandshakeException;
 import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSocket;
 
@@ -38,8 +43,11 @@ import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnectionFactory;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ssl.SslClientConnectionFactory;
+import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.io.ssl.SslHandshakeListener;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
@@ -48,6 +56,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.ExecutorThreadPool;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledOnJre;
@@ -556,5 +565,49 @@ public class HttpClientTLSTest
             });
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testSSLEngineClosedDuringHandshake() throws Exception
+    {
+        SslContextFactory serverTLSFactory = createServerSslContextFactory();
+        startServer(serverTLSFactory, new EmptyServerHandler());
+
+        SslContextFactory clientTLSFactory = createClientSslContextFactory();
+        QueuedThreadPool clientThreads = new QueuedThreadPool();
+        clientThreads.setName("client");
+        client = new HttpClient(clientTLSFactory)
+        {
+            @Override
+            protected ClientConnectionFactory newSslClientConnectionFactory(SslContextFactory sslContextFactory, ClientConnectionFactory connectionFactory)
+            {
+                if (sslContextFactory == null)
+                    sslContextFactory = getSslContextFactory();
+                return new SslClientConnectionFactory(sslContextFactory, getByteBufferPool(), getExecutor(), connectionFactory)
+                {
+                    @Override
+                    protected SslConnection newSslConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, SSLEngine engine)
+                    {
+                        return new SslConnection(byteBufferPool, executor, endPoint, engine, isDirectBuffersForEncryption(), isDirectBuffersForDecryption())
+                        {
+                            @Override
+                            protected SSLEngineResult wrap(SSLEngine sslEngine, ByteBuffer[] input, ByteBuffer output) throws SSLException
+                            {
+                                sslEngine.closeOutbound();
+                                return super.wrap(sslEngine, input, output);
+                            }
+                        };
+                    }
+                };
+            }
+        };
+        client.setExecutor(clientThreads);
+        client.start();
+
+        ExecutionException failure = assertThrows(ExecutionException.class, () -> client.newRequest("localhost", connector.getLocalPort())
+            .scheme(HttpScheme.HTTPS.asString())
+            .send());
+        Throwable cause = failure.getCause();
+        assertThat(cause, Matchers.instanceOf(SSLHandshakeException.class));
     }
 }
