@@ -1824,6 +1824,7 @@ public class HttpParser
         _endOfContent = EndOfContent.UNKNOWN_CONTENT;
         _contentLength = -1;
         _hasContentLength = false;
+        _hasTransferEncoding = false;
         _contentPosition = 0;
         _responseStatus = 0;
         _contentChunk = null;
