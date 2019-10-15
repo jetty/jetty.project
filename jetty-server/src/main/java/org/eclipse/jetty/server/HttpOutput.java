@@ -407,6 +407,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                 {
                     if (!_state.compareAndSet(state, State.CLOSED))
                         break;
+                    releaseBuffer();
                     return;
                 }
                 case CLOSED:
