@@ -373,7 +373,6 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
                                 BufferUtil.clear(_copy);
                             slice = _copy;
                             int copied = BufferUtil.append(_copy, _content);
-                            _content.position(_content.position() + copied);
                         }
 
                         // transfer the data from the slice to the the deflator
