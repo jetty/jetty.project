@@ -372,7 +372,7 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
                             else
                                 BufferUtil.clear(_copy);
                             slice = _copy;
-                            int copied = BufferUtil.append(_copy, _content);
+                            BufferUtil.append(_copy, _content);
                         }
 
                         // transfer the data from the slice to the the deflator
@@ -380,7 +380,7 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
                         int off = slice.arrayOffset() + slice.position();
                         int len = slice.remaining();
                         _crc.update(array, off, len);
-                        _deflater.setInput(array, off, len);
+                        _deflater.setInput(array, off, len);  // TODO use ByteBuffer API in Jetty-10
                         BufferUtil.clear(slice);
                         if (_last && BufferUtil.isEmpty(_content))
                             _deflater.finish();
