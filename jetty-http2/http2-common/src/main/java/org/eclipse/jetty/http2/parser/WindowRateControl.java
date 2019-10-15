@@ -39,6 +39,11 @@ public class WindowRateControl implements RateControl
     private final int maxEvents;
     private final long window;
 
+    public static WindowRateControl ofSecond(int maxEvents)
+    {
+        return new WindowRateControl(maxEvents, Duration.ofSeconds(1));
+    }
+
     public WindowRateControl(int maxEvents, Duration window)
     {
         this.maxEvents = maxEvents;
