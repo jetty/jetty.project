@@ -947,7 +947,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     /**
      * Set the minimum response size to trigger dynamic compression.
      * <p>
-     *     Sizes below 23 will result a compressed response that is larger then the
+     *     Sizes below 23 will result a compressed response that is larger than the
      *     original data.
      * </p>
      *
