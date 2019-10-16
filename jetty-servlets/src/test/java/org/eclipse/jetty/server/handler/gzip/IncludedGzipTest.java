@@ -88,7 +88,6 @@ public class IncludedGzipTest
         tester.getContext().addServlet(org.eclipse.jetty.servlet.DefaultServlet.class, "/");
 
         GzipHandler gzipHandler = new GzipHandler();
-        gzipHandler.setMinGzipSize(16);
         tester.getContext().insertHandler(gzipHandler);
         tester.start();
     }

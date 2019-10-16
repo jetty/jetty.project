@@ -92,7 +92,7 @@ import org.eclipse.jetty.util.log.Logger;
  * </li>
  * <li>
  * Is the Response {@code Content-Length} header present, and does its
- * value meet the minimum gzip size requirements (default 1024 bytes)?
+ * value meet the minimum gzip size requirements (default 32 bytes)?
  * </li>
  * <li>
  * Is the Request {@code Accept} header present and does it contain the
@@ -154,6 +154,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
 {
     public static final String GZIP = "gzip";
     public static final String DEFLATE = "deflate";
+    public static final int DEFAULT_MIN_GZIP_SIZE = 32;
     public static final int BREAK_EVEN_GZIP_SIZE = 23;
     private static final Logger LOG = Log.getLogger(GzipHandler.class);
     private static final HttpField X_CE_GZIP = new PreEncodedHttpField("X-Content-Encoding", "gzip");
@@ -163,7 +164,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     private int _poolCapacity = -1;
     private DeflaterPool _deflaterPool = null;
 
-    private int _minGzipSize = 1024;
+    private int _minGzipSize = DEFAULT_MIN_GZIP_SIZE;
     private int _compressionLevel = Deflater.DEFAULT_COMPRESSION;
     /**
      * @deprecated feature will be removed in Jetty 10.x, with no replacement.
@@ -949,16 +950,16 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     /**
      * Set the minimum response size to trigger dynamic compression.
      * <p>
-     *     Sizes below 23 will result a compressed response that is larger than the
+     *     Sizes below {@link #BREAK_EVEN_GZIP_SIZE} will result a compressed response that is larger than the
      *     original data.
      * </p>
      *
-     * @param minGzipSize minimum response size in bytes (not allowed to be lower then 23)
+     * @param minGzipSize minimum response size in bytes (not allowed to be lower then {@link #BREAK_EVEN_GZIP_SIZE})
      */
     public void setMinGzipSize(int minGzipSize)
     {
         if (minGzipSize < BREAK_EVEN_GZIP_SIZE)
-            LOG.warn("minGzipSize {} is less break even size {}", minGzipSize, BREAK_EVEN_GZIP_SIZE);
+            LOG.warn("minGzipSize of {} is inefficient for short content, break even is size {}", minGzipSize, BREAK_EVEN_GZIP_SIZE);
         _minGzipSize = Math.max(0, minGzipSize);
     }
 
