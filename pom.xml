@@ -1612,6 +1612,30 @@
         <alpn.version>8.1.13.v20181017</alpn.version>
       </properties>
     </profile>
+    <profile>
+      <id>8u231</id>
+      <activation>
+        <property>
+          <name>java.version</name>
+          <value>1.8.0_231</value>
+        </property>
+      </activation>
+      <properties>
+        <alpn.version>8.1.13.v20181017</alpn.version>
+      </properties>
+    </profile>
+    <profile>
+      <id>8u232</id>
+      <activation>
+        <property>
+          <name>java.version</name>
+          <value>1.8.0_232</value>
+        </property>
+      </activation>
+      <properties>
+        <alpn.version>8.1.13.v20181017</alpn.version>
+      </properties>
+    </profile>
   </profiles>
 
   <pluginRepositories>
