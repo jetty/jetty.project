@@ -102,7 +102,7 @@ public class OpenIdAuthenticationTest
         OpenIdConfiguration configuration = new OpenIdConfiguration(openIdProvider.getProvider(), CLIENT_ID, CLIENT_SECRET);
 
         // Configure OpenIdLoginService optionally providing a base LoginService to provide user roles
-        OpenIdLoginService loginService = new OpenIdLoginService(configuration, new OpenIdHttpClientFactory());
+        OpenIdLoginService loginService = new OpenIdLoginService(configuration);//, hashLoginService);
         securityHandler.setLoginService(loginService);
 
         Authenticator authenticator = new OpenIdAuthenticator(configuration, "/error");

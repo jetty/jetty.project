@@ -28,8 +28,10 @@ import java.util.stream.Collectors;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.util.ajax.JSON;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 /**
  * Holds the configuration for an OpenID Connect service.
@@ -37,18 +39,19 @@ import org.eclipse.jetty.util.log.Logger;
  * This uses the OpenID Provider URL with the path {@link #CONFIG_PATH} to discover
  * the required information about the OIDC service.
  */
-public class OpenIdConfiguration implements Serializable
+public class OpenIdConfiguration extends ContainerLifeCycle implements Serializable
 {
     private static final Logger LOG = Log.getLogger(OpenIdConfiguration.class);
     private static final long serialVersionUID = 2227941990601349102L;
     private static final String CONFIG_PATH = "/.well-known/openid-configuration";
 
+    private final HttpClient httpClient;
     private final String issuer;
-    private final String authEndpoint;
-    private final String tokenEndpoint;
     private final String clientId;
     private final String clientSecret;
     private final List<String> scopes = new ArrayList<>();
+    private String authEndpoint;
+    private String tokenEndpoint;
 
     /**
      * Create an OpenID configuration for a specific OIDC provider.
@@ -58,7 +61,7 @@ public class OpenIdConfiguration implements Serializable
      */
     public OpenIdConfiguration(String provider, String clientId, String clientSecret)
     {
-        this(provider, null, null, clientId, clientSecret, null);
+        this(provider, null, null, clientId, clientSecret, newHttpClient());
     }
 
     /**
@@ -68,39 +71,53 @@ public class OpenIdConfiguration implements Serializable
      * @param tokenEndpoint the URL of the OpenID provider's token endpoint if configured.
      * @param clientId OAuth 2.0 Client Identifier valid at the Authorization Server.
      * @param clientSecret The client secret known only by the Client and the Authorization Server.
-     * @param factory A factory that can create the {@link HttpClient} which will discover the provider's metadata.
+     * @param httpClient The {@link HttpClient} instance to use.
      */
     public OpenIdConfiguration(String issuer, String authorizationEndpoint, String tokenEndpoint,
-                               String clientId, String clientSecret, OpenIdHttpClientFactory factory)
+                               String clientId, String clientSecret, HttpClient httpClient)
     {
         this.issuer = issuer;
         this.clientId = clientId;
         this.clientSecret = clientSecret;
+        this.authEndpoint = authorizationEndpoint;
+        this.tokenEndpoint = tokenEndpoint;
+        this.httpClient = httpClient;
 
-        if (issuer == null)
-            throw new IllegalArgumentException("Provider was not configured");
+        if (this.issuer == null)
+            throw new IllegalArgumentException("Issuer was not configured");
 
-        if (tokenEndpoint == null || authorizationEndpoint == null)
+        addBean(this.httpClient);
+    }
+
+    @Override
+    protected void doStart() throws Exception
+    {
+        super.doStart();
+
+        if (authEndpoint == null || tokenEndpoint == null)
         {
-            Map<String, Object> discoveryDocument = fetchOpenIdConnectMetadata(issuer, factory == null ?
-                new HttpClient() : factory.createHttpClient());
+            Map<String, Object> discoveryDocument = fetchOpenIdConnectMetadata(issuer, httpClient);
 
-            this.authEndpoint = (String)discoveryDocument.get("authorization_endpoint");
-            if (this.authEndpoint == null)
+            authEndpoint = (String)discoveryDocument.get("authorization_endpoint");
+            if (authEndpoint == null)
                 throw new IllegalArgumentException("authorization_endpoint");
 
-            this.tokenEndpoint = (String)discoveryDocument.get("token_endpoint");
-            if (this.tokenEndpoint == null)
+            tokenEndpoint = (String)discoveryDocument.get("token_endpoint");
+            if (tokenEndpoint == null)
                 throw new IllegalArgumentException("token_endpoint");
 
             if (!Objects.equals(discoveryDocument.get("issuer"), issuer))
-                LOG.warn("The provider in the metadata is not correct.");
+                throw new IllegalArgumentException("The provider in the metadata is not correct.");
         }
-        else
-        {
-            this.authEndpoint = authorizationEndpoint;
-            this.tokenEndpoint = tokenEndpoint;
-        }
+    }
+
+    private static HttpClient newHttpClient()
+    {
+        SslContextFactory.Client sslContextFactory = new SslContextFactory.Client(false);
+        sslContextFactory.setEndpointIdentificationAlgorithm("https");
+        HttpClient client = new HttpClient(sslContextFactory);
+        client.setFollowRedirects(false);
+        return client;
     }
 
     private static Map<String, Object> fetchOpenIdConnectMetadata(String provider, HttpClient httpClient)
@@ -118,14 +135,12 @@ public class OpenIdConfiguration implements Serializable
             if (parsedResult instanceof Map)
             {
                 Map<?, ?> rawResult = (Map)parsedResult;
-
                 result = rawResult.entrySet().stream()
                         .collect(Collectors.toMap(it -> it.getKey().toString(), Map.Entry::getValue));
             }
             else
             {
                 LOG.warn("OpenID provider did not return a proper JSON object response. Result was '{}'", responseBody);
-
                 throw new IllegalStateException("Could not parse OpenID provider's malformed response");
             }
 
@@ -137,6 +152,11 @@ public class OpenIdConfiguration implements Serializable
         {
             throw new IllegalArgumentException("invalid identity provider", e);
         }
+    }
+
+    public HttpClient getHttpClient()
+    {
+        return httpClient;
     }
 
     public String getAuthEndpoint()

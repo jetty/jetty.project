@@ -41,15 +41,15 @@ public class OpenIdLoginService extends ContainerLifeCycle implements LoginServi
 {
     private static final Logger LOG = Log.getLogger(OpenIdLoginService.class);
 
-    private final OpenIdConfiguration _configuration;
+    private final OpenIdConfiguration configuration;
     private final LoginService loginService;
     private final HttpClient httpClient;
     private IdentityService identityService;
     private boolean authenticateNewUsers;
 
-    public OpenIdLoginService(OpenIdConfiguration configuration, OpenIdHttpClientFactory factory)
+    public OpenIdLoginService(OpenIdConfiguration configuration)
     {
-        this(configuration, null, factory);
+        this(configuration, null);
     }
 
     /**
@@ -59,23 +59,24 @@ public class OpenIdLoginService extends ContainerLifeCycle implements LoginServi
      * @param configuration the OpenID configuration to use.
      * @param loginService the wrapped LoginService to defer to for user roles.
      */
-    public OpenIdLoginService(OpenIdConfiguration configuration, LoginService loginService, OpenIdHttpClientFactory factory)
+    public OpenIdLoginService(OpenIdConfiguration configuration, LoginService loginService)
     {
-        _configuration = configuration;
+        this.configuration = configuration;
         this.loginService = loginService;
-        this.httpClient = factory.createHttpClient();
+        this.httpClient = configuration.getHttpClient();
+        addBean(this.configuration);
         addBean(this.loginService);
     }
 
     @Override
     public String getName()
     {
-        return _configuration.getIssuer();
+        return configuration.getIssuer();
     }
 
     public OpenIdConfiguration getConfiguration()
     {
-        return _configuration;
+        return configuration;
     }
 
     @Override
