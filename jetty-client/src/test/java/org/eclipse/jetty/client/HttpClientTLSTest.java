@@ -35,7 +35,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLException;
+import javax.net.ssl.SSLHandshakeException;
 import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSocket;
 
@@ -63,6 +65,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.ExecutorThreadPool;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledOnJre;
@@ -771,5 +774,53 @@ public class HttpClientTLSTest
         assertEquals(0, connectionPool.getConnectionCount(), connectionPool.dump());
         assertEquals(0, serverBytes.get());
         assertEquals(0, clientBytes.get());
+    }
+
+    @Test
+    public void testSSLEngineClosedDuringHandshake() throws Exception
+    {
+        SslContextFactory.Server serverTLSFactory = createServerSslContextFactory();
+        startServer(serverTLSFactory, new EmptyServerHandler());
+
+        SslContextFactory.Client clientTLSFactory = createClientSslContextFactory();
+        ClientConnector clientConnector = new ClientConnector();
+        clientConnector.setSelectors(1);
+        clientConnector.setSslContextFactory(clientTLSFactory);
+        QueuedThreadPool clientThreads = new QueuedThreadPool();
+        clientThreads.setName("client");
+        clientConnector.setExecutor(clientThreads);
+        client = new HttpClient(new HttpClientTransportOverHTTP(clientConnector))
+        {
+            @Override
+            protected ClientConnectionFactory newSslClientConnectionFactory(SslContextFactory.Client sslContextFactory, ClientConnectionFactory connectionFactory)
+            {
+                if (sslContextFactory == null)
+                    sslContextFactory = getSslContextFactory();
+                return new SslClientConnectionFactory(sslContextFactory, getByteBufferPool(), getExecutor(), connectionFactory)
+                {
+                    @Override
+                    protected SslConnection newSslConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, SSLEngine engine)
+                    {
+                        return new SslConnection(byteBufferPool, executor, endPoint, engine, isDirectBuffersForEncryption(), isDirectBuffersForDecryption())
+                        {
+                            @Override
+                            protected SSLEngineResult wrap(SSLEngine sslEngine, ByteBuffer[] input, ByteBuffer output) throws SSLException
+                            {
+                                sslEngine.closeOutbound();
+                                return super.wrap(sslEngine, input, output);
+                            }
+                        };
+                    }
+                };
+            }
+        };
+        client.setExecutor(clientThreads);
+        client.start();
+
+        ExecutionException failure = assertThrows(ExecutionException.class, () -> client.newRequest("localhost", connector.getLocalPort())
+            .scheme(HttpScheme.HTTPS.asString())
+            .send());
+        Throwable cause = failure.getCause();
+        assertThat(cause, Matchers.instanceOf(SSLHandshakeException.class));
     }
 }
