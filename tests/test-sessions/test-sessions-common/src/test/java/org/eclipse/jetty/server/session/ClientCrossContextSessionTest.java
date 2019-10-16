@@ -82,12 +82,11 @@ public class ClientCrossContextSessionTest
                 assertEquals(HttpServletResponse.SC_OK, response.getStatus());
                 String sessionCookie = response.getHeaders().get("Set-Cookie");
                 assertTrue(sessionCookie != null);
-                // Mangle the cookie, replacing Path with $Path, etc.
-                sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
+                String sessionId = TestServer.extractSessionId(sessionCookie);
 
                 // Perform a request to contextB with the same session cookie
                 Request request = client.newRequest("http://localhost:" + port + contextB + servletMapping);
-                request.header("Cookie", sessionCookie);
+                request.header("Cookie", "JSESSIONID=" + sessionId);
                 ContentResponse responseB = request.send();
                 assertEquals(HttpServletResponse.SC_OK, responseB.getStatus());
                 assertEquals(servletA.sessionId, servletB.sessionId);

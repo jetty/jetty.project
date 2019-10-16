@@ -20,8 +20,13 @@ package org.eclipse.jetty.webapp;
 
 import java.net.URI;
 import java.util.Arrays;
+import java.util.function.Supplier;
 
+import org.eclipse.jetty.util.IncludeExcludeSet;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.webapp.ClassMatcher.ByLocationOrModule;
+import org.eclipse.jetty.webapp.ClassMatcher.ByPackageOrName;
+import org.eclipse.jetty.webapp.ClassMatcher.Entry;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,7 +41,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class ClassMatcherTest
 {
     private final ClassMatcher _pattern = new ClassMatcher();
-
+    
+    protected static Supplier<URI> NULL_SUPPLIER = new Supplier<URI>()
+    {
+        public URI get()
+        {
+            return null;
+        } 
+    };
+    
     @BeforeEach
     public void before()
     {
@@ -261,6 +274,44 @@ public class ClassMatcherTest
         assertThat(pattern.match(String.class), Matchers.is(false));
         assertThat(pattern.match(Test.class), Matchers.is(false));
         assertThat(pattern.match(ClassMatcherTest.class), Matchers.is(false));
+    }
+    
+    @Test
+    public void testWithNullLocation() throws Exception
+    {
+        ClassMatcher matcher = new ClassMatcher();
+        
+        IncludeExcludeSet<Entry, String> names = new IncludeExcludeSet<>(ByPackageOrName.class);
+        IncludeExcludeSet<Entry, URI> locations = new IncludeExcludeSet<>(ByLocationOrModule.class);
+
+        //Test no name or location includes or excludes - should match
+        assertThat(ClassMatcher.combine(names, "a.b.c", locations, NULL_SUPPLIER), Matchers.is(true));
+        
+        names.include(matcher.newEntry("a.b.", true));
+        names.exclude(matcher.newEntry("d.e.", false));
+       
+        //Test explicit include by name no locations - should match
+        assertThat(ClassMatcher.combine(names, "a.b.c", locations, NULL_SUPPLIER), Matchers.is(true));
+        
+        //Test explicit exclude by name no locations - should not match
+        assertThat(ClassMatcher.combine(names, "d.e.f", locations, NULL_SUPPLIER), Matchers.is(false));
+        
+        //Test include by name with location includes - should match
+        locations.include(matcher.newEntry("file:/foo/bar", true));
+        assertThat(ClassMatcher.combine(names, "a.b.c", locations, NULL_SUPPLIER), Matchers.is(true));
+        
+        //Test include by name but with location exclusions - should not match
+        locations.clear();
+        locations.exclude(matcher.newEntry("file:/high/low", false));
+        assertThat(ClassMatcher.combine(names, "a.b.c", locations, NULL_SUPPLIER), Matchers.is(false));
+        
+        //Test neither included or excluded by name, but with location exclusions - should not match
+        assertThat(ClassMatcher.combine(names, "g.b.r", locations, NULL_SUPPLIER), Matchers.is(false));
+        
+        //Test neither included nor excluded by name, but with location inclusions - should not match
+        locations.clear();
+        locations.include(matcher.newEntry("file:/foo/bar", true));
+        assertThat(ClassMatcher.combine(names, "g.b.r", locations, NULL_SUPPLIER), Matchers.is(false));
     }
 
     @Test
