@@ -343,33 +343,17 @@ public class HttpConnectionTest
     public static Stream<Arguments> http11TransferEncodingChunked()
     {
         return Stream.of(
-            // empty variants
-            // no conflicts on empty tokens, chunked token not specified, will result in chunked
-            Arguments.of(Arrays.asList()), // no entries
-            Arguments.of(Arrays.asList("")), // no entries
-            Arguments.of(Arrays.asList(",")), // no entries
             Arguments.of(Arrays.asList("chunked, ")), // results in 1 entry
-
-            // invalid token values (per https://www.iana.org/assignments/http-parameters/http-parameters.xhtml#transfer-coding)
-            // no conflicts, chunked token not actually specified, will result in chunked
-            Arguments.of(Arrays.asList("bad")),
-            Arguments.of(Arrays.asList("identity")),  // identity was removed in RFC2616 errata and has been dropped in RFC7230
-            Arguments.of(Arrays.asList("'chunked'")), // apostrophe characters
-            Arguments.of(Arrays.asList("`chunked`")), // backtick "quote" characters
-            Arguments.of(Arrays.asList("[chunked]")), // bracketed (seen as mistake in several REST libraries)
-            Arguments.of(Arrays.asList("{chunked}")), // json'd (seen as mistake in several REST libraries)
-            Arguments.of(Arrays.asList("\u201Cchunked\u201D")), // opening and closing (fancy) double quotes characters
+            Arguments.of(Arrays.asList(", chunked")),
 
             // invalid tokens with chunked as last
             // no conflicts, chunked token is specified and is last, will result in chunked
             Arguments.of(Arrays.asList("bogus, chunked")),
             Arguments.of(Arrays.asList("'chunked', chunked")), // apostrophe characters with and without
             Arguments.of(Arrays.asList("identity, chunked")), // identity was removed in RFC2616 errata and has been dropped in RFC7230
-            Arguments.of(Arrays.asList(", chunked")),
 
             // multiple headers
-            Arguments.of(Arrays.asList("", "")), // no entries, 2 separate headers
-            Arguments.of(Arrays.asList("bogus", "identity")), // 2 separate headers
+            Arguments.of(Arrays.asList("identity", "chunked")), // 2 separate headers
             Arguments.of(Arrays.asList("", "chunked")) // 2 separate headers
         );
     }
@@ -402,6 +386,17 @@ public class HttpConnectionTest
     public static Stream<Arguments> http11TransferEncodingInvalidChunked()
     {
         return Stream.of(
+            // == Results in 400 Bad Request
+            Arguments.of(Arrays.asList("bogus", "identity")), // 2 separate headers
+
+            Arguments.of(Arrays.asList("bad")),
+            Arguments.of(Arrays.asList("identity")),  // identity was removed in RFC2616 errata and has been dropped in RFC7230
+            Arguments.of(Arrays.asList("'chunked'")), // apostrophe characters
+            Arguments.of(Arrays.asList("`chunked`")), // backtick "quote" characters
+            Arguments.of(Arrays.asList("[chunked]")), // bracketed (seen as mistake in several REST libraries)
+            Arguments.of(Arrays.asList("{chunked}")), // json'd (seen as mistake in several REST libraries)
+            Arguments.of(Arrays.asList("\u201Cchunked\u201D")), // opening and closing (fancy) double quotes characters
+
             // invalid tokens with chunked not as last
             Arguments.of(Arrays.asList("chunked, bogus")),
             Arguments.of(Arrays.asList("chunked, 'chunked'")),
@@ -410,6 +405,7 @@ public class HttpConnectionTest
             Arguments.of(Arrays.asList("chunked", "identity")), // 2 separate header lines
 
             // multiple chunked tokens present
+            Arguments.of(Arrays.asList("chunked", "identity", "chunked")), // 3 separate header lines
             Arguments.of(Arrays.asList("chunked", "chunked")), // 2 separate header lines
             Arguments.of(Arrays.asList("chunked, chunked")) // on same line
         );

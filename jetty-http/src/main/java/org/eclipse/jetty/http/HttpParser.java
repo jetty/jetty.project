@@ -988,24 +988,32 @@ public class HttpParser
                         if (_endOfContent == EndOfContent.CHUNKED_CONTENT)
                             throw new BadMessageException(HttpStatus.BAD_REQUEST_400, "Bad Transfer-Encoding, chunked not last");
 
-                        List<String> values = new QuotedCSV(_valueString).getValues();
-                        int chunked = -1;
-                        int len = values.size();
-                        for (int i = 0; i < len; i++)
+                        if (HttpHeaderValue.CHUNKED.is(_valueString))
                         {
-                            if (HttpHeaderValue.CHUNKED.is(values.get(i)))
+                            _endOfContent = EndOfContent.CHUNKED_CONTENT;
+                            _contentLength = -1;
+                        }
+                        else
+                        {
+                            List<String> values = new QuotedCSV(_valueString).getValues();
+                            int chunked = -1;
+                            int len = values.size();
+                            for (int i = 0; i < len; i++)
                             {
-                                if (chunked != -1)
-                                    throw new BadMessageException(HttpStatus.BAD_REQUEST_400, "Bad Transfer-Encoding, multiple chunked tokens");
-                                chunked = i;
-                                // declared chunked
-                                _endOfContent = EndOfContent.CHUNKED_CONTENT;
-                                _contentLength = -1;
-                            }
-                            // we have a non-chunked token after a declared chunked token
-                            else if (_endOfContent == EndOfContent.CHUNKED_CONTENT)
-                            {
-                                throw new BadMessageException(HttpStatus.BAD_REQUEST_400, "Bad Transfer-Encoding, chunked not last");
+                                if (HttpHeaderValue.CHUNKED.is(values.get(i)))
+                                {
+                                    if (chunked != -1)
+                                        throw new BadMessageException(HttpStatus.BAD_REQUEST_400, "Bad Transfer-Encoding, multiple chunked tokens");
+                                    chunked = i;
+                                    // declared chunked
+                                    _endOfContent = EndOfContent.CHUNKED_CONTENT;
+                                    _contentLength = -1;
+                                }
+                                // we have a non-chunked token after a declared chunked token
+                                else if (_endOfContent == EndOfContent.CHUNKED_CONTENT)
+                                {
+                                    throw new BadMessageException(HttpStatus.BAD_REQUEST_400, "Bad Transfer-Encoding, chunked not last");
+                                }
                             }
                         }
                         break;
@@ -1152,10 +1160,12 @@ public class HttpParser
                             // We found Transfer-Encoding headers, but none declared the 'chunked' token
                             if (_hasTransferEncoding && _endOfContent != EndOfContent.CHUNKED_CONTENT)
                             {
-                                // Assume Transfer-Encoding chunked per
-                                // https://tools.ietf.org/html/rfc7230#section-3.3.1
-                                _endOfContent = EndOfContent.CHUNKED_CONTENT;
-                                _contentLength = -1;
+                                if (_responseHandler == null || _endOfContent != EndOfContent.EOF_CONTENT)
+                                {
+                                    // Transfer-Encoding chunked not specified
+                                    // https://tools.ietf.org/html/rfc7230#section-3.3.1
+                                    throw new BadMessageException(HttpStatus.BAD_REQUEST_400, "Bad Transfer-Encoding, chunked not last");
+                                }
                             }
 
                             // Was there a required host header?
