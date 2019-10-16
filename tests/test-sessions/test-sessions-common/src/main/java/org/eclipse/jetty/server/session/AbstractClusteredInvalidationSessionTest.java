@@ -103,8 +103,6 @@ public abstract class AbstractClusteredInvalidationSessionTest extends AbstractT
                     assertEquals(HttpServletResponse.SC_OK, response1.getStatus());
                     String sessionCookie = response1.getHeaders().get("Set-Cookie");
                     assertTrue(sessionCookie != null);
-                    // Mangle the cookie, replacing Path with $Path, etc.
-                    sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
 
                     //ensure request is fully finished processing
                     latch.await(5, TimeUnit.SECONDS);
@@ -113,7 +111,6 @@ public abstract class AbstractClusteredInvalidationSessionTest extends AbstractT
                     latch = new CountDownLatch(1);
                     scopeListener.setExitSynchronizer(latch);
                     Request request2 = client.newRequest(urls[1] + "?action=increment");
-                    request2.header("Cookie", sessionCookie);
                     ContentResponse response2 = request2.send();
                     assertEquals(HttpServletResponse.SC_OK, response2.getStatus());
 
@@ -153,6 +150,8 @@ public abstract class AbstractClusteredInvalidationSessionTest extends AbstractT
 
     public static class TestServlet extends HttpServlet
     {
+        private static final long serialVersionUID = 1L;
+
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
