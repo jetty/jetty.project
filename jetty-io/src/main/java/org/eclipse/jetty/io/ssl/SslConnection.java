@@ -113,7 +113,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
     private boolean _renegotiationAllowed;
     private int _renegotiationLimit = -1;
     private boolean _closedOutbound;
-    private boolean _allowMissingCloseMessage = true;
+    private boolean _requireCloseMessage;
     private FlushState _flushState = FlushState.IDLE;
     private FillState _fillState = FillState.IDLE;
     private AtomicReference<Handshake> _handshake = new AtomicReference<>(Handshake.INITIAL);
@@ -231,7 +231,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
     }
 
     /**
-     * @return The number of renegotions allowed for this connection.  When the limit
+     * @return The number of renegotiations allowed for this connection.  When the limit
      * is 0 renegotiation will be denied. If the limit is less than 0 then no limit is applied.
      */
     public int getRenegotiationLimit()
@@ -240,7 +240,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
     }
 
     /**
-     * @param renegotiationLimit The number of renegotions allowed for this connection.
+     * @param renegotiationLimit The number of renegotiations allowed for this connection.
      * When the limit is 0 renegotiation will be denied. If the limit is less than 0 then no limit is applied.
      * Default -1.
      */
@@ -249,14 +249,46 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
         _renegotiationLimit = renegotiationLimit;
     }
 
+    /**
+     * @return whether is not required that peers send the TLS {@code close_notify} message
+     * @deprecated use inverted {@link #isRequireCloseMessage()} instead
+     */
+    @Deprecated
     public boolean isAllowMissingCloseMessage()
     {
-        return _allowMissingCloseMessage;
+        return !isRequireCloseMessage();
     }
 
+    /**
+     * @param allowMissingCloseMessage whether is not required that peers send the TLS {@code close_notify} message
+     * @deprecated use inverted {@link #setRequireCloseMessage(boolean)} instead
+     */
+    @Deprecated
     public void setAllowMissingCloseMessage(boolean allowMissingCloseMessage)
     {
-        this._allowMissingCloseMessage = allowMissingCloseMessage;
+        setRequireCloseMessage(!allowMissingCloseMessage);
+    }
+
+    /**
+     * @return whether peers must send the TLS {@code close_notify} message
+     */
+    public boolean isRequireCloseMessage()
+    {
+        return _requireCloseMessage;
+    }
+
+    /**
+     * <p>Sets whether it is required that a peer send the TLS {@code close_notify} message
+     * to indicate the will to close the connection, otherwise it may be interpreted as a
+     * truncation attack.</p>
+     * <p>This option is only useful on clients, since typically servers cannot accept
+     * connection-delimited content that may be truncated.</p>
+     *
+     * @param requireCloseMessage whether peers must send the TLS {@code close_notify} message
+     */
+    public void setRequireCloseMessage(boolean requireCloseMessage)
+    {
+        _requireCloseMessage = requireCloseMessage;
     }
 
     private void acquireEncryptedInput()
@@ -1096,15 +1128,15 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
         @Override
         public void doShutdownOutput()
         {
-            final EndPoint endp = getEndPoint();
+            EndPoint endPoint = getEndPoint();
             try
             {
                 boolean close;
                 boolean flush = false;
                 synchronized (_decryptedEndPoint)
                 {
-                    boolean ishut = endp.isInputShutdown();
-                    boolean oshut = endp.isOutputShutdown();
+                    boolean ishut = endPoint.isInputShutdown();
+                    boolean oshut = endPoint.isOutputShutdown();
                     if (LOG.isDebugEnabled())
                         LOG.debug("shutdownOutput: {} oshut={}, ishut={}", SslConnection.this, oshut, ishut);
 
@@ -1128,19 +1160,19 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                         // let's just flush the encrypted output in the background.
                         ByteBuffer write = _encryptedOutput;
                         if (BufferUtil.hasContent(write))
-                            endp.write(Callback.from(Callback.NOOP::succeeded, t -> endp.close()), write);
+                            endPoint.write(Callback.from(Callback.NOOP::succeeded, t -> endPoint.close()), write);
                     }
                 }
 
                 if (close)
-                    endp.close();
+                    endPoint.close();
                 else
                     ensureFillInterested();
             }
             catch (Throwable x)
             {
                 LOG.ignore(x);
-                endp.close();
+                endPoint.close();
             }
         }
 
@@ -1152,7 +1184,8 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
             }
             catch (Throwable x)
             {
-                LOG.ignore(x);
+                if (LOG.isDebugEnabled())
+                    LOG.debug(x);
             }
         }
 

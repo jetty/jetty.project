@@ -67,8 +67,6 @@ public class HttpClientTLSTest
     private ServerConnector connector;
     private HttpClient client;
 
-    private SSLSocket sslSocket;
-
     private void startServer(SslContextFactory sslContextFactory, Handler handler) throws Exception
     {
         ExecutorThreadPool serverThreads = new ExecutorThreadPool();
@@ -420,16 +418,16 @@ public class HttpClientTLSTest
 
         String host = "localhost";
         int port = connector.getLocalPort();
-        Socket socket = new Socket(host, port);
-        sslSocket = (SSLSocket)clientTLSFactory.getSslContext().getSocketFactory().createSocket(socket, host, port, true);
+        Socket socket1 = new Socket(host, port);
+        SSLSocket sslSocket1 = (SSLSocket)clientTLSFactory.getSslContext().getSocketFactory().createSocket(socket1, host, port, true);
         CountDownLatch handshakeLatch1 = new CountDownLatch(1);
         AtomicReference<byte[]> session1 = new AtomicReference<>();
-        sslSocket.addHandshakeCompletedListener(event ->
+        sslSocket1.addHandshakeCompletedListener(event ->
         {
             session1.set(event.getSession().getId());
             handshakeLatch1.countDown();
         });
-        sslSocket.startHandshake();
+        sslSocket1.startHandshake();
         assertTrue(handshakeLatch1.await(5, TimeUnit.SECONDS));
 
         // In TLS 1.3 the server sends a NewSessionTicket post-handshake message
@@ -437,29 +435,29 @@ public class HttpClientTLSTest
 
         assertThrows(SocketTimeoutException.class, () ->
         {
-            sslSocket.setSoTimeout(1000);
-            sslSocket.getInputStream().read();
+            sslSocket1.setSoTimeout(1000);
+            sslSocket1.getInputStream().read();
         });
 
         // The client closes abruptly.
-        socket.close();
+        socket1.close();
 
         // Try again and compare the session ids.
-        socket = new Socket(host, port);
-        sslSocket = (SSLSocket)clientTLSFactory.getSslContext().getSocketFactory().createSocket(socket, host, port, true);
+        Socket socket2 = new Socket(host, port);
+        SSLSocket sslSocket2 = (SSLSocket)clientTLSFactory.getSslContext().getSocketFactory().createSocket(socket2, host, port, true);
         CountDownLatch handshakeLatch2 = new CountDownLatch(1);
         AtomicReference<byte[]> session2 = new AtomicReference<>();
-        sslSocket.addHandshakeCompletedListener(event ->
+        sslSocket2.addHandshakeCompletedListener(event ->
         {
             session2.set(event.getSession().getId());
             handshakeLatch2.countDown();
         });
-        sslSocket.startHandshake();
+        sslSocket2.startHandshake();
         assertTrue(handshakeLatch2.await(5, TimeUnit.SECONDS));
 
         assertArrayEquals(session1.get(), session2.get());
 
-        sslSocket.close();
+        sslSocket2.close();
     }
 
     @Test
@@ -477,7 +475,7 @@ public class HttpClientTLSTest
                 protected ClientConnectionFactory newSslClientConnectionFactory(SslContextFactory sslContextFactory, ClientConnectionFactory connectionFactory)
                 {
                     SslClientConnectionFactory ssl = (SslClientConnectionFactory)super.newSslClientConnectionFactory(sslContextFactory, connectionFactory);
-                    ssl.setAllowMissingCloseMessage(false);
+                    ssl.setRequireCloseMessage(true);
                     return ssl;
                 }
             };
@@ -505,19 +503,19 @@ public class HttpClientTLSTest
                         break;
                 }
 
-                // If the response is Content-Length delimited, allowing the
-                // missing TLS Close Message is fine because the application
-                // will see a EOFException anyway.
-                // If the response is connection delimited, allowing the
-                // missing TLS Close Message is bad because the application
-                // will see a successful response with truncated content.
+                // If the response is Content-Length delimited, the lack of
+                // the TLS Close Message is fine because the application
+                // will see a EOFException anyway: the Content-Length and
+                // the actual content bytes count won't match.
+                // If the response is connection delimited, the lack of the
+                // TLS Close Message is bad because the application will
+                // see a successful response, but with truncated content.
 
-                // Verify that by not allowing the missing
-                // TLS Close Message we get a response failure.
+                // Verify that by requiring the TLS Close Message we get
+                // a response failure.
 
                 byte[] half = new byte[8];
                 String response = "HTTP/1.1 200 OK\r\n" +
-//                        "Content-Length: " + (half.length * 2) + "\r\n" +
                     "Connection: close\r\n" +
                     "\r\n";
                 OutputStream output = sslSocket.getOutputStream();
