@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.server.handler;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.io.IOException;
 import java.net.Socket;
 import java.nio.ByteBuffer;
@@ -27,7 +25,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -44,6 +41,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class InetAccessHandlerTest
 {
@@ -167,13 +166,13 @@ public class InetAccessHandlerTest
                 // Empty lists 1
                 {"", "", "", "", "200;200"},
 
-                // test simple filters 2 - 5
+                // test simple filters
                 {"127.0.0.1", "", "", "", "200;200"},
                 {"127.0.0.1-127.0.0.254", "", "", "", "200;200"},
                 {"192.0.0.1", "", "", "", "403;403"},
                 {"192.0.0.1-192.0.0.254", "", "", "", "403;403"},
 
-                // 6 - 9 - test includeConnector
+                // test includeConnector
                 {"127.0.0.1", "", "http_connector1", "", "200;200"},
                 {"127.0.0.1-127.0.0.254", "", "http_connector1", "", "200;200"},
                 {"192.0.0.1", "", "http_connector1", "", "403;200"},
@@ -181,13 +180,13 @@ public class InetAccessHandlerTest
                 {"192.0.0.1", "", "http_connector2", "", "200;403"},
                 {"192.0.0.1-192.0.0.254", "", "http_connector2", "", "200;403"},
 
-                // 10 - 13 - test includeConnector names where none of them match
+                // test includeConnector names where none of them match
                 {"127.0.0.1", "", "nothttp", "", "200;200"},
                 {"127.0.0.1-127.0.0.254", "", "nothttp", "", "200;200"},
                 {"192.0.0.1", "", "nothttp", "", "200;200"},
                 {"192.0.0.1-192.0.0.254", "", "nothttp", "", "200;200"},
 
-                // 14 - 17 - text excludeConnector
+                // text excludeConnector
                 {"127.0.0.1", "", "", "http_connector1", "200;200"},
                 {"127.0.0.1-127.0.0.254", "", "", "http_connector1", "200;200"},
                 {"192.0.0.1", "", "", "http_connector1", "200;403"},
@@ -195,25 +194,25 @@ public class InetAccessHandlerTest
                 {"192.0.0.1", "", "", "http_connector2", "403;200"},
                 {"192.0.0.1-192.0.0.254", "", "", "http_connector2", "403;200"},
 
-                // 18 - 21 - test excludeConnector where none of them match.
+                // test excludeConnector where none of them match.
                 {"127.0.0.1", "", "", "nothttp", "200;200"},
                 {"127.0.0.1-127.0.0.254", "", "", "nothttp", "200;200"},
                 {"192.0.0.1", "", "", "nothttp", "403;403"},
                 {"192.0.0.1-192.0.0.254", "", "", "nothttp", "403;403"},
 
-                // 22 - 25 - both connectors are excluded
+                // both connectors are excluded
                 {"127.0.0.1", "", "", "http_connector1;http_connector2", "200;200"},
                 {"127.0.0.1-127.0.0.254", "", "", "http_connector1;http_connector2", "200;200"},
                 {"192.0.0.1", "", "", "http_connector1;http_connector2", "200;200"},
                 {"192.0.0.1-192.0.0.254", "", "", "http_connector1;http_connector2", "200;200"},
 
-                // 26 - 29 - both connectors are included
+                // both connectors are included
                 {"127.0.0.1", "", "http_connector1;http_connector2", "", "200;200"},
                 {"127.0.0.1-127.0.0.254", "", "http_connector1;http_connector2", "", "200;200"},
                 {"192.0.0.1", "", "http_connector1;http_connector2", "", "403;403"},
                 {"192.0.0.1-192.0.0.254", "", "http_connector1;http_connector2", "", "403;403"},
                 
-                // 30 - 33 - exclude takes precedence over include
+                // exclude takes precedence over include
                 {"127.0.0.1", "", "http_connector1;http_connector2", "http_connector1;http_connector2", "200;200"},
                 {"127.0.0.1-127.0.0.254", "", "http_connector1;http_connector2", "http_connector1;http_connector2", "200;200"},
                 {"192.0.0.1", "", "http_connector1;http_connector2", "http_connector1;http_connector2", "200;200"},
