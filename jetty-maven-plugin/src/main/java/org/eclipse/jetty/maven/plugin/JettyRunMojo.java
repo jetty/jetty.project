@@ -304,10 +304,15 @@ public class JettyRunMojo extends AbstractWebAppMojo
         }
     }
     
- 
-
-    /** 
-     * @see org.eclipse.jetty.maven.plugin.AbstractJettyMojo#restartWebApp(boolean)
+    /**
+     * Stop an executing webapp and restart it after optionally
+     * reconfiguring it.
+     * 
+     * @param reconfigure if true, the scanner will
+     * be reconfigured after changes to the pom. If false, only
+     * the webapp will be reconfigured.
+     * 
+     * @throws Exception
      */
     public void restartWebApp(boolean reconfigure) throws Exception 
     {

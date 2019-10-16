@@ -25,6 +25,9 @@ import org.eclipse.jetty.util.resource.Resource;
 
 /**
  * Overlay
+ * 
+ * An Overlay represents overlay information derived from the
+ * maven-war-plugin.
  */
 public class Overlay
 {
@@ -76,6 +79,7 @@ public class Overlay
      * Unpack the overlay into the given directory. Only
      * unpack if the directory does not exist, or the overlay
      * has been modified since the dir was created.
+     * 
      * @param dir the directory into which to unpack the overlay
      * @throws IOException 
      */

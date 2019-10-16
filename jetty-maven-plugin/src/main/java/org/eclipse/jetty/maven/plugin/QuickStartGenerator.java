@@ -80,7 +80,7 @@ public class QuickStartGenerator
     }
 
     /**
-     * @param server the server to set
+     * @param server the server to use
      */
     public void setServer(Server server)
     {
@@ -92,6 +92,9 @@ public class QuickStartGenerator
         return webAppPropsFile;
     }
 
+    /**
+     * @param webAppPropsFile properties file describing the webapp
+     */
     public void setWebAppPropsFile(File webAppPropsFile)
     {
         this.webAppPropsFile = webAppPropsFile;
@@ -102,11 +105,19 @@ public class QuickStartGenerator
         return contextXml;
     }
 
+    /**
+     * @param contextXml a context xml file to apply to the webapp
+     */
     public void setContextXml(String contextXml)
     {
         this.contextXml = contextXml;
     }
     
+    /**
+     * Configure the webapp in preparation for quickstart generation.
+     * 
+     * @throws Exception
+     */
     private void prepareWebApp()
         throws Exception
     {
@@ -125,6 +136,8 @@ public class QuickStartGenerator
     /**
      * Run enough of jetty to generate a full quickstart xml file for the 
      * webapp. The tmp directory is persisted.
+     * 
+     * @throws Exception
      */
     public void generate()
         throws Exception

@@ -377,8 +377,6 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
     
     /**
      * This plugin
-     * 
-     * @required
      */
     @Parameter (defaultValue = "${plugin}", readonly = true, required = true)
     protected PluginDescriptor plugin;
@@ -597,6 +595,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
     
     /**
      * Verify some basic configuration is present, supplying defaults if not.
+     * @throws MojoExecutionException
      */
     protected void verifyPomConfiguration() throws MojoExecutionException
     {        
@@ -648,6 +647,10 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
 
     /**
      * Unite system properties set via systemPropertiesFile element and the systemProperties element.
+     * Properties from the pom override properties from the file.
+     * 
+     * @return united properties map
+     * @throws MojoExecutionException
      */
     protected Map<String,String> mergeSystemProperties()
         throws MojoExecutionException
@@ -726,7 +729,9 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
      * Get any dependencies that are scope "provided" if useProvidedScope == true. Ensure
      * that only those dependencies that are not already present via the plugin are
      * included.
+     * 
      * @return provided scope dependencies that are not also plugin dependencies.
+     * @throws MojoExecutionException
      */
     protected List<File> getProvidedJars() throws MojoExecutionException
     {  
@@ -962,10 +967,10 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
         getLog().info("Web overrides = " + (webApp.getOverrideDescriptor() == null ? " none" : webApp.getOverrideDescriptor()));
     }
 
-    
     /**
      * Try and find a jetty-web.xml file, using some
      * historical naming conventions if necessary.
+     * 
      * @param webInfDir the web inf directory
      * @return the jetty web xml file
      */
@@ -991,8 +996,8 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
     /**
      * Get a file into which to write output from jetty.
      * 
-     * @param name
-     * @return
+     * @param name the name of the file
+     * @return the created file
      * @throws Exception
      */
     protected File getJettyOutputFile(String name) throws Exception
@@ -1060,6 +1065,14 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
             .collect(Collectors.toList());
     }
     
+    /**
+     * Check if the artifact is suitable to be considered part of the
+     * virtual web-inf/lib.
+     * 
+     * @param artifact the artifact to check
+     * @return true if the artifact represents a jar, isn't scope provided and 
+     * is scope test, if useTestScope is enabled. False otherwise.
+     */
     private boolean isArtifactOKForWebInfLib(Artifact artifact)
     {
         //The dependency cannot be of type war

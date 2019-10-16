@@ -224,6 +224,7 @@ public class WarPluginInfo
     /**
      * Check if the given artifact matches the group and artifact coordinates.
      * 
+     * @param a the artifact to check
      * @param gid the group id
      * @param aid the artifact id
      * @return true if matched false otherwise
@@ -239,5 +240,4 @@ public class WarPluginInfo
 
         return false;
     }
-
 }

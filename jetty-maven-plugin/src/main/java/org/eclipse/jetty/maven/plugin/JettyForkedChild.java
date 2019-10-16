@@ -52,6 +52,10 @@ public class JettyForkedChild extends AbstractLifeCycle
     protected PathWatcher scanner;
     protected File webAppPropsFile;
 
+    /**
+     * @param args arguments that were passed to main
+     * @throws Exception
+     */
     public JettyForkedChild(String[] args)
         throws Exception
     {
@@ -59,6 +63,12 @@ public class JettyForkedChild extends AbstractLifeCycle
         configure(args);
     }
 
+    /**
+     * Based on the args passed to the program, configure jetty.
+     * 
+     * @param args args that were passed to the program.
+     * @throws Exception
+     */
     public void configure(String[] args)
         throws Exception
     {
@@ -159,6 +169,14 @@ public class JettyForkedChild extends AbstractLifeCycle
         jetty.setExitVm(true);
     }
 
+    /**
+     * Load properties from a file describing the webapp if one is
+     * present.
+     * 
+     * @return file contents as properties
+     * @throws FileNotFoundException
+     * @throws IOException
+     */
     private Properties loadWebAppProps() throws FileNotFoundException, IOException
     {
         Properties props = new Properties();
@@ -167,6 +185,10 @@ public class JettyForkedChild extends AbstractLifeCycle
         return props;
     }
 
+    /**
+     * Start a jetty instance and webapp. This thread will
+     * wait until jetty exits.
+     */
     public void doStart()
         throws Exception
     {
@@ -189,11 +211,6 @@ public class JettyForkedChild extends AbstractLifeCycle
         jetty.join();
     }
 
-
-    /**
-     * @param args
-     * @throws Exception 
-     */
     public static void main(String[] args)
         throws Exception
     {
@@ -203,5 +220,4 @@ public class JettyForkedChild extends AbstractLifeCycle
         JettyForkedChild child = new JettyForkedChild(args);
         child.start();
     }
-
 }

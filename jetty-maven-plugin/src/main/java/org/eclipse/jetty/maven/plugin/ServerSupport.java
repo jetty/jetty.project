@@ -54,13 +54,14 @@ public class ServerSupport
 
     /**
      * Set up the handler structure to receive a webapp.
-     * Also put in a DefaultHandler so we get a nice page
+     * Also put in a DefaultHandler so we get a nicer page
      * than a 404 if we hit the root and the webapp's
      * context isn't at root.
-     *
-     * @param server the server
-     * @param requestLog the request log
-     * @throws Exception if unable to configure the handlers
+     * 
+     * @param server the server to use
+     * @param contextHandlers the context handlers to include
+     * @param requestLog a request log to use
+     * @throws Exception
      */
     public static void configureHandlers(Server server, List<ContextHandler> contextHandlers, RequestLog requestLog) throws Exception 
     {
@@ -158,6 +159,12 @@ public class ServerSupport
         }
     }
 
+    /**
+     * Add a WebAppContext to a Server
+     * @param server the server to use
+     * @param webapp the webapp to add
+     * @throws Exception
+     */
     public static void addWebApplication(Server server, WebAppContext webapp) throws Exception
     {
         if (server == null)
@@ -168,6 +175,12 @@ public class ServerSupport
         contexts.addHandler(webapp);
     }
 
+    /**
+     * Locate a ContextHandlerCollection for a Server.
+     * 
+     * @param server the Server to check.
+     * @return The ContextHandlerCollection or null if not found.
+     */
     public static ContextHandlerCollection findContextHandlerCollection(Server server)
     {
         if (server == null)
