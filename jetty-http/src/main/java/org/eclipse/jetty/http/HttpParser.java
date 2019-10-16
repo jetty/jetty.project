@@ -169,7 +169,6 @@ public class HttpParser
     private Utf8StringBuilder _uri = new Utf8StringBuilder(INITIAL_URI_LENGTH); // Tune?
     private EndOfContent _endOfContent;
     private boolean _hasContentLength;
-    private boolean _hasTransferEncoding;
     private long _contentLength = -1;
     private long _contentPosition;
     private int _chunkLength;
@@ -956,9 +955,6 @@ public class HttpParser
                 switch (_header)
                 {
                     case CONTENT_LENGTH:
-                        if (_hasTransferEncoding && complianceViolation(TRANSFER_ENCODING_WITH_CONTENT_LENGTH))
-                            throw new BadMessageException(HttpStatus.BAD_REQUEST_400, "Transfer-Encoding and Content-Length");
-
                         if (_hasContentLength)
                         {
                             if (complianceViolation(MULTIPLE_CONTENT_LENGTHS))
@@ -969,7 +965,7 @@ public class HttpParser
                         _hasContentLength = true;
 
                         if (_endOfContent == EndOfContent.CHUNKED_CONTENT && complianceViolation(TRANSFER_ENCODING_WITH_CONTENT_LENGTH))
-                            throw new BadMessageException(HttpStatus.BAD_REQUEST_400, "Bad Content-Length");
+                            throw new BadMessageException(HttpStatus.BAD_REQUEST_400, "Transfer-Encoding and Content-Length");
 
                         if (_endOfContent != EndOfContent.CHUNKED_CONTENT)
                         {
@@ -982,10 +978,11 @@ public class HttpParser
                         break;
 
                     case TRANSFER_ENCODING:
-                        _hasTransferEncoding = true;
-
                         if (_hasContentLength && complianceViolation(TRANSFER_ENCODING_WITH_CONTENT_LENGTH))
                             throw new BadMessageException(HttpStatus.BAD_REQUEST_400, "Transfer-Encoding and Content-Length");
+
+                        if (_endOfContent == EndOfContent.CHUNKED_CONTENT)
+                            throw new BadMessageException(HttpStatus.BAD_REQUEST_400, "Bad Transfer-Encoding, multiple chunked tokens");
 
                         if (HttpHeaderValue.CHUNKED.is(_valueString))
                         {
@@ -995,13 +992,26 @@ public class HttpParser
                         else
                         {
                             List<String> values = new QuotedCSV(_valueString).getValues();
-                            if (!values.isEmpty() && HttpHeaderValue.CHUNKED.is(values.get(values.size() - 1)))
+                            int chunked = -1;
+                            int len = values.size();
+                            for (int i = 0; i < len; i++)
                             {
-                                _endOfContent = EndOfContent.CHUNKED_CONTENT;
-                                _contentLength = -1;
+                                if (HttpHeaderValue.CHUNKED.is(values.get(i)))
+                                {
+                                    if (chunked != -1)
+                                        throw new BadMessageException(HttpStatus.BAD_REQUEST_400, "Bad Transfer-Encoding, multiple chunked tokens");
+                                    chunked = i;
+                                }
                             }
-                            else if (values.stream().anyMatch(HttpHeaderValue.CHUNKED::is))
-                                throw new BadMessageException(HttpStatus.BAD_REQUEST_400, "Bad chunking");
+                            // Was "chunked" token provided? then ensure it was the last token.
+                            if ((chunked >= 0) && (chunked != (len - 1)))
+                            {
+                                throw new BadMessageException(HttpStatus.BAD_REQUEST_400, "Bad Transfer-Encoding, chunked token not last");
+                            }
+                            // if we got here, we've validated the Transfer-Encoding tokens, and are automatically
+                            // in chunked mode per RFC7230 Section-3.3.1
+                            _endOfContent = EndOfContent.CHUNKED_CONTENT;
+                            _contentLength = -1;
                         }
 
                         break;
@@ -1824,7 +1834,6 @@ public class HttpParser
         _endOfContent = EndOfContent.UNKNOWN_CONTENT;
         _contentLength = -1;
         _hasContentLength = false;
-        _hasTransferEncoding = false;
         _contentPosition = 0;
         _responseStatus = 0;
         _contentChunk = null;
