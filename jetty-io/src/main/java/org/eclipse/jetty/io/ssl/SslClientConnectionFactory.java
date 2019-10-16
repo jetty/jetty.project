@@ -47,7 +47,7 @@ public class SslClientConnectionFactory implements ClientConnectionFactory
     private final ClientConnectionFactory connectionFactory;
     private boolean _directBuffersForEncryption = true;
     private boolean _directBuffersForDecryption = true;
-    private boolean allowMissingCloseMessage = true;
+    private boolean _requireCloseMessage;
 
     public SslClientConnectionFactory(SslContextFactory sslContextFactory, ByteBufferPool byteBufferPool, Executor executor, ClientConnectionFactory connectionFactory)
     {
@@ -77,14 +77,42 @@ public class SslClientConnectionFactory implements ClientConnectionFactory
         return _directBuffersForEncryption;
     }
 
+    /**
+     * @return whether is not required that peers send the TLS {@code close_notify} message
+     * @deprecated use {@link #isRequireCloseMessage()} instead
+     */
+    @Deprecated
     public boolean isAllowMissingCloseMessage()
     {
-        return allowMissingCloseMessage;
+        return !isRequireCloseMessage();
     }
 
+    /**
+     * @param allowMissingCloseMessage whether is not required that peers send the TLS {@code close_notify} message
+     * @deprecated use {@link #setRequireCloseMessage(boolean)} instead
+     */
+    @Deprecated
     public void setAllowMissingCloseMessage(boolean allowMissingCloseMessage)
     {
-        this.allowMissingCloseMessage = allowMissingCloseMessage;
+        setRequireCloseMessage(!allowMissingCloseMessage);
+    }
+
+    /**
+     * @return whether peers must send the TLS {@code close_notify} message
+     * @see SslConnection#isRequireCloseMessage()
+     */
+    public boolean isRequireCloseMessage()
+    {
+        return _requireCloseMessage;
+    }
+
+    /**
+     * @param requireCloseMessage whether peers must send the TLS {@code close_notify} message
+     * @see SslConnection#setRequireCloseMessage(boolean)
+     */
+    public void setRequireCloseMessage(boolean requireCloseMessage)
+    {
+        _requireCloseMessage = requireCloseMessage;
     }
 
     @Override
@@ -120,7 +148,7 @@ public class SslClientConnectionFactory implements ClientConnectionFactory
             SslConnection sslConnection = (SslConnection)connection;
             sslConnection.setRenegotiationAllowed(sslContextFactory.isRenegotiationAllowed());
             sslConnection.setRenegotiationLimit(sslContextFactory.getRenegotiationLimit());
-            sslConnection.setAllowMissingCloseMessage(isAllowMissingCloseMessage());
+            sslConnection.setRequireCloseMessage(isRequireCloseMessage());
             ContainerLifeCycle connector = (ContainerLifeCycle)context.get(ClientConnectionFactory.CONNECTOR_CONTEXT_KEY);
             connector.getBeans(SslHandshakeListener.class).forEach(sslConnection::addHandshakeListener);
         }
