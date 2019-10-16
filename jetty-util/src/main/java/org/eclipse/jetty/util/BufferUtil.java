@@ -219,6 +219,20 @@ public class BufferUtil
         buffer.position(position);
     }
 
+    /** Put an integer little endian
+     * @param buffer The buffer to put to
+     * @param value The value to put.
+     */
+    public static void putIntLittleEndian(ByteBuffer buffer, int value)
+    {
+        int p = flipToFill(buffer);
+        buffer.put((byte)(value & 0xFF));
+        buffer.put((byte)((value >>> 8) & 0xFF));
+        buffer.put((byte)((value >>> 16) & 0xFF));
+        buffer.put((byte)((value >>> 24) & 0xFF));
+        flipToFlush(buffer, p);
+    }
+
     /**
      * Convert a ByteBuffer to a byte array.
      *

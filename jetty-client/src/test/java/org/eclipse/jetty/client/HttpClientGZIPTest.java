@@ -24,7 +24,7 @@ import java.io.InterruptedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Random;
-import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.zip.GZIPOutputStream;
 import javax.servlet.ServletOutputStream;
@@ -44,7 +44,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThan;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 public class HttpClientGZIPTest extends AbstractHttpClientServerTest
@@ -217,16 +217,11 @@ public class HttpClientGZIPTest extends AbstractHttpClientServerTest
             }
         });
 
-        final CountDownLatch latch = new CountDownLatch(1);
-        client.newRequest("localhost", connector.getLocalPort())
-            .scheme(scenario.getScheme())
-            .send(result ->
-            {
-                if (result.isFailed())
-                    latch.countDown();
-            });
-
-        assertTrue(latch.await(5, TimeUnit.SECONDS));
+        assertThrows(ExecutionException.class, () ->
+            client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scenario.getScheme())
+                .timeout(5, TimeUnit.SECONDS)
+                .send());
     }
 
     @ParameterizedTest

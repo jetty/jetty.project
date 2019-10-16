@@ -61,6 +61,7 @@ import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.generator.Generator;
+import org.eclipse.jetty.http2.hpack.HpackException;
 import org.eclipse.jetty.http2.parser.RateControl;
 import org.eclipse.jetty.http2.parser.ServerParser;
 import org.eclipse.jetty.http2.server.RawHTTP2ServerConnectionFactory;
@@ -74,6 +75,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -467,21 +469,35 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
                     @Override
                     public void onPreface()
                     {
-                        // Server's preface.
-                        generator.control(lease, new SettingsFrame(new HashMap<>(), false));
-                        // Reply to client's SETTINGS.
-                        generator.control(lease, new SettingsFrame(new HashMap<>(), true));
-                        writeFrames();
+                        try
+                        {
+                            // Server's preface.
+                            generator.control(lease, new SettingsFrame(new HashMap<>(), false));
+                            // Reply to client's SETTINGS.
+                            generator.control(lease, new SettingsFrame(new HashMap<>(), true));
+                            writeFrames();
+                        }
+                        catch (HpackException x)
+                        {
+                            x.printStackTrace();
+                        }
                     }
 
                     @Override
                     public void onHeaders(HeadersFrame request)
                     {
-                        // Response.
-                        MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, new HttpFields());
-                        HeadersFrame response = new HeadersFrame(request.getStreamId(), metaData, null, true);
-                        generator.control(lease, response);
-                        writeFrames();
+                        try
+                        {
+                            // Response.
+                            MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, new HttpFields());
+                            HeadersFrame response = new HeadersFrame(request.getStreamId(), metaData, null, true);
+                            generator.control(lease, response);
+                            writeFrames();
+                        }
+                        catch (HpackException x)
+                        {
+                            x.printStackTrace();
+                        }
                     }
 
                     private void writeFrames()
@@ -573,6 +589,8 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
+                // Disable checks for invalid headers.
+                ((HTTP2Session)stream.getSession()).getGenerator().setValidateHpackEncoding(false);
                 // Produce an invalid HPACK block by adding a request pseudo-header to the response.
                 HttpFields fields = new HttpFields();
                 fields.put(":method", "get");
@@ -601,6 +619,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
 
     @Disabled
     @Test
+    @Tag("external")
     public void testExternalServer() throws Exception
     {
         HTTP2Client http2Client = new HTTP2Client();

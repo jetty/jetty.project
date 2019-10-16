@@ -22,10 +22,12 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.util.HostPort;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 /**
  * The configuration of the forward proxy to use with {@link org.eclipse.jetty.client.HttpClient}.
@@ -64,11 +66,23 @@ public class ProxyConfiguration
         private final Set<String> excluded = new HashSet<>();
         private final Origin.Address address;
         private final boolean secure;
+        private final SslContextFactory.Client sslContextFactory;
 
         protected Proxy(Origin.Address address, boolean secure)
         {
+            this(address, secure, null);
+        }
+
+        protected Proxy(Origin.Address address, SslContextFactory.Client sslContextFactory)
+        {
+            this(address, true, Objects.requireNonNull(sslContextFactory));
+        }
+
+        private Proxy(Origin.Address address, boolean secure, SslContextFactory.Client sslContextFactory)
+        {
             this.address = address;
             this.secure = secure;
+            this.sslContextFactory = sslContextFactory;
         }
 
         /**
@@ -85,6 +99,14 @@ public class ProxyConfiguration
         public boolean isSecure()
         {
             return secure;
+        }
+
+        /**
+         * @return the optional SslContextFactory to use when connecting to proxies
+         */
+        public SslContextFactory.Client getSslContextFactory()
+        {
+            return sslContextFactory;
         }
 
         /**

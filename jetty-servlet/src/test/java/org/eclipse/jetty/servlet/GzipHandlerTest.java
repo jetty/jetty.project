@@ -30,21 +30,26 @@ import java.util.EnumSet;
 import java.util.Enumeration;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
+import javax.servlet.AsyncContext;
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
 import javax.servlet.ServletException;
+import javax.servlet.ServletOutputStream;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
+import javax.servlet.WriteListener;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.server.HttpOutput;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
@@ -76,6 +81,8 @@ public class GzipHandlerTest
             "consequat mauris quis luctus. Cras enim nibh, dignissim eu faucibus ac, mollis nec neque. " +
             "Aliquam purus mauris, consectetur nec convallis lacinia, porta sed ante. Suspendisse " +
             "et cursus magna. Donec orci enim, molestie a lobortis eu, imperdiet vitae neque.";
+
+    private static final byte[] __bytes = __content.getBytes(StandardCharsets.UTF_8);
 
     private static final String __micro = __content.substring(0, 10);
 
@@ -110,6 +117,8 @@ public class GzipHandlerTest
         servlets.addServletWithMapping(IncludeServlet.class, "/include");
         servlets.addServletWithMapping(EchoServlet.class, "/echo/*");
         servlets.addServletWithMapping(DumpServlet.class, "/dump/*");
+        servlets.addServletWithMapping(AsyncServlet.class, "/async/*");
+        servlets.addServletWithMapping(BufferServlet.class, "/buffer/*");
         servlets.addFilterWithMapping(CheckFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
 
         _server.start();
@@ -172,6 +181,59 @@ public class GzipHandlerTest
                 response.sendError(HttpServletResponse.SC_NO_CONTENT);
             else
                 response.sendError(HttpServletResponse.SC_NOT_MODIFIED);
+        }
+    }
+
+    public static class AsyncServlet extends HttpServlet
+    {
+        @Override
+        protected void doGet(HttpServletRequest req, HttpServletResponse response) throws ServletException, IOException
+        {
+            String writes = req.getParameter("writes");
+            final AsyncContext context = req.startAsync();
+            final ServletOutputStream out = response.getOutputStream();
+
+            out.setWriteListener(new WriteListener()
+            {
+                int count = writes == null ? 1 : Integer.valueOf(writes);
+                {
+                    response.setContentLength(count * __bytes.length);
+                }
+
+                @Override
+                public void onWritePossible() throws IOException
+                {
+                    while(out.isReady())
+                    {
+                        if (count-- == 0)
+                        {
+                            out.close();
+                            break;
+                        }
+
+                        out.write(__bytes);
+                    }
+                }
+
+                @Override
+                public void onError(Throwable t)
+                {
+                    t.printStackTrace();
+                }
+            });
+        }
+    }
+
+    public static class BufferServlet extends HttpServlet
+    {
+        @Override
+        protected void doGet(HttpServletRequest req, HttpServletResponse response) throws ServletException, IOException
+        {
+            HttpOutput out = (HttpOutput)response.getOutputStream();
+            ByteBuffer buffer = BufferUtil.toBuffer(__bytes).asReadOnlyBuffer();
+            response.setContentLength(buffer.remaining());
+            response.setContentType("text/plain");
+            out.write(buffer);
         }
     }
 
@@ -259,7 +321,7 @@ public class GzipHandlerTest
     }
 
     @Test
-    public void testGzipHandler() throws Exception
+    public void testBlockingResponse() throws Exception
     {
         // generated and parsed test
         HttpTester.Request request = HttpTester.newRequest();
@@ -283,6 +345,113 @@ public class GzipHandlerTest
         IO.copy(testIn, testOut);
 
         assertEquals(__content, testOut.toString("UTF8"));
+    }
+
+    @Test
+    public void testAsyncResponse() throws Exception
+    {
+        // generated and parsed test
+        HttpTester.Request request = HttpTester.newRequest();
+        HttpTester.Response response;
+
+        request.setMethod("GET");
+        request.setURI("/ctx/async/info?writes=1");
+        request.setVersion("HTTP/1.0");
+        request.setHeader("Host", "tester");
+        request.setHeader("accept-encoding", "gzip");
+
+        response = HttpTester.parseResponse(_connector.getResponse(request.generate()));
+
+        assertThat(response.getStatus(), is(200));
+        assertThat(response.get("Content-Encoding"), Matchers.equalToIgnoringCase("gzip"));
+        assertThat(response.getCSV("Vary", false), Matchers.contains("Accept-Encoding"));
+
+        InputStream testIn = new GZIPInputStream(new ByteArrayInputStream(response.getContentBytes()));
+        ByteArrayOutputStream testOut = new ByteArrayOutputStream();
+        IO.copy(testIn, testOut);
+
+        assertEquals(__content, testOut.toString("UTF8"));
+    }
+
+    @Test
+    public void testBufferResponse() throws Exception
+    {
+        // generated and parsed test
+        HttpTester.Request request = HttpTester.newRequest();
+        HttpTester.Response response;
+
+        request.setMethod("GET");
+        request.setURI("/ctx/buffer/info");
+        request.setVersion("HTTP/1.0");
+        request.setHeader("Host", "tester");
+        request.setHeader("accept-encoding", "gzip");
+
+        response = HttpTester.parseResponse(_connector.getResponse(request.generate()));
+
+        assertThat(response.getStatus(), is(200));
+        assertThat(response.get("Content-Encoding"), Matchers.equalToIgnoringCase("gzip"));
+        assertThat(response.getCSV("Vary", false), Matchers.contains("Accept-Encoding"));
+
+        InputStream testIn = new GZIPInputStream(new ByteArrayInputStream(response.getContentBytes()));
+        ByteArrayOutputStream testOut = new ByteArrayOutputStream();
+        IO.copy(testIn, testOut);
+
+        assertEquals(__content, testOut.toString("UTF8"));
+    }
+
+    @Test
+    public void testAsyncLargeResponse() throws Exception
+    {
+        int writes = 100;
+        // generated and parsed test
+        HttpTester.Request request = HttpTester.newRequest();
+        HttpTester.Response response;
+
+        request.setMethod("GET");
+        request.setURI("/ctx/async/info?writes=" + writes);
+        request.setVersion("HTTP/1.0");
+        request.setHeader("Host", "tester");
+        request.setHeader("accept-encoding", "gzip");
+
+        response = HttpTester.parseResponse(_connector.getResponse(request.generate()));
+
+        assertThat(response.getStatus(), is(200));
+        assertThat(response.get("Content-Encoding"), Matchers.equalToIgnoringCase("gzip"));
+        assertThat(response.getCSV("Vary", false), Matchers.contains("Accept-Encoding"));
+
+        InputStream testIn = new GZIPInputStream(new ByteArrayInputStream(response.getContentBytes()));
+        ByteArrayOutputStream testOut = new ByteArrayOutputStream();
+        IO.copy(testIn, testOut);
+
+        byte[] bytes = testOut.toByteArray();
+
+        for (int i = 0; i < writes; i++)
+            assertEquals(__content, new String(Arrays.copyOfRange(bytes,i * __bytes.length, (i + 1) * __bytes.length), StandardCharsets.UTF_8), "chunk " + i);
+    }
+
+    @Test
+    public void testAsyncEmptyResponse() throws Exception
+    {
+        int writes = 0;
+        _server.getChildHandlerByClass(GzipHandler.class).setMinGzipSize(0);
+
+        // generated and parsed test
+        HttpTester.Request request = HttpTester.newRequest();
+        HttpTester.Response response;
+
+        request.setMethod("GET");
+        request.setURI("/ctx/async/info?writes=" + writes);
+        request.setVersion("HTTP/1.0");
+        request.setHeader("Host", "tester");
+        request.setHeader("accept-encoding", "gzip");
+
+        response = HttpTester.parseResponse(_connector.getResponse(request.generate()));
+
+        assertThat(response.getStatus(), is(200));
+        assertThat(response.get("Content-Encoding"), Matchers.equalToIgnoringCase("gzip"));
+        assertThat(response.getCSV("Vary", false), Matchers.contains("Accept-Encoding"));
+
+
     }
 
     @Test

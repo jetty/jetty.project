@@ -30,6 +30,7 @@ import java.util.Set;
 
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
+import org.eclipse.jetty.http2.hpack.HpackException;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.Callback;
@@ -206,6 +207,13 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
                             // Continue to process control frames.
                         }
                     }
+                }
+                catch (HpackException.StreamException failure)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Failure generating " + entry, failure);
+                    entry.failed(failure);
+                    pending.remove();
                 }
                 catch (Throwable failure)
                 {
@@ -397,7 +405,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
             return 0;
         }
 
-        protected abstract boolean generate(ByteBufferPool.Lease lease);
+        protected abstract boolean generate(ByteBufferPool.Lease lease) throws HpackException;
 
         public abstract long onFlushed(long bytes) throws IOException;
 
