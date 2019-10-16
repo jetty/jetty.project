@@ -92,8 +92,7 @@ import org.eclipse.jetty.util.log.Logger;
  * </li>
  * <li>
  * Is the Response {@code Content-Length} header present, and does its
- * value meet the minimum gzip size requirements?
- * <br> (Default: 1024 bytes. see {@link GzipHandler#BREAK_EVEN_GZIP_SIZE})
+ * value meet the minimum gzip size requirements (default 1024 bytes)?
  * </li>
  * <li>
  * Is the Request {@code Accept} header present and does it contain the
