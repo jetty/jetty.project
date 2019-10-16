@@ -378,6 +378,16 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
         _decryptedEndPoint.onFillableFail(cause == null ? new IOException() : cause);
     }
 
+    protected SSLEngineResult wrap(SSLEngine sslEngine, ByteBuffer[] input, ByteBuffer output) throws SSLException
+    {
+        return sslEngine.wrap(input, output);
+    }
+
+    protected SSLEngineResult unwrap(SSLEngine sslEngine, ByteBuffer input, ByteBuffer output) throws SSLException
+    {
+        return sslEngine.unwrap(input, output);
+    }
+
     @Override
     public String toConnectionString()
     {
@@ -641,7 +651,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                             try
                             {
                                 _underflown = false;
-                                unwrapResult = _sslEngine.unwrap(_encryptedInput, appIn);
+                                unwrapResult = unwrap(_sslEngine, _encryptedInput, appIn);
                             }
                             finally
                             {
@@ -716,8 +726,8 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                     }
                     catch (Throwable x)
                     {
-                        Throwable failure = handleException(x, "fill");
-                        handshakeFailed(failure);
+                        Throwable f = handleException(x, "fill");
+                        Throwable failure = handshakeFailed(f);
                         if (_flushState == FlushState.WAIT_FOR_FILL)
                         {
                             _flushState = FlushState.IDLE;
@@ -854,7 +864,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
             }
         }
 
-        private void handshakeFailed(Throwable failure)
+        private Throwable handshakeFailed(Throwable failure)
         {
             if (_handshake.compareAndSet(HandshakeState.HANDSHAKE, HandshakeState.FAILED))
             {
@@ -864,6 +874,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                     failure = new SSLHandshakeException(failure.getMessage()).initCause(failure);
                 notifyHandshakeFailed(_sslEngine, failure);
             }
+            return failure;
         }
 
         private void terminateInput()
@@ -978,7 +989,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                             SSLEngineResult wrapResult;
                             try
                             {
-                                wrapResult = _sslEngine.wrap(appOuts, _encryptedOutput);
+                                wrapResult = wrap(_sslEngine, appOuts, _encryptedOutput);
                             }
                             finally
                             {
@@ -1057,8 +1068,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                     catch (Throwable x)
                     {
                         Throwable failure = handleException(x, "flush");
-                        handshakeFailed(failure);
-                        throw failure;
+                        throw handshakeFailed(failure);
                     }
                     finally
                     {
