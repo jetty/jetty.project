@@ -360,18 +360,20 @@ public abstract class RFC2616BaseTest
         // request message is terminated with a 'Connection: close'.
 
         StringBuffer req1 = new StringBuffer();
-        req1.append("GET /echo/R1 HTTP/1.1\n");
-        req1.append("Host: localhost\n");
-        req1.append("Transfer-Encoding: identity\n");
-        req1.append("Content-Type: text/plain\n");
-        req1.append("Content-Length: 5\n");
-        req1.append("\n");
-        req1.append("123\r\n");
+        req1.append("GET /echo/R1 HTTP/1.1\r\n");
+        req1.append("Host: localhost\r\n");
+        req1.append("Transfer-Encoding: identity\r\n");
+        req1.append("Content-Type: text/plain\r\n");
+        req1.append("\r\n");
+        req1.append("3;\r\n");
+        req1.append("123");
+        req1.append("\r\n");
+        req1.append("0;\r\n\r\n");
 
-        req1.append("GET /echo/R2 HTTP/1.1\n");
-        req1.append("Host: localhost\n");
-        req1.append("Connection: close\n");
-        req1.append("\n");
+        req1.append("GET /echo/R2 HTTP/1.1\r\n");
+        req1.append("Host: localhost\r\n");
+        req1.append("Connection: close\r\n");
+        req1.append("\r\n");
 
         List<HttpTester.Response> responses = http.requests(req1);
         assertEquals(2, responses.size(), "Response Count");
@@ -389,25 +391,25 @@ public abstract class RFC2616BaseTest
         // Server - ignore 'Content-Length' if 'Transfer-Encoding' is provided.
 
         StringBuffer req2 = new StringBuffer();
-        req2.append("GET /echo/R1 HTTP/1.1\n");
-        req2.append("Host: localhost\n");
-        req2.append("Transfer-Encoding: chunked\n");
-        req2.append("Content-Type: text/plain\n");
-        req2.append("Content-Length: 100\n");
-        req2.append("\n");
-        req2.append("3;\n");
-        req2.append("123\n");
-        req2.append("3;\n");
-        req2.append("456\n");
-        req2.append("0;\n");
-        req2.append("\n");
+        req2.append("GET /echo/R1 HTTP/1.1\r\n");
+        req2.append("Host: localhost\r\n");
+        req2.append("Transfer-Encoding: chunked\r\n");
+        req2.append("Content-Type: text/plain\r\n");
+        req2.append("Content-Length: 100\r\n");
+        req2.append("\r\n");
+        req2.append("3;\r\n");
+        req2.append("123");
+        req2.append("3;\r\n");
+        req2.append("456\r\n");
+        req2.append("0\r\n");
+        req2.append("\r\n");
 
-        req2.append("GET /echo/R2 HTTP/1.1\n");
-        req2.append("Host: localhost\n");
-        req2.append("Connection: close\n");
-        req2.append("Content-Type: text/plain\n");
-        req2.append("Content-Length: 6\n");
-        req2.append("\n");
+        req2.append("GET /echo/R2 HTTP/1.1\r\n");
+        req2.append("Host: localhost\r\n");
+        req2.append("Connection: close\r\n");
+        req2.append("Content-Type: text/plain\r\n");
+        req2.append("Content-Length: 6\r\n");
+        req2.append("\r\n");
         req2.append("7890AB");
 
         responses = http.requests(req2);

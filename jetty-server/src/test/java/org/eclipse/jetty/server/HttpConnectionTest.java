@@ -369,6 +369,7 @@ public class HttpConnectionTest
 
             // multiple headers
             Arguments.of(Arrays.asList("", "")), // no entries, 2 separate headers
+            Arguments.of(Arrays.asList("bogus", "identity")), // 2 separate headers
             Arguments.of(Arrays.asList("", "chunked")) // 2 separate headers
         );
     }
@@ -405,12 +406,12 @@ public class HttpConnectionTest
             Arguments.of(Arrays.asList("chunked, bogus")),
             Arguments.of(Arrays.asList("chunked, 'chunked'")),
             Arguments.of(Arrays.asList("chunked, identity")),
+            Arguments.of(Arrays.asList("chunked, identity, chunked")), // duplicate chunked
+            Arguments.of(Arrays.asList("chunked", "identity")), // 2 separate header lines
 
             // multiple chunked tokens present
             Arguments.of(Arrays.asList("chunked", "chunked")), // 2 separate header lines
-            Arguments.of(Arrays.asList("chunked, chunked")), // on same line
-            Arguments.of(Arrays.asList("chunked, identity, chunked")),
-            Arguments.of(Arrays.asList("chunked", "identity")) // 2 separate header lines
+            Arguments.of(Arrays.asList("chunked, chunked")) // on same line
         );
     }
 
