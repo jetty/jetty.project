@@ -44,7 +44,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 
-public class GzipHandlerMinSizeTest
+public class GzipHandlerBreakEvenSizeTest
 {
     private Server server;
     private HttpClient client;
@@ -89,9 +89,10 @@ public class GzipHandlerMinSizeTest
             .send();
 
         assertThat("Status Code", response.getStatus(), is(200));
-        System.out.println(response.getHeaders());
         assertThat("Size Requested", response.getHeaders().getField("X-SizeRequested").getIntValue(), is(size));
-        assertThat("Response Size", response.getHeaders().getField(HttpHeader.CONTENT_LENGTH).getIntValue(), lessThanOrEqualTo(size));
+
+        if (size > GzipHandler.BREAK_EVEN_GZIP_SIZE)
+            assertThat("Response Size", response.getHeaders().getField(HttpHeader.CONTENT_LENGTH).getIntValue(), lessThanOrEqualTo(size));
     }
 
     public static class VeryCompressibleContentServlet extends HttpServlet

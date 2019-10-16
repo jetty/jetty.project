@@ -61,7 +61,7 @@ public class GzipFilterLayeredTest
     private static final HttpConfiguration defaultHttp = new HttpConfiguration();
     private static final int LARGE = defaultHttp.getOutputBufferSize() * 8;
     private static final int SMALL = defaultHttp.getOutputBufferSize() / 4;
-    private static final int TINY = GzipHandler.DEFAULT_MIN_GZIP_SIZE / 2;
+    private static final int TINY = GzipHandler.BREAK_EVEN_GZIP_SIZE / 2;
     private static final boolean EXPECT_COMPRESSED = true;
 
     public static Stream<Arguments> scenarios()

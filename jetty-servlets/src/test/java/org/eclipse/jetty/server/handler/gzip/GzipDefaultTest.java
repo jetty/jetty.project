@@ -468,6 +468,7 @@ public class GzipDefaultTest
         tester.setContentServlet(HttpContentTypeWithEncoding.class);
         tester.getGzipHandler().addIncludedMimeTypes("text/plain");
         tester.getGzipHandler().setExcludedAgentPatterns();
+        tester.getGzipHandler().setMinGzipSize(16);
         try
         {
             tester.start();

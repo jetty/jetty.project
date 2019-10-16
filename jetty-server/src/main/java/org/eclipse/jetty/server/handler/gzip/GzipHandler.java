@@ -93,7 +93,7 @@ import org.eclipse.jetty.util.log.Logger;
  * <li>
  * Is the Response {@code Content-Length} header present, and does its
  * value meet the minimum gzip size requirements?
- * <br> (Default: 16 bytes. see {@link GzipHandler#DEFAULT_MIN_GZIP_SIZE})
+ * <br> (Default: 1024 bytes. see {@link GzipHandler#BREAK_EVEN_GZIP_SIZE})
  * </li>
  * <li>
  * Is the Request {@code Accept} header present and does it contain the
@@ -155,7 +155,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
 {
     public static final String GZIP = "gzip";
     public static final String DEFLATE = "deflate";
-    public static final int DEFAULT_MIN_GZIP_SIZE = 23;
+    public static final int BREAK_EVEN_GZIP_SIZE = 23;
     private static final Logger LOG = Log.getLogger(GzipHandler.class);
     private static final HttpField X_CE_GZIP = new PreEncodedHttpField("X-Content-Encoding", "gzip");
     private static final HttpField TE_CHUNKED = new PreEncodedHttpField(HttpHeader.TRANSFER_ENCODING, HttpHeaderValue.CHUNKED.asString());
@@ -164,7 +164,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     private int _poolCapacity = -1;
     private DeflaterPool _deflaterPool = null;
 
-    private int _minGzipSize = DEFAULT_MIN_GZIP_SIZE;
+    private int _minGzipSize = 1024;
     private int _compressionLevel = Deflater.DEFAULT_COMPRESSION;
     /**
      * @deprecated feature will be removed in Jetty 10.x, with no replacement.
@@ -955,7 +955,9 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
      */
     public void setMinGzipSize(int minGzipSize)
     {
-        _minGzipSize = Math.max(DEFAULT_MIN_GZIP_SIZE, minGzipSize);
+        if (minGzipSize < BREAK_EVEN_GZIP_SIZE)
+            LOG.warn("minGzipSize {} is less break even size {}", minGzipSize, BREAK_EVEN_GZIP_SIZE);
+        _minGzipSize = Math.max(0, minGzipSize);
     }
 
     /**
