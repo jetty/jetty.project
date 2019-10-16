@@ -707,7 +707,7 @@ public class HttpGenerator
             if (_contentPrepared > 0)
                 throw new BadMessageException(INTERNAL_SERVER_ERROR_500, "Content for no content response");
 
-            if (contentLength >= 0)
+            if (contentLengthField)
             {
                 if (response != null && response.getStatus() == HttpStatus.NOT_MODIFIED_304)
                     putContentLength(header, contentLength);
