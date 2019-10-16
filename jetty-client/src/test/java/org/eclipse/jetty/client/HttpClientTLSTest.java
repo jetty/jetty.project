@@ -19,17 +19,22 @@
 package org.eclipse.jetty.client;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSocket;
@@ -39,13 +44,21 @@ import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ssl.SslClientConnectionFactory;
+import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.io.ssl.SslHandshakeListener;
+import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpConnectionFactory;
+import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.ExecutorThreadPool;
@@ -68,7 +81,6 @@ public class HttpClientTLSTest
     private Server server;
     private ServerConnector connector;
     private HttpClient client;
-    private SSLSocket sslSocket;
 
     private void startServer(SslContextFactory.Server sslContextFactory, Handler handler) throws Exception
     {
@@ -424,16 +436,16 @@ public class HttpClientTLSTest
 
         String host = "localhost";
         int port = connector.getLocalPort();
-        Socket socket = new Socket(host, port);
-        sslSocket = (SSLSocket)clientTLSFactory.getSslContext().getSocketFactory().createSocket(socket, host, port, true);
+        Socket socket1 = new Socket(host, port);
+        SSLSocket sslSocket1 = (SSLSocket)clientTLSFactory.getSslContext().getSocketFactory().createSocket(socket1, host, port, true);
         CountDownLatch handshakeLatch1 = new CountDownLatch(1);
         AtomicReference<byte[]> session1 = new AtomicReference<>();
-        sslSocket.addHandshakeCompletedListener(event ->
+        sslSocket1.addHandshakeCompletedListener(event ->
         {
             session1.set(event.getSession().getId());
             handshakeLatch1.countDown();
         });
-        sslSocket.startHandshake();
+        sslSocket1.startHandshake();
         assertTrue(handshakeLatch1.await(5, TimeUnit.SECONDS));
 
         // In TLS 1.3 the server sends a NewSessionTicket post-handshake message
@@ -441,29 +453,29 @@ public class HttpClientTLSTest
 
         assertThrows(SocketTimeoutException.class, () ->
         {
-            sslSocket.setSoTimeout(1000);
-            sslSocket.getInputStream().read();
+            sslSocket1.setSoTimeout(1000);
+            sslSocket1.getInputStream().read();
         });
 
         // The client closes abruptly.
-        socket.close();
+        socket1.close();
 
         // Try again and compare the session ids.
-        socket = new Socket(host, port);
-        sslSocket = (SSLSocket)clientTLSFactory.getSslContext().getSocketFactory().createSocket(socket, host, port, true);
+        Socket socket2 = new Socket(host, port);
+        SSLSocket sslSocket2 = (SSLSocket)clientTLSFactory.getSslContext().getSocketFactory().createSocket(socket2, host, port, true);
         CountDownLatch handshakeLatch2 = new CountDownLatch(1);
         AtomicReference<byte[]> session2 = new AtomicReference<>();
-        sslSocket.addHandshakeCompletedListener(event ->
+        sslSocket2.addHandshakeCompletedListener(event ->
         {
             session2.set(event.getSession().getId());
             handshakeLatch2.countDown();
         });
-        sslSocket.startHandshake();
+        sslSocket2.startHandshake();
         assertTrue(handshakeLatch2.await(5, TimeUnit.SECONDS));
 
         assertArrayEquals(session1.get(), session2.get());
 
-        sslSocket.close();
+        sslSocket2.close();
     }
 
     @Test
@@ -485,7 +497,7 @@ public class HttpClientTLSTest
                 protected ClientConnectionFactory newSslClientConnectionFactory(SslContextFactory.Client sslContextFactory, ClientConnectionFactory connectionFactory)
                 {
                     SslClientConnectionFactory ssl = (SslClientConnectionFactory)super.newSslClientConnectionFactory(sslContextFactory, connectionFactory);
-                    ssl.setAllowMissingCloseMessage(false);
+                    ssl.setRequireCloseMessage(true);
                     return ssl;
                 }
             };
@@ -512,19 +524,19 @@ public class HttpClientTLSTest
                         break;
                 }
 
-                // If the response is Content-Length delimited, allowing the
-                // missing TLS Close Message is fine because the application
-                // will see a EOFException anyway.
-                // If the response is connection delimited, allowing the
-                // missing TLS Close Message is bad because the application
-                // will see a successful response with truncated content.
+                // If the response is Content-Length delimited, the lack of
+                // the TLS Close Message is fine because the application
+                // will see a EOFException anyway: the Content-Length and
+                // the actual content bytes count won't match.
+                // If the response is connection delimited, the lack of the
+                // TLS Close Message is bad because the application will
+                // see a successful response, but with truncated content.
 
-                // Verify that by not allowing the missing
-                // TLS Close Message we get a response failure.
+                // Verify that by requiring the TLS Close Message we get
+                // a response failure.
 
                 byte[] half = new byte[8];
                 String response = "HTTP/1.1 200 OK\r\n" +
-//                        "Content-Length: " + (half.length * 2) + "\r\n" +
                     "Connection: close\r\n" +
                     "\r\n";
                 OutputStream output = sslSocket.getOutputStream();
@@ -563,5 +575,201 @@ public class HttpClientTLSTest
             });
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testNeverUsedConnectionThenServerIdleTimeout() throws Exception
+    {
+        long idleTimeout = 2000;
+
+        SslContextFactory.Server serverTLSFactory = createServerSslContextFactory();
+        QueuedThreadPool serverThreads = new QueuedThreadPool();
+        serverThreads.setName("server");
+        server = new Server(serverThreads);
+        HttpConfiguration httpConfig = new HttpConfiguration();
+        httpConfig.addCustomizer(new SecureRequestCustomizer());
+        HttpConnectionFactory http = new HttpConnectionFactory(httpConfig);
+        AtomicLong serverBytes = new AtomicLong();
+        SslConnectionFactory ssl = new SslConnectionFactory(serverTLSFactory, http.getProtocol())
+        {
+            @Override
+            protected SslConnection newSslConnection(Connector connector, EndPoint endPoint, SSLEngine engine)
+            {
+                return new SslConnection(connector.getByteBufferPool(), connector.getExecutor(), endPoint, engine, isDirectBuffersForEncryption(), isDirectBuffersForDecryption())
+                {
+                    @Override
+                    protected int networkFill(ByteBuffer input) throws IOException
+                    {
+                        int n = super.networkFill(input);
+                        if (n > 0)
+                            serverBytes.addAndGet(n);
+                        return n;
+                    }
+                };
+            }
+        };
+        connector = new ServerConnector(server, 1, 1, ssl, http);
+        connector.setIdleTimeout(idleTimeout);
+        server.addConnector(connector);
+        server.setHandler(new EmptyServerHandler());
+        server.start();
+
+        SslContextFactory.Client clientTLSFactory = createClientSslContextFactory();
+        ClientConnector clientConnector = new ClientConnector();
+        clientConnector.setSelectors(1);
+        clientConnector.setSslContextFactory(clientTLSFactory);
+        QueuedThreadPool clientThreads = new QueuedThreadPool();
+        clientThreads.setName("client");
+        clientConnector.setExecutor(clientThreads);
+        AtomicLong clientBytes = new AtomicLong();
+        client = new HttpClient(new HttpClientTransportOverHTTP(clientConnector))
+        {
+            @Override
+            protected ClientConnectionFactory newSslClientConnectionFactory(SslContextFactory.Client sslContextFactory, ClientConnectionFactory connectionFactory)
+            {
+                if (sslContextFactory == null)
+                    sslContextFactory = getSslContextFactory();
+                return new SslClientConnectionFactory(sslContextFactory, getByteBufferPool(), getExecutor(), connectionFactory)
+                {
+                    @Override
+                    protected SslConnection newSslConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, SSLEngine engine)
+                    {
+                        return new SslConnection(byteBufferPool, executor, endPoint, engine, isDirectBuffersForEncryption(), isDirectBuffersForDecryption())
+                        {
+                            @Override
+                            protected int networkFill(ByteBuffer input) throws IOException
+                            {
+                                int n = super.networkFill(input);
+                                if (n > 0)
+                                    clientBytes.addAndGet(n);
+                                return n;
+                            }
+                        };
+                    }
+                };
+            }
+        };
+        client.setExecutor(clientThreads);
+        client.start();
+
+        // Create a connection but don't use it.
+        Origin origin = new Origin(HttpScheme.HTTPS.asString(), "localhost", connector.getLocalPort());
+        HttpDestination destination = client.resolveDestination(new HttpDestination.Key(origin, null));
+        DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
+        // Trigger the creation of a new connection, but don't use it.
+        connectionPool.tryCreate(-1);
+        // Verify that the connection has been created.
+        while (true)
+        {
+            Thread.sleep(50);
+            if (connectionPool.getConnectionCount() == 1)
+                break;
+        }
+
+        // Wait for the server to idle timeout the connection.
+        Thread.sleep(idleTimeout + idleTimeout / 2);
+
+        // The connection should be gone from the connection pool.
+        assertEquals(0, connectionPool.getConnectionCount(), connectionPool.dump());
+        assertEquals(0, serverBytes.get());
+        assertEquals(0, clientBytes.get());
+    }
+
+    @Test
+    public void testNeverUsedConnectionThenClientIdleTimeout() throws Exception
+    {
+        SslContextFactory.Server serverTLSFactory = createServerSslContextFactory();
+        QueuedThreadPool serverThreads = new QueuedThreadPool();
+        serverThreads.setName("server");
+        server = new Server(serverThreads);
+        HttpConfiguration httpConfig = new HttpConfiguration();
+        httpConfig.addCustomizer(new SecureRequestCustomizer());
+        HttpConnectionFactory http = new HttpConnectionFactory(httpConfig);
+        AtomicLong serverBytes = new AtomicLong();
+        SslConnectionFactory ssl = new SslConnectionFactory(serverTLSFactory, http.getProtocol())
+        {
+            @Override
+            protected SslConnection newSslConnection(Connector connector, EndPoint endPoint, SSLEngine engine)
+            {
+                return new SslConnection(connector.getByteBufferPool(), connector.getExecutor(), endPoint, engine, isDirectBuffersForEncryption(), isDirectBuffersForDecryption())
+                {
+                    @Override
+                    protected int networkFill(ByteBuffer input) throws IOException
+                    {
+                        int n = super.networkFill(input);
+                        if (n > 0)
+                            serverBytes.addAndGet(n);
+                        return n;
+                    }
+                };
+            }
+        };
+        connector = new ServerConnector(server, 1, 1, ssl, http);
+        server.addConnector(connector);
+        server.setHandler(new EmptyServerHandler());
+        server.start();
+
+        long idleTimeout = 2000;
+
+        SslContextFactory.Client clientTLSFactory = createClientSslContextFactory();
+        ClientConnector clientConnector = new ClientConnector();
+        clientConnector.setSelectors(1);
+        clientConnector.setSslContextFactory(clientTLSFactory);
+        QueuedThreadPool clientThreads = new QueuedThreadPool();
+        clientThreads.setName("client");
+        clientConnector.setExecutor(clientThreads);
+        AtomicLong clientBytes = new AtomicLong();
+        client = new HttpClient(new HttpClientTransportOverHTTP(clientConnector))
+        {
+            @Override
+            protected ClientConnectionFactory newSslClientConnectionFactory(SslContextFactory.Client sslContextFactory, ClientConnectionFactory connectionFactory)
+            {
+                if (sslContextFactory == null)
+                    sslContextFactory = getSslContextFactory();
+                return new SslClientConnectionFactory(sslContextFactory, getByteBufferPool(), getExecutor(), connectionFactory)
+                {
+                    @Override
+                    protected SslConnection newSslConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, SSLEngine engine)
+                    {
+                        return new SslConnection(byteBufferPool, executor, endPoint, engine, isDirectBuffersForEncryption(), isDirectBuffersForDecryption())
+                        {
+                            @Override
+                            protected int networkFill(ByteBuffer input) throws IOException
+                            {
+                                int n = super.networkFill(input);
+                                if (n > 0)
+                                    clientBytes.addAndGet(n);
+                                return n;
+                            }
+                        };
+                    }
+                };
+            }
+        };
+        client.setIdleTimeout(idleTimeout);
+        client.setExecutor(clientThreads);
+        client.start();
+
+        // Create a connection but don't use it.
+        Origin origin = new Origin(HttpScheme.HTTPS.asString(), "localhost", connector.getLocalPort());
+        HttpDestination destination = client.resolveDestination(new HttpDestination.Key(origin, null));
+        DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
+        // Trigger the creation of a new connection, but don't use it.
+        connectionPool.tryCreate(-1);
+        // Verify that the connection has been created.
+        while (true)
+        {
+            Thread.sleep(50);
+            if (connectionPool.getConnectionCount() == 1)
+                break;
+        }
+
+        // Wait for the client to idle timeout the connection.
+        Thread.sleep(idleTimeout + idleTimeout / 2);
+
+        // The connection should be gone from the connection pool.
+        assertEquals(0, connectionPool.getConnectionCount(), connectionPool.dump());
+        assertEquals(0, serverBytes.get());
+        assertEquals(0, clientBytes.get());
     }
 }

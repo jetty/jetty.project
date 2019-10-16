@@ -80,9 +80,10 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
     private static final Logger LOG = Log.getLogger(SslConnection.class);
     private static final String TLS_1_3 = "TLSv1.3";
 
-    private enum Handshake
+    private enum HandshakeState
     {
         INITIAL,
+        HANDSHAKE,
         SUCCEEDED,
         FAILED
     }
@@ -113,10 +114,10 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
     private boolean _renegotiationAllowed;
     private int _renegotiationLimit = -1;
     private boolean _closedOutbound;
-    private boolean _allowMissingCloseMessage = true;
+    private boolean _requireCloseMessage;
     private FlushState _flushState = FlushState.IDLE;
     private FillState _fillState = FillState.IDLE;
-    private AtomicReference<Handshake> _handshake = new AtomicReference<>(Handshake.INITIAL);
+    private AtomicReference<HandshakeState> _handshake = new AtomicReference<>(HandshakeState.INITIAL);
     private boolean _underflown;
 
     private abstract class RunnableTask implements Runnable, Invocable
@@ -231,7 +232,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
     }
 
     /**
-     * @return The number of renegotions allowed for this connection.  When the limit
+     * @return The number of renegotiations allowed for this connection.  When the limit
      * is 0 renegotiation will be denied. If the limit is less than 0 then no limit is applied.
      */
     public int getRenegotiationLimit()
@@ -240,7 +241,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
     }
 
     /**
-     * @param renegotiationLimit The number of renegotions allowed for this connection.
+     * @param renegotiationLimit The number of renegotiations allowed for this connection.
      * When the limit is 0 renegotiation will be denied. If the limit is less than 0 then no limit is applied.
      * Default -1.
      */
@@ -249,14 +250,42 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
         _renegotiationLimit = renegotiationLimit;
     }
 
-    public boolean isAllowMissingCloseMessage()
+    /**
+     * @return whether peers must send the TLS {@code close_notify} message
+     */
+    public boolean isRequireCloseMessage()
     {
-        return _allowMissingCloseMessage;
+        return _requireCloseMessage;
     }
 
-    public void setAllowMissingCloseMessage(boolean allowMissingCloseMessage)
+    /**
+     * <p>Sets whether it is required that a peer send the TLS {@code close_notify} message
+     * to indicate the will to close the connection, otherwise it may be interpreted as a
+     * truncation attack.</p>
+     * <p>This option is only useful on clients, since typically servers cannot accept
+     * connection-delimited content that may be truncated.</p>
+     *
+     * @param requireCloseMessage whether peers must send the TLS {@code close_notify} message
+     */
+    public void setRequireCloseMessage(boolean requireCloseMessage)
     {
-        this._allowMissingCloseMessage = allowMissingCloseMessage;
+        _requireCloseMessage = requireCloseMessage;
+    }
+
+    private boolean isHandshakeInitial()
+    {
+        return _handshake.get() == HandshakeState.INITIAL;
+    }
+
+    private boolean isHandshakeSucceeded()
+    {
+        return _handshake.get() == HandshakeState.SUCCEEDED;
+    }
+
+    private boolean isHandshakeComplete()
+    {
+        HandshakeState state = _handshake.get();
+        return state == HandshakeState.SUCCEEDED || state == HandshakeState.FAILED;
     }
 
     private void acquireEncryptedInput()
@@ -359,6 +388,16 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
             _bufferPool.release(_encryptedOutput);
             _encryptedOutput = null;
         }
+    }
+
+    protected int networkFill(ByteBuffer input) throws IOException
+    {
+        return getEndPoint().fill(input);
+    }
+
+    protected boolean networkFlush(ByteBuffer output) throws IOException
+    {
+        return getEndPoint().flush(output);
     }
 
     public class DecryptedEndPoint extends AbstractEndPoint
@@ -558,13 +597,22 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                             }
 
                             // Let's try reading some encrypted data... even if we have some already.
-                            int netFilled = getEndPoint().fill(_encryptedInput);
-
+                            int netFilled = networkFill(_encryptedInput);
                             if (LOG.isDebugEnabled())
                                 LOG.debug("net filled={}", netFilled);
 
-                            if (netFilled > 0 && _handshake.get() == Handshake.INITIAL && isOutboundDone())
+                            // Workaround for Java 11 behavior.
+                            if (netFilled < 0 && isHandshakeInitial() && BufferUtil.isEmpty(_encryptedInput))
+                                closeInbound();
+
+                            if (netFilled > 0 && !isHandshakeComplete() && isOutboundDone())
                                 throw new SSLHandshakeException("Closed during handshake");
+
+                            if (_handshake.compareAndSet(HandshakeState.INITIAL, HandshakeState.HANDSHAKE))
+                            {
+                                if (LOG.isDebugEnabled())
+                                    LOG.debug("fill starting handshake {}", SslConnection.this);
+                            }
 
                             // Let's unwrap even if we have no net data because in that
                             // case we want to fall through to the handshake handling
@@ -771,7 +819,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
 
         private void handshakeSucceeded() throws SSLException
         {
-            if (_handshake.compareAndSet(Handshake.INITIAL, Handshake.SUCCEEDED))
+            if (_handshake.compareAndSet(HandshakeState.HANDSHAKE, HandshakeState.SUCCEEDED))
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("handshake succeeded {} {} {}/{}", SslConnection.this,
@@ -779,7 +827,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                         _sslEngine.getSession().getProtocol(), _sslEngine.getSession().getCipherSuite());
                 notifyHandshakeSucceeded(_sslEngine);
             }
-            else if (_handshake.get() == Handshake.SUCCEEDED)
+            else if (isHandshakeSucceeded())
             {
                 if (_renegotiationLimit > 0)
                     _renegotiationLimit--;
@@ -788,7 +836,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
 
         private void handshakeFailed(Throwable failure)
         {
-            if (_handshake.compareAndSet(Handshake.INITIAL, Handshake.FAILED))
+            if (_handshake.compareAndSet(HandshakeState.HANDSHAKE, HandshakeState.FAILED))
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("handshake failed {} {}", SslConnection.this, failure);
@@ -820,7 +868,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
             }
             catch (SSLException x)
             {
-                if (handshakeStatus == HandshakeStatus.NOT_HANDSHAKING && !isAllowMissingCloseMessage())
+                if (handshakeStatus == HandshakeStatus.NOT_HANDSHAKING && isRequireCloseMessage())
                     throw x;
                 LOG.ignore(x);
                 return x;
@@ -850,7 +898,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                     }
 
                     // finish of any previous flushes
-                    if (BufferUtil.hasContent(_encryptedOutput) && !getEndPoint().flush(_encryptedOutput))
+                    if (BufferUtil.hasContent(_encryptedOutput) && !networkFlush(_encryptedOutput))
                         return false;
 
                     boolean isEmpty = BufferUtil.isEmpty(appOuts);
@@ -878,6 +926,9 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                                     continue;
 
                                 case NEED_UNWRAP:
+                                    // Workaround for Java 11 behavior.
+                                    if (isHandshakeInitial() && isOutboundDone())
+                                        break;
                                     if (_fillState == FillState.IDLE)
                                     {
                                         int filled = fill(BufferUtil.EMPTY_BUFFER);
@@ -894,6 +945,12 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
 
                             if (_encryptedOutput == null)
                                 _encryptedOutput = _bufferPool.acquire(_sslEngine.getSession().getPacketBufferSize(), _encryptedDirectBuffers);
+
+                            if (_handshake.compareAndSet(HandshakeState.INITIAL, HandshakeState.HANDSHAKE))
+                            {
+                                if (LOG.isDebugEnabled())
+                                    LOG.debug("flush starting handshake {}", SslConnection.this);
+                            }
 
                             // We call sslEngine.wrap to try to take bytes from appOut buffers and encrypt them into the _netOut buffer
                             BufferUtil.compact(_encryptedOutput);
@@ -920,7 +977,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                             // if we have net bytes, let's try to flush them
                             boolean flushed = true;
                             if (BufferUtil.hasContent(_encryptedOutput))
-                                flushed = getEndPoint().flush(_encryptedOutput);
+                                flushed = networkFlush(_encryptedOutput);
 
                             if (LOG.isDebugEnabled())
                                 LOG.debug("net flushed={}, ac={}", flushed, isEmpty);
@@ -1096,15 +1153,15 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
         @Override
         public void doShutdownOutput()
         {
-            final EndPoint endp = getEndPoint();
+            EndPoint endPoint = getEndPoint();
             try
             {
                 boolean close;
                 boolean flush = false;
                 synchronized (_decryptedEndPoint)
                 {
-                    boolean ishut = endp.isInputShutdown();
-                    boolean oshut = endp.isOutputShutdown();
+                    boolean ishut = endPoint.isInputShutdown();
+                    boolean oshut = endPoint.isOutputShutdown();
                     if (LOG.isDebugEnabled())
                         LOG.debug("shutdownOutput: {} oshut={}, ishut={}", SslConnection.this, oshut, ishut);
 
@@ -1128,19 +1185,19 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                         // let's just flush the encrypted output in the background.
                         ByteBuffer write = _encryptedOutput;
                         if (BufferUtil.hasContent(write))
-                            endp.write(Callback.from(Callback.NOOP::succeeded, t -> endp.close()), write);
+                            endPoint.write(Callback.from(Callback.NOOP::succeeded, t -> endPoint.close()), write);
                     }
                 }
 
                 if (close)
-                    endp.close();
+                    endPoint.close();
                 else
                     ensureFillInterested();
             }
             catch (Throwable x)
             {
                 LOG.ignore(x);
-                endp.close();
+                endPoint.close();
             }
         }
 
@@ -1152,7 +1209,8 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
             }
             catch (Throwable x)
             {
-                LOG.ignore(x);
+                if (LOG.isDebugEnabled())
+                    LOG.debug(x);
             }
         }
 
@@ -1258,7 +1316,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
 
         private boolean isRenegotiating()
         {
-            if (_handshake.get() == Handshake.INITIAL)
+            if (!isHandshakeComplete())
                 return false;
             if (isTLS13())
                 return false;
