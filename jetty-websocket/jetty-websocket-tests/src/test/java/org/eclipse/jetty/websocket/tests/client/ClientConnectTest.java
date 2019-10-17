@@ -26,6 +26,7 @@ import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.time.Duration;
 import java.util.EnumSet;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -70,6 +71,7 @@ public class ClientConnectTest
 {
     private Server server;
     private WebSocketClient client;
+    private CountDownLatch serverLatch = new CountDownLatch(1);
 
     @SuppressWarnings("unchecked")
     private <E extends Throwable> E assertExpectedError(ExecutionException e, CloseTrackingEndpoint wsocket, Matcher<Throwable> errorMatcher)
@@ -97,7 +99,7 @@ public class ClientConnectTest
     {
         client = new WebSocketClient();
         client.setConnectTimeout(TimeUnit.SECONDS.toMillis(3));
-        client.setIdleTimeout(Duration.ofSeconds(10));
+        client.setIdleTimeout(Duration.ofSeconds(3));
         client.start();
     }
 
@@ -124,6 +126,19 @@ public class ClientConnectTest
                     return new EchoSocket();
                 });
                 container.addMapping("/get-auth-header", (req, resp) -> new GetAuthHeaderEndpoint());
+
+                container.addMapping("/noResponse", (req, resp) ->
+                {
+                    try
+                    {
+                        serverLatch.await();
+                    }
+                    catch (InterruptedException e)
+                    {
+                        e.printStackTrace();
+                    }
+                    return null;
+                });
             });
 
         context.addFilter(WebSocketUpgradeFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
@@ -367,35 +382,31 @@ public class ClientConnectTest
     @Test
     public void testConnectionTimeout_Concurrent() throws Exception
     {
+        client.setConnectTimeout(1000);
         CloseTrackingEndpoint cliSock = new CloseTrackingEndpoint();
 
-        try (ServerSocket serverSocket = new ServerSocket())
-        {
-            InetAddress addr = InetAddress.getByName("localhost");
-            InetSocketAddress endpoint = new InetSocketAddress(addr, 0);
-            serverSocket.bind(endpoint, 1);
-            int port = serverSocket.getLocalPort();
-            URI wsUri = URI.create(String.format("ws://%s:%d/", addr.getHostAddress(), port));
-            Future<Session> future = client.connect(cliSock, wsUri);
+        // Connect to endpoint which waits and does not send back a response.
+        URI wsUri = WSURI.toWebsocket(server.getURI().resolve("/noResponse"));
+        Future<Session> future = client.connect(cliSock, wsUri);
 
-            // Accept the connection, but do nothing on it (no response, no upgrade, etc)
-            serverSocket.accept();
+        // The attempt to get upgrade response future should throw error
+        Exception e = assertThrows(Exception.class,
+            () -> future.get(5, TimeUnit.SECONDS));
 
-            // The attempt to get upgrade response future should throw error
-            Exception e = assertThrows(Exception.class,
-                () -> future.get(5, TimeUnit.SECONDS));
+        // Allow server to exit now we have failed.
+        serverLatch.countDown();
 
-            if (e instanceof ExecutionException)
-            {
-                assertExpectedError((ExecutionException)e, cliSock, anyOf(
-                    instanceOf(ConnectException.class),
-                    instanceOf(UpgradeException.class)
-                ));
-            }
-            else
-            {
-                assertThat("Should have been a TimeoutException", e, instanceOf(TimeoutException.class));
-            }
-        }
+        // Unwrap the exception to test if it was what we expected.
+        assertThat(e, instanceOf(ExecutionException.class));
+
+        Throwable jettyUpgradeException = e.getCause();
+        assertThat(jettyUpgradeException, instanceOf(UpgradeException.class));
+
+        Throwable coreUpgradeException = jettyUpgradeException.getCause();
+        assertThat(coreUpgradeException, instanceOf(org.eclipse.jetty.websocket.core.UpgradeException.class));
+
+        Throwable timeoutException = coreUpgradeException.getCause();
+        assertThat(timeoutException, instanceOf(TimeoutException.class));
+        assertThat(timeoutException.getMessage(), containsString("Idle timeout"));
     }
 }
