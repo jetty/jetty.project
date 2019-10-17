@@ -239,6 +239,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
     public void setIdleTimeout(Duration duration)
     {
         configurationCustomizer.setIdleTimeout(duration);
+        getHttpClient().setIdleTimeout(duration.toMillis());
     }
 
     @Override
@@ -281,14 +282,13 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
     }
 
     /**
-     * Set the timeout for establishing a WebSocket connection with the remote server.
+     * Set the timeout for connecting to the remote server.
      *
      * @param ms the timeout in milliseconds
      */
     public void setConnectTimeout(long ms)
     {
         getHttpClient().setConnectTimeout(ms);
-        getHttpClient().setIdleTimeout(ms);
     }
 
     public CookieStore getCookieStore()

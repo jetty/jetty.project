@@ -383,6 +383,7 @@ public class ClientConnectTest
     public void testConnectionTimeout_Concurrent() throws Exception
     {
         client.setConnectTimeout(1000);
+        client.setIdleTimeout(Duration.ofSeconds(1));
         CloseTrackingEndpoint cliSock = new CloseTrackingEndpoint();
 
         // Connect to endpoint which waits and does not send back a response.
