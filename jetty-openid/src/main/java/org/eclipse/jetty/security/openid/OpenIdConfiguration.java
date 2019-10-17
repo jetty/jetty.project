@@ -115,9 +115,7 @@ public class OpenIdConfiguration extends ContainerLifeCycle implements Serializa
     {
         SslContextFactory.Client sslContextFactory = new SslContextFactory.Client(false);
         sslContextFactory.setEndpointIdentificationAlgorithm("https");
-        HttpClient client = new HttpClient(sslContextFactory);
-        client.setFollowRedirects(false);
-        return client;
+        return new HttpClient(sslContextFactory);
     }
 
     private static Map<String, Object> fetchOpenIdConnectMetadata(String provider, HttpClient httpClient)

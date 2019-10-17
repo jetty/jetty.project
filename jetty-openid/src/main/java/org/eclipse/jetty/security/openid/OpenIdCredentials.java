@@ -78,7 +78,7 @@ public class OpenIdCredentials implements Serializable
         return response;
     }
 
-    public void redeemAuthCode(HttpClient httpClient) throws Throwable
+    public void redeemAuthCode(HttpClient httpClient) throws Exception
     {
         if (LOG.isDebugEnabled())
             LOG.debug("redeemAuthCode() {}", this);
@@ -185,7 +185,10 @@ public class OpenIdCredentials implements Serializable
         String jwtClaimString = new String(decoder.decode(padJWTSection(sections[1])), StandardCharsets.UTF_8);
         String jwtSignature = sections[2];
 
-        Map<String, Object> jwtHeader = (Map)JSON.parse(jwtHeaderString);
+        Object parsedJwtHeader = JSON.parse(jwtHeaderString);
+        if (!(parsedJwtHeader instanceof Map))
+            throw new IllegalStateException("Invalid JWT header");
+        Map<String, Object> jwtHeader = (Map)parsedJwtHeader;
         LOG.debug("JWT Header: {}", jwtHeader);
 
         /* If the ID Token is received via direct communication between the Client
@@ -194,7 +197,11 @@ public class OpenIdCredentials implements Serializable
         if (LOG.isDebugEnabled())
             LOG.debug("JWT signature not validated {}", jwtSignature);
 
-        return (Map)JSON.parse(jwtClaimString);
+        Object parsedClaims = JSON.parse(jwtClaimString);
+        if (!(parsedClaims instanceof Map))
+            throw new IllegalStateException("Could not decode JSON for JWT claims.");
+
+        return (Map)parsedClaims;
     }
 
     private static byte[] padJWTSection(String unpaddedEncodedJwtSection)
@@ -223,7 +230,7 @@ public class OpenIdCredentials implements Serializable
         return paddedEncodedJwtSection;
     }
 
-    private Map<String, Object> claimAuthCode(HttpClient httpClient, String authCode) throws Throwable
+    private Map<String, Object> claimAuthCode(HttpClient httpClient, String authCode) throws Exception
     {
         Fields fields = new Fields();
         fields.add("code", authCode);
@@ -240,6 +247,10 @@ public class OpenIdCredentials implements Serializable
         if (LOG.isDebugEnabled())
             LOG.debug("Authentication response: {}", responseBody);
 
-        return (Map)JSON.parse(responseBody);
+        Object parsedResponse = JSON.parse(responseBody);
+        if (!(parsedResponse instanceof Map))
+            throw new IllegalStateException("Malformed response from OpenID Provider");
+
+        return (Map)parsedResponse;
     }
 }

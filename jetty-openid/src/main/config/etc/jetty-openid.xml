@@ -9,7 +9,6 @@
         <Set name="endpointIdentificationAlgorithm">https</Set>
       </New>
     </Arg>
-    <Set name="followRedirects" type="boolean">false</Set>
     <Set name="executor"><Ref refid="ThreadPool"/></Set>
   </New>
   <New id="OpenIdConfiguration" class="org.eclipse.jetty.security.openid.OpenIdConfiguration">
