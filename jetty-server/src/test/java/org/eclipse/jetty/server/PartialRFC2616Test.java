@@ -107,6 +107,33 @@ public class PartialRFC2616Test
         }
     }
 
+
+    @Test
+    public void test3_3_2()
+    {
+        try
+        {
+            String get = connector.getResponse("GET /R1 HTTP/1.0\n" + "Host: localhost\n" + "\n");
+            checkContains(get, 0, "HTTP/1.1 200", "GET");
+            checkContains(get, 0, "Content-Type: text/html", "GET _content");
+            checkContains(get, 0, "<html>", "GET body");
+            int cli = get.indexOf("Content-Length");
+            String contentLength = get.substring(cli,get.indexOf("\r",cli));
+
+            String head = connector.getResponse("HEAD /R1 HTTP/1.0\n" + "Host: localhost\n" + "\n");
+            checkContains(head, 0, "HTTP/1.1 200", "HEAD");
+            checkContains(head, 0, "Content-Type: text/html", "HEAD _content");
+            assertEquals(-1, head.indexOf("<html>"), "HEAD no body");
+            checkContains(head, 0, contentLength, "3.3.2 HEAD");
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+            assertTrue(false);
+        }
+    }
+
+
     @Test
     public void test3_6_a() throws Exception
     {
