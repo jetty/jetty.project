@@ -983,7 +983,8 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                                     LOG.debug("flush starting handshake {}", SslConnection.this);
                             }
 
-                            // We call sslEngine.wrap to try to take bytes from appOut buffers and encrypt them into the _netOut buffer
+                            // We call sslEngine.wrap to try to take bytes from appOuts
+                            // buffers and encrypt them into the _encryptedOutput buffer.
                             BufferUtil.compact(_encryptedOutput);
                             int pos = BufferUtil.flipToFill(_encryptedOutput);
                             SSLEngineResult wrapResult;
@@ -1032,6 +1033,13 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                                 case BUFFER_OVERFLOW:
                                     if (!flushed)
                                         return result = false;
+                                    // It's possible that SSLSession.packetBufferSize has been expanded
+                                    // during the TLS handshake. Wrapping a large application buffer
+                                    // causes BUFFER_OVERFLOW because the (old) packetBufferSize is
+                                    // too small. Release the encrypted output buffer so that it will
+                                    // be re-acquired with the larger capacity.
+                                    // See also system property "jsse.SSLEngine.acceptLargeFragments".
+                                    releaseEncryptedOutputBuffer();
                                     continue;
 
                                 case OK:
