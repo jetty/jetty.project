@@ -56,6 +56,12 @@ public class IncludeExcludeSet<T, P> implements Predicate<P>
         {
             return set.contains(item);
         }
+
+        @Override
+        public String toString()
+        {
+            return "CONTAINS";
+        }
     }
 
     /**
@@ -232,5 +238,35 @@ public class IncludeExcludeSet<T, P> implements Predicate<P>
     public boolean isEmpty()
     {
         return _includes.isEmpty() && _excludes.isEmpty();
+    }
+
+    /**
+     * Match items in combined IncludeExcludeSets.
+     * @param item1 The item to match against set1
+     * @param set1 A IncludeExcludeSet to match item1 against
+     * @param item2 The item to match against set2
+     * @param set2 A IncludeExcludeSet to match item2 against
+     * @param <T1> The type of item1
+     * @param <T2> The type of item2
+     * @return True IFF <ul>
+     *     <li>Neither item is excluded from their respective sets</li>
+     *     <li>Both sets have no includes OR at least one of the items is included in its respective set</li>
+     * </ul>
+     */
+    public static <T1,T2> boolean matchCombined(T1 item1, IncludeExcludeSet<?,T1> set1, T2 item2, IncludeExcludeSet<?,T2> set2)
+    {
+        Boolean match1 = set1.isIncludedAndNotExcluded(item1);
+        Boolean match2 = set2.isIncludedAndNotExcluded(item2);
+
+        // if we are excluded from either set, then we do not match
+        if (match1 == Boolean.FALSE || match2 == Boolean.FALSE)
+            return false;
+
+        // If either set has any includes, then we must be included by one of them
+        if (set1.hasIncludes() || set2.hasIncludes())
+            return match1 == Boolean.TRUE || match2 == Boolean.TRUE;
+
+        // If not excluded and no includes, then we match
+        return true;
     }
 }
