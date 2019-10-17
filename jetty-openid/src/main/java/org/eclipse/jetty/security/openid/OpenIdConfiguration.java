@@ -107,7 +107,7 @@ public class OpenIdConfiguration extends ContainerLifeCycle implements Serializa
                 throw new IllegalArgumentException("token_endpoint");
 
             if (!Objects.equals(discoveryDocument.get("issuer"), issuer))
-                throw new IllegalArgumentException("The provider in the metadata is not correct.");
+                LOG.warn("The issuer in the metadata is not correct.");
         }
     }
 
