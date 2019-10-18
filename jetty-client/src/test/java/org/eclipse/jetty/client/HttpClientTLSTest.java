@@ -32,7 +32,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.net.ssl.SSLEngine;
@@ -49,7 +48,6 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.io.ssl.SslClientConnectionFactory;
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.io.ssl.SslHandshakeListener;
@@ -75,7 +73,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -809,81 +806,5 @@ public class HttpClientTLSTest
             .send());
         Throwable cause = failure.getCause();
         assertThat(cause, Matchers.instanceOf(SSLHandshakeException.class));
-    }
-
-    @Test
-    public void testTLSLargeFragments() throws Exception
-    {
-        // The SSLEngine implementation may read a TLS packet that is larger than the default size,
-        // because the other peer uses large TLS fragments.
-        // When this happens, the SSLEngine implementation expands the SSLSession.packetBufferSize
-        // _during_ the TLS handshake, which causes a BUFFER_OVERFLOW result when trying to wrap().
-
-        SslContextFactory serverTLSFactory = createServerSslContextFactory();
-        startServer(serverTLSFactory, new EmptyServerHandler());
-
-        SslContextFactory clientTLSFactory = createClientSslContextFactory();
-        QueuedThreadPool clientThreads = new QueuedThreadPool();
-        clientThreads.setName("client");
-        client = new HttpClient(clientTLSFactory)
-        {
-            @Override
-            protected ClientConnectionFactory newSslClientConnectionFactory(SslContextFactory sslContextFactory, ClientConnectionFactory connectionFactory)
-            {
-                if (sslContextFactory == null)
-                    sslContextFactory = getSslContextFactory();
-                return new SslClientConnectionFactory(sslContextFactory, getByteBufferPool(), getExecutor(), connectionFactory)
-                {
-                    @Override
-                    protected SslConnection newSslConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, SSLEngine engine)
-                    {
-                        AtomicInteger outputHash = new AtomicInteger();
-                        byteBufferPool = new MappedByteBufferPool()
-                        {
-                            @Override
-                            public void release(ByteBuffer buffer)
-                            {
-                                // Discard the TLS buffer so that it cannot be re-acquired.
-                                if (outputHash.get() != System.identityHashCode(buffer))
-                                    super.release(buffer);
-                            }
-                        };
-                        return new SslConnection(byteBufferPool, executor, endPoint, engine, isDirectBuffersForEncryption(), isDirectBuffersForDecryption())
-                        {
-                            private int wrapCount;
-
-                            @Override
-                            protected SSLEngineResult wrap(SSLEngine sslEngine, ByteBuffer[] input, ByteBuffer output) throws SSLException
-                            {
-                                if (++wrapCount == 1)
-                                {
-                                    outputHash.set(System.identityHashCode(output));
-                                    // Replace the output buffer with one that will cause BUFFER_OVERFLOW.
-                                    output = ByteBuffer.allocate(1);
-                                    SSLEngineResult result = super.wrap(sslEngine, input, output);
-                                    assertEquals(SSLEngineResult.Status.BUFFER_OVERFLOW, result.getStatus());
-                                    return result;
-                                }
-                                else
-                                {
-                                    // Make sure that if there was a BUFFER_OVERFLOW, we re-acquire
-                                    // the output buffer with potentially a different capacity due
-                                    // to the buffer expansion performed by the TLS implementation.
-                                    assertNotEquals(outputHash, System.identityHashCode(output));
-                                    return super.wrap(sslEngine, input, output);
-                                }
-                            }
-                        };
-                    }
-                };
-            }
-        };
-        client.setExecutor(clientThreads);
-        client.start();
-
-        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-            .scheme(HttpScheme.HTTPS.asString())
-            .send();
-        assertEquals(HttpStatus.OK_200, response.getStatus());
     }
 }
