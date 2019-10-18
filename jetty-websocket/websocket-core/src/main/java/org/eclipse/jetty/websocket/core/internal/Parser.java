@@ -322,7 +322,7 @@ public class Parser
 
         // Always autoFragment data frames if payloadLength is greater than maxFrameSize.
         long maxFrameSize = configuration.getMaxFrameSize();
-        if (payloadLength > maxFrameSize && OpCode.isDataFrame(OpCode.getOpCode(firstByte)))
+        if (maxFrameSize > 0 && OpCode.isDataFrame(OpCode.getOpCode(firstByte)) && payloadLength > maxFrameSize)
             return autoFragment(buffer, (int)Math.min(available, maxFrameSize));
 
         if (aggregate == null)
