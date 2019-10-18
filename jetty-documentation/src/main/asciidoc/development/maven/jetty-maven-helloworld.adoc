@@ -25,21 +25,29 @@ Based on the concept of a project object model (POM), Maven can manage a project
 It is an ideal tool to build a web application project, and such projects can use the link:#jetty-maven-plugin[jetty-maven-plugin] to easily run the web application and save time in development.
 You can also use Maven to build, test and run a project which embeds Jetty.
 
-____
-[NOTE]
-Use of Maven and the jetty-maven-plugin is *not* required.
-Using Maven for Jetty implementations is a popular choice, but users encouraged to manage their projects in whatever way suits their needs.
-Other popular tools include Ant and Gradle. 
-____
-
-____
-[IMPORTANT]
-Various Jetty sub-projects may define configuration files with the same name.
-When two projects declare the same files, these files should be _merged_ rather than overwritten.
-This will happen automatically if you use Maven with the shade plugin and https://maven.apache.org/plugins/maven-shade-plugin/examples/resource-transformers.html#ServicesResourceTransformer[ServicesResourceTransformer].
-____
-
 First we'll have a look at a very simple HelloWorld java application that embeds Jetty, then a simple webapp which makes use of the link:#jetty-maven-plugin[jetty-maven-plugin] to speed up the development cycle.
+
+[[jetty-maven-uber-jar]]
+==== Building an Uber Jar with Maven
+An Uber, "Fat," or "Super" Jar contains your code and all its dependencies in one big jar file.
+The `META-INF/services` directory in jar files https://docs.oracle.com/javase/7/docs/technotes/guides/jar/jar.html#Provider_Configuration_File[holds service provider configuration files].
+Jetty relies on the behavior of java.util.ServiceLoader which _merges_ same-named files in the `META-INF/services` directory of different dependent jar files.
+The default behavior of the https://maven.apache.org/plugins/maven-shade-plugin/[Maven Shade Plugin] is to _overwrite_ any service provider config file with a file of the same name from another dependent jar file.
+
+If you find that your application works when the jar files are specified on the classpath, but not when run from an uber jar, you probably failed to merge service provider configuration files.
+To merge these files automatically, use the https://maven.apache.org/plugins/maven-shade-plugin/examples/resource-transformers.html#ServicesResourceTransformer[ServicesResourceTransformer] with the shade plugin.
+
+In your `pom.xml`, simply add the following to the `<configuration>` section of the Maven Shade Plugin:
+```xml
+<transformers>
+    <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+</transformers>
+```
+
+[[jetty-gradle-uber-jar]]
+===== Uber Jar with Gradle
+Here's an https://github.com/johnrengelman/shadow/issues/105[example of calling a ServicesResourceTransformer] in Gradle.
+Gradle users may also wish to see https://stackoverflow.com/questions/32887966/shadow-plugin-gradle-what-does-mergeservicefiles-do[this].
 
 [[configuring-embedded-jetty-with-maven]]
 ==== Using Embedded Jetty with Maven

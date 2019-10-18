@@ -42,9 +42,3 @@ The Jetty HTTP/2 implementation consists of the following sub-projects (each pro
 4.  `http2-client`: Provides the implementation of HTTP/2 client with a low level HTTP/2 API, dealing with HTTP/2 streams, frames, etc.
 5.  `http2-http-client-transport`: Provides the implementation of the HTTP/2 transport for `HttpClient` (see xref:http-client[]).
 Applications can use the higher level API provided by `HttpClient` to send HTTP requests and receive HTTP responses, and the HTTP/2 transport will take care of converting them in HTTP/2 format (see also https://webtide.com/http2-support-for-httpclient/[this blog entry]).
-
-____
-[CAUTION]
-If you plan to run your Jetty HTTP/2 application from a fat (uber) jar file, your build tool will likely need to merge some jetty configuration files.
-Use the ServicesResourceTransformer to do this as described in link:#jetty-maven-helloworld[Using Maven]
-____
