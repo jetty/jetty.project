@@ -19,6 +19,7 @@
 package org.eclipse.jetty.websocket.core.internal;
 
 import java.nio.ByteBuffer;
+import java.nio.channels.ClosedChannelException;
 import java.util.ArrayDeque;
 import java.util.Queue;
 
@@ -33,13 +34,14 @@ import org.eclipse.jetty.websocket.core.OpCode;
 /**
  * Fragment Extension
  */
-public abstract  class FragmentingFlusher
+public abstract class FragmentingFlusher
 {
     private static final Logger LOG = Log.getLogger(FragmentingFlusher.class);
 
     private final Queue<FrameEntry> entries = new ArrayDeque<>();
     private final IteratingCallback flusher = new Flusher();
     private final Configuration configuration;
+    private boolean canEnqueue = true;
 
     public FragmentingFlusher(Configuration configuration)
     {
@@ -50,12 +52,30 @@ public abstract  class FragmentingFlusher
 
     public void sendFrame(Frame frame, Callback callback, boolean batch)
     {
+        boolean enqueued = false;
         synchronized (this)
         {
-            entries.offer(new FrameEntry(frame, callback, batch));
+            if (canEnqueue)
+                enqueued = entries.offer(new FrameEntry(frame, callback, batch));
         }
 
-        flusher.iterate();
+        if (enqueued)
+            flusher.iterate();
+        else
+            notifyCallbackFailure(callback, new ClosedChannelException());
+    }
+
+    protected void onFailure()
+    {
+        synchronized (this)
+        {
+            canEnqueue = false;
+        }
+
+        ClosedChannelException error = new ClosedChannelException();
+        for (FrameEntry entry : entries)
+            notifyCallbackFailure(entry.callback, error);
+        entries.clear();
     }
 
     private FrameEntry pollEntry()
@@ -63,34 +83,6 @@ public abstract  class FragmentingFlusher
         synchronized (this)
         {
             return entries.poll();
-        }
-    }
-
-    private static void notifyCallbackSuccess(Callback callback)
-    {
-        try
-        {
-            if (callback != null)
-                callback.succeeded();
-        }
-        catch (Throwable x)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Exception while notifying success of callback " + callback, x);
-        }
-    }
-
-    private static void notifyCallbackFailure(Callback callback, Throwable failure)
-    {
-        try
-        {
-            if (callback != null)
-                callback.failed(failure);
-        }
-        catch (Throwable x)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Exception while notifying failure of callback " + callback, x);
         }
     }
 
@@ -163,9 +155,7 @@ public abstract  class FragmentingFlusher
         @Override
         protected void onCompleteFailure(Throwable x)
         {
-            // This IteratingCallback never fails.
-            // The callback are those provided by WriteCallback (implemented
-            // below) and even in case of writeFailed() we call succeeded().
+            onFailure();
         }
 
         @Override
@@ -181,14 +171,36 @@ public abstract  class FragmentingFlusher
         @Override
         public void failed(Throwable cause)
         {
-            // Notify first, the call succeeded() to drain the queue.
-            // We don't want to call failed(x) because that will put
-            // this flusher into a final state that cannot be exited,
-            // and the failure of a frame may not mean that the whole
-            // connection is now invalid.
-            // TODO: Should we fail the queue, or set finished to true?
-            notifyCallbackFailure(current.callback, cause);
-            succeeded();
+            LOG.warn(cause);
+            super.failed(cause);
+        }
+    }
+
+    private static void notifyCallbackSuccess(Callback callback)
+    {
+        try
+        {
+            if (callback != null)
+                callback.succeeded();
+        }
+        catch (Throwable x)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Exception while notifying success of callback " + callback, x);
+        }
+    }
+
+    private static void notifyCallbackFailure(Callback callback, Throwable failure)
+    {
+        try
+        {
+            if (callback != null)
+                callback.failed(failure);
+        }
+        catch (Throwable x)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Exception while notifying failure of callback " + callback, x);
         }
     }
 }
