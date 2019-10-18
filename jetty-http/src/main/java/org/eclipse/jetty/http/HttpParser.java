@@ -169,6 +169,7 @@ public class HttpParser
     private Utf8StringBuilder _uri = new Utf8StringBuilder(INITIAL_URI_LENGTH); // Tune?
     private EndOfContent _endOfContent;
     private boolean _hasContentLength;
+    private boolean _hasTransferEncoding;
     private long _contentLength = -1;
     private long _contentPosition;
     private int _chunkLength;
@@ -955,6 +956,9 @@ public class HttpParser
                 switch (_header)
                 {
                     case CONTENT_LENGTH:
+                        if (_hasTransferEncoding && complianceViolation(TRANSFER_ENCODING_WITH_CONTENT_LENGTH))
+                            throw new BadMessageException(HttpStatus.BAD_REQUEST_400, "Transfer-Encoding and Content-Length");
+
                         if (_hasContentLength)
                         {
                             if (complianceViolation(MULTIPLE_CONTENT_LENGTHS))
@@ -963,9 +967,6 @@ public class HttpParser
                                 throw new BadMessageException(HttpStatus.BAD_REQUEST_400, MULTIPLE_CONTENT_LENGTHS.description);
                         }
                         _hasContentLength = true;
-
-                        if (_endOfContent == EndOfContent.CHUNKED_CONTENT && complianceViolation(TRANSFER_ENCODING_WITH_CONTENT_LENGTH))
-                            throw new BadMessageException(HttpStatus.BAD_REQUEST_400, "Bad Content-Length");
 
                         if (_endOfContent != EndOfContent.CHUNKED_CONTENT)
                         {
@@ -978,8 +979,14 @@ public class HttpParser
                         break;
 
                     case TRANSFER_ENCODING:
+                        _hasTransferEncoding = true;
+
                         if (_hasContentLength && complianceViolation(TRANSFER_ENCODING_WITH_CONTENT_LENGTH))
                             throw new BadMessageException(HttpStatus.BAD_REQUEST_400, "Transfer-Encoding and Content-Length");
+
+                        // we encountered another Transfer-Encoding header, but chunked was already set
+                        if (_endOfContent == EndOfContent.CHUNKED_CONTENT)
+                            throw new BadMessageException(HttpStatus.BAD_REQUEST_400, "Bad Transfer-Encoding, chunked not last");
 
                         if (HttpHeaderValue.CHUNKED.is(_valueString))
                         {
@@ -989,15 +996,26 @@ public class HttpParser
                         else
                         {
                             List<String> values = new QuotedCSV(_valueString).getValues();
-                            if (!values.isEmpty() && HttpHeaderValue.CHUNKED.is(values.get(values.size() - 1)))
+                            int chunked = -1;
+                            int len = values.size();
+                            for (int i = 0; i < len; i++)
                             {
-                                _endOfContent = EndOfContent.CHUNKED_CONTENT;
-                                _contentLength = -1;
+                                if (HttpHeaderValue.CHUNKED.is(values.get(i)))
+                                {
+                                    if (chunked != -1)
+                                        throw new BadMessageException(HttpStatus.BAD_REQUEST_400, "Bad Transfer-Encoding, multiple chunked tokens");
+                                    chunked = i;
+                                    // declared chunked
+                                    _endOfContent = EndOfContent.CHUNKED_CONTENT;
+                                    _contentLength = -1;
+                                }
+                                // we have a non-chunked token after a declared chunked token
+                                else if (_endOfContent == EndOfContent.CHUNKED_CONTENT)
+                                {
+                                    throw new BadMessageException(HttpStatus.BAD_REQUEST_400, "Bad Transfer-Encoding, chunked not last");
+                                }
                             }
-                            else if (values.stream().anyMatch(HttpHeaderValue.CHUNKED::is))
-                                throw new BadMessageException(HttpStatus.BAD_REQUEST_400, "Bad chunking");
                         }
-
                         break;
 
                     case HOST:
@@ -1137,6 +1155,17 @@ public class HttpParser
                             {
                                 setState(State.END);
                                 return _handler.messageComplete();
+                            }
+
+                            // We found Transfer-Encoding headers, but none declared the 'chunked' token
+                            if (_hasTransferEncoding && _endOfContent != EndOfContent.CHUNKED_CONTENT)
+                            {
+                                if (_responseHandler == null || _endOfContent != EndOfContent.EOF_CONTENT)
+                                {
+                                    // Transfer-Encoding chunked not specified
+                                    // https://tools.ietf.org/html/rfc7230#section-3.3.1
+                                    throw new BadMessageException(HttpStatus.BAD_REQUEST_400, "Bad Transfer-Encoding, chunked not last");
+                                }
                             }
 
                             // Was there a required host header?
@@ -1818,6 +1847,7 @@ public class HttpParser
         _endOfContent = EndOfContent.UNKNOWN_CONTENT;
         _contentLength = -1;
         _hasContentLength = false;
+        _hasTransferEncoding = false;
         _contentPosition = 0;
         _responseStatus = 0;
         _contentChunk = null;

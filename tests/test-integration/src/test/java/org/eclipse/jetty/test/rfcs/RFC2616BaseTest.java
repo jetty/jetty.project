@@ -368,20 +368,11 @@ public abstract class RFC2616BaseTest
         req1.append("\n");
         req1.append("123\r\n");
 
-        req1.append("GET /echo/R2 HTTP/1.1\n");
-        req1.append("Host: localhost\n");
-        req1.append("Connection: close\n");
-        req1.append("\n");
-
         List<HttpTester.Response> responses = http.requests(req1);
-        assertEquals(2, responses.size(), "Response Count");
+        assertEquals(1, responses.size(), "Response Count");
 
         HttpTester.Response response = responses.get(0);
-        assertThat("4.4.2 Message Length / Response Code", response.getStatus(), is(HttpStatus.OK_200));
-        assertThat("4.4.2 Message Length / Body", response.getContent(), Matchers.containsString("123\n"));
-        response = responses.get(1);
-        assertThat("4.4.2 Message Length / Response Code", response.getStatus(), is(HttpStatus.OK_200));
-        assertEquals("", response.getContent(), "4.4.2 Message Length / No Body");
+        assertThat("4.4.2 Message Length / Response Code", response.getStatus(), is(HttpStatus.BAD_REQUEST_400));
 
         // 4.4.3 -
         // Client - do not send 'Content-Length' if entity-length

@@ -35,6 +35,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -348,12 +349,10 @@ public class PartialRFC2616Test
                 "\n");
         offset = 0;
         response = endp.getResponse();
-        offset = checkContains(response, offset, "HTTP/1.1 200 OK", "2. identity") + 10;
-        offset = checkContains(response, offset, "/R1", "2. identity") + 3;
+        offset = checkContains(response, offset, "HTTP/1.1 400 ", "2. identity") + 10;
         offset = 0;
         response = endp.getResponse();
-        offset = checkContains(response, offset, "HTTP/1.1 200 OK", "2. identity") + 10;
-        offset = checkContains(response, offset, "/R2", "2. identity") + 3;
+        assertThat("There should be no next response as first one closed connection", response, is(nullValue()));
     }
 
     @Test
@@ -385,7 +384,7 @@ public class PartialRFC2616Test
                 "\n" +
                 "abcdef");
         response = endp.getResponse();
-        offset = checkContains(response, offset, "HTTP/1.1 400 Bad", "3. ignore c-l") + 1;
+        offset = checkContains(response, offset, "HTTP/1.1 400 ", "3. ignore c-l") + 1;
         checkNotContained(response, offset, "/R2", "3. _content-length");
     }
 
