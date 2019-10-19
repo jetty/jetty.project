@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.ToIntFunction;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLEngineResult.HandshakeStatus;
@@ -311,23 +312,22 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
 
     private int getApplicationBufferSize()
     {
-        SSLSession hsSession = _sslEngine.getHandshakeSession();
-        SSLSession session = _sslEngine.getSession();
-        int size = session.getApplicationBufferSize();
-        if (hsSession == null)
-            return size;
-        int hsSize = hsSession.getApplicationBufferSize();
-        return Math.max(hsSize, size);
+        return getBufferSize(SSLSession::getApplicationBufferSize);
     }
 
     private int getPacketBufferSize()
     {
+        return getBufferSize(SSLSession::getPacketBufferSize);
+    }
+
+    private int getBufferSize(ToIntFunction<SSLSession> bufferSizeFn)
+    {
         SSLSession hsSession = _sslEngine.getHandshakeSession();
         SSLSession session = _sslEngine.getSession();
-        int size = session.getPacketBufferSize();
-        if (hsSession == null)
+        int size = bufferSizeFn.applyAsInt(session);
+        if (hsSession == null || hsSession == session)
             return size;
-        int hsSize = hsSession.getPacketBufferSize();
+        int hsSize = bufferSizeFn.applyAsInt(hsSession);
         return Math.max(hsSize, size);
     }
 
