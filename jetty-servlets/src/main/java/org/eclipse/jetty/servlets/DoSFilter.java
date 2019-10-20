@@ -121,7 +121,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
  * </dl>
  * <p>
  * This filter should be configured for {@link DispatcherType#REQUEST} and {@link DispatcherType#ASYNC} and with
- * <code>&lt;async-supported&gt;true&lt;/async-supported&gt;</code>.
+ * {@code <async-supported>true</async-supported>}.
  * </p>
  */
 @ManagedObject("limits exposure to abuse from request flooding, whether malicious, or as a result of a misconfigured client")
@@ -146,7 +146,6 @@ public class DoSFilter implements Filter
     private static final long __DEFAULT_MAX_REQUEST_MS_INIT_PARAM = 30000L;
     private static final long __DEFAULT_MAX_IDLE_TRACKER_MS_INIT_PARAM = 30000L;
 
-    static final String NAME = "name";
     static final String MANAGED_ATTR_INIT_PARAM = "managedAttr";
     static final String MAX_REQUESTS_PER_S_INIT_PARAM = "maxRequestsPerSec";
     static final String DELAY_MS_INIT_PARAM = "delayMs";
@@ -390,8 +389,7 @@ public class DoSFilter implements Filter
                         response.addHeader("DoSFilter", "throttled");
                     AsyncContext asyncContext = request.startAsync();
                     request.setAttribute(_suspended, Boolean.TRUE);
-                    if (throttleMs > 0)
-                        asyncContext.setTimeout(throttleMs);
+                    asyncContext.setTimeout(throttleMs);
                     asyncContext.addListener(_listeners[priority]);
                     _queues[priority].add(asyncContext);
                     if (LOG.isDebugEnabled())
@@ -467,14 +465,7 @@ public class DoSFilter implements Filter
     protected void doFilterChain(FilterChain chain, final HttpServletRequest request, final HttpServletResponse response) throws IOException, ServletException
     {
         final Thread thread = Thread.currentThread();
-        Runnable requestTimeout = new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                closeConnection(request, response, thread);
-            }
-        };
+        Runnable requestTimeout = () -> closeConnection(request, response, thread);
         Scheduler.Task task = _scheduler.schedule(requestTimeout, getMaxRequestMs(), TimeUnit.MILLISECONDS);
         try
         {
@@ -539,7 +530,7 @@ public class DoSFilter implements Filter
      * @param tracker the rate tracker for this request
      * @return the priority for this request
      */
-    protected int getPriority(HttpServletRequest request, RateTracker tracker)
+    private int getPriority(HttpServletRequest request, RateTracker tracker)
     {
         if (extractUserId(request) != null)
             return USER_AUTH;
@@ -556,7 +547,7 @@ public class DoSFilter implements Filter
         return USER_AUTH;
     }
 
-    public void schedule(RateTracker tracker)
+    private void schedule(RateTracker tracker)
     {
         _scheduler.schedule(tracker, getMaxIdleTrackerMs(), TimeUnit.MILLISECONDS);
     }
@@ -577,7 +568,7 @@ public class DoSFilter implements Filter
      * @param request the current request
      * @return the request rate tracker for the current connection
      */
-    public RateTracker getRateTracker(ServletRequest request)
+    RateTracker getRateTracker(ServletRequest request)
     {
         HttpSession session = ((HttpServletRequest)request).getSession(false);
 
@@ -629,7 +620,7 @@ public class DoSFilter implements Filter
         return tracker;
     }
 
-    public void addToRateTracker(RateTracker tracker)
+    private void addToRateTracker(RateTracker tracker)
     {
         _rateTrackers.put(tracker.getId(), tracker);
     }
@@ -1268,7 +1259,7 @@ public class DoSFilter implements Filter
                 LOG.debug("Tracker removed: {}", getId());
         }
 
-        protected void addToRateTrackers(DoSFilter filter, RateTracker tracker)
+        private void addToRateTrackers(DoSFilter filter, RateTracker tracker)
         {
             if (filter == null)
                 return;
@@ -1308,7 +1299,7 @@ public class DoSFilter implements Filter
         }
     }
 
-    class FixedRateTracker extends RateTracker
+    private static class FixedRateTracker extends RateTracker
     {
         public FixedRateTracker(ServletContext context, String filterName, String id, int type, int numRecentRequestsTracked)
         {
@@ -1337,15 +1328,15 @@ public class DoSFilter implements Filter
         }
     }
 
-    private class DoSTimeoutAsyncListener implements AsyncListener
+    private static class DoSTimeoutAsyncListener implements AsyncListener
     {
         @Override
-        public void onStartAsync(AsyncEvent event) throws IOException
+        public void onStartAsync(AsyncEvent event)
         {
         }
 
         @Override
-        public void onComplete(AsyncEvent event) throws IOException
+        public void onComplete(AsyncEvent event)
         {
         }
 
@@ -1356,7 +1347,7 @@ public class DoSFilter implements Filter
         }
 
         @Override
-        public void onError(AsyncEvent event) throws IOException
+        public void onError(AsyncEvent event)
         {
         }
     }
