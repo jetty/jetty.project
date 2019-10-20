@@ -110,8 +110,8 @@ import org.eclipse.jetty.util.resource.Resource;
 @ManagedObject("URI Context")
 public class ContextHandler extends ScopedHandler implements Attributes, Graceful
 {
-    public static final int SERVLET_MAJOR_VERSION = 3;
-    public static final int SERVLET_MINOR_VERSION = 1;
+    public static final int SERVLET_MAJOR_VERSION = 4;
+    public static final int SERVLET_MINOR_VERSION = 0;
     public static final Class<?>[] SERVLET_LISTENER_TYPES =
     {
         ServletContextListener.class,
