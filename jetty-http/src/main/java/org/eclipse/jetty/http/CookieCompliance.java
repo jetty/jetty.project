@@ -34,7 +34,7 @@ import static java.util.EnumSet.noneOf;
  */
 public class CookieCompliance implements ComplianceViolation.Mode
 {
-    enum Violation implements ComplianceViolation
+    public enum Violation implements ComplianceViolation
     {
         COMMA_NOT_VALID_OCTET("https://tools.ietf.org/html/rfc6265#section-4.1.1", "Comma not valid as cookie-octet or separator"),
         RESERVED_NAMES_NOT_DOLLAR_PREFIXED("https://tools.ietf.org/html/rfc6265#section-4.1.1", "Reserved names no longer use '$' prefix");
@@ -57,13 +57,13 @@ public class CookieCompliance implements ComplianceViolation.Mode
         @Override
         public String getURL()
         {
-            return null;
+            return url;
         }
 
         @Override
         public String getDescription()
         {
-            return null;
+            return description;
         }
     }
 
@@ -87,9 +87,8 @@ public class CookieCompliance implements ComplianceViolation.Mode
 
     private CookieCompliance(String name, Set<Violation> violations)
     {
-        Objects.nonNull(violations);
         _name = name;
-        _violations = unmodifiableSet(copyOf(violations));
+        _violations = unmodifiableSet(copyOf(Objects.requireNonNull(violations)));
     }
 
     @Override
