@@ -16,6 +16,9 @@ server
 etc/jetty-ssl.xml
 etc/jetty-ssl-context.xml
 
+[files]
+basehome:modules/test-keystore/keystore|etc/keystore
+
 [ini-template]
 ### TLS(SSL) Connector Configuration
 
