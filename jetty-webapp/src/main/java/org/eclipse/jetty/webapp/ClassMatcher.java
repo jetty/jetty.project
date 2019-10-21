@@ -72,7 +72,7 @@ public class ClassMatcher extends AbstractSet<String>
 {
     private static final Logger LOG = Log.getLogger(ClassMatcher.class);
 
-    static class Entry
+    public static class Entry
     {
         private final String _pattern;
         private final String _name;

@@ -979,7 +979,7 @@ public class HttpParserTest
         assertEquals("GET", _methodOrVersion);
         assertEquals("/chunk", _uriOrStatus);
         assertEquals("HTTP/1.0", _versionOrReason);
-        assertThat(_bad, containsString("Bad chunking"));
+        assertThat(_bad, containsString("Bad Transfer-Encoding"));
     }
 
     @Test

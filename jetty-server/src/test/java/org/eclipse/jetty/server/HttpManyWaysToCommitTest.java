@@ -24,6 +24,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.tools.HttpTester;
 import org.eclipse.jetty.server.handler.AbstractHandler;
@@ -434,6 +435,21 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
 
     @ParameterizedTest
     @MethodSource("httpVersions")
+    public void testSetContentLengthAnd304Status(HttpVersion httpVersion) throws Exception
+    {
+        server.setHandler(new SetContentLength304Handler());
+        server.start();
+
+        HttpTester.Response response = executeRequest(httpVersion);
+        assertThat("response code", response.getStatus(), is(304));
+        assertThat(response, containsHeaderValue("content-length", "32768"));
+        byte[] content = response.getContentBytes();
+        assertThat(content.length, is(0));
+        assertFalse(response.isEarlyEOF());
+    }
+
+    @ParameterizedTest
+    @MethodSource("httpVersions")
     public void testSetContentLengthFlushAndWriteInsufficientBytes(HttpVersion httpVersion) throws Exception
     {
         server.setHandler(new SetContentLengthAndWriteInsufficientBytesHandler(true));
@@ -516,6 +532,21 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
             if (flush)
                 response.flushBuffer();
             response.getWriter().write("foo");
+        }
+    }
+
+    private class SetContentLength304Handler extends AbstractHandler
+    {
+        private SetContentLength304Handler()
+        {
+        }
+
+        @Override
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        {
+            baseRequest.setHandled(true);
+            response.setContentLength(32768);
+            response.setStatus(HttpStatus.NOT_MODIFIED_304);
         }
     }
 
