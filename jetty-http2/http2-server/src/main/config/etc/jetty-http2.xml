@@ -12,6 +12,12 @@
         <Set name="maxConcurrentStreams" property="jetty.http2.maxConcurrentStreams"/>
         <Set name="initialStreamRecvWindow" property="jetty.http2.initialStreamRecvWindow"/>
         <Set name="initialSessionRecvWindow" property="jetty.http2.initialSessionRecvWindow"/>
+        <Set name="maxSettingsKeys"><Property name="jetty.http2.maxSettingsKeys" default="64"/></Set>
+        <Set name="rateControl">
+          <Call class="org.eclipse.jetty.http2.parser.WindowRateControl" name="fromEventsPerSecond">
+            <Arg type="int"><Property name="jetty.http2.rateControl.maxEventsPerSecond" default="20"/></Arg>
+          </Call>
+        </Set>
       </New>
     </Arg>
   </Call>

@@ -523,25 +523,15 @@ public class HttpClient extends ContainerLifeCycle
 
     HttpDestination resolveDestination(HttpDestination.Key key)
     {
-        HttpDestination destination = destinations.get(key);
-        if (destination == null)
+        return destinations.computeIfAbsent(key, k ->
         {
-            destination = getTransport().newHttpDestination(key);
+            HttpDestination destination = getTransport().newHttpDestination(k);
             // Start the destination before it's published to other threads.
             addManaged(destination);
-            HttpDestination existing = destinations.putIfAbsent(key, destination);
-            if (existing != null)
-            {
-                removeBean(destination);
-                destination = existing;
-            }
-            else
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Created {}", destination);
-            }
-        }
-        return destination;
+            if (LOG.isDebugEnabled())
+                LOG.debug("Created {}", destination);
+            return destination;
+        });
     }
 
     protected boolean removeDestination(HttpDestination destination)
@@ -1116,9 +1106,11 @@ public class HttpClient extends ContainerLifeCycle
         return HttpScheme.HTTPS.is(scheme) || HttpScheme.WSS.is(scheme);
     }
 
-    protected ClientConnectionFactory newSslClientConnectionFactory(ClientConnectionFactory connectionFactory)
+    protected ClientConnectionFactory newSslClientConnectionFactory(SslContextFactory.Client sslContextFactory, ClientConnectionFactory connectionFactory)
     {
-        return new SslClientConnectionFactory(getSslContextFactory(), getByteBufferPool(), getExecutor(), connectionFactory);
+        if (sslContextFactory == null)
+            sslContextFactory = getSslContextFactory();
+        return new SslClientConnectionFactory(sslContextFactory, getByteBufferPool(), getExecutor(), connectionFactory);
     }
 
     private class ContentDecoderFactorySet implements Set<ContentDecoder.Factory>

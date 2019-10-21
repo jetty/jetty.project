@@ -107,18 +107,18 @@ To enable Websocket, you need to enable the `websocket` link:#enabling-modules[m
 
 Once this module is enabled for your Jetty base, it will apply to all webapps deployed to that base. If you want to be more selective about which webapps use Websocket, then you can:
 
-Disable JSR-356 for a particular webapp:::
-  You can disable jsr-356 for a particular webapp by setting the link:#context_attributes[context attribute] `org.eclipse.jetty.websocket.jsr356` to `false`.
+Disable Websocket for a particular webapp:::
+  You can disable jsr-356 for a particular webapp by setting the link:#context_attributes[context attribute] `org.eclipse.jetty.websocket.javax` to `false`.
   This will mean that websockets are not available to your webapp, however deployment time   scanning for websocket-related classes such as endpoints will still occur.
   This can be a significant impost if your webapp contains a lot of classes and/or jar files.
   To completely disable websockets and avoid all setup costs associated with it for a particular webapp, use instead the context attribute `org.eclipse.jetty.containerInitializerExclusionPattern`, described next, which allows you to exclude the websocket ServletContainerInitializer that causes the scanning.
-Completely disable jsr-356 for a particular webapp:::
-  Set the `org.eclipse.jetty.containerInitializerExclusionPattern` link:#context_attributes[context attribute] to include `org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer`.
+Completely disable Websocket for a particular webapp:::
+  Set the `org.eclipse.jetty.containerInitializerExclusionPattern` link:#context_attributes[context attribute] to include `org.eclipse.jetty.websocket.javax.server.JavaxWebSocketServletContainerInitializer`.
   Here's an example of doing this in code, although you can do the link:#intro-jetty-configuration-webapps[same in xml]:
 +
 [source, java, subs="{sub-order}"]
 ----
 WebAppContext context = new WebAppContext();
-context.setAttribute("org.eclipse.jetty.containerInitializerExclusionPattern", 
-                     "org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer|com.acme.*");
+context.setAttribute("org.eclipse.jetty.containerInitializerExclusionPattern",
+                     "org.eclipse.jetty.websocket.javax.server.JavaxWebSocketServletContainerInitializer|com.acme.*");
 ----

@@ -31,7 +31,6 @@
 
 The Jetty `GzipHandler` is a compression handler that you can apply to any dynamic resource (servlet).
 It fixes many of the bugs in commonly available compression filters: it works with asynchronous servlets; it handles all ways to set content length.
-It has been tested with Jetty continuations and suspending requests.
 Some user-agents might be excluded from compression to avoid common browser bugs (yes, this means IE!).
 
 The `GzipHandler` can be added to the entire server by enabling the `gzip.mod` module.

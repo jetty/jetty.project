@@ -49,8 +49,9 @@ import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.CompletableCallback;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -68,7 +69,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
     private final Flusher flusher;
     private final Delegate delegate;
     private final ClientParser parser;
-    private ByteBuffer buffer;
+    private RetainableByteBuffer networkBuffer;
 
     public HttpConnectionOverFCGI(EndPoint endPoint, HttpDestination destination, Promise<Connection> promise)
     {
@@ -114,69 +115,80 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
     @Override
     public void onFillable()
     {
-        buffer = acquireBuffer();
-        process(buffer);
+        networkBuffer = newNetworkBuffer();
+        process();
     }
 
-    private ByteBuffer acquireBuffer()
+    private void reacquireNetworkBuffer()
+    {
+        if (networkBuffer == null)
+            throw new IllegalStateException();
+        if (networkBuffer.hasRemaining())
+            throw new IllegalStateException();
+        networkBuffer.release();
+        networkBuffer = newNetworkBuffer();
+        if (LOG.isDebugEnabled())
+            LOG.debug("Reacquired {}", networkBuffer);
+    }
+
+    private RetainableByteBuffer newNetworkBuffer()
     {
         HttpClient client = destination.getHttpClient();
         ByteBufferPool bufferPool = client.getByteBufferPool();
-        return bufferPool.acquire(client.getResponseBufferSize(), true);
+        // TODO: configure directness.
+        return new RetainableByteBuffer(bufferPool, client.getResponseBufferSize(), true);
     }
 
-    private void releaseBuffer(ByteBuffer buffer)
+    private void releaseNetworkBuffer()
     {
-        @SuppressWarnings("ReferenceEquality")
-        boolean isCurrentBuffer = (this.buffer == buffer);
-        assert (isCurrentBuffer);
-        HttpClient client = destination.getHttpClient();
-        ByteBufferPool bufferPool = client.getByteBufferPool();
-        bufferPool.release(buffer);
-        this.buffer = null;
+        if (networkBuffer == null)
+            throw new IllegalStateException();
+        if (networkBuffer.hasRemaining())
+            throw new IllegalStateException();
+        networkBuffer.release();
+        if (LOG.isDebugEnabled())
+            LOG.debug("Released {}", networkBuffer);
+        this.networkBuffer = null;
     }
 
-    private void process(ByteBuffer buffer)
+    void process()
     {
         try
         {
             EndPoint endPoint = getEndPoint();
-            boolean looping = false;
             while (true)
             {
-                if (!looping && parse(buffer))
+                if (parse(networkBuffer.getBuffer()))
                     return;
 
-                int read = endPoint.fill(buffer);
+                if (networkBuffer.getReferences() > 1)
+                    reacquireNetworkBuffer();
+
+                // The networkBuffer may have been reacquired.
+                int read = endPoint.fill(networkBuffer.getBuffer());
                 if (LOG.isDebugEnabled())
                     LOG.debug("Read {} bytes from {}", read, endPoint);
 
-                if (read > 0)
+                if (read == 0)
                 {
-                    if (parse(buffer))
-                        return;
-                }
-                else if (read == 0)
-                {
-                    releaseBuffer(buffer);
+                    releaseNetworkBuffer();
                     fillInterested();
                     return;
                 }
-                else
+                else if (read < 0)
                 {
-                    releaseBuffer(buffer);
+                    releaseNetworkBuffer();
                     shutdown();
                     return;
                 }
-
-                looping = true;
             }
         }
         catch (Exception x)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug(x);
-            releaseBuffer(buffer);
+            networkBuffer.clear();
+            releaseNetworkBuffer();
             close(x);
         }
     }
@@ -423,26 +435,8 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
                     HttpChannelOverFCGI channel = activeChannels.get(request);
                     if (channel != null)
                     {
-                        CompletableCallback callback = new CompletableCallback()
-                        {
-                            @Override
-                            public void resume()
-                            {
-                                if (LOG.isDebugEnabled())
-                                    LOG.debug("Content consumed asynchronously, resuming processing");
-                                process(HttpConnectionOverFCGI.this.buffer);
-                            }
-
-                            @Override
-                            public void abort(Throwable x)
-                            {
-                                close(x);
-                            }
-                        };
-                        // Do not short circuit these calls.
-                        boolean proceed = channel.content(buffer, callback);
-                        boolean async = callback.tryComplete();
-                        return !proceed || async;
+                        networkBuffer.retain();
+                        return !channel.content(buffer, Callback.from(networkBuffer::release, HttpConnectionOverFCGI.this::close));
                     }
                     else
                     {

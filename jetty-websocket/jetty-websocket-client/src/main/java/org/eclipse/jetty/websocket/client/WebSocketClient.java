@@ -239,6 +239,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
     public void setIdleTimeout(Duration duration)
     {
         configurationCustomizer.setIdleTimeout(duration);
+        getHttpClient().setIdleTimeout(duration.toMillis());
     }
 
     @Override

@@ -81,8 +81,8 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
         _executor = executor;
         _capacity = reservedThreads(executor, capacity);
         _stack = new ConcurrentLinkedDeque<>();
-
-        LOG.debug("{}", this);
+        if (LOG.isDebugEnabled())
+            LOG.debug("{}", this);
     }
 
     /**
@@ -209,9 +209,10 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
             return false;
 
         ReservedThread thread = _stack.pollFirst();
-        if (thread == null && task != STOP)
+        if (thread == null)
         {
-            startReservedThread();
+            if (task != STOP)
+                startReservedThread();
             return false;
         }
 
