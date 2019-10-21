@@ -65,16 +65,15 @@ public abstract class FragmentingFlusher
             notifyCallbackFailure(callback, new ClosedChannelException());
     }
 
-    protected void onFailure()
+    protected void onFailure(Throwable t)
     {
         synchronized (this)
         {
             canEnqueue = false;
         }
 
-        ClosedChannelException error = new ClosedChannelException();
         for (FrameEntry entry : entries)
-            notifyCallbackFailure(entry.callback, error);
+            notifyCallbackFailure(entry.callback, t);
         entries.clear();
     }
 
@@ -139,9 +138,9 @@ public abstract class FragmentingFlusher
             ByteBuffer payloadFragment = payload.slice();
             payload.limit(limit);
             fragment.setPayload(payloadFragment);
+            payload.position(newLimit);
             if (LOG.isDebugEnabled())
                 LOG.debug("Fragmented {}->{}", frame, fragment);
-            payload.position(newLimit);
 
             forwardFrame(fragment, this, entry.batch);
         }
@@ -153,9 +152,9 @@ public abstract class FragmentingFlusher
         }
 
         @Override
-        protected void onCompleteFailure(Throwable x)
+        protected void onCompleteFailure(Throwable t)
         {
-            onFailure();
+            onFailure(t);
         }
 
         @Override
@@ -171,7 +170,7 @@ public abstract class FragmentingFlusher
         @Override
         public void failed(Throwable cause)
         {
-            LOG.warn(cause);
+            notifyCallbackFailure(current.callback, cause);
             super.failed(cause);
         }
     }

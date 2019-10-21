@@ -44,6 +44,7 @@ import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.IncomingFrames;
+import org.eclipse.jetty.websocket.core.MessageTooLargeException;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.OutgoingFrames;
 import org.eclipse.jetty.websocket.core.ProtocolException;
@@ -156,7 +157,7 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
         if (!OpCode.isKnown(frame.getOpCode()))
             throw new ProtocolException("Unknown opcode: " + frame.getOpCode());
 
-        int payloadLength = (frame.getPayload() == null) ? 0 : frame.getPayload().remaining();
+        int payloadLength = frame.getPayloadLength();
         if (frame.isControlFrame())
         {
             if (!frame.isFin())
@@ -174,6 +175,9 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
         }
         else
         {
+            if (!autoFragment && maxFrameSize > 0 && payloadLength > maxFrameSize)
+                throw new MessageTooLargeException("Cannot handle payload lengths larger than " + maxFrameSize);
+
             /*
              * RFC 6455 Section 5.2
              *
@@ -797,8 +801,22 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
 
     private class Flusher extends IteratingCallback
     {
+        private final FragmentingFlusher fragmentingFlusher;
+
         private final Queue<FrameEntry> queue = new ArrayDeque<>();
         FrameEntry entry;
+
+        public Flusher()
+        {
+            fragmentingFlusher = new FragmentingFlusher(WebSocketCoreSession.this)
+            {
+                @Override
+                void forwardFrame(Frame frame, Callback callback, boolean batch)
+                {
+                    negotiated.getExtensions().sendFrame(frame, callback, batch);
+                }
+            };
+        }
 
         @Override
         protected Action process() throws Throwable
@@ -810,7 +828,12 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
             if (entry == null)
                 return Action.IDLE;
 
-            negotiated.getExtensions().sendFrame(entry.frame, this, entry.batch);
+            Frame frame = entry.frame;
+            if (OpCode.isControlFrame(frame.getOpCode()) || frame.getPayloadLength() < maxFrameSize)
+                negotiated.getExtensions().sendFrame(frame, this, entry.batch);
+            else
+                fragmentingFlusher.sendFrame(frame, this, entry.batch);
+
             return Action.SCHEDULED;
         }
 
