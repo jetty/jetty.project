@@ -57,7 +57,8 @@ public class TestFrameHandler implements SynchronousFrameHandler
     @Override
     public void onOpen(CoreSession coreSession)
     {
-        LOG.info("onOpen {}", coreSession);
+        if (LOG.isDebugEnabled())
+            LOG.debug("onOpen {}", coreSession);
         this.coreSession = coreSession;
         open.countDown();
     }
@@ -65,41 +66,47 @@ public class TestFrameHandler implements SynchronousFrameHandler
     @Override
     public void onFrame(Frame frame)
     {
-        LOG.info("onFrame: " + OpCode.name(frame.getOpCode()) + ":" + BufferUtil.toDetailString(frame.getPayload()));
+        if (LOG.isDebugEnabled())
+            LOG.debug("onFrame: " + OpCode.name(frame.getOpCode()) + ":" + BufferUtil.toDetailString(frame.getPayload()));
         receivedFrames.offer(Frame.copy(frame));
     }
 
     @Override
     public void onClosed(CloseStatus closeStatus)
     {
-        LOG.info("onClosed {}", closeStatus);
+        if (LOG.isDebugEnabled())
+            LOG.debug("onClosed {}", closeStatus);
         closed.countDown();
     }
 
     @Override
     public void onError(Throwable cause)
     {
-        LOG.info("onError {} ", cause == null ? null : cause.toString());
+        if (LOG.isDebugEnabled())
+            LOG.debug("onError {} ", cause == null ? null : cause.toString());
         failure = cause;
         error.countDown();
     }
 
     public void sendText(String text)
     {
-        LOG.info("sendText {} ", text);
+        if (LOG.isDebugEnabled())
+            LOG.debug("sendText {} ", text);
         Frame frame = new Frame(OpCode.TEXT, text);
         getCoreSession().sendFrame(frame, Callback.NOOP, false);
     }
 
     public void sendFrame(Frame frame)
     {
-        LOG.info("sendFrame {} ", frame);
+        if (LOG.isDebugEnabled())
+            LOG.debug("sendFrame {} ", frame);
         getCoreSession().sendFrame(frame, Callback.NOOP, false);
     }
 
     public void sendClose()
     {
-        LOG.info("sendClose");
+        if (LOG.isDebugEnabled())
+            LOG.debug("sendClose");
         Frame frame = new Frame(OpCode.CLOSE);
         getCoreSession().sendFrame(frame, Callback.NOOP, false);
     }
