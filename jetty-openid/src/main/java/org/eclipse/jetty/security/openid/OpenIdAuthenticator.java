@@ -246,6 +246,16 @@ public class OpenIdAuthenticator extends LoginAuthenticator
 
         try
         {
+            if (request.isRequestedSessionIdFromURL())
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Session ID should be cookie for OpenID authentication to work");
+
+                int redirectCode = (baseRequest.getHttpVersion().getVersion() < HttpVersion.HTTP_1_1.getVersion() ? HttpServletResponse.SC_MOVED_TEMPORARILY : HttpServletResponse.SC_SEE_OTHER);
+                baseResponse.sendRedirect(redirectCode, URIUtil.addPaths(request.getContextPath(), _errorPage));
+                return Authentication.SEND_FAILURE;
+            }
+
             // Handle a request for authentication.
             if (isJSecurityCheck(uri))
             {
