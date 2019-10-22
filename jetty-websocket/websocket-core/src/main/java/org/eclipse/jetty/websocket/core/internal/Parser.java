@@ -319,10 +319,11 @@ public class Parser
             return null;
 
         int available = buffer.remaining();
+        boolean isDataFrame = OpCode.isDataFrame(OpCode.getOpCode(firstByte));
 
         // Always autoFragment data frames if payloadLength is greater than maxFrameSize.
         long maxFrameSize = configuration.getMaxFrameSize();
-        if (maxFrameSize > 0 && OpCode.isDataFrame(OpCode.getOpCode(firstByte)) && payloadLength > maxFrameSize)
+        if (maxFrameSize > 0 && isDataFrame && payloadLength > maxFrameSize)
             return autoFragment(buffer, (int)Math.min(available, maxFrameSize));
 
         if (aggregate == null)
@@ -331,7 +332,7 @@ public class Parser
             {
                 // not enough to complete this frame
                 // Can we auto-fragment
-                if (configuration.isAutoFragment() && OpCode.isDataFrame(OpCode.getOpCode(firstByte)))
+                if (configuration.isAutoFragment() && isDataFrame)
                     return autoFragment(buffer, available);
 
                 // No space in the buffer, so we have to copy the partial payload
