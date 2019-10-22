@@ -49,11 +49,11 @@ public class Scanner extends AbstractLifeCycle
     private static int __scannerId = 0;
     private int _scanInterval;
     private int _scanCount = 0;
-    private final List<Listener> _listeners = new ArrayList<Listener>();
-    private final Map<String, TimeNSize> _prevScan = new HashMap<String, TimeNSize>();
-    private final Map<String, TimeNSize> _currentScan = new HashMap<String, TimeNSize>();
+    private final List<Listener> _listeners = new ArrayList<>();
+    private final Map<String, TimeNSize> _prevScan = new HashMap<>();
+    private final Map<String, TimeNSize> _currentScan = new HashMap<>();
     private FilenameFilter _filter;
-    private final List<File> _scanDirs = new ArrayList<File>();
+    private final List<File> _scanDirs = new ArrayList<>();
     private volatile boolean _running = false;
     private boolean _reportExisting = true;
     private boolean _reportDirs = true;
@@ -66,7 +66,7 @@ public class Scanner extends AbstractLifeCycle
         ADDED, CHANGED, REMOVED
     }
 
-    private final Map<String, Notification> _notifications = new HashMap<String, Notification>();
+    private final Map<String, Notification> _notifications = new HashMap<>();
 
     static class TimeNSize
     {
@@ -411,11 +411,7 @@ public class Scanner extends AbstractLifeCycle
                 if (l instanceof ScanListener)
                     ((ScanListener)l).scan();
             }
-            catch (Exception e)
-            {
-                LOG.warn(e);
-            }
-            catch (Error e)
+            catch (Throwable e)
             {
                 LOG.warn(e);
             }
@@ -427,16 +423,11 @@ public class Scanner extends AbstractLifeCycle
      */
     public synchronized void scanFiles()
     {
-        if (_scanDirs == null)
-            return;
-
         _currentScan.clear();
-        Iterator<File> itor = _scanDirs.iterator();
-        while (itor.hasNext())
+        for (File dir : _scanDirs)
         {
-            File dir = itor.next();
-
             if ((dir != null) && (dir.exists()))
+            {
                 try
                 {
                     scanFile(dir.getCanonicalFile(), _currentScan, 0);
@@ -445,6 +436,7 @@ public class Scanner extends AbstractLifeCycle
                 {
                     LOG.warn("Error scanning files.", e);
                 }
+            }
         }
     }
 
@@ -454,11 +446,11 @@ public class Scanner extends AbstractLifeCycle
      * @param currentScan the info from the most recent pass
      * @param oldScan info from the previous pass
      */
-    public synchronized void reportDifferences(Map<String, TimeNSize> currentScan, Map<String, TimeNSize> oldScan)
+    private synchronized void reportDifferences(Map<String, TimeNSize> currentScan, Map<String, TimeNSize> oldScan)
     {
         // scan the differences and add what was found to the map of notifications:
 
-        Set<String> oldScanKeys = new HashSet<String>(oldScan.keySet());
+        Set<String> oldScanKeys = new HashSet<>(oldScan.keySet());
 
         // Look for new and changed files
         for (Map.Entry<String, TimeNSize> entry : currentScan.entrySet())
@@ -480,14 +472,8 @@ public class Scanner extends AbstractLifeCycle
             else if (!oldScan.get(file).equals(currentScan.get(file)))
             {
                 Notification old = _notifications.put(file, Notification.CHANGED);
-                if (old != null)
-                {
-                    switch (old)
-                    {
-                        case ADDED:
-                            _notifications.put(file, Notification.ADDED);
-                    }
-                }
+                if (old == Notification.ADDED)
+                    _notifications.put(file, Notification.ADDED);
             }
         }
 
@@ -497,14 +483,8 @@ public class Scanner extends AbstractLifeCycle
             if (!currentScan.containsKey(file))
             {
                 Notification old = _notifications.put(file, Notification.REMOVED);
-                if (old != null)
-                {
-                    switch (old)
-                    {
-                        case ADDED:
-                            _notifications.remove(file);
-                    }
-                }
+                if (old == Notification.ADDED)
+                    _notifications.remove(file);
             }
         }
 
@@ -513,7 +493,7 @@ public class Scanner extends AbstractLifeCycle
 
         // Process notifications
         // Only process notifications that are for stable files (ie same in old and current scan).
-        List<String> bulkChanges = new ArrayList<String>();
+        List<String> bulkChanges = new ArrayList<>();
         for (Iterator<Entry<String, Notification>> iter = _notifications.entrySet().iterator(); iter.hasNext(); )
         {
             Entry<String, Notification> entry = iter.next();
@@ -565,7 +545,7 @@ public class Scanner extends AbstractLifeCycle
 
             if (f.isFile() || depth > 0 && _reportDirs && f.isDirectory())
             {
-                if ((_filter == null) || ((_filter != null) && _filter.accept(f.getParentFile(), f.getName())))
+                if (_filter == null || _filter.accept(f.getParentFile(), f.getName()))
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("scan accepted {}", f);
@@ -585,9 +565,9 @@ public class Scanner extends AbstractLifeCycle
                 File[] files = f.listFiles();
                 if (files != null)
                 {
-                    for (int i = 0; i < files.length; i++)
+                    for (File file : files)
                     {
-                        scanFile(files[i], scanInfoMap, depth + 1);
+                        scanFile(file, scanInfoMap, depth + 1);
                     }
                 }
                 else
@@ -612,20 +592,14 @@ public class Scanner extends AbstractLifeCycle
      */
     private void reportAddition(String filename)
     {
-        Iterator<Listener> itor = _listeners.iterator();
-        while (itor.hasNext())
+        for (Listener l : _listeners)
         {
-            Listener l = itor.next();
             try
             {
                 if (l instanceof DiscreteListener)
                     ((DiscreteListener)l).fileAdded(filename);
             }
-            catch (Exception e)
-            {
-                warn(l, filename, e);
-            }
-            catch (Error e)
+            catch (Throwable e)
             {
                 warn(l, filename, e);
             }
@@ -639,20 +613,14 @@ public class Scanner extends AbstractLifeCycle
      */
     private void reportRemoval(String filename)
     {
-        Iterator<Listener> itor = _listeners.iterator();
-        while (itor.hasNext())
+        for (Object l : _listeners)
         {
-            Object l = itor.next();
             try
             {
                 if (l instanceof DiscreteListener)
                     ((DiscreteListener)l).fileRemoved(filename);
             }
-            catch (Exception e)
-            {
-                warn(l, filename, e);
-            }
-            catch (Error e)
+            catch (Throwable e)
             {
                 warn(l, filename, e);
             }
@@ -666,20 +634,14 @@ public class Scanner extends AbstractLifeCycle
      */
     private void reportChange(String filename)
     {
-        Iterator<Listener> itor = _listeners.iterator();
-        while (itor.hasNext())
+        for (Listener l : _listeners)
         {
-            Listener l = itor.next();
             try
             {
                 if (l instanceof DiscreteListener)
                     ((DiscreteListener)l).fileChanged(filename);
             }
-            catch (Exception e)
-            {
-                warn(l, filename, e);
-            }
-            catch (Error e)
+            catch (Throwable e)
             {
                 warn(l, filename, e);
             }
@@ -688,20 +650,14 @@ public class Scanner extends AbstractLifeCycle
 
     private void reportBulkChanges(List<String> filenames)
     {
-        Iterator<Listener> itor = _listeners.iterator();
-        while (itor.hasNext())
+        for (Listener l : _listeners)
         {
-            Listener l = itor.next();
             try
             {
                 if (l instanceof BulkListener)
                     ((BulkListener)l).filesChanged(filenames);
             }
-            catch (Exception e)
-            {
-                warn(l, filenames.toString(), e);
-            }
-            catch (Error e)
+            catch (Throwable e)
             {
                 warn(l, filenames.toString(), e);
             }

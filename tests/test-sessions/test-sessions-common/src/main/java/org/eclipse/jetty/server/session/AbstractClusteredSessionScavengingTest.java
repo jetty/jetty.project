@@ -117,6 +117,7 @@ public abstract class AbstractClusteredSessionScavengingTest extends AbstractTes
                     assertTrue(response1.getContentAsString().startsWith("init"));
                     String sessionCookie = response1.getHeaders().get("Set-Cookie");
                     assertTrue(sessionCookie != null);
+                    String id = TestServer.extractSessionId(sessionCookie);
 
                     //ensure request has finished being handled
                     synchronizer.await(5, TimeUnit.SECONDS);
@@ -124,9 +125,7 @@ public abstract class AbstractClusteredSessionScavengingTest extends AbstractTes
                     assertEquals(1, ((DefaultSessionCache)m1.getSessionCache()).getSessionsCurrent());
                     assertEquals(1, ((DefaultSessionCache)m1.getSessionCache()).getSessionsMax());
                     assertEquals(1, ((DefaultSessionCache)m1.getSessionCache()).getSessionsTotal());
-                    // Mangle the cookie, replacing Path with $Path, etc.
-                    sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
-                    String id = TestServer.extractSessionId(sessionCookie);
+
                     
                     //Peek at the contents of the cache without doing all the reference counting etc
                     Session s1 = ((AbstractSessionCache)m1.getSessionCache()).doGet(id);
@@ -144,7 +143,6 @@ public abstract class AbstractClusteredSessionScavengingTest extends AbstractTes
                         synchronizer = new CountDownLatch(1);
                         scopeListener2.setExitSynchronizer(synchronizer);
                         Request request = client.newRequest("http://localhost:" + port2 + contextPath + servletMapping.substring(1));
-                        request.header("Cookie", sessionCookie); //use existing session
                         ContentResponse response2 = request.send();
                         assertEquals(HttpServletResponse.SC_OK, response2.getStatus());
                         assertTrue(response2.getContentAsString().startsWith("test"));

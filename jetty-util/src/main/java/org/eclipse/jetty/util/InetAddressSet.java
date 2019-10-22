@@ -58,7 +58,7 @@ public class InetAddressSet extends AbstractSet<String> implements Set<String>, 
         return _patterns.put(pattern, newInetRange(pattern)) == null;
     }
 
-    protected InetPattern newInetRange(String pattern)
+    private InetPattern newInetRange(String pattern)
     {
         if (pattern == null)
             return null;

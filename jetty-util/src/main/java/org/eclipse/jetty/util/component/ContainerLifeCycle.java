@@ -331,7 +331,7 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
         return addBean(o, managed ? Managed.POJO : Managed.UNMANAGED);
     }
 
-    public boolean addBean(Object o, Managed managed)
+    private boolean addBean(Object o, Managed managed)
     {
         if (o == null || contains(o))
             return false;

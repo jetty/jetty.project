@@ -297,7 +297,7 @@ The ALPN class and its nested classes are released under same license as the cla
 The ALPN implementation, relying on modifications of OpenJDK classes, updates every time there are updates to the modified OpenJDK classes.
 
 .ALPN vs. OpenJDK versions
-[cols=",",options="header",]
+[cols="a,",options="header"]
 |=============================
 |OpenJDK version |ALPN version
 |1.7.0u40 |7.1.0.v20141016
@@ -351,11 +351,20 @@ The ALPN implementation, relying on modifications of OpenJDK classes, updates ev
 |1.8.0u192 |8.1.13.v20181017
 |1.8.0u201 |8.1.13.v20181017
 |1.8.0u202 |8.1.13.v20181017
-|1.8.0u211 |8.1.13.v20181017
+|1.8.0u211^[1]^ |8.1.13.v20181017
 |1.8.0u212 |8.1.13.v20181017
-|1.8.0u221 |8.1.13.v20181017
+|1.8.0u221^[1]^ |8.1.13.v20181017
 |1.8.0u222 |8.1.13.v20181017
+|1.8.0u231^[1]^ |8.1.13.v20181017
+|1.8.0u232 |8.1.13.v20181017
 |=============================
+^[1]^ These are Oracle releases for which the source code is not available,
+or it is unclear what exactly is because there is no correspondent tag in
+the OpenJDK repository.
+We assume that the source code for these releases is equivalent (at least
+for the files modified to make ALPN work) to the release that follows
+(for example, for 1.8.0u211 we assume that the source code is equivalent
+to 1.8.0u212, for 1.8.0u221 we assume 1.8.0u222, etc.).
 
 [[alpn-build]]
 ==== How to build ALPN
