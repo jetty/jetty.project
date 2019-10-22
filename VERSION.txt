@@ -1,3 +1,5 @@
+jetty-9.4.23-SNAPSHOT
+
 jetty-9.4.22.v20191022 - 22 October 2019
  + 2429 HttpClient backpressure improved
  + 3558 Error notifications can be received after a successful websocket
