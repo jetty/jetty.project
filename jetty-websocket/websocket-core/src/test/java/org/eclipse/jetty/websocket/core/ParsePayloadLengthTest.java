@@ -62,6 +62,7 @@ public class ParsePayloadLengthTest
     public void testPayloadLength(int size, String description) throws InterruptedException
     {
         ParserCapture capture = new ParserCapture();
+        capture.getCoreSession().setMaxFrameSize(0);
 
         ByteBuffer raw = BufferUtil.allocate(size + Generator.MAX_HEADER_LENGTH);
         BufferUtil.clearToFill(raw);
