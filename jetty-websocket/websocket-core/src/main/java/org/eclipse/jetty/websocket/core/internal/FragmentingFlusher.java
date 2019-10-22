@@ -32,7 +32,7 @@ import org.eclipse.jetty.websocket.core.FrameHandler.Configuration;
 import org.eclipse.jetty.websocket.core.OpCode;
 
 /**
- * Fragment Extension
+ * Used to split large data frames into multiple frames below the maxFrameSize.
  */
 public abstract class FragmentingFlusher
 {
