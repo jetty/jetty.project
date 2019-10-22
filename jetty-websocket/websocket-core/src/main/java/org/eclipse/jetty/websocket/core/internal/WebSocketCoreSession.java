@@ -102,6 +102,10 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
     {
         assertValidFrame(frame);
 
+        // Validate frame size.
+        if (maxFrameSize > 0 && frame.getPayloadLength() > maxFrameSize)
+            throw new MessageTooLargeException("Cannot handle payload lengths larger than " + maxFrameSize);
+
         // Assert Incoming Frame Behavior Required by RFC-6455 / Section 5.1
         switch (behavior)
         {
@@ -133,6 +137,10 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
     public void assertValidOutgoing(Frame frame) throws CloseException
     {
         assertValidFrame(frame);
+
+        // Validate frame size (allowed to be over max frame size if autoFragment is true).
+        if (!autoFragment && maxFrameSize > 0 && frame.getPayloadLength() > maxFrameSize)
+            throw new MessageTooLargeException("Cannot handle payload lengths larger than " + maxFrameSize);
 
         /*
          * RFC 6455 Section 5.5.1
@@ -175,9 +183,6 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
         }
         else
         {
-            if (!autoFragment && maxFrameSize > 0 && payloadLength > maxFrameSize)
-                throw new MessageTooLargeException("Cannot handle payload lengths larger than " + maxFrameSize);
-
             /*
              * RFC 6455 Section 5.2
              *
