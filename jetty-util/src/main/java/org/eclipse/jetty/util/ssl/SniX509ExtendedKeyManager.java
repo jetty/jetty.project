@@ -22,10 +22,11 @@ import java.net.Socket;
 import java.security.Principal;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Objects;
+import java.util.stream.Collectors;
 import javax.net.ssl.SNIMatcher;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLHandshakeException;
@@ -82,36 +83,28 @@ public class SniX509ExtendedKeyManager extends X509ExtendedKeyManager
 
         // Find our SNIMatcher.  There should only be one and it always matches (always returns true
         // from AliasSNIMatcher.matches), but it will capture the SNI Host if one was presented.
-        String host = null;
-        if (matchers != null)
-        {
-            for (SNIMatcher m : matchers)
-            {
-                if (m instanceof SslContextFactory.AliasSNIMatcher)
-                {
-                    SslContextFactory.AliasSNIMatcher matcher = (SslContextFactory.AliasSNIMatcher)m;
-                    host = matcher.getHost();
-                    break;
-                }
-            }
-        }
-
-        // delegate the decision to accept to the sniSelector
-        SniSelector sniSelector = _sslContextFactory.getSNISelector();
-        if (sniSelector == null)
-            sniSelector = _sslContextFactory;
+        String host = matchers == null ? null :  matchers.stream()
+            .filter(SslContextFactory.AliasSNIMatcher.class::isInstance)
+            .map(SslContextFactory.AliasSNIMatcher.class::cast)
+            .findFirst()
+            .map(SslContextFactory.AliasSNIMatcher::getHost)
+            .orElse(null);
 
         try
         {
             // Filter the certificates by alias.
-            Collection<X509> certificates = new ArrayList<>();
-            for (String alias : aliases)
-            {
-                X509 x509 = _sslContextFactory.getX509(alias);
-                if (x509 != null)
-                    certificates.add(x509);
-            }
+            Collection<X509> certificates = Arrays.stream(aliases)
+                .map(_sslContextFactory::getX509)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+
+            // delegate the decision to accept to the sniSelector
+            SniSelector sniSelector = _sslContextFactory.getSNISelector();
+            if (sniSelector == null)
+                sniSelector = _sslContextFactory;
             String alias = sniSelector.sniSelect(keyType, issuers, session, host, certificates);
+
+            // Check selected alias
             if (alias != null && alias != DELEGATE)
             {
                 // Make sure we got back an alias from the acceptable aliases.
