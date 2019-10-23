@@ -266,7 +266,7 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
             X509 x509 = (X509)sslSession.getValue(SniX509ExtendedKeyManager.SNI_X509);
 
             if (LOG.isDebugEnabled())
-                LOG.debug("Host {} matched SNI {}", name, x509);
+                LOG.debug("Host {} with SNI {}", name, x509);
 
             if (x509 == null)
             {
