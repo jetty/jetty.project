@@ -230,20 +230,13 @@ public class SniSslConnectionFactoryTest
     }
 
     @Test
-    public void testWrongSNIRejected() throws Exception
+    public void testWrongSNIRejectedConnection() throws Exception
     {
         start(ssl ->
         {
             ssl.setKeyStorePath("src/test/resources/keystore_sni.p12");
             // Do not allow unmatched SNI.
-            ssl.setRejectUnmatchedSNIHost(true);
-            ssl.setSNISelector((keyType, issuers, session, sniHost, certificates) ->
-            {
-                // Do not allow missing SNI.
-                if (sniHost == null)
-                    throw new SSLHandshakeException("Missing SNI");
-                return ssl.sniSelect(keyType, issuers, session, sniHost, certificates);
-            });
+            ssl.setSniRequired(true);
         });
 
         // Wrong SNI host.
@@ -251,6 +244,31 @@ public class SniSslConnectionFactoryTest
 
         // No SNI host.
         assertThrows(SSLHandshakeException.class, () -> getResponse(null, "wrong.com", null));
+    }
+
+    @Test
+    public void testWrongSNIRejectedBadRequest() throws Exception
+    {
+        start(ssl ->
+        {
+            ssl.setKeyStorePath("src/test/resources/keystore_sni.p12");
+            // Do not allow unmatched SNI.
+            ssl.setSniRequired(false);
+            _httpsConfiguration.getCustomizers().stream()
+                .filter(SecureRequestCustomizer.class::isInstance)
+                .map(SecureRequestCustomizer.class::cast)
+                .forEach(src -> src.setSniRequired(true));
+        });
+
+        // Wrong SNI host.
+        HttpTester.Response response = HttpTester.parseResponse(getResponse("wrong.com", "wrong.com", null));
+        assertNotNull(response);
+        assertThat(response.getStatus(), is(400));
+
+        // No SNI host.
+        response = HttpTester.parseResponse(getResponse(null, "wrong.com", null));
+        assertNotNull(response);
+        assertThat(response.getStatus(), is(400));
     }
 
     @Test

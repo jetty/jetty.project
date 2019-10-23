@@ -25,8 +25,10 @@ import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import javax.net.ssl.SNIMatcher;
 import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLHandshakeException;
 import javax.net.ssl.SSLSession;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.X509ExtendedKeyManager;
@@ -42,7 +44,7 @@ import org.eclipse.jetty.util.log.Logger;
 public class SniX509ExtendedKeyManager extends X509ExtendedKeyManager
 {
     public static final String SNI_X509 = "org.eclipse.jetty.util.ssl.snix509";
-    private static final String NO_MATCHERS = "no_matchers";
+    public static final String DELEGATE = "delegate_no_sni_match";
     private static final Logger LOG = Log.getLogger(SniX509ExtendedKeyManager.class);
 
     private final X509ExtendedKeyManager _delegate;
@@ -93,7 +95,7 @@ public class SniX509ExtendedKeyManager extends X509ExtendedKeyManager
             }
         }
 
-        SslContextFactory.SNISelector sniSelector = _sslContextFactory.getSNISelector();
+        SniSelector sniSelector = _sslContextFactory.getSNISelector();
         if (sniSelector == null)
             sniSelector = _sslContextFactory;
 
@@ -107,25 +109,24 @@ public class SniX509ExtendedKeyManager extends X509ExtendedKeyManager
                 if (x509 != null)
                     certificates.add(x509);
             }
-            X509 x509 = sniSelector.sniSelect(keyType, issuers, session, host, certificates);
-            if (x509 == null)
+            String alias = sniSelector.sniSelect(keyType, issuers, session, host, certificates);
+            if (alias != null && alias != DELEGATE)
             {
-                return NO_MATCHERS;
-            }
-            else
-            {
-                // Make sure we got back an X509 from the collection we passed in.
-                if (!certificates.contains(x509))
+                // Make sure we got back an alias from the acceptable aliases.
+                X509 x509 = _sslContextFactory.getX509(alias);
+                if (!Arrays.asList(aliases).contains(alias) || x509 == null)
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Invalid X509 match for SNI {}: {}", host, x509);
+                        LOG.debug("Invalid X509 match for SNI {}: {}", host, alias);
                     return null;
                 }
+
                 if (LOG.isDebugEnabled())
                     LOG.debug("Matched SNI {} with X509 {} from {}", host, x509, Arrays.asList(aliases));
-                session.putValue(SNI_X509, x509);
-                return x509.getAlias();
+                if (session != null)
+                    session.putValue(SNI_X509, x509);
             }
+            return alias;
         }
         catch (Throwable x)
         {
@@ -139,8 +140,10 @@ public class SniX509ExtendedKeyManager extends X509ExtendedKeyManager
     public String chooseServerAlias(String keyType, Principal[] issuers, Socket socket)
     {
         SSLSocket sslSocket = (SSLSocket)socket;
-        String alias = socket == null ? NO_MATCHERS : chooseServerAlias(keyType, issuers, sslSocket.getSSLParameters().getSNIMatchers(), sslSocket.getHandshakeSession());
-        if (alias == NO_MATCHERS)
+        String alias = (socket == null)
+            ? chooseServerAlias(keyType, issuers, Collections.emptyList(), null)
+            : chooseServerAlias(keyType, issuers, sslSocket.getSSLParameters().getSNIMatchers(), sslSocket.getHandshakeSession());
+        if (alias == DELEGATE)
             alias = _delegate.chooseServerAlias(keyType, issuers, socket);
         if (LOG.isDebugEnabled())
             LOG.debug("Chose alias {}/{} on {}", alias, keyType, socket);
@@ -150,8 +153,10 @@ public class SniX509ExtendedKeyManager extends X509ExtendedKeyManager
     @Override
     public String chooseEngineServerAlias(String keyType, Principal[] issuers, SSLEngine engine)
     {
-        String alias = engine == null ? NO_MATCHERS : chooseServerAlias(keyType, issuers, engine.getSSLParameters().getSNIMatchers(), engine.getHandshakeSession());
-        if (alias == NO_MATCHERS)
+        String alias = (engine == null)
+            ? chooseServerAlias(keyType, issuers, Collections.emptyList(), null)
+            : chooseServerAlias(keyType, issuers, engine.getSSLParameters().getSNIMatchers(), engine.getHandshakeSession());
+        if (alias == DELEGATE)
             alias = _delegate.chooseEngineServerAlias(keyType, issuers, engine);
         if (LOG.isDebugEnabled())
             LOG.debug("Chose alias {}/{} on {}", alias, keyType, engine);
@@ -180,5 +185,30 @@ public class SniX509ExtendedKeyManager extends X509ExtendedKeyManager
     public String[] getServerAliases(String keyType, Principal[] issuers)
     {
         return _delegate.getServerAliases(keyType, issuers);
+    }
+
+    /**
+     * <p>Selects a certificate based on SNI information.</p>
+     */
+    @FunctionalInterface
+    public interface SniSelector
+    {
+        /**
+         * <p>Selects a certificate based on SNI information.</p>
+         * <p>This method may be invoked multiple times during the TLS handshake, with different parameters.
+         * For example, the {@code keyType} could be different, and subsequently the collection of certificates
+         * (because they need to match the {@code keyType}.</p>
+         *
+         * @param keyType the key algorithm type name
+         * @param issuers the list of acceptable CA issuer subject names or null if it does not matter which issuers are used
+         * @param session the TLS handshake session or null if not known.
+         * @param sniHost the server name indication sent by the client, or null if the client did not send the server name indication
+         * @param certificates the list of certificates matching {@code keyType} and {@code issuers} known to this SslContextFactory
+         * @return the alias of the certificate to return to the client, from the {@code certificates} list,
+         * or {@link SniX509ExtendedKeyManager#DELEGATE} if the certificate choice should be delegated to the
+         * nested key manager or null for no match.
+         * @throws SSLHandshakeException if the TLS handshake should be aborted
+         */
+        public String sniSelect(String keyType, Principal[] issuers, SSLSession session, String sniHost, Collection<X509> certificates) throws SSLHandshakeException;
     }
 }

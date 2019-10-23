@@ -2205,10 +2205,10 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     }
 
     @ManagedObject
-    public static class Server extends SslContextFactory implements SNISelector
+    public static class Server extends SslContextFactory implements SniX509ExtendedKeyManager.SniSelector
     {
-        private boolean rejectUnmatchedSNIHost;
-        private SNISelector _sniSelector;
+        private boolean _sniRequired;
+        private SniX509ExtendedKeyManager.SniSelector _sniSelector;
 
         public Server()
         {
@@ -2239,26 +2239,48 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
         }
 
         /**
-         * @return whether to reject the TLS handshake if the SNI host is present but does not match
+         * Does the default {@link #sniSelect(String, Principal[], SSLSession, String, Collection)} implementation
+         * require an SNI match?  Note that if a non SNI handshake is accepted, requests may still be rejected
+         * at the HTTP level for incorrect SNI (see SecureRequestCustomizer).
+         * @return true if no SNI match is handled as no certificate match, false if no SNI match is handled by
+         *         delegation to the non SNI matching methods.
          */
-        @ManagedAttribute("Whether the TLS handshake is rejected if the SNI host is present but does not match")
-        public boolean isRejectUnmatchedSNIHost()
+        @ManagedAttribute("Whether the TLS handshake is rejected if there is no SNI host match")
+        public boolean isSniRequired()
         {
-            return rejectUnmatchedSNIHost;
+            return _sniRequired;
         }
 
         /**
-         * @param rejectUnmatchedSNIHost whether to reject the TLS handshake if the SNI host is present but does not match
+         * Set if the default {@link #sniSelect(String, Principal[], SSLSession, String, Collection)} implementation
+         * require an SNI match? Note that if a non SNI handshake is accepted, requests may still be rejected
+         * at the HTTP level for incorrect SNI (see SecureRequestCustomizer).
+         * This setting may have no effect if {@link #sniSelect(String, Principal[], SSLSession, String, Collection)} is
+         * overridden or a non null function is passed to {@link #setSNISelector(SniX509ExtendedKeyManager.SniSelector)}.
+         * @param sniRequired true if no SNI match is handled as no certificate match, false if no SNI match is handled by
+         *                    delegation to the non SNI matching methods.
          */
-        public void setRejectUnmatchedSNIHost(boolean rejectUnmatchedSNIHost)
+        public void setSniRequired(boolean sniRequired)
         {
-            this.rejectUnmatchedSNIHost = rejectUnmatchedSNIHost;
+            _sniRequired = sniRequired;
+        }
+
+        @Override
+        protected KeyManager[] getKeyManagers(KeyStore keyStore) throws Exception
+        {
+            KeyManager[] managers = super.getKeyManagers(keyStore);
+            if (isSniRequired())
+            {
+                if (managers == null || Arrays.stream(managers).noneMatch(SniX509ExtendedKeyManager.class::isInstance))
+                    throw new IllegalStateException("No SNI Key managers when SNI is required");
+            }
+            return managers;
         }
 
         /**
          * @return the custom function to select certificates based on SNI information
          */
-        public SNISelector getSNISelector()
+        public SniX509ExtendedKeyManager.SniSelector getSNISelector()
         {
             return _sniSelector;
         }
@@ -2268,13 +2290,13 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
          *
          * @param sniSelector the selection function
          */
-        public void setSNISelector(SNISelector sniSelector)
+        public void setSNISelector(SniX509ExtendedKeyManager.SniSelector sniSelector)
         {
             _sniSelector = sniSelector;
         }
 
         @Override
-        public X509 sniSelect(String keyType, Principal[] issuers, SSLSession session, String sniHost, Collection<X509> certificates) throws SSLHandshakeException
+        public String sniSelect(String keyType, Principal[] issuers, SSLSession session, String sniHost, Collection<X509> certificates) throws SSLHandshakeException
         {
             if (sniHost == null)
             {
@@ -2282,18 +2304,17 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
                 return certificates.stream()
                     .filter(x509 -> Objects.equals(x509.getAlias(), getCertAlias()))
                     .findAny()
-                    .orElse(null);
+                    .map(X509::getAlias)
+                    .orElse(_sniRequired ? null : SniX509ExtendedKeyManager.DELEGATE);
             }
             else
             {
                 // Match the SNI host, or let the JDK decide unless unmatched SNIs are rejected.
-                X509 result = certificates.stream()
+                return certificates.stream()
                     .filter(x509 -> x509.matches(sniHost))
                     .findAny()
-                    .orElse(null);
-                if (result == null && isRejectUnmatchedSNIHost())
-                    throw new SSLHandshakeException("Unmatched Server Name Indication for: " + sniHost);
-                return result;
+                    .map(X509::getAlias)
+                    .orElse(_sniRequired ? null : SniX509ExtendedKeyManager.DELEGATE);
             }
         }
 
@@ -2302,29 +2323,6 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
         {
             return new SniX509ExtendedKeyManager(keyManager, this);
         }
-    }
-
-    /**
-     * <p>Selects a certificate based on SNI information.</p>
-     */
-    @FunctionalInterface
-    public interface SNISelector
-    {
-        /**
-         * <p>Selects a certificate based on SNI information.</p>
-         * <p>This method may be invoked multiple times during the TLS handshake, with different parameters.
-         * For example, the {@code keyType} could be different, and subsequently the collection of certificates
-         * (because they need to match the {@code keyType}.</p>
-         *
-         * @param keyType the key algorithm type name
-         * @param issuers the list of acceptable CA issuer subject names or null if it does not matter which issuers are used
-         * @param session the TLS handshake session
-         * @param sniHost the server name indication sent by the client, or null if the client did not send the server name indication
-         * @param certificates the list of certificates matching {@code keyType} and {@code issuers} known to this SslContextFactory
-         * @return the {@code X509} certificate to return to the client, from the {@code certificates} list
-         * @throws SSLHandshakeException if the TLS handshake should be aborted
-         */
-        public X509 sniSelect(String keyType, Principal[] issuers, SSLSession session, String sniHost, Collection<X509> certificates) throws SSLHandshakeException;
     }
 
     /**
