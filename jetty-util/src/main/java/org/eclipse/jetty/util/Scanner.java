@@ -58,7 +58,8 @@ public class Scanner extends AbstractLifeCycle
      * When walking a directory, a depth of 1 ensures that
      * the directory's descendants are visited, not just the
      * directory itself (as a file).
-     * @see Vistor.preVisitDirectory
+     * 
+     * @see Visitor#preVisitDirectory
      */
     public static final int DEFAULT_SCAN_DEPTH = 1;
     public static final int MAX_SCAN_DEPTH = Integer.MAX_VALUE;
@@ -90,7 +91,7 @@ public class Scanner extends AbstractLifeCycle
      * PathMatcherSet
      *
      * A set of PathMatchers for testing Paths against path matching patterns via
-     * IncludeExcludeSets.
+     * @see IncludeExcludeSet
      */
     static class PathMatcherSet extends HashSet<PathMatcher> implements Predicate<Path>
     {
@@ -155,31 +156,31 @@ public class Scanner extends AbstractLifeCycle
     public class Visitor implements FileVisitor<Path>
     {
         Map<String, TimeNSize> scanInfoMap;
+        IncludeExcludeSet<PathMatcher,Path> rootIncludesExcludes;
+        Path root;
         
-        public Visitor(Map<String, TimeNSize> scanInfoMap)
+        public Visitor(Path root, IncludeExcludeSet<PathMatcher,Path> rootIncludesExcludes, Map<String, TimeNSize> scanInfoMap)
         {
+            this.root = root;
+            this.rootIncludesExcludes = rootIncludesExcludes;
             this.scanInfoMap = scanInfoMap;
         }
         
         @Override
         public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException
         {
-            File f = dir.toFile();
-            
-            if (!f.exists())
+            if (!Files.exists(dir))
                 return FileVisitResult.SKIP_SUBTREE;
 
             if (_reportDirs)
             {
+                File f = dir.toFile();
                 boolean accepted = false;
-                IncludeExcludeSet<PathMatcher, Path> includesExcludes = _scannables.get(dir);
-                if (includesExcludes != null)
+                if (rootIncludesExcludes != null)
                 { 
                     //accepted if not explicitly excluded and either is explicitly included or there are no explicit inclusions
-                    Boolean result = includesExcludes.isIncludedAndNotExcluded(dir);
+                    Boolean result = rootIncludesExcludes.test(dir);
                     if (Boolean.TRUE == result)
-                        accepted = true;
-                    else if (result == null && !includesExcludes.hasIncludes())
                         accepted = true;
                 }
                 else if (_filter == null || _filter.accept(f.getParentFile(), f.getName()))
@@ -197,32 +198,21 @@ public class Scanner extends AbstractLifeCycle
 
         @Override
         public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException
-        {
-            File f = file.toFile();
-            
-            if (!f.exists())
+        {   
+            if (!Files.exists(file))
                 return FileVisitResult.CONTINUE;
             
-            if (f.isDirectory())
+            if (Files.isDirectory(file))
                 return FileVisitResult.CONTINUE; //handled by preVisitDirectory
-
+            File f = file.toFile();
             boolean accepted = false;
             Path tmp = file.toRealPath();
-            IncludeExcludeSet<PathMatcher, Path> includesExcludes = null;
-            includesExcludes = _scannables.get(tmp);
-            while (includesExcludes == null && tmp.getNameCount() > 0)
-            {
-                tmp = tmp.getParent();
-                includesExcludes = _scannables.get(tmp);
-            }
 
-            if (includesExcludes != null)
+            if (rootIncludesExcludes != null)
             {
                 //accepted if not explicitly excluded and either is explicitly included or there are no explicit inclusions
-                Boolean result = includesExcludes.isIncludedAndNotExcluded(file);
+                Boolean result = rootIncludesExcludes.test(file);
                 if (Boolean.TRUE == result)
-                    accepted = true;
-                else if (result == null && !includesExcludes.hasIncludes())
                     accepted = true;
             }
             else if (_filter == null || _filter.accept(f.getParentFile(), f.getName()))
@@ -336,7 +326,6 @@ public class Scanner extends AbstractLifeCycle
             return;
         try
         {
-
             if (dir.isDirectory())
                 addDirectory(dir.toPath());
             else
@@ -369,8 +358,8 @@ public class Scanner extends AbstractLifeCycle
      * Add a directory to be scanned. The directory must not be null and must exist.
      * 
      * @param p the directory to scan.
-     * @return an IncludeExcludeSet<PathMatcher,Path> to which the caller can add PathMatcher patterns to match
-     * @throws Exception
+     * @return an IncludeExcludeSet to which the caller can add PathMatcher patterns to match
+     * @throws IOException
      */
     public synchronized IncludeExcludeSet<PathMatcher, Path> addDirectory(Path p)
         throws IOException
@@ -665,7 +654,7 @@ public class Scanner extends AbstractLifeCycle
         {
             try
             {
-                Files.walkFileTree(p, EnumSet.allOf(FileVisitOption.class),_scanDepth, new Visitor(_currentScan));
+                Files.walkFileTree(p, EnumSet.allOf(FileVisitOption.class),_scanDepth, new Visitor(p, _scannables.get(p), _currentScan));
             }
             catch (IOException e)
             {
