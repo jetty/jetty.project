@@ -80,7 +80,8 @@ public class SniX509ExtendedKeyManager extends X509ExtendedKeyManager
         if (aliases == null || aliases.length == 0)
             return null;
 
-        // Look for the SNI information.
+        // Find our SNIMatcher.  There should only be one and it always matches (always returns true
+        // from AliasSNIMatcher.matches), but it will capture the SNI Host if one was presented.
         String host = null;
         if (matchers != null)
         {
@@ -95,6 +96,7 @@ public class SniX509ExtendedKeyManager extends X509ExtendedKeyManager
             }
         }
 
+        // delegate the decision to accept to the sniSelector
         SniSelector sniSelector = _sslContextFactory.getSNISelector();
         if (sniSelector == null)
             sniSelector = _sslContextFactory;

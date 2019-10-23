@@ -2119,7 +2119,6 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     class AliasSNIMatcher extends SNIMatcher
     {
         private String _host;
-        private X509 _x509;
 
         AliasSNIMatcher()
         {
@@ -2134,31 +2133,9 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
 
             if (serverName instanceof SNIHostName)
             {
-                String host = _host = ((SNIHostName)serverName).getAsciiName();
-                host = StringUtil.asciiToLowerCase(host);
-
-                // Try an exact match
-                _x509 = _certHosts.get(host);
-
-                // Else try an exact wild match
-                if (_x509 == null)
-                {
-                    _x509 = _certWilds.get(host);
-
-                    // Else try an 1 deep wild match
-                    if (_x509 == null)
-                    {
-                        int dot = host.indexOf('.');
-                        if (dot >= 0)
-                        {
-                            String domain = host.substring(dot + 1);
-                            _x509 = _certWilds.get(domain);
-                        }
-                    }
-                }
-
+                _host = StringUtil.asciiToLowerCase(((SNIHostName)serverName).getAsciiName());
                 if (LOG.isDebugEnabled())
-                    LOG.debug("SNI host name {} matched certificate {}", host, _x509);
+                    LOG.debug("SNI host name {}", _host);
             }
             else
             {
@@ -2175,11 +2152,6 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
         public String getHost()
         {
             return _host;
-        }
-
-        public X509 getX509()
-        {
-            return _x509;
         }
     }
 
