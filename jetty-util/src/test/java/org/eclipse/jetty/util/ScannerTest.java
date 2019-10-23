@@ -22,6 +22,8 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.file.Path;
+import java.nio.file.PathMatcher;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -30,12 +32,14 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.Scanner.Notification;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -61,6 +65,8 @@ public class ScannerTest
         _scanner = new Scanner();
         _scanner.addScanDir(_directory);
         _scanner.setScanInterval(0);
+        _scanner.setReportDirs(false);
+        _scanner.setReportExistingFilesOnStartup(false);
         _scanner.addListener(new Scanner.DiscreteListener()
         {
             @Override
@@ -89,8 +95,8 @@ public class ScannerTest
                 _bulk.add(filenames);
             }
         });
+        
         _scanner.start();
-
         _scanner.scan();
 
         assertTrue(_queue.isEmpty());
@@ -117,6 +123,76 @@ public class ScannerTest
     }
 
     @Test
+    public void testPatterns() throws Exception
+    {
+        //test include and exclude patterns
+        touch("ttt.txt");
+        touch("ttt.foo");
+        File dir = new File(_directory, "xxx");
+        FS.ensureDirExists(dir);
+        
+        File x1 = new File(dir, "ttt.xxx");
+        FS.touch(x1);
+        File x2 = new File(dir, "xxx.txt");
+        FS.touch(x2);
+        
+        File dir2 = new File(dir, "yyy");
+        FS.ensureDirExists(dir2);
+        File y1 = new File(dir2, "ttt.yyy");
+        FS.touch(y1);
+        File y2 = new File(dir2, "yyy.txt");
+        FS.touch(y2);
+        
+        BlockingQueue<Event> queue = new LinkedBlockingQueue<Event>();
+        //only scan the *.txt files for changes
+        Scanner scanner = new Scanner();
+        IncludeExcludeSet<PathMatcher, Path> pattern = scanner.addDirectory(_directory.toPath());
+        pattern.exclude(_directory.toPath().getFileSystem().getPathMatcher("glob:**/*.foo"));
+        pattern.exclude(_directory.toPath().getFileSystem().getPathMatcher("glob:**/ttt.xxx"));
+        scanner.setScanInterval(0);
+        scanner.setScanDepth(2); //should never see any files from subdir yyy
+        scanner.setReportDirs(false);
+        scanner.setReportExistingFilesOnStartup(false);
+        scanner.addListener(new Scanner.DiscreteListener()
+        {
+            @Override
+            public void fileRemoved(String filename) throws Exception
+            {
+                queue.add(new Event(filename, Notification.REMOVED));
+            }
+
+            @Override
+            public void fileChanged(String filename) throws Exception
+            {
+                queue.add(new Event(filename, Notification.CHANGED));
+            }
+
+            @Override
+            public void fileAdded(String filename) throws Exception
+            {
+                queue.add(new Event(filename, Notification.ADDED));
+            }
+        });
+        
+        scanner.start();
+        assertTrue(queue.isEmpty());
+
+        Thread.sleep(1100); // make sure time in seconds changes
+        touch("ttt.txt");
+        FS.touch(x2);
+        FS.touch(x1);
+        FS.touch(y2);
+        scanner.scan();
+        scanner.scan(); //2 scans for file to be considered settled
+
+        assertThat(queue.size(), Matchers.equalTo(2));
+        for (Event e : queue)
+        {
+            assertTrue(e._filename.endsWith("ttt.txt") || e._filename.endsWith("xxx.txt"));
+        }
+    }
+
+    @Test
     @DisabledOnOs(WINDOWS) // TODO: needs review
     @DisabledIfSystemProperty(named = "env", matches = "ci") // TODO: SLOW, needs review
     public void testAddedChangeRemove() throws Exception
@@ -126,6 +202,7 @@ public class ScannerTest
         // takes 2 scans to notice a0 and check that it is stable
         _scanner.scan();
         _scanner.scan();
+        
         Event event = _queue.poll();
         assertNotNull(event, "Event should not be null");
         assertEquals(_directory + "/a0", event._filename);
