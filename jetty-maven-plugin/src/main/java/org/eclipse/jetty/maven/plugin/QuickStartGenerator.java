@@ -148,9 +148,8 @@ public class QuickStartGenerator
         if (!prepared)
         {
             prepared = true;
-            
             prepareWebApp();
-
+            
             if (server == null)
                 server = new Server();
 
@@ -158,7 +157,7 @@ public class QuickStartGenerator
             ServerSupport.configureHandlers(server, null, null);
 
             ServerSupport.configureDefaultConfigurationClasses(server);
-
+            
             //if our server has a thread pool associated we can do annotation scanning multithreaded,
             //otherwise scanning will be single threaded
             if (tpool == null)

@@ -1015,7 +1015,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
      * 
      * @param scanner PathWatcher that notices changes in files and dirs.
      */
-    protected void configureScanTargetsAndPatterns (PathWatcher scanner)
+    protected void configureScanTargetsAndPatterns(PathWatcher scanner)
     {
         //handle the explicit extra scan targets
         if (scanTargets != null)

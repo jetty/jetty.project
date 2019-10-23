@@ -193,7 +193,7 @@ public class JettyForkedChild extends AbstractLifeCycle
         throws Exception
     {
         super.doStart();
-        
+
         //Start the embedded jetty instance
         jetty.start();
 

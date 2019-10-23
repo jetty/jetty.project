@@ -44,36 +44,20 @@ import org.eclipse.jetty.util.resource.Resource;
  */
 public class JettyEmbedder extends AbstractLifeCycle
 {
-    private static final Logger LOG = Log.getLogger(JettyEmbedder.class);
-
     protected List<ContextHandler> contextHandlers;
-    
     protected List<LoginService> loginServices;
-
     protected RequestLog requestLog;
-    
     protected MavenServerConnector httpConnector;
-    
     protected Server server;
-    
     protected JettyWebAppContext webApp;
-    
     protected boolean exitVm;
-    
     protected boolean stopAtShutdown;
-    
     protected List<File> jettyXmlFiles;
-    
     protected Map<String,String> jettyProperties;
-    
     protected ShutdownMonitor shutdownMonitor;
-    
     protected int stopPort;
-    
     protected String stopKey;
-
     private String contextXml;
-
     private Properties webAppProperties;
 
     public List<ContextHandler> getContextHandlers()
@@ -243,9 +227,7 @@ public class JettyEmbedder extends AbstractLifeCycle
         Resource.setDefaultUseCaches(false);
         
         configure();
-   
         configureShutdownMonitor();
-        
         server.start();
     }
     
@@ -286,7 +268,7 @@ public class JettyEmbedder extends AbstractLifeCycle
         //ensure there's a connector
         if (httpConnector != null)
             httpConnector.setServer(server);
-        
+
         ServerSupport.configureConnectors(server, httpConnector, jettyProperties);
 
         //set up handler structure

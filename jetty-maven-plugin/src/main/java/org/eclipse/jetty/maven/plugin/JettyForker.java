@@ -24,8 +24,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 
 /**
  * JettyForker
@@ -34,22 +32,13 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class JettyForker extends AbstractForker
 {
-    private static final Logger LOG = Log.getLogger(JettyForker.class);
-    
     protected File forkWebXml;
-    
     protected Server server;
-    
     protected JettyWebAppContext webApp;
-    
     protected String containerClassPath;
-    
     protected File webAppPropsFile;
-    
-    protected String contextXml;
-    
+    protected String contextXml; 
     protected boolean scan;
-    
     QuickStartGenerator generator;
 
     /**
@@ -134,6 +123,7 @@ public class JettyForker extends AbstractForker
         generator.setWebAppPropsFile(webAppPropsFile);
         generator.setServer(server);
         generator.generate();
+
         super.doStart();
     }
 
@@ -224,7 +214,7 @@ public class JettyForker extends AbstractForker
         PluginLog.getLog().info("Forked process starting");
 
         //set up extra environment vars if there are any
-        if (!env.isEmpty())
+        if (env != null && !env.isEmpty())
             command.environment().putAll(env);
 
         if (waitForChild)
@@ -293,5 +283,4 @@ public class JettyForker extends AbstractForker
         }
         return ret.toString();
     }
-
 }
