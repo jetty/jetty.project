@@ -20,10 +20,13 @@ package org.eclipse.jetty.security;
 
 import java.io.IOException;
 import java.security.Principal;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.ServiceLoader;
 import java.util.Set;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -61,17 +64,21 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
 
     private boolean _checkWelcomeFiles = false;
     private Authenticator _authenticator;
-    private Authenticator.Factory _authenticatorFactory = new DefaultAuthenticatorFactory();
+    private List<Authenticator.Factory> _authenticatorFactories = new ArrayList<>();
     private String _realmName;
     private String _authMethod;
-    private final Map<String, String> _initParameters = new HashMap<String, String>();
+    private final Map<String, String> _initParameters = new HashMap<>();
     private LoginService _loginService;
     private IdentityService _identityService;
     private boolean _renewSession = true;
 
     protected SecurityHandler()
     {
-        addBean(_authenticatorFactory);
+        for (Authenticator.Factory factory : ServiceLoader.load(Authenticator.Factory.class))
+        {
+            addBean(factory);
+            _authenticatorFactories.add(factory);
+        }
     }
 
     /**
@@ -144,23 +151,40 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
     }
 
     /**
-     * @return the authenticatorFactory
+     * @return the first authenticatorFactory
+     * @deprecated use {@link #getAuthenticatorFactories()} instead.
      */
+    @Deprecated
     public Authenticator.Factory getAuthenticatorFactory()
     {
-        return _authenticatorFactory;
+        return _authenticatorFactories.get(0);
     }
 
     /**
-     * @param authenticatorFactory the authenticatorFactory to set
+     * @return the list of authenticatorFactories
+     */
+    public List<Authenticator.Factory> getAuthenticatorFactories()
+    {
+        return _authenticatorFactories;
+    }
+
+    /**
+     * @param authenticatorFactory the specific authenticatorFactory to use
      * @throws IllegalStateException if the SecurityHandler is running
      */
     public void setAuthenticatorFactory(Authenticator.Factory authenticatorFactory)
     {
         if (isRunning())
             throw new IllegalStateException("running");
-        updateBean(_authenticatorFactory, authenticatorFactory);
-        _authenticatorFactory = authenticatorFactory;
+
+        for (Authenticator.Factory factory : _authenticatorFactories)
+        {
+            removeBean(factory);
+        }
+
+        _authenticatorFactories.clear();
+        addBean(authenticatorFactory);
+        _authenticatorFactories.add(authenticatorFactory);
     }
 
     /**
@@ -241,12 +265,12 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
      * @param key the init key
      * @param value the init value
      * @return previous value
-     * @throws IllegalStateException if the SecurityHandler is running
+     * @throws IllegalStateException if the SecurityHandler is started
      */
     public String setInitParameter(String key, String value)
     {
-        if (isRunning())
-            throw new IllegalStateException("running");
+        if (isStarted())
+            throw new IllegalStateException("started");
         return _initParameters.put(key, value);
     }
 
@@ -336,9 +360,20 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
                 throw new IllegalStateException("LoginService has different IdentityService to " + this);
         }
 
-        Authenticator.Factory authenticatorFactory = getAuthenticatorFactory();
-        if (_authenticator == null && authenticatorFactory != null && _identityService != null)
-            setAuthenticator(authenticatorFactory.getAuthenticator(getServer(), ContextHandler.getCurrentContext(), this, _identityService, _loginService));
+        if (_authenticator == null && _identityService != null)
+        {
+            for (Authenticator.Factory factory : getAuthenticatorFactories())
+            {
+                Authenticator authenticator = factory.getAuthenticator(getServer(), ContextHandler.getCurrentContext(),
+                    this, _identityService, _loginService);
+
+                if (authenticator != null)
+                {
+                    setAuthenticator(authenticator);
+                    break;
+                }
+            }
+        }
 
         if (_authenticator != null)
             _authenticator.setConfiguration(this);
