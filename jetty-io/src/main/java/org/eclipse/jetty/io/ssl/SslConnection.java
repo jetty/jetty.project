@@ -692,14 +692,6 @@ public class SslConnection extends AbstractConnection
                                 _underFlown = unwrapResultStatus == Status.BUFFER_UNDERFLOW ||
                                         unwrapResultStatus == Status.OK && unwrapResult.bytesConsumed() == 0 && unwrapResult.bytesProduced() == 0;
 
-                                if (_underFlown)
-                                {
-                                    if (net_filled < 0 && _sslEngine.getUseClientMode())
-                                        closeInbound();
-                                    if (net_filled <= 0)
-                                        return net_filled;
-                                }
-
                                 switch (unwrapResultStatus)
                                 {
                                     case CLOSED:
@@ -707,32 +699,22 @@ public class SslConnection extends AbstractConnection
                                         switch (handshakeStatus)
                                         {
                                             case NOT_HANDSHAKING:
-                                            {
                                                 // We were not handshaking, so just tell the app we are closed
                                                 return -1;
-                                            }
                                             case NEED_TASK:
-                                            {
                                                 _sslEngine.getDelegatedTask().run();
                                                 continue;
-                                            }
                                             case NEED_WRAP:
-                                            {
                                                 // We need to send some handshake data (probably the close handshake).
                                                 // We return -1 so that the application can drive the close by flushing
                                                 // or shutting down the output.
                                                 return -1;
-                                            }
                                             case NEED_UNWRAP:
-                                            {
                                                 // We expected to read more, but we got closed.
                                                 // Return -1 to indicate to the application to drive the close.
                                                 return -1;
-                                            }
                                             default:
-                                            {
                                                 throw new IllegalStateException();
-                                            }
                                         }
                                     }
                                     case BUFFER_OVERFLOW:
@@ -762,8 +744,7 @@ public class SslConnection extends AbstractConnection
                                             catch (SSLException closeFailure)
                                             {
                                                 Throwable handshakeFailure = new SSLHandshakeException("Abruptly closed by peer");
-                                                if (closeFailure != null)
-                                                    handshakeFailure.initCause(closeFailure);
+                                                handshakeFailure.initCause(closeFailure);
                                                 throw handshakeFailure;
                                             }
 
