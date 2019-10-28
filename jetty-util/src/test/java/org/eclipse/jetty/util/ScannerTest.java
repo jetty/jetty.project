@@ -125,9 +125,11 @@ public class ScannerTest
     @Test
     public void testDepth() throws Exception
     {
-        touch("foo.foo");
-        touch("foo2.foo");
-        File dir = new File(_directory, "xxx");
+        File root = new File (_directory, "root");
+        FS.ensureDirExists(root);
+        FS.touch(new File(root, "foo.foo"));
+        FS.touch(new File(root, "foo2.foo"));
+        File dir = new File(root, "xxx");
         FS.ensureDirExists(dir);
         File x1 = new File(dir, "xxx.foo");
         FS.touch(x1);
@@ -146,7 +148,7 @@ public class ScannerTest
         scanner.setScanDepth(0);
         scanner.setReportDirs(true);
         scanner.setReportExistingFilesOnStartup(true);
-        scanner.addDirectory(_directory.toPath());
+        scanner.addDirectory(root.toPath());
         scanner.addListener(new Scanner.DiscreteListener()
         {
             @Override
@@ -172,14 +174,14 @@ public class ScannerTest
         Event e = queue.take();
         assertNotNull(e);
         assertEquals(Notification.ADDED, e._notification);
-        assertTrue(e._filename.endsWith(_directory.getName()));
+        assertTrue(e._filename.endsWith(root.getName()));
         queue.clear();
         scanner.stop();
         scanner.reset();
         
         //Depth one should report the dir itself and its file and dir direct children
         scanner.setScanDepth(1);
-        scanner.addDirectory(_directory.toPath());
+        scanner.addDirectory(root.toPath());
         scanner.start();
         assertEquals(4, queue.size());
         queue.clear();
@@ -188,7 +190,7 @@ public class ScannerTest
         
         //Depth 2 should report the dir itself, all file children, xxx and xxx's children
         scanner.setScanDepth(2);
-        scanner.addDirectory(_directory.toPath());
+        scanner.addDirectory(root.toPath());
         scanner.start();
 
         assertEquals(7, queue.size());
@@ -199,9 +201,13 @@ public class ScannerTest
     public void testPatterns() throws Exception
     {
         //test include and exclude patterns
-        touch("ttt.txt");
-        touch("ttt.foo");
-        File dir = new File(_directory, "xxx");
+        File root = new File(_directory, "proot");
+        FS.ensureDirExists(root);
+        
+        File ttt = new File(root, "ttt.txt");
+        FS.touch(ttt);
+        FS.touch(new File(root, "ttt.foo"));
+        File dir = new File(root, "xxx");
         FS.ensureDirExists(dir);
         
         File x1 = new File(dir, "ttt.xxx");
@@ -219,9 +225,9 @@ public class ScannerTest
         BlockingQueue<Event> queue = new LinkedBlockingQueue<Event>();
         //only scan the *.txt files for changes
         Scanner scanner = new Scanner();
-        IncludeExcludeSet<PathMatcher, Path> pattern = scanner.addDirectory(_directory.toPath());
-        pattern.exclude(_directory.toPath().getFileSystem().getPathMatcher("glob:**/*.foo"));
-        pattern.exclude(_directory.toPath().getFileSystem().getPathMatcher("glob:**/ttt.xxx"));
+        IncludeExcludeSet<PathMatcher, Path> pattern = scanner.addDirectory(root.toPath());
+        pattern.exclude(root.toPath().getFileSystem().getPathMatcher("glob:**/*.foo"));
+        pattern.exclude(root.toPath().getFileSystem().getPathMatcher("glob:**/ttt.xxx"));
         scanner.setScanInterval(0);
         scanner.setScanDepth(2); //should never see any files from subdir yyy
         scanner.setReportDirs(false);
@@ -251,7 +257,7 @@ public class ScannerTest
         assertTrue(queue.isEmpty());
 
         Thread.sleep(1100); // make sure time in seconds changes
-        touch("ttt.txt");
+        FS.touch(ttt);
         FS.touch(x2);
         FS.touch(x1);
         FS.touch(y2);
