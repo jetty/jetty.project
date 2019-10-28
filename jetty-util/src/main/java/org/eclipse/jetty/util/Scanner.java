@@ -171,10 +171,12 @@ public class Scanner extends AbstractLifeCycle
         {
             if (!Files.exists(dir))
                 return FileVisitResult.SKIP_SUBTREE;
-
-            if (_reportDirs)
+            
+            File f = dir.toFile();
+            
+            //if we want to report directories and we haven't already seen it
+            if (_reportDirs && !scanInfoMap.containsKey(f.getCanonicalPath()))
             {
-                File f = dir.toFile();
                 boolean accepted = false;
                 if (rootIncludesExcludes != null && !rootIncludesExcludes.isEmpty())
                 { 
@@ -183,8 +185,11 @@ public class Scanner extends AbstractLifeCycle
                     if (Boolean.TRUE == result)
                         accepted = true;
                 }
-                else if (_filter == null || _filter.accept(f.getParentFile(), f.getName()))
-                    accepted = true;
+                else
+                {
+                    if (_filter == null || _filter.accept(f.getParentFile(), f.getName()))
+                        accepted = true;
+                }
 
                 if (accepted)
                 {
@@ -192,7 +197,7 @@ public class Scanner extends AbstractLifeCycle
                     if (LOG.isDebugEnabled()) LOG.debug("scan accepted dir {} mod={}", f, f.lastModified());
                 }
             }
-            
+
             return FileVisitResult.CONTINUE;
         }
 
@@ -201,27 +206,27 @@ public class Scanner extends AbstractLifeCycle
         {
             if (!Files.exists(file))
                 return FileVisitResult.CONTINUE;
-            
-            if (Files.isDirectory(file))
-                return FileVisitResult.CONTINUE; //handled by preVisitDirectory
+
             File f = file.toFile();
             boolean accepted = false;
-            Path tmp = file.toRealPath();
 
-            if (rootIncludesExcludes != null && !rootIncludesExcludes.isEmpty())
+            if (f.isFile() || (f.isDirectory() && _reportDirs && !scanInfoMap.containsKey(f.getCanonicalPath())))
             {
-                //accepted if not explicitly excluded and either is explicitly included or there are no explicit inclusions
-                Boolean result = rootIncludesExcludes.test(file);
-                if (Boolean.TRUE == result)
+                if (rootIncludesExcludes != null && !rootIncludesExcludes.isEmpty())
+                {
+                    //accepted if not explicitly excluded and either is explicitly included or there are no explicit inclusions
+                    Boolean result = rootIncludesExcludes.test(file);
+                    if (Boolean.TRUE == result)
+                        accepted = true;
+                }
+                else if (_filter == null || _filter.accept(f.getParentFile(), f.getName()))
                     accepted = true;
             }
-            else if (_filter == null || _filter.accept(f.getParentFile(), f.getName()))
-                accepted = true;
 
             if (accepted)
             {
                 scanInfoMap.put(f.getCanonicalPath(), new TimeNSize(f.lastModified(), f.isDirectory() ? 0 : f.length()));
-                if (LOG.isDebugEnabled()) LOG.debug("scan accepted file {} mod={}", f, f.lastModified());
+                if (LOG.isDebugEnabled()) LOG.debug("scan accepted {} mod={}", f, f.lastModified());
             }
             
             return FileVisitResult.CONTINUE;
@@ -524,6 +529,9 @@ public class Scanner extends AbstractLifeCycle
             return;
 
         _running = true;
+        if (LOG.isDebugEnabled())
+            LOG.debug("Scanner start: rprtExists={}, depth={}, rprtDirs={}, interval={}, filter={}, scannables={}", 
+                _reportExisting, _scanDepth, _reportDirs, _scanInterval, _filter, _scannables);
 
         if (_reportExisting)
         {
@@ -601,7 +609,12 @@ public class Scanner extends AbstractLifeCycle
         if (!isStopped())
             throw new IllegalStateException("Not stopped");
         
+        //clear the scannables
         _scannables.clear();
+        
+        //clear the previous scans
+        _currentScan.clear();
+        _prevScan.clear();
     }
 
     /**
@@ -672,7 +685,6 @@ public class Scanner extends AbstractLifeCycle
     private synchronized void reportDifferences(Map<String, TimeNSize> currentScan, Map<String, TimeNSize> oldScan)
     {
         // scan the differences and add what was found to the map of notifications:
-
         Set<String> oldScanKeys = new HashSet<>(oldScan.keySet());
 
         // Look for new and changed files
@@ -719,9 +731,9 @@ public class Scanner extends AbstractLifeCycle
         List<String> bulkChanges = new ArrayList<>();
         for (Iterator<Entry<String, Notification>> iter = _notifications.entrySet().iterator(); iter.hasNext(); )
         {
+
             Entry<String, Notification> entry = iter.next();
             String file = entry.getKey();
-
             // Is the file stable?
             if (oldScan.containsKey(file))
             {

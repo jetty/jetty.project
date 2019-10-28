@@ -121,6 +121,79 @@ public class ScannerTest
             _notification = notification;
         }
     }
+    
+    @Test
+    public void testDepth() throws Exception
+    {
+        touch("foo.foo");
+        touch("foo2.foo");
+        File dir = new File(_directory, "xxx");
+        FS.ensureDirExists(dir);
+        File x1 = new File(dir, "xxx.foo");
+        FS.touch(x1);
+        File x2 = new File(dir, "xxx2.foo");
+        FS.touch(x2);
+        File dir2 = new File(dir, "yyy");
+        FS.ensureDirExists(dir2);
+        File y1 = new File(dir2, "yyy.foo");
+        FS.touch(y1);
+        File y2 = new File(dir2, "yyy2.foo");
+        FS.touch(y2);
+        
+        BlockingQueue<Event> queue = new LinkedBlockingQueue<Event>();
+        Scanner scanner = new Scanner();
+        scanner.setScanInterval(0);
+        scanner.setScanDepth(0);
+        scanner.setReportDirs(true);
+        scanner.setReportExistingFilesOnStartup(true);
+        scanner.addDirectory(_directory.toPath());
+        scanner.addListener(new Scanner.DiscreteListener()
+        {
+            @Override
+            public void fileRemoved(String filename) throws Exception
+            {
+                queue.add(new Event(filename, Notification.REMOVED));
+            }
+
+            @Override
+            public void fileChanged(String filename) throws Exception
+            {
+                queue.add(new Event(filename, Notification.CHANGED));  
+            }
+
+            @Override
+            public void fileAdded(String filename) throws Exception
+            {
+                queue.add(new Event(filename, Notification.ADDED));
+            }
+        });
+
+        scanner.start();
+        Event e = queue.take();
+        assertNotNull(e);
+        assertEquals(Notification.ADDED, e._notification);
+        assertTrue(e._filename.endsWith(_directory.getName()));
+        queue.clear();
+        scanner.stop();
+        scanner.reset();
+        
+        //Depth one should report the dir itself and its file and dir direct children
+        scanner.setScanDepth(1);
+        scanner.addDirectory(_directory.toPath());
+        scanner.start();
+        assertEquals(4, queue.size());
+        queue.clear();
+        scanner.stop();
+        scanner.reset();
+        
+        //Depth 2 should report the dir itself, all file children, xxx and xxx's children
+        scanner.setScanDepth(2);
+        scanner.addDirectory(_directory.toPath());
+        scanner.start();
+
+        assertEquals(7, queue.size());
+        scanner.stop();
+    }
 
     @Test
     public void testPatterns() throws Exception
