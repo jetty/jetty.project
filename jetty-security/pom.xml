@@ -32,10 +32,8 @@
             </goals>
             <configuration>
               <instructions>
-                <Bundle-Description>Jetty Security</Bundle-Description>
-                <Export-Package>org.eclipse.jetty.security.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"</Export-Package>
-                <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)";resolution:=optional</Require-Capability>
-                <Provide-Capability>osgi.serviceloader;osgi.serviceloader=org.eclipse.jetty.security.Authenticator.Factory</Provide-Capability>
+                <Require-Capability>osgi.serviceloader; filter:="(osgi.serviceloader=org.eclipse.jetty.security.Authenticator$Factory";resolution:=optional;cardinality:=multiple, osgi.extender; filter:="(osgi.extender=osgi.serviceloader.processor)";resolution:=optional, osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)";resolution:=optional</Require-Capability>
+                <Provide-Capability>osgi.serviceloader; osgi.serviceloader=org.eclipse.jetty.security.Authenticator$Factory</Provide-Capability>
               </instructions>
             </configuration>
           </execution>
