@@ -176,7 +176,7 @@ public class Scanner extends AbstractLifeCycle
             {
                 File f = dir.toFile();
                 boolean accepted = false;
-                if (rootIncludesExcludes != null)
+                if (rootIncludesExcludes != null && !rootIncludesExcludes.isEmpty())
                 { 
                     //accepted if not explicitly excluded and either is explicitly included or there are no explicit inclusions
                     Boolean result = rootIncludesExcludes.test(dir);
@@ -185,7 +185,7 @@ public class Scanner extends AbstractLifeCycle
                 }
                 else if (_filter == null || _filter.accept(f.getParentFile(), f.getName()))
                     accepted = true;
-                
+
                 if (accepted)
                 {
                     scanInfoMap.put(f.getCanonicalPath(), new TimeNSize(f.lastModified(), f.isDirectory() ? 0 : f.length()));
@@ -198,7 +198,7 @@ public class Scanner extends AbstractLifeCycle
 
         @Override
         public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException
-        {   
+        {
             if (!Files.exists(file))
                 return FileVisitResult.CONTINUE;
             
@@ -208,7 +208,7 @@ public class Scanner extends AbstractLifeCycle
             boolean accepted = false;
             Path tmp = file.toRealPath();
 
-            if (rootIncludesExcludes != null)
+            if (rootIncludesExcludes != null && !rootIncludesExcludes.isEmpty())
             {
                 //accepted if not explicitly excluded and either is explicitly included or there are no explicit inclusions
                 Boolean result = rootIncludesExcludes.test(file);
