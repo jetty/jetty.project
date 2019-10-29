@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.maven.plugin;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
@@ -31,8 +32,10 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Random;
 
+import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.resource.Resource;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -51,7 +54,6 @@ public class TestForkedChild
     File baseDir;
     File tmpDir;
     File tokenFile;
-    File forkWebXml;
     File webappPropsFile;
     int stopPort;
     String stopKey = "FERMATI";
@@ -82,6 +84,7 @@ public class TestForkedChild
                 JettyWebAppContext webapp = new JettyWebAppContext();
                 webapp.setContextPath("/foo");
                 webapp.setTempDirectory(tmpDir);
+                webapp.setBaseResource(Resource.newResource(baseDir));
                 WebAppPropertyConverter.toProperties(webapp, webappPropsFile, null);
                 child = new JettyForkedChild(cmd.toArray(new String[cmd.size()]));
                 child.jetty.setExitVm(false); //ensure jetty doesn't stop vm for testing
@@ -100,10 +103,9 @@ public class TestForkedChild
         baseDir = MavenTestingUtils.getTestResourceDir("root");
         testDir = MavenTestingUtils.getTargetTestingDir("forkedChild");
         if (testDir.exists())
-            IO.delete(testDir);
+            FS.delete(testDir);
         testDir.mkdirs();
         tmpDir = new File(testDir, "tmp");
-        forkWebXml = new File(testDir, "fork-web.xml");
         webappPropsFile = new File(testDir, "webapp.props");
         
         stopPort = Integer.valueOf(System.getProperty("stop.port"));
@@ -165,6 +167,9 @@ public class TestForkedChild
             connection = (HttpURLConnection)url.openConnection();
             connection.connect();
             assertThat(connection.getResponseCode(), Matchers.is(200));
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            IO.copy(connection.getInputStream(), baos);
+            assertThat(baos.toString(), Matchers.containsString("ROOT"));
         }
         finally
         {

@@ -54,12 +54,12 @@ What is the Local and Remote Address.
 
 [source, java, subs="{sub-order}"]
 ----
-InetSocketAddress remoteAddr = session.getRemoteAddress();
+SocketAddress remoteAddr = session.getRemoteAddress();
 ----
 
 Get and Set the Idle Timeout
 
 [source, java, subs="{sub-order}"]
 ----
-session.setIdleTimeout(2000); // 2 second timeout
+session.setIdleTimeout(Duration.ofMillis(2000));
 ----

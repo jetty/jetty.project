@@ -1542,6 +1542,7 @@ public class ParserTest
         ByteBuffer buffer = BufferUtil.allocate(32);
 
         ParserCapture capture = new ParserCapture(false, Behavior.SERVER);
+        capture.getCoreSession().setAutoFragment(true);
 
         data.limit(6 + 5);
         BufferUtil.append(buffer, data);
