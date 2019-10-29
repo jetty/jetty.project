@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.websocket.core.internal.compress;
 
-import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.Queue;
@@ -259,86 +258,6 @@ public abstract class CompressExtension extends AbstractExtension
         }
     }
 
-    private static boolean supplyInput(Inflater inflater, ByteBuffer buf)
-    {
-        if (buf.remaining() <= 0)
-        {
-            if (LOG.isDebugEnabled())
-            {
-                LOG.debug("No data left left to supply to Inflater");
-            }
-            return false;
-        }
-
-        byte[] input;
-        int inputOffset;
-        int len;
-
-        if (buf.hasArray())
-        {
-            // no need to create a new byte buffer, just return this one.
-            len = buf.remaining();
-            input = buf.array();
-            inputOffset = buf.position() + buf.arrayOffset();
-            buf.position(buf.position() + len);
-        }
-        else
-        {
-            // Only create an return byte buffer that is reasonable in size
-            len = Math.min(INPUT_MAX_BUFFER_SIZE, buf.remaining());
-            input = new byte[len];
-            inputOffset = 0;
-            buf.get(input, 0, len);
-        }
-
-        inflater.setInput(input, inputOffset, len);
-        if (LOG.isDebugEnabled())
-        {
-            LOG.debug("Supplied {} input bytes: {}", input.length, toDetail(inflater));
-        }
-        return true;
-    }
-
-    private static boolean supplyInput(Deflater deflater, ByteBuffer buf)
-    {
-        if (buf.remaining() <= 0)
-        {
-            if (LOG.isDebugEnabled())
-            {
-                LOG.debug("No data left left to supply to Deflater");
-            }
-            return false;
-        }
-
-        byte[] input;
-        int inputOffset;
-        int len;
-
-        if (buf.hasArray())
-        {
-            // no need to create a new byte buffer, just return this one.
-            len = buf.remaining();
-            input = buf.array();
-            inputOffset = buf.position() + buf.arrayOffset();
-            buf.position(buf.position() + len);
-        }
-        else
-        {
-            // Only create an return byte buffer that is reasonable in size
-            len = Math.min(INPUT_MAX_BUFFER_SIZE, buf.remaining());
-            input = new byte[len];
-            inputOffset = 0;
-            buf.get(input, 0, len);
-        }
-
-        deflater.setInput(input, inputOffset, len);
-        if (LOG.isDebugEnabled())
-        {
-            LOG.debug("Supplied {} input bytes: {}", input.length, toDetail(deflater));
-        }
-        return true;
-    }
-
     private static String toDetail(Inflater inflater)
     {
         return String.format("Inflater[finished=%b,read=%d,written=%d,remaining=%d,in=%d,out=%d]", inflater.finished(), inflater.getBytesRead(),
@@ -442,40 +361,31 @@ public abstract class CompressExtension extends AbstractExtension
             if (LOG.isDebugEnabled())
                 LOG.debug("Compressing {}: {} bytes in {} bytes chunk", entry, remaining, outputLength);
 
-            boolean needsCompress = true;
-
             Deflater deflater = getDeflater();
-
-            if (deflater.needsInput() && !supplyInput(deflater, data))
-            {
-                // no input supplied
-                needsCompress = false;
-            }
-
-            ByteArrayOutputStream out = new ByteArrayOutputStream();
-
-            byte[] output = new byte[outputLength];
-
-            boolean fin = frame.isFin();
+            if (first)
+              deflater.setInput(data);
 
             // Compress the data
-            while (needsCompress)
+            ByteAccumulator accumulator = new ByteAccumulator(getWebSocketCoreSession(), getBufferPool());
+            while (true)
             {
-                int compressed = deflater.deflate(output, 0, outputLength, Deflater.SYNC_FLUSH);
+                ByteBuffer output = getBufferPool().acquire(DECOMPRESS_BUF_SIZE, false);
+                BufferUtil.clearToFill(output);
+                int compressed = deflater.deflate(output, Deflater.SYNC_FLUSH);
+                BufferUtil.flipToFlush(output, 0);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Compressed {} bytes", compressed);
+
+                if (compressed <= 0)
+                {
+                    break;
+                }
 
                 // Append the output for the eventual frame.
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Wrote {} bytes to output buffer", compressed);
-                out.write(output, 0, compressed);
-
-                if (compressed < outputLength)
-                {
-                    needsCompress = false;
-                }
+                accumulator.addChunk(output);
             }
 
-            ByteBuffer payload = ByteBuffer.wrap(out.toByteArray());
-
+            ByteBuffer payload = accumulator.getBytes();
             if (payload.remaining() > 0)
             {
                 // Handle tail bytes generated by SYNC_FLUSH.
@@ -501,7 +411,7 @@ public abstract class CompressExtension extends AbstractExtension
                         LOG.debug("payload (TAIL_DROP_FIN_ONLY) = {}", BufferUtil.toDetailString(payload));
                 }
             }
-            else if (fin)
+            else if (frame.isFin())
             {
                 // Special case: 7.2.3.6.  Generating an Empty Fragment Manually
                 // https://tools.ietf.org/html/rfc7692#section-7.2.3.6
@@ -525,9 +435,16 @@ public abstract class CompressExtension extends AbstractExtension
                 chunk.setRsv1(true);
             }
             chunk.setPayload(payload);
-            chunk.setFin(fin);
+            chunk.setFin(frame.isFin());
 
-            nextOutgoingFrame(chunk, this, entry.batch);
+            try
+            {
+                nextOutgoingFrame(chunk, this, entry.batch);
+            }
+            finally
+            {
+                getBufferPool().release(payload);
+            }
         }
 
         @Override
