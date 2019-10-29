@@ -12,7 +12,7 @@
       }
     }
   ],
-  "cases": ["*"],
+  "cases": ["12.4.*"],
   "exclude-cases": [],
   "exclude-agent-cases": {}
 }

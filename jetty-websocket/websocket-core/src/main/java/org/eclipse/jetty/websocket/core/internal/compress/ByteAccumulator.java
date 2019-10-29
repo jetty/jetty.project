@@ -22,9 +22,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.websocket.core.FrameHandler.Configuration;
 import org.eclipse.jetty.websocket.core.MessageTooLargeException;
 
 /**
@@ -36,22 +34,19 @@ import org.eclipse.jetty.websocket.core.MessageTooLargeException;
  */
 public class ByteAccumulator
 {
-    private final ByteBufferPool _bufferPool;
-    private final Configuration _configuration;
+    private final long _maxFrameSize;
     private final List<ByteBuffer> _chunks = new ArrayList<>();
     private int _length = 0;
 
-    public ByteAccumulator(Configuration configuration, ByteBufferPool bufferPool)
+    public ByteAccumulator(long maxFrameSize)
     {
-        _configuration = configuration;
-        _bufferPool = bufferPool;
+        _maxFrameSize = maxFrameSize;
     }
 
     public void addChunk(ByteBuffer buffer)
     {
-        long maxFrameSize = _configuration.getMaxFrameSize();
-        if (maxFrameSize > 0 && _length + buffer.remaining() > maxFrameSize)
-            throw new MessageTooLargeException(String.format("Decompressed Message [%,d b] is too large [max %,d b]", this._length + _length, maxFrameSize));
+        if (_maxFrameSize > 0 && _length + buffer.remaining() > _maxFrameSize)
+            throw new MessageTooLargeException(String.format("Decompressed Message [%,d b] is too large [max %,d b]", this._length + _length, _maxFrameSize));
 
         _chunks.add(buffer);
         _length += buffer.remaining();
@@ -64,7 +59,7 @@ public class ByteAccumulator
 
     public ByteBuffer getBytes()
     {
-        ByteBuffer buffer = _bufferPool.acquire(_length, false);
+        ByteBuffer buffer = ByteBuffer.allocate(_length);
         BufferUtil.clearToFill(buffer);
 
         for (ByteBuffer chunk : _chunks)

@@ -69,7 +69,7 @@ public class DeflateFrameExtension extends CompressExtension
 
         try
         {
-            ByteAccumulator accumulator = new ByteAccumulator(getWebSocketCoreSession(), getBufferPool());
+            ByteAccumulator accumulator = new ByteAccumulator(getWebSocketCoreSession().getMaxFrameSize());
             decompress(accumulator, frame.getPayload());
             decompress(accumulator, TAIL_BYTES_BUF.slice());
             forwardIncoming(frame, callback, accumulator);

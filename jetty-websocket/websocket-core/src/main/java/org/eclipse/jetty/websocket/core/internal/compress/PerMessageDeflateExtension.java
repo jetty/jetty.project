@@ -84,7 +84,7 @@ public class PerMessageDeflateExtension extends CompressExtension
             return;
         }
 
-        ByteAccumulator accumulator = new ByteAccumulator(getWebSocketCoreSession(), getBufferPool());
+        ByteAccumulator accumulator = new ByteAccumulator(getWebSocketCoreSession().getMaxFrameSize());
         try
         {
             ByteBuffer payload = frame.getPayload();
