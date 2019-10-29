@@ -50,14 +50,14 @@ public class ByteAccumulator
     public void addChunk(ByteBuffer buffer)
     {
         long maxFrameSize = _configuration.getMaxFrameSize();
-        if (_length + buffer.remaining() > maxFrameSize)
+        if (maxFrameSize > 0 && _length + buffer.remaining() > maxFrameSize)
             throw new MessageTooLargeException(String.format("Decompressed Message [%,d b] is too large [max %,d b]", this._length + _length, maxFrameSize));
 
         _chunks.add(buffer);
         _length += buffer.remaining();
     }
 
-    public int getLength()
+    public int size()
     {
         return _length;
     }
@@ -70,9 +70,10 @@ public class ByteAccumulator
         for (ByteBuffer chunk : _chunks)
         {
             BufferUtil.put(chunk, buffer);
-            _bufferPool.release(chunk);
         }
+
         _chunks.clear();
+        _length = 0;
 
         BufferUtil.flipToFlush(buffer, 0);
         return buffer;
