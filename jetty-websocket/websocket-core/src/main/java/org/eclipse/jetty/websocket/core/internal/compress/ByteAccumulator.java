@@ -22,10 +22,13 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.websocket.core.FrameHandler.Configuration;
 import org.eclipse.jetty.websocket.core.MessageTooLargeException;
 
 /**
- * Collect up 1 or more byte arrays for later transfer to a single {@link ByteBuffer}.
+ * Collect up 1 or more ByteBuffers for later transfer to a single {@link ByteBuffer}.
  * <p>
  * Used by decompression routines to fail if there is excessive inflation of the
  * decompressed data. (either maliciously or accidentally)
@@ -33,45 +36,45 @@ import org.eclipse.jetty.websocket.core.MessageTooLargeException;
  */
 public class ByteAccumulator
 {
-    private final List<byte[]> chunks = new ArrayList<>();
-    private final int maxSize;
-    private int length = 0;
+    private final ByteBufferPool _bufferPool;
+    private final Configuration _configuration;
+    private final List<ByteBuffer> _chunks = new ArrayList<>();
+    private int _length = 0;
 
-    public ByteAccumulator(int maxOverallMessageSize)
+    public ByteAccumulator(Configuration configuration, ByteBufferPool bufferPool)
     {
-        this.maxSize = maxOverallMessageSize;
+        _configuration = configuration;
+        _bufferPool = bufferPool;
     }
 
-    public void copyChunk(byte[] buf, int offset, int length)
+    public void addChunk(ByteBuffer buffer)
     {
-        if (this.length + length > maxSize)
-        {
-            throw new MessageTooLargeException(String.format("Decompressed Message [%,d b] is too large [max %,d b]", this.length + length, maxSize));
-        }
+        long maxFrameSize = _configuration.getMaxFrameSize();
+        if (_length + buffer.remaining() > maxFrameSize)
+            throw new MessageTooLargeException(String.format("Decompressed Message [%,d b] is too large [max %,d b]", this._length + _length, maxFrameSize));
 
-        byte[] copy = new byte[length - offset];
-        System.arraycopy(buf, offset, copy, 0, length);
-
-        chunks.add(copy);
-        this.length += length;
+        _chunks.add(buffer);
+        _length += buffer.remaining();
     }
 
     public int getLength()
     {
-        return length;
+        return _length;
     }
 
-    public void transferTo(ByteBuffer bufferInFillMode)
+    public ByteBuffer getBytes()
     {
-        if (bufferInFillMode.remaining() < length)
-        {
-            throw new IllegalArgumentException(String.format("Not enough space in ByteBuffer remaining [%d] for accumulated buffers length [%d]",
-                bufferInFillMode.remaining(), length));
-        }
+        ByteBuffer buffer = _bufferPool.acquire(_length, false);
+        BufferUtil.clearToFill(buffer);
 
-        for (byte[] chunk : chunks)
+        for (ByteBuffer chunk : _chunks)
         {
-            bufferInFillMode.put(chunk, 0, chunk.length);
+            BufferUtil.put(chunk, buffer);
+            _bufferPool.release(chunk);
         }
+        _chunks.clear();
+
+        BufferUtil.flipToFlush(buffer, 0);
+        return buffer;
     }
 }

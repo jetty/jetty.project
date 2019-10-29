@@ -84,20 +84,13 @@ public class PerMessageDeflateExtension extends CompressExtension
             return;
         }
 
-        //TODO fix this to use long instead of int
-        if (getWebSocketCoreSession().getMaxFrameSize() > Integer.MAX_VALUE)
-            throw new IllegalArgumentException("maxFrameSize too large for ByteAccumulator");
-
-        ByteAccumulator accumulator = new ByteAccumulator((int)getWebSocketCoreSession().getMaxFrameSize());
-
+        ByteAccumulator accumulator = new ByteAccumulator(getWebSocketCoreSession(), getBufferPool());
         try
         {
             ByteBuffer payload = frame.getPayload();
             decompress(accumulator, payload);
             if (frame.isFin())
-            {
                 decompress(accumulator, TAIL_BYTES_BUF.slice());
-            }
 
             forwardIncoming(frame, callback, accumulator);
         }

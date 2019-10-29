@@ -69,10 +69,7 @@ public class DeflateFrameExtension extends CompressExtension
 
         try
         {
-            //TODO fix this to use long instead of int
-            if (getWebSocketCoreSession().getMaxFrameSize() > Integer.MAX_VALUE)
-                throw new IllegalArgumentException("maxFrameSize too large for ByteAccumulator");
-            ByteAccumulator accumulator = new ByteAccumulator((int)getWebSocketCoreSession().getMaxFrameSize());
+            ByteAccumulator accumulator = new ByteAccumulator(getWebSocketCoreSession(), getBufferPool());
             decompress(accumulator, frame.getPayload());
             decompress(accumulator, TAIL_BYTES_BUF.slice());
             forwardIncoming(frame, callback, accumulator);

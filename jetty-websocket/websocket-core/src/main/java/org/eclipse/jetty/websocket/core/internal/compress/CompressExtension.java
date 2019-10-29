@@ -148,24 +148,14 @@ public abstract class CompressExtension extends AbstractExtension
 
     protected void forwardIncoming(Frame frame, Callback callback, ByteAccumulator accumulator)
     {
+        // Copy frame and unset RSV1 since it's not compressed anymore.
         Frame newFrame = Frame.copyWithoutPayload(frame);
-
-        // Unset RSV1 since it's not compressed anymore.
         newFrame.setRsv1(false);
 
-        ByteBuffer buffer = getBufferPool().acquire(accumulator.getLength(), false);
+        // Move the payload to a large enough buffer.
+        ByteBuffer buffer = accumulator.getBytes();
         try
         {
-            int position = BufferUtil.flipToFill(buffer);
-            try
-            {
-                accumulator.transferTo(buffer);
-            }
-            finally
-            {
-                BufferUtil.flipToFlush(buffer, position);
-            }
-
             newFrame.setPayload(buffer);
             nextIncomingFrame(newFrame, callback);
         }
@@ -178,46 +168,31 @@ public abstract class CompressExtension extends AbstractExtension
     protected void decompress(ByteAccumulator accumulator, ByteBuffer buf) throws DataFormatException
     {
         if ((buf == null) || (!buf.hasRemaining()))
-        {
             return;
-        }
-        byte[] output = new byte[DECOMPRESS_BUF_SIZE];
 
         Inflater inflater = getInflater();
+        inflater.setInput(buf);
 
-        while (buf.hasRemaining() && inflater.needsInput())
+        while (true)
         {
-            if (!supplyInput(inflater, buf))
+            ByteBuffer output = getBufferPool().acquire(DECOMPRESS_BUF_SIZE, false);
+            BufferUtil.clearToFill(output);
+            int read = inflater.inflate(output);
+            BufferUtil.flipToFlush(output, 0);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Decompress: read {} {}", read, toDetail(inflater));
+
+            if (read <= 0)
             {
-                LOG.debug("Needed input, but no buffer could supply input");
-                return;
+                getBufferPool().release(output);
+                break;
             }
 
-            int read;
-            while ((read = inflater.inflate(output)) >= 0)
-            {
-                if (read == 0)
-                {
-                    LOG.debug("Decompress: read 0 {}", toDetail(inflater));
-                    break;
-                }
-                else
-                {
-                    // do something with output
-                    if (LOG.isDebugEnabled())
-                    {
-                        LOG.debug("Decompressed {} bytes: {}", read, toDetail(inflater));
-                    }
-
-                    accumulator.copyChunk(output, 0, read);
-                }
-            }
+            accumulator.addChunk(output);
         }
 
         if (LOG.isDebugEnabled())
-        {
             LOG.debug("Decompress: exiting {}", toDetail(inflater));
-        }
     }
 
     @Override
