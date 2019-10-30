@@ -1020,6 +1020,10 @@ public class SslConnection extends AbstractConnection
                                     }
                                     return allConsumed;
                                 }
+                                case BUFFER_UNDERFLOW:
+                                {
+                                    throw new IllegalStateException();
+                                }
                                 case BUFFER_OVERFLOW:
                                 {
                                     // It's possible that SSLSession.packetBufferSize has been expanded
@@ -1033,11 +1037,14 @@ public class SslConnection extends AbstractConnection
                                         releaseEncryptedOutputBuffer();
                                         continue;
                                     }
-                                    throw new IllegalStateException("Unexpected wrap result " + wrapResultStatus);
-                                }
-                                case BUFFER_UNDERFLOW:
-                                {
-                                    throw new IllegalStateException();
+                                    if (BufferUtil.isEmpty(_encryptedOutput))
+                                    {
+                                        throw new IllegalStateException(
+                                            String.format("Unexpected wrap result %s (packetBufferSize %d < getPacketBufferSize() %d)",
+                                                wrapResultStatus, packetBufferSize, getPacketBufferSize()
+                                            ));
+                                    }
+                                    // fall-through default case to flush()
                                 }
                                 default:
                                 {
