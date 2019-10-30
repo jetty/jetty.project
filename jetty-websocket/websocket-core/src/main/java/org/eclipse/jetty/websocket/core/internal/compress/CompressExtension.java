@@ -138,12 +138,20 @@ public abstract class CompressExtension extends AbstractExtension
         ByteAccumulator accumulator = new ByteAccumulator(getWebSocketCoreSession().getMaxFrameSize());
         try
         {
+            // Decompress the payload.
             ByteBuffer payload = frame.getPayload();
             decompress(accumulator, payload);
             if (frame.isFin() || compressionMode == CompressionMode.FRAME)
                 decompress(accumulator, TAIL_BYTES_BUF.slice());
 
-            forwardIncoming(frame, callback, accumulator);
+            // Copy frame and unset RSV1 since it's not compressed anymore.
+            Frame newFrame = Frame.copyWithoutPayload(frame);
+            newFrame.setRsv1(false);
+
+            // Move the payload to a large enough buffer.
+            ByteBuffer buffer = accumulator.getBytes();
+            newFrame.setPayload(buffer);
+            nextIncomingFrame(newFrame, callback);
         }
         catch (DataFormatException e)
         {
@@ -152,18 +160,6 @@ public abstract class CompressExtension extends AbstractExtension
 
         if (frame.isFin())
             incomingCompressed = false;
-    }
-
-    protected void forwardIncoming(Frame frame, Callback callback, ByteAccumulator accumulator)
-    {
-        // Copy frame and unset RSV1 since it's not compressed anymore.
-        Frame newFrame = Frame.copyWithoutPayload(frame);
-        newFrame.setRsv1(false);
-
-        // Move the payload to a large enough buffer.
-        ByteBuffer buffer = accumulator.getBytes();
-        newFrame.setPayload(buffer);
-        nextIncomingFrame(newFrame, callback);
     }
 
     protected void decompress(ByteAccumulator accumulator, ByteBuffer buf) throws DataFormatException
