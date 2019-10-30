@@ -98,9 +98,14 @@ public class TestFrameHandler implements SynchronousFrameHandler
 
     public void sendFrame(Frame frame)
     {
+        sendFrame(frame, Callback.NOOP, false);
+    }
+
+    public void sendFrame(Frame frame, Callback callback, boolean batch)
+    {
         if (LOG.isDebugEnabled())
             LOG.debug("sendFrame {} ", frame);
-        getCoreSession().sendFrame(frame, Callback.NOOP, false);
+        getCoreSession().sendFrame(frame, callback, batch);
     }
 
     public void sendClose()

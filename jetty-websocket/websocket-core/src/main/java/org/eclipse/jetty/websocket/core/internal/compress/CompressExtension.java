@@ -52,6 +52,7 @@ public abstract class CompressExtension extends AbstractExtension
 
     private final CompressionMode compressionMode;
     private final TransformingFlusher outgoingFlusher;
+    private final TransformingFlusher incomingFlusher;
     private Deflater deflaterImpl;
     private Inflater inflaterImpl;
     private boolean incomingCompressed;
@@ -74,6 +75,70 @@ public abstract class CompressExtension extends AbstractExtension
                 return compress(frame, callback, batch, first);
             }
         };
+
+        incomingFlusher = new TransformingFlusher(getWebSocketCoreSession())
+        {
+            @Override
+            protected boolean transform(Frame frame, Callback callback, boolean batch, boolean first)
+            {
+                if (OpCode.isControlFrame(frame.getOpCode()))
+                {
+                    nextIncomingFrame(frame, callback);
+                    return true;
+                }
+
+                if (first)
+                {
+                    switch (compressionMode)
+                    {
+                        case MESSAGE:
+                            // This mode requires the RSV1 bit set only in the first frame.
+                            // Subsequent continuation frames don't have RSV1 set, but are compressed.
+                            switch (frame.getOpCode())
+                            {
+                                case OpCode.TEXT:
+                                case OpCode.BINARY:
+                                    incomingCompressed = frame.isRsv1();
+                                    break;
+
+                                case OpCode.CONTINUATION:
+                                    if (frame.isRsv1())
+                                        throw new ProtocolException("Invalid RSV1 set on permessage-deflate CONTINUATION frame");
+                                    break;
+
+                                default:
+                                    break;
+                            }
+                            break;
+
+                        case FRAME:
+                            incomingCompressed = frame.isRsv1();
+                            break;
+
+                        default:
+                            throw new IllegalStateException();
+                    }
+
+                    if (!incomingCompressed)
+                    {
+                        nextIncomingFrame(frame, callback);
+                        return true;
+                    }
+                }
+
+                if (frame.isFin())
+                    incomingCompressed = false;
+
+                try
+                {
+                    return decompress(frame, callback, first);
+                }
+                catch (DataFormatException e)
+                {
+                    throw new BadPayloadException(e);
+                }
+            }
+        };
     }
 
     @Override
@@ -94,102 +159,67 @@ public abstract class CompressExtension extends AbstractExtension
     @Override
     public void onFrame(Frame frame, Callback callback)
     {
-        if (OpCode.isControlFrame(frame.getOpCode()))
-        {
-            nextIncomingFrame(frame, callback);
-            return;
-        }
-
-        switch (compressionMode)
-        {
-            case MESSAGE:
-                // This mode requires the RSV1 bit set only in the first frame.
-                // Subsequent continuation frames don't have RSV1 set, but are compressed.
-                switch (frame.getOpCode())
-                {
-                    case OpCode.TEXT:
-                    case OpCode.BINARY:
-                        incomingCompressed = frame.isRsv1();
-                        break;
-
-                    case OpCode.CONTINUATION:
-                        if (frame.isRsv1())
-                            callback.failed(new ProtocolException("Invalid RSV1 set on permessage-deflate CONTINUATION frame"));
-                        break;
-                    default:
-                        break;
-                }
-                break;
-
-            case FRAME:
-                incomingCompressed = frame.isRsv1();
-                break;
-
-            default:
-                throw new IllegalStateException();
-        }
-
-        if (!incomingCompressed)
-        {
-            nextIncomingFrame(frame, callback);
-            return;
-        }
-
-        ByteAccumulator accumulator = new ByteAccumulator(getWebSocketCoreSession().getMaxFrameSize());
-        try
-        {
-            // Decompress the payload.
-            ByteBuffer payload = frame.getPayload();
-            decompress(accumulator, payload);
-            if (frame.isFin() || compressionMode == CompressionMode.FRAME)
-                decompress(accumulator, TAIL_BYTES_BUF.slice());
-
-            // Copy frame and unset RSV1 since it's not compressed anymore.
-            Frame newFrame = Frame.copyWithoutPayload(frame);
-            newFrame.setRsv1(false);
-
-            // Move the payload to a large enough buffer.
-            ByteBuffer buffer = accumulator.getBytes();
-            newFrame.setPayload(buffer);
-            nextIncomingFrame(newFrame, callback);
-        }
-        catch (DataFormatException e)
-        {
-            throw new BadPayloadException(e);
-        }
-
-        if (frame.isFin())
-            incomingCompressed = false;
+        incomingFlusher.sendFrame(frame, callback, false);
     }
 
-    protected void decompress(ByteAccumulator accumulator, ByteBuffer buf) throws DataFormatException
+    protected boolean decompress(Frame frame, Callback callback, boolean first) throws DataFormatException
     {
-        if ((buf == null) || (!buf.hasRemaining()))
-            return;
+        // TODO: what happens if payload is empty?
+        ByteBuffer data = frame.getPayload();
+        long maxFrameSize = getWebSocketCoreSession().getMaxFrameSize();
 
         Inflater inflater = getInflater();
-        inflater.setInput(buf);
+        if (first)
+            inflater.setInput(data);
 
+        // Decompress the payload.
+        boolean finished = false;
+        ByteAccumulator accumulator = new ByteAccumulator(getWebSocketCoreSession().getMaxFrameSize());
         while (true)
         {
-            ByteBuffer output = getBufferPool().acquire(DECOMPRESS_BUF_SIZE, false);
-            BufferUtil.clearToFill(output);
-            int read = inflater.inflate(output); // todo cannot restrict size with bytebuffer
-            BufferUtil.flipToFlush(output, 0);
+            int bufferSize = DECOMPRESS_BUF_SIZE;
+            if (maxFrameSize > 0)
+                bufferSize = (int)Math.min(maxFrameSize - accumulator.size(), DECOMPRESS_BUF_SIZE);
+
+            byte[] output = new byte[bufferSize];
+            int read = inflater.inflate(output, 0, output.length);
             if (LOG.isDebugEnabled())
                 LOG.debug("Decompress: read {} {}", read, toDetail(inflater));
 
             if (read <= 0)
             {
-                getBufferPool().release(output);
+                // Do one more loop to finish.
+                if (!finished && (frame.isFin() || compressionMode == CompressionMode.FRAME))
+                {
+                    inflater.setInput(TAIL_BYTES_BUF.slice());
+                    finished = true;
+                    continue;
+                }
+
+                finished = true;
                 break;
             }
 
-            accumulator.addChunk(output);
+            accumulator.addChunk(BufferUtil.toBuffer(output, 0, read));
+
+            if (maxFrameSize > 0 && accumulator.size() == maxFrameSize)
+            {
+                if (!getWebSocketCoreSession().isAutoFragment())
+                    throw new MessageTooLargeException("Inflated payload exceeded maxFrameSize");
+                break;
+            }
         }
+
+        Frame chunk = new Frame(first ? frame.getOpCode() : OpCode.CONTINUATION);
+        chunk.setRsv1(false);
+        chunk.setPayload(accumulator.getBytes());
+        chunk.setFin(frame.isFin() && finished);
+        nextIncomingFrame(chunk, callback);
 
         if (LOG.isDebugEnabled())
             LOG.debug("Decompress: exiting {}", toDetail(inflater));
+
+        return finished;
     }
 
     private boolean compress(Frame frame, Callback callback, boolean batch, boolean first)
@@ -198,10 +228,9 @@ public abstract class CompressExtension extends AbstractExtension
         // the heap if the payload is a huge mapped file.
         ByteBuffer data = frame.getPayload();
         int remaining = data.remaining();
-        int outputLength = Math.max(256, data.remaining());
         long maxFrameSize = getWebSocketCoreSession().getMaxFrameSize();
         if (LOG.isDebugEnabled())
-            LOG.debug("Compressing {}: {} bytes in {} bytes chunk", frame, remaining, outputLength);
+            LOG.debug("Compressing remaining {} bytes of {} ", remaining, frame);
 
         // Get Deflater and provide payload as input if this is the first time.
         Deflater deflater = getDeflater();
@@ -274,10 +303,10 @@ public abstract class CompressExtension extends AbstractExtension
         }
 
         if (LOG.isDebugEnabled())
-            LOG.debug("Compressed {}: input:{} -> payload:{}", frame, outputLength, payload.remaining());
+            LOG.debug("Compressed {}: payload:{}", frame, payload.remaining());
 
         Frame chunk = new Frame(first ? frame.getOpCode() : OpCode.CONTINUATION);
-        chunk.setRsv1(first || compressionMode != CompressionMode.FRAME);
+        chunk.setRsv1(first || compressionMode == CompressionMode.FRAME);
         chunk.setPayload(payload);
         chunk.setFin(frame.isFin() && finished);
 

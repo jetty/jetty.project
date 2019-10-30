@@ -67,7 +67,7 @@ public abstract class TransformingFlusher
             notifyCallbackFailure(callback, new ClosedChannelException());
     }
 
-    protected void onFailure(Throwable t)
+    private void onFailure(Throwable t)
     {
         synchronized (this)
         {

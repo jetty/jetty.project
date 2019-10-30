@@ -33,7 +33,6 @@ import org.eclipse.jetty.websocket.core.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -114,7 +113,6 @@ public class AutoFragmentTest
         assertTrue(clientHandler.closed.await(5, TimeUnit.SECONDS));
     }
 
-    @Disabled("permessage-deflate autoFragment not implemented yet")
     @Test
     public void testIncomingAutoFragmentWithPermessageDeflate() throws Exception
     {
@@ -200,7 +198,7 @@ public class AutoFragmentTest
         serverHandler.coreSession.setAutoFragment(true);
 
         // Send the payload which should be fragmented by the server permessage-deflate.
-        serverHandler.coreSession.sendFrame(new Frame(OpCode.BINARY, BufferUtil.copy(payload)), Callback.NOOP, false);
+        serverHandler.sendFrame(new Frame(OpCode.BINARY, BufferUtil.copy(payload)), Callback.NOOP, false);
 
         // Assemble the message from the fragmented frames.
         ByteBuffer message = BufferUtil.allocate(payload.remaining()*2);
