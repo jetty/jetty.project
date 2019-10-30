@@ -431,9 +431,9 @@ public class ErrorHandler extends AbstractHandler
     {
         writer
             .append("{\n")
-            .append("  url: \"").append(request.getRequestURI()).append("\",\n")
-            .append("  status: \"").append(Integer.toString(code)).append("\",\n")
-            .append("  message: ").append(QuotedStringTokenizer.quote(message)).append(",\n");
+            .append("  \"url\": \"").append(request.getRequestURI()).append("\",\n")
+            .append("  \"status\": \"").append(Integer.toString(code)).append("\",\n")
+            .append("  \"message\": ").append(QuotedStringTokenizer.quote(message)).append(",\n");
         Object servlet = request.getAttribute(Dispatcher.ERROR_SERVLET_NAME);
         if (servlet != null)
             writer.append("servlet: \"").append(servlet.toString()).append("\",\n");
@@ -441,9 +441,13 @@ public class ErrorHandler extends AbstractHandler
         int c = 0;
         while (cause != null)
         {
-            writer.append("  cause").append(Integer.toString(c++)).append(": ")
-                .append(QuotedStringTokenizer.quote(cause.toString())).append(",\n");
+            writer.append("  \"cause").append(Integer.toString(c++)).append('"').append(": ")
+                .append(QuotedStringTokenizer.quote(cause.toString()));
             cause = cause.getCause();
+            if(cause!=null)
+            {
+                writer.append(",\n");
+            }
         }
         writer.append("}");
     }

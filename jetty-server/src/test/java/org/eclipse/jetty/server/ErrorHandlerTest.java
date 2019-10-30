@@ -30,6 +30,8 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -302,5 +304,26 @@ public class ErrorHandlerTest
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
         assertThat("Response status code", response.getStatus(), is(444));
+    }
+
+    @Test
+    public void testJsonResponse() throws Exception
+    {
+        String rawResponse = connector.getResponse(
+                "GET /badmessage/444 HTTP/1.1\r\n" +
+                        "Host: Localhost\r\n" +
+                        "Accept: text/json\r\n" +
+                        "\r\n");
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+
+        assertThat("Response status code", response.getStatus(), is(444));
+
+        System.out.println("response:" + response.getContent());
+
+        JSONObject jo = (JSONObject) new JSONParser().parse(response.getContent());
+
+        assertThat("url field not null", jo.get("url"), is(notNullValue()));
+        assertThat("status field not null", jo.get("status"), is(notNullValue()));
+        assertThat("message field not null", jo.get("message"), is(notNullValue()));
     }
 }
