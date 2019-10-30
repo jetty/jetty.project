@@ -19,24 +19,19 @@
 package org.eclipse.jetty.websocket.core.internal.compress;
 
 import java.nio.ByteBuffer;
-import java.util.ArrayDeque;
-import java.util.Queue;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.zip.DataFormatException;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
-import java.util.zip.ZipException;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.AbstractExtension;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.MessageTooLargeException;
 import org.eclipse.jetty.websocket.core.OpCode;
-import org.eclipse.jetty.websocket.core.internal.FrameEntry;
+import org.eclipse.jetty.websocket.core.internal.TransformingFlusher;
 
 public abstract class CompressExtension extends AbstractExtension
 {
@@ -83,11 +78,9 @@ public abstract class CompressExtension extends AbstractExtension
      */
     private static final int DECOMPRESS_BUF_SIZE = 8 * 1024;
 
-    private final Queue<FrameEntry> entries = new ArrayDeque<>();
-    private final IteratingCallback flusher = new Flusher();
+    private final TransformingFlusher outgoingFlusher;
     private Deflater deflaterImpl;
     private Inflater inflaterImpl;
-    protected AtomicInteger decompressCount = new AtomicInteger(0);
     private int tailDrop;
     private int rsvUse;
 
@@ -95,6 +88,22 @@ public abstract class CompressExtension extends AbstractExtension
     {
         tailDrop = getTailDropMode();
         rsvUse = getRsvUseMode();
+
+        outgoingFlusher = new TransformingFlusher(getWebSocketCoreSession())
+        {
+            @Override
+            protected boolean transform(Frame frame, Callback callback, boolean batch, boolean first)
+            {
+                // Do not deflate control frames
+                if (OpCode.isControlFrame(frame.getOpCode()))
+                {
+                    nextOutgoingFrame(frame, callback, batch);
+                    return true;
+                }
+
+                return compress(frame, callback, batch, first);
+            }
+        };
     }
 
     public Deflater getDeflater()
@@ -186,18 +195,6 @@ public abstract class CompressExtension extends AbstractExtension
 
         if (LOG.isDebugEnabled())
             LOG.debug("Decompress: exiting {}", toDetail(inflater));
-    }
-
-    private boolean transform(Frame frame, Callback callback, boolean batch, boolean first)
-    {
-        // Do not deflate control frames
-        if (OpCode.isControlFrame(frame.getOpCode()))
-        {
-            nextOutgoingFrame(frame, callback, batch);
-            return true;
-        }
-
-        return compress(frame, callback, batch, first);
     }
 
     private boolean compress(Frame frame, Callback callback, boolean batch, boolean first)
@@ -297,62 +294,7 @@ public abstract class CompressExtension extends AbstractExtension
         // We use a queue and an IteratingCallback to handle concurrency.
         // We must compress and write atomically, otherwise the compression
         // context on the other end gets confused.
-
-        if (flusher.isFailed())
-        {
-            notifyCallbackFailure(callback, new ZipException());
-            return;
-        }
-
-        FrameEntry entry = new FrameEntry(frame, callback, batch);
-        if (LOG.isDebugEnabled())
-            LOG.debug("Queuing {}", entry);
-        offerEntry(entry);
-        flusher.iterate();
-    }
-
-    private void offerEntry(FrameEntry entry)
-    {
-        synchronized (this)
-        {
-            entries.offer(entry);
-        }
-    }
-
-    private FrameEntry pollEntry()
-    {
-        synchronized (this)
-        {
-            return entries.poll();
-        }
-    }
-
-    protected void notifyCallbackSuccess(Callback callback)
-    {
-        try
-        {
-            if (callback != null)
-                callback.succeeded();
-        }
-        catch (Throwable x)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Exception while notifying success of callback " + callback, x);
-        }
-    }
-
-    protected void notifyCallbackFailure(Callback callback, Throwable failure)
-    {
-        try
-        {
-            if (callback != null)
-                callback.failed(failure);
-        }
-        catch (Throwable x)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Exception while notifying failure of callback " + callback, x);
-        }
+        outgoingFlusher.sendFrame(frame, callback, batch);
     }
 
     private static String toDetail(Inflater inflater)
@@ -388,63 +330,5 @@ public abstract class CompressExtension extends AbstractExtension
     public String toString()
     {
         return getClass().getSimpleName();
-    }
-
-    private class Flusher extends IteratingCallback
-    {
-        private FrameEntry current;
-        private boolean finished = true;
-
-        @Override
-        public void succeeded()
-        {
-            if (finished)
-                notifyCallbackSuccess(current.callback);
-            super.succeeded();
-        }
-
-        @Override
-        public void failed(Throwable cause)
-        {
-            releaseInflater();
-            releaseDeflater();
-            notifyCallbackFailure(current.callback, cause);
-            // If something went wrong, very likely the compression context
-            // will be invalid, so we need to fail this IteratingCallback.
-            LOG.warn(cause);
-            super.failed(cause);
-        }
-
-        @Override
-        protected Action process() throws Exception
-        {
-            if (finished)
-            {
-                current = pollEntry();
-                LOG.debug("Processing {}", current);
-                if (current == null)
-                    return Action.IDLE;
-            }
-
-            finished = transform(current.frame, this, current.batch, finished);
-            return Action.SCHEDULED;
-        }
-
-        @Override
-        protected void onCompleteSuccess()
-        {
-            // This IteratingCallback never completes.
-        }
-
-        @Override
-        protected void onCompleteFailure(Throwable x)
-        {
-            // Fail all the frames in the queue.
-            FrameEntry entry;
-            while ((entry = pollEntry()) != null)
-            {
-                notifyCallbackFailure(entry.callback, x);
-            }
-        }
     }
 }

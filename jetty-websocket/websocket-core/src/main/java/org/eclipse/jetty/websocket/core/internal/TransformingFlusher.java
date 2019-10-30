@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.websocket.core.internal;
 
-import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.util.ArrayDeque;
 import java.util.Queue;
@@ -29,7 +28,6 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.FrameHandler.Configuration;
-import org.eclipse.jetty.websocket.core.OpCode;
 
 /**
  * Used to split large data frames into multiple frames below the maxFrameSize.
@@ -48,15 +46,19 @@ public abstract class TransformingFlusher
         this.configuration = configuration;
     }
 
-    abstract void forwardFrame(Frame frame, Callback callback, boolean batch);
+    protected abstract boolean transform(Frame frame, Callback callback, boolean batch, boolean first);
 
     public void sendFrame(Frame frame, Callback callback, boolean batch)
     {
+        FrameEntry entry = new FrameEntry(frame, callback, batch);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Queuing {}", entry);
+
         boolean enqueued = false;
         synchronized (this)
         {
             if (canEnqueue)
-                enqueued = entries.offer(new FrameEntry(frame, callback, batch));
+                enqueued = entries.offer(entry);
         }
 
         if (enqueued)
@@ -99,50 +101,10 @@ public abstract class TransformingFlusher
                 LOG.debug("Processing {}", current);
                 if (current == null)
                     return Action.IDLE;
+            }
 
-                finished = transform(current, true);
-            }
-            else
-            {
-                finished = transform(current, false);
-            }
+            finished = transform(current.frame, this, current.batch, finished);
             return Action.SCHEDULED;
-        }
-
-        private boolean transform(FrameEntry entry, boolean first)
-        {
-            Frame frame = entry.frame;
-            ByteBuffer payload = frame.getPayload();
-            int remaining = payload.remaining();
-            long maxFrameSize = configuration.getMaxFrameSize();
-            int fragmentSize = (int)Math.min(remaining, maxFrameSize);
-
-            boolean continuation = (frame.getOpCode() == OpCode.CONTINUATION) || !first;
-            Frame fragment = new Frame(continuation ? OpCode.CONTINUATION : frame.getOpCode());
-            finished = (maxFrameSize <= 0 || remaining <= maxFrameSize);
-            fragment.setFin(frame.isFin() && finished);
-
-            // If we don't need to fragment just forward with original payload.
-            if (finished)
-            {
-                fragment.setPayload(frame.getPayload());
-                forwardFrame(fragment, this, entry.batch);
-                return true;
-            }
-
-            // Slice the fragmented payload from the buffer.
-            int limit = payload.limit();
-            int newLimit = payload.position() + fragmentSize;
-            payload.limit(newLimit);
-            ByteBuffer payloadFragment = payload.slice();
-            payload.limit(limit);
-            fragment.setPayload(payloadFragment);
-            payload.position(newLimit);
-            if (LOG.isDebugEnabled())
-                LOG.debug("Fragmented {}->{}", frame, fragment);
-
-            forwardFrame(fragment, this, entry.batch);
-            return false;
         }
 
         @Override
