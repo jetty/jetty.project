@@ -1039,10 +1039,7 @@ public class SslConnection extends AbstractConnection
                                     }
                                     if (BufferUtil.isEmpty(_encryptedOutput))
                                     {
-                                        throw new IllegalStateException(
-                                            String.format("Unexpected wrap result %s (packetBufferSize %d < getPacketBufferSize() %d)",
-                                                wrapResultStatus, packetBufferSize, getPacketBufferSize()
-                                            ));
+                                        throw new IllegalStateException("Unexpected wrap result " + wrapResultStatus);
                                     }
                                     // fall-through default case to flush()
                                 }
