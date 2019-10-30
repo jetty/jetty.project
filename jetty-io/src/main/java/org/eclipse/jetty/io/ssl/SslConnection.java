@@ -23,7 +23,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.util.Arrays;
 import java.util.concurrent.Executor;
-
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLEngineResult.HandshakeStatus;
@@ -228,6 +227,16 @@ public class SslConnection extends AbstractConnection
         }
         if (failFlusher)
             _decryptedEndPoint.getWriteFlusher().onFail(cause);
+    }
+
+    protected SSLEngineResult wrap(SSLEngine sslEngine, ByteBuffer[] input, ByteBuffer output) throws SSLException
+    {
+        return sslEngine.wrap(input, output);
+    }
+
+    protected SSLEngineResult unwrap(SSLEngine sslEngine, ByteBuffer input, ByteBuffer output) throws SSLException
+    {
+        return sslEngine.unwrap(input, output);
     }
 
     @Override
@@ -525,7 +534,7 @@ public class SslConnection extends AbstractConnection
                         SSLEngineResult unwrapResult;
                         try
                         {
-                            unwrapResult = _sslEngine.unwrap(_encryptedInput, app_in);
+                            unwrapResult = unwrap(_sslEngine, _encryptedInput, app_in);
                         }
                         finally
                         {
@@ -757,7 +766,7 @@ public class SslConnection extends AbstractConnection
                     SSLEngineResult wrapResult;
                     try
                     {
-                        wrapResult=_sslEngine.wrap(appOuts, _encryptedOutput);
+                        wrapResult = wrap(_sslEngine, appOuts, _encryptedOutput);
                     }
                     finally
                     {
