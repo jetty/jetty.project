@@ -645,6 +645,7 @@ public class SslConnection extends AbstractConnection
                             // We also need an app buffer, but can use the passed buffer if it is big enough
                             ByteBuffer app_in;
                             int appBufferSize = getApplicationBufferSize();
+
                             if (BufferUtil.space(buffer) > appBufferSize)
                                 app_in = buffer;
                             else if (_decryptedInput == null)
@@ -692,6 +693,14 @@ public class SslConnection extends AbstractConnection
                                 _underFlown = unwrapResultStatus == Status.BUFFER_UNDERFLOW ||
                                         unwrapResultStatus == Status.OK && unwrapResult.bytesConsumed() == 0 && unwrapResult.bytesProduced() == 0;
 
+                                if (_underFlown)
+                                {
+                                    if (net_filled < 0 && _sslEngine.getUseClientMode())
+                                        closeInbound();
+                                    if (net_filled <= 0)
+                                        return net_filled;
+                                }
+
                                 switch (unwrapResultStatus)
                                 {
                                     case CLOSED:
@@ -732,25 +741,6 @@ public class SslConnection extends AbstractConnection
                                         throw new IllegalStateException("Unexpected unwrap result " + unwrapResultStatus);
 
                                     case BUFFER_UNDERFLOW:
-                                        if (net_filled > 0)
-                                            break decryption; // try filling some more
-                                        _underFlown = true;
-                                        if (net_filled < 0 && _sslEngine.getUseClientMode())
-                                        {
-                                            try
-                                            {
-                                                closeInbound();
-                                            }
-                                            catch (SSLException closeFailure)
-                                            {
-                                                Throwable handshakeFailure = new SSLHandshakeException("Abruptly closed by peer");
-                                                handshakeFailure.initCause(closeFailure);
-                                                throw handshakeFailure;
-                                            }
-
-                                            return -1;
-                                        }
-                                        return net_filled;
                                     case OK:
                                     {
                                         if (unwrapHandshakeStatus == HandshakeStatus.FINISHED)
