@@ -18,14 +18,6 @@
 
 package org.eclipse.jetty.websocket.core.internal.compress;
 
-import java.util.zip.DataFormatException;
-
-import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.BadPayloadException;
-import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
 
 /**
@@ -35,8 +27,6 @@ import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
  */
 public class DeflateFrameExtension extends CompressExtension
 {
-    private static final Logger LOG = Log.getLogger(DeflateFrameExtension.class);
-
     @Override
     public String getName()
     {
@@ -44,40 +34,9 @@ public class DeflateFrameExtension extends CompressExtension
     }
 
     @Override
-    int getRsvUseMode()
+    CompressionMode getCompressionMode()
     {
-        return RSV_USE_ALWAYS;
-    }
-
-    @Override
-    int getTailDropMode()
-    {
-        return TAIL_DROP_ALWAYS;
-    }
-
-    @Override
-    public void onFrame(Frame frame, Callback callback)
-    {
-        // Incoming frames are always non concurrent because
-        // they are read and parsed with a single thread, and
-        // therefore there is no need for synchronization.
-        if ((OpCode.isControlFrame(frame.getOpCode())) || !frame.isRsv1() || !frame.hasPayload())
-        {
-            nextIncomingFrame(frame, callback);
-            return;
-        }
-
-        try
-        {
-            ByteAccumulator accumulator = new ByteAccumulator(getWebSocketCoreSession().getMaxFrameSize());
-            decompress(accumulator, frame.getPayload());
-            decompress(accumulator, TAIL_BYTES_BUF.slice());
-            forwardIncoming(frame, callback, accumulator);
-        }
-        catch (DataFormatException e)
-        {
-            throw new BadPayloadException(e);
-        }
+        return CompressionMode.FRAME;
     }
 
     @Override
