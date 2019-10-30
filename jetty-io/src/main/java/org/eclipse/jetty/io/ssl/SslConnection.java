@@ -879,6 +879,9 @@ public class SslConnection extends AbstractConnection
                             }
                             return allConsumed;
 
+                        case BUFFER_UNDERFLOW:
+                            throw new IllegalStateException();
+
                         case BUFFER_OVERFLOW:
                         {
                             // It's possible that SSLSession.packetBufferSize has been expanded
@@ -892,11 +895,12 @@ public class SslConnection extends AbstractConnection
                                 releaseEncryptedOutputBuffer();
                                 continue;
                             }
-                            throw new IllegalStateException("Unexpected wrap result " + wrapResultStatus);
+                            if (BufferUtil.isEmpty(_encryptedOutput))
+                            {
+                                throw new IllegalStateException("Unexpected wrap result " + wrapResultStatus);
+                            }
+                            // fall-through default case to flush()
                         }
-
-                        case BUFFER_UNDERFLOW:
-                            throw new IllegalStateException();
 
                         default:
                             if (DEBUG)
