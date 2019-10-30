@@ -217,8 +217,8 @@ public class AutoFragmentTest
         }
 
         // We received correct payload in 2 frames.
-        assertThat(numFrames, is(2));
         assertThat(message, is(payload));
+        assertThat(numFrames, is(2));
 
         clientHandler.sendClose();
         assertTrue(serverHandler.closed.await(5, TimeUnit.SECONDS));
