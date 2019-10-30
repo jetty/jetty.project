@@ -429,15 +429,25 @@ public class ErrorHandler extends AbstractHandler
 
     private void writeErrorJson(HttpServletRequest request, PrintWriter writer, int code, String message)
     {
+        Throwable cause = (Throwable)request.getAttribute(Dispatcher.ERROR_EXCEPTION);
+        Object servlet = request.getAttribute(Dispatcher.ERROR_SERVLET_NAME);
+
         writer
             .append("{\n")
             .append("  \"url\": \"").append(request.getRequestURI()).append("\",\n")
             .append("  \"status\": \"").append(Integer.toString(code)).append("\",\n")
-            .append("  \"message\": ").append(QuotedStringTokenizer.quote(message)).append(",\n");
-        Object servlet = request.getAttribute(Dispatcher.ERROR_SERVLET_NAME);
+            .append("  \"message\": ").append(QuotedStringTokenizer.quote(message));
+
         if (servlet != null)
-            writer.append("servlet: \"").append(servlet.toString()).append("\",\n");
-        Throwable cause = (Throwable)request.getAttribute(Dispatcher.ERROR_EXCEPTION);
+        {
+            writer.append(",\n");
+            writer.append("servlet: \"").append(servlet.toString()).append("\"");
+        }
+        if(cause!=null)
+            writer.append(',');
+
+        writer.append("\n");
+
         int c = 0;
         while (cause != null)
         {
