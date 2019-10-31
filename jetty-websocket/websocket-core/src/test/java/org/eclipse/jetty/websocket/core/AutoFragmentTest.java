@@ -261,7 +261,7 @@ public class AutoFragmentTest
             int appended = BufferUtil.append(message, frame.getPayload());
             assertThat(appended, is(framePayloadLen));
 
-            frame = serverHandler.receivedFrames.poll(1, TimeUnit.SECONDS);
+            frame = clientHandler.receivedFrames.poll(1, TimeUnit.SECONDS);
         }
 
         // We received correct payload in 2 frames.
