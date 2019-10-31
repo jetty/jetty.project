@@ -371,6 +371,37 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
         }
     }
 
+    @Test
+    public void testIncomingFrameNoPayload()
+    {
+        PerMessageDeflateExtension ext = new PerMessageDeflateExtension();
+        ExtensionConfig config = ExtensionConfig.parse("permessage-deflate");
+        ext.init(config, components);
+        ext.setWebSocketCoreSession(newSession());
+
+        // Setup capture of incoming frames
+        IncomingFramesCapture capture = new IncomingFramesCapture();
+
+        // Wire up stack
+        ext.setNextIncomingFrames(capture);
+
+        Frame ping = new Frame(OpCode.TEXT);
+        ping.setRsv1(true);
+        ext.onFrame(ping, Callback.NOOP);
+
+        capture.assertFrameCount(1);
+        Frame actual = capture.frames.poll();
+
+        assertThat("Frame.opcode", actual.getOpCode(), is(OpCode.TEXT));
+        assertThat("Frame.fin", actual.isFin(), is(true));
+        assertThat("Frame.rsv1", actual.isRsv1(), is(false));
+        assertThat("Frame.rsv2", actual.isRsv2(), is(false));
+        assertThat("Frame.rsv3", actual.isRsv3(), is(false));
+
+        assertThat("Frame.payloadLength", actual.getPayloadLength(), is(0));
+        assertThat("Frame.payload", actual.getPayload(), is(BufferUtil.EMPTY_BUFFER));
+    }
+
     /**
      * Outgoing PING (Control Frame) should pass through extension unmodified
      *
@@ -459,6 +490,36 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
         assertThat("Frame.rsv1", capturedFrame.isRsv1(), is(false));
         assertThat("Frame.rsv2", capturedFrame.isRsv2(), is(false));
         assertThat("Frame.rsv3", capturedFrame.isRsv3(), is(false));
+    }
+
+    @Test
+    public void testOutgoingFrameNoPayload()
+    {
+        PerMessageDeflateExtension ext = new PerMessageDeflateExtension();
+        ExtensionConfig config = ExtensionConfig.parse("permessage-deflate");
+        ext.init(config, components);
+        ext.setWebSocketCoreSession(newSession());
+
+        // Setup capture of incoming frames
+        OutgoingFramesCapture capture = new OutgoingFramesCapture();
+
+        // Wire up stack
+        ext.setNextOutgoingFrames(capture);
+
+        Frame frame = new Frame(OpCode.TEXT);
+        ext.sendFrame(frame, Callback.NOOP, false);
+
+        capture.assertFrameCount(1);
+        Frame actual = capture.frames.poll();
+
+        assertThat("Frame.opcode", actual.getOpCode(), is(OpCode.TEXT));
+        assertThat("Frame.fin", actual.isFin(), is(true));
+        assertThat("Frame.rsv1", actual.isRsv1(), is(true));
+        assertThat("Frame.rsv2", actual.isRsv2(), is(false));
+        assertThat("Frame.rsv3", actual.isRsv3(), is(false));
+
+        assertThat("Frame.payloadLength", actual.getPayloadLength(), is(1));
+        //assertThat("Frame.payload", actual.getPayload(), is(BufferUtil.EMPTY_BUFFER));
     }
 
     @Test
