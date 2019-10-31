@@ -32,7 +32,7 @@
             </goals>
             <configuration>
               <instructions>
-                <Require-Capability>osgi.serviceloader; filter:="(osgi.serviceloader=org.eclipse.jetty.security.Authenticator$Factory)";resolution:=optional;cardinality:=multiple, osgi.extender; filter:="(osgi.extender=osgi.serviceloader.processor);resolution:=optional", osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar);resolution:=optional"</Require-Capability>
+                <Require-Capability>osgi.serviceloader; filter:="(osgi.serviceloader=org.eclipse.jetty.security.Authenticator$Factory)";cardinality:=multiple, osgi.extender; filter:="(osgi.extender=osgi.serviceloader.processor)", osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)"</Require-Capability>
               </instructions>
             </configuration>
           </execution>
