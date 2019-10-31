@@ -261,7 +261,8 @@ public abstract class CompressExtension extends AbstractExtension
 
             if (maxFrameSize > 0 && accumulator.size() == maxFrameSize)
             {
-                if (!getWebSocketCoreSession().isAutoFragment())
+                // We can fragment if autoFragment is set to true and we are not doing per frame compression.
+                if (!getWebSocketCoreSession().isAutoFragment() || compressionMode == CompressionMode.FRAME)
                     throw new MessageTooLargeException("Deflated payload exceeded maxFrameSize");
                 break;
             }
@@ -306,7 +307,7 @@ public abstract class CompressExtension extends AbstractExtension
             LOG.debug("Compressed {}: payload:{}", frame, payload.remaining());
 
         Frame chunk = new Frame(first ? frame.getOpCode() : OpCode.CONTINUATION);
-        chunk.setRsv1(first || compressionMode == CompressionMode.FRAME);
+        chunk.setRsv1((first && frame.getOpCode() != OpCode.CONTINUATION) || compressionMode == CompressionMode.FRAME);
         chunk.setPayload(payload);
         chunk.setFin(frame.isFin() && finished);
 

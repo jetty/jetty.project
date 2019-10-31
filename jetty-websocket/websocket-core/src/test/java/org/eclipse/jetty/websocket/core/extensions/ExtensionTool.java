@@ -20,12 +20,13 @@ package org.eclipse.jetty.websocket.core.extensions;
 
 import java.nio.ByteBuffer;
 import java.util.LinkedList;
+import java.util.concurrent.ExecutionException;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.toolchain.test.ByteBufferAssert;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.websocket.core.Behavior;
 import org.eclipse.jetty.websocket.core.Extension;
@@ -95,9 +96,23 @@ public class ExtensionTool
                     Frame frame = parser.parse(buffer);
                     if (frame == null)
                         break;
-                    ext.onFrame(frame, Callback.from(() ->
+
+                    FutureCallback callback = new FutureCallback();
+                    ext.onFrame(frame, callback);
+
+                    // Throw if callback fails.
+                    try
                     {
-                    }, Assertions::fail));
+                        callback.get();
+                    }
+                    catch (ExecutionException e)
+                    {
+                        throw new RuntimeException(e.getCause());
+                    }
+                    catch (Throwable t)
+                    {
+                        Assertions.fail(t);
+                    }
                 }
             }
         }

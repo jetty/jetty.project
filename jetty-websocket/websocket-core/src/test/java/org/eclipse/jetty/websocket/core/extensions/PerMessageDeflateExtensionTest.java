@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -29,12 +30,18 @@ import org.eclipse.jetty.toolchain.test.ByteBufferAssert;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.websocket.core.Behavior;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.FrameHandler.ConfigurationCustomizer;
 import org.eclipse.jetty.websocket.core.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.OutgoingFramesCapture;
 import org.eclipse.jetty.websocket.core.ProtocolException;
+import org.eclipse.jetty.websocket.core.TestMessageHandler;
+import org.eclipse.jetty.websocket.core.internal.ExtensionStack;
+import org.eclipse.jetty.websocket.core.internal.Negotiated;
+import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
 import org.eclipse.jetty.websocket.core.internal.compress.CompressExtension;
 import org.eclipse.jetty.websocket.core.internal.compress.PerMessageDeflateExtension;
 import org.junit.jupiter.api.Test;
@@ -312,41 +319,6 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
     }
 
     /**
-     * Incoming Text Message fragmented into 3 pieces.
-     */
-    @Test
-    public void testIncomingFragmented()
-    {
-        PerMessageDeflateExtension ext = new PerMessageDeflateExtension();
-        ExtensionConfig config = ExtensionConfig.parse("permessage-deflate");
-        ext.init(config, components);
-
-        // Setup capture of incoming frames
-        IncomingFramesCapture capture = new IncomingFramesCapture();
-
-        // Wire up stack
-        ext.setNextIncomingFrames(capture);
-
-        String payload = "Are you there?";
-        Frame ping = new Frame(OpCode.PING).setPayload(payload);
-        ext.onFrame(ping, Callback.NOOP);
-
-        capture.assertFrameCount(1);
-        capture.assertHasOpCount(OpCode.PING, 1);
-        Frame actual = capture.frames.poll();
-
-        assertThat("Frame.opcode", actual.getOpCode(), is(OpCode.PING));
-        assertThat("Frame.fin", actual.isFin(), is(true));
-        assertThat("Frame.rsv1", actual.isRsv1(), is(false));
-        assertThat("Frame.rsv2", actual.isRsv2(), is(false));
-        assertThat("Frame.rsv3", actual.isRsv3(), is(false));
-
-        ByteBuffer expected = BufferUtil.toBuffer(payload, StandardCharsets.UTF_8);
-        assertThat("Frame.payloadLength", actual.getPayloadLength(), is(expected.remaining()));
-        ByteBufferAssert.assertEquals("Frame.payload", expected, actual.getPayload().slice());
-    }
-
-    /**
      * Verify that incoming uncompressed frames are properly passed through
      */
     @Test
@@ -448,6 +420,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
     {
         PerMessageDeflateExtension ext = new PerMessageDeflateExtension();
         ext.init(ExtensionConfig.parse("permessage-deflate"), components);
+        ext.setWebSocketCoreSession(newSession());
 
         // Setup capture of outgoing frames
         OutgoingFramesCapture capture = new OutgoingFramesCapture();
@@ -558,5 +531,20 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
         );
 
         tester.assertHasFrames("tora", "tora", "tora");
+    }
+
+    private WebSocketCoreSession newSession()
+    {
+        return newSessionFromConfig(new ConfigurationCustomizer());
+    }
+
+    private WebSocketCoreSession newSessionFromConfig(ConfigurationCustomizer configuration)
+    {
+        ExtensionStack exStack = new ExtensionStack(components, Behavior.SERVER);
+        exStack.negotiate(new LinkedList<>(), new LinkedList<>());
+
+        WebSocketCoreSession coreSession = new WebSocketCoreSession(new TestMessageHandler(), Behavior.SERVER, Negotiated.from(exStack));
+        configuration.customize(configuration);
+        return coreSession;
     }
 }
