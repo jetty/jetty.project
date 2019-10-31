@@ -24,13 +24,14 @@ import java.nio.channels.ClosedChannelException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executor;
-
+import java.util.function.ToIntFunction;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLEngineResult.HandshakeStatus;
 import javax.net.ssl.SSLEngineResult.Status;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLHandshakeException;
+import javax.net.ssl.SSLSession;
 
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.AbstractEndPoint;
@@ -38,6 +39,7 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
+import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.io.SelectChannelEndPoint;
 import org.eclipse.jetty.io.WriteFlusher;
 import org.eclipse.jetty.util.BufferUtil;
@@ -212,6 +214,57 @@ public class SslConnection extends AbstractConnection
         this._allowMissingCloseMessage = allowMissingCloseMessage;
     }
 
+    private int getApplicationBufferSize()
+    {
+        return getBufferSize(SSLSession::getApplicationBufferSize);
+    }
+
+    private int getPacketBufferSize()
+    {
+        return getBufferSize(SSLSession::getPacketBufferSize);
+    }
+
+    private int getBufferSize(ToIntFunction<SSLSession> bufferSizeFn)
+    {
+        SSLSession hsSession = _sslEngine.getHandshakeSession();
+        SSLSession session = _sslEngine.getSession();
+        int size = bufferSizeFn.applyAsInt(session);
+        if (hsSession == null || hsSession == session)
+            return size;
+        int hsSize = bufferSizeFn.applyAsInt(hsSession);
+        return Math.max(hsSize, size);
+    }
+
+    private void acquireEncryptedInput()
+    {
+        if (_encryptedInput == null)
+            _encryptedInput = _bufferPool.acquire(getPacketBufferSize(), _encryptedDirectBuffers);
+    }
+
+    private void acquireEncryptedOutput()
+    {
+        if (_encryptedOutput == null)
+            _encryptedOutput = _bufferPool.acquire(getPacketBufferSize(), _encryptedDirectBuffers);
+    }
+
+    private void releaseEncryptedInputBuffer()
+    {
+        if (_encryptedInput != null && !_encryptedInput.hasRemaining())
+        {
+            _bufferPool.release(_encryptedInput);
+            _encryptedInput = null;
+        }
+    }
+
+    protected void releaseDecryptedInputBuffer()
+    {
+        if (_decryptedInput != null && !_decryptedInput.hasRemaining())
+        {
+            _bufferPool.release(_decryptedInput);
+            _decryptedInput = null;
+        }
+    }
+
     @Override
     public void onOpen()
     {
@@ -296,6 +349,16 @@ public class SslConnection extends AbstractConnection
         }
         if (failFlusher)
             _decryptedEndPoint.getWriteFlusher().onFail(cause);
+    }
+
+    protected SSLEngineResult wrap(SSLEngine sslEngine, ByteBuffer[] input, ByteBuffer output) throws SSLException
+    {
+        return sslEngine.wrap(input, output);
+    }
+
+    protected SSLEngineResult unwrap(SSLEngine sslEngine, ByteBuffer input, ByteBuffer output) throws SSLException
+    {
+        return sslEngine.unwrap(input, output);
     }
 
     @Override
@@ -540,9 +603,12 @@ public class SslConnection extends AbstractConnection
         {
             if (connection instanceof AbstractConnection)
             {
-                AbstractConnection a = (AbstractConnection)connection;
-                if (a.getInputBufferSize()<_sslEngine.getSession().getApplicationBufferSize())
-                    a.setInputBufferSize(_sslEngine.getSession().getApplicationBufferSize());
+                // This is an optimization to avoid that upper layer connections use small
+                // buffers and we need to copy decrypted data rather than decrypting in place.
+                AbstractConnection c = (AbstractConnection)connection;
+                int appBufferSize = getApplicationBufferSize();
+                if (c.getInputBufferSize() < appBufferSize)
+                    c.setInputBufferSize(appBufferSize);
             }
             super.setConnection(connection);
         }
@@ -572,18 +638,23 @@ public class SslConnection extends AbstractConnection
                         else
                             BufferUtil.compact(_encryptedInput);
 
-                        // We also need an app buffer, but can use the passed buffer if it is big enough
-                        ByteBuffer app_in;
-                        if (BufferUtil.space(buffer) > _sslEngine.getSession().getApplicationBufferSize())
-                            app_in = buffer;
-                        else if (_decryptedInput == null)
-                            app_in = _decryptedInput = _bufferPool.acquire(_sslEngine.getSession().getApplicationBufferSize(), _decryptedDirectBuffers);
-                        else
-                            app_in = _decryptedInput;
 
                         // loop filling and unwrapping until we have something
                         while (true)
                         {
+                            // We also need an app buffer, but can use the passed buffer if it is big enough
+                            ByteBuffer app_in;
+                            int appBufferSize = getApplicationBufferSize();
+
+                            if (BufferUtil.space(buffer) > appBufferSize)
+                                app_in = buffer;
+                            else if (_decryptedInput == null)
+                                app_in = _decryptedInput = _bufferPool.acquire(appBufferSize, _decryptedDirectBuffers);
+                            else
+                                app_in = _decryptedInput;
+
+                            acquireEncryptedInput();
+
                             // Let's try reading some encrypted data... even if we have some already.
                             int net_filled = getEndPoint().fill(_encryptedInput);
 
@@ -598,17 +669,20 @@ public class SslConnection extends AbstractConnection
                                 SSLEngineResult unwrapResult;
                                 try
                                 {
-                                    unwrapResult = _sslEngine.unwrap(_encryptedInput, app_in);
+                                    unwrapResult = unwrap(_sslEngine, _encryptedInput, app_in);
                                 }
                                 finally
                                 {
                                     BufferUtil.flipToFlush(app_in, pos);
                                 }
+
                                 if (LOG.isDebugEnabled())
-                                {
-                                    LOG.debug("net={} unwrap {} {}", net_filled, unwrapResult.toString().replace('\n',' '), SslConnection.this);
-                                    LOG.debug("filled {} {}",BufferUtil.toHexSummary(buffer), SslConnection.this);
-                                }
+                                    LOG.debug("unwrap net_filled={} {} encryptedBuffer={} unwrapBuffer={} appBuffer={}",
+                                        net_filled,
+                                        unwrapResult.toString().replace('\n',' '),
+                                        BufferUtil.toSummaryString(_encryptedInput),
+                                        BufferUtil.toDetailString(app_in),
+                                        BufferUtil.toDetailString(buffer));
 
                                 HandshakeStatus handshakeStatus = _sslEngine.getHandshakeStatus();
                                 HandshakeStatus unwrapHandshakeStatus = unwrapResult.getHandshakeStatus();
@@ -634,34 +708,38 @@ public class SslConnection extends AbstractConnection
                                         switch (handshakeStatus)
                                         {
                                             case NOT_HANDSHAKING:
-                                            {
                                                 // We were not handshaking, so just tell the app we are closed
                                                 return -1;
-                                            }
                                             case NEED_TASK:
-                                            {
                                                 _sslEngine.getDelegatedTask().run();
                                                 continue;
-                                            }
                                             case NEED_WRAP:
-                                            {
                                                 // We need to send some handshake data (probably the close handshake).
                                                 // We return -1 so that the application can drive the close by flushing
                                                 // or shutting down the output.
                                                 return -1;
-                                            }
                                             case NEED_UNWRAP:
-                                            {
                                                 // We expected to read more, but we got closed.
                                                 // Return -1 to indicate to the application to drive the close.
                                                 return -1;
-                                            }
                                             default:
-                                            {
                                                 throw new IllegalStateException();
-                                            }
                                         }
                                     }
+                                    case BUFFER_OVERFLOW:
+                                        // It's possible that SSLSession.applicationBufferSize has been expanded
+                                        // by the SSLEngine implementation. Unwrapping a large encrypted buffer
+                                        // causes BUFFER_OVERFLOW because the (old) applicationBufferSize is
+                                        // too small. Release the decrypted input buffer so it will be re-acquired
+                                        // with the larger capacity.
+                                        // See also system property "jsse.SSLEngine.acceptLargeFragments".
+                                        if (BufferUtil.isEmpty(_decryptedInput) && appBufferSize < getApplicationBufferSize())
+                                        {
+                                            releaseDecryptedInputBuffer();
+                                            break decryption;
+                                        }
+                                        throw new IllegalStateException("Unexpected unwrap result " + unwrapResultStatus);
+
                                     case BUFFER_UNDERFLOW:
                                     case OK:
                                     {
@@ -671,7 +749,7 @@ public class SslConnection extends AbstractConnection
                                         // Check whether re-negotiation is allowed
                                         if (!allowRenegotiate(handshakeStatus))
                                             return -1;
-                                        
+
                                         // If bytes were produced, don't bother with the handshake status;
                                         // pass the decrypted data to the application, which will perform
                                         // another call to fill() or flush().
@@ -769,23 +847,17 @@ public class SslConnection extends AbstractConnection
                             getExecutor().execute(failure == null ? _runCompletWrite : new FailWrite(failure));
                         }
 
-                        if (_encryptedInput != null && !_encryptedInput.hasRemaining())
-                        {
-                            _bufferPool.release(_encryptedInput);
-                            _encryptedInput = null;
-                        }
-                        if (_decryptedInput != null && !_decryptedInput.hasRemaining())
-                        {
-                            _bufferPool.release(_decryptedInput);
-                            _decryptedInput = null;
-                        }
+                        releaseEncryptedInputBuffer();
+                        releaseDecryptedInputBuffer();
                     }
                 }
             }
             catch (Throwable x)
             {
                 close(x);
-                throw x;
+                if(x instanceof IOException)
+                    throw (IOException) x;
+                throw new RuntimeIOException(x);
             }
         }
 
@@ -895,19 +967,19 @@ public class SslConnection extends AbstractConnection
                             return false;
                         }
 
-                        // We will need a network buffer
-                        if (_encryptedOutput == null)
-                            _encryptedOutput = _bufferPool.acquire(_sslEngine.getSession().getPacketBufferSize(), _encryptedDirectBuffers);
-
                         while (true)
                         {
-                            // We call sslEngine.wrap to try to take bytes from appOut buffers and encrypt them into the _netOut buffer
+                            int packetBufferSize = getPacketBufferSize();
+                            acquireEncryptedOutput();
+
+                            // We call sslEngine.wrap to try to take bytes from appOuts
+                            // buffers and encrypt them into the _encryptedOutput buffer.
                             BufferUtil.compact(_encryptedOutput);
                             int pos = BufferUtil.flipToFill(_encryptedOutput);
                             SSLEngineResult wrapResult;
                             try
                             {
-                                wrapResult = _sslEngine.wrap(appOuts, _encryptedOutput);
+                                wrapResult = wrap(_sslEngine, appOuts,_encryptedOutput);
                             }
                             finally
                             {
@@ -951,6 +1023,25 @@ public class SslConnection extends AbstractConnection
                                 case BUFFER_UNDERFLOW:
                                 {
                                     throw new IllegalStateException();
+                                }
+                                case BUFFER_OVERFLOW:
+                                {
+                                    // It's possible that SSLSession.packetBufferSize has been expanded
+                                    // by the SSLEngine implementation. Wrapping a large application buffer
+                                    // causes BUFFER_OVERFLOW because the (old) packetBufferSize is
+                                    // too small. Release the encrypted output buffer so that it will
+                                    // be re-acquired with the larger capacity.
+                                    // See also system property "jsse.SSLEngine.acceptLargeFragments".
+                                    if (packetBufferSize < getPacketBufferSize())
+                                    {
+                                        releaseEncryptedOutputBuffer();
+                                        continue;
+                                    }
+                                    if (BufferUtil.isEmpty(_encryptedOutput))
+                                    {
+                                        throw new IllegalStateException("Unexpected wrap result " + wrapResultStatus);
+                                    }
+                                    // fall-through default case to flush()
                                 }
                                 default:
                                 {
