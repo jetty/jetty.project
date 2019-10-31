@@ -23,7 +23,6 @@ import java.time.Duration;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.TestMessageHandler;
-import org.eclipse.jetty.websocket.core.WebSocketConstants;
 
 public class AutobahnFrameHandler extends TestMessageHandler
 {
@@ -33,7 +32,6 @@ public class AutobahnFrameHandler extends TestMessageHandler
         coreSession.setIdleTimeout(Duration.ofSeconds(5));
         coreSession.setMaxTextMessageSize(Integer.MAX_VALUE);
         coreSession.setMaxBinaryMessageSize(Integer.MAX_VALUE);
-        coreSession.setMaxFrameSize(WebSocketConstants.DEFAULT_MAX_FRAME_SIZE * 2);
         super.onOpen(coreSession, callback);
     }
 
