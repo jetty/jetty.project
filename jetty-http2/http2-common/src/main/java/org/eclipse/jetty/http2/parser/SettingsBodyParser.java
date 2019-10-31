@@ -84,6 +84,11 @@ public class SettingsBodyParser extends BodyParser
     @Override
     public boolean parse(ByteBuffer buffer)
     {
+        return parse(buffer, getStreamId(), getBodyLength());
+    }
+
+    private boolean parse(ByteBuffer buffer, int streamId, int bodyLength)
+    {
         while (buffer.hasRemaining())
         {
             switch (state)
@@ -91,9 +96,9 @@ public class SettingsBodyParser extends BodyParser
                 case PREPARE:
                 {
                     // SPEC: wrong streamId is treated as connection error.
-                    if (getStreamId() != 0)
+                    if (streamId != 0)
                         return connectionFailure(buffer, ErrorCode.PROTOCOL_ERROR.code, "invalid_settings_frame");
-                    length = getBodyLength();
+                    length = bodyLength;
                     settings = new HashMap<>();
                     state = State.SETTING_ID;
                     break;
@@ -234,7 +239,7 @@ public class SettingsBodyParser extends BodyParser
             }
         });
         if (buffer.hasRemaining())
-            parser.parse(buffer);
+            parser.parse(buffer, 0, buffer.remaining());
         else
             parser.emptyBody(buffer);
         return frameRef.get();
