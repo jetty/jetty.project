@@ -27,25 +27,23 @@ import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.FrameHandler.Configuration;
 
-/**
- * Used to split large data frames into multiple frames below the maxFrameSize.
- */
 public abstract class TransformingFlusher
 {
     private static final Logger LOG = Log.getLogger(TransformingFlusher.class);
 
     private final Queue<FrameEntry> entries = new ArrayDeque<>();
     private final IteratingCallback flusher = new Flusher();
-    private final Configuration configuration;
     private boolean canEnqueue = true;
 
-    public TransformingFlusher(Configuration configuration)
-    {
-        this.configuration = configuration;
-    }
-
+    /**
+     * Used to iteratively transform a Frame.
+     * @param frame the frame to transform.
+     * @param callback used to signal to start processing again.
+     * @param batch whether this frame can be batched.
+     * @param first if this is the first time this particular frame has been given to transform.
+     * @return true when finished processing this frame.
+     */
     protected abstract boolean transform(Frame frame, Callback callback, boolean batch, boolean first);
 
     public void sendFrame(Frame frame, Callback callback, boolean batch)
@@ -98,11 +96,14 @@ public abstract class TransformingFlusher
             if (finished)
             {
                 current = pollEntry();
-                LOG.debug("Processing {}", current);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Processing {}", current);
                 if (current == null)
                     return Action.IDLE;
             }
 
+            if (LOG.isDebugEnabled())
+                LOG.debug("Processing {}", current);
             finished = transform(current.frame, this, current.batch, finished);
             return Action.SCHEDULED;
         }

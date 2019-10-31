@@ -61,7 +61,7 @@ public abstract class CompressExtension extends AbstractExtension
     {
         compressionMode = getCompressionMode();
 
-        outgoingFlusher = new TransformingFlusher(getWebSocketCoreSession())
+        outgoingFlusher = new TransformingFlusher()
         {
             @Override
             protected boolean transform(Frame frame, Callback callback, boolean batch, boolean first)
@@ -76,7 +76,7 @@ public abstract class CompressExtension extends AbstractExtension
             }
         };
 
-        incomingFlusher = new TransformingFlusher(getWebSocketCoreSession())
+        incomingFlusher = new TransformingFlusher()
         {
             @Override
             protected boolean transform(Frame frame, Callback callback, boolean batch, boolean first)
