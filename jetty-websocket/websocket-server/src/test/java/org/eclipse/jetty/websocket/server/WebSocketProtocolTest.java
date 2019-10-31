@@ -40,7 +40,7 @@ public class WebSocketProtocolTest
     public void startServer() throws Exception
     {
         server = new BrowserDebugTool();
-        server.prepare(0);
+        server.prepare(0, 0);
         server.start();
     }
 
