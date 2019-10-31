@@ -221,6 +221,13 @@ public class SettingsBodyParser extends BodyParser
         return true;
     }
 
+    /**
+     * <p>Parses the given buffer containing the whole body of a {@code SETTINGS} frame
+     * (without header bytes), typically from the {@code HTTP2-Settings} header.</p>
+     *
+     * @param buffer the buffer containing the body of {@code SETTINGS} frame
+     * @return the {@code SETTINGS} frame from the parsed body bytes
+     */
     public static SettingsFrame parseBody(final ByteBuffer buffer)
     {
         AtomicReference<SettingsFrame> frameRef = new AtomicReference<>();
