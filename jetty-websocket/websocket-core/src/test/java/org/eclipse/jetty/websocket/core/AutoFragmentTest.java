@@ -150,9 +150,10 @@ public class AutoFragmentTest
         while (frame != null)
         {
             int framePayloadLen = frame.getPayloadLength();
-            int append = BufferUtil.append(message, frame.getPayload());
             assertThat(framePayloadLen, lessThanOrEqualTo(maxFrameSize));
-            assertThat(append, is(framePayloadLen));
+            int appended = BufferUtil.append(message, frame.getPayload());
+            assertThat(appended, is(framePayloadLen));
+
             frame = serverHandler.receivedFrames.poll(1, TimeUnit.SECONDS);
         }
 
@@ -162,6 +163,54 @@ public class AutoFragmentTest
         assertTrue(serverHandler.closed.await(5, TimeUnit.SECONDS));
         assertTrue(clientHandler.closed.await(5, TimeUnit.SECONDS));
     }
+
+    @Test
+    public void testGzipBomb() throws Exception
+    {
+        TestFrameHandler clientHandler = new TestFrameHandler();
+        ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(client, serverUri, clientHandler);
+        upgradeRequest.addExtensions("permessage-deflate");
+        CompletableFuture<FrameHandler.CoreSession> connect = client.connect(upgradeRequest);
+        connect.get(5, TimeUnit.SECONDS);
+
+        // Turn off fragmentation on the client.
+        clientHandler.coreSession.setMaxFrameSize(0);
+        clientHandler.coreSession.setAutoFragment(false);
+
+        // Set a small maxFrameSize on the server.
+        int maxFrameSize = 1024;
+        assertTrue(serverHandler.open.await(5, TimeUnit.SECONDS));
+        serverHandler.coreSession.setMaxFrameSize(maxFrameSize);
+        serverHandler.coreSession.setAutoFragment(true);
+
+        // Highly compressible payload.
+        byte[] data = new byte[512 * 1024];
+        Arrays.fill(data, (byte)'X');
+        ByteBuffer payload = ByteBuffer.wrap(data);
+
+        // Send the payload which should be fragmented on the server.
+        clientHandler.coreSession.sendFrame(new Frame(OpCode.BINARY, BufferUtil.copy(payload)), Callback.NOOP, false);
+
+        // Assemble the message from the fragmented frames.
+        ByteBuffer message = BufferUtil.allocate(payload.remaining()*2);
+        Frame frame = serverHandler.receivedFrames.poll(1, TimeUnit.SECONDS);
+        while (frame != null)
+        {
+            int framePayloadLen = frame.getPayloadLength();
+            assertThat(framePayloadLen, lessThanOrEqualTo(maxFrameSize));
+            int appended = BufferUtil.append(message, frame.getPayload());
+            assertThat(appended, is(framePayloadLen));
+
+            frame = serverHandler.receivedFrames.poll(1, TimeUnit.SECONDS);
+        }
+
+        assertThat(message, is(payload));
+
+        clientHandler.sendClose();
+        assertTrue(serverHandler.closed.await(5, TimeUnit.SECONDS));
+        assertTrue(clientHandler.closed.await(5, TimeUnit.SECONDS));
+    }
+
 
     @Test
     public void testOutgoingAutoFragmentWithPermessageDeflate() throws Exception
@@ -208,10 +257,11 @@ public class AutoFragmentTest
         {
             numFrames++;
             int framePayloadLen = frame.getPayloadLength();
-            int append = BufferUtil.append(message, frame.getPayload());
             assertThat(framePayloadLen, lessThanOrEqualTo(maxFrameSize));
-            assertThat(append, is(framePayloadLen));
-            frame = clientHandler.receivedFrames.poll(1, TimeUnit.SECONDS);
+            int appended = BufferUtil.append(message, frame.getPayload());
+            assertThat(appended, is(framePayloadLen));
+
+            frame = serverHandler.receivedFrames.poll(1, TimeUnit.SECONDS);
         }
 
         // We received correct payload in 2 frames.
