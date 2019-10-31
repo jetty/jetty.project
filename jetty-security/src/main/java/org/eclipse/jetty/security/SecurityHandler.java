@@ -79,6 +79,8 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
             addBean(factory);
             _authenticatorFactories.add(factory);
         }
+
+        _authenticatorFactories.add(new DefaultAuthenticatorFactory());
     }
 
     /**
