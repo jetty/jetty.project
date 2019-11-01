@@ -128,10 +128,10 @@ public class SniSslConnectionFactoryTest
             new HttpConnectionFactory(_httpsConfiguration));
         _server.addConnector(https);
 
-        _server.setHandler(new AbstractHandler.ErrorDispatchHandler()
+        _server.setHandler(new AbstractHandler()
         {
             @Override
-            protected void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             {
                 baseRequest.setHandled(true);
                 response.setStatus(200);
