@@ -452,13 +452,12 @@ public class ErrorHandler extends AbstractHandler
             cause = cause.getCause();
         }
 
-        writer.append("{\n");
         writer.append(json.entrySet().stream()
                 .map(e -> QuotedStringTokenizer.quote(e.getKey()) +
                         ":" +
                         QuotedStringTokenizer.quote((e.getValue())))
-                .collect(Collectors.joining(",\n")));
-        writer.append("\n}");
+                .collect(Collectors.joining(",\n", "{\n", "\n}")));
+
 
     }
 
