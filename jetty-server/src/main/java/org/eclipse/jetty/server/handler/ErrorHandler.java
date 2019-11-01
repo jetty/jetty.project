@@ -26,7 +26,12 @@ import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 import javax.servlet.RequestDispatcher;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -431,35 +436,30 @@ public class ErrorHandler extends AbstractHandler
     {
         Throwable cause = (Throwable)request.getAttribute(Dispatcher.ERROR_EXCEPTION);
         Object servlet = request.getAttribute(Dispatcher.ERROR_SERVLET_NAME);
+        Map<String,String> json = new HashMap<>();
 
-        writer
-            .append("{\n")
-            .append("  \"url\": \"").append(request.getRequestURI()).append("\",\n")
-            .append("  \"status\": \"").append(Integer.toString(code)).append("\",\n")
-            .append("  \"message\": ").append(QuotedStringTokenizer.quote(message));
-
+        json.put("url", request.getRequestURI());
+        json.put("status", Integer.toString(code));
+        json.put("message", message);
         if (servlet != null)
         {
-            writer.append(",\n");
-            writer.append("servlet: \"").append(servlet.toString()).append("\"");
+            json.put("servlet", servlet.toString());
         }
-        if(cause!=null)
-            writer.append(',');
-
-        writer.append("\n");
-
         int c = 0;
         while (cause != null)
         {
-            writer.append("  \"cause").append(Integer.toString(c++)).append('"').append(": ")
-                .append(QuotedStringTokenizer.quote(cause.toString()));
+            json.put("cause" + c++, cause.toString());
             cause = cause.getCause();
-            if(cause!=null)
-            {
-                writer.append(",\n");
-            }
         }
-        writer.append("}");
+
+        writer.append("{\n");
+        writer.append(json.entrySet().stream()
+                .map(e -> QuotedStringTokenizer.quote(e.getKey()) +
+                        ":" +
+                        QuotedStringTokenizer.quote((e.getValue())))
+                .collect(Collectors.joining(",\n")));
+        writer.append("\n}");
+
     }
 
     protected void writeErrorPageStacks(HttpServletRequest request, Writer writer)

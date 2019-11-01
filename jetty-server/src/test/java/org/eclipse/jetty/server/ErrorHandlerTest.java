@@ -19,6 +19,8 @@
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
+import java.util.Map;
+
 import javax.servlet.DispatcherType;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
@@ -30,8 +32,7 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
+import org.eclipse.jetty.util.ajax.JSON;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -320,10 +321,10 @@ public class ErrorHandlerTest
 
         System.out.println("response:" + response.getContent());
 
-        JSONObject jo = (JSONObject) new JSONParser().parse(response.getContent());
+        Map<Object,Object> jo = (Map) JSON.parse(response.getContent());
 
-        assertThat("url field not null", jo.get("url"), is(notNullValue()));
-        assertThat("status field not null", jo.get("status"), is(notNullValue()));
-        assertThat("message field not null", jo.get("message"), is(notNullValue()));
+        assertThat("url field null", jo.get("url"), is(notNullValue()));
+        assertThat("status field null", jo.get("status"), is(notNullValue()));
+        assertThat("message field null", jo.get("message"), is(notNullValue()));
     }
 }
