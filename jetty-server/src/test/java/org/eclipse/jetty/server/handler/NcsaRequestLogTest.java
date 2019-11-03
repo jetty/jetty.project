@@ -484,7 +484,8 @@ public class NcsaRequestLogTest
         ErrorHandler errorHandler = new ErrorHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+                throws IOException, ServletException
             {
                 errors.add(baseRequest.getRequestURI());
                 super.handle(target, baseRequest, request, response);
