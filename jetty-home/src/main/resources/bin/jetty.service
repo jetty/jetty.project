@@ -1,0 +1,15 @@
+[Unit]
+Description=Jetty Web Application Server
+After=syslog.target network.target remote-fs.target nss-lookup.target
+
+[Service]
+Type=forking
+PIDFile=/opt/web/mybase/jetty.pid
+ExecStart=/etc/init.d/jetty start
+ExecStop=/etc/init.d/jetty stop
+ExecReload=/etc/init.d/jetty restart
+User=jetty
+Group=jetty
+
+[Install]
+WantedBy=multi-user.target
