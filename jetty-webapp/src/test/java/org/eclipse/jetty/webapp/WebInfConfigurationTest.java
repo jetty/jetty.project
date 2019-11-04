@@ -26,6 +26,7 @@ import java.nio.file.FileSystems;
 import java.nio.file.FileVisitOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -46,6 +47,7 @@ import org.junit.jupiter.api.condition.DisabledOnJre;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.junit.jupiter.api.condition.EnabledOnJre;
 import org.junit.jupiter.api.condition.JRE;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -150,8 +152,7 @@ public class WebInfConfigurationTest
             Arguments.of("another one/bites the dust/", "bites the dust"),
             Arguments.of("another+one/bites+the+dust/", "bites+the+dust"),
             Arguments.of("another%20one/bites%20the%20dust/", "bites%20the%20dust"),
-            Arguments.of("spanish/número.war", "número.war"),
-            Arguments.of("spanish/n\uC3BAmero.war", "n\uC3BAmero.war"),
+            Arguments.of("spanish/n\u00FAmero.war", "n\u00FAmero.war"),
             Arguments.of("spanish/n%C3%BAmero.war", "n%C3%BAmero.war"),
             Arguments.of("a/b!/", "b!"),
             Arguments.of("a/b!/c/", "c"),
@@ -191,6 +192,11 @@ public class WebInfConfigurationTest
         Path root = workDir.getPath();
         Path base = root.resolve(basePath);
         URI uri = base.toUri();
+        if (OS.MAC.isCurrentOs())
+        {
+            // Normalize Unicode to NFD form that OSX Path/FileSystem produces
+            expectedName = Normalizer.normalize(expectedName, Normalizer.Form.NFD);
+        }
         assertThat(WebInfConfiguration.getUriLastPathSegment(uri), is(expectedName));
     }
 
