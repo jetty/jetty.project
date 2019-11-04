@@ -59,6 +59,7 @@ import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.ssl.SniX509ExtendedKeyManager;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
@@ -267,6 +268,37 @@ public class SniSslConnectionFactoryTest
 
         // No SNI host.
         response = HttpTester.parseResponse(getResponse(null, "wrong.com", null));
+        assertNotNull(response);
+        assertThat(response.getStatus(), is(400));
+    }
+
+
+
+    @Test
+    public void testWrongSNIRejectedFunction() throws Exception
+    {
+        start(ssl ->
+        {
+            ssl.setKeyStorePath("src/test/resources/keystore_sni.p12");
+            // Do not allow unmatched SNI.
+            ssl.setSniRequired(true);
+            ssl.setSNISelector((keyType, issuers, session, sniHost, certificates) ->
+            {
+                if (sniHost == null)
+                    return SniX509ExtendedKeyManager.SniSelector.DELEGATE;
+                return ssl.sniSelect(keyType, issuers, session, sniHost, certificates);
+            });
+            _httpsConfiguration.getCustomizers().stream()
+                .filter(SecureRequestCustomizer.class::isInstance)
+                .map(SecureRequestCustomizer.class::cast)
+                .forEach(src -> src.setSniRequired(true));
+        });
+
+        // Wrong SNI host.
+        assertThrows(SSLHandshakeException.class, () -> getResponse("wrong.com", "wrong.com", null));
+
+        // No SNI host.
+        HttpTester.Response response = HttpTester.parseResponse(getResponse(null, "wrong.com", null));
         assertNotNull(response);
         assertThat(response.getStatus(), is(400));
     }

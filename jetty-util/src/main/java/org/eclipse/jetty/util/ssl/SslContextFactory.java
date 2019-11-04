@@ -2272,21 +2272,17 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
         {
             if (sniHost == null)
             {
-                // No SNI, find the default certificate to send, or let the JDK decide.
-                return certificates.stream()
-                    .filter(x509 -> Objects.equals(x509.getAlias(), getCertAlias()))
-                    .findAny()
-                    .map(X509::getAlias)
-                    .orElse(_sniRequired ? null : SniX509ExtendedKeyManager.DELEGATE);
+                // No SNI, so reject or delegate.
+                return _sniRequired ? null : SniX509ExtendedKeyManager.SniSelector.DELEGATE;
             }
             else
             {
                 // Match the SNI host, or let the JDK decide unless unmatched SNIs are rejected.
                 return certificates.stream()
                     .filter(x509 -> x509.matches(sniHost))
-                    .findAny()
+                    .findFirst()
                     .map(X509::getAlias)
-                    .orElse(_sniRequired ? null : SniX509ExtendedKeyManager.DELEGATE);
+                    .orElse(_sniRequired ? null : SniX509ExtendedKeyManager.SniSelector.DELEGATE);
             }
         }
 
