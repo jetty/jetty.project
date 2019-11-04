@@ -468,10 +468,10 @@ public class NcsaRequestLogTest
     {
         setup(logType);
         _server.setRequestLog(_log);
-        AbstractHandler.ErrorDispatchHandler wrapper = new AbstractHandler.ErrorDispatchHandler()
+        AbstractHandler wrapper = new AbstractHandler()
         {
             @Override
-            protected void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
                 throws IOException, ServletException
             {
                 testHandler.handle(target, baseRequest, request, response);
@@ -484,10 +484,11 @@ public class NcsaRequestLogTest
         ErrorHandler errorHandler = new ErrorHandler()
         {
             @Override
-            public void doError(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+                throws IOException, ServletException
             {
                 errors.add(baseRequest.getRequestURI());
-                super.doError(target, baseRequest, request, response);
+                super.handle(target, baseRequest, request, response);
             }
         };
         _server.addBean(errorHandler);
@@ -502,10 +503,10 @@ public class NcsaRequestLogTest
     {
         setup(logType);
         _server.setRequestLog(_log);
-        AbstractHandler.ErrorDispatchHandler wrapper = new AbstractHandler.ErrorDispatchHandler()
+        AbstractHandler wrapper = new AbstractHandler()
         {
             @Override
-            protected void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
                 throws IOException, ServletException
             {
                 testHandler.handle(target, baseRequest, request, response);

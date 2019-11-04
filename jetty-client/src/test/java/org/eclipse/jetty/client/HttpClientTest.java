@@ -535,10 +535,10 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     @ArgumentsSource(ScenarioProvider.class)
     public void test_ExchangeIsComplete_OnlyWhenBothRequestAndResponseAreComplete(Scenario scenario) throws Exception
     {
-        start(scenario, new AbstractHandler.ErrorDispatchHandler()
+        start(scenario, new AbstractHandler()
         {
             @Override
-            protected void doNonErrorHandle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 baseRequest.setHandled(true);
                 response.setContentLength(0);
