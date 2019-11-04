@@ -61,10 +61,11 @@ import org.eclipse.jetty.util.log.Logger;
 public abstract class SecurityHandler extends HandlerWrapper implements Authenticator.AuthConfiguration
 {
     private static final Logger LOG = Log.getLogger(SecurityHandler.class);
+    private static final List<Authenticator.Factory> _authenticatorFactories = new ArrayList<>();
 
     private boolean _checkWelcomeFiles = false;
     private Authenticator _authenticator;
-    private List<Authenticator.Factory> _authenticatorFactories = new ArrayList<>();
+    private Authenticator.Factory _authenticatorFactory;
     private String _realmName;
     private String _authMethod;
     private final Map<String, String> _initParameters = new HashMap<>();
@@ -72,15 +73,22 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
     private IdentityService _identityService;
     private boolean _renewSession = true;
 
-    protected SecurityHandler()
+    static
     {
         for (Authenticator.Factory factory : ServiceLoader.load(Authenticator.Factory.class))
         {
-            addBean(factory);
             _authenticatorFactories.add(factory);
         }
 
         _authenticatorFactories.add(new DefaultAuthenticatorFactory());
+    }
+
+    protected SecurityHandler()
+    {
+        for (Authenticator.Factory factory : _authenticatorFactories)
+        {
+            addBean(factory);
+        }
     }
 
     /**
@@ -184,9 +192,8 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
             removeBean(factory);
         }
 
-        _authenticatorFactories.clear();
         addBean(authenticatorFactory);
-        _authenticatorFactories.add(authenticatorFactory);
+        _authenticatorFactory = authenticatorFactory;
     }
 
     /**
@@ -364,15 +371,27 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
 
         if (_authenticator == null && _identityService != null)
         {
-            for (Authenticator.Factory factory : getAuthenticatorFactories())
+            // If someone has set an authenticator factory only use that, otherwise try the list of discovered factories.
+            if (_authenticatorFactory != null)
             {
-                Authenticator authenticator = factory.getAuthenticator(getServer(), ContextHandler.getCurrentContext(),
+                Authenticator authenticator = _authenticatorFactory.getAuthenticator(getServer(), ContextHandler.getCurrentContext(),
                     this, _identityService, _loginService);
 
                 if (authenticator != null)
-                {
                     setAuthenticator(authenticator);
-                    break;
+            }
+            else
+            {
+                for (Authenticator.Factory factory : getAuthenticatorFactories())
+                {
+                    Authenticator authenticator = factory.getAuthenticator(getServer(), ContextHandler.getCurrentContext(),
+                        this, _identityService, _loginService);
+
+                    if (authenticator != null)
+                    {
+                        setAuthenticator(authenticator);
+                        break;
+                    }
                 }
             }
         }
