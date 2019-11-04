@@ -766,7 +766,7 @@ public class WebInfConfiguration extends AbstractConfiguration
             }
         }
 
-        //Resource  base
+        // Resource base
         try
         {
             Resource resource = context.getBaseResource();
@@ -775,29 +775,20 @@ public class WebInfConfiguration extends AbstractConfiguration
                 if (context.getWar() == null || context.getWar().length() == 0)
                     throw new IllegalStateException("No resourceBase or war set for context");
 
-                // Set dir or WAR
+                // Set dir or WAR to resource
                 resource = context.newResource(context.getWar());
             }
 
-            String tmp = getResourceBasePath(resource);
-            if (tmp.endsWith("/"))
-                tmp = tmp.substring(0, tmp.length() - 1);
-            if (tmp.endsWith("!"))
-                tmp = tmp.substring(0, tmp.length() - 1);
-            //get just the last part which is the filename
-            int i = tmp.lastIndexOf("/");
-            if (i > -1 && tmp.length() > 1)
-            {
-                canonicalName.append(tmp.substring(i + 1));
-            }
+            String resourceBaseName = getResourceBaseName(resource);
+            canonicalName.append(resourceBaseName);
             canonicalName.append("-");
         }
-        catch (IOException e)
+        catch (Exception e)
         {
             LOG.warn("Can't get resource for resourceBase",  e);
-            LOG.debug(e); 
+            LOG.debug(e);
         }
-            
+
         //Context name
         canonicalName.append(context.getContextPath());
 
@@ -813,28 +804,74 @@ public class WebInfConfiguration extends AbstractConfiguration
 
         return StringUtil.sanitizeFileSystemName(canonicalName.toString());
     }
-    
-    private static String getResourceBasePath(Resource resource)
+
+    protected static String getResourceBaseName(Resource resource)
     {
-        String tmp = "";
+        // Use File System and File interface if present
         try
         {
-            tmp = URIUtil.decodePath(resource.getURI().getPath());
+            File resourceFile = resource.getFile();
+            if (resourceFile != null)
+            {
+                return resourceFile.getName();
+            }
         }
-        catch (Exception e)
+        catch (IOException e)
         {
-            try
+            e.printStackTrace();
+        }
+
+        // Use URI itself.
+        URI uri = resource.getURI();
+        if (uri == null)
+        {
+            throw new RuntimeException("Unable to produce URI from resource: " + resource);
+        }
+        return getUriLastPathSegment(uri);
+    }
+
+    protected static String getUriLastPathSegment(URI uri)
+    {
+        String path = uri.getPath();
+
+        if ("jar".equalsIgnoreCase(uri.getScheme()))
+        {
+            String schemeSpecificPart = uri.getRawSchemeSpecificPart();
+            URI inner = URI.create(schemeSpecificPart);
+            if ("file".equalsIgnoreCase(inner.getScheme()))
             {
-                tmp = URIUtil.decodePath(resource.getURI().toURL().getPath());
+                path = inner.getRawPath();
+                int idx = path.lastIndexOf("!/");
+                if (idx >= 0)
+                {
+                    String pathInJar = path.substring(idx + 2);
+                    if (StringUtil.isNotBlank(pathInJar))
+                    {
+                        URI pathInJarUri = URI.create(pathInJar);
+                        return getUriLastPathSegment(pathInJarUri);
+                    }
+                    else
+                    {
+                        // Strip empty "!/"
+                        path = path.substring(0, idx);
+                    }
+                }
+                // if we reached here, we have "jar:file:" but no
+                // internal jar reference with "!/" present
             }
-            catch (Exception x)
+            else
             {
-                LOG.warn("Can't get path for resource",  x);
-                LOG.debug(e);
+                // inner URI is not "file"
+                return getUriLastPathSegment(inner);
             }
         }
-        
-        return tmp;
+
+        if (path.endsWith("/"))
+            path = path.substring(0, path.length() - 1);
+        // get just the last part which is the filename
+        int i = path.lastIndexOf("/");
+
+        return path.substring(i + 1);
     }
 
     protected List<Resource> findClassDirs(WebAppContext context)
