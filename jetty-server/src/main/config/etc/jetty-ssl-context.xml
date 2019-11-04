@@ -29,6 +29,7 @@
   <Set name="sslSessionTimeout" property="jetty.sslContext.sslSessionTimeout"/>
   <Set name="RenegotiationAllowed" property="jetty.sslContext.renegotiationAllowed"/>
   <Set name="RenegotiationLimit" property="jetty.sslContext.renegotiationLimit"/>
+  <Set name="SniRequired" property="jetty.sslContext.sniRequired"/>
 
   <!-- Example of how to configure a PKIX Certificate Path revocation Checker
   <Call id="pkixPreferCrls" class="java.security.cert.PKIXRevocationChecker$Option" name="valueOf"><Arg>PREFER_CRLS</Arg></Call>

@@ -28,6 +28,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import javax.servlet.RequestDispatcher;
+import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -82,26 +83,38 @@ public class ErrorHandler extends AbstractHandler
         }
     }
 
-    /*
-     * @see org.eclipse.jetty.server.server.Handler#handle(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, int)
-     */
-    @Override
-    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
-    {
-        doError(target, baseRequest, request, response);
-    }
-
-    @Override
-    public void doError(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
         String cacheControl = getCacheControl();
         if (cacheControl != null)
             response.setHeader(HttpHeader.CACHE_CONTROL.asString(), cacheControl);
 
-        String message = (String)request.getAttribute(Dispatcher.ERROR_MESSAGE);
-        if (message == null)
-            message = baseRequest.getResponse().getReason();
-        generateAcceptableResponse(baseRequest, request, response, response.getStatus(), message);
+        // Look for an error page dispatcher
+        // This logic really should be in ErrorPageErrorHandler, but some implementations extend ErrorHandler
+        // and implement ErrorPageMapper directly, so we do this here in the base class.
+        String errorPage = (this instanceof ErrorPageMapper) ? ((ErrorPageMapper)this).getErrorPage(request) : null;
+        ContextHandler.Context context = baseRequest.getErrorContext();
+        Dispatcher errorDispatcher = (errorPage != null && context != null)
+            ? (Dispatcher)context.getRequestDispatcher(errorPage) : null;
+
+        try
+        {
+            if (errorDispatcher != null)
+            {
+                errorDispatcher.error(request, response);
+            }
+            else
+            {
+                String message = (String)request.getAttribute(Dispatcher.ERROR_MESSAGE);
+                if (message == null)
+                    message = baseRequest.getResponse().getReason();
+                generateAcceptableResponse(baseRequest, request, response, response.getStatus(), message);
+            }
+        }
+        finally
+        {
+            baseRequest.setHandled(true);
+        }
     }
 
     /**
