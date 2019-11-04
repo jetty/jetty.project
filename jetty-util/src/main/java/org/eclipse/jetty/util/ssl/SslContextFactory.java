@@ -65,6 +65,7 @@ import javax.net.ssl.SNIMatcher;
 import javax.net.ssl.SNIServerName;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLHandshakeException;
 import javax.net.ssl.SSLParameters;
 import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLServerSocket;
@@ -1251,7 +1252,7 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
                     for (int idx = 0; idx < managers.length; idx++)
                     {
                         if (managers[idx] instanceof X509ExtendedKeyManager)
-                            managers[idx] = new SniX509ExtendedKeyManager((X509ExtendedKeyManager)managers[idx]);
+                            managers[idx] = newSniX509ExtendedKeyManager((X509ExtendedKeyManager)managers[idx]);
                     }
                 }
             }
@@ -1261,6 +1262,11 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
             LOG.debug("managers={} for {}", managers, this);
 
         return managers;
+    }
+
+    protected X509ExtendedKeyManager newSniX509ExtendedKeyManager(X509ExtendedKeyManager keyManager)
+    {
+        return new SniX509ExtendedKeyManager(keyManager);
     }
 
     protected TrustManager[] getTrustManagers(KeyStore trustStore, Collection<? extends CRL> crls) throws Exception
@@ -2113,7 +2119,6 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     class AliasSNIMatcher extends SNIMatcher
     {
         private String _host;
-        private X509 _x509;
 
         AliasSNIMatcher()
         {
@@ -2128,36 +2133,14 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
 
             if (serverName instanceof SNIHostName)
             {
-                String host = _host = ((SNIHostName)serverName).getAsciiName();
-                host = StringUtil.asciiToLowerCase(host);
-
-                // Try an exact match
-                _x509 = _certHosts.get(host);
-
-                // Else try an exact wild match
-                if (_x509 == null)
-                {
-                    _x509 = _certWilds.get(host);
-
-                    // Else try an 1 deep wild match
-                    if (_x509 == null)
-                    {
-                        int dot = host.indexOf('.');
-                        if (dot >= 0)
-                        {
-                            String domain = host.substring(dot + 1);
-                            _x509 = _certWilds.get(domain);
-                        }
-                    }
-                }
-
+                _host = StringUtil.asciiToLowerCase(((SNIHostName)serverName).getAsciiName());
                 if (LOG.isDebugEnabled())
-                    LOG.debug("SNI matched {}->{}", host, _x509);
+                    LOG.debug("SNI host name {}", _host);
             }
             else
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("SNI no match for {}", serverName);
+                    LOG.debug("No SNI host name for {}", serverName);
             }
 
             // Return true and allow the KeyManager to accept or reject when choosing a certificate.
@@ -2169,11 +2152,6 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
         public String getHost()
         {
             return _host;
-        }
-
-        public X509 getX509()
-        {
-            return _x509;
         }
     }
 
@@ -2198,8 +2176,12 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
         }
     }
 
-    public static class Server extends SslContextFactory
+    @ManagedObject
+    public static class Server extends SslContextFactory implements SniX509ExtendedKeyManager.SniSelector
     {
+        private boolean _sniRequired;
+        private SniX509ExtendedKeyManager.SniSelector _sniSelector;
+
         public Server()
         {
             setEndpointIdentificationAlgorithm(null);
@@ -2226,6 +2208,88 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
         public void setNeedClientAuth(boolean needClientAuth)
         {
             super.setNeedClientAuth(needClientAuth);
+        }
+
+        /**
+         * Does the default {@link #sniSelect(String, Principal[], SSLSession, String, Collection)} implementation
+         * require an SNI match?  Note that if a non SNI handshake is accepted, requests may still be rejected
+         * at the HTTP level for incorrect SNI (see SecureRequestCustomizer).
+         * @return true if no SNI match is handled as no certificate match, false if no SNI match is handled by
+         *         delegation to the non SNI matching methods.
+         */
+        @ManagedAttribute("Whether the TLS handshake is rejected if there is no SNI host match")
+        public boolean isSniRequired()
+        {
+            return _sniRequired;
+        }
+
+        /**
+         * Set if the default {@link #sniSelect(String, Principal[], SSLSession, String, Collection)} implementation
+         * require an SNI match? Note that if a non SNI handshake is accepted, requests may still be rejected
+         * at the HTTP level for incorrect SNI (see SecureRequestCustomizer).
+         * This setting may have no effect if {@link #sniSelect(String, Principal[], SSLSession, String, Collection)} is
+         * overridden or a non null function is passed to {@link #setSNISelector(SniX509ExtendedKeyManager.SniSelector)}.
+         * @param sniRequired true if no SNI match is handled as no certificate match, false if no SNI match is handled by
+         *                    delegation to the non SNI matching methods.
+         */
+        public void setSniRequired(boolean sniRequired)
+        {
+            _sniRequired = sniRequired;
+        }
+
+        @Override
+        protected KeyManager[] getKeyManagers(KeyStore keyStore) throws Exception
+        {
+            KeyManager[] managers = super.getKeyManagers(keyStore);
+            if (isSniRequired())
+            {
+                if (managers == null || Arrays.stream(managers).noneMatch(SniX509ExtendedKeyManager.class::isInstance))
+                    throw new IllegalStateException("No SNI Key managers when SNI is required");
+            }
+            return managers;
+        }
+
+        /**
+         * @return the custom function to select certificates based on SNI information
+         */
+        public SniX509ExtendedKeyManager.SniSelector getSNISelector()
+        {
+            return _sniSelector;
+        }
+
+        /**
+         * <p>Sets a custom function to select certificates based on SNI information.</p>
+         *
+         * @param sniSelector the selection function
+         */
+        public void setSNISelector(SniX509ExtendedKeyManager.SniSelector sniSelector)
+        {
+            _sniSelector = sniSelector;
+        }
+
+        @Override
+        public String sniSelect(String keyType, Principal[] issuers, SSLSession session, String sniHost, Collection<X509> certificates) throws SSLHandshakeException
+        {
+            if (sniHost == null)
+            {
+                // No SNI, so reject or delegate.
+                return _sniRequired ? null : SniX509ExtendedKeyManager.SniSelector.DELEGATE;
+            }
+            else
+            {
+                // Match the SNI host, or let the JDK decide unless unmatched SNIs are rejected.
+                return certificates.stream()
+                    .filter(x509 -> x509.matches(sniHost))
+                    .findFirst()
+                    .map(X509::getAlias)
+                    .orElse(_sniRequired ? null : SniX509ExtendedKeyManager.SniSelector.DELEGATE);
+            }
+        }
+
+        @Override
+        protected X509ExtendedKeyManager newSniX509ExtendedKeyManager(X509ExtendedKeyManager keyManager)
+        {
+            return new SniX509ExtendedKeyManager(keyManager, this);
         }
     }
 

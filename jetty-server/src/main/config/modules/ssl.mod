@@ -46,6 +46,12 @@ basehome:modules/ssl/keystore|etc/keystore
 ## Connect Timeout in milliseconds
 # jetty.ssl.connectTimeout=15000
 
+## Whether SNI is required for all secure connections. Rejections are in TLS handshakes.
+# jetty.sslContext.sniRequired=false
+
+## Whether SNI is required for all secure connections. Rejections are in HTTP 400 response.
+# jetty.ssl.sniRequired=false
+
 ## Whether request host names are checked to match any SNI names
 # jetty.ssl.sniHostCheck=true
 
