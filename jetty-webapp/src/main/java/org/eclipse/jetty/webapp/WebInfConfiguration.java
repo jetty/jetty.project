@@ -818,7 +818,7 @@ public class WebInfConfiguration extends AbstractConfiguration
         }
         catch (IOException e)
         {
-            e.printStackTrace();
+            LOG.ignore(e);
         }
 
         // Use URI itself.
