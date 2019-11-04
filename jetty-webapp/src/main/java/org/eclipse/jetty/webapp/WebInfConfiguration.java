@@ -779,22 +779,25 @@ public class WebInfConfiguration extends AbstractConfiguration
                 resource = context.newResource(context.getWar());
             }
 
-            String tmp = URIUtil.decodePath(resource.getURI().getPath());
+            String tmp = getResourceBasePath(resource);
             if (tmp.endsWith("/"))
                 tmp = tmp.substring(0, tmp.length() - 1);
             if (tmp.endsWith("!"))
                 tmp = tmp.substring(0, tmp.length() - 1);
             //get just the last part which is the filename
             int i = tmp.lastIndexOf("/");
-            canonicalName.append(tmp.substring(i + 1));
+            if (i > -1 && tmp.length() > 1)
+            {
+                canonicalName.append(tmp.substring(i + 1));
+            }
             canonicalName.append("-");
         }
-        catch (Exception e)
+        catch (IOException e)
         {
-            LOG.warn("Can't generate resourceBase as part of webapp tmp dir name: " + e);
-            LOG.debug(e);
+            LOG.warn("Can't get resource for resourceBase",  e);
+            LOG.debug(e); 
         }
-
+            
         //Context name
         canonicalName.append(context.getContextPath());
 
@@ -809,6 +812,29 @@ public class WebInfConfiguration extends AbstractConfiguration
         canonicalName.append("-");
 
         return StringUtil.sanitizeFileSystemName(canonicalName.toString());
+    }
+    
+    private static String getResourceBasePath(Resource resource)
+    {
+        String tmp = "";
+        try
+        {
+            tmp = URIUtil.decodePath(resource.getURI().getPath());
+        }
+        catch (Exception e)
+        {
+            try
+            {
+                tmp = URIUtil.decodePath(resource.getURI().toURL().getPath());
+            }
+            catch (Exception x)
+            {
+                LOG.warn("Can't get path for resource",  x);
+                LOG.debug(e);
+            }
+        }
+        
+        return tmp;
     }
 
     protected List<Resource> findClassDirs(WebAppContext context)
