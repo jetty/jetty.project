@@ -142,6 +142,22 @@ public class WebInfConfigurationTest
         assertThat(containerResources.get(0).toString(), containsString("jetty-util"));
     }
 
+    public static Stream<Arguments> rawResourceNames()
+    {
+        return Stream.of(
+            Arguments.of("/", ""),
+            Arguments.of("/a", "a")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("rawResourceNames")
+    public void testTinyGetResourceBaseName(String rawPath, String expectedName) throws IOException
+    {
+        Resource resource = Resource.newResource(rawPath);
+        assertThat(WebInfConfiguration.getResourceBaseName(resource), is(expectedName));
+    }
+
     public static Stream<Arguments> baseResourceNames()
     {
         return Stream.of(
