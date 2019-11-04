@@ -41,6 +41,7 @@ import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
+import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -61,7 +62,7 @@ import org.eclipse.jetty.util.log.Logger;
 public abstract class SecurityHandler extends HandlerWrapper implements Authenticator.AuthConfiguration
 {
     private static final Logger LOG = Log.getLogger(SecurityHandler.class);
-    private static final List<Authenticator.Factory> _authenticatorFactories = new ArrayList<>();
+    private static final List<Authenticator.Factory> __knownAuthenticatorFactories = new ArrayList<>();
 
     private boolean _checkWelcomeFiles = false;
     private Authenticator _authenticator;
@@ -77,18 +78,15 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
     {
         for (Authenticator.Factory factory : ServiceLoader.load(Authenticator.Factory.class))
         {
-            _authenticatorFactories.add(factory);
+            __knownAuthenticatorFactories.add(factory);
         }
 
-        _authenticatorFactories.add(new DefaultAuthenticatorFactory());
+        __knownAuthenticatorFactories.add(new DefaultAuthenticatorFactory());
     }
 
     protected SecurityHandler()
     {
-        for (Authenticator.Factory factory : _authenticatorFactories)
-        {
-            addBean(factory);
-        }
+        addBean(new DumpableCollection("knownAuthenticatorFactories", __knownAuthenticatorFactories));
     }
 
     /**
@@ -161,39 +159,31 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
     }
 
     /**
-     * @return the first authenticatorFactory
-     * @deprecated use {@link #getAuthenticatorFactories()} instead.
+     * @return the authenticatorFactory
      */
-    @Deprecated
     public Authenticator.Factory getAuthenticatorFactory()
     {
-        return _authenticatorFactories.get(0);
+        return _authenticatorFactory;
     }
 
     /**
-     * @return the list of authenticatorFactories
-     */
-    public List<Authenticator.Factory> getAuthenticatorFactories()
-    {
-        return _authenticatorFactories;
-    }
-
-    /**
-     * @param authenticatorFactory the specific authenticatorFactory to use
+     * @param authenticatorFactory the authenticatorFactory to set
      * @throws IllegalStateException if the SecurityHandler is running
      */
     public void setAuthenticatorFactory(Authenticator.Factory authenticatorFactory)
     {
         if (isRunning())
             throw new IllegalStateException("running");
-
-        for (Authenticator.Factory factory : _authenticatorFactories)
-        {
-            removeBean(factory);
-        }
-
-        addBean(authenticatorFactory);
+        updateBean(_authenticatorFactory, authenticatorFactory);
         _authenticatorFactory = authenticatorFactory;
+    }
+
+    /**
+     * @return the list of discovered authenticatorFactories
+     */
+    public List<Authenticator.Factory> getKnownAuthenticatorFactories()
+    {
+        return __knownAuthenticatorFactories;
     }
 
     /**
@@ -382,7 +372,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
             }
             else
             {
-                for (Authenticator.Factory factory : getAuthenticatorFactories())
+                for (Authenticator.Factory factory : getKnownAuthenticatorFactories())
                 {
                     Authenticator authenticator = factory.getAuthenticator(getServer(), ContextHandler.getCurrentContext(),
                         this, _identityService, _loginService);
