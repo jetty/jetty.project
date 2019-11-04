@@ -83,11 +83,14 @@ public class ErrorHandler extends AbstractHandler
         }
     }
 
-    /*
-     * @see org.eclipse.jetty.server.server.Handler#handle(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, int)
-     */
-    @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    {
+        // TODO inline this and remove method in jetty-10
+        doError(target, baseRequest, request, response);
+    }
+
+    @Override
+    public void doError(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
         String cacheControl = getCacheControl();
         if (cacheControl != null)

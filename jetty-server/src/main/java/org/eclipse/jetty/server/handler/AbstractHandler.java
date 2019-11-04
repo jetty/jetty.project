@@ -141,6 +141,7 @@ public abstract class AbstractHandler extends ContainerLifeCycle implements Hand
      * {@link DispatcherType#ERROR} dispatches are handled by calling the {@link #doError(String, Request, HttpServletRequest, HttpServletResponse)}
      * method.  All other dispatches are passed to the abstract {@link #doNonErrorHandle(String, Request, HttpServletRequest, HttpServletResponse)}
      * method, which should be implemented with specific handler behavior
+     * @deprecated This class is no longer required as ERROR dispatch is only done if there is an error page target.
      */
     @Deprecated
     public abstract static class ErrorDispatchHandler extends AbstractHandler
@@ -169,6 +170,7 @@ public abstract class AbstractHandler extends ContainerLifeCycle implements Hand
          * @throws IOException if unable to handle the request or response processing
          * @throws ServletException if unable to handle the request or response due to underlying servlet issue
          */
+        @Deprecated
         protected abstract void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException;
     }
 }
