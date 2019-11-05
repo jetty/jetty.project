@@ -1,4 +1,7 @@
-jetty-9.3.28-SNAPSHOT
+jetty-9.3.28.v20191105 - 05 November 2019
+ + 3989 Inform custom ManagedSelector of dead selector via optional
+   onFailedSelect()
+ + 4217 SslConnection.DecryptedEnpoint.flush eternal busy loop
 
 jetty-9.3.27.v20190418 - 18 April 2019
  + 3549 Directory Listing on Windows reveals Resource Base path
