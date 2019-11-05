@@ -279,7 +279,7 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         session.setInitialSessionRecvWindow(getInitialSessionRecvWindow());
         session.setWriteThreshold(getHttpConfiguration().getOutputBufferSize());
 
-        ServerParser parser = newServerParser(connector, session, getRateControlFactory().newRateControl());
+        ServerParser parser = newServerParser(connector, session, getRateControlFactory().newRateControl(endPoint));
         parser.setMaxFrameLength(getMaxFrameLength());
         parser.setMaxSettingsKeys(getMaxSettingsKeys());
 

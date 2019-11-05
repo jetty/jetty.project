@@ -23,6 +23,8 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.eclipse.jetty.io.EndPoint;
+
 /**
  * <p>An implementation of {@link RateControl} that limits the number of
  * events within a time period.</p>
@@ -78,7 +80,7 @@ public class WindowRateControl implements RateControl
         }
 
         @Override
-        public RateControl newRateControl()
+        public RateControl newRateControl(EndPoint endPoint)
         {
             return WindowRateControl.fromEventsPerSecond(maxEventRate);
         }

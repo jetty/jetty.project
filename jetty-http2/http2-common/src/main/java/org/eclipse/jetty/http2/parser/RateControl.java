@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.http2.parser;
 
+import org.eclipse.jetty.io.EndPoint;
+
 /**
  * Controls rate of events via {@link #onEvent(Object)}.
  */
@@ -43,9 +45,10 @@ public interface RateControl
     public interface Factory
     {
         /**
-         * @return a new RateControl instance.
+         * @return a new RateControl instance for the given EndPoint
+         * @param endPoint the EndPoint for which the RateControl is created
          */
-        public default RateControl newRateControl()
+        public default RateControl newRateControl(EndPoint endPoint)
         {
             return NO_RATE_CONTROL;
         }
