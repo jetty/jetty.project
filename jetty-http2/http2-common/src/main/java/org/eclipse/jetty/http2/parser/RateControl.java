@@ -36,4 +36,18 @@ public interface RateControl
      * @return true IFF the rate is within limits
      */
     public boolean onEvent(Object event);
+
+    /**
+     * Factory to create RateControl instances.
+     */
+    public interface Factory
+    {
+        /**
+         * @return a new RateControl instance.
+         */
+        public default RateControl newRateControl()
+        {
+            return NO_RATE_CONTROL;
+        }
+    }
 }

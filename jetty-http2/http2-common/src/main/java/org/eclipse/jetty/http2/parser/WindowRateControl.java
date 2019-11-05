@@ -67,4 +67,20 @@ public class WindowRateControl implements RateControl
         events.add(now + window);
         return size.incrementAndGet() <= maxEvents;
     }
+
+    public static class Factory implements RateControl.Factory
+    {
+        private final int maxEventRate;
+
+        public Factory(int maxEventRate)
+        {
+            this.maxEventRate = maxEventRate;
+        }
+
+        @Override
+        public RateControl newRateControl()
+        {
+            return WindowRateControl.fromEventsPerSecond(maxEventRate);
+        }
+    }
 }
