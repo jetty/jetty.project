@@ -33,14 +33,14 @@ public class HttpCookie
     /**
      *If this string is found within the comment parsed with {@link #isHttpOnlyInComment(String)} the check will return true
      **/
-    private static final String HTTP_ONLY_COMMENT = "__HTTP_ONLY__";
+    public static final String HTTP_ONLY_COMMENT = "__HTTP_ONLY__";
     /**
      *These strings are used by {@link #getSameSiteFromComment(String)} to check for a SameSite specifier in the comment
      **/
     private static final String SAME_SITE_COMMENT = "__SAME_SITE_";
-    private static final String SAME_SITE_NONE_COMMENT = SAME_SITE_COMMENT + "NONE__";
-    private static final String SAME_SITE_LAX_COMMENT = SAME_SITE_COMMENT + "LAX__";
-    private static final String SAME_SITE_STRICT_COMMENT = SAME_SITE_COMMENT + "STRICT__";
+    public static final String SAME_SITE_NONE_COMMENT = SAME_SITE_COMMENT + "NONE__";
+    public static final String SAME_SITE_LAX_COMMENT = SAME_SITE_COMMENT + "LAX__";
+    public static final String SAME_SITE_STRICT_COMMENT = SAME_SITE_COMMENT + "STRICT__";
 
     public enum SameSite
     {
@@ -463,6 +463,41 @@ public class HttpCookie
         strippedComment = StringUtil.strip(strippedComment, SAME_SITE_STRICT_COMMENT);
 
         return strippedComment.length() == 0 ? null : strippedComment;
+    }
+
+    public static String getCommentWithAttributes(String comment, boolean httpOnly, SameSite sameSite)
+    {
+        if (comment == null || sameSite == null)
+            return null;
+
+        StringBuilder builder = new StringBuilder();
+        if (comment != null)
+            builder.append(getCommentWithoutAttributes(comment));
+
+        if (httpOnly)
+            builder.append(HTTP_ONLY_COMMENT);
+
+        if (sameSite != null)
+        {
+            switch (sameSite)
+            {
+                case NONE:
+                    builder.append(SAME_SITE_NONE_COMMENT);
+                    break;
+                case STRICT:
+                    builder.append(SAME_SITE_STRICT_COMMENT);
+                    break;
+                case LAX:
+                    builder.append(SAME_SITE_LAX_COMMENT);
+                    break;
+                default:
+                    throw new IllegalArgumentException(sameSite.toString());
+            }
+        }
+
+        if (builder.length() == 0)
+            return null;
+        return builder.toString();
     }
 
     public static class SetCookieHttpField extends HttpField
