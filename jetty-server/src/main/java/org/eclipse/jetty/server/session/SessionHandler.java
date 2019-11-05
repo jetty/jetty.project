@@ -670,7 +670,7 @@ public class SessionHandler extends ScopedHandler
                 _cookieConfig.isHttpOnly(),
                 _cookieConfig.isSecure() || (isSecureRequestOnly() && requestIsSecure),
                 HttpCookie.getCommentWithoutAttributes(_cookieConfig.getComment()),
-                1,
+                0,
                 HttpCookie.getSameSiteFromComment(_cookieConfig.getComment()));
 
             return cookie;
