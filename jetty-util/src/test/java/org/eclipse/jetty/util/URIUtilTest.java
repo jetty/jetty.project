@@ -109,27 +109,39 @@ public class URIUtilTest
         // Test for null character (real world ugly test case)
         byte[] oddBytes = {'/', 0x00, '/'};
         String odd = new String(oddBytes, StandardCharsets.ISO_8859_1);
-        arguments.add(Arguments.of("/%00/", odd));
+        arguments.add(Arguments.of("/%00/"));
 
         // Deprecated Microsoft Percent-U encoding
-        arguments.add(Arguments.of("abc%u3040", "abc\u3040"));
+        arguments.add(Arguments.of("abc%u3040"));
 
         // Bad %## encoding
-        arguments.add(Arguments.of("abc%xyz", "abc%xyz")); // not a "%##"
+        arguments.add(Arguments.of("abc%xyz"));
 
         // Incomplete %## encoding
-        arguments.add(Arguments.of("abc%", "abc%")); // percent at end of string
-        arguments.add(Arguments.of("abc%A", "abc%A")); // incomplete "%##" at end of string
+        arguments.add(Arguments.of("abc%"));
+        arguments.add(Arguments.of("abc%A"));
 
         // Invalid microsoft %u#### encoding
-        arguments.add(Arguments.of("abc%uvwxyz", "abc%uvwxyz")); // not a valid "%u####"
-        arguments.add(Arguments.of("abc%uEFGHIJ", "abc%uEFGHIJ")); // not a valid "%u####"
+        arguments.add(Arguments.of("abc%uvwxyz"));
+        arguments.add(Arguments.of("abc%uEFGHIJ"));
 
         // Incomplete microsoft %u#### encoding
-        arguments.add(Arguments.of("abc%uABC", "abc%uABC")); // incomplete "%u####"
-        arguments.add(Arguments.of("abc%uAB", "abc%uAB")); // incomplete "%u####"
-        arguments.add(Arguments.of("abc%uA", "abc%uA")); // incomplete "%u####"
-        arguments.add(Arguments.of("abc%u", "abc%u")); // incomplete "%u####"
+        arguments.add(Arguments.of("abc%uABC"));
+        arguments.add(Arguments.of("abc%uAB"));
+        arguments.add(Arguments.of("abc%uA"));
+        arguments.add(Arguments.of("abc%u"));
+
+        // Invalid UTF-8 and ISO8859-1
+        arguments.add(Arguments.of("abc%C3%28")); // invalid 2 octext sequence
+        arguments.add(Arguments.of("abc%A0%A1")); // invalid 2 octext sequence
+        arguments.add(Arguments.of("abc%e2%28%a1")); // invalid 3 octext sequence
+        arguments.add(Arguments.of("abc%e2%82%28")); // invalid 3 octext sequence
+        arguments.add(Arguments.of("abc%f0%28%8c%bc")); // invalid 4 octext sequence
+        arguments.add(Arguments.of("abc%f0%90%28%bc")); // invalid 4 octext sequence
+        arguments.add(Arguments.of("abc%f0%28%8c%28")); // invalid 4 octext sequence
+        arguments.add(Arguments.of("abc%f8%a1%a1%a1%a1")); // valid sequence, but not unicode
+        arguments.add(Arguments.of("abc%fc%a1%a1%a1%a1%a1")); // valid sequence, but not unicode
+        arguments.add(Arguments.of("abc%f8%a1%a1%a1")); // incomplete sequence
 
         return arguments.stream();
     }
