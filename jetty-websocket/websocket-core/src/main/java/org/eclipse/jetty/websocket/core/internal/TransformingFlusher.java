@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.websocket.core.internal;
 
-import java.nio.channels.ClosedChannelException;
 import java.util.ArrayDeque;
 import java.util.Queue;
 
@@ -34,7 +33,7 @@ public abstract class TransformingFlusher
 
     private final Queue<FrameEntry> entries = new ArrayDeque<>();
     private final IteratingCallback flusher = new Flusher();
-    private boolean canEnqueue = true;
+    private Throwable failure;
 
     /**
      * Used to iteratively transform a Frame.
@@ -55,21 +54,24 @@ public abstract class TransformingFlusher
         boolean enqueued = false;
         synchronized (this)
         {
-            if (canEnqueue)
-                enqueued = entries.offer(entry);
+            if (failure == null)
+            {
+                enqueued = entries.add(entry);
+            }
         }
 
         if (enqueued)
             flusher.iterate();
         else
-            notifyCallbackFailure(callback, new ClosedChannelException());
+            notifyCallbackFailure(callback, failure);
     }
 
     private void onFailure(Throwable t)
     {
         synchronized (this)
         {
-            canEnqueue = false;
+            if (failure == null)
+                failure = t;
         }
 
         for (FrameEntry entry : entries)
