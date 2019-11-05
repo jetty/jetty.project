@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.util.resource;
 
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
@@ -31,6 +32,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -39,6 +41,43 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class ResourceAliasTest
 {
     public WorkDir workDir;
+
+    @Test
+    public void testPercentPaths() throws IOException
+    {
+        Path baseDir = workDir.getEmptyPathDir();
+
+        Path foo = baseDir.resolve("%foo");
+        Files.createDirectories(foo);
+
+        Path bar = foo.resolve("bar%");
+        Files.createDirectories(bar);
+
+        Path text = bar.resolve("test.txt");
+        FS.touch(text);
+
+        // At this point we have a path .../%foo/bar%/test.txt present on the filesystem.
+        // This would also apply for paths found in JAR files (like META-INF/resources/%foo/bar%/test.txt)
+
+        assertTrue(Files.exists(text));
+
+        Resource baseResource = new PathResource(baseDir);
+        assertTrue(baseResource.exists(), "baseResource exists");
+
+        Resource fooResource = baseResource.addPath("%foo");
+        assertTrue(fooResource.exists(), "fooResource exists");
+        assertTrue(fooResource.isDirectory(), "fooResource isDir");
+        assertFalse(fooResource.isAlias(), "fooResource isAlias");
+
+        Resource barResource = fooResource.addPath("bar%");
+        assertTrue(barResource.exists(), "barResource exists");
+        assertTrue(barResource.isDirectory(), "barResource isDir");
+        assertFalse(barResource.isAlias(), "barResource isAlias");
+
+        Resource textResource = barResource.addPath("test.txt");
+        assertTrue(textResource.exists(), "textResource exists");
+        assertFalse(textResource.isDirectory(), "textResource isDir");
+    }
 
     @Test
     public void testNullCharEndingFilename() throws Exception
