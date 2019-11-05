@@ -23,12 +23,18 @@ import java.net.MalformedURLException;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Function;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -42,8 +48,19 @@ public class ResourceAliasTest
 {
     public WorkDir workDir;
 
-    @Test
-    public void testPercentPaths() throws IOException
+    public static Stream<Function<Path, Resource>> resourceTypes()
+    {
+        List<Function<Path, Resource>> types = new ArrayList<>();
+
+        types.add((path) -> new PathResource(path));
+        types.add((path) -> new FileResource(path.toFile()));
+
+        return types.stream();
+    }
+
+    @ParameterizedTest
+    @MethodSource("resourceTypes")
+    public void testPercentPaths(Function<Path, Resource> resourceType) throws IOException
     {
         Path baseDir = workDir.getEmptyPathDir();
 
@@ -61,18 +78,24 @@ public class ResourceAliasTest
 
         assertTrue(Files.exists(text));
 
-        Resource baseResource = new PathResource(baseDir);
+        Resource baseResource = resourceType.apply(baseDir);
         assertTrue(baseResource.exists(), "baseResource exists");
 
         Resource fooResource = baseResource.addPath("%foo");
         assertTrue(fooResource.exists(), "fooResource exists");
         assertTrue(fooResource.isDirectory(), "fooResource isDir");
-        assertFalse(fooResource.isAlias(), "fooResource isAlias");
+        if (fooResource instanceof FileResource)
+            assertTrue(fooResource.isAlias(), "fooResource isAlias");
+        else
+            assertFalse(fooResource.isAlias(), "fooResource isAlias");
 
         Resource barResource = fooResource.addPath("bar%");
         assertTrue(barResource.exists(), "barResource exists");
         assertTrue(barResource.isDirectory(), "barResource isDir");
-        assertFalse(barResource.isAlias(), "barResource isAlias");
+        if (fooResource instanceof FileResource)
+            assertTrue(barResource.isAlias(), "barResource isAlias");
+        else
+            assertFalse(barResource.isAlias(), "barResource isAlias");
 
         Resource textResource = barResource.addPath("test.txt");
         assertTrue(textResource.exists(), "textResource exists");
