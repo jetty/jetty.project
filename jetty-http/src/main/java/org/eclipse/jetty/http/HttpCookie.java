@@ -467,13 +467,16 @@ public class HttpCookie
 
     public static String getCommentWithAttributes(String comment, boolean httpOnly, SameSite sameSite)
     {
-        if (comment == null || sameSite == null)
+        if (comment == null && sameSite == null)
             return null;
 
         StringBuilder builder = new StringBuilder();
-        if (comment != null)
-            builder.append(getCommentWithoutAttributes(comment));
-
+        if (StringUtil.isNotBlank(comment))
+        {
+            comment = getCommentWithoutAttributes(comment);
+            if (StringUtil.isNotBlank(comment))
+                builder.append(comment);
+        }
         if (httpOnly)
             builder.append(HTTP_ONLY_COMMENT);
 

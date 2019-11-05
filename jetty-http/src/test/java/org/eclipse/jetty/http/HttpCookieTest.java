@@ -24,6 +24,8 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -217,5 +219,26 @@ public class HttpCookieTest
         assertEquals(HttpCookie.getCommentWithoutAttributes("comment__SAME_SITE_NONE__"), "comment");
         assertEquals(HttpCookie.getCommentWithoutAttributes("comment__HTTP_ONLY____SAME_SITE_NONE__"), "comment");
         assertNull(HttpCookie.getCommentWithoutAttributes("__SAME_SITE_LAX__"));
+    }
+
+    @Test
+    public void getCommentWithAttributes()
+    {
+        assertThat(HttpCookie.getCommentWithAttributes(null, false, null), nullValue());
+        assertThat(HttpCookie.getCommentWithAttributes("", false, null), nullValue());
+        assertThat(HttpCookie.getCommentWithAttributes("hello", false, null), is("hello"));
+
+        assertThat(HttpCookie.getCommentWithAttributes(null, true, HttpCookie.SameSite.STRICT),
+            is("__HTTP_ONLY____SAME_SITE_STRICT__"));
+        assertThat(HttpCookie.getCommentWithAttributes("", true, HttpCookie.SameSite.NONE),
+            is("__HTTP_ONLY____SAME_SITE_NONE__"));
+        assertThat(HttpCookie.getCommentWithAttributes("hello", true, HttpCookie.SameSite.LAX),
+            is("hello__HTTP_ONLY____SAME_SITE_LAX__"));
+
+        assertThat(HttpCookie.getCommentWithAttributes("__HTTP_ONLY____SAME_SITE_LAX__", false, null), nullValue());
+        assertThat(HttpCookie.getCommentWithAttributes("__HTTP_ONLY____SAME_SITE_LAX__", true, HttpCookie.SameSite.NONE),
+            is("__HTTP_ONLY____SAME_SITE_NONE__"));
+        assertThat(HttpCookie.getCommentWithAttributes("__HTTP_ONLY____SAME_SITE_LAX__hello", true, HttpCookie.SameSite.LAX),
+            is("hello__HTTP_ONLY____SAME_SITE_LAX__"));
     }
 }
