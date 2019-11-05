@@ -33,6 +33,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -87,24 +88,8 @@ public class URIUtilTest
         arguments.add(Arguments.of("/f%d8%a9%d8%a9%2523;ignore/bar;ignore", "/f\u0629\u0629%23/bar"));
         arguments.add(Arguments.of("foo%2523%3b%2c:%3db%20a%20r;rubbish", "foo%23;,:=b a r"));
 
-        // Test for null character (real world ugly test case)
-        byte[] oddBytes = {'/', 0x00, '/'};
-        String odd = new String(oddBytes, StandardCharsets.ISO_8859_1);
-        arguments.add(Arguments.of("/%00/", odd));
-
         // Deprecated Microsoft Percent-U encoding
         arguments.add(Arguments.of("abc%u3040", "abc\u3040"));
-
-        // Lenient decode
-        arguments.add(Arguments.of("abc%xyz", "abc%xyz")); // not a "%##"
-        arguments.add(Arguments.of("abc%", "abc%")); // percent at end of string
-        arguments.add(Arguments.of("abc%A", "abc%A")); // incomplete "%##" at end of string
-        arguments.add(Arguments.of("abc%uvwxyz", "abc%uvwxyz")); // not a valid "%u####"
-        arguments.add(Arguments.of("abc%uEFGHIJ", "abc%uEFGHIJ")); // not a valid "%u####"
-        arguments.add(Arguments.of("abc%uABC", "abc%uABC")); // incomplete "%u####"
-        arguments.add(Arguments.of("abc%uAB", "abc%uAB")); // incomplete "%u####"
-        arguments.add(Arguments.of("abc%uA", "abc%uA")); // incomplete "%u####"
-        arguments.add(Arguments.of("abc%u", "abc%u")); // incomplete "%u####"
 
         return arguments.stream();
     }
@@ -115,6 +100,47 @@ public class URIUtilTest
     {
         String path = URIUtil.decodePath(encodedPath);
         assertEquals(expectedPath, path);
+    }
+
+    public static Stream<Arguments> badDecodePathSource()
+    {
+        List<Arguments> arguments = new ArrayList<>();
+
+        // Test for null character (real world ugly test case)
+        byte[] oddBytes = {'/', 0x00, '/'};
+        String odd = new String(oddBytes, StandardCharsets.ISO_8859_1);
+        arguments.add(Arguments.of("/%00/", odd));
+
+        // Deprecated Microsoft Percent-U encoding
+        arguments.add(Arguments.of("abc%u3040", "abc\u3040"));
+
+        // Bad %## encoding
+        arguments.add(Arguments.of("abc%xyz", "abc%xyz")); // not a "%##"
+
+        // Incomplete %## encoding
+        arguments.add(Arguments.of("abc%", "abc%")); // percent at end of string
+        arguments.add(Arguments.of("abc%A", "abc%A")); // incomplete "%##" at end of string
+
+        // Invalid microsoft %u#### encoding
+        arguments.add(Arguments.of("abc%uvwxyz", "abc%uvwxyz")); // not a valid "%u####"
+        arguments.add(Arguments.of("abc%uEFGHIJ", "abc%uEFGHIJ")); // not a valid "%u####"
+
+        // Incomplete microsoft %u#### encoding
+        arguments.add(Arguments.of("abc%uABC", "abc%uABC")); // incomplete "%u####"
+        arguments.add(Arguments.of("abc%uAB", "abc%uAB")); // incomplete "%u####"
+        arguments.add(Arguments.of("abc%uA", "abc%uA")); // incomplete "%u####"
+        arguments.add(Arguments.of("abc%u", "abc%u")); // incomplete "%u####"
+
+        return arguments.stream();
+    }
+
+    @ParameterizedTest(name = "[{index}] {0}")
+    @MethodSource("badDecodePathSource")
+    public void testBadDecodePath(String encodedPath)
+    {
+        // TODO: what exception type should these throw?
+        assertThrows(IllegalArgumentException.class, () -> URIUtil.decodePath(encodedPath));
+        // NOTE: the decodePath() will attempt UTF-8 then fallback to ISO8859-1
     }
 
     @Test
