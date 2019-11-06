@@ -36,16 +36,21 @@ public abstract class TransformingFlusher
     private Throwable failure;
 
     /**
-     * Used to iteratively transform a Frame.
+     * Called when a frame is ready to be transformed.
      * @param frame the frame to transform.
      * @param callback used to signal to start processing again.
      * @param batch whether this frame can be batched.
-     * @param first if this is the first time this particular frame has been given to transform.
      * @return true when finished processing this frame.
      */
-    protected abstract boolean transform(Frame frame, Callback callback, boolean batch, boolean first);
+    protected abstract boolean onFrame(Frame frame, Callback callback, boolean batch);
 
-    public void sendFrame(Frame frame, Callback callback, boolean batch)
+    /**
+     * Called multiple times to transform the frame given in {@link TransformingFlusher#onFrame(Frame, Callback, boolean)}.
+     * @return true when finished processing this frame.
+     */
+    protected abstract boolean transform();
+
+    public final void sendFrame(Frame frame, Callback callback, boolean batch)
     {
         FrameEntry entry = new FrameEntry(frame, callback, batch);
         if (LOG.isDebugEnabled())
@@ -106,7 +111,14 @@ public abstract class TransformingFlusher
 
             if (LOG.isDebugEnabled())
                 LOG.debug("Processing {}", current);
-            finished = transform(current.frame, this, current.batch, finished);
+
+            if (finished && onFrame(current.frame, this, current.batch))
+            {
+                finished = true;
+                return Action.SCHEDULED;
+            }
+
+            finished = transform();
             return Action.SCHEDULED;
         }
 

@@ -60,85 +60,8 @@ public abstract class CompressExtension extends AbstractExtension
     protected CompressExtension()
     {
         compressionMode = getCompressionMode();
-
-        outgoingFlusher = new TransformingFlusher()
-        {
-            @Override
-            protected boolean transform(Frame frame, Callback callback, boolean batch, boolean first)
-            {
-                if (OpCode.isControlFrame(frame.getOpCode()))
-                {
-                    nextOutgoingFrame(frame, callback, batch);
-                    return true;
-                }
-
-                return compress(frame, callback, batch, first);
-            }
-        };
-
-        incomingFlusher = new TransformingFlusher()
-        {
-            @Override
-            protected boolean transform(Frame frame, Callback callback, boolean batch, boolean first)
-            {
-                if (OpCode.isControlFrame(frame.getOpCode()))
-                {
-                    nextIncomingFrame(frame, callback);
-                    return true;
-                }
-
-                if (first)
-                {
-                    switch (compressionMode)
-                    {
-                        case MESSAGE:
-                            // This mode requires the RSV1 bit set only in the first frame.
-                            // Subsequent continuation frames don't have RSV1 set, but are compressed.
-                            switch (frame.getOpCode())
-                            {
-                                case OpCode.TEXT:
-                                case OpCode.BINARY:
-                                    incomingCompressed = frame.isRsv1();
-                                    break;
-
-                                case OpCode.CONTINUATION:
-                                    if (frame.isRsv1())
-                                        throw new ProtocolException("Invalid RSV1 set on permessage-deflate CONTINUATION frame");
-                                    break;
-
-                                default:
-                                    break;
-                            }
-                            break;
-
-                        case FRAME:
-                            incomingCompressed = frame.isRsv1();
-                            break;
-
-                        default:
-                            throw new IllegalStateException();
-                    }
-
-                    if (!incomingCompressed)
-                    {
-                        nextIncomingFrame(frame, callback);
-                        return true;
-                    }
-                }
-
-                if (frame.isFin())
-                    incomingCompressed = false;
-
-                try
-                {
-                    return decompress(frame, callback, first);
-                }
-                catch (DataFormatException e)
-                {
-                    throw new BadPayloadException(e);
-                }
-            }
-        };
+        outgoingFlusher = new OutgoingFlusher();
+        incomingFlusher = new IncomingFlusher();
     }
 
     @Override
@@ -164,14 +87,10 @@ public abstract class CompressExtension extends AbstractExtension
 
     protected boolean decompress(Frame frame, Callback callback, boolean first) throws DataFormatException
     {
-        ByteBuffer data = frame.getPayload();
         long maxFrameSize = getWebSocketCoreSession().getMaxFrameSize();
 
-        Inflater inflater = getInflater();
-        if (first)
-            inflater.setInput(data);
-
         // Decompress the payload.
+        Inflater inflater = getInflater();
         boolean finished = false;
         ByteAccumulator accumulator = new ByteAccumulator(getWebSocketCoreSession().getMaxFrameSize());
         while (true)
@@ -235,12 +154,8 @@ public abstract class CompressExtension extends AbstractExtension
         if (LOG.isDebugEnabled())
             LOG.debug("Compressing remaining {} bytes of {} ", remaining, frame);
 
-        // Get Deflater and provide payload as input if this is the first time.
-        Deflater deflater = getDeflater();
-        if (first)
-            deflater.setInput(data);
-
         // Compress the payload.
+        Deflater deflater = getDeflater();
         boolean finished = false;
         ByteAccumulator accumulator = new ByteAccumulator(getWebSocketCoreSession().getMaxFrameSize());
         while (true)
@@ -385,5 +300,117 @@ public abstract class CompressExtension extends AbstractExtension
     public String toString()
     {
         return getClass().getSimpleName();
+    }
+
+    private class OutgoingFlusher extends TransformingFlusher
+    {
+        private boolean _first;
+        private Frame _frame;
+        private Callback _callback;
+        private boolean _batch;
+
+        @Override
+        protected boolean onFrame(Frame frame, Callback callback, boolean batch)
+        {
+            if (OpCode.isControlFrame(frame.getOpCode()))
+            {
+                nextOutgoingFrame(frame, callback, batch);
+                return true;
+            }
+
+            _first = true;
+            _frame = frame;
+            _callback = callback;
+            _batch = batch;
+
+            // Provide the frames payload as input to the Deflater.
+            getDeflater().setInput(frame.getPayload());
+            return false;
+        }
+
+        @Override
+        protected boolean transform()
+        {
+            boolean finished = compress(_frame, _callback, _batch, _first);
+            _first = false;
+            return finished;
+        }
+    }
+
+    private class IncomingFlusher extends TransformingFlusher
+    {
+        private boolean _first;
+        private Frame _frame;
+        private Callback _callback;
+
+        @Override
+        protected boolean onFrame(Frame frame, Callback callback, boolean batch)
+        {
+            if (OpCode.isControlFrame(frame.getOpCode()))
+            {
+                nextIncomingFrame(frame, callback);
+                return true;
+            }
+
+            switch (compressionMode)
+            {
+                case MESSAGE:
+                    // This mode requires the RSV1 bit set only in the first frame.
+                    // Subsequent continuation frames don't have RSV1 set, but are compressed.
+                    switch (frame.getOpCode())
+                    {
+                        case OpCode.TEXT:
+                        case OpCode.BINARY:
+                            incomingCompressed = frame.isRsv1();
+                            break;
+
+                        case OpCode.CONTINUATION:
+                            if (frame.isRsv1())
+                                throw new ProtocolException("Invalid RSV1 set on permessage-deflate CONTINUATION frame");
+                            break;
+
+                        default:
+                            break;
+                    }
+                    break;
+
+                case FRAME:
+                    incomingCompressed = frame.isRsv1();
+                    break;
+
+                default:
+                    throw new IllegalStateException();
+            }
+
+            if (_first && !incomingCompressed)
+            {
+                nextIncomingFrame(frame, callback);
+                return true;
+            }
+
+            if (frame.isFin())
+                incomingCompressed = false;
+
+            _first = true;
+            _frame = frame;
+            _callback = callback;
+
+            // Provide the frames payload as input to the Inflater.
+            getInflater().setInput(frame.getPayload());
+            return false;
+        }
+
+        @Override
+        protected boolean transform()
+        {
+            try
+            {
+                return decompress(_frame, _callback, _first);
+            }
+            catch (DataFormatException e)
+            {
+                throw new BadPayloadException(e);
+            }
+        }
     }
 }
