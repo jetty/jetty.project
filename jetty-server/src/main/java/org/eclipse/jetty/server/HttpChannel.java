@@ -51,7 +51,6 @@ import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.server.HttpChannelState.Action;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
-import org.eclipse.jetty.server.handler.ErrorHandler.ErrorPageMapper;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.SharedBlockingCallback.Blocker;
@@ -372,8 +371,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                     {
                         if (!_request.hasMetaData())
                             throw new IllegalStateException("state=" + _state);
-                        _request.setHandled(false);
-                        _response.reopen();
 
                         dispatch(DispatcherType.REQUEST, () ->
                         {
@@ -391,9 +388,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
                     case ASYNC_DISPATCH:
                     {
-                        _request.setHandled(false);
-                        _response.reopen();
-
                         dispatch(DispatcherType.ASYNC,() -> getServer().handleAsync(this));
                         break;
                     }
@@ -407,9 +401,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                         try
                         {
                             // Get ready to send an error response
-                            _request.setHandled(false);
                             _response.resetContent();
-                            _response.reopen();
 
                             // the following is needed as you cannot trust the response code and reason
                             // as those could have been modified after calling sendError
@@ -426,20 +418,11 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                                 break;
                             }
 
-                            // Look for an error page dispatcher
-                            String errorPage = (errorHandler instanceof ErrorPageMapper) ? ((ErrorPageMapper)errorHandler).getErrorPage(_request) : null;
-                            Dispatcher errorDispatcher = errorPage != null ? (Dispatcher)context.getRequestDispatcher(errorPage) : null;
-                            if (errorDispatcher == null)
+                            dispatch(DispatcherType.ERROR,() ->
                             {
-                                // Allow ErrorHandler to generate response
                                 errorHandler.handle(null, _request, _request, _response);
                                 _request.setHandled(true);
-                            }
-                            else
-                            {
-                                // Do the error page dispatch
-                                dispatch(DispatcherType.ERROR,() -> errorDispatcher.error(_request, _response));
-                            }
+                            });
                         }
                         catch (Throwable x)
                         {
@@ -557,6 +540,8 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     {
         try
         {
+            _request.setHandled(false);
+            _response.reopen();
             _request.setDispatcherType(type);
             _combinedListener.onBeforeDispatch(_request);
             dispatchable.dispatch();

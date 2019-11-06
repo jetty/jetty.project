@@ -26,7 +26,6 @@ import java.io.PrintWriter;
 import java.net.Socket;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
-import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -212,7 +211,7 @@ public class HttpServerTestFixture
         }
     }
 
-    protected static class ReadExactHandler extends AbstractHandler.ErrorDispatchHandler
+    protected static class ReadExactHandler extends AbstractHandler
     {
         private int expected;
 
@@ -227,7 +226,7 @@ public class HttpServerTestFixture
         }
 
         @Override
-        public void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             baseRequest.setHandled(true);
             int len = expected < 0 ? request.getContentLength() : expected;
@@ -246,16 +245,6 @@ public class HttpServerTestFixture
             String reply = "Read " + offset + "\r\n";
             response.setContentLength(reply.length());
             response.getOutputStream().write(reply.getBytes(StandardCharsets.ISO_8859_1));
-        }
-
-        @Override
-        protected void doError(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
-        {
-            System.err.println("ERROR: " + request.getAttribute(RequestDispatcher.ERROR_MESSAGE));
-            Throwable th = (Throwable)request.getAttribute(RequestDispatcher.ERROR_EXCEPTION);
-            if (th != null)
-                th.printStackTrace();
-            super.doError(target, baseRequest, request, response);
         }
     }
 

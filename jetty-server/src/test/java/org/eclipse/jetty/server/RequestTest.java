@@ -1857,14 +1857,14 @@ public class RequestTest
         boolean check(HttpServletRequest request, HttpServletResponse response) throws IOException;
     }
 
-    private class RequestHandler extends AbstractHandler.ErrorDispatchHandler
+    private class RequestHandler extends AbstractHandler
     {
         private RequestTester _checker;
         @SuppressWarnings("unused")
         private String _content;
 
         @Override
-        protected void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             ((Request)request).setHandled(true);
 

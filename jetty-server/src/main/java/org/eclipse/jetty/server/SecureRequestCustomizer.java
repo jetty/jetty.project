@@ -57,6 +57,7 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
 
     private String sslSessionAttribute = "org.eclipse.jetty.servlet.request.ssl_session";
 
+    private boolean _sniRequired;
     private boolean _sniHostCheck;
     private long _stsMaxAge = -1;
     private boolean _stsIncludeSubDomains;
@@ -82,6 +83,22 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
         @Name("stsMaxAgeSeconds") long stsMaxAgeSeconds,
         @Name("stsIncludeSubdomains") boolean stsIncludeSubdomains)
     {
+        this(false, sniHostCheck, stsMaxAgeSeconds, stsIncludeSubdomains);
+    }
+
+    /**
+     * @param sniRequired True if a SNI certificate is required.
+     * @param sniHostCheck True if the SNI Host name must match.
+     * @param stsMaxAgeSeconds The max age in seconds for a Strict-Transport-Security response header. If set less than zero then no header is sent.
+     * @param stsIncludeSubdomains If true, a include subdomain property is sent with any Strict-Transport-Security header
+     */
+    public SecureRequestCustomizer(
+        @Name("sniRequired") boolean sniRequired,
+        @Name("sniHostCheck") boolean sniHostCheck,
+        @Name("stsMaxAgeSeconds") long stsMaxAgeSeconds,
+        @Name("stsIncludeSubdomains") boolean stsIncludeSubdomains)
+    {
+        _sniRequired = sniRequired;
         _sniHostCheck = sniHostCheck;
         _stsMaxAge = stsMaxAgeSeconds;
         _stsIncludeSubDomains = stsIncludeSubdomains;
@@ -89,7 +106,7 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
     }
 
     /**
-     * @return True if the SNI Host name must match.
+     * @return True if the SNI Host name must match when there is an SNI certificate.
      */
     public boolean isSniHostCheck()
     {
@@ -97,11 +114,29 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
     }
 
     /**
-     * @param sniHostCheck True if the SNI Host name must match.
+     * @param sniHostCheck True if the SNI Host name must match when there is an SNI certificate.
      */
     public void setSniHostCheck(boolean sniHostCheck)
     {
         _sniHostCheck = sniHostCheck;
+    }
+
+    /**
+     * @return True if SNI is required, else requests will be rejected with 400 response.
+     * @see SslContextFactory.Server#isSniRequired()
+     */
+    public boolean isSniRequired()
+    {
+        return _sniRequired;
+    }
+
+    /**
+     * @param sniRequired True if SNI is required, else requests will be rejected with 400 response.
+     * @see SslContextFactory.Server#setSniRequired(boolean)
+     */
+    public void setSniRequired(boolean sniRequired)
+    {
+        _sniRequired = sniRequired;
     }
 
     /**
@@ -225,19 +260,23 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
     {
         SSLSession sslSession = sslEngine.getSession();
 
-        if (_sniHostCheck)
+        if (_sniHostCheck || _sniRequired)
         {
             String name = request.getServerName();
             X509 x509 = (X509)sslSession.getValue(SniX509ExtendedKeyManager.SNI_X509);
 
-            if (x509 != null && !x509.matches(name))
+            if (LOG.isDebugEnabled())
+                LOG.debug("Host {} with SNI {}", name, x509);
+
+            if (x509 == null)
             {
-                LOG.warn("Host {} does not match SNI {}", name, x509);
+                if (_sniRequired)
+                    throw new BadMessageException(400, "SNI required");
+            }
+            else if (_sniHostCheck && !x509.matches(name))
+            {
                 throw new BadMessageException(400, "Host does not match SNI");
             }
-
-            if (LOG.isDebugEnabled())
-                LOG.debug("Host {} matched SNI {}", name, x509);
         }
 
         try

@@ -46,10 +46,10 @@ public class UnixSocketServer
         if (Files.exists(socket))
             Files.delete(socket);
 
-        server.setHandler(new AbstractHandler.ErrorDispatchHandler()
+        server.setHandler(new AbstractHandler()
         {
             @Override
-            protected void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 int l = 0;
                 if (request.getContentLength() != 0)
