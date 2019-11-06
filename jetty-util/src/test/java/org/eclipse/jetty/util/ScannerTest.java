@@ -22,6 +22,8 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.file.Path;
+import java.nio.file.PathMatcher;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -30,12 +32,14 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.Scanner.Notification;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -61,6 +65,8 @@ public class ScannerTest
         _scanner = new Scanner();
         _scanner.addScanDir(_directory);
         _scanner.setScanInterval(0);
+        _scanner.setReportDirs(false);
+        _scanner.setReportExistingFilesOnStartup(false);
         _scanner.addListener(new Scanner.DiscreteListener()
         {
             @Override
@@ -89,8 +95,8 @@ public class ScannerTest
                 _bulk.add(filenames);
             }
         });
+        
         _scanner.start();
-
         _scanner.scan();
 
         assertTrue(_queue.isEmpty());
@@ -115,6 +121,155 @@ public class ScannerTest
             _notification = notification;
         }
     }
+    
+    @Test
+    public void testDepth() throws Exception
+    {
+        File root = new File (_directory, "root");
+        FS.ensureDirExists(root);
+        FS.touch(new File(root, "foo.foo"));
+        FS.touch(new File(root, "foo2.foo"));
+        File dir = new File(root, "xxx");
+        FS.ensureDirExists(dir);
+        File x1 = new File(dir, "xxx.foo");
+        FS.touch(x1);
+        File x2 = new File(dir, "xxx2.foo");
+        FS.touch(x2);
+        File dir2 = new File(dir, "yyy");
+        FS.ensureDirExists(dir2);
+        File y1 = new File(dir2, "yyy.foo");
+        FS.touch(y1);
+        File y2 = new File(dir2, "yyy2.foo");
+        FS.touch(y2);
+        
+        BlockingQueue<Event> queue = new LinkedBlockingQueue<Event>();
+        Scanner scanner = new Scanner();
+        scanner.setScanInterval(0);
+        scanner.setScanDepth(0);
+        scanner.setReportDirs(true);
+        scanner.setReportExistingFilesOnStartup(true);
+        scanner.addDirectory(root.toPath());
+        scanner.addListener(new Scanner.DiscreteListener()
+        {
+            @Override
+            public void fileRemoved(String filename) throws Exception
+            {
+                queue.add(new Event(filename, Notification.REMOVED));
+            }
+
+            @Override
+            public void fileChanged(String filename) throws Exception
+            {
+                queue.add(new Event(filename, Notification.CHANGED));  
+            }
+
+            @Override
+            public void fileAdded(String filename) throws Exception
+            {
+                queue.add(new Event(filename, Notification.ADDED));
+            }
+        });
+
+        scanner.start();
+        Event e = queue.take();
+        assertNotNull(e);
+        assertEquals(Notification.ADDED, e._notification);
+        assertTrue(e._filename.endsWith(root.getName()));
+        queue.clear();
+        scanner.stop();
+        scanner.reset();
+        
+        //Depth one should report the dir itself and its file and dir direct children
+        scanner.setScanDepth(1);
+        scanner.addDirectory(root.toPath());
+        scanner.start();
+        assertEquals(4, queue.size());
+        queue.clear();
+        scanner.stop();
+        scanner.reset();
+        
+        //Depth 2 should report the dir itself, all file children, xxx and xxx's children
+        scanner.setScanDepth(2);
+        scanner.addDirectory(root.toPath());
+        scanner.start();
+
+        assertEquals(7, queue.size());
+        scanner.stop();
+    }
+
+    @Test
+    public void testPatterns() throws Exception
+    {
+        //test include and exclude patterns
+        File root = new File(_directory, "proot");
+        FS.ensureDirExists(root);
+        
+        File ttt = new File(root, "ttt.txt");
+        FS.touch(ttt);
+        FS.touch(new File(root, "ttt.foo"));
+        File dir = new File(root, "xxx");
+        FS.ensureDirExists(dir);
+        
+        File x1 = new File(dir, "ttt.xxx");
+        FS.touch(x1);
+        File x2 = new File(dir, "xxx.txt");
+        FS.touch(x2);
+        
+        File dir2 = new File(dir, "yyy");
+        FS.ensureDirExists(dir2);
+        File y1 = new File(dir2, "ttt.yyy");
+        FS.touch(y1);
+        File y2 = new File(dir2, "yyy.txt");
+        FS.touch(y2);
+        
+        BlockingQueue<Event> queue = new LinkedBlockingQueue<Event>();
+        //only scan the *.txt files for changes
+        Scanner scanner = new Scanner();
+        IncludeExcludeSet<PathMatcher, Path> pattern = scanner.addDirectory(root.toPath());
+        pattern.exclude(root.toPath().getFileSystem().getPathMatcher("glob:**/*.foo"));
+        pattern.exclude(root.toPath().getFileSystem().getPathMatcher("glob:**/ttt.xxx"));
+        scanner.setScanInterval(0);
+        scanner.setScanDepth(2); //should never see any files from subdir yyy
+        scanner.setReportDirs(false);
+        scanner.setReportExistingFilesOnStartup(false);
+        scanner.addListener(new Scanner.DiscreteListener()
+        {
+            @Override
+            public void fileRemoved(String filename) throws Exception
+            {
+                queue.add(new Event(filename, Notification.REMOVED));
+            }
+
+            @Override
+            public void fileChanged(String filename) throws Exception
+            {
+                queue.add(new Event(filename, Notification.CHANGED));
+            }
+
+            @Override
+            public void fileAdded(String filename) throws Exception
+            {
+                queue.add(new Event(filename, Notification.ADDED));
+            }
+        });
+        
+        scanner.start();
+        assertTrue(queue.isEmpty());
+
+        Thread.sleep(1100); // make sure time in seconds changes
+        FS.touch(ttt);
+        FS.touch(x2);
+        FS.touch(x1);
+        FS.touch(y2);
+        scanner.scan();
+        scanner.scan(); //2 scans for file to be considered settled
+
+        assertThat(queue.size(), Matchers.equalTo(2));
+        for (Event e : queue)
+        {
+            assertTrue(e._filename.endsWith("ttt.txt") || e._filename.endsWith("xxx.txt"));
+        }
+    }
 
     @Test
     @DisabledOnOs(WINDOWS) // TODO: needs review
@@ -126,6 +281,7 @@ public class ScannerTest
         // takes 2 scans to notice a0 and check that it is stable
         _scanner.scan();
         _scanner.scan();
+        
         Event event = _queue.poll();
         assertNotNull(event, "Event should not be null");
         assertEquals(_directory + "/a0", event._filename);

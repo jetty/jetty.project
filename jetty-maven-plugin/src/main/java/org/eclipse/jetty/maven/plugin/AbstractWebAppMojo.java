@@ -26,9 +26,9 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Path;
+import java.nio.file.PathMatcher;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -57,7 +57,8 @@ import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.util.PathWatcher;
+import org.eclipse.jetty.util.IncludeExcludeSet;
+import org.eclipse.jetty.util.Scanner;
 import org.eclipse.jetty.util.resource.Resource;
 
 /**
@@ -847,22 +848,18 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
      * Configure any extra files, directories or patterns thereof for the
      * scanner to watch for changes.
      * 
-     * @param scanner PathWatcher that notices changes in files and dirs.
+     * @param scanner Scanner that notices changes in files and dirs.
+     * @throws IOException 
      */
-    protected void configureScanTargetPatterns(PathWatcher scanner)
+    protected void configureScanTargetPatterns(Scanner scanner) throws IOException
     {
         //handle the extra scan patterns
         if (scanTargetPatterns != null)
         {
-            for (ScanTargetPattern p:scanTargetPatterns)
+            for (ScanTargetPattern p : scanTargetPatterns)
             {
-                PathWatcher.Config config = new PathWatcher.Config(p.getDirectory().toPath());
-                config.setRecurseDepth(PathWatcher.Config.UNLIMITED_DEPTH);
-                for (String pattern:p.getExcludes())
-                    config.addExcludeGlobRelative(pattern);
-                for (String pattern:p.getIncludes())
-                    config.addIncludeGlobRelative(pattern);
-                scanner.watch(config);
+                IncludeExcludeSet<PathMatcher, Path> includesExcludes = scanner.addDirectory(p.getDirectory().toPath());
+                p.configureIncludesExcludeSet(includesExcludes);
             }
         }
     }

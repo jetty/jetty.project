@@ -13,10 +13,10 @@
 <Configure id="sslContextFactory" class="org.eclipse.jetty.util.ssl.SslContextFactory$Server">
   <Set name="Provider" property="jetty.sslContext.provider"/>
   <Set name="KeyStorePath"><Property name="jetty.base" default="." />/<Property name="jetty.sslContext.keyStorePath" default="etc/keystore"/></Set>
-  <Set name="KeyStorePassword"><Property name="jetty.sslContext.keyStorePassword" default="OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4"/></Set>
+  <Set name="KeyStorePassword"><Property name="jetty.sslContext.keyStorePassword"/></Set>
   <Set name="KeyStoreType" property="jetty.sslContext.keyStoreType"/>
   <Set name="KeyStoreProvider" property="jetty.sslContext.keyStoreProvider"/>
-  <Set name="KeyManagerPassword"><Property name="jetty.sslContext.keyManagerPassword" default="OBF:1u2u1wml1z7s1z7a1wnl1u2g"/></Set>
+  <Set name="KeyManagerPassword"><Property name="jetty.sslContext.keyManagerPassword"/></Set>
   <Set name="TrustStorePath"><Property name="jetty.base" default="." />/<Property name="jetty.sslContext.trustStorePath" default="etc/keystore"/></Set>
   <Set name="TrustStorePassword" property="jetty.sslContext.trustStorePassword"/>
   <Set name="TrustStoreType" property="jetty.sslContext.trustStoreType"/>
@@ -29,6 +29,7 @@
   <Set name="sslSessionTimeout" property="jetty.sslContext.sslSessionTimeout"/>
   <Set name="RenegotiationAllowed" property="jetty.sslContext.renegotiationAllowed"/>
   <Set name="RenegotiationLimit" property="jetty.sslContext.renegotiationLimit"/>
+  <Set name="SniRequired" property="jetty.sslContext.sniRequired"/>
 
   <!-- Example of how to configure a PKIX Certificate Path revocation Checker
   <Call id="pkixPreferCrls" class="java.security.cert.PKIXRevocationChecker$Option" name="valueOf"><Arg>PREFER_CRLS</Arg></Call>

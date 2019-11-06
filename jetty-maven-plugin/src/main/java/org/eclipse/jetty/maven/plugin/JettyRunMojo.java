@@ -19,6 +19,8 @@
 package org.eclipse.jetty.maven.plugin;
 
 import java.io.File;
+import java.nio.file.Path;
+import java.nio.file.PathMatcher;
 import java.util.Date;
 import java.util.List;
 
@@ -30,8 +32,10 @@ import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
+import org.eclipse.jetty.util.IncludeExcludeSet;
 import org.eclipse.jetty.util.PathWatcher;
 import org.eclipse.jetty.util.PathWatcher.PathWatchEvent;
+import org.eclipse.jetty.util.Scanner;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.WebAppContext;
 
@@ -68,7 +72,7 @@ public class JettyRunMojo extends AbstractUnassembledWebAppMojo
     /**
      * Scanner to check for files changes to cause redeploy
      */
-    protected PathWatcher scanner;
+    protected Scanner scanner;
     
     /**
      * Only one of the following will be used, depending the mode
@@ -154,9 +158,11 @@ public class JettyRunMojo extends AbstractUnassembledWebAppMojo
         // start scanning for changes, or wait for linefeed on stdin
         if (scan > 0)
         {
-            scanner = new PathWatcher();
+            scanner = new Scanner();
+            scanner.setScanInterval(scan);
+            scanner.setScanDepth(Scanner.MAX_SCAN_DEPTH); //always fully walk directory hierarchies
+            scanner.setReportExistingFilesOnStartup(false);
             configureScanner();
-            scanner.setNotifyExistingOnStart(false);
             scanner.start();
         }
         else
@@ -194,27 +200,13 @@ public class JettyRunMojo extends AbstractUnassembledWebAppMojo
         {
             throw new MojoExecutionException("Error forming scan list", e);
         }
-
-        scanner.addListener(new PathWatcher.EventListListener()
+        scanner.addListener(new Scanner.BulkListener()
         {
-            @Override
-            public void onPathWatchEvents(List<PathWatchEvent> events)
+            public void filesChanged(List<String> changes)
             {
                 try
                 {
-                    boolean reconfigure = false;
-                    if (events != null)
-                    {
-                        for (PathWatchEvent e:events)
-                        {
-                            if (e.getPath().equals(project.getFile().toPath()))
-                            {
-                                reconfigure = true;
-                                break;
-                            }
-                        }
-                    }
-
+                    boolean reconfigure = changes.contains(project.getFile().getCanonicalPath());
                     restartWebApp(reconfigure);
                 }
                 catch (Exception e)
@@ -230,77 +222,95 @@ public class JettyRunMojo extends AbstractUnassembledWebAppMojo
         if (webApp.getDescriptor() != null)
         {
             Resource r = Resource.newResource(webApp.getDescriptor());
-            scanner.watch(r.getFile().toPath());
+            scanner.addFile(r.getFile().toPath());
         }
         
         if (webApp.getJettyEnvXml() != null)
-            scanner.watch(new File(webApp.getJettyEnvXml()).toPath());
+            scanner.addFile(new File(webApp.getJettyEnvXml()).toPath());
 
         if (webApp.getDefaultsDescriptor() != null)
         {
             if (!WebAppContext.WEB_DEFAULTS_XML.equals(webApp.getDefaultsDescriptor()))
-                scanner.watch(new File(webApp.getDefaultsDescriptor()).toPath());
+                scanner.addFile(new File(webApp.getDefaultsDescriptor()).toPath());
         }
 
         if (webApp.getOverrideDescriptor() != null)
         {
-            scanner.watch(new File(webApp.getOverrideDescriptor()).toPath());
+            scanner.addFile(new File(webApp.getOverrideDescriptor()).toPath());
         }
         
         File jettyWebXmlFile = findJettyWebXmlFile(new File(webAppSourceDirectory,"WEB-INF"));
         if (jettyWebXmlFile != null)
         {
-            scanner.watch(jettyWebXmlFile.toPath());
+            scanner.addFile(jettyWebXmlFile.toPath());
         }
         
         //make sure each of the war artifacts is added to the scanner
         for (Artifact a:mavenProjectHelper.getWarPluginInfo().getWarArtifacts())
         {
-            scanner.watch(a.getFile().toPath());
+            File f = a.getFile();
+            if (a.getFile().isDirectory())
+                scanner.addDirectory(f.toPath());
+            else
+                scanner.addFile(f.toPath());
         }
         
         //set up any extra files or dirs to watch
         configureScanTargetPatterns(scanner);
 
-        scanner.watch(project.getFile().toPath());
+        scanner.addFile(project.getFile().toPath());
 
         if (webApp.getTestClasses() != null && webApp.getTestClasses().exists())
         {
-            PathWatcher.Config config = new PathWatcher.Config(webApp.getTestClasses().toPath());
-            config.setRecurseDepth(PathWatcher.Config.UNLIMITED_DEPTH);           
+            Path p = webApp.getTestClasses().toPath();
+            IncludeExcludeSet<PathMatcher, Path> includeExcludeSet = scanner.addDirectory(p);
             if (scanTestClassesPattern != null)
             {
-                for (String p:scanTestClassesPattern.getExcludes())
-                    config.addExcludeGlobRelative(p);
-                for (String p:scanTestClassesPattern.getIncludes())
-                    config.addIncludeGlobRelative(p);
+                for (String s : scanTestClassesPattern.getExcludes())
+                {
+                    if (!s.startsWith("glob:"))
+                        s = "glob:" + s;
+                    includeExcludeSet.exclude(p.getFileSystem().getPathMatcher(s));
+                }
+                for (String s : scanTestClassesPattern.getIncludes())
+                {
+                    if (!s.startsWith("glob:"))
+                        s = "glob:" + s;
+                    includeExcludeSet.include(p.getFileSystem().getPathMatcher(s));
+                }
             }
-            scanner.watch(config);
         }
         
         if (webApp.getClasses() != null && webApp.getClasses().exists())
         {
-            PathWatcher.Config config = new PathWatcher.Config(webApp.getClasses().toPath());
-            config.setRecurseDepth(PathWatcher.Config.UNLIMITED_DEPTH);
+            Path p = webApp.getClasses().toPath();
+            IncludeExcludeSet<PathMatcher, Path> includeExcludes = scanner.addDirectory(p);
             if (scanClassesPattern != null)
             {
-                for (String p:scanClassesPattern.getExcludes())
-                    config.addExcludeGlobRelative(p);
+                for (String s : scanClassesPattern.getExcludes())
+                {
+                    if (!s.startsWith("glob:"))
+                        s = "glob:" + s;
+                    includeExcludes.exclude(p.getFileSystem().getPathMatcher(s));
+                }
 
-                for (String p:scanClassesPattern.getIncludes())
-                    config.addIncludeGlobRelative(p);
-
-            }
-            scanner.watch(config);
+                for (String s : scanClassesPattern.getIncludes())
+                {
+                    if (!s.startsWith("glob:"))
+                        s = "glob:" + s;
+                    includeExcludes.include(p.getFileSystem().getPathMatcher(s));
+                }
+            }     
         }
 
         if (webApp.getWebInfLib() != null)
         {
-            for (File f:webApp.getWebInfLib())
+            for (File f : webApp.getWebInfLib())
             {
-                PathWatcher.Config config = new PathWatcher.Config(f.toPath());
-                config.setRecurseDepth(PathWatcher.Config.UNLIMITED_DEPTH);
-                scanner.watch(config);
+                if (f.isDirectory())
+                    scanner.addDirectory(f.toPath());
+                else
+                    scanner.addFile(f.toPath());
             }
         }
     }

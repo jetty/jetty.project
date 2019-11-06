@@ -104,7 +104,7 @@ public abstract class AbstractHttpTest
         }
     }
 
-    protected class ThrowExceptionOnDemandHandler extends AbstractHandler.ErrorDispatchHandler
+    protected class ThrowExceptionOnDemandHandler extends AbstractHandler
     {
         private final boolean throwException;
         private volatile Throwable failure;
@@ -115,7 +115,7 @@ public abstract class AbstractHttpTest
         }
 
         @Override
-        protected void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             if (throwException)
                 throw new TestCommitException();

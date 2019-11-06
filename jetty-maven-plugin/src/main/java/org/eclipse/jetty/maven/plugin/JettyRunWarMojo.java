@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.maven.plugin;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Date;
@@ -29,8 +30,7 @@ import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
-import org.eclipse.jetty.util.PathWatcher;
-import org.eclipse.jetty.util.PathWatcher.PathWatchEvent;
+import org.eclipse.jetty.util.Scanner;
 import org.eclipse.jetty.util.StringUtil;
 
 /**
@@ -65,7 +65,7 @@ public class JettyRunWarMojo extends AbstractWebAppMojo
     /**
      * Scanner to check for files changes to cause redeploy
      */
-    protected PathWatcher scanner;
+    protected Scanner scanner;
     protected JettyEmbedder embedder;
     protected JettyForker forker;
     protected JettyDistroForker distroForker;
@@ -155,9 +155,11 @@ public class JettyRunWarMojo extends AbstractWebAppMojo
         // start scanning for changes, or wait for linefeed on stdin
         if (scan > 0)
         {
-            scanner = new PathWatcher();
+            scanner = new Scanner();
+            scanner.setScanInterval(scan);
+            scanner.setScanDepth(Scanner.MAX_SCAN_DEPTH); //always fully walk directory hierarchies
+            scanner.setReportExistingFilesOnStartup(false);
             configureScanner();
-            scanner.setNotifyExistingOnStart(false);
             scanner.start();
         }
         else
@@ -186,36 +188,33 @@ public class JettyRunWarMojo extends AbstractWebAppMojo
 
     public void configureScanner() throws MojoExecutionException
     {
-        scanner.watch(project.getFile().toPath());
-        scanner.watch(war);
-        
-        //set up any extra files or dirs to watch
-        configureScanTargetPatterns(scanner);
-        
-        scanner.addListener(new PathWatcher.EventListListener()
+        try
         {
-            @Override
-            public void onPathWatchEvents(List<PathWatchEvent> events)
+            scanner.addFile(project.getFile().toPath());
+            scanner.addFile(war);
+
+            //set up any extra files or dirs to watch
+            configureScanTargetPatterns(scanner);
+            scanner.addListener(new Scanner.BulkListener()
             {
-                try
+                public void filesChanged(List<String> changes)
                 {
-                    boolean reconfigure = false;
-                    for (PathWatchEvent e:events)
+                    try
                     {
-                        if (e.getPath().equals(project.getFile().toPath()))
-                        {
-                            reconfigure = true;
-                            break;
-                        }
+                        boolean reconfigure = changes.contains(project.getFile().getCanonicalPath());
+                        restartWebApp(reconfigure);
                     }
-                    restartWebApp(reconfigure);
+                    catch (Exception e)
+                    {
+                        getLog().error("Error reconfiguring/restarting webapp after change in watched files",e);
+                    }
                 }
-                catch (Exception e)
-                {
-                    getLog().error("Error reconfiguring/restarting webapp after change in watched files",e);
-                }
-            }
-        });
+            });
+        }
+        catch (IOException e)
+        {
+            throw new MojoExecutionException("Error configuring scanner", e);
+        }
     }
 
     public void restartWebApp(boolean reconfigure) throws Exception 
@@ -288,7 +287,7 @@ public class JettyRunWarMojo extends AbstractWebAppMojo
             }
             default:
             {
-                throw new IllegalStateException("Unrecognized run type " +deployMode);
+                throw new IllegalStateException("Unrecognized run type " + deployMode);
             }
         }
         getLog().info("Restart completed.");
