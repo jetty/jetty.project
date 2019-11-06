@@ -21,17 +21,44 @@
 
 The Jetty Maven plugin is useful for rapid development and testing.
 You can add it to any webapp project that is structured according to the Maven defaults.
-The plugin can then periodically scan your project for changes and automatically redeploy the webapp if any are found.
+The plugin can then optionally periodically scan your project for changes and automatically redeploy the webapp if any are found.
 This makes the development cycle more productive by eliminating the build and deploy steps: you use your IDE to make changes to the project, and the running web container automatically picks them up, allowing you to test them straight away.
+
+The plugin has been substantially re-architected in jetty-10 to:
+
+* have less goals
+* make deployment modes (embedded, forked or to a jetty distribution) apply uniformly across all goals
+* simplify configuration options
+* make the purpose and operation of each goal clearer
+* rearchitect with composition rather than inheritance to make future extensions easier
+
+There are now only 4 goals to run a webapp in jetty:
+
+* link:#jetty-run-goal[jetty:run]
+* link:#jetty-run-war-goal[jetty:run-war]
+* link:#jetty-start-goal[jetty:start]
+* link:#jetty-start-war-goal[jetty:start-war]
+
+Plus two utility goals:
+
+* link:#jetty-stop-goal[jetty:stop]
+* link:#jetty-effective-web-xml-goal[jetty:effective-web-xml]
+
+`jetty:run` and `jetty:start` are alike in that they both run an unassembled webapp in jetty,however `jetty:run` is designed to be used at the command line, whereas `jetty:start` is specifically designed to be bound to execution phases in the build lifecycle.
+`jetty:run` will pause maven while jetty is running, echoing all output to the console, and then stop maven when jetty exits.
+`jetty:start` will not pause maven, will write all its output to a file, and will not stop maven when jetty exits.
+
+`jetty:run-war` and `jetty:start-war` are similar in that they both run an _assembled_ war file in jetty.
+However, `jetty:run-war` is designed to be run at the command line, whereas `jetty:start-war` is specifically designed to be bound to execution phases in the build lifecycle.
+`jetty:run-war` will pause maven while jetty is running, echoing all output to the console, and then stop maven when jetty exits.
+`jetty:start-war` will not not pause maven, will write all its output to a file, and will not stop maven when jetty exits.
 
 ____
 [IMPORTANT]
-You should use Maven 3.3+ for this plugin.
-____
-
-While the Jetty Maven Plugin can be very useful for development we do not recommend its use in a production capacity.
+While the Jetty Maven Plugin can be very useful for development we do not recommend its use in a _production capacity_.
 In order for the plugin to work it needs to leverage many internal Maven apis and Maven itself it not a production deployment tool.
-We recommend either the traditional distribution deployment approach or using link:#advanced-embedding[embedded Jetty.]
+We recommend either the traditional link:distribution-guide/index.html[distribution] deployment approach or using link:#advanced-embedding[embedded Jetty.]
+____
 
 [[get-up-and-running]]
 ==== Quick Start: Get Up and Running
@@ -57,25 +84,29 @@ mvn jetty:run
 This starts Jetty and serves up your project on http://localhost:8080/.
 
 Jetty will continue to run until you stop it.
-While it runs it periodically scans for changes to your project files
-If you save changes and recompile your class files, Jetty redeploys your webapp, and you can instantly test the changes that were just made.
+By default, it will not automatically restart your webapp: you can force a redeploy by hitting the `Enter` key.
+Set a non-zero &lt;scan&gt; value to have jetty scan your webapp for changes and automatically redeploy.
 
 You can terminate the plugin with a `ctrl-c` in the terminal window where it is running.
 
 ____
 [NOTE]
 The classpath of the running Jetty instance and its deployed webapp are managed by Maven, and may not be exactly what you expect.
-For example: a webapp's dependent jars might be referenced via the local repository, not the `WEB-INF/lib` directory.
+For example: a webapp's dependent jars might be referenced via the local repository, or other projects in the reactor, not the `WEB-INF/lib` directory.
 ____
 
-[[running-and-deploying]]
+[[supported-goals]]
 ==== Supported Goals
 
-The Jetty Maven plugin has a number of distinct Maven goals.
-Arguably the most useful is the `run` goal which runs Jetty on an unassembled webapp.
-There are other goals which help you accomplish different tasks.
-For example, you might need to run your webapp in a forked instance of Jetty rather than within the process running Maven; or you may need finer grained control over the maven lifecycle stage in which you wish to deploy your webapp.
-There are different goals to accomplish these tasks, as well as several others.
+The goals prefixed with `"run"` are designed to be used at the _command line_. 
+They will start jetty and pause the maven build process until jetty is manually terminated, at which time the build will also be terminated.
+Jetty can scan various files in your project for changes and redeploy the webapp as necessary, or you can choose to manually trigger a redeploy if you prefer.
+All output from jetty is echoed to the console.
+
+The goals prefixed with `"start"` are designed to be used with _build lifecycle bindings in the pom_, and _not_ at the command line.
+Maven will start and terminate jetty at the appropriate points in the build lifecycle, continuing with the build.
+Jetty will _not_ scan any files in your project for changes, and your webapp will _not_ be redeployed either automatically or manually.
+Output from jetty is directed to a file in the `target` directory.
 
 To see a list of all goals supported by the Jetty Maven plugin, do:
 
@@ -91,54 +122,46 @@ To see the detailed list of parameters that can be configured for a particular g
 mvn jetty:help -Ddetail=true -Dgoal= <goal name>
 ....
 
-[[configuring-jetty-container]]
-==== Configuring the Jetty Container
+[[deployment-modes]]
+==== Deployment Modes
+All of the `"run"` and `"start"` goals can deploy your webapp either into the running maven process, or forked into a new child process, or forked into a jetty distribution on disk.
 
-These configuration elements set up the Jetty environment in which your webapp executes.
-They are common to most goals:
+This is controlled by setting the `deployMode` configuration parameter in the pom, but can also be set by defining the maven property 'jetty.deployMode'.
+
+===== Embedded
+
+`deployMode` of `EMBED`.
+This is the "classic" jetty maven plugin deployment mode, running in-process with maven.
+This is the _default_ mode.
+
+These extra configuration parameters are available:
 
 httpConnector::
 Optional.
+NOTE to configure a https connector, you will need to use xml configuration files instead, setting the `jettyXmls` parameter.
+This parameter can only be used to configure a standard http connector.
 If not specified, Jetty will create a link:{JDURL}/org/eclipse/jetty/server/ServerConnector.html[ServerConnector] instance listening on port 8080.
 You can change this default port number by using the system property `jetty.http.port` on the command line, for example, `mvn -Djetty.http.port=9999 jetty:run`.
 Alternatively, you can use this configuration element to set up the information for the ServerConnector.
 The following are the valid configuration sub-elements:
-+
-port;;
+port:::
 The port number for the connector to listen on.
 By default it is 8080.
-host;;
+host:::
 The particular interface for the connector to listen on.
 By default, all interfaces.
-name;;
+name:::
 The name of the connector, which is useful for link:#serving-webapp-from-particular-port[configuring contexts to respond only on particular connectors].
-idleTimeout;;
+idleTimeout:::
 Maximum idle time for a connection.
-+
 You could instead configure the connectors in a standard link:#jetty-xml-config[jetty xml config file] and put its location into the `jettyXml` parameter.
 Note that since Jetty 9.0 it is no longer possible to configure a link:#maven-config-https[https connector] directly in the pom.xml: you need to link:#maven-config-https[use jetty xml config files to do it].
-jettyXml::
-Optional.
-A comma separated list of locations of Jetty xml files to apply in addition to any plugin configuration parameters.
-You might use it if you have other webapps, handlers, specific types of connectors etc., to deploy, or if you have other Jetty objects that you cannot configure from the plugin.
-scanIntervalSeconds::
-The pause in seconds between sweeps of the webapp to check for changes and automatically hot redeploy if any are detected.
-*By default this is 0, which disables hot deployment scanning.*
-A number greater than 0 enables it.
-reload::
-Default value is "automatic", used in conjunction with a non-zero *_`scanIntervalSeconds`_* causes automatic hot redeploy when changes are detected.
-Set to "manual" instead to trigger scanning by typing a linefeed in the console running the plugin.
-This might be useful when you are doing a series of changes that you want to ignore until you're done.
-In that use, use the `reload` parameter.
-dumpOnStart::
-Optional.
-Default value is false.
-If true, then jetty will dump out the server structure on start.
 loginServices::
 Optional.
 A list of `org.eclipse.jetty.security.LoginService` implementations. Note that there is no default realm.
 If you use a realm in your `web.xml` you can specify a corresponding realm here.
 You could instead configure the login services in a jetty xml file and add its location to the `jettyXml` parameter.
+See link:#configuring-security-settings[Configuring Security].
 requestLog::
 Optional.
 An implementation of the `org.eclipse.jetty.server.RequestLog` request log interface.
@@ -155,123 +178,150 @@ Optional as of Jetty 9.3.1.
 This would configure an instance of the link:{GITBROWSEURL}/jetty-server/src/main/java/org/eclipse/jetty/server/Server.java[`org.eclipse.jetty.server.Server`] for the plugin to use, however it is usually NOT necessary to configure this, as the plugin will automatically configure one for you.
 In particular, if you use the jettyXml element, then you generally DON'T want to define this element, as you are probably using the jettyXml file to configure up a Server with a special constructor argument, such as a custom threadpool.
 If you define both a server element AND use a jetty xml element which points to a config file that has a line like `<Configure id="Server" class="org.eclipse.jetty.server.Server">` then the the xml configuration will override what you configure for the server in the `pom.xml`.
-stopPort::
-Optional.
-Port to listen on for stop commands.
-Useful to use in conjunction with the link:#jetty-stop-goal[stop] or link:#jetty-run-forked-goal[run-forked] goals.
-stopKey::
-Optional.
-Used in conjunction with stopPort for stopping jetty.
-Useful when used in conjunction with the stop or run-forked goals.
-systemProperties::
-Optional.
-Allows you to configure System properties for the execution of the plugin.
-For more information, see link:#sys_props[Setting System Properties].
-systemPropertiesFile::
-Optional.
-A file containing System properties to set for the execution of the plugin.
-By default, settings that you make here *do not* override any system properties already set on the command line, by the JVM, or in the POM via `systemProperties`.
-Read link:#sys_props[Setting System Properties] for how to force overrides.
-skip::
-Default is false.
-If true, the execution of the plugin exits.
-Same as setting the SystemProperty `-Djetty.skip` on the command line.
-This is most useful when configuring Jetty for execution during integration testing and you want to skip the tests.
 useProvidedScope::
 Default value is `false`.
 If true, the dependencies with `<scope>provided</scope>` are placed onto the __container classpath__.
 Be aware that this is NOT the webapp classpath, as "provided" indicates that these dependencies would normally be expected to be provided by the container.
 You should very rarely ever need to use this.
-Instead, you should copy the provided dependencies as explicit dependencies of the `plugin` instead.
+See link:#container-classpath[Container Classpath vs WebApp Classpath].
+
+===== Forked
+
+`deployMode` of `FORK`.
+This is similar to the old "jetty:run-forked" goal - a separate process is forked to run your webapp embedded into jetty.
+These extra configuration parameters are available:
+
+env::
+Optional.
+Map of key/value pairs to pass as environment to the forked JVM.
+jvmArgs::
+Optional.
+A string representing arbitrary arguments to pass to the forked JVM.
+forkWebXml::
+Optional.
+Defaults to `target/fork-web.xml`.
+This is the location of a quickstart web xml file that will be _generated_ during the forking of the jetty process.
+You should not need to set this parameter, but it is available if you wish to control the name and location of that file.
+useProvidedScope::
+Default value is `false`.
+If true, the dependencies with `<scope>provided</scope>` are placed onto the __container classpath__.
+Be aware that this is NOT the webapp classpath, as "provided" indicates that these dependencies would normally be expected to be provided by the container.
+You should very rarely ever need to use this.
+See link:#container-classpath[Container Classpath vs WebApp Classpath].
+
+===== In a jetty distribution
+
+`deployMode` of `DISTRO`.
+This is similar to the old "jetty:run-distro" goal - your webapp is deployed into a dynamically downloaded, unpacked and configured jetty distribution.
+A separate process is forked to run the distro.
+These extra configuration parameters are available:
+
+jettyBase::
+Optional.
+The location of an existing jetty base directory to use to deploy the webapp.
+The existing base will be copied to the `target/` directory before the webapp is deployed.
+If there is no existing jetty base, a fresh one will be made in `target/jetty-base`.
+jettyHome::
+Optional.
+The location of an existing unpacked jetty distribution.
+If one does not exist, a fresh jetty distribution will be downloaded from maven and installed to the `target` directory.
+jvmArgs::
+Optional.
+A string representing arguments that should be passed to the jvm of the child process running the distro.
+modules::
+Optional.
+An array of names of additional jetty modules that the jetty child process will activate.
+Use this to change the link:#container-classpath[container classpath] instead of `useProvidedScope`.
+These modules are enabled by default: `server,http,webapp,deploy`.
+
+
+[[common-configuration]]
+==== Common Configuration
+
+The following configuration parameters are common to all of the `"run-"` and `"start-"` goals:
+
+deployMode::
+One of `EMBED`, `FORK` or `DISTRO`.
+Default `EMBED`.
+Can also be configured by setting the Maven property `jetty.deployMode`.
+This parameter determines whether the webapp will run in jetty in-process with Maven, forked into a new process, or deployed into a jetty distribution.
+See link:#deployment-modes[Deployment Modes].
+jettyXmls::
+Optional.
+A comma separated list of locations of jetty xml files to apply in addition to any plugin configuration parameters.
+You might use it if you have other webapps, handlers, specific types of connectors etc., to deploy, or if you have other Jetty objects that you cannot configure from the plugin.
+skip::
+Default is false.
+If true, the execution of the plugin exits.
+Same as setting the SystemProperty `-Djetty.skip` on the command line.
+This is most useful when configuring Jetty for execution during integration testing and you want to skip the tests.
 excludedGoals::
 Optional.
 A list of Jetty plugin goal names that will cause the plugin to print an informative message and exit.
 Useful if you want to prevent users from executing goals that you know cannot work with your project.
+supportedPackagings::
+Optional.
+Defaults to `war`.
+This is a list of maven &lt;packaging&gt; types that can work with the jetty plugin.
+Usually, only `war` projects are suitable, however, you may configure other types.
+The plugin will refuse to start if the &lt;packaging&gt; type in the pom is not in list of `supportedPackagings`.
+systemProperties::
+Optional.
+Allows you to configure System properties for the execution of the plugin.
+For more information, see link:#setting-system-properties[Setting System Properties].
+systemPropertiesFile::
+Optional.
+A file containing System properties to set for the execution of the plugin.
+By default, settings that you make here *do not* override any system properties already set on the command line, by the JVM, or in the POM via `systemProperties`.
+Read link:#setting-system-properties[Setting System Properties] for how to force overrides.
+jettyProperties::
+Optional.
+A map of property name, value pairs.
+Allows you to configure standard jetty properties.
 
-[[maven-config-https]]
-===== Configuring a Https Connector
+[[container-classpath]]
+==== Container Classpath vs WebApp Classpath
 
-In order to configure an HTTPS connector, you need to use jetty xml configuration files.
-This example uses files copied directly from the jetty distribution etc/ directory, although you can of course make up your own xml file or files.
-We will use the following files:
+The Servlet Specification makes a strong distinction between the classpath for a webapp, and the classpath of the container.
+When running in maven, the plugin's classpath is equivalent to the container classpath.
+It will make a classpath for the webapp to be deployed comprised of &lt;dependencies&gt; specified in the pom.
 
-jetty.xml::
-Sets up various characteristics of the link:{GITBROWSEURL}/jetty-server/src/main/java/org/eclipse/jetty/server/Server.java[`org.eclipse.jetty.server.Server`] instance for the plugin to use.
-Importantly, it sets up the link:{GITBROWSEURL}/jetty-server/src/main/java/org/eclipse/jetty/server/HttpConfiguration.java[`org.eclipse.jetty.server.HttpConfiguration`] element that we can refer to in subsequent xml files that configure the connectors.
-Below is the relevant section taken from link:{GITBROWSEURL}/jetty-server/src/main/config/etc/jetty.xml[jetty.xml].
-+
-[source, xml, subs="{sub-order}"]
-----
-<Configure id="Server" class="org.eclipse.jetty.server.Server">
-  ...
-    <New id="httpConfig" class="org.eclipse.jetty.server.HttpConfiguration">
-      <Set name="secureScheme"><Property name="jetty.httpConfig.secureScheme" default="https" /></Set>
-      <Set name="securePort"><Property name="jetty.httpConfig.securePort" deprecated="jetty.secure.port" default="8443" /></Set>
-      <Set name="outputBufferSize"><Property name="jetty.httpConfig.outputBufferSize" deprecated="jetty.output.buffer.size" default="32768" /></Set>
-      <Set name="outputAggregationSize"><Property name="jetty.httpConfig.outputAggregationSize" deprecated="jetty.output.aggregation.size" default="8192" /></Set>
-      <Set name="requestHeaderSize"><Property name="jetty.httpConfig.requestHeaderSize" deprecated="jetty.request.header.size" default="8192" /></Set>
-      <Set name="responseHeaderSize"><Property name="jetty.httpConfig.responseHeaderSize" deprecated="jetty.response.header.size" default="8192" /></Set>
-      <Set name="sendServerVersion"><Property name="jetty.httpConfig.sendServerVersion" deprecated="jetty.send.server.version" default="true" /></Set>
-      <Set name="sendDateHeader"><Property name="jetty.httpConfig.sendDateHeader" deprecated="jetty.send.date.header" default="false" /></Set>
-      <Set name="headerCacheSize"><Property name="jetty.httpConfig.headerCacheSize" default="4096" /></Set>
-      <Set name="delayDispatchUntilContent"><Property name="jetty.httpConfig.delayDispatchUntilContent" deprecated="jetty.delayDispatchUntilContent" default="true"/></Set>
-      <Set name="maxErrorDispatches"><Property name="jetty.httpConfig.maxErrorDispatches" default="10"/></Set>
-      <Set name="persistentConnectionsEnabled"><Property name="jetty.httpConfig.persistentConnectionsEnabled" default="true"/></Set>
-      <Set name="cookieCompliance"><Call class="org.eclipse.jetty.http.CookieCompliance" name="valueOf"><Arg><Property name="jetty.httpConfig.cookieCompliance" default="RFC6265"/></Arg></Call></Set>
+If your production environment places specific jars onto the container's classpath, the equivalent way to do this with maven is to define these as &lt;dependencies&gt; for the plugin itself. See link:http://maven.apache.org/pom.html#Plugins.
+This is suitable if you are using either `EMBED` or `FORK` mode.
+If you are using `DISTRO` mode, then you should configure the `modules` parameter with the names of the jetty modules that place these jars onto the container classpath.
 
-      <!-- Uncomment to enable handling of X-Forwarded- style headers
-      <Call name="addCustomizer">
-        <Arg><New class="org.eclipse.jetty.server.ForwardedRequestCustomizer"/></Arg>
-      </Call>
-      -->
-    </New>
-  ...
-</Configure>
-----
-jetty-ssl.xml::
-Sets up ssl which will be used by the https connector.
-Here's the `jetty-ssl.xml` file from the jetty-distribution:
-+
-[source, xml, subs="{sub-order}"]
-----
-include::{SRCDIR}/jetty-server/src/main/config/etc/jetty-ssl.xml[]
-----
-jetty-https.xml::
-Set up the https connector using the HttpConfiguration from `jetty.xml` and the ssl configuration from `jetty-ssl.xml`:
-+
-[source, xml, subs="{sub-order}"]
-----
-include::{SRCDIR}/jetty-server/src/main/config/etc/jetty-https.xml[]
-----
+Note that in `EMBED` or `FORK` mode, you could also influence the container classpath by setting the `useProvidedScope` parameter to `true`: this will place any dependencies with &lt;scope&gt;provided&lt;scope&gt; onto the plugin's classpath.
+Use this very cautiously: as the plugin already automatically places most jetty jars onto the classpath, you could wind up with duplicate jars. 
 
-Now you need to let the plugin know to apply the files above:
 
-[source, xml, subs="{sub-order}"]
-----
-<plugin>
-  <groupId>org.eclipse.jetty</groupId>
-  <artifactId>jetty-maven-plugin</artifactId>
-  <version>{VERSION}</version>
-  <configuration>
-    <jettyXml>jetty.xml,jetty-ssl.xml,jetty-https.xml</jettyXml>
-  </configuration>
-</plugin>
-----
+[[jetty-run-goal]]
+==== jetty:run
 
-____
-[CAUTION]
-Just as with an installed distribution of Jetty, the ordering of the xml files is significant.
-____
+The `run` goal deploys a webapp that is _not_ first built into a WAR.
+A virtual webapp is constructed from the project's sources and its dependencies.
+It looks for the constituent parts of a webapp in the maven default project locations, although you can override these in the plugin configuration.
+For example, by default it looks for:
 
-You can also use Jetty xml files to configure a http connector for the plugin to use.
-Here we use the same `jetty-http.xml` file from the Jetty distribution:
+* resources in `${project.basedir}/src/main/webapp`
+* classes in `${project.build.outputDirectory}`
+* `web.xml` in `${project.basedir}/src/main/webapp/WEB-INF/`
 
-[source, xml, subs="{sub-order}"]
-----
-include::{SRCDIR}/jetty-server/src/main/config/etc/jetty-http.xml[]
-----
+The plugin first runs a maven parallel build to ensure that the classes are built and up-to-date before deployment.
+If you change the source of a class and your IDE automatically compiles it in the background, the plugin picks up the changed class (note you need to configure a non-zero `scan` interval for automatic redeployment, otherwise redeployment only occurs if you hit the `Enter` key).
 
-Now we add it to the list of configs for the plugin to apply:
+If the plugin is invoked in a multi-module build, any dependencies that are also in the maven reactor are used from their compiled classes.
+Prior to jetty-9.4.7 any dependencies needed to be built first.
+
+Once invoked, you can configure the plugin to run continuously, scanning for changes in the project and automatically performing a hot redeploy when necessary.
+Any changes you make are immediately reflected in the running instance of Jetty, letting you quickly jump from coding to testing, rather than going through the cycle of: code, compile, reassemble, redeploy, test.
+
+The maven build will be paused until jetty exits, at which time maven will also exit.
+
+Stopping jetty is accomplished by typing `cntrl-c` at the command line.
+
+Output from jetty will be logged to the console.
+
+Here is an example, which turns on scanning for changes every ten seconds, and sets the webapp context path to `/test`:
 
 [source, xml, subs="{sub-order}"]
 ----
@@ -280,18 +330,15 @@ Now we add it to the list of configs for the plugin to apply:
   <artifactId>jetty-maven-plugin</artifactId>
   <version>{VERSION}</version>
   <configuration>
-    <jettyXml>jetty.xml,jetty-http.xml,jetty-ssl.xml,jetty-https.xml</jettyXml>
+    <scan>10</scan>
+    <webApp>
+      <contextPath>/test</contextPath>
+    </webApp>
   </configuration>
 </plugin>
 ----
 
-Alternatively, you can use the link:#maven-http-connector[*httpConnector*] configuration element inside the pom instead as described above.
-
-[[configuring-your-webapp]]
-==== Configuring Your WebApp
-
-These configuration parameters apply to your webapp.
-They are common to almost all goals.
+===== Configuration
 
 webApp::
 This is an instance of link:{JDURL}/org/eclipse/jetty/maven/plugin/JettyWebAppContext.html[org.eclipse.jetty.maven.plugin.JettyWebAppContext], which is an extension to the class  link:{JDURL}/org/eclipse/jetty/webapp/WebAppContext.hml[`org.eclipse.jetty.webapp.WebAppContext`].
@@ -300,7 +347,7 @@ Here are a few of the most useful ones:
 +
 contextPath;;
 The context path for your webapp. By default, this is set to `/`.
-If using a custom value for this parameter, you probably want to include the leading `/`, example `/mycontext`.
+If using a custom value for this parameter, you should include the leading `/`, example `/mycontext`.
 descriptor;;
 The path to the `web.xml` file for your webapp.
 defaultsDescriptor;;
@@ -309,6 +356,9 @@ If you don't supply one, Jetty uses a default file baked into the `jetty-webapp.
 overrideDescriptor;;
 The path to a `web.xml` file that Jetty applies after reading your `web.xml`.
 You can use this to replace or add configuration.
+jettyEnvXml;;
+Optional.
+Location of a `jetty-env.xml` file, which allows you to make JNDI bindings that satisfy `env-entry`, `resource-env-ref`, and `resource-ref` linkages in the `web.xml` that are scoped  only to the webapp and not shared with other webapps that you might be deploying at the same time (for example, by using a `jettyXml` file).
 tempDirectory;;
 The path to a dir that Jetty can use to expand or copy jars and jsp compiles when your webapp is running.
 The default is `${project.build.outputDirectory}/tmp`.
@@ -333,54 +383,6 @@ You can make this pattern more restrictive to only match certain jars by using t
 This is analogous to the context attribute link:#web-inf-include-jar-pattern[org.eclipse.jetty.server.webapp.WebInfIncludeJarPattern] that is documented link:#web-inf-include-jar-pattern[here].
 contextXml::
 The path to a context xml file that is applied to your webapp AFTER the `webApp` element.
-
-[[jetty-run-goal]]
-==== jetty:run
-
-The `run` goal runs on a webapp that does not have to be built into a WAR.
-Instead, Jetty deploys the webapp from its sources.
-It looks for the constituent parts of a webapp in the Maven default project locations, although you can override these in the plugin configuration.
-For example, by default it looks for:
-
-* resources in `${project.basedir}/src/main/webapp`
-* classes in `${project.build.outputDirectory}`
-* `web.xml` in `${project.basedir}/src/main/webapp/WEB-INF/`
-
-The plugin automatically ensures the classes are rebuilt and up-to-date before deployment.
-If you change the source of a class and your IDE automatically compiles it in the background, the plugin picks up the changed class.
-
-You do not need to assemble the webapp into a WAR, saving time during the development cycle.
-Once invoked, you can configure the plugin to run continuously, scanning for changes in the project and automatically performing a hot redeploy when necessary.
-Any changes you make are immediately reflected in the running instance of Jetty, letting you quickly jump from coding to testing, rather than going through the cycle of: code, compile, reassemble, redeploy, test.
-
-____
-[NOTE]
-As of Jetty 9.4.7, when using jetty:run in a multi-module build, it is no longer necessary to build each of the modules that form dependencies of the webapp first.
-Thus, if your webapp depends on other modules in your project and they are present in the reactor at the same time, jetty will use their compiled classes rather than their jar files from your local maven repository.
-____
-
-Here is an example, which turns on scanning for changes every ten seconds, and sets the webapp context path to `/test`:
-
-[source, xml, subs="{sub-order}"]
-----
-<plugin>
-  <groupId>org.eclipse.jetty</groupId>
-  <artifactId>jetty-maven-plugin</artifactId>
-  <version>{VERSION}</version>
-  <configuration>
-    <scanIntervalSeconds>10</scanIntervalSeconds>
-    <webApp>
-      <contextPath>/test</contextPath>
-    </webApp>
-  </configuration>
-</plugin>
-----
-
-[[configuring-additional-parameters]]
-===== Configuration
-
-In addition to the `webApp` element that is common to most goals, the `jetty:run` goal supports:
-
 classesDirectory::
 Location of your compiled classes for the webapp.
 You should rarely need to set this parameter.
@@ -393,15 +395,13 @@ By default this is false.
 webAppSourceDirectory::
 By default, this is set to `${project.basedir}/src/main/webapp`.
 If your static sources are in a different location, set this parameter accordingly.
-jettyEnvXml::
-Optional.
-Location of a `jetty-env.xml` file, which allows you to make JNDI bindings that satisfy `env-entry`, `resource-env-ref`, and `resource-ref` linkages in the `web.xml` that are scoped  only to the webapp and not shared with other webapps that you might be deploying at the same time (for example, by using a ` jettyConfig` file).
-scanTargets::
-Optional.
-A list of files and directories to periodically scan in addition to those the plugin automatically scans.
+scan::
+The pause in seconds between sweeps of the webapp to check for changes and automatically hot redeploy if any are detected.
+*By default this is 0, which disables hot deployment scanning. Redeployment is by hitting `Enter` key.*
+A number greater than 0 enables it.
 scanTargetPatterns::
 Optional.
-If you have a long list of extra files you want scanned, it is more convenient to use pattern matching expressions to specify them instead of enumerating them with the `scanTargetsList` of `scanTargetPatterns`, each consisting of a directory, and including and/or excluding parameters to specify the file matching patterns.
+List of directories with ant-style include/excludes patterns to specify other files to periodically scan for changes.
 scanClassesPattern::
 Since 9.3.0.
 Optional.
@@ -415,7 +415,9 @@ Include and exclude patterns that can be applied to the testClassesDirectory for
 If a file or directory is excluded by the patterns then a change in that file (or subtree in the case of a directory) is ignored and will not cause the webapp to redeploy.
 Patterns are specified as a relative path using a glob-like syntax as described in the http://docs.oracle.com/javase/8/docs/api/java/nio/file/FileSystem.html#getPathMatcher-java.lang.String-[javadoc] for http://docs.oracle.com/javase/8/docs/api/java/nio/file/FileSystem.html#getPathMatcher-java.lang.String-[FileSystem.getPathMatcher].
 
-Here's an example:
+See link:#deployment-modes[Deployment Modes] for other configuration parameters available when using the `run` goal in EMBED, FORK or DISTRO modes.
+
+Here's an example of a pom configuration for the plugin with the `run` goal:
 
 [source, xml, subs="{sub-order}"]
 ----
@@ -440,10 +442,6 @@ Here's an example:
              <exclude>**/Foo.class</exclude>
           </excludes>
         </scanClassesPattern>
-        <scanTargets>
-          <scanTarget>src/mydir</scanTarget>
-          <scanTarget>src/myfile.txt</scanTarget>
-        </scanTargets>
         <scanTargetPatterns>
           <scanTargetPattern>
             <directory>src/other-resources</directory>
@@ -464,360 +462,79 @@ Here's an example:
 </project>
 ----
 
-If, for whatever reason, you cannot run on an unassembled webapp, the goals `run-war` and `run-exploded` work on unassembled webapps.
+If, for whatever reason, you cannot run on an unassembled webapp, the goal `run-war` works on assembled webapps.
 
-[[running-assembled-webapp-as-war]]
+[[jetty-run-war-goal]]
 ==== jetty:run-war
 
-This goal first packages your webapp as a WAR file and then deploys it to Jetty.
-If you set a non-zero `scanInterval`, Jetty watches your `pom.xml` and the WAR file; if either changes, it redeploys the war.
+When invoked at the command line this goal first executes a maven build of your project to the package phase. 
 
-[[configuring-war]]
+By default it then deploys the resultant war to jetty, but you can use this goal instead to deploy _any_ war file by simply setting the `&lt;webApp&gt;&lt;war&gt;` configuration parameter to its location.
+
+If you set a non-zero `scan`, Jetty watches your `pom.xml` and the WAR file; if either changes, it redeploys the war.
+With a zero `scan` interval, redeployment is manual via hitting the `Enter` key.
+
+The maven build is held up until jetty exits, which is achieved by typing `cntrl-c` at the command line.
+
+All jetty output is directed to the console.
+
 ===== Configuration
 
-war::
+Configuration parameters are:
+
+webApp::
+war:::
 The location of the built WAR file. This defaults to `${project.build.directory}/${project.build.finalName}.war`.
-If this is not sufficient, set it to your custom location.
-
-Here's how to set it:
-
-[source, xml, subs="{sub-order}"]
-----
-<project>
-...
-  <plugins>
-...
-    <plugin>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-maven-plugin</artifactId>
-      <version>{VERSION}</version>
-      <configuration>
-        <war>${project.basedir}/target/mycustom.war</war>
-      </configuration>
-    </plugin>
-  </plugins>
-</project>
-----
-
-[[running-assembled-webapp-as-expanded-war]]
-==== jetty:run-exploded
-
-The run-exploded goal first assembles your webapp into an exploded WAR file and then deploys it to Jetty.
-If you set a non-zero `scanInterval`, Jetty watches your `pom.xml,`WEB-INF/lib`, `WEB-INF/` and `WEB-INF/web.xml` for changes and redeploys when necessary.
-
-[[configuring-exploded-war]]
-===== Configuration
-
-war::
-The location of the exploded WAR.
-This defaults to `${project.build.directory}/${project.build.finalName}`, but you can override the default by setting this parameter.
-
-Here's how to set it:
-
-[source, xml, subs="{sub-order}"]
-----
-<project>
-...
-  <plugins>
-...
-    <plugin>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>maven-jetty-plugin</artifactId>
-      <version>{VERSION}</version>
-      <configuration>
-        <war>${project.basedir}/target/myfunkywebapp</war>
-      </configuration>
-    </plugin>
-  </plugins>
-</project>
-----
-
-[[deploy-war-running-pre-assembled-war]]
-==== jetty:deploy-war
-
-This is basically the same as `jetty:run-war`, but without assembling the WAR of the current module - you can nominate the location of any war to run.
-Unlike `run-war`, the phase in which this plugin executes is not bound to the "package" phase - you may bind it to any phase to use it.
-
-===== Configuration
-
-war::
-The location of the WAR file. This defaults to `${project.build.directory}/${project.build.finalName}`, but you can override the default by setting this parameter.
-daemon::
-If true, this plugin will start Jetty but let the build continue.
-This is useful if you want to start jetty as an execution binding in a particular phase and then stop it in another.
-Alternatively, you can set this parameter to false, in which case Jetty will block and you will need to use a ctrl-c to stop it.
-
-Here's the configuration:
-
-[source, xml, subs="{sub-order}"]
-----
-
-<project>
-...
-  <plugins>
-...
-  <plugin>
-    <groupId>org.eclipse.jetty</groupId>
-    <artifactId>jetty-maven-plugin</artifactId>
-    <version>{VERSION}</version>
-    <configuration>
-      <war>/opt/special/some-app.war</war>
-      <stopKey>alpha</stopKey>
-      <stopPort>9099</stopPort>
-    </configuration>
-    <executions>
-      <execution>
-        <id>start-jetty</id>
-        <phase>test-compile</phase>
-        <goals>
-          <goal>deploy-war</goal>
-        </goals>
-      </execution>
-      <execution>
-        <id>stop-jetty</id>
-        <phase>test</phase>
-        <goals>
-          <goal>stop</goal>
-        </goals>
-      </execution>
-     </executions>
-    </plugin>
-  </plugins>
-</project>
-
-
-----
-
-[[jetty-run-forked-goal]]
-==== jetty:run-forked
-
-This goal allows you to start the webapp in a new JVM, optionally passing arguments to that new JVM.
-This goal supports mostly the same configuration parameters as the `jetty:run` goal with a couple of extras to help configure the forked process.
-Unlike the `jetty:run` goal, the `jetty:run-forked` goal will not scan the webapp for changes and redeploy.
-
-===== Configuration
-
-The available configuration parameters - in addition to those for the `jetty:run` goal - are:
-
-jvmArgs::
+You can set it to the location of any pre-built war file.
+contextPath:::
+The context path for your webapp. By default, this is set to `/`.
+If using a custom value for this parameter, you should include the leading `/`, example `/mycontext`.
+defaultsDescriptor:::
+The path to a `webdefault.xml` file that will be applied to your webapp before the `web.xml`.
+If you don't supply one, Jetty uses a default file baked into the `jetty-webapp.jar`.
+overrideDescriptor:::
+The path to a `web.xml` file that Jetty applies after reading your `web.xml`.
+You can use this to replace or add configuration.
+containerIncludeJarPattern:::
+Defaults to `.*/jetty-servlet-api-[^/]*\.jar$|.*javax.servlet.jsp.jstl-[^/]*\.jar|.*taglibs-standard-impl-.*\.jar`.
+This is a pattern that is applied to the names of the jars on the container's classpath (ie the classpath of the plugin, not that of the webapp) that should be scanned for fragments, tlds, annotations etc.
+This is analogous to the context attribute link:#container-include-jar-pattern[org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern] that is documented link:#container-include-jar-pattern[here].
+You can define extra patterns of jars that will be included in the scan.
+webInfIncludeJarPattern:::
+Defaults to matching _all_ of the dependency jars for the webapp (ie the equivalent of WEB-INF/lib).
+You can make this pattern more restrictive to only match certain jars by using this setter.
+This is analogous to the context attribute link:#web-inf-include-jar-pattern[org.eclipse.jetty.server.webapp.WebInfIncludeJarPattern] that is documented link:#web-inf-include-jar-pattern[here].
+tempDirectory:::
+The path to a dir that Jetty can use to expand or copy jars and jsp compiles when your webapp is running.
+The default is `${project.build.outputDirectory}/tmp`.
+contextXml:::
+The path to a context xml file that is applied to your webapp AFTER the `webApp` element.
+scan::
+The pause in seconds between sweeps of the webapp to check for changes and automatically hot redeploy if any are detected.
+*By default this is 0, which disables hot deployment scanning. Redeployment is by hitting `Enter` key.*
+A number greater than 0 enables it.
+scanTargetPatterns::
 Optional.
-A string representing arbitrary arguments to pass to the forked JVM.
-env::
-Optional.
-Map of key/value pairs to pass as environment to the forked JVM.
-waitForChild::
-Default is `true`.
-This causes the parent process to wait for the forked process to exit.
-In this case you can use `ctrl-c` to terminate both processes.
-It is more useful to set it to `false`, in which case the parent process terminates whilst leaving the child process running.
-You use the `jetty:stop` goal to stop the child process.
-In the case where `waitForChild` is `false`, the output from the child process is written to `target/jetty.out`.
-maxChildChecks::
-Default is `50`.
-This is maximum number of times the parent process checks to see if the child process has started.
-Only relevant if `waitForChild` is `false`.
-maxChildCheckInterval::
-Default is `100`.
-This is the time in milliseconds between checks to see if the child process has started.
-Only relevant if `waitForChild` is `false`.
-forkWebXml::
-Default is `target/fork-web.xml`.
-This is the name of the file into which jetty generates the effective web.xml for use by the child process.
-javaPath::
-Default will be your `${java.home}/bin/java`
-This the java executable used to start the child process
+List of directories with ant-style include/excludes patterns to specify other files to periodically scan for changes.
 
-The following `jetty:run` parameters are NOT applicable:
-
-* *scanTargets*
-* *scanTargetPatterns*
-* *scanClassesPattern*
-* *scanTestClassesPattern*
-
-Some of the container configuration parameters are *NOT* available with this goal:
-
-scanIntervalSeconds::
-Not supported.
-The forked jetty will not monitor and redeploy the webapp.
-reload::
-Not supported.
-The forked jetty will not redeploy the webapp.
-httpConnector::
-Not supported.
-To define custom connectors use a jetty xml file instead.
-loginServices::
-Not supported.
-To define LoginServices use a jetty xml or context xml file instead.
-requestLog::
-Not supported.
-To define a RequestLog setup, use a jetty xml or context xml file instead.
-systemProperties::
-Not supported.
-Use the `jvmArgs` parameter to pass system properties to the forked process.
-
-To deploy your unassembled web app to Jetty running in a new JVM:
-
-[source, screen, subs="{sub-order}"]
-....
-mvn jetty:run-forked
-....
-
-Jetty continues to execute until you either:
-
-* Press `ctrl-c` in the terminal window to stop the plugin, which also stops the forked JVM (only if you started with `waitForChild=true`)
-* Use `jetty:stop` to stop the forked JVM, which also stops the plugin.
-
-____
-[NOTE]
-If you want to set a custom port for the Jetty connector you need to specify it in a `jetty xml` file rather than setting the connector and port tags.
-You can specify the location of the `jetty.xml` using the `jettyXml` parameter.
-____
-
-[[jetty-run-distro-goal]]
-==== jetty:run-distro
-
-Introduced in Jetty 9.4.8, this goal allows you to execute your unassembled webapp in a local distribution of Jetty.
-This can be useful if your webapp requires a highly customized environment in which to run.
-If your webapp is designed to run in the jetty distribution in production, then this goal is the closest approximation to that environment.
-
-Similar to the `jetty:run-forked` goal, this goal will fork a child process in which to execute your webapp in the distro.
-
-===== Configuration
-
-The configuration parameters are mostly the same as the `jetty:run` goal (although see below for some exceptions), with the addition of:
-
-jettyBase::
-Optional.
-The location of an existing jetty base directory to use to deploy the webapp.
-The existing base will be copied to the `target/` directory before the webapp is deployed.
-If there is no existing jetty base, a fresh one will be made in `target/jetty-base`.
-jettyHome::
-Optional.
-The location of an existing unpacked jetty distribution.
-If one does not exist, a fresh jetty distribution will be downloaded from maven and installed to the `target` directory.
-jettyProperties::
-Optional.
-An array of jetty properties to specify on the command line for the child process.
-jvmArgs::
-Optional.
-A string representing arguments that should be passed to the jvm of the child process.
-modules::
-Optional.
-An array of names of jetty modules that the jetty child process will activate.
-waitForChild::
-Default is `true`.
-Like jetty:run-forked, if `true`, the parent process will wait for the child to exit and echo all of its output to the parent's stdout/stderr.
-In that case you can terminate both processes with a `cntrl-c`.
-If `false`, the parent does not wait for the child to finish, and the child will write all of its output to `target/jetty.out`.
-To stop the asynchronously executing child process you can use `jetty:stop`.
-maxChildChecks::
-Default value 10.
-This is the maximum number of times the parent will check to see if the child started correctly when `waitForChild` is `false`.
-maxChildCheckInterval::
-Default value 100.
-This is the interval in milliseconds between checks to see if the child started correctly.
-Only applicable if `waitForChild` is `false`.
-javaPath::
-Default will be your `${java.home}/bin/java`
-This the java executable used to start the child process
-
-____
-[NOTE]
-Use the `modules` parameter to configure the Jetty distribution appropriately rather than using jetty artifacts as `plugin dependencies`.
-____
-
-The following `jetty:run` parameters are *NOT* applicable to this goal:
-
-* *scanTargets*
-* *scanTargetPatterns*
-* *scanClassesPattern*
-* *scanTestClassesPattern*
-
-
-The following container configuration options are *NOT* applicable for this goal:
-
-scanIntervalSeconds::
-Not supported.
-This goal will not monitor and redeploy the webapp.
-reload::
-Not supported.
-This goal will not redeploy the webapp.
-httpConnector::
-Not supported.
-Use the `modules` parameter to enable appropriate modules, or the `jettyBase` parameter to point to an appropriately configured jetty base.
-loginServices::
-Not supported.
-Use the `modules` parameter to enable appropriate modules, or the `jettyBase` parameter to point to an appropriately configured jetty base.
-requestLog::
-Not supported.
-Use the `modules` parameter to enable appropriate modules, or the `jettyBase` parameter to point to an appropriately configured jetty base.
-systemProperties::
-Not supported.
-Use the `jvmArgs` parameter to pass system properties to the forked process.
-
-Here's an example of using the configuration parameters:
-[source, xml, subs="{sub-order}"]
-----
-
-<project>
-...
-  <plugins>
-...
-  <plugin>
-    <groupId>org.eclipse.jetty</groupId>
-    <artifactId>jetty-maven-plugin</artifactId>
-    <version>{VERSION}</version>
-    <configuration>
-      <stopKey>alpha</stopKey>
-      <stopPort>9099</stopPort>
-      <jettyBase>/my/existing/jetty-base</jettyBase>
-      <contextXml>/some/existing/context.xml</contextXml>
-      <useTestClasspath>true</useTestClasspath>
-      <modules>
-       <module>apache-jsp</module>
-       <module>apache-jstl</module>
-       <module>jmx</module>
-      </modules>
-      <jettyProperties>
-        <jettyProperty>jetty.server.dumpAfterStart=true</jettyProperty>
-      </jettyProperties>
-      <jvmArgs>-Dorg.eclipse.jetty.webapp.LEVEL=DEBUG</jvmArgs>
-      <webApp>
-        <contextPath>/mypath</contextPath>
-      </webApp>
-    </configuration>
-    </plugin>
-...
-  </plugins>
-</project>
-
-----
-
-____
-[NOTE]
-When defining modules for this goal, use the standard link:#startup-modules[Jetty module] names and not the name of the related Jetty sub-project.
-For example, in the configuration above support for JMX is configured by adding the `jmx` Jetty module and not the `jetty-jmx` sub-project.
-____
-
-
-To deploy your unassembled web app to jetty running as a local distribution:
-
-[source, screen, subs="{sub-order}"]
-....
-mvn jetty:run-distro
-....
-
+See link:#deployment-modes[Deployment Modes] for other configuration parameters available when using the `run-war` goal in EMBED, FORK or DISTRO modes.
 
 [[jetty-start-goal]]
 ==== jetty:start
 
-This goal is for use with an execution binding in your `pom.xml`.
-It is similar to the `jetty:run` goal, however it does NOT first execute the build up until the `test-compile` phase to ensure that all necessary classes and files of the webapp have been generated.
-This is most useful when you want to control the start and stop of Jetty via execution bindings in your `pom.xml`.
+This is similar to the `jetty:run` goal, however it is _not_ designed to be run from the command line and does _not_ first execute the build up until the `test-compile` phase to ensure that all necessary classes and files of the webapp have been generated.
 
-For example, you can configure the plugin to start your webapp at the beginning of your unit tests and stop at the end.
-To do this, you need to set up a couple of `execution` scenarios for the Jetty plugin.
-You use the `pre-integration-test` and `post-integration-test` Maven build phases to trigger the execution and termination of Jetty:
+It will _not_ scan your project for changes and restart your webapp.
+
+It does _not_ pause maven until jetty is stopped.
+
+It is designed to be used with build phase bindings in your pom.
+For example to you can have maven start your webapp at the beginning of your tests and stop at the end.
+
+If the plugin is invoked as part of a multi-module build, any dependencies that are also in the maven reactor are used from their compiled classes.
+Prior to jetty-9.4.7 any dependencies needed to be built first.
+
+Here's an example of using the `pre-integration-test` and `post-integration-test` Maven build phases to trigger the execution and termination of Jetty:
 
 [source, xml, subs="{sub-order}"]
 ----
@@ -826,7 +543,7 @@ You use the `pre-integration-test` and `post-integration-test` Maven build phase
   <artifactId>jetty-maven-plugin</artifactId>
   <version>{VERSION}</version>
   <configuration>
-    <scanIntervalSeconds>10</scanIntervalSeconds>
+    <scan>10</scan>
     <stopKey>foo</stopKey>
     <stopPort>9999</stopPort>
   </configuration>
@@ -838,7 +555,7 @@ You use the `pre-integration-test` and `post-integration-test` Maven build phase
         <goal>start</goal>
       </goals>
       <configuration>
-        <scanIntervalSeconds>0</scanIntervalSeconds>
+        <scan>0</scan>
       </configuration>
     </execution>
     <execution>
@@ -852,12 +569,161 @@ You use the `pre-integration-test` and `post-integration-test` Maven build phase
 </plugin>
 ----
 
+This goal will generate output from jetty into the `target/jetty-start.out` file.
+
+===== Configuration
+
+These configuration parameters are available:
+
+webApp::
+This is an instance of link:{JDURL}/org/eclipse/jetty/maven/plugin/JettyWebAppContext.html[org.eclipse.jetty.maven.plugin.JettyWebAppContext], which is an extension to the class  link:{JDURL}/org/eclipse/jetty/webapp/WebAppContext.hml[`org.eclipse.jetty.webapp.WebAppContext`].
+You can use any of the setter methods on this object to configure your webapp.
+Here are a few of the most useful ones:
++
+contextPath;;
+The context path for your webapp. By default, this is set to `/`.
+If using a custom value for this parameter, you should include the leading `/`, example `/mycontext`.
+descriptor;;
+The path to the `web.xml` file for your webapp.
+defaultsDescriptor;;
+The path to a `webdefault.xml` file that will be applied to your webapp before the `web.xml`.
+If you don't supply one, Jetty uses a default file baked into the `jetty-webapp.jar`.
+overrideDescriptor;;
+The path to a `web.xml` file that Jetty applies after reading your `web.xml`.
+You can use this to replace or add configuration.
+jettyEnvXml;;
+Optional.
+Location of a `jetty-env.xml` file, which allows you to make JNDI bindings that satisfy `env-entry`, `resource-env-ref`, and `resource-ref` linkages in the `web.xml` that are scoped  only to the webapp and not shared with other webapps that you might be deploying at the same time (for example, by using a `jettyXml` file).
+tempDirectory;;
+The path to a dir that Jetty can use to expand or copy jars and jsp compiles when your webapp is running.
+The default is `${project.build.outputDirectory}/tmp`.
+baseResource;;
+The path from which Jetty serves static resources.
+Defaults to `src/main/webapp`.
+resourceBases;;
+Use instead of `baseResource` if you have multiple directories from which you want to serve static content.
+This is an array of directory names.
+baseAppFirst;;
+Defaults to "true".
+Controls whether any overlaid wars are added before or after the original base resource(s) of the webapp.
+See the section on link:#using-overlaid-wars[overlaid wars] for more information.
+containerIncludeJarPattern;;
+Defaults to `.*/jetty-servlet-api-[^/]*\.jar$|.*javax.servlet.jsp.jstl-[^/]*\.jar|.*taglibs-standard-impl-.*\.jar`.
+This is a pattern that is applied to the names of the jars on the container's classpath (ie the classpath of the plugin, not that of the webapp) that should be scanned for fragments, tlds, annotations etc.
+This is analogous to the context attribute link:#container-include-jar-pattern[org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern] that is documented link:#container-include-jar-pattern[here].
+You can define extra patterns of jars that will be included in the scan.
+webInfIncludeJarPattern;;
+Defaults to matching _all_ of the dependency jars for the webapp (ie the equivalent of WEB-INF/lib).
+You can make this pattern more restrictive to only match certain jars by using this setter.
+This is analogous to the context attribute link:#web-inf-include-jar-pattern[org.eclipse.jetty.server.webapp.WebInfIncludeJarPattern] that is documented link:#web-inf-include-jar-pattern[here].
+contextXml::
+The path to a context xml file that is applied to your webapp AFTER the `webApp` element.
+classesDirectory::
+Location of your compiled classes for the webapp.
+You should rarely need to set this parameter.
+Instead, you should set `build outputDirectory` in your `pom.xml`.
+testClassesDirectory::
+Location of the compiled test classes for your webapp. By default this is `${project.build.testOutputDirectory}`.
+useTestScope::
+If true, the classes from `testClassesDirectory` and dependencies of scope "test" are placed first on the classpath.
+By default this is false.
+webAppSourceDirectory::
+By default, this is set to `${project.basedir}/src/main/webapp`.
+If your static sources are in a different location, set this parameter accordingly.
+stopPort::
+Optional.
+Port to listen on for stop commands.
+Useful to use in conjunction with the link:#jetty-stop-goal[stop] and link:#jetty-start-goal[start] goals.
+stopKey::
+Optional.
+Used in conjunction with stopPort for stopping jetty.
+Useful to use in conjunction with the link:#jetty-stop-goal[stop] and link:#jetty-start-goal[start] goals.
+
+These additional configuration parameters are available when running in `FORK` or `DISTRO` mode:
+
+maxChildStartChecks::
+Default is `10`.
+This is maximum number of times the parent process checks to see if the forked jetty process has started correctly
+maxChildStartCheckMs::
+Default is `200`.
+This is the time in milliseconds between checks on the startup of the forked jetty process.
+
+
+[[jetty-start-war-goal]]
+==== jetty:start-war
+
+Similarly to the `jetty:start` goal, `jetty:start-war` is designed to be bound to build lifecycle phases in your pom.
+
+It will _not_ scan your project for changes and restart your webapp.
+
+It does _not_ pause maven until jetty is stopped.
+
+By default, if your pom is for a webapp project, it will deploy the war file for the project to jetty.
+However, like the `jetty:run-war` project, you can nominate any war file to deploy by defining its location in the `&lt;webApp&gt;&lt;war&gt;` parameter.
+
+If the plugin is invoked as part of a multi-module build, any dependencies that are also in the maven reactor are used from their compiled classes.
+Prior to jetty-9.4.7 any dependencies needed to be built first.
+
+This goal will generate output from jetty into the `target/jetty-start-war.out` file.
+
+===== Configuration
+
+These configuration parameters are available:
+
+webApp::
+war:::
+The location of the built WAR file. This defaults to `${project.build.directory}/${project.build.finalName}.war`.
+You can set it to the location of any pre-built war file.
+contextPath:::
+The context path for your webapp. By default, this is set to `/`.
+If using a custom value for this parameter, you should include the leading `/`, example `/mycontext`.
+defaultsDescriptor:::
+The path to a `webdefault.xml` file that will be applied to your webapp before the `web.xml`.
+If you don't supply one, Jetty uses a default file baked into the `jetty-webapp.jar`.
+overrideDescriptor:::
+The path to a `web.xml` file that Jetty applies after reading your `web.xml`.
+You can use this to replace or add configuration.
+containerIncludeJarPattern:::
+Defaults to `.*/jetty-servlet-api-[^/]*\.jar$|.*javax.servlet.jsp.jstl-[^/]*\.jar|.*taglibs-standard-impl-.*\.jar`.
+This is a pattern that is applied to the names of the jars on the container's classpath (ie the classpath of the plugin, not that of the webapp) that should be scanned for fragments, tlds, annotations etc.
+This is analogous to the context attribute link:#container-include-jar-pattern[org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern] that is documented link:#container-include-jar-pattern[here].
+You can define extra patterns of jars that will be included in the scan.
+webInfIncludeJarPattern:::
+Defaults to matching _all_ of the dependency jars for the webapp (ie the equivalent of WEB-INF/lib).
+You can make this pattern more restrictive to only match certain jars by using this setter.
+This is analogous to the context attribute link:#web-inf-include-jar-pattern[org.eclipse.jetty.server.webapp.WebInfIncludeJarPattern] that is documented link:#web-inf-include-jar-pattern[here].
+tempDirectory:::
+The path to a dir that Jetty can use to expand or copy jars and jsp compiles when your webapp is running.
+The default is `${project.build.outputDirectory}/tmp`.
+contextXml:::
+The path to a context xml file that is applied to your webapp AFTER the `webApp` element.
+stopPort::
+Optional.
+Port to listen on for stop commands.
+Useful to use in conjunction with the link:#jetty-stop-goal[stop].
+stopKey::
+Optional.
+Used in conjunction with stopPort for stopping jetty.
+Useful to use in conjunction with the link:#jetty-stop-goal[stop].
+
+These additional configuration parameters are available when running in FORK or DISTRO mode:
+
+maxChildStartChecks::
+Default is `10`.
+This is maximum number of times the parent process checks to see if the forked jetty process has started correctly
+maxChildStartCheckMs::
+Default is `200`.
+This is the time in milliseconds between checks on the startup of the forked jetty process.
+
+
 [[jetty-stop-goal]]
 ==== jetty:stop
 
-The stop goal stops a running instance of Jetty.
+The stop goal stops a FORK or DISTRO mode running instance of Jetty.
 To use it, you need to configure the plugin with a special port number and key.
 That same port number and key will also be used by the other goals that start jetty.
+
+===== Configuration
 
 stopPort::
 A port number for Jetty to listen on to receive a stop command to cause it to shutdown.
@@ -896,22 +762,52 @@ mvn jetty:stop
 The `stopPort` must be free on the machine you are running on.
 If this is not the case, you will get an "Address already in use" error message after the "Started ServerConnector ..." message.
 
-[[jetty-effective-web-xml]]
+[[jetty-effective-web-xml-goal]]
 ==== jetty:effective-web-xml
 
 This goal calculates a synthetic `web.xml` (the "effective web.xml") according to the rules of the Servlet Specification taking into account all sources of discoverable configuration of web components in your application: descriptors (`webdefault.xml`, `web.xml`, `web-fragment.xml`s, `web-override.xml`) and discovered annotations (`@WebServlet`, `@WebFilter`, `@WebListener`).
-Note that no programmatic declarations of servlets, filters and listeners can be taken into account.
-The effective `web.xml` from these combined sources is generated and displayed as maven log output.
+No programmatic declarations of servlets, filters and listeners can be taken into account.
+
+You can calculate the effective web.xml for any pre-built war file by setting the `&lt;webApp&gt;&lt;war&gt;` parameter, or you can calculate it for the unassembled webapp by setting all of the usual `&lt;webApp&gt;` parameters as for `jetty:run`.
+
 Other useful information about your webapp that is produced as part of the analysis is also stored as context parameters in the effective-web.xml.
 The effective-web.xml can be used in conjunction with the link:#quickstart-webapp[Quickstart] feature to quickly start your webapp (note that Quickstart is not appropriate for the mvn jetty goals).
 
-The following configuration parameters allow you to save the file:
+The effective web.xml from these combined sources is generated into a file, which by default is `target/effective-web.xml`, but can be changed by setting the `effectiveWebXml` configuration parameter.
 
-deleteOnExit::
-By default this is `true`.
-If set to `false`, the effective web.xml is generated into a file called `effective-web.xml` in the build `target` directory.
+===== Configuration
+
 effectiveWebXml::
 The full path name of a file into which you would like the effective web xml generated.
+webApp::
+war:::
+The location of the built WAR file. This defaults to `${project.build.directory}/${project.build.finalName}.war`.
+You can set it to the location of any pre-built war file.
+Or you can leave it blank and set up the other `webApp` parameters as per link:#jetty-run-goal[jetty:run], as well as the `webAppSourceDirectory`, `classes` and `testClasses` parameters.
+contextPath:::
+The context path for your webapp. By default, this is set to `/`.
+If using a custom value for this parameter, you should include the leading `/`, example `/mycontext`.
+defaultsDescriptor:::
+The path to a `webdefault.xml` file that will be applied to your webapp before the `web.xml`.
+If you don't supply one, Jetty uses a default file baked into the `jetty-webapp.jar`.
+overrideDescriptor:::
+The path to a `web.xml` file that Jetty applies after reading your `web.xml`.
+You can use this to replace or add configuration.
+containerIncludeJarPattern:::
+Defaults to `.*/jetty-servlet-api-[^/]*\.jar$|.*javax.servlet.jsp.jstl-[^/]*\.jar|.*taglibs-standard-impl-.*\.jar`.
+This is a pattern that is applied to the names of the jars on the container's classpath (ie the classpath of the plugin, not that of the webapp) that should be scanned for fragments, tlds, annotations etc.
+This is analogous to the context attribute link:#container-include-jar-pattern[org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern] that is documented link:#container-include-jar-pattern[here].
+You can define extra patterns of jars that will be included in the scan.
+webInfIncludeJarPattern:::
+Defaults to matching _all_ of the dependency jars for the webapp (ie the equivalent of WEB-INF/lib).
+You can make this pattern more restrictive to only match certain jars by using this setter.
+This is analogous to the context attribute link:#web-inf-include-jar-pattern[org.eclipse.jetty.server.webapp.WebInfIncludeJarPattern] that is documented link:#web-inf-include-jar-pattern[here].
+tempDirectory:::
+The path to a dir that Jetty can use to expand or copy jars and jsp compiles when your webapp is running.
+The default is `${project.build.outputDirectory}/tmp`.
+contextXml:::
+The path to a context xml file that is applied to your webapp AFTER the `webApp` element.
+
 
 You can also generate the origin of each element into the effective web.xml file.
 The origin is either a descriptor eg web.xml,web-fragment.xml,override-web.xml file, or an annotation eg @WebServlet.
@@ -936,13 +832,13 @@ False by default. If true, will force the generation of the originAttribute onto
 [[using-overlaid-wars]]
 ==== Using Overlaid wars
 
-If your webapp depends on other war files, the link:#jetty-run-goal[jetty:run] and link:#jetty-run-forked-goal[jetty:run-forked] goals are able to merge resources from all of them.
+If your webapp depends on other war files, the link:#jetty-run-goal[jetty:run] and link:#jetty-start-goal[jetty:start] goals are able to merge resources from all of them.
 It can do so based on the settings of the http://maven.apache.org/plugins/maven-war-plugin/[maven-war-plugin], or if your project does not use the http://maven.apache.org/plugins/maven-war-plugin/[maven-war-plugin] to handle the overlays, it can fall back to a simple algorithm to determine the ordering of resources.
 
 ===== With maven-war-plugin
 
 The maven-war-plugin has a rich set of capabilities for merging resources.
-The `jetty:run` and `jetty:run-forked` goals are able to interpret most of them and apply them during execution of your unassembled webapp.
+The `jetty:run` and `jetty:start` goals are able to interpret most of them and apply them during execution of your unassembled webapp.
 This is probably best seen by looking at a concrete example.
 
 Suppose your webapp depends on the following wars:
@@ -1020,7 +916,7 @@ Similarly as `baz.jsp` is excluded, a request for it would result in a 404 error
 ===== Without maven-war-plugin
 
 The algorithm is fairly simple, is based on the ordering of declaration of the dependent wars, and does not support exclusions.
-The configuration parameter `<baseAppFirst>` (see the section on link:#configuring-your-webapp[Configuring Your Webapp] for more information) can be used to control whether your webapp's resources are placed first or last on the resource path at runtime.
+The configuration parameter `<baseAppFirst>` (see for example link:#jetty-run-goal[jetty:run] for more information) can be used to control whether your webapp's resources are placed first or last on the resource path at runtime.
 
 For example, suppose our webapp depends on these two wars:
 
@@ -1082,7 +978,7 @@ Here's an example of setting up the HashLoginService for a webapp:
   <artifactId>jetty-maven-plugin</artifactId>
   <version>{VERSION}</version>
   <configuration>
-    <scanIntervalSeconds>10</scanIntervalSeconds>
+    <scan>10</scan>
     <webApp>
       <contextPath>/test</contextPath>
     </webApp>
@@ -1135,7 +1031,7 @@ Putting the configuration in webapp A's `pom.xml`:
   <artifactId>jetty-maven-plugin</artifactId>
   <version>{VERSION}</version>
   <configuration>
-    <scanIntervalSeconds>10</scanIntervalSeconds>
+    <scan>10</scan>
     <webApp>
       <contextPath>/test</contextPath>
     </webApp>
@@ -1193,7 +1089,7 @@ Then configure the location of this `jetty.xml` file into webapp A's jetty plugi
   <artifactId>jetty-maven-plugin</artifactId>
   <version>{VERSION}</version>
   <configuration>
-    <scanIntervalSeconds>10</scanIntervalSeconds>
+    <scan>10</scan>
     <webApp>
       <contextPath>/test</contextPath>
     </webApp>
@@ -1205,10 +1101,6 @@ Then configure the location of this `jetty.xml` file into webapp A's jetty plugi
 
 For either of these solutions, the other webapps must already have been built, and they are not automatically monitored for changes.
 You can refer either to the packed WAR file of the pre-built webapps or to their expanded equivalents.
-
-===== With jetty:run-distro
-
-Simply configure a jetty base that contains all of the other prebuilt webapps you wish to deploy.
 
 [[setting-system-properties]]
 ==== Setting System Properties
@@ -1245,7 +1137,8 @@ In the latter case, you can use the link:http://www.mojohaus.org/[maven properti
 
 ____
 [NOTE]
-If a System property is already set (for example, from the command line or by the JVM itself), then by default these configured properties *DO NOT* override them (see below for use of the <force> parameter).
+If a System property is already set (for example, from the command line or by the JVM itself), then by default these configured properties *DO NOT* override them.
+However, they can override system properties set from a file instead, see link:#specifying-properties-in-file[specifying system properties in a file].
 ____
 
 [[specifying-properties-in-pom]]
@@ -1260,10 +1153,7 @@ Here's an example of how to specify System properties in the POM:
   <artifactId>jetty-maven-plugin</artifactId>
   <configuration>
     <systemProperties>
-      <systemProperty>
-        <name>fooprop</name>
-        <value>222</value>
-      </systemProperty>
+        <fooprop>222</fooprop>
     </systemProperties>
     <webApp>
       <contextPath>/test</contextPath>
@@ -1271,28 +1161,6 @@ Here's an example of how to specify System properties in the POM:
   </configuration>
 </plugin>
 
-----
-
-To change the default behavior so that these system properties override those on the command line, use the `<force>` parameter:
-
-[source, xml, subs="{sub-order}"]
-----
-<plugin>
-  <groupId>org.eclipse.jetty</groupId>
-  <artifactId>jetty-maven-plugin</artifactId>
-  <configuration>
-    <systemProperties>
-      <force>true</force>
-      <systemProperty>
-       <name>fooprop</name>
-       <value>222</value>
-     </systemProperty>
-    </systemProperties>
-    <webApp>
-      <contextPath>/test</contextPath>
-    </webApp>
-  </configuration>
-</plugin>
 ----
 
 [[specifying-properties-in-file]]

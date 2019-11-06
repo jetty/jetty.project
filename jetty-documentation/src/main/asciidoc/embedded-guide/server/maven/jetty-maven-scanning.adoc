@@ -34,8 +34,8 @@ The files that are scanned depend on the goal being executed.
 * <dependencies>
 * <classesDirectory>
 * <testClassesDirectory>
-* <webXml> or <webAppSourceDirectory>/WEB-INF/web.xml
-* <jettyEnvXml> or <webAppSourceDirectory>/WEB-INF/jetty-web.xml
+* <webApp><descriptor/></webApp> or <webAppSourceDirectory>/WEB-INF/web.xml
+* <webApp><jettyEnvXml/></webApp> or <webAppSourceDirectory>/WEB-INF/jetty-web.xml
 * <webAppSourceDirectory>/WEB-INF/jetty-web.xml
 * <scanTargets>
 * <scanTargetPatterns>
@@ -49,25 +49,4 @@ The files that are scanned depend on the goal being executed.
 * pom.xml
 * <war>
 
-|link:#running-assembled-webapp-as-expanded-war[jetty:run-exploded]
-|
-
-* pom.xml
-* <war>/WEB-INF/web.xml
-* <war>/WEB-INF/jetty-web.xml
-* <war>/WEB-INF/jetty-env.xml
-* <war>/WEB-INF/classes
-* <war>/WEB-INF/lib
-
-|link:#deploy-war-running-pre-assembled-war[jetty:deploy-war] 
-|
-
-* pom.xml
-* <war>
-
-|link:#jetty-run-forked-goal[jetty:run-forked] |
-|link:#jetty-effective-web-xml[jetty:effective-web-xml] |
-|link:#jetty-run-distro-goal[jetty:run-distro] |
-|link:#jetty-start-goal[jetty:start] |
-|link:#jetty-stop-goal[jetty:stop] |
 |=======================================================================
