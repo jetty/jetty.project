@@ -20,9 +20,7 @@ import org.eclipse.jetty.websocket.core.Extension;
 import org.eclipse.jetty.websocket.core.internal.FragmentExtension;
 import org.eclipse.jetty.websocket.core.internal.IdentityExtension;
 import org.eclipse.jetty.websocket.core.internal.ValidationExtension;
-import org.eclipse.jetty.websocket.core.internal.compress.DeflateFrameExtension;
 import org.eclipse.jetty.websocket.core.internal.compress.PerMessageDeflateExtension;
-import org.eclipse.jetty.websocket.core.internal.compress.XWebkitDeflateFrameExtension;
 
 module org.eclipse.jetty.websocket.core
 {
@@ -45,10 +43,8 @@ module org.eclipse.jetty.websocket.core
     uses Extension;
 
     provides Extension with
-        DeflateFrameExtension,
         FragmentExtension,
         IdentityExtension,
         PerMessageDeflateExtension,
-        ValidationExtension,
-        XWebkitDeflateFrameExtension;
+        ValidationExtension;
 }

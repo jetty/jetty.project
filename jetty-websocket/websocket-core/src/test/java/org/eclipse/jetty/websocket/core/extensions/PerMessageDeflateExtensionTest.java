@@ -42,7 +42,6 @@ import org.eclipse.jetty.websocket.core.TestMessageHandler;
 import org.eclipse.jetty.websocket.core.internal.ExtensionStack;
 import org.eclipse.jetty.websocket.core.internal.Negotiated;
 import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
-import org.eclipse.jetty.websocket.core.internal.compress.CompressExtension;
 import org.eclipse.jetty.websocket.core.internal.compress.PerMessageDeflateExtension;
 import org.junit.jupiter.api.Test;
 
@@ -66,7 +65,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
     private void assertEndsWithTail(String hexStr, boolean expectedResult)
     {
         ByteBuffer buf = ByteBuffer.wrap(TypeUtil.fromHexString(hexStr));
-        assertThat("endsWithTail([" + hexStr + "])", CompressExtension.endsWithTail(buf), is(expectedResult));
+        assertThat("endsWithTail([" + hexStr + "])", PerMessageDeflateExtension.endsWithTail(buf), is(expectedResult));
     }
 
     @Test
