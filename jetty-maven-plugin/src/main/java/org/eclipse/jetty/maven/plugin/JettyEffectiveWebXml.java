@@ -48,7 +48,15 @@ public class JettyEffectiveWebXml extends AbstractUnassembledWebAppMojo
         //unassembled webapp
         super.configureWebApp();
         if (StringUtil.isBlank(webApp.getWar()))
-            configureUnassembledWebApp();
+            super.configureUnassembledWebApp();
+    }
+    
+    /**
+     * Override so we can call the parent's method in a different order.
+     */
+    @Override
+    protected void configureUnassembledWebApp() throws Exception
+    {
     }
 
     @Override
