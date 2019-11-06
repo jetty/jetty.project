@@ -319,6 +319,7 @@ public class PerMessageDeflateExtension extends AbstractExtension
             chunk.setPayload(payload);
             chunk.setFin(frame.isFin() && finished);
 
+            this.finished = finished;
             nextOutgoingFrame(chunk, callback, batch);
             return finished;
         }
@@ -437,7 +438,12 @@ public class PerMessageDeflateExtension extends AbstractExtension
             chunk.setRsv1(false);
             chunk.setPayload(payload);
             chunk.setFin(frame.isFin() && finished);
+            this.finished = finished;
             nextIncomingFrame(chunk, callback);
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("Decompress finished: {} {}", finished, chunk);
+
             return finished;
         }
     }

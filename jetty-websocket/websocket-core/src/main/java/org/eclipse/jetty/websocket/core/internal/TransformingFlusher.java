@@ -29,7 +29,7 @@ import org.eclipse.jetty.websocket.core.Frame;
 
 public abstract class TransformingFlusher
 {
-    private static final Logger LOG = Log.getLogger(TransformingFlusher.class);
+    private final Logger LOG = Log.getLogger(this.getClass());
 
     private final Queue<FrameEntry> entries = new ArrayDeque<>();
     private final IteratingCallback flusher = new Flusher();
@@ -92,10 +92,11 @@ public abstract class TransformingFlusher
         }
     }
 
+    protected boolean finished = true;
+
     private class Flusher extends IteratingCallback implements Callback
     {
         private FrameEntry current;
-        private boolean finished = true;
 
         @Override
         protected Action process()
@@ -139,6 +140,9 @@ public abstract class TransformingFlusher
         {
             // Notify first then call succeeded(), otherwise
             // write callbacks may be invoked out of order.
+            if (LOG.isDebugEnabled())
+                LOG.debug("succeeded");
+
             if (finished)
                 notifyCallbackSuccess(current.callback);
             super.succeeded();
@@ -147,13 +151,19 @@ public abstract class TransformingFlusher
         @Override
         public void failed(Throwable cause)
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("failed {}", cause);
+
             notifyCallbackFailure(current.callback, cause);
             super.failed(cause);
         }
     }
 
-    private static void notifyCallbackSuccess(Callback callback)
+    private void notifyCallbackSuccess(Callback callback)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("notifyCallbackSuccess {}", callback);
+
         try
         {
             if (callback != null)
@@ -165,8 +175,11 @@ public abstract class TransformingFlusher
         }
     }
 
-    private static void notifyCallbackFailure(Callback callback, Throwable failure)
+    private void notifyCallbackFailure(Callback callback, Throwable failure)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("notifyCallbackFailure {} {}", callback, failure);
+
         try
         {
             if (callback != null)

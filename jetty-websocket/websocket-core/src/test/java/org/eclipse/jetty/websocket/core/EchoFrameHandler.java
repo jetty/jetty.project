@@ -37,7 +37,8 @@ public class EchoFrameHandler extends TestAsyncFrameHandler
     @Override
     public void onFrame(Frame frame, Callback callback)
     {
-        LOG.info("[{}] onFrame {}", name, frame);
+        if (LOG.isDebugEnabled())
+            LOG.debug("[{}] onFrame {}", name, frame);
         receivedFrames.offer(Frame.copy(frame));
 
         if (throwOnFrame)
@@ -45,8 +46,10 @@ public class EchoFrameHandler extends TestAsyncFrameHandler
 
         if (frame.isDataFrame())
         {
-            LOG.info("[{}] echoDataFrame {}", name, frame);
-            coreSession.sendFrame(new Frame(frame.getOpCode(), frame.getPayload()), callback, false);
+            if (LOG.isDebugEnabled())
+                LOG.debug("[{}] echoDataFrame {}", name, frame);
+            Frame echo = Frame.copy(frame).setMask(null);
+            coreSession.sendFrame(echo, callback, false);
         }
         else
         {
