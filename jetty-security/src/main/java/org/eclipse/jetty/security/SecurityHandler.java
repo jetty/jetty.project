@@ -367,11 +367,13 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
                 Authenticator authenticator = _authenticatorFactory.getAuthenticator(getServer(), ContextHandler.getCurrentContext(),
                     this, _identityService, _loginService);
 
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Created authenticator {} with {}", authenticator, _authenticatorFactory);
-
                 if (authenticator != null)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Created authenticator {} with {}", authenticator, _authenticatorFactory);
+
                     setAuthenticator(authenticator);
+                }
             }
             else
             {
