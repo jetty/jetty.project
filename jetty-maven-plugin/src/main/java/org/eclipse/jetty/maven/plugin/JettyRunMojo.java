@@ -53,7 +53,7 @@ import org.eclipse.jetty.webapp.WebAppContext;
  */
 @Mojo (name = "run", requiresDependencyResolution = ResolutionScope.TEST)
 @Execute (phase = LifecyclePhase.TEST_COMPILE)
-public class JettyRunMojo extends AbstractWebAppMojo
+public class JettyRunMojo extends AbstractUnassembledWebAppMojo
 {
     //Start of parameters only valid for runType=inprocess  
     /**

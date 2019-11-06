@@ -75,6 +75,7 @@ public class JettyRunWarMojo extends AbstractWebAppMojo
     public void configureWebApp() throws Exception
     {
         super.configureWebApp();
+        //if no war has been explicitly configured, use the one from the webapp project
         if (StringUtil.isBlank(webApp.getWar()))
         {
             war = target.toPath().resolve(project.getBuild().getFinalName() + ".war");

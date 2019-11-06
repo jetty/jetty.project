@@ -41,15 +41,9 @@ import org.apache.maven.plugins.annotations.ResolutionScope;
  */
 @Mojo(name = "start", requiresDependencyResolution = ResolutionScope.TEST)
 @Execute(phase = LifecyclePhase.VALIDATE)
-public class JettyStartMojo extends AbstractWebAppMojo
+public class JettyStartMojo extends AbstractUnassembledWebAppMojo
 {
-    @Override
-    protected void configureWebApp() throws Exception
-    {
-        super.configureWebApp();
-        super.configureUnassembledWebApp();
-    }
-    
+
     /**
      *  Starts the webapp - without first compiling the classes -
      * in the same process as maven.

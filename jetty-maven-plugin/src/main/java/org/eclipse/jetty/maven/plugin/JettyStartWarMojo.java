@@ -18,10 +18,15 @@
 
 package org.eclipse.jetty.maven.plugin;
 
+import java.io.File;
+import java.nio.file.Path;
+
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Mojo;
+import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.resource.Resource;
 
 /**
  * <p>
@@ -52,6 +57,9 @@ import org.eclipse.jetty.util.StringUtil;
 @Mojo(name = "start-war", requiresDependencyResolution = ResolutionScope.RUNTIME)
 public class JettyStartWarMojo extends AbstractWebAppMojo
 {
+    @Parameter (defaultValue = "${project.baseDir}/src/main/webapp")
+    protected File webAppSourceDirectory;
+    
     protected JettyEmbedder embedder;
     protected JettyForker forker;
     protected JettyDistroForker distroForker;
@@ -60,10 +68,11 @@ public class JettyStartWarMojo extends AbstractWebAppMojo
     public void configureWebApp() throws Exception
     {
         super.configureWebApp();
+        //if a war has not been explicitly configured, use the one from the project
         if (StringUtil.isBlank(webApp.getWar()))
         {
-            super.verifyPomConfiguration();
-            configureUnassembledWebApp();
+            Path war = target.toPath().resolve(project.getBuild().getFinalName() + ".war");
+            webApp.setWar(war.toFile().getAbsolutePath());
         }
 
         getLog().info("War = " + webApp.getWar());

@@ -32,7 +32,7 @@ import org.eclipse.jetty.util.StringUtil;
  *
  */
 @Mojo(name = "effective-web-xml", requiresDependencyResolution = ResolutionScope.RUNTIME)
-public class JettyEffectiveWebXml extends AbstractWebAppMojo
+public class JettyEffectiveWebXml extends AbstractUnassembledWebAppMojo
 {
     /**
      * The name of the file to generate into
