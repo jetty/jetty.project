@@ -95,143 +95,47 @@ public class PerMessageDeflateExtension extends AbstractExtension
         incomingFlusher.sendFrame(frame, callback, false);
     }
 
-    protected boolean decompress(Frame frame, Callback callback, boolean first) throws DataFormatException
+    @Override
+    public void init(final ExtensionConfig config, WebSocketComponents components)
     {
-        long maxFrameSize = getWebSocketCoreSession().getMaxFrameSize();
+        configRequested = new ExtensionConfig(config);
+        Map<String, String> paramsNegotiated = new HashMap<>();
 
-        // Decompress the payload.
-        Inflater inflater = getInflater();
-        boolean finished = false;
-        ByteAccumulator accumulator = new ByteAccumulator(getWebSocketCoreSession().getMaxFrameSize());
-        while (true)
+        for (String key : config.getParameterKeys())
         {
-            int bufferSize = DECOMPRESS_BUF_SIZE;
-            if (maxFrameSize > 0)
-                bufferSize = (int)Math.min(maxFrameSize - accumulator.size(), DECOMPRESS_BUF_SIZE);
-
-            byte[] output = new byte[bufferSize];
-            int read = inflater.inflate(output, 0, output.length);
-            if (LOG.isDebugEnabled())
-                LOG.debug("Decompress: read {} {}", read, toDetail(inflater));
-
-            if (read <= 0)
+            key = key.trim();
+            switch (key)
             {
-                // Do one more loop to finish.
-                if (!finished && frame.isFin())
+                case "client_max_window_bits":
+                case "server_max_window_bits":
                 {
-                    inflater.setInput(TAIL_BYTES_BUF.slice());
-                    finished = true;
-                    continue;
+                    // Not supported by Jetty
+                    // Don't negotiate these parameters
+                    break;
                 }
-
-                finished = true;
-                break;
-            }
-
-            accumulator.addChunk(BufferUtil.toBuffer(output, 0, read));
-
-            if (maxFrameSize > 0 && accumulator.size() == maxFrameSize)
-            {
-                if (!getWebSocketCoreSession().isAutoFragment())
-                    throw new MessageTooLargeException("Inflated payload exceeded maxFrameSize");
-                break;
-            }
-        }
-
-        // Copy accumulated bytes into a big buffer and release the buffer when callback is completed.
-        final ByteBuffer payload = accumulator.getBytes(getBufferPool());
-        callback = Callback.from(callback, ()->getBufferPool().release(payload));
-
-        Frame chunk = new Frame(first ? frame.getOpCode() : OpCode.CONTINUATION);
-        chunk.setRsv1(false);
-        chunk.setPayload(payload);
-        chunk.setFin(frame.isFin() && finished);
-        nextIncomingFrame(chunk, callback);
-
-        if (LOG.isDebugEnabled())
-            LOG.debug("Decompress: exiting {}", toDetail(inflater));
-
-        return finished;
-    }
-
-    private boolean compress(Frame frame, Callback callback, boolean batch, boolean first)
-    {
-        // Get a chunk of the payload to avoid to blow
-        // the heap if the payload is a huge mapped file.
-        ByteBuffer data = frame.getPayload();
-        int remaining = data.remaining();
-        long maxFrameSize = getWebSocketCoreSession().getMaxFrameSize();
-        if (LOG.isDebugEnabled())
-            LOG.debug("Compressing remaining {} bytes of {} ", remaining, frame);
-
-        // Compress the payload.
-        Deflater deflater = getDeflater();
-        boolean finished = false;
-        ByteAccumulator accumulator = new ByteAccumulator(getWebSocketCoreSession().getMaxFrameSize());
-        while (true)
-        {
-            int bufferSize = COMPRESS_BUFFER_SIZE;
-            if (maxFrameSize > 0)
-                bufferSize = (int)Math.min(maxFrameSize - accumulator.size(), COMPRESS_BUFFER_SIZE);
-
-            byte[] output = new byte[bufferSize];
-            int compressed = deflater.deflate(output, 0, output.length, Deflater.SYNC_FLUSH);
-            if (LOG.isDebugEnabled())
-                LOG.debug("Compressed {} bytes", compressed);
-
-            if (compressed <= 0)
-            {
-                finished = true;
-                break;
-            }
-
-            accumulator.addChunk(BufferUtil.toBuffer(output, 0, compressed));
-
-            if (maxFrameSize > 0 && accumulator.size() == maxFrameSize)
-            {
-                // We can fragment if autoFragment is set to true and we are not doing per frame compression.
-                if (!getWebSocketCoreSession().isAutoFragment())
-                    throw new MessageTooLargeException("Deflated payload exceeded maxFrameSize");
-                break;
+                case "client_no_context_takeover":
+                {
+                    paramsNegotiated.put("client_no_context_takeover", null);
+                    incomingContextTakeover = false;
+                    break;
+                }
+                case "server_no_context_takeover":
+                {
+                    paramsNegotiated.put("server_no_context_takeover", null);
+                    outgoingContextTakeover = false;
+                    break;
+                }
+                default:
+                {
+                    throw new IllegalArgumentException();
+                }
             }
         }
 
-        final ByteBuffer payload;
-        if (accumulator.size() > 0)
-        {
-            // Copy accumulated bytes into a big buffer and release the buffer when callback is completed.
-            payload = accumulator.getBytes(getBufferPool());
-            callback = Callback.from(callback, ()->getBufferPool().release(payload));
+        configNegotiated = new ExtensionConfig(config.getName(), paramsNegotiated);
+        LOG.debug("config: outgoingContextTakover={}, incomingContextTakeover={} : {}", outgoingContextTakeover, incomingContextTakeover, this);
 
-            // Handle tail bytes generated by SYNC_FLUSH.
-            if (finished && frame.isFin() && endsWithTail(payload))
-            {
-                payload.limit(payload.limit() - TAIL_BYTES.length);
-                if (LOG.isDebugEnabled())
-                    LOG.debug("payload (TAIL_DROP_FIN_ONLY) = {}", BufferUtil.toDetailString(payload));
-            }
-        }
-        else if (frame.isFin())
-        {
-            // Special case: 7.2.3.6.  Generating an Empty Fragment Manually
-            // https://tools.ietf.org/html/rfc7692#section-7.2.3.6
-            payload = ByteBuffer.wrap(new byte[]{0x00});
-        }
-        else
-        {
-            payload = BufferUtil.EMPTY_BUFFER;
-        }
-
-        if (LOG.isDebugEnabled())
-            LOG.debug("Compressed {}: payload:{}", frame, payload.remaining());
-
-        Frame chunk = new Frame(first ? frame.getOpCode() : OpCode.CONTINUATION);
-        chunk.setRsv1(first && frame.getOpCode() != OpCode.CONTINUATION);
-        chunk.setPayload(payload);
-        chunk.setFin(frame.isFin() && finished);
-
-        nextOutgoingFrame(chunk, callback, batch);
-        return finished;
+        super.init(configNegotiated, components);
     }
 
     private static String toDetail(Inflater inflater)
@@ -320,49 +224,6 @@ public class PerMessageDeflateExtension extends AbstractExtension
         super.nextOutgoingFrame(frame, callback, batch);
     }
 
-    @Override
-    public void init(final ExtensionConfig config, WebSocketComponents components)
-    {
-        configRequested = new ExtensionConfig(config);
-        Map<String, String> paramsNegotiated = new HashMap<>();
-
-        for (String key : config.getParameterKeys())
-        {
-            key = key.trim();
-            switch (key)
-            {
-                case "client_max_window_bits":
-                case "server_max_window_bits":
-                {
-                    // Not supported by Jetty
-                    // Don't negotiate these parameters
-                    break;
-                }
-                case "client_no_context_takeover":
-                {
-                    paramsNegotiated.put("client_no_context_takeover", null);
-                    incomingContextTakeover = false;
-                    break;
-                }
-                case "server_no_context_takeover":
-                {
-                    paramsNegotiated.put("server_no_context_takeover", null);
-                    outgoingContextTakeover = false;
-                    break;
-                }
-                default:
-                {
-                    throw new IllegalArgumentException();
-                }
-            }
-        }
-
-        configNegotiated = new ExtensionConfig(config.getName(), paramsNegotiated);
-        LOG.debug("config: outgoingContextTakover={}, incomingContextTakeover={} : {}", outgoingContextTakeover, incomingContextTakeover, this);
-
-        super.init(configNegotiated, components);
-    }
-
     private class OutgoingFlusher extends TransformingFlusher
     {
         private boolean _first;
@@ -396,6 +257,71 @@ public class PerMessageDeflateExtension extends AbstractExtension
             _first = false;
             return finished;
         }
+
+        private boolean compress(Frame frame, Callback callback, boolean batch, boolean first)
+        {
+            // Get a buffer for the inflated payload.
+            long maxFrameSize = getWebSocketCoreSession().getMaxFrameSize();
+            int bufferSize = (maxFrameSize <= 0) ? COMPRESS_BUFFER_SIZE : (int)Math.min(maxFrameSize, COMPRESS_BUFFER_SIZE);
+            final ByteBuffer buffer = getBufferPool().acquire(bufferSize, false);
+            callback = Callback.from(callback, ()->getBufferPool().release(buffer));
+            BufferUtil.clear(buffer);
+
+            // Fill up the buffer with a max length of bufferSize;
+            boolean finished = false;
+            Deflater deflater = getDeflater();
+            while (true)
+            {
+                int compressed = deflater.deflate(buffer.array(), buffer.arrayOffset() + buffer.position(),
+                    bufferSize - buffer.position(), Deflater.SYNC_FLUSH);
+                buffer.limit(buffer.limit() + compressed);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Compressed {} bytes {}", compressed, toDetail(deflater));
+
+                if (buffer.limit() == bufferSize)
+                {
+                    // We need to fragment. TODO: what if there was only bufferSize of content?
+                    if (!getWebSocketCoreSession().isAutoFragment())
+                        throw new MessageTooLargeException("Deflated payload exceeded the compress buffer size");
+                    break;
+                }
+
+                if (compressed == 0)
+                {
+                    finished = true;
+                    break;
+                }
+            }
+
+            ByteBuffer payload = buffer;
+            if (payload.hasRemaining())
+            {
+                // Handle tail bytes generated by SYNC_FLUSH.
+                if (finished && frame.isFin() && endsWithTail(payload))
+                {
+                    payload.limit(payload.limit() - TAIL_BYTES.length);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("payload (TAIL_DROP_FIN_ONLY) = {}", BufferUtil.toDetailString(payload));
+                }
+            }
+            else if (frame.isFin())
+            {
+                // Special case: 7.2.3.6.  Generating an Empty Fragment Manually
+                // https://tools.ietf.org/html/rfc7692#section-7.2.3.6
+                payload = ByteBuffer.wrap(new byte[]{0x00});
+            }
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("Compressed {}: payload:{}", frame, payload.remaining());
+
+            Frame chunk = new Frame(first ? frame.getOpCode() : OpCode.CONTINUATION);
+            chunk.setRsv1(first && frame.getOpCode() != OpCode.CONTINUATION);
+            chunk.setPayload(payload);
+            chunk.setFin(frame.isFin() && finished);
+
+            nextOutgoingFrame(chunk, callback, batch);
+            return finished;
+        }
     }
 
     private class IncomingFlusher extends TransformingFlusher
@@ -403,10 +329,16 @@ public class PerMessageDeflateExtension extends AbstractExtension
         private boolean _first;
         private Frame _frame;
         private Callback _callback;
+        private boolean _tailBytes;
 
         @Override
         protected boolean onFrame(Frame frame, Callback callback, boolean batch)
         {
+            _tailBytes = false;
+            _first = true;
+            _frame = frame;
+            _callback = callback;
+
             if (OpCode.isControlFrame(frame.getOpCode()))
             {
                 nextIncomingFrame(frame, callback);
@@ -440,10 +372,6 @@ public class PerMessageDeflateExtension extends AbstractExtension
             if (frame.isFin())
                 incomingCompressed = false;
 
-            _first = true;
-            _frame = frame;
-            _callback = callback;
-
             // Provide the frames payload as input to the Inflater.
             getInflater().setInput(frame.getPayload());
             return false;
@@ -454,12 +382,63 @@ public class PerMessageDeflateExtension extends AbstractExtension
         {
             try
             {
-                return decompress(_frame, _callback, _first);
+                boolean finished = decompress(_frame, _callback, _first);
+                _first = false;
+                return finished;
             }
             catch (DataFormatException e)
             {
                 throw new BadPayloadException(e);
             }
+        }
+
+        private boolean decompress(Frame frame, Callback callback, boolean first) throws DataFormatException
+        {
+            // Get a buffer for the inflated payload.
+            long maxFrameSize = getWebSocketCoreSession().getMaxFrameSize();
+            int bufferSize = (maxFrameSize <= 0) ? DECOMPRESS_BUF_SIZE : (int)Math.min(maxFrameSize, DECOMPRESS_BUF_SIZE);
+            final ByteBuffer payload = getBufferPool().acquire(bufferSize, false);
+            callback = Callback.from(callback, ()->getBufferPool().release(payload));
+            BufferUtil.clear(payload);
+
+            // Fill up the ByteBuffer with a max length of bufferSize;
+            boolean finished = false;
+            Inflater inflater = getInflater();
+            while (true)
+            {
+                int read = inflater.inflate(payload.array(), payload.arrayOffset() + payload.position(), bufferSize - payload.position());
+                payload.limit(payload.limit() + read);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Decompress: read {} {}", read, toDetail(inflater));
+
+                if (payload.limit() == bufferSize)
+                {
+                    // We need to fragment. TODO: what if there was only bufferSize of content?
+                    if (!getWebSocketCoreSession().isAutoFragment())
+                        throw new MessageTooLargeException("Inflated payload exceeded the decompress buffer size");
+                    break;
+                }
+
+                if (read == 0)
+                {
+                    if (!_tailBytes && frame.isFin())
+                    {
+                        inflater.setInput(TAIL_BYTES_BUF.slice());
+                        _tailBytes = true;
+                        continue;
+                    }
+
+                    finished = true;
+                    break;
+                }
+            }
+
+            Frame chunk = new Frame(first ? frame.getOpCode() : OpCode.CONTINUATION);
+            chunk.setRsv1(false);
+            chunk.setPayload(payload);
+            chunk.setFin(frame.isFin() && finished);
+            nextIncomingFrame(chunk, callback);
+            return finished;
         }
     }
 }
