@@ -475,7 +475,8 @@ public class URIUtil
                             char u = path.charAt(i + 1);
                             if (u == 'u')
                             {
-                                // TODO this is wrong. This is a codepoint not a char
+                                // TODO remove %u support in jetty-10
+                                // this is wrong. This is a codepoint not a char
                                 builder.append((char)(0xffff & TypeUtil.parseInt(path, i + 2, 4, 16)));
                                 i += 5;
                             }
@@ -561,13 +562,13 @@ public class URIUtil
                         char u = path.charAt(i + 1);
                         if (u == 'u')
                         {
-                            // TODO this is wrong. This is a codepoint not a char
+                            // TODO remove %u encoding support in jetty-10
+                            // This is wrong. This is a codepoint not a char
                             builder.append((char)(0xffff & TypeUtil.parseInt(path, i + 2, 4, 16)));
                             i += 5;
                         }
                         else
                         {
-                            // TODO this is wrong. 16 bits doesn't go to 8 reliably
                             builder.append((char)(0xff & (TypeUtil.convertHexDigit(u) * 16 + TypeUtil.convertHexDigit(path.charAt(i + 2)))));
                             i += 2;
                         }

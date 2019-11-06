@@ -31,6 +31,7 @@ import java.util.stream.Stream;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.eclipse.jetty.util.log.Log;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -114,7 +115,7 @@ public class ResourceAliasTest
         {
             Path file0 = baseDir.resolve("test.txt\0");
             if (!Files.exists(file0))
-                return;  // this file system does not suffer this problem
+                return;  // this file system does get tricked by ending filenames
 
             assertThat(file0 + " exists", Files.exists(file0), is(true));  // This is an alias!
 
@@ -164,7 +165,8 @@ public class ResourceAliasTest
         }
         catch (InvalidPathException e)
         {
-            // this file system does not suffer this problem
+            // this file system does allow null char ending filenames
+            Log.getRootLogger().ignore(e);
         }
     }
 }

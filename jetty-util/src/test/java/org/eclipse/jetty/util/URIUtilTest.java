@@ -109,16 +109,6 @@ public class URIUtilTest
     public static Stream<Arguments> decodeBadPathSource()
     {
         List<Arguments> arguments = new ArrayList<>();
-        // Lenient decode
-        arguments.add(Arguments.of("abc%xyz"));     // not a "%##"
-        arguments.add(Arguments.of("abc%"));        // percent at end of string
-        arguments.add(Arguments.of("abc%A"));       // incomplete "%##" at end of string
-        arguments.add(Arguments.of("abc%uvwxyz"));  // not a valid "%u####"
-        arguments.add(Arguments.of("abc%uEFGHIJ")); // not a valid "%u####"
-        arguments.add(Arguments.of("abc%uABC"));    // incomplete "%u####"
-        arguments.add(Arguments.of("abc%uAB"));     // incomplete "%u####"
-        arguments.add(Arguments.of("abc%uA"));      // incomplete "%u####"
-        arguments.add(Arguments.of("abc%u"));       // incomplete "%u####"
 
         // Test for null character (real world ugly test case)
         // TODO is this a bad decoding or a bad URI ?
