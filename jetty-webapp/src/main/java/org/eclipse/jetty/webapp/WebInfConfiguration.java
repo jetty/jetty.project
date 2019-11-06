@@ -785,8 +785,11 @@ public class WebInfConfiguration extends AbstractConfiguration
         }
         catch (Exception e)
         {
-            LOG.warn("Can't get resource for resourceBase",  e);
-            LOG.debug(e);
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("Can't get resource base name", e);
+            }
+            canonicalName.append("-"); // empty resourceBaseName segment
         }
 
         //Context name
@@ -818,60 +821,50 @@ public class WebInfConfiguration extends AbstractConfiguration
         }
         catch (IOException e)
         {
-            LOG.ignore(e);
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("Resource has no File reference: {}", resource);
+            }
         }
 
         // Use URI itself.
         URI uri = resource.getURI();
         if (uri == null)
         {
-            throw new RuntimeException("Unable to produce URI from resource: " + resource);
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("Resource has no URI reference: {}", resource);
+            }
+            return "";
         }
+
         return getUriLastPathSegment(uri);
     }
 
     protected static String getUriLastPathSegment(URI uri)
     {
-        String path = uri.getPath();
-
-        if ("jar".equalsIgnoreCase(uri.getScheme()))
+        String ssp = uri.getSchemeSpecificPart();
+        // strip off deep jar:file: reference information
+        int idx = ssp.indexOf("!/");
+        if (idx != -1)
         {
-            String schemeSpecificPart = uri.getRawSchemeSpecificPart();
-            URI inner = URI.create(schemeSpecificPart);
-            if ("file".equalsIgnoreCase(inner.getScheme()))
-            {
-                path = inner.getRawPath();
-                int idx = path.lastIndexOf("!/");
-                if (idx >= 0)
-                {
-                    String pathInJar = path.substring(idx + 2);
-                    if (StringUtil.isNotBlank(pathInJar))
-                    {
-                        URI pathInJarUri = URI.create(pathInJar);
-                        return getUriLastPathSegment(pathInJarUri);
-                    }
-                    else
-                    {
-                        // Strip empty "!/"
-                        path = path.substring(0, idx);
-                    }
-                }
-                // if we reached here, we have "jar:file:" but no
-                // internal jar reference with "!/" present
-            }
-            else
-            {
-                // inner URI is not "file"
-                return getUriLastPathSegment(inner);
-            }
+            ssp = ssp.substring(0, idx);
         }
 
-        if (path.endsWith("/"))
-            path = path.substring(0, path.length() - 1);
-        // get just the last part which is the filename
-        int i = path.lastIndexOf("/");
+        // Strip off trailing '/' if present
+        if (ssp.endsWith("/"))
+        {
+            ssp = ssp.substring(0, ssp.length() - 1);
+        }
 
-        return path.substring(i + 1);
+        // Only interested in last segment
+        idx = ssp.lastIndexOf('/');
+        if (idx != -1)
+        {
+            ssp = ssp.substring(idx + 1);
+        }
+
+        return ssp;
     }
 
     protected List<Resource> findClassDirs(WebAppContext context)

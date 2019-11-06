@@ -158,7 +158,7 @@ public class WebInfConfigurationTest
         assertThat(WebInfConfiguration.getResourceBaseName(resource), is(expectedName));
     }
 
-    public static Stream<Arguments> baseResourceNames()
+    public static Stream<Arguments> fileBaseResourceNames()
     {
         return Stream.of(
             Arguments.of("test.war", "test.war"),
@@ -178,7 +178,7 @@ public class WebInfConfigurationTest
     }
 
     @ParameterizedTest
-    @MethodSource("baseResourceNames")
+    @MethodSource("fileBaseResourceNames")
     public void testPathGetResourceBaseName(String basePath, String expectedName) throws IOException
     {
         Path root = workDir.getPath();
@@ -198,15 +198,43 @@ public class WebInfConfigurationTest
         assertThat(WebInfConfiguration.getResourceBaseName(resource), is(expectedName));
     }
 
+    public static Stream<Arguments> fileUriBaseResourceNames()
+    {
+        return Stream.of(
+            Arguments.of("test.war", "test.war"),
+            Arguments.of("a/b/c/test.war", "test.war"),
+            Arguments.of("bar%2Fbaz/test.war", "test.war"),
+            Arguments.of("fizz buzz/test.war", "test.war"),
+            Arguments.of("another one/bites the dust/", "bites the dust"),
+            Arguments.of("another+one/bites+the+dust/", "bites+the+dust"),
+            Arguments.of("another%20one/bites%20the%20dust/", "bites%20the%20dust"),
+            Arguments.of("spanish/n\u00FAmero.war", "n\u00FAmero.war"),
+            Arguments.of("spanish/n%C3%BAmero.war", "n%C3%BAmero.war"),
+            Arguments.of("a/b!/", "b"),
+            Arguments.of("a/b!/c/", "b"),
+            Arguments.of("a/b!/c/d/", "b"),
+            Arguments.of("a/b%21/", "b%21")
+        );
+    }
+
     /**
      * Similar to testPathGetResourceBaseName, but with "file:" URIs
      */
     @ParameterizedTest
-    @MethodSource("baseResourceNames")
+    @MethodSource("fileUriBaseResourceNames")
     public void testFileUriGetUriLastPathSegment(String basePath, String expectedName) throws IOException
     {
         Path root = workDir.getPath();
         Path base = root.resolve(basePath);
+        if (basePath.endsWith("/"))
+        {
+            FS.ensureDirExists(base);
+        }
+        else
+        {
+            FS.ensureDirExists(base.getParent());
+            FS.touch(base);
+        }
         URI uri = base.toUri();
         if (OS.MAC.isCurrentOs())
         {
@@ -216,7 +244,7 @@ public class WebInfConfigurationTest
         assertThat(WebInfConfiguration.getUriLastPathSegment(uri), is(expectedName));
     }
 
-    public static Stream<Arguments> jarFileBaseResourceNames() throws URISyntaxException, IOException
+    public static Stream<Arguments> uriLastSegmentSource() throws URISyntaxException, IOException
     {
         Path testJar = MavenTestingUtils.getTestResourcePathFile(TEST_RESOURCE_JAR);
         URI uri = new URI("jar", testJar.toUri().toASCIIString(), null);
@@ -243,17 +271,7 @@ public class WebInfConfigurationTest
                     }
                     else
                     {
-                        String lastPathSegment = TEST_RESOURCE_JAR;
-                        if (path.getFileName() != null)
-                        {
-                            lastPathSegment = path.getFileName().toString();
-                        }
-                        // Strip last '/' from directory entries
-                        if (Files.isDirectory(path) && lastPathSegment.endsWith("/"))
-                        {
-                            lastPathSegment = lastPathSegment.substring(0, lastPathSegment.length() - 1);
-                        }
-                        arguments.add(Arguments.of(path.toUri(), lastPathSegment));
+                        arguments.add(Arguments.of(path.toUri(), TEST_RESOURCE_JAR));
                     }
                 });
             }
@@ -263,11 +281,11 @@ public class WebInfConfigurationTest
     }
 
     /**
-     * Tests of "jar:file:" based URIs
+     * Tests of URIs last segment, including "jar:file:" based URIs.
      */
     @ParameterizedTest
-    @MethodSource("jarFileBaseResourceNames")
-    public void testJarFileUriGetUriLastPathSegment(URI uri, String expectedName) throws IOException
+    @MethodSource("uriLastSegmentSource")
+    public void testGetUriLastPathSegment(URI uri, String expectedName) throws IOException
     {
         assertThat(WebInfConfiguration.getUriLastPathSegment(uri), is(expectedName));
     }
