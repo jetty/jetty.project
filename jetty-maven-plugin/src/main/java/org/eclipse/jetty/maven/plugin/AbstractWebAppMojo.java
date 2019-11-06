@@ -80,7 +80,19 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
         DISTRO
     }
     
+    /**
+     * Max number of times to check to see if jetty has started correctly
+     * when running in FORK or DISTRO mode.
+     */
+    @Parameter (defaultValue = "10")
+    protected int maxChildStartChecks;
     
+    /**
+     * How long to wait in msec between checks to see if jetty has started
+     * correctly when running in FORK or DISTRO mode.
+     */
+    @Parameter (defaultValue = "200")
+    protected long maxChildStartCheckMs;
     /**
      * Whether or not to include dependencies on the plugin's classpath with &lt;scope&gt;provided&lt;/scope&gt;
      * Use WITH CAUTION as you may wind up with duplicate jars/classes.
@@ -193,15 +205,8 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
     protected File webAppSourceDirectory;
     
     /**
-     * List of files or directories to additionally periodically scan for changes. Optional.
-     */
-    @Parameter
-    protected List<File> scanTargets;
-    
-    /**
      * List of directories with ant-style &lt;include&gt; and &lt;exclude&gt; patterns
-     * for extra targets to periodically scan for changes. Can be used instead of,
-     * or in conjunction with &lt;scanTargets&gt;.Optional.
+     * for extra targets to periodically scan for changes.Optional.
      */
     @Parameter
     protected List<ScanTargetPattern> scanTargetPatterns;
@@ -1015,24 +1020,8 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
      * 
      * @param scanner PathWatcher that notices changes in files and dirs.
      */
-    protected void configureScanTargetsAndPatterns(PathWatcher scanner)
+    protected void configureScanTargetPatterns(PathWatcher scanner)
     {
-        //handle the explicit extra scan targets
-        if (scanTargets != null)
-        {
-            for (File f:scanTargets)
-            {
-                if (f.isDirectory())
-                {
-                    PathWatcher.Config config = new PathWatcher.Config(f.toPath());
-                    config.setRecurseDepth(PathWatcher.Config.UNLIMITED_DEPTH);
-                    scanner.watch(config);
-                }
-                else
-                    scanner.watch(f.toPath());
-            }
-        }
-        
         //handle the extra scan patterns
         if (scanTargetPatterns != null)
         {

@@ -36,8 +36,6 @@ import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 /**
- * NewJettyRunMojo
- * 
  *  This goal is used in-situ on a Maven project without first requiring that the project 
  *  is assembled into a war, saving time during the development cycle.
  *  <p>
@@ -48,7 +46,10 @@ import org.eclipse.jetty.webapp.WebAppContext;
  *  Once invoked, the plugin can be configured to run continuously, scanning for changes in the project and automatically performing a 
  *  hot redeploy when necessary. This allows the developer to concentrate on coding changes to the project using their IDE of choice and have those changes
  *  immediately and transparently reflected in the running web container, eliminating development time that is wasted on rebuilding, reassembling and redeploying.
- *  Alternatively, you can configure the plugin to wait for an %lt;enter&gt; at the command line to manually control redeployment.
+ *  Alternatively, you can configure the plugin to wait for an &lt;enter&gt; at the command line to manually control redeployment.
+ *  <p>
+ *  You can configure this goal to run your unassembled webapp either in-process with maven, or forked into a new process, or deployed into a
+ *  jetty distribution.
  */
 @Mojo (name = "run", requiresDependencyResolution = ResolutionScope.TEST)
 @Execute (phase = LifecyclePhase.TEST_COMPILE)
@@ -259,7 +260,7 @@ public class JettyRunMojo extends AbstractWebAppMojo
         }
         
         //set up any extra files or dirs to watch
-        configureScanTargetsAndPatterns(scanner);
+        configureScanTargetPatterns(scanner);
 
         scanner.watch(project.getFile().toPath());
 

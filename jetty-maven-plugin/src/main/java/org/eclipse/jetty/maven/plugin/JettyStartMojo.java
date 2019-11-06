@@ -34,6 +34,10 @@ import org.apache.maven.plugins.annotations.ResolutionScope;
  * <p>
  * This goal will NOT scan for changes in either the webapp project or any scanTargets or scanTargetPatterns.
  * </p>
+ * <p>
+ *  You can configure this goal to run your webapp either in-process with maven, or forked into a new process, or deployed into a
+ *  jetty distribution.
+ *  </p>
  */
 @Mojo(name = "start", requiresDependencyResolution = ResolutionScope.TEST)
 @Execute(phase = LifecyclePhase.VALIDATE)
@@ -76,7 +80,9 @@ public class JettyStartMojo extends AbstractWebAppMojo
         try
         {
             JettyForker jetty = newJettyForker();
-            jetty.setWaitForChild(false); //we never wait for child
+            jetty.setWaitForChild(false); //we never wait for child to finish
+            jetty.setMaxChildStartChecks(maxChildStartChecks);
+            jetty.setMaxChildStartCheckMs(maxChildStartCheckMs);
             jetty.setJettyOutputFile(getJettyOutputFile("jetty-start.out"));
             jetty.start(); //forks jetty instance
         }
@@ -96,7 +102,9 @@ public class JettyStartMojo extends AbstractWebAppMojo
         try
         {
             JettyDistroForker jetty = newJettyDistroForker();
-            jetty.setWaitForChild(false); //never wait for child
+            jetty.setWaitForChild(false); //never wait for child to finish
+            jetty.setMaxChildStartChecks(maxChildStartChecks);
+            jetty.setMaxChildStartCheckMs(maxChildStartCheckMs);
             jetty.setJettyOutputFile(getJettyOutputFile("jetty-start.out"));
             jetty.start(); //forks a jetty distro
         }

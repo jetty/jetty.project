@@ -44,7 +44,10 @@ import org.eclipse.jetty.util.StringUtil;
 *  <p>
 *  You may also specify the location of a jetty.xml file whose contents will be applied before any plugin configuration.
 *  </p>
-*  Runs jetty on a war file
+*  <p>
+*  You can configure this goal to run your webapp either in-process with maven, or forked into a new process, or deployed into a
+*  jetty distribution.
+*  </p>
 */
 @Mojo(name = "run-war", requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME)
 @Execute(phase = LifecyclePhase.PACKAGE)
@@ -186,7 +189,7 @@ public class JettyRunWarMojo extends AbstractWebAppMojo
         scanner.watch(war);
         
         //set up any extra files or dirs to watch
-        configureScanTargetsAndPatterns(scanner);
+        configureScanTargetPatterns(scanner);
         
         scanner.addListener(new PathWatcher.EventListListener()
         {

@@ -55,9 +55,9 @@ public abstract class AbstractForker extends AbstractLifeCycle
     
     protected boolean waitForChild;
     
-    protected int maxChildChecks = 10; //check up to 10 times for child to start
+    protected int maxChildStartChecks = 10; //check up to 10 times for child to start
     
-    protected long maxChildCheckInterval = 200; //wait 100ms between checks
+    protected long maxChildStartCheckMs = 200; //wait 200ms between checks
     
     protected File tokenFile;
     
@@ -195,24 +195,24 @@ public abstract class AbstractForker extends AbstractLifeCycle
         this.waitForChild = waitForChild;
     }
 
-    public int getMaxChildChecks()
+    public int getMaxChildtartChecks()
     {
-        return maxChildChecks;
+        return maxChildStartChecks;
     }
 
-    public void setMaxChildChecks(int maxChildChecks)
+    public void setMaxChildStartChecks(int maxChildStartChecks)
     {
-        this.maxChildChecks = maxChildChecks;
+        this.maxChildStartChecks = maxChildStartChecks;
     }
 
-    public long getMaxChildCheckInterval()
+    public long getMaxChildStartCheckMs()
     {
-        return maxChildCheckInterval;
+        return maxChildStartCheckMs;
     }
 
-    public void setMaxChildCheckInterval(long maxChildCheckInterval)
+    public void setMaxChildStartCheckMs(long maxChildStartCheckMs)
     {
-        this.maxChildCheckInterval = maxChildCheckInterval;
+        this.maxChildStartCheckMs = maxChildStartCheckMs;
     }
 
     public File getTokenFile()
@@ -242,10 +242,10 @@ public abstract class AbstractForker extends AbstractLifeCycle
         else
         {
             //just wait until the child has started successfully
-            int attempts = maxChildChecks;
+            int attempts = maxChildStartChecks;
             while (!tokenFile.exists() && attempts > 0)
             {
-                Thread.currentThread().sleep(maxChildCheckInterval);
+                Thread.currentThread().sleep(maxChildStartCheckMs);
                 --attempts;
             }
             if (attempts <= 0)
