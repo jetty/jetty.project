@@ -81,6 +81,11 @@ public class WebAppProvider extends ScanningAppProvider
             String lowername = name.toLowerCase(Locale.ENGLISH);
 
             File file = new File(dir, name);
+            Resource r = Resource.newResource(file);
+            if (getMonitoredResources().contains(r) && r.isDirectory())
+            {
+                return false;
+            }
 
             // ignore hidden files
             if (lowername.startsWith("."))
