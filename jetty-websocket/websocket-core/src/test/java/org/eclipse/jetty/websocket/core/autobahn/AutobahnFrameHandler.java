@@ -18,18 +18,14 @@
 
 package org.eclipse.jetty.websocket.core.autobahn;
 
+import java.nio.ByteBuffer;
 import java.time.Duration;
 
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.websocket.core.EchoFrameHandler;
+import org.eclipse.jetty.websocket.core.TestMessageHandler;
 
-public class AutobahnFrameHandler extends EchoFrameHandler
+public class AutobahnFrameHandler extends TestMessageHandler
 {
-    public AutobahnFrameHandler()
-    {
-        super("AutobahnFrameHandler");
-    }
-
     @Override
     public void onOpen(CoreSession coreSession, Callback callback)
     {
@@ -37,5 +33,17 @@ public class AutobahnFrameHandler extends EchoFrameHandler
         coreSession.setMaxTextMessageSize(Integer.MAX_VALUE);
         coreSession.setMaxBinaryMessageSize(Integer.MAX_VALUE);
         super.onOpen(coreSession, callback);
+    }
+
+    @Override
+    public void onBinary(ByteBuffer wholeMessage, Callback callback)
+    {
+        sendBinary(wholeMessage, callback, false);
+    }
+
+    @Override
+    public void onText(String wholeMessage, Callback callback)
+    {
+        sendText(wholeMessage, callback, false);
     }
 }

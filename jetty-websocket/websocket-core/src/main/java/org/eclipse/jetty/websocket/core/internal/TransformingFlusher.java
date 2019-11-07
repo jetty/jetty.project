@@ -33,6 +33,7 @@ public abstract class TransformingFlusher
 
     private final Queue<FrameEntry> entries = new ArrayDeque<>();
     private final IteratingCallback flusher = new Flusher();
+    private boolean finished = true;
     private Throwable failure;
 
     /**
@@ -40,15 +41,23 @@ public abstract class TransformingFlusher
      * @param frame the frame to transform.
      * @param callback used to signal to start processing again.
      * @param batch whether this frame can be batched.
-     * @return true when finished processing this frame.
      */
-    protected abstract boolean onFrame(Frame frame, Callback callback, boolean batch);
+    protected abstract void onFrame(Frame frame, Callback callback, boolean batch);
 
     /**
      * Called multiple times to transform the frame given in {@link TransformingFlusher#onFrame(Frame, Callback, boolean)}.
-     * @return true when finished processing this frame.
      */
-    protected abstract boolean transform();
+    protected abstract void transform();
+
+    /**
+     * Called to indicate that you have finished transforming this frame and are ready to receive a new one
+     * after the next the callback is succeeded.
+     * @param finished
+     */
+    public final void setFinished(boolean finished)
+    {
+        this.finished = finished;
+    }
 
     public final void sendFrame(Frame frame, Callback callback, boolean batch)
     {
@@ -92,8 +101,6 @@ public abstract class TransformingFlusher
         }
     }
 
-    protected boolean finished = true;
-
     private class Flusher extends IteratingCallback implements Callback
     {
         private FrameEntry current;
@@ -113,13 +120,9 @@ public abstract class TransformingFlusher
             if (LOG.isDebugEnabled())
                 LOG.debug("Processing {}", current);
 
-            if (finished && onFrame(current.frame, this, current.batch))
-            {
-                finished = true;
-                return Action.SCHEDULED;
-            }
-
-            finished = transform();
+            onFrame(current.frame, this, current.batch);
+            if (!finished)
+                transform();
             return Action.SCHEDULED;
         }
 
