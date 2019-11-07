@@ -935,6 +935,9 @@ public class HttpClientStreamTest extends AbstractTest
     {
         start(new EmptyServerHandler());
 
+        long connectTimeout = 1000;
+        client.setConnectTimeout(connectTimeout);
+
         final byte[] data = new byte[512];
         final CountDownLatch latch = new CountDownLatch(1);
         OutputStreamContentProvider content = new OutputStreamContentProvider();
@@ -957,7 +960,7 @@ public class HttpClientStreamTest extends AbstractTest
             // Expected
         }
 
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(latch.await(2 * connectTimeout, TimeUnit.SECONDS));
     }
 
     @Test
@@ -1012,6 +1015,9 @@ public class HttpClientStreamTest extends AbstractTest
     {
         start(new EmptyServerHandler());
 
+        long connectTimeout = 1000;
+        client.setConnectTimeout(connectTimeout);
+
         final CountDownLatch closeLatch = new CountDownLatch(1);
         InputStream stream = new ByteArrayInputStream("test".getBytes(StandardCharsets.UTF_8))
         {
@@ -1034,7 +1040,7 @@ public class HttpClientStreamTest extends AbstractTest
                     completeLatch.countDown();
                 });
 
-        Assert.assertTrue(completeLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(completeLatch.await(2 * connectTimeout, TimeUnit.SECONDS));
         Assert.assertTrue(closeLatch.await(5, TimeUnit.SECONDS));
     }
 
