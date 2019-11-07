@@ -48,6 +48,7 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -104,6 +105,7 @@ public class WebSocketNegotiationTest extends WebSocketTester
                         break;
 
                     case "test":
+                    case "testExtensionThatDoesNotExist":
                     case "testInvalidExtensionParameter":
                     case "testAcceptTwoExtensionsOfSameName":
                     case "testInvalidUpgradeRequest":
@@ -237,6 +239,23 @@ public class WebSocketNegotiationTest extends WebSocketTester
         assertNull(clientHandler.getError());
 
         assertNull(extensionHeader.get(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testExtensionThatDoesNotExist() throws Exception
+    {
+        Socket client = new Socket();
+        client.connect(new InetSocketAddress("127.0.0.1", server.getLocalPort()));
+
+        HttpFields httpFields = newUpgradeRequest("nonExistentExtensionName");
+        String upgradeRequest = "GET / HTTP/1.1\r\n" + httpFields;
+        client.getOutputStream().write(upgradeRequest.getBytes(StandardCharsets.ISO_8859_1));
+        String response = getUpgradeResponse(client.getInputStream());
+
+        assertThat(response, startsWith("HTTP/1.1 101 Switching Protocols"));
+        assertThat(response, containsString("Sec-WebSocket-Protocol: test"));
+        assertThat(response, containsString("Sec-WebSocket-Accept: +WahVcVmeMLKQUMm0fvPrjSjwzI="));
+        assertThat(response, not(containsString(HttpHeader.SEC_WEBSOCKET_EXTENSIONS.asString())));
     }
 
     @Test

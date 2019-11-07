@@ -296,6 +296,18 @@ public class OutgoingMessageCapture extends FrameHandler.CoreSession.Empty imple
             }
 
             @Override
+            public long getMaxFrameSize()
+            {
+                return 0;
+            }
+
+            @Override
+            public boolean isAutoFragment()
+            {
+                return false;
+            }
+
+            @Override
             public void setIdleTimeout(Duration duration)
             {
             }
@@ -317,6 +329,16 @@ public class OutgoingMessageCapture extends FrameHandler.CoreSession.Empty imple
 
             @Override
             public void setMaxTextMessageSize(long size)
+            {
+            }
+
+            @Override
+            public void setMaxFrameSize(long maxFrameSize)
+            {
+            }
+
+            @Override
+            public void setAutoFragment(boolean autoFragment)
             {
             }
         };

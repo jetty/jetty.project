@@ -14,15 +14,14 @@
 //
 //  You may elect to redistribute this code under either of these licenses.
 //  ========================================================================
-//
+//  
 
-package org.eclipse.jetty.websocket.javax.tests;
+package org.eclipse.jetty.websocket.javax.tests.autobahn;
 
 import java.io.IOException;
-import java.util.concurrent.BlockingQueue;
+import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import javax.websocket.ClientEndpoint;
-import javax.websocket.CloseReason;
 import javax.websocket.OnClose;
 import javax.websocket.OnError;
 import javax.websocket.OnMessage;
@@ -30,54 +29,48 @@ import javax.websocket.OnOpen;
 import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
 
-import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-@ServerEndpoint("/")
 @ClientEndpoint
-public class EventSocket
+@ServerEndpoint("/")
+public class JavaxAutobahnSocket
 {
-    private static final Logger LOG = Log.getLogger(EventSocket.class);
+    private static final Logger LOG = Log.getLogger(JavaxAutobahnSocket.class);
 
     public Session session;
-
-    public BlockingQueue<String> messageQueue = new BlockingArrayQueue<>();
-    public volatile Throwable error = null;
-
-    public CountDownLatch openLatch = new CountDownLatch(1);
     public CountDownLatch closeLatch = new CountDownLatch(1);
 
     @OnOpen
-    public void onOpen(Session session)
+    public void onConnect(Session session)
     {
         this.session = session;
-        if (LOG.isDebugEnabled())
-            LOG.debug("{}  onOpen(): {}", toString(), session);
-        openLatch.countDown();
+        session.setMaxTextMessageBufferSize(Integer.MAX_VALUE);
+        session.setMaxBinaryMessageBufferSize(Integer.MAX_VALUE);
     }
 
     @OnMessage
-    public void onMessage(String message) throws IOException
+    public void onText(String message) throws IOException
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("{}  onMessage(): {}", toString(), message);
-        messageQueue.offer(message);
+        session.getBasicRemote().sendText(message);
     }
 
-    @OnClose
-    public void onClose(CloseReason reason)
+    @OnMessage
+    public void onBinary(ByteBuffer message) throws IOException
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("{}  onClose(): {}", toString(), reason);
-        closeLatch.countDown();
+        session.getBasicRemote().sendBinary(message);
     }
 
     @OnError
-    public void onError(Throwable cause)
+    public void onError(Throwable t)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("{}  onError(): {}", toString(), cause);
-        error = cause;
+            LOG.debug("onError()", t);
+    }
+
+    @OnClose
+    public void onClose()
+    {
+        closeLatch.countDown();
     }
 }

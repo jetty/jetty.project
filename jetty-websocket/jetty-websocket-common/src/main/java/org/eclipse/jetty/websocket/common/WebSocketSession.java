@@ -118,6 +118,18 @@ public class WebSocketSession extends AbstractLifeCycle implements Session, Susp
     }
 
     @Override
+    public long getMaxFrameSize()
+    {
+        return coreSession.getMaxFrameSize();
+    }
+
+    @Override
+    public boolean isAutoFragment()
+    {
+        return coreSession.isAutoFragment();
+    }
+
+    @Override
     public void setIdleTimeout(Duration duration)
     {
         coreSession.setIdleTimeout(duration);
@@ -145,6 +157,18 @@ public class WebSocketSession extends AbstractLifeCycle implements Session, Susp
     public void setMaxTextMessageSize(long size)
     {
         coreSession.setMaxTextMessageSize(size);
+    }
+
+    @Override
+    public void setMaxFrameSize(long maxFrameSize)
+    {
+        coreSession.setMaxFrameSize(maxFrameSize);
+    }
+
+    @Override
+    public void setAutoFragment(boolean autoFragment)
+    {
+        coreSession.setAutoFragment(autoFragment);
     }
 
     @Override
