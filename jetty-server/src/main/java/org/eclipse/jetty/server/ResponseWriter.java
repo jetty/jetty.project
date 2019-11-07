@@ -128,10 +128,13 @@ public class ResponseWriter extends PrintWriter
     private void isOpen() throws IOException
     {
         if (_ioException != null)
-            throw new RuntimeIOException(_ioException);
+            throw _ioException;
 
         if (_isClosed)
-            throw new EofException("Stream closed");
+        {
+            _ioException = new EofException("Stream closed");
+            throw _ioException;
+        }
     }
 
     @Override
