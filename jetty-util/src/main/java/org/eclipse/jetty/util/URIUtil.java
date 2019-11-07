@@ -751,6 +751,42 @@ public class URIUtil
     }
 
     /**
+     * Given a URI, attempt to get the last segment.
+     * <p>
+     * If this is a {@code jar:file://} style URI, then
+     * the JAR filename is returned (not the deep {@code !/path} location)
+     * </p>
+     *
+     * @param uri the URI to look in
+     * @return the last segment.
+     */
+    public static String getUriLastPathSegment(URI uri)
+    {
+        String ssp = uri.getSchemeSpecificPart();
+        // strip off deep jar:file: reference information
+        int idx = ssp.indexOf("!/");
+        if (idx != -1)
+        {
+            ssp = ssp.substring(0, idx);
+        }
+
+        // Strip off trailing '/' if present
+        if (ssp.endsWith("/"))
+        {
+            ssp = ssp.substring(0, ssp.length() - 1);
+        }
+
+        // Only interested in last segment
+        idx = ssp.lastIndexOf('/');
+        if (idx != -1)
+        {
+            ssp = ssp.substring(idx + 1);
+        }
+
+        return ssp;
+    }
+
+    /**
      * Return the parent Path.
      * Treat a URI like a directory path and return the parent directory.
      *

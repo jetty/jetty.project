@@ -844,33 +844,7 @@ public class WebInfConfiguration extends AbstractConfiguration
             return "";
         }
 
-        return getUriLastPathSegment(uri);
-    }
-
-    protected static String getUriLastPathSegment(URI uri)
-    {
-        String ssp = uri.getSchemeSpecificPart();
-        // strip off deep jar:file: reference information
-        int idx = ssp.indexOf("!/");
-        if (idx != -1)
-        {
-            ssp = ssp.substring(0, idx);
-        }
-
-        // Strip off trailing '/' if present
-        if (ssp.endsWith("/"))
-        {
-            ssp = ssp.substring(0, ssp.length() - 1);
-        }
-
-        // Only interested in last segment
-        idx = ssp.lastIndexOf('/');
-        if (idx != -1)
-        {
-            ssp = ssp.substring(idx + 1);
-        }
-
-        return ssp;
+        return URIUtil.getUriLastPathSegment(uri);
     }
 
     protected List<Resource> findClassDirs(WebAppContext context)
