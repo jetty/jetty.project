@@ -405,8 +405,7 @@ public class JarFileResource extends JarResource
         return url.sameFile(resource.getURI().toURL());
     }
 
-    @Override
-    public File getFile()
+    public File getJarFile()
     {
         if (_file != null)
             return _file;

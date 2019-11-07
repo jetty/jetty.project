@@ -42,6 +42,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.resource.JarFileResource;
 import org.eclipse.jetty.util.resource.JarResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
@@ -814,6 +815,11 @@ public class WebInfConfiguration extends AbstractConfiguration
         try
         {
             File resourceFile = resource.getFile();
+            if ((resourceFile != null) && (resource instanceof JarFileResource))
+            {
+                resourceFile = ((JarFileResource)resource).getJarFile();
+            }
+
             if (resourceFile != null)
             {
                 return resourceFile.getName();
