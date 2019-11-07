@@ -21,11 +21,17 @@ package org.eclipse.jetty.websocket.server.browser;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpConnectionFactory;
+import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.ResourceHandler;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.common.extensions.FrameCaptureExtension;
 import org.eclipse.jetty.websocket.server.WebSocketHandler;
@@ -43,10 +49,12 @@ import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 public class BrowserDebugTool implements WebSocketCreator
 {
     private static final Logger LOG = Log.getLogger(BrowserDebugTool.class);
+    private ServerConnector secureConnector;
 
     public static void main(String[] args)
     {
         int port = 8080;
+        int securePort = 8443;
 
         for (int i = 0; i < args.length; i++)
         {
@@ -55,12 +63,17 @@ public class BrowserDebugTool implements WebSocketCreator
             {
                 port = Integer.parseInt(args[++i]);
             }
+
+            if ("-sP".equals(a) || "--securePort".equals(a))
+            {
+                securePort = Integer.parseInt(args[++i]);
+            }
         }
 
         try
         {
             BrowserDebugTool tool = new BrowserDebugTool();
-            tool.prepare(port);
+            tool.prepare(port, securePort);
             tool.start();
         }
         catch (Throwable t)
@@ -118,12 +131,38 @@ public class BrowserDebugTool implements WebSocketCreator
         return connector.getLocalPort();
     }
 
-    public void prepare(int port)
+    public int getSecurePort()
+    {
+        return secureConnector.getLocalPort();
+    }
+
+    public void prepare(int port, int securePort)
     {
         server = new Server();
-        connector = new ServerConnector(server);
+
+        HttpConfiguration httpConfiguration = new HttpConfiguration();
+        httpConfiguration.setSecureScheme("https");
+        httpConfiguration.setSecurePort(securePort);
+
+        connector = new ServerConnector(server, new HttpConnectionFactory(httpConfiguration));
         connector.setPort(port);
         server.addConnector(connector);
+
+        SslContextFactory sslContextFactory = new SslContextFactory();
+        sslContextFactory.setKeyStorePath(MavenTestingUtils.getTestResourceFile("keystore").getAbsolutePath());
+        sslContextFactory.setKeyStorePassword("storepwd");
+        sslContextFactory.setKeyManagerPassword("keypwd");
+
+        // SSL HTTP Configuration
+        HttpConfiguration httpsConfiguration = new HttpConfiguration(httpConfiguration);
+        httpsConfiguration.addCustomizer(new SecureRequestCustomizer());
+
+        // SSL Connector
+        secureConnector = new ServerConnector(server,
+            new SslConnectionFactory(sslContextFactory,"http/1.1"),
+            new HttpConnectionFactory(httpsConfiguration));
+        secureConnector.setPort(securePort);
+        server.addConnector(secureConnector);
 
         WebSocketHandler wsHandler = new WebSocketHandler()
         {
@@ -161,7 +200,8 @@ public class BrowserDebugTool implements WebSocketCreator
     public void start() throws Exception
     {
         server.start();
-        LOG.info("Server available on port {}",getPort());
+        LOG.info("Server available on port {}", getPort());
+        LOG.info("Server available on secure (TLS) port {}", getSecurePort());
     }
 
     public void stop() throws Exception
