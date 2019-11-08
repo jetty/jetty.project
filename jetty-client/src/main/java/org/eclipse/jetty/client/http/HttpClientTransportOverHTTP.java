@@ -29,6 +29,7 @@ import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 
 @ManagedObject("The HTTP/1.1 client transport")
@@ -70,6 +71,7 @@ public class HttpClientTransportOverHTTP extends AbstractConnectorHttpClientTran
         return new HttpConnectionOverHTTP(endPoint, destination, promise);
     }
 
+    @ManagedAttribute("The maximum allowed size in bytes for an HTTP header field cache")
     public int getHeaderCacheSize()
     {
         return headerCacheSize;
