@@ -2364,7 +2364,7 @@ public class HttpParserTest
         @Override
         public int getHeaderCacheSize()
         {
-            return 4096;
+            return 1024;
         }
 
         @Override

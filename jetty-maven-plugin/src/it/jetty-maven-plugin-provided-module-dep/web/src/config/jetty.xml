@@ -9,7 +9,7 @@
     <Set name="outputBufferSize">32768</Set>
     <Set name="requestHeaderSize">8192</Set>
     <Set name="responseHeaderSize">8192</Set>
-    <Set name="headerCacheSize">4096</Set>
+    <Set name="headerCacheSize">1024</Set>
   </New>
 
   <Call name="addConnector">
