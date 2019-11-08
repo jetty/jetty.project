@@ -71,7 +71,10 @@ public class PersistentFileUploadDownloadTest
     @BeforeEach
     public void startServerAndClient() throws Exception
     {
-        server = new Server();
+        QueuedThreadPool serverThreadPool = new QueuedThreadPool();
+        serverThreadPool.setName("Server");
+        server = new Server(serverThreadPool);
+        
         ServerConnector connector = new ServerConnector(server);
         connector.setPort(0);
         connector.addBean(new ChannelLogger());
