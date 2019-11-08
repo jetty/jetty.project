@@ -112,7 +112,7 @@ public abstract class TransformingFlusher
             {
                 current = pollEntry();
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Processing {}", current);
+                    LOG.debug("Polled {}", current);
                 if (current == null)
                     return Action.IDLE;
             }
@@ -120,7 +120,12 @@ public abstract class TransformingFlusher
             if (LOG.isDebugEnabled())
                 LOG.debug("Processing {}", current);
 
-            onFrame(current.frame, this, current.batch);
+            if (finished)
+            {
+                finished = false;
+                onFrame(current.frame, this, current.batch);
+            }
+
             if (!finished)
                 transform();
             return Action.SCHEDULED;
