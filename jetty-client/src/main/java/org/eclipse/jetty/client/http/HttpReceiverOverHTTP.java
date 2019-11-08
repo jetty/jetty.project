@@ -246,7 +246,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     public int getHeaderCacheSize()
     {
         // TODO get from configuration
-        return 4096;
+        return 1024;
     }
 
     @Override

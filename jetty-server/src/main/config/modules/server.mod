@@ -55,7 +55,7 @@ patch-module: servlet.api=lib/jetty-schemas-3.1.jar
 # jetty.httpConfig.sendDateHeader=false
 
 ## Max per-connection header cache size (in nodes)
-# jetty.httpConfig.headerCacheSize=4096
+# jetty.httpConfig.headerCacheSize=1024
 
 ## Whether, for requests with content, delay dispatch until some content has arrived
 # jetty.httpConfig.delayDispatchUntilContent=true
