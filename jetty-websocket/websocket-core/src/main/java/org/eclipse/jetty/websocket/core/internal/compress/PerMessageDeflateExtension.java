@@ -125,6 +125,16 @@ public class PerMessageDeflateExtension extends AbstractExtension
                     outgoingContextTakeover = false;
                     break;
                 }
+                case "@deflate_buffer_size":
+                {
+                    deflateBufferSize = config.getParameter(key, DEFAULT_BUF_SIZE);
+                    break;
+                }
+                case "@inflate_buffer_size":
+                {
+                    inflateBufferSize = config.getParameter(key, DEFAULT_BUF_SIZE);
+                    break;
+                }
                 default:
                 {
                     throw new IllegalArgumentException();

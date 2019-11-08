@@ -131,6 +131,9 @@ public class Negotiation
                 .filter(ec -> available.contains(ec.getName().toLowerCase()) && !ec.getName().startsWith("@"))
                 .collect(Collectors.toList());
 
+            // Remove any parameters starting with "@", these are not to be negotiated by client (internal parameters).
+            offeredExtensions.forEach(ExtensionConfig::removeInternalParameters);
+
             offeredSubprotocols = subprotocols == null
                 ? Collections.emptyList()
                 : subprotocols.getValues();

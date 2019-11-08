@@ -26,6 +26,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.util.ArrayTrie;
@@ -173,6 +174,16 @@ public class ExtensionConfig
         this.parameters.putAll(paramParser.params.get(this.name));
     }
 
+    public List<Map.Entry<String, String>> getInternalParameters()
+    {
+        return parameters.entrySet().stream().filter(entry -> entry.getKey().startsWith("@")).collect(Collectors.toList());
+    }
+
+    public void removeInternalParameters()
+    {
+        parameters.entrySet().removeIf(entry -> entry.getKey().startsWith("@"));
+    }
+
     public String getName()
     {
         return name;
@@ -204,6 +215,27 @@ public class ExtensionConfig
         str.append(name);
         for (String param : parameters.keySet())
         {
+            str.append(';');
+            str.append(param);
+            String value = parameters.get(param);
+            if (value != null)
+            {
+                str.append('=');
+                quoteIfNeeded(str, value);
+            }
+        }
+        return str.toString();
+    }
+
+    public final String getParameterizedNameWithoutInternalParams()
+    {
+        StringBuilder str = new StringBuilder();
+        str.append(name);
+        for (String param : parameters.keySet())
+        {
+            if (param.startsWith("@"))
+                continue;
+
             str.append(';');
             str.append(param);
             String value = parameters.get(param);
