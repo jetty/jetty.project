@@ -708,7 +708,7 @@ public class HttpParser
 
                         case LF:
                             setState(State.HEADER);
-                            handle |= _responseHandler.startResponse(_version, _responseStatus, null);
+                            handle = _responseHandler.startResponse(_version, _responseStatus, null);
                             break;
 
                         default:
@@ -805,7 +805,7 @@ public class HttpParser
                             if (_responseHandler != null)
                             {
                                 setState(State.HEADER);
-                                handle |= _responseHandler.startResponse(_version, _responseStatus, null);
+                                handle = _responseHandler.startResponse(_version, _responseStatus, null);
                             }
                             else
                             {
@@ -835,15 +835,13 @@ public class HttpParser
                             checkVersion();
 
                             // Should we try to cache header fields?
-                            if (_fieldCache == null && _version.getVersion() >= HttpVersion.HTTP_1_1.getVersion() && _handler.getHeaderCacheSize() > 0)
-                            {
-                                int headerCache = _handler.getHeaderCacheSize();
+                            int headerCache = _handler.getHeaderCacheSize();
+                            if (_fieldCache == null && _version.getVersion() >= HttpVersion.HTTP_1_1.getVersion() && headerCache > 0)
                                 _fieldCache = new ArrayTernaryTrie<>(headerCache);
-                            }
 
                             setState(State.HEADER);
 
-                            handle |= _requestHandler.startRequest(_methodString, _uri.toString(), _version);
+                            handle = _requestHandler.startRequest(_methodString, _uri.toString(), _version);
                             continue;
 
                         case ALPHA:
@@ -865,7 +863,7 @@ public class HttpParser
                         case LF:
                             String reason = takeString();
                             setState(State.HEADER);
-                            handle |= _responseHandler.startResponse(_version, _responseStatus, reason);
+                            handle = _responseHandler.startResponse(_version, _responseStatus, reason);
                             continue;
 
                         case ALPHA:
@@ -1589,7 +1587,6 @@ public class HttpParser
         }
 
         // Handle _content
-        byte ch;
         while (_state.ordinal() < State.TRAILER.ordinal() && remaining > 0)
         {
             switch (_state)
