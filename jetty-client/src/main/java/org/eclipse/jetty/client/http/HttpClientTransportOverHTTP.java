@@ -34,6 +34,8 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 @ManagedObject("The HTTP/1.1 client transport")
 public class HttpClientTransportOverHTTP extends AbstractConnectorHttpClientTransport
 {
+    private int headerCacheSize = 1024;
+
     public HttpClientTransportOverHTTP()
     {
         this(Math.max(1, ProcessorUtils.availableProcessors() / 2));
@@ -66,5 +68,15 @@ public class HttpClientTransportOverHTTP extends AbstractConnectorHttpClientTran
     protected HttpConnectionOverHTTP newHttpConnection(EndPoint endPoint, HttpDestination destination, Promise<Connection> promise)
     {
         return new HttpConnectionOverHTTP(endPoint, destination, promise);
+    }
+
+    public int getHeaderCacheSize()
+    {
+        return headerCacheSize;
+    }
+
+    public void setHeaderCacheSize(int headerCacheSize)
+    {
+        this.headerCacheSize = headerCacheSize;
     }
 }
