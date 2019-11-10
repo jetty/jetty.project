@@ -57,7 +57,7 @@ ____
 [IMPORTANT]
 While the Jetty Maven Plugin can be very useful for development we do not recommend its use in a _production capacity_.
 In order for the plugin to work it needs to leverage many internal Maven apis and Maven itself it not a production deployment tool.
-We recommend either the traditional link:distribution-guide/index.html[distribution] deployment approach or using link:#advanced-embedding[embedded Jetty.]
+We recommend either the traditional link:{DISTGUIDE}[distribution] deployment approach or using link:#advanced-embedding[embedded Jetty].
 ____
 
 [[get-up-and-running]]
