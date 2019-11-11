@@ -19,7 +19,7 @@
 package org.eclipse.jetty.maven.plugin;
 
 import java.io.File;
-import java.util.List;
+import java.io.IOException;
 
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
@@ -28,8 +28,6 @@ import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
-import org.eclipse.jetty.util.PathWatcher;
-import org.eclipse.jetty.util.PathWatcher.PathWatchEvent;
 
 /**
  * <p>
@@ -56,9 +54,6 @@ public class JettyRunWarMojo extends AbstractJettyMojo
     @Parameter(defaultValue = "${project.build.directory}/${project.build.finalName}.war", required = true)
     private File war;
 
-    /**
-     * @see org.apache.maven.plugin.Mojo#execute()
-     */
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException
     {
@@ -80,45 +75,20 @@ public class JettyRunWarMojo extends AbstractJettyMojo
         webApp.setWar(war.getCanonicalPath());
     }
 
-    /**
-     * @see AbstractJettyMojo#configureScanner()
-     */
     @Override
     public void configureScanner() throws MojoExecutionException
     {
-        scanner.watch(project.getFile().toPath());
-        scanner.watch(war.toPath());
-
-        scanner.addListener(new PathWatcher.EventListListener()
+        try
         {
-
-            @Override
-            public void onPathWatchEvents(List<PathWatchEvent> events)
-            {
-                try
-                {
-                    boolean reconfigure = false;
-                    for (PathWatchEvent e : events)
-                    {
-                        if (e.getPath().equals(project.getFile().toPath()))
-                        {
-                            reconfigure = true;
-                            break;
-                        }
-                    }
-                    restartWebApp(reconfigure);
-                }
-                catch (Exception e)
-                {
-                    getLog().error("Error reconfiguring/restarting webapp after change in watched files", e);
-                }
-            }
-        });
+            scanner.addFile(project.getFile().toPath());
+            scanner.addFile(war.toPath());
+        }
+        catch (IOException e)
+        {
+            throw new MojoExecutionException("Error configuring scanner", e);
+        }
     }
 
-    /**
-     * @see org.eclipse.jetty.maven.plugin.AbstractJettyMojo#restartWebApp(boolean)
-     */
     @Override
     public void restartWebApp(boolean reconfigureScanner) throws Exception
     {

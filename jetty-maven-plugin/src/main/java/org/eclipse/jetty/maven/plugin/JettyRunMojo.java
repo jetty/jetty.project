@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Path;
+import java.nio.file.PathMatcher;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -41,8 +42,7 @@ import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
 import org.eclipse.jetty.maven.plugin.utils.MavenProjectHelper;
-import org.eclipse.jetty.util.PathWatcher;
-import org.eclipse.jetty.util.PathWatcher.PathWatchEvent;
+import org.eclipse.jetty.util.IncludeExcludeSet;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
@@ -145,9 +145,6 @@ public class JettyRunMojo extends AbstractJettyMojo
 
     protected Resource originalBaseResource;
 
-    /**
-     * @see org.eclipse.jetty.maven.plugin.AbstractJettyMojo#execute()
-     */
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException
     {
@@ -157,8 +154,6 @@ public class JettyRunMojo extends AbstractJettyMojo
 
     /**
      * Verify the configuration given in the pom.
-     *
-     * @see AbstractJettyMojo#checkPomConfiguration()
      */
     @Override
     public boolean checkPomConfiguration() throws MojoExecutionException
@@ -229,9 +224,6 @@ public class JettyRunMojo extends AbstractJettyMojo
         super.finishConfigurationBeforeStart();
     }
 
-    /**
-     * @see org.eclipse.jetty.maven.plugin.AbstractJettyMojo#configureWebApplication()
-     */
     @Override
     public void configureWebApplication() throws Exception
     {
@@ -317,9 +309,6 @@ public class JettyRunMojo extends AbstractJettyMojo
         getLog().info("Webapp directory = " + webAppSourceDirectory.getCanonicalPath());
     }
 
-    /**
-     * @see org.eclipse.jetty.maven.plugin.AbstractJettyMojo#configureScanner()
-     */
     @Override
     public void configureScanner()
         throws MojoExecutionException
@@ -332,36 +321,6 @@ public class JettyRunMojo extends AbstractJettyMojo
         {
             throw new MojoExecutionException("Error forming scan list", e);
         }
-
-        scanner.addListener(new PathWatcher.EventListListener()
-        {
-
-            @Override
-            public void onPathWatchEvents(List<PathWatchEvent> events)
-            {
-                try
-                {
-                    boolean reconfigure = false;
-                    if (events != null)
-                    {
-                        for (PathWatchEvent e : events)
-                        {
-                            if (e.getPath().equals(project.getFile().toPath()))
-                            {
-                                reconfigure = true;
-                                break;
-                            }
-                        }
-                    }
-
-                    restartWebApp(reconfigure);
-                }
-                catch (Exception e)
-                {
-                    getLog().error("Error reconfiguring/restarting webapp after change in watched files", e);
-                }
-            }
-        });
     }
 
     public void gatherScannables() throws Exception
@@ -369,33 +328,37 @@ public class JettyRunMojo extends AbstractJettyMojo
         if (webApp.getDescriptor() != null)
         {
             Resource r = Resource.newResource(webApp.getDescriptor());
-            scanner.watch(r.getFile().toPath());
+            scanner.addFile(r.getFile().toPath());
         }
 
         if (webApp.getJettyEnvXml() != null)
-            scanner.watch(new File(webApp.getJettyEnvXml()).toPath());
+            scanner.addFile(new File(webApp.getJettyEnvXml()).toPath());
 
         if (webApp.getDefaultsDescriptor() != null)
         {
             if (!WebAppContext.WEB_DEFAULTS_XML.equals(webApp.getDefaultsDescriptor()))
-                scanner.watch(new File(webApp.getDefaultsDescriptor()).toPath());
+                scanner.addFile(new File(webApp.getDefaultsDescriptor()).toPath());
         }
 
         if (webApp.getOverrideDescriptor() != null)
         {
-            scanner.watch(new File(webApp.getOverrideDescriptor()).toPath());
+            scanner.addFile(new File(webApp.getOverrideDescriptor()).toPath());
         }
 
         File jettyWebXmlFile = findJettyWebXmlFile(new File(webAppSourceDirectory, "WEB-INF"));
         if (jettyWebXmlFile != null)
         {
-            scanner.watch(jettyWebXmlFile.toPath());
+            scanner.addFile(jettyWebXmlFile.toPath());
         }
 
         //make sure each of the war artifacts is added to the scanner
         for (Artifact a : getWarArtifacts())
         {
-            scanner.watch(a.getFile().toPath());
+            File f = a.getFile();
+            if (a.getFile().isDirectory())
+                scanner.addDirectory(f.toPath());
+            else
+                scanner.addFile(f.toPath());
         }
 
         //handle the explicit extra scan targets
@@ -405,87 +368,81 @@ public class JettyRunMojo extends AbstractJettyMojo
             {
                 if (f.isDirectory())
                 {
-                    PathWatcher.Config config = new PathWatcher.Config(f.toPath());
-                    config.setRecurseDepth(PathWatcher.Config.UNLIMITED_DEPTH);
-                    scanner.watch(config);
+                    scanner.addDirectory(f.toPath());
                 }
                 else
-                    scanner.watch(f.toPath());
+                    scanner.addFile(f.toPath());
             }
         }
-
+        
+        scanner.addFile(project.getFile().toPath());
+        
         //handle the extra scan patterns
         if (scanTargetPatterns != null)
         {
             for (ScanTargetPattern p : scanTargetPatterns)
             {
-                PathWatcher.Config config = new PathWatcher.Config(p.getDirectory().toPath());
-                config.setRecurseDepth(PathWatcher.Config.UNLIMITED_DEPTH);
-                for (String pattern : p.getExcludes())
-                {
-                    config.addExcludeGlobRelative(pattern);
-                }
-                for (String pattern : p.getIncludes())
-                {
-                    config.addIncludeGlobRelative(pattern);
-                }
-                scanner.watch(config);
+                IncludeExcludeSet<PathMatcher, Path> includesExcludes = scanner.addDirectory(p.getDirectory().toPath());
+                p.configureIncludesExcludeSet(includesExcludes);
             }
         }
 
-        scanner.watch(project.getFile().toPath());
-
         if (webApp.getTestClasses() != null && webApp.getTestClasses().exists())
         {
-            PathWatcher.Config config = new PathWatcher.Config(webApp.getTestClasses().toPath());
-            config.setRecurseDepth(PathWatcher.Config.UNLIMITED_DEPTH);
+            Path p = webApp.getTestClasses().toPath();
+            IncludeExcludeSet<PathMatcher, Path> includeExcludeSet = scanner.addDirectory(p);
+
             if (scanTestClassesPattern != null)
             {
-                for (String p : scanTestClassesPattern.getExcludes())
+                for (String s : scanTestClassesPattern.getExcludes())
                 {
-                    config.addExcludeGlobRelative(p);
+                    if (!s.startsWith("glob:"))
+                        s = "glob:" + s;
+                    includeExcludeSet.exclude(p.getFileSystem().getPathMatcher(s));
                 }
-                for (String p : scanTestClassesPattern.getIncludes())
+                for (String s : scanTestClassesPattern.getIncludes())
                 {
-                    config.addIncludeGlobRelative(p);
+                    if (!s.startsWith("glob:"))
+                        s = "glob:" + s;
+                    includeExcludeSet.include(p.getFileSystem().getPathMatcher(s));
                 }
             }
-            scanner.watch(config);
         }
 
         if (webApp.getClasses() != null && webApp.getClasses().exists())
         {
-            PathWatcher.Config config = new PathWatcher.Config(webApp.getClasses().toPath());
-            config.setRecurseDepth(PathWatcher.Config.UNLIMITED_DEPTH);
+            Path p = webApp.getClasses().toPath();
+            IncludeExcludeSet<PathMatcher, Path> includeExcludes = scanner.addDirectory(p);
             if (scanClassesPattern != null)
             {
-                for (String p : scanClassesPattern.getExcludes())
+                for (String s : scanClassesPattern.getExcludes())
                 {
-                    config.addExcludeGlobRelative(p);
+                    if (!s.startsWith("glob:"))
+                        s = "glob:" + s;
+                    includeExcludes.exclude(p.getFileSystem().getPathMatcher(s));
                 }
 
-                for (String p : scanClassesPattern.getIncludes())
+                for (String s : scanClassesPattern.getIncludes())
                 {
-                    config.addIncludeGlobRelative(p);
+                    if (!s.startsWith("glob:"))
+                        s = "glob:" + s;
+                    includeExcludes.include(p.getFileSystem().getPathMatcher(s));
                 }
             }
-            scanner.watch(config);
         }
 
         if (webApp.getWebInfLib() != null)
         {
             for (File f : webApp.getWebInfLib())
             {
-                PathWatcher.Config config = new PathWatcher.Config(f.toPath());
-                config.setRecurseDepth(PathWatcher.Config.UNLIMITED_DEPTH);
-                scanner.watch(config);
+                if (f.isDirectory())
+                    scanner.addDirectory(f.toPath());
+                else
+                    scanner.addFile(f.toPath());
             }
         }
     }
 
-    /**
-     * @see org.eclipse.jetty.maven.plugin.AbstractJettyMojo#restartWebApp(boolean)
-     */
     @Override
     public void restartWebApp(boolean reconfigureScanner) throws Exception
     {
@@ -661,9 +618,6 @@ public class JettyRunMojo extends AbstractJettyMojo
         return Resource.newResource(dir.getCanonicalPath());
     }
 
-    /**
-     *
-     */
     private List<Artifact> getWarArtifacts()
     {
         if (warArtifacts != null)
@@ -704,9 +658,6 @@ public class JettyRunMojo extends AbstractJettyMojo
         return null;
     }
 
-    /**
-     *
-     */
     protected String getJavaBin()
     {
         String[] javaexes = new String[]
