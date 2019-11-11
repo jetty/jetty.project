@@ -42,11 +42,13 @@ public abstract class TransformingFlusher
      * @param callback used to signal to start processing again.
      * @param batch whether this frame can be batched.
      */
+    // todo callback here should always be completed before transforming
     protected abstract void onFrame(Frame frame, Callback callback, boolean batch);
 
     /**
      * Called multiple times to transform the frame given in {@link TransformingFlusher#onFrame(Frame, Callback, boolean)}.
      */
+    // todo: callback should go in here
     protected abstract void transform();
 
     /**

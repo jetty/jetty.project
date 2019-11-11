@@ -89,7 +89,6 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
     private FrameHandler frameHandler;
     private FrameHandler.ConfigurationCustomizer customizer = new FrameHandler.ConfigurationCustomizer();
     private List<UpgradeListener> upgradeListeners = new ArrayList<>();
-
     private List<ExtensionConfig> requestedExtensions = new ArrayList<>();
 
     public ClientUpgradeRequest(WebSocketCoreClient webSocketClient, URI requestURI)
