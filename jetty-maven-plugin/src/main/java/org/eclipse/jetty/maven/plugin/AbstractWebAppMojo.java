@@ -71,8 +71,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
     
     public static final String JETTY_HOME_GROUPID = "org.eclipse.jetty";
     public static final String JETTY_HOME_ARTIFACTID = "jetty-home";
-    public static final String DEFAULT_WEBAPP_SRC = "src" + File.separator + "main" + File.separator + "webapp";
-    public static final String FAKE_WEBAPP = "webapp-tmp";
+    public static final String FAKE_WEBAPP = "webapp-synth";
 
     public enum DeploymentMode 
     {

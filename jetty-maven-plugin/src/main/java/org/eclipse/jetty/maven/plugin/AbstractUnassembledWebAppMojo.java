@@ -72,37 +72,20 @@ public abstract class AbstractUnassembledWebAppMojo extends AbstractWebAppMojo
     
 
     /**
-     * Root directory for all html/jsp etc files
+     * Default root directory for all html/jsp etc files.
+     * Used to initialize webApp.setBaseResource().
      */
-    @Parameter (defaultValue = "${project.baseDir}/src/main/webapp")
+    @Parameter (defaultValue = "${project.basedir}/src/main/webapp", readonly = true)
     protected File webAppSourceDirectory;
     
     protected void verifyPomConfiguration() throws MojoExecutionException
     {        
-        // check the location of the static content/jsps etc
-        try
-        {
-            if ((webAppSourceDirectory == null) || !webAppSourceDirectory.exists())
-            {  
-                getLog().info("webAppSourceDirectory" + (webAppSourceDirectory == null ? " not set." : (webAppSourceDirectory.getAbsolutePath() + " does not exist.")) + " Trying " + DEFAULT_WEBAPP_SRC);
-                webAppSourceDirectory = new File(project.getBasedir(), DEFAULT_WEBAPP_SRC);             
-                if (!webAppSourceDirectory.exists())
-                {
-                    getLog().info("webAppSourceDirectory " + webAppSourceDirectory.getAbsolutePath() + " does not exist. Trying " + project.getBuild().getDirectory() + File.separator + FAKE_WEBAPP);
-
-                    //try last resort of making a fake empty dir
-                    File target = new File(project.getBuild().getDirectory());
-                    webAppSourceDirectory = new File(target, FAKE_WEBAPP);
-                    if (!webAppSourceDirectory.exists())
-                        webAppSourceDirectory.mkdirs();              
-                }
-            }
-            else
-                getLog().info("Webapp source directory = " + webAppSourceDirectory.getCanonicalPath());
-        }
-        catch (IOException e)
-        {
-            throw new MojoExecutionException("Webapp source directory does not exist", e);
+        //Does the default webapp static resource location exist?
+        if (!webAppSourceDirectory.exists())
+        {  
+            //try last resort of a fake directory
+            File target = new File(project.getBuild().getDirectory());
+            webAppSourceDirectory = new File(target, FAKE_WEBAPP);           
         }
 
         // check the classes to form a classpath with
@@ -144,15 +127,17 @@ public abstract class AbstractUnassembledWebAppMojo extends AbstractWebAppMojo
         //the former could be the location of a packed war, while the latter is the location
         //after any unpacking. With this mojo, you are running an unpacked, unassembled webapp,
         //so the two locations should be equal.
-        Resource webAppSourceDirectoryResource = Resource.newResource(webAppSourceDirectory.getCanonicalPath());
-        if (webApp.getWar() == null)
-            webApp.setWar(webAppSourceDirectoryResource.toString());
 
         //The first time we run, remember the original base dir
         if (originalBaseResource == null)
         {
             if (webApp.getBaseResource() == null)
-                originalBaseResource = webAppSourceDirectoryResource;
+            {
+                //Use the default static resource location
+                if (!webAppSourceDirectory.exists())
+                    webAppSourceDirectory.mkdirs();
+                originalBaseResource = Resource.newResource(webAppSourceDirectory.getCanonicalPath());
+            }
             else
                 originalBaseResource = webApp.getBaseResource();
         }
@@ -161,6 +146,9 @@ public abstract class AbstractUnassembledWebAppMojo extends AbstractWebAppMojo
         //we might have applied any war overlays onto it
         webApp.setBaseResource(originalBaseResource);
 
+        if (webApp.getWar() == null)
+            webApp.setWar(originalBaseResource.getURI().toURL().toExternalForm());
+        
         if (classesDirectory != null)
             webApp.setClasses(classesDirectory);
 

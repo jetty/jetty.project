@@ -34,9 +34,9 @@ The files that are scanned depend on the goal being executed.
 * <dependencies>
 * <classesDirectory>
 * <testClassesDirectory>
-* <webApp><descriptor/></webApp> or <webAppSourceDirectory>/WEB-INF/web.xml
-* <webApp><jettyEnvXml/></webApp> or <webAppSourceDirectory>/WEB-INF/jetty-web.xml
-* <webAppSourceDirectory>/WEB-INF/jetty-web.xml
+* <webApp><descriptor/></webApp> or src/main/webapp/WEB-INF/web.xml
+* <webApp><jettyEnvXml/></webApp> or src/main/webapp/WEB-INF/jetty-web.xml
+* <webApp><baseResource>/WEB-INF/jetty-web.xml
 * <scanTargets>
 * <scanTargetPatterns>
 * any link:{JDURL}/org/eclipse/jetty/webapp/WebAppContext.html#setDefaultsDescriptor%28java.lang.String%29[defaultsDescriptor] for the webapp
