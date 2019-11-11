@@ -2229,6 +2229,39 @@ public class HttpParserTest
     }
 
     @Test
+    public void testForHTTP09HeaderCompleteTrueDoesNotEmitContentComplete()
+    {
+        HttpParser.RequestHandler handler = new Handler()
+        {
+            @Override
+            public boolean headerComplete()
+            {
+                super.headerComplete();
+                return true;
+            }
+        };
+
+        HttpParser parser = new HttpParser(handler, HttpCompliance.RFC2616_LEGACY);
+        ByteBuffer buffer = BufferUtil.toBuffer("GET /path\r\n");
+        boolean handle = parser.parseNext(buffer);
+        assertTrue(handle);
+        assertFalse(buffer.hasRemaining());
+        assertFalse(_contentCompleted);
+        assertFalse(_messageCompleted);
+
+        assertEquals("GET", _methodOrVersion);
+        assertEquals("/path", _uriOrStatus);
+        assertEquals("HTTP/0.9", _versionOrReason);
+        assertEquals(-1, _headers);
+
+        // Need to parse more to advance the parser.
+        handle = parser.parseNext(buffer);
+        assertTrue(handle);
+        assertTrue(_contentCompleted);
+        assertTrue(_messageCompleted);
+    }
+
+    @Test
     public void testForContentLengthZeroHeaderCompleteTrueDoesNotEmitContentComplete()
     {
         HttpParser.ResponseHandler handler = new Handler()
