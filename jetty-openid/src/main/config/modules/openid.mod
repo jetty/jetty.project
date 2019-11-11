@@ -39,3 +39,6 @@ etc/jetty-openid.xml
 
 ## Whether to Authenticate users not found by base LoginService
 # jetty.openid.authenticateNewUsers=false
+
+## True if all certificates should be trusted by the default SslContextFactory
+# jetty.openid.sslContextFactory.trustAll=false

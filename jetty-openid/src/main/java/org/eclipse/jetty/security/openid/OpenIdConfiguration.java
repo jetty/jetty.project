@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.security.openid;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -39,10 +38,9 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
  * This uses the OpenID Provider URL with the path {@link #CONFIG_PATH} to discover
  * the required information about the OIDC service.
  */
-public class OpenIdConfiguration extends ContainerLifeCycle implements Serializable
+public class OpenIdConfiguration extends ContainerLifeCycle
 {
     private static final Logger LOG = Log.getLogger(OpenIdConfiguration.class);
-    private static final long serialVersionUID = 2227941990601349102L;
     private static final String CONFIG_PATH = "/.well-known/openid-configuration";
 
     private final HttpClient httpClient;
@@ -61,7 +59,7 @@ public class OpenIdConfiguration extends ContainerLifeCycle implements Serializa
      */
     public OpenIdConfiguration(String provider, String clientId, String clientSecret)
     {
-        this(provider, null, null, clientId, clientSecret, newHttpClient());
+        this(provider, null, null, clientId, clientSecret, null);
     }
 
     /**
@@ -81,7 +79,7 @@ public class OpenIdConfiguration extends ContainerLifeCycle implements Serializa
         this.clientSecret = clientSecret;
         this.authEndpoint = authorizationEndpoint;
         this.tokenEndpoint = tokenEndpoint;
-        this.httpClient = httpClient;
+        this.httpClient = httpClient != null ? httpClient : newHttpClient();
 
         if (this.issuer == null)
             throw new IllegalArgumentException("Issuer was not configured");
@@ -114,7 +112,6 @@ public class OpenIdConfiguration extends ContainerLifeCycle implements Serializa
     private static HttpClient newHttpClient()
     {
         SslContextFactory.Client sslContextFactory = new SslContextFactory.Client(false);
-        sslContextFactory.setEndpointIdentificationAlgorithm("https");
         return new HttpClient(sslContextFactory);
     }
 
