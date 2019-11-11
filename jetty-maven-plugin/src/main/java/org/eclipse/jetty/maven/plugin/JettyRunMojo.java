@@ -33,8 +33,6 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.eclipse.jetty.util.IncludeExcludeSet;
-import org.eclipse.jetty.util.PathWatcher;
-import org.eclipse.jetty.util.PathWatcher.PathWatchEvent;
 import org.eclipse.jetty.util.Scanner;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.WebAppContext;
@@ -153,6 +151,7 @@ public class JettyRunMojo extends AbstractUnassembledWebAppMojo
             scanner.setScanDepth(Scanner.MAX_SCAN_DEPTH); //always fully walk directory hierarchies
             scanner.setReportExistingFilesOnStartup(false);
             configureScanner();
+            getLog().info("Scan interval ms = " + scan);
             scanner.start();
         }
         else

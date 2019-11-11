@@ -36,7 +36,7 @@ public class TestQuickStartGenerator
     @Test
     public void testGenerator() throws Exception
     {
-        JettyWebAppContext webApp = new JettyWebAppContext();
+        MavenWebAppContext webApp = new MavenWebAppContext();
         webApp.setContextPath("/shouldbeoverridden");
         webApp.setBaseResource(Resource.newResource(MavenTestingUtils.getTestResourceDir("root")));
         File quickstartFile = new File(MavenTestingUtils.getTargetTestingDir(), "quickstart-web.xml");

@@ -29,7 +29,6 @@ import java.util.Set;
 import org.apache.maven.artifact.Artifact;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
-import org.eclipse.jetty.webapp.WebAppContext;
 
 /**
  * OverlayManager
@@ -46,7 +45,7 @@ public class OverlayManager
         this.warPlugin = warPlugin;
     }
 
-    public void applyOverlays (JettyWebAppContext webApp)
+    public void applyOverlays (MavenWebAppContext webApp)
         throws Exception
     {
         List<Resource> resourceBases = new ArrayList<Resource>();

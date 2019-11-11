@@ -43,7 +43,7 @@ public class TestJettyEmbedder
     @Test
     public void testJettyEmbedderFromDefaults() throws Exception
     {
-        JettyWebAppContext webApp = new JettyWebAppContext();
+        MavenWebAppContext webApp = new MavenWebAppContext();
         MavenServerConnector connector = new MavenServerConnector();
         connector.setPort(0);
         
@@ -79,7 +79,7 @@ public class TestJettyEmbedder
     public void testJettyEmbedder()
         throws Exception
     {
-        JettyWebAppContext webApp = new JettyWebAppContext();
+        MavenWebAppContext webApp = new MavenWebAppContext();
         Server server = new Server();
         Map<String,String> jettyProperties = new HashMap<>();
         jettyProperties.put("jetty.server.dumpAfterStart", "true");

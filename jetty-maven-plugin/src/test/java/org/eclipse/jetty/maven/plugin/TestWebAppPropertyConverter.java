@@ -98,7 +98,7 @@ public class TestWebAppPropertyConverter
             propsFile.delete();
         propsFile.createNewFile();
 
-        JettyWebAppContext webApp = new JettyWebAppContext();
+        MavenWebAppContext webApp = new MavenWebAppContext();
         webApp.setContextPath("/foo");
         webApp.setBaseResource(Resource.newResource(MavenTestingUtils.getTestResourceDir("root")));
         webApp.setTempDirectory(tmpDir);
@@ -133,7 +133,7 @@ public class TestWebAppPropertyConverter
         base1.mkdirs();
         File base2 = new File(testDir, "base2");
         base2.mkdirs();
-        JettyWebAppContext webApp = new JettyWebAppContext();
+        MavenWebAppContext webApp = new MavenWebAppContext();
         Properties props = new Properties();
         props.setProperty(WebAppPropertyConverter.BASE_DIRS, String.join(",", base1.getAbsolutePath(), base2.getAbsolutePath()));
         props.setProperty(WebAppPropertyConverter.CLASSES_DIR, classesDir.getAbsolutePath());

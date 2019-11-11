@@ -32,8 +32,6 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ShutdownMonitor;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 
 /**
@@ -49,7 +47,7 @@ public class JettyEmbedder extends AbstractLifeCycle
     protected RequestLog requestLog;
     protected MavenServerConnector httpConnector;
     protected Server server;
-    protected JettyWebAppContext webApp;
+    protected MavenWebAppContext webApp;
     protected boolean exitVm;
     protected boolean stopAtShutdown;
     protected List<File> jettyXmlFiles;
@@ -116,7 +114,7 @@ public class JettyEmbedder extends AbstractLifeCycle
         this.server = server;
     }
 
-    public JettyWebAppContext getWebApp()
+    public MavenWebAppContext getWebApp()
     {
         return webApp;
     }
@@ -191,7 +189,7 @@ public class JettyEmbedder extends AbstractLifeCycle
         this.stopKey = stopKey;
     }
     
-    public void setWebApp(JettyWebAppContext app) throws Exception
+    public void setWebApp(MavenWebAppContext app) throws Exception
     {
         webApp = app;
     }
@@ -282,7 +280,7 @@ public class JettyEmbedder extends AbstractLifeCycle
 
         /* Configure the webapp */
         if (webApp == null)
-            webApp = new JettyWebAppContext();
+            webApp = new MavenWebAppContext();
 
         applyWebAppProperties();
 

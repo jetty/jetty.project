@@ -342,7 +342,7 @@ Here is an example, which turns on scanning for changes every ten seconds, and s
 ===== Configuration
 
 webApp::
-This is an instance of link:{JDURL}/org/eclipse/jetty/maven/plugin/JettyWebAppContext.html[org.eclipse.jetty.maven.plugin.JettyWebAppContext], which is an extension to the class  link:{JDURL}/org/eclipse/jetty/webapp/WebAppContext.hml[`org.eclipse.jetty.webapp.WebAppContext`].
+This is an instance of link:{JDURL}/org/eclipse/jetty/maven/plugin/MavenWebAppContext.html[org.eclipse.jetty.maven.plugin.MavenWebAppContext], which is an extension to the class  link:{JDURL}/org/eclipse/jetty/webapp/WebAppContext.hml[`org.eclipse.jetty.webapp.WebAppContext`].
 You can use any of the setter methods on this object to configure your webapp.
 Here are a few of the most useful ones:
 +
@@ -572,7 +572,7 @@ This goal will generate output from jetty into the `target/jetty-start.out` file
 These configuration parameters are available:
 
 webApp::
-This is an instance of link:{JDURL}/org/eclipse/jetty/maven/plugin/JettyWebAppContext.html[org.eclipse.jetty.maven.plugin.JettyWebAppContext], which is an extension to the class  link:{JDURL}/org/eclipse/jetty/webapp/WebAppContext.hml[`org.eclipse.jetty.webapp.WebAppContext`].
+This is an instance of link:{JDURL}/org/eclipse/jetty/maven/plugin/MavenWebAppContext.html[org.eclipse.jetty.maven.plugin.MavenWebAppContext], which is an extension to the class  link:{JDURL}/org/eclipse/jetty/webapp/WebAppContext.hml[`org.eclipse.jetty.webapp.WebAppContext`].
 You can use any of the setter methods on this object to configure your webapp.
 Here are a few of the most useful ones:
 +
@@ -1029,11 +1029,11 @@ Putting the configuration in webapp A's `pom.xml`:
       <contextPath>/test</contextPath>
     </webApp>
     <contextHandlers>
-      <contextHandler implementation="org.eclipse.jetty.maven.plugin.JettyWebAppContext">
+      <contextHandler implementation="org.eclipse.jetty.maven.plugin.MavenWebAppContext">
         <war>${project.basedir}../../B.war</war>
         <contextPath>/B</contextPath>
       </contextHandler>
-      <contextHandler implementation="org.eclipse.jetty.maven.plugin.JettyWebAppContext">
+      <contextHandler implementation="org.eclipse.jetty.maven.plugin.MavenWebAppContext">
         <war>${project.basedir}../../C.war</war>
         <contextPath>/C</contextPath>
       </contextHandler>
@@ -1044,7 +1044,7 @@ Putting the configuration in webapp A's `pom.xml`:
 
 ____
 [IMPORTANT]
-If the `ContextHandler` you are deploying is a webapp, it is *essential* that you use an `org.eclipse.jetty.maven.plugin.JettyWebAppContext` instance rather than a standard `org.eclipse.jetty.webapp.WebAppContext` instance.
+If the `ContextHandler` you are deploying is a webapp, it is *essential* that you use an `org.eclipse.jetty.maven.plugin.MavenWebAppContext` instance rather than a standard `org.eclipse.jetty.webapp.WebAppContext` instance.
 Only the former will allow the webapp to function correctly in the maven environment.
 ____
 
@@ -1056,7 +1056,7 @@ Copy the `jetty.xml` file from the Jetty distribution, and then add WebAppContex
 <Ref refid="Contexts">
   <Call name="addHandler">
     <Arg>
-      <New class="org.eclipse.jetty.maven.plugin.JettyWebAppContext">
+      <New class="org.eclipse.jetty.maven.plugin.MavenWebAppContext">
         <Set name="contextPath">/B</Set>
         <Set name="war">../../B.war</Set>
       </New>
@@ -1064,7 +1064,7 @@ Copy the `jetty.xml` file from the Jetty distribution, and then add WebAppContex
   </Call>
   <Call>
     <Arg>
-      <New class="org.eclipse.jetty.maven.plugin.JettyWebAppContext">
+      <New class="org.eclipse.jetty.maven.plugin.MavenWebAppContext">
         <Set name="contextPath">/C</Set>
         <Set name="war">../../C.war</Set>
       </New>

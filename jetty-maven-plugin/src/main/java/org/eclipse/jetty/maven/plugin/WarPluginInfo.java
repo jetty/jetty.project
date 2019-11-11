@@ -20,7 +20,6 @@ package org.eclipse.jetty.maven.plugin;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -51,13 +50,14 @@ public class WarPluginInfo
         _project = project;
         if (_project.getArtifacts() != null)
         {
-             _warArtifacts = _project.getArtifacts().stream()
-                .filter(a->"war".equals(a.getType()) || "zip".equals(a.getType())).collect(Collectors.toSet());
+            _warArtifacts = _project.getArtifacts()
+                .stream()
+                .filter(a -> "war".equals(a.getType()) || "zip".equals(a.getType())).collect(Collectors.toSet());
         }
         else
             _warArtifacts = Collections.emptySet();
     }
-    
+
     /**
      * @return the project
      */
@@ -85,10 +85,10 @@ public class WarPluginInfo
     public Artifact getWarArtifact(String groupId, String artifactId, String classifier)
     {
         Optional<Artifact> o = _warArtifacts.stream()
-            .filter(a->match(a, groupId, artifactId, classifier)).findFirst();
+            .filter(a -> match(a, groupId, artifactId, classifier)).findFirst();
         return o.orElse(null);
     }
-    
+
     /**
      * Find the maven-war-plugin, if one is configured
      *

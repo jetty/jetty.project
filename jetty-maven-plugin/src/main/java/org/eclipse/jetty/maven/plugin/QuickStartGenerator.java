@@ -37,7 +37,7 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 public class QuickStartGenerator
 {
     private File quickstartXml;
-    private JettyWebAppContext webApp;
+    private MavenWebAppContext webApp;
     private File webAppPropsFile;
     private String contextXml;
     private boolean prepared = false;
@@ -49,7 +49,7 @@ public class QuickStartGenerator
      * @param quickstartXml the file to generate quickstart into
      * @param webApp the webapp for which to generate quickstart
      */
-    public QuickStartGenerator(File quickstartXml, JettyWebAppContext webApp)
+    public QuickStartGenerator(File quickstartXml, MavenWebAppContext webApp)
     {
         this.quickstartXml = quickstartXml;
         this.webApp = webApp;
@@ -58,7 +58,7 @@ public class QuickStartGenerator
     /**
      * @return the webApp
      */
-    public JettyWebAppContext getWebApp()
+    public MavenWebAppContext getWebApp()
     {
         return webApp;
     }
@@ -122,7 +122,7 @@ public class QuickStartGenerator
         throws Exception
     {
         if (webApp == null)
-            webApp = new JettyWebAppContext();
+            webApp = new MavenWebAppContext();
 
         //set the webapp up to do very little other than generate the quickstart-web.xml
         webApp.addConfiguration(new MavenQuickStartConfiguration());

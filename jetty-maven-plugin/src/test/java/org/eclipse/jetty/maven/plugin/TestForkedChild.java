@@ -81,7 +81,7 @@ public class TestForkedChild
                 cmd.add("--token");
                 cmd.add(tokenFile.getAbsolutePath());
 
-                JettyWebAppContext webapp = new JettyWebAppContext();
+                MavenWebAppContext webapp = new MavenWebAppContext();
                 webapp.setContextPath("/foo");
                 webapp.setTempDirectory(tmpDir);
                 webapp.setBaseResource(Resource.newResource(baseDir));

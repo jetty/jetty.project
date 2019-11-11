@@ -61,7 +61,7 @@ public class MavenMetaInfConfiguration extends MetaInfConfiguration
         throws Exception
     {
         List<Resource> list = new ArrayList<>();
-        JettyWebAppContext jwac = (JettyWebAppContext)context;
+        MavenWebAppContext jwac = (MavenWebAppContext)context;
         List<File> files = jwac.getWebInfLib();
         if (files != null)
         {
@@ -96,7 +96,7 @@ public class MavenMetaInfConfiguration extends MetaInfConfiguration
     {
         List<Resource> list = new ArrayList<>();
 
-        JettyWebAppContext jwac = (JettyWebAppContext)context;
+        MavenWebAppContext jwac = (MavenWebAppContext)context;
         List<File> files = jwac.getWebInfClasses();
         if (files != null)
         {

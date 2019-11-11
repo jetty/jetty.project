@@ -34,7 +34,7 @@ public class JettyForker extends AbstractForker
 {
     protected File forkWebXml;
     protected Server server;
-    protected JettyWebAppContext webApp;
+    protected MavenWebAppContext webApp;
     protected String containerClassPath;
     protected File webAppPropsFile;
     protected String contextXml; 
@@ -98,7 +98,7 @@ public class JettyForker extends AbstractForker
         this.containerClassPath = containerClassPath;
     }
 
-    public void setWebApp(JettyWebAppContext app)
+    public void setWebApp(MavenWebAppContext app)
     {
         webApp = app;
     }

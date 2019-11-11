@@ -119,7 +119,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
      * 
      */
     @Parameter
-    protected JettyWebAppContext webApp;
+    protected MavenWebAppContext webApp;
 
     /**  
      * Skip this mojo execution.
@@ -775,7 +775,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
         throws Exception
     {
         if (webApp == null)
-            webApp = new JettyWebAppContext();
+            webApp = new MavenWebAppContext();
         
         //If no contextPath was specified, go with default of project artifactid
         String cp = webApp.getContextPath();

@@ -30,9 +30,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
-import org.eclipse.jetty.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.plus.webapp.EnvConfiguration;
-import org.eclipse.jetty.plus.webapp.PlusConfiguration;
 import org.eclipse.jetty.quickstart.QuickStartConfiguration;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.FilterMapping;
@@ -50,16 +48,16 @@ import org.eclipse.jetty.webapp.MetaInfConfiguration;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 /**
- * JettyWebAppContext
+ * MavenWebAppContext
  *
  * Extends the WebAppContext to specialize for the maven environment. We pass in
  * the list of files that should form the classpath for the webapp when
  * executing in the plugin, and any jetty-env.xml file that may have been
  * configured.
  */
-public class JettyWebAppContext extends WebAppContext
+public class MavenWebAppContext extends WebAppContext
 {
-    private static final Logger LOG = Log.getLogger(JettyWebAppContext.class);
+    private static final Logger LOG = Log.getLogger(MavenWebAppContext.class);
 
     private static final String DEFAULT_CONTAINER_INCLUDE_JAR_PATTERN = ".*/javax.servlet-[^/]*\\.jar$|.*/jetty-servlet-api-[^/]*\\.jar$|.*javax.servlet.jsp.jstl-[^/]*\\.jar|.*taglibs-standard-impl-.*\\.jar";
 
@@ -104,7 +102,7 @@ public class JettyWebAppContext extends WebAppContext
      */
     private boolean _baseAppFirst = true;
 
-    public JettyWebAppContext() throws Exception
+    public MavenWebAppContext() throws Exception
     {
         super();
         // Turn off copyWebInf option as it is not applicable for plugin.
@@ -492,7 +490,7 @@ public class JettyWebAppContext extends WebAppContext
 
     public void initCDI()
     {
-        Class cdiInitializer = null;
+        Class<?> cdiInitializer = null;
         try
         {
             cdiInitializer = Thread.currentThread().getContextClassLoader().loadClass("org.eclipse.jetty.cdi.servlet.JettyWeldInitializer");

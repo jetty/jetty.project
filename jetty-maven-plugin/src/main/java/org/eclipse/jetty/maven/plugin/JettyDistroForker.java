@@ -52,7 +52,7 @@ import org.eclipse.jetty.util.resource.Resource;
  */
 public class JettyDistroForker extends AbstractForker
 {
-    protected JettyWebAppContext webApp;
+    protected MavenWebAppContext webApp;
 
     protected String contextXml;
 
@@ -146,12 +146,12 @@ public class JettyDistroForker extends AbstractForker
         this.jettyDistro = jettyDistro;
     }
 
-    public JettyWebAppContext getWebApp()
+    public MavenWebAppContext getWebApp()
     {
         return webApp;
     }
 
-    public void setWebApp(JettyWebAppContext webApp)
+    public void setWebApp(MavenWebAppContext webApp)
     {
         this.webApp = webApp;
     }
@@ -307,11 +307,10 @@ public class JettyDistroForker extends AbstractForker
             Path jettyBasePath = jettyBase.toPath();
             
             final File contextXmlFile = (contextXml == null ? null : FileSystems.getDefault().getPath(contextXml).toFile());
-            
+
             //copy the existing jetty base
-            Files.walkFileTree(jettyBasePath,EnumSet.of(FileVisitOption.FOLLOW_LINKS), 
-                               Integer.MAX_VALUE,
-                               new SimpleFileVisitor<Path>() 
+            Files.walkFileTree(jettyBasePath, EnumSet.of(FileVisitOption.FOLLOW_LINKS), Integer.MAX_VALUE,
+                new SimpleFileVisitor<Path>()
             {
                 @Override
                 public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException

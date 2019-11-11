@@ -83,7 +83,7 @@ public class Overlay
      * @param dir the directory into which to unpack the overlay
      * @throws IOException 
      */
-    public void unpackTo (File dir) throws IOException
+    public void unpackTo(File dir) throws IOException
     {
         if (dir == null)
             throw new IllegalStateException("No overly unpack directory");

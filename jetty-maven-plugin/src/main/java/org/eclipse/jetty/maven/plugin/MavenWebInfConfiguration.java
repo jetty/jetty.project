@@ -54,7 +54,7 @@ public class MavenWebInfConfiguration extends WebInfConfiguration
     @Override
     public void configure(WebAppContext context) throws Exception
     {
-        JettyWebAppContext jwac = (JettyWebAppContext)context;
+        MavenWebAppContext jwac = (MavenWebAppContext)context;
 
         //put the classes dir and all dependencies into the classpath
         if (jwac.getClassPathFiles() != null && context.getClassLoader() instanceof WebAppClassLoader)
