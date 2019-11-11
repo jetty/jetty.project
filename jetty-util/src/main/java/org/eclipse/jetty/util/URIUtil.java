@@ -470,75 +470,25 @@ public class URIUtil
                             builder = new Utf8StringBuilder(path.length());
                             builder.append(path, offset, i - offset);
                         }
-
-                        // lenient percent decoding
-                        if (i >= end)
+                        if ((i + 2) < end)
                         {
-                            // [LENIENT] a percent sign at end of string.
-                            builder.append('%');
-                            i = end;
-                        }
-                        else if (end > (i + 1))
-                        {
-                            char type = path.charAt(i + 1);
-                            if (type == 'u')
+                            char u = path.charAt(i + 1);
+                            if (u == 'u')
                             {
-                                // We have a possible (deprecated) microsoft unicode code point "%u####"
-                                // - not recommended to use as it's limited to 2 bytes.
-                                if ((i + 5) >= end)
-                                {
-                                    // [LENIENT] we have a partial "%u####" at the end of a string.
-                                    builder.append(path, i, (end - i));
-                                    i = end;
-                                }
-                                else
-                                {
-                                    // this seems wrong, as we are casting to a char, but that's the known
-                                    // limitation of this deprecated encoding (only 2 bytes allowed)
-                                    if (StringUtil.isHex(path, i + 2, 4))
-                                    {
-                                        int codepoint = 0xffff & TypeUtil.parseInt(path, i + 2, 4, 16);
-                                        char[] chars = Character.toChars(codepoint);
-                                        for (char ch : chars)
-                                        {
-                                            builder.append(ch);
-                                        }
-                                        i += 5;
-                                    }
-                                    else
-                                    {
-                                        // [LENIENT] copy the "%u" as-is.
-                                        builder.append(path, i, 2);
-                                        i += 1;
-                                    }
-                                }
-                            }
-                            else if (end > (i + 2))
-                            {
-                                // we have a possible "%##" encoding
-                                if (StringUtil.isHex(path, i + 1, 2))
-                                {
-                                    builder.append((byte)TypeUtil.parseInt(path, i + 1, 2, 16));
-                                    i += 2;
-                                }
-                                else
-                                {
-                                    builder.append(path, i, 3);
-                                    i += 2;
-                                }
+                                // TODO remove %u support in jetty-10
+                                // this is wrong. This is a codepoint not a char
+                                builder.append((char)(0xffff & TypeUtil.parseInt(path, i + 2, 4, 16)));
+                                i += 5;
                             }
                             else
                             {
-                                // [LENIENT] incomplete "%##" sequence at end of string
-                                builder.append(path, i, (end - i));
-                                i = end;
+                                builder.append((byte)(0xff & (TypeUtil.convertHexDigit(u) * 16 + TypeUtil.convertHexDigit(path.charAt(i + 2)))));
+                                i += 2;
                             }
                         }
                         else
                         {
-                            // [LENIENT] the "%" at the end of the string
-                            builder.append(path, i, (end - i));
-                            i = end;
+                            throw new IllegalArgumentException("Bad URI % encoding");
                         }
 
                         break;
@@ -576,10 +526,18 @@ public class URIUtil
         }
         catch (NotUtf8Exception e)
         {
-            LOG.warn(path.substring(offset, offset + length) + " " + e);
-            LOG.debug(e);
+            LOG.debug(path.substring(offset, offset + length) + " " + e);
             return decodeISO88591Path(path, offset, length);
         }
+        catch (IllegalArgumentException e)
+        {
+            throw e;
+        }
+        catch (Exception e)
+        {
+            throw new IllegalArgumentException("cannot decode URI", e);
+        }
+
     }
 
     /* Decode a URI path and strip parameters of ISO-8859-1 path
@@ -604,13 +562,14 @@ public class URIUtil
                         char u = path.charAt(i + 1);
                         if (u == 'u')
                         {
-                            // TODO this is wrong. This is a codepoint not a char
+                            // TODO remove %u encoding support in jetty-10
+                            // This is wrong. This is a codepoint not a char
                             builder.append((char)(0xffff & TypeUtil.parseInt(path, i + 2, 4, 16)));
                             i += 5;
                         }
                         else
                         {
-                            builder.append((byte)(0xff & (TypeUtil.convertHexDigit(u) * 16 + TypeUtil.convertHexDigit(path.charAt(i + 2)))));
+                            builder.append((char)(0xff & (TypeUtil.convertHexDigit(u) * 16 + TypeUtil.convertHexDigit(path.charAt(i + 2)))));
                             i += 2;
                         }
                     }

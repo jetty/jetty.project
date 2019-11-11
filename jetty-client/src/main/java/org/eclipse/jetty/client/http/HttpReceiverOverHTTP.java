@@ -245,8 +245,8 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     @Override
     public int getHeaderCacheSize()
     {
-        // TODO get from configuration
-        return 4096;
+        HttpClientTransportOverHTTP transport = (HttpClientTransportOverHTTP)getHttpDestination().getHttpClient().getTransport();
+        return transport.getHeaderCacheSize();
     }
 
     @Override

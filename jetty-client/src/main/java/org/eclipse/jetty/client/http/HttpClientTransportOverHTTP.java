@@ -33,12 +33,15 @@ import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 
 @ManagedObject("The HTTP/1.1 client transport")
 public class HttpClientTransportOverHTTP extends AbstractConnectorHttpClientTransport
 {
     public static final HttpDestination.Protocol HTTP11 = new HttpDestination.Protocol(List.of("http/1.1"), false);
+
+    private int headerCacheSize = 1024;
 
     public HttpClientTransportOverHTTP()
     {
@@ -75,7 +78,7 @@ public class HttpClientTransportOverHTTP extends AbstractConnectorHttpClientTran
         HttpDestination destination = (HttpDestination)context.get(HTTP_DESTINATION_CONTEXT_KEY);
         @SuppressWarnings("unchecked")
         Promise<Connection> promise = (Promise<Connection>)context.get(HTTP_CONNECTION_PROMISE_CONTEXT_KEY);
-        org.eclipse.jetty.io.Connection connection = newHttpConnection(endPoint, destination, promise);
+        var connection = newHttpConnection(endPoint, destination, promise);
         if (LOG.isDebugEnabled())
             LOG.debug("Created {}", connection);
         return customize(connection, context);
@@ -84,5 +87,16 @@ public class HttpClientTransportOverHTTP extends AbstractConnectorHttpClientTran
     protected HttpConnectionOverHTTP newHttpConnection(EndPoint endPoint, HttpDestination destination, Promise<Connection> promise)
     {
         return new HttpConnectionOverHTTP(endPoint, destination, promise);
+    }
+
+    @ManagedAttribute("The maximum allowed size in bytes for an HTTP header field cache")
+    public int getHeaderCacheSize()
+    {
+        return headerCacheSize;
+    }
+
+    public void setHeaderCacheSize(int headerCacheSize)
+    {
+        this.headerCacheSize = headerCacheSize;
     }
 }
