@@ -204,7 +204,6 @@ public class PerMessageDeflaterBufferSizeTest
         assertNull(clientHandler.getError());
     }
 
-    // TODO: debug
     @Test
     public void testServerDeflateBufferSize() throws Exception
     {

@@ -144,7 +144,7 @@ public class Negotiation
                 long matches = negotiatedExtensions.stream()
                     .filter(negotiatedConfig -> negotiatedConfig.getName().equals(config.getName())).count();
                 if (matches == 0)
-                    negotiatedExtensions.add(config);
+                    negotiatedExtensions.add(new ExtensionConfig(config));
             }
         }
         catch (Throwable t)
