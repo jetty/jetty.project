@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.test;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.InputStream;
@@ -31,7 +27,6 @@ import java.nio.file.Path;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -59,6 +54,10 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 @ExtendWith(WorkDirExtension.class)
 public class PersistentFileUploadDownloadTest
@@ -111,8 +110,8 @@ public class PersistentFileUploadDownloadTest
         FS.ensureEmpty(workBase);
         Path uploadFile = workBase.resolve("upload-test-file.txt");
         Path downloadFile = workBase.resolve("download-test-file.txt");
-        
-        createTestFile(uploadFile, "test-file-content", 100_000);
+
+        createTestFile(uploadFile, "test-file-content", 10_000_000);
         
         int iterations = 100;
         
