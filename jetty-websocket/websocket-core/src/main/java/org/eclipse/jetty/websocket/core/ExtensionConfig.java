@@ -174,6 +174,11 @@ public class ExtensionConfig
         this.parameters.putAll(paramParser.params.get(this.name));
     }
 
+    public boolean isInternalExtension()
+    {
+        return name.startsWith("@");
+    }
+
     public List<Map.Entry<String, String>> getInternalParameters()
     {
         return parameters.entrySet().stream().filter(entry -> entry.getKey().startsWith("@")).collect(Collectors.toList());
