@@ -29,7 +29,7 @@ import org.eclipse.jetty.websocket.core.Frame;
 
 public abstract class TransformingFlusher
 {
-    private final Logger LOG = Log.getLogger(this.getClass());
+    private final Logger log = Log.getLogger(this.getClass());
 
     private final Queue<FrameEntry> entries = new ArrayDeque<>();
     private final IteratingCallback flusher = new Flusher();
@@ -42,14 +42,13 @@ public abstract class TransformingFlusher
      * @param callback used to signal to start processing again.
      * @param batch whether this frame can be batched.
      */
-    // todo callback here should always be completed before transforming
     protected abstract void onFrame(Frame frame, Callback callback, boolean batch);
 
     /**
      * Called multiple times to transform the frame given in {@link TransformingFlusher#onFrame(Frame, Callback, boolean)}.
+     * @param callback used to signal to start processing again.
      */
-    // todo: callback should go in here
-    protected abstract void transform();
+    protected abstract void transform(Callback callback);
 
     /**
      * Called to indicate that you have finished transforming this frame and are ready to receive a new one
@@ -64,8 +63,8 @@ public abstract class TransformingFlusher
     public final void sendFrame(Frame frame, Callback callback, boolean batch)
     {
         FrameEntry entry = new FrameEntry(frame, callback, batch);
-        if (LOG.isDebugEnabled())
-            LOG.debug("Queuing {}", entry);
+        if (log.isDebugEnabled())
+            log.debug("Queuing {}", entry);
 
         boolean enqueued = false;
         synchronized (this)
@@ -113,23 +112,25 @@ public abstract class TransformingFlusher
             if (finished)
             {
                 current = pollEntry();
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Polled {}", current);
+                if (log.isDebugEnabled())
+                    log.debug("Polled {}", current);
                 if (current == null)
                     return Action.IDLE;
             }
 
-            if (LOG.isDebugEnabled())
-                LOG.debug("Processing {}", current);
+            if (log.isDebugEnabled())
+                log.debug("Processing {}", current);
 
             if (finished)
             {
                 finished = false;
                 onFrame(current.frame, this, current.batch);
             }
+            else
+            {
+                transform(this);
+            }
 
-            if (!finished)
-                transform();
             return Action.SCHEDULED;
         }
 
@@ -150,8 +151,8 @@ public abstract class TransformingFlusher
         {
             // Notify first then call succeeded(), otherwise
             // write callbacks may be invoked out of order.
-            if (LOG.isDebugEnabled())
-                LOG.debug("succeeded");
+            if (log.isDebugEnabled())
+                log.debug("succeeded");
 
             if (finished)
                 notifyCallbackSuccess(current.callback);
@@ -161,8 +162,8 @@ public abstract class TransformingFlusher
         @Override
         public void failed(Throwable cause)
         {
-            if (LOG.isDebugEnabled())
-                LOG.debug("failed {}", cause);
+            if (log.isDebugEnabled())
+                log.debug("failed {}", cause);
 
             notifyCallbackFailure(current.callback, cause);
             super.failed(cause);
@@ -171,8 +172,8 @@ public abstract class TransformingFlusher
 
     private void notifyCallbackSuccess(Callback callback)
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("notifyCallbackSuccess {}", callback);
+        if (log.isDebugEnabled())
+            log.debug("notifyCallbackSuccess {}", callback);
 
         try
         {
@@ -181,14 +182,14 @@ public abstract class TransformingFlusher
         }
         catch (Throwable x)
         {
-            LOG.warn("Exception while notifying success of callback " + callback, x);
+            log.warn("Exception while notifying success of callback " + callback, x);
         }
     }
 
     private void notifyCallbackFailure(Callback callback, Throwable failure)
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("notifyCallbackFailure {} {}", callback, failure);
+        if (log.isDebugEnabled())
+            log.debug("notifyCallbackFailure {} {}", callback, failure);
 
         try
         {
@@ -197,7 +198,7 @@ public abstract class TransformingFlusher
         }
         catch (Throwable x)
         {
-            LOG.warn("Exception while notifying failure of callback " + callback, x);
+            log.warn("Exception while notifying failure of callback " + callback, x);
         }
     }
 }

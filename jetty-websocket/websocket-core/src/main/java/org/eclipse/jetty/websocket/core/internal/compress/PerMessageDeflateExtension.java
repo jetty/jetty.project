@@ -238,7 +238,6 @@ public class PerMessageDeflateExtension extends AbstractExtension
     {
         private boolean _first;
         private Frame _frame;
-        private Callback _callback;
         private boolean _batch;
 
         @Override
@@ -253,27 +252,27 @@ public class PerMessageDeflateExtension extends AbstractExtension
 
             _first = true;
             _frame = frame;
-            _callback = callback;
             _batch = batch;
 
             // Provide the frames payload as input to the Deflater.
             getDeflater().setInput(frame.getPayload());
+            callback.succeeded();
         }
 
         @Override
-        protected void transform()
+        protected void transform(Callback callback)
         {
-            deflate();
+            deflate(callback);
             _first = false;
         }
 
-        private void deflate()
+        private void deflate(Callback callback)
         {
             // Get a buffer for the inflated payload.
             long maxFrameSize = getWebSocketCoreSession().getMaxFrameSize();
             int bufferSize = (maxFrameSize <= 0) ? deflateBufferSize : (int)Math.min(maxFrameSize, deflateBufferSize);
             final ByteBuffer buffer = getBufferPool().acquire(bufferSize, false);
-            _callback = Callback.from(_callback, ()->getBufferPool().release(buffer));
+            callback = Callback.from(callback, () -> getBufferPool().release(buffer));
             BufferUtil.clear(buffer);
 
             // Fill up the buffer with a max length of bufferSize;
@@ -329,7 +328,7 @@ public class PerMessageDeflateExtension extends AbstractExtension
             chunk.setFin(_frame.isFin() && finished);
 
             setFinished(finished);
-            nextOutgoingFrame(chunk, _callback, _batch);
+            nextOutgoingFrame(chunk, callback, _batch);
         }
     }
 
@@ -337,7 +336,6 @@ public class PerMessageDeflateExtension extends AbstractExtension
     {
         private boolean _first;
         private Frame _frame;
-        private Callback _callback;
         private boolean _tailBytes;
 
         @Override
@@ -346,12 +344,11 @@ public class PerMessageDeflateExtension extends AbstractExtension
             _tailBytes = false;
             _first = true;
             _frame = frame;
-            _callback = callback;
 
             if (OpCode.isControlFrame(_frame.getOpCode()))
             {
                 setFinished(true);
-                nextIncomingFrame(_frame, _callback);
+                nextIncomingFrame(_frame, callback);
                 return;
             }
 
@@ -376,7 +373,7 @@ public class PerMessageDeflateExtension extends AbstractExtension
             if (_first && !incomingCompressed)
             {
                 setFinished(true);
-                nextIncomingFrame(_frame, _callback);
+                nextIncomingFrame(_frame, callback);
                 return;
             }
 
@@ -385,14 +382,15 @@ public class PerMessageDeflateExtension extends AbstractExtension
 
             // Provide the frames payload as input to the Inflater.
             getInflater().setInput(_frame.getPayload());
+            callback.succeeded();
         }
 
         @Override
-        protected void transform()
+        protected void transform(Callback callback)
         {
             try
             {
-                inflate();
+                inflate(callback);
                 _first = false;
             }
             catch (DataFormatException e)
@@ -401,13 +399,13 @@ public class PerMessageDeflateExtension extends AbstractExtension
             }
         }
 
-        private void inflate() throws DataFormatException
+        private void inflate(Callback callback) throws DataFormatException
         {
             // Get a buffer for the inflated payload.
             long maxFrameSize = getWebSocketCoreSession().getMaxFrameSize();
             int bufferSize = (maxFrameSize <= 0) ? inflateBufferSize : (int)Math.min(maxFrameSize, inflateBufferSize);
             final ByteBuffer payload = getBufferPool().acquire(bufferSize, false);
-            _callback = Callback.from(_callback, ()->getBufferPool().release(payload));
+            callback = Callback.from(callback, () -> getBufferPool().release(payload));
             BufferUtil.clear(payload);
 
             // Fill up the ByteBuffer with a max length of bufferSize;
@@ -448,7 +446,7 @@ public class PerMessageDeflateExtension extends AbstractExtension
             chunk.setFin(_frame.isFin() && finished);
 
             setFinished(finished);
-            nextIncomingFrame(chunk, _callback);
+            nextIncomingFrame(chunk, callback);
 
             if (LOG.isDebugEnabled())
                 LOG.debug("Decompress finished: {} {}", finished, chunk);
