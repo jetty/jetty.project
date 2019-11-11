@@ -202,7 +202,7 @@ public abstract class AbstractUnassembledWebAppMojo extends AbstractWebAppMojo
         //process any overlays and the war type artifacts, and
         //sets up the base resource collection for the webapp
         mavenProjectHelper.getOverlayManager().applyOverlays(webApp);
-        
+
         getLog().info("web.xml file = " + webApp.getDescriptor());       
         getLog().info("Webapp directory = " + webAppSourceDirectory.getCanonicalPath());
         getLog().info("Web defaults = " + (webApp.getDefaultsDescriptor() == null ? " jetty default" : webApp.getDefaultsDescriptor()));

@@ -87,16 +87,6 @@ public class JettyRunMojo extends AbstractUnassembledWebAppMojo
     {
         super.execute();
     }
-    
-    /**
-     *
-     */
-    @Override
-    protected void configureWebApp() throws Exception
-    {
-        super.configureWebApp();
-        super.configureUnassembledWebApp();
-    }
 
     @Override
     public void startJettyEmbedded() throws MojoExecutionException
