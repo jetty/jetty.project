@@ -16,6 +16,8 @@
 //  ========================================================================
 //
 
+import org.eclipse.jetty.security.Authenticator;
+
 module org.eclipse.jetty.security
 {
     exports org.eclipse.jetty.security;
@@ -30,4 +32,6 @@ module org.eclipse.jetty.security
     requires static java.sql;
     // Only required if using SPNEGO.
     requires static java.security.jgss;
+
+    uses Authenticator.Factory;
 }

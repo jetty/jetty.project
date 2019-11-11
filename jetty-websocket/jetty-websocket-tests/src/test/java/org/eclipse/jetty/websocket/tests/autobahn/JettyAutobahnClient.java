@@ -16,10 +16,11 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core.autobahn;
+package org.eclipse.jetty.websocket.tests.autobahn;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -29,9 +30,11 @@ import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.UrlEncoded;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.core.TestMessageHandler;
-import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
+import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.StatusCode;
+import org.eclipse.jetty.websocket.client.WebSocketClient;
+import org.eclipse.jetty.websocket.tests.EchoSocket;
+import org.eclipse.jetty.websocket.tests.EventSocket;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -62,15 +65,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * Running Autobahn Fuzzing Server (which you run this client implementation against):
  * </p>
  * <pre>
- *     # Change to websocket-core
- *     $ cd jetty-websocket/websocket-core
+ *     # Change to jetty-websocket-tests directory first.
+ *     $ cd jetty-websocket/jetty-websocket-tests/
  *     $ wstest --mode=fuzzingserver --spec=fuzzingserver.json
  *
  *     # Report output is configured (in the fuzzingserver.json) at location:
  *     $ ls target/reports/clients/
  * </pre>
  */
-public class AutobahnWebSocketClient
+public class JettyAutobahnClient
 {
     public static void main(String[] args)
     {
@@ -95,11 +98,11 @@ public class AutobahnWebSocketClient
             }
         }
 
-        AutobahnWebSocketClient client = null;
+        JettyAutobahnClient client = null;
         try
         {
             String userAgent = "JettyWebsocketClient/" + Jetty.VERSION;
-            client = new AutobahnWebSocketClient(hostname, port, userAgent);
+            client = new JettyAutobahnClient(hostname, port, userAgent);
 
             LOG.info("Running test suite...");
             LOG.info("Using Fuzzing Server: {}:{}", hostname, port);
@@ -137,29 +140,29 @@ public class AutobahnWebSocketClient
         }
     }
 
-    private static final Logger LOG = Log.getLogger(AutobahnWebSocketClient.class);
+    private static final Logger LOG = Log.getLogger(JettyAutobahnClient.class);
     private URI baseWebsocketUri;
-    private WebSocketCoreClient client;
+    private WebSocketClient client;
     private String userAgent;
 
-    public AutobahnWebSocketClient(String hostname, int port, String userAgent) throws Exception
+    public JettyAutobahnClient(String hostname, int port, String userAgent) throws Exception
     {
         this.userAgent = userAgent;
         this.baseWebsocketUri = new URI("ws://" + hostname + ":" + port);
-        this.client = new WebSocketCoreClient();
+        this.client = new WebSocketClient();
         this.client.start();
     }
 
     public int getCaseCount() throws IOException, InterruptedException
     {
         URI wsUri = baseWebsocketUri.resolve("/getCaseCount");
-        TestMessageHandler onCaseCount = new TestMessageHandler();
-        Future<FrameHandler.CoreSession> response = client.connect(onCaseCount, wsUri);
+        EventSocket onCaseCount = new EventSocket();
+        CompletableFuture<Session> response = client.connect(onCaseCount, wsUri);
 
         if (waitForUpgrade(wsUri, response))
         {
-            String msg = onCaseCount.textMessages.poll(10, TimeUnit.SECONDS);
-            onCaseCount.getCoreSession().abort(); // Don't expect normal close
+            String msg = onCaseCount.messageQueue.poll(10, TimeUnit.SECONDS);
+            onCaseCount.session.close(StatusCode.SHUTDOWN, null);
             assertTrue(onCaseCount.closeLatch.await(2, TimeUnit.SECONDS));
             assertNotNull(msg);
             return Integer.decode(msg);
@@ -172,15 +175,15 @@ public class AutobahnWebSocketClient
         URI wsUri = baseWebsocketUri.resolve("/runCase?case=" + caseNumber + "&agent=" + UrlEncoded.encodeString(userAgent));
         LOG.info("test uri: {}", wsUri);
 
-        AutobahnFrameHandler echoHandler = new AutobahnFrameHandler();
-        Future<FrameHandler.CoreSession> response = client.connect(echoHandler, wsUri);
+        EchoSocket echoHandler = new JettyAutobahnSocket();
+        Future<Session> response = client.connect(echoHandler, wsUri);
         if (waitForUpgrade(wsUri, response))
         {
             // Wait up to 5 min as some of the tests can take a while
             if (!echoHandler.closeLatch.await(5, TimeUnit.MINUTES))
             {
                 LOG.warn("could not close {}, aborting session", echoHandler);
-                echoHandler.coreSession.abort();
+                echoHandler.session.disconnect();
             }
         }
     }
@@ -200,15 +203,15 @@ public class AutobahnWebSocketClient
     public void updateReports() throws IOException, InterruptedException, ExecutionException, TimeoutException
     {
         URI wsUri = baseWebsocketUri.resolve("/updateReports?agent=" + UrlEncoded.encodeString(userAgent));
-        TestMessageHandler onUpdateReports = new TestMessageHandler();
-        Future<FrameHandler.CoreSession> response = client.connect(onUpdateReports, wsUri);
+        EventSocket onUpdateReports = new EventSocket();
+        Future<Session> response = client.connect(onUpdateReports, wsUri);
         response.get(5, TimeUnit.SECONDS);
         assertTrue(onUpdateReports.closeLatch.await(15, TimeUnit.SECONDS));
         LOG.info("Reports updated.");
         LOG.info("Test suite finished!");
     }
 
-    private boolean waitForUpgrade(URI wsUri, Future<FrameHandler.CoreSession> response) throws InterruptedException
+    private boolean waitForUpgrade(URI wsUri, Future<Session> response)
     {
         try
         {

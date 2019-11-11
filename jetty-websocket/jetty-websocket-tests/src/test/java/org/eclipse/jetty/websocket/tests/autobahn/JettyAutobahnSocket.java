@@ -16,24 +16,22 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.security.openid;
+package org.eclipse.jetty.websocket.tests.autobahn;
 
-import javax.servlet.ServletContext;
+import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.annotations.WebSocket;
+import org.eclipse.jetty.websocket.core.WebSocketConstants;
+import org.eclipse.jetty.websocket.tests.EchoSocket;
 
-import org.eclipse.jetty.security.Authenticator;
-import org.eclipse.jetty.security.IdentityService;
-import org.eclipse.jetty.security.LoginService;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.util.security.Constraint;
-
-public class OpenIdAuthenticatorFactory implements Authenticator.Factory
+@WebSocket
+public class JettyAutobahnSocket extends EchoSocket
 {
     @Override
-    public Authenticator getAuthenticator(Server server, ServletContext context, Authenticator.AuthConfiguration configuration, IdentityService identityService, LoginService loginService)
+    public void onOpen(Session session)
     {
-        String auth = configuration.getAuthMethod();
-        if (Constraint.__OPENID_AUTH.equalsIgnoreCase(auth))
-            return new OpenIdAuthenticator();
-        return null;
+        super.onOpen(session);
+        session.setMaxTextMessageSize(Long.MAX_VALUE);
+        session.setMaxBinaryMessageSize(Long.MAX_VALUE);
+        session.setMaxFrameSize(WebSocketConstants.DEFAULT_MAX_FRAME_SIZE*2);
     }
 }
