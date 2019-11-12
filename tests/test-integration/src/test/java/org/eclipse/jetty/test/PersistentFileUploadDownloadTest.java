@@ -63,6 +63,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @ExtendWith(WorkDirExtension.class)
 public class PersistentFileUploadDownloadTest
 {
+    public static final Logger LOG = Log.getLogger(PersistentFileUploadDownloadTest.class);
     public WorkDir workDir;
     
     private Server server;
@@ -121,7 +122,10 @@ public class PersistentFileUploadDownloadTest
         
         for (int i = 0; i < iterations; i++)
         {
-            URI uri = server.getURI().resolve("/upload-filename");
+            URI uri = server.getURI().resolve("/upload-filename?iter=" + i);
+
+            LOG.info("---- XXXX Test Iteration {} -----", i);
+            // Thread.sleep(1500);
             
             // Upload (PUT) File
             clientPUT(uploadFile, uri);
@@ -174,17 +178,23 @@ public class PersistentFileUploadDownloadTest
         
         public void onDispatchFailure(Request request, Throwable failure)
         {
-            LOG.warn("onDispatchFailure " + request.getMethod() + " " + request.getRequestURI(), failure);
+            dump("onDispatchFailure ", request, failure);
         }
         
         public void onRequestFailure(Request request, Throwable failure)
         {
-            LOG.warn("onRequestFailure " + request.getMethod() + " " + request.getRequestURI(), failure);
+            dump("onRequestFailure", request, failure);
         }
         
         public void onResponseFailure(Request request, Throwable failure)
         {
-            LOG.warn("onResponseFailure " + request.getMethod() + " " + request.getRequestURI(), failure);
+            dump("onResponseFailure ", request, failure);
+        }
+        
+        private void dump(String method, Request request, Throwable failure)
+        {
+            HttpChannel channel = request.getHttpChannel();
+            LOG.warn(method + " " + channel + " - " + request, failure);
         }
     }
     
