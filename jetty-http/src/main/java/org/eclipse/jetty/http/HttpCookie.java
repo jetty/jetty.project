@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
 
-// TODO consider replacing this with java.net.HttpCookie
+// TODO consider replacing this with java.net.HttpCookie (once it supports RFC6265)
 public class HttpCookie
 {
     private static final String __COOKIE_DELIM = "\",;\\ \t";
