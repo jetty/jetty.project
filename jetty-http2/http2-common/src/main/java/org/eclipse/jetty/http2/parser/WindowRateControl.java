@@ -50,6 +50,21 @@ public class WindowRateControl implements RateControl
     {
         this.maxEvents = maxEvents;
         this.window = window.toNanos();
+        if (this.window == 0)
+            throw new IllegalArgumentException("Invalid duration " + window);
+    }
+
+    public int getEventsPerSecond()
+    {
+        try
+        {
+            long rate = maxEvents * 1_000_000_000L / window;
+            return Math.toIntExact(rate);
+        }
+        catch (ArithmeticException x)
+        {
+            return Integer.MAX_VALUE;
+        }
     }
 
     @Override

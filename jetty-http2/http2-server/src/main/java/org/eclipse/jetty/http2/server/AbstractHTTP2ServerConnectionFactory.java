@@ -192,14 +192,18 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
     }
 
     /**
-     * @param rateControl ignored
-     * @throws UnsupportedOperationException when invoked
+     * @param rateControl ignored, unless {@code rateControl} it is precisely a WindowRateControl
+     * (not a subclass) object in which case it is used as a prototype in a WindowRateControl.Factory.
+     * @throws UnsupportedOperationException when invoked, unless precisely a WindowRateControl object
      * @deprecated use {@link #setRateControlFactory(RateControl.Factory)} instead
      */
     @Deprecated
     public void setRateControl(RateControl rateControl)
     {
-        throw new UnsupportedOperationException();
+        if (rateControl.getClass() == WindowRateControl.class)
+            setRateControlFactory(new WindowRateControl.Factory(((WindowRateControl)rateControl).getEventsPerSecond()));
+        else
+            throw new UnsupportedOperationException();
     }
 
     /**
