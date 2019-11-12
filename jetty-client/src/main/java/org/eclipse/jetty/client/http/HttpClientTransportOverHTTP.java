@@ -42,6 +42,7 @@ public class HttpClientTransportOverHTTP extends AbstractConnectorHttpClientTran
     public static final HttpDestination.Protocol HTTP11 = new HttpDestination.Protocol(List.of("http/1.1"), false);
 
     private int headerCacheSize = 1024;
+    private boolean headerCacheCaseSensitive;
 
     public HttpClientTransportOverHTTP()
     {
@@ -98,5 +99,16 @@ public class HttpClientTransportOverHTTP extends AbstractConnectorHttpClientTran
     public void setHeaderCacheSize(int headerCacheSize)
     {
         this.headerCacheSize = headerCacheSize;
+    }
+
+    @ManagedAttribute("Whether the header field cache is case sensitive")
+    public boolean isHeaderCacheCaseSensitive()
+    {
+        return headerCacheCaseSensitive;
+    }
+
+    public void setHeaderCacheCaseSensitive(boolean headerCacheCaseSensitive)
+    {
+        this.headerCacheCaseSensitive = headerCacheCaseSensitive;
     }
 }

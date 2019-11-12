@@ -109,10 +109,10 @@ public class ExtendedServerTest extends HttpServerTestBase
             return new HttpChannelOverHttp(this, getConnector(), getHttpConfiguration(), getEndPoint(), this)
             {
                 @Override
-                public boolean startRequest(String method, String uri, HttpVersion version)
+                public void startRequest(String method, String uri, HttpVersion version)
                 {
                     getRequest().setAttribute("DispatchedAt", ((ExtendedEndPoint)getEndPoint()).getLastSelected());
-                    return super.startRequest(method, uri, version);
+                    super.startRequest(method, uri, version);
                 }
             };
         }

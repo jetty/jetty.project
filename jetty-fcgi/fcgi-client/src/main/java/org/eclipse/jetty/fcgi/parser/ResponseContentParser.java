@@ -151,21 +151,7 @@ public class ResponseContentParser extends StreamContentParser
         }
 
         @Override
-        public int getHeaderCacheSize()
-        {
-            // TODO: configure this
-            return 1024;
-        }
-
-        @Override
-        public boolean isHeaderCacheCaseSensitive()
-        {
-            // TODO get from configuration
-            return false;
-        }
-
-        @Override
-        public boolean startResponse(HttpVersion version, int status, String reason)
+        public void startResponse(HttpVersion version, int status, String reason)
         {
             // The HTTP request line does not exist in FCGI responses
             throw new IllegalStateException();

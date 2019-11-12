@@ -48,7 +48,10 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     public HttpReceiverOverHTTP(HttpChannelOverHTTP channel)
     {
         super(channel);
-        parser = new HttpParser(this, -1, channel.getHttpDestination().getHttpClient().getHttpCompliance());
+        HttpClient httpClient = channel.getHttpDestination().getHttpClient();
+        parser = new HttpParser(this, -1, httpClient.getHttpCompliance());
+        parser.setHeaderCacheSize(((HttpClientTransportOverHTTP)httpClient.getTransport()).getHeaderCacheSize());
+        parser.setHeaderCacheCaseSensitive(((HttpClientTransportOverHTTP)httpClient.getTransport()).isHeaderCacheCaseSensitive());
     }
 
     @Override
@@ -243,32 +246,18 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     }
 
     @Override
-    public int getHeaderCacheSize()
-    {
-        HttpClientTransportOverHTTP transport = (HttpClientTransportOverHTTP)getHttpDestination().getHttpClient().getTransport();
-        return transport.getHeaderCacheSize();
-    }
-
-    @Override
-    public boolean isHeaderCacheCaseSensitive()
-    {
-        // TODO get from configuration
-        return false;
-    }
-
-    @Override
-    public boolean startResponse(HttpVersion version, int status, String reason)
+    public void startResponse(HttpVersion version, int status, String reason)
     {
         HttpExchange exchange = getHttpExchange();
         if (exchange == null)
-            return false;
+            return;
 
         String method = exchange.getRequest().getMethod();
         parser.setHeadResponse(HttpMethod.HEAD.is(method) ||
             (HttpMethod.CONNECT.is(method) && status == HttpStatus.OK_200));
         exchange.getResponse().version(version).status(status).reason(reason);
 
-        return !responseBegin(exchange);
+        responseBegin(exchange);
     }
 
     @Override
