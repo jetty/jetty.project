@@ -22,6 +22,7 @@ import java.security.Principal;
 import javax.security.auth.Subject;
 import javax.servlet.ServletRequest;
 
+import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.server.UserIdentity;
@@ -40,8 +41,9 @@ public class OpenIdLoginService extends ContainerLifeCycle implements LoginServi
 {
     private static final Logger LOG = Log.getLogger(OpenIdLoginService.class);
 
-    private final OpenIdConfiguration _configuration;
+    private final OpenIdConfiguration configuration;
     private final LoginService loginService;
+    private final HttpClient httpClient;
     private IdentityService identityService;
     private boolean authenticateNewUsers;
 
@@ -59,20 +61,22 @@ public class OpenIdLoginService extends ContainerLifeCycle implements LoginServi
      */
     public OpenIdLoginService(OpenIdConfiguration configuration, LoginService loginService)
     {
-        _configuration = configuration;
+        this.configuration = configuration;
         this.loginService = loginService;
+        this.httpClient = configuration.getHttpClient();
+        addBean(this.configuration);
         addBean(this.loginService);
     }
 
     @Override
     public String getName()
     {
-        return _configuration.getOpenIdProvider();
+        return configuration.getIssuer();
     }
 
     public OpenIdConfiguration getConfiguration()
     {
-        return _configuration;
+        return configuration;
     }
 
     @Override
@@ -84,7 +88,7 @@ public class OpenIdLoginService extends ContainerLifeCycle implements LoginServi
         OpenIdCredentials openIdCredentials = (OpenIdCredentials)credentials;
         try
         {
-            openIdCredentials.redeemAuthCode();
+            openIdCredentials.redeemAuthCode(httpClient);
             if (openIdCredentials.isExpired())
                 return null;
         }

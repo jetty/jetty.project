@@ -1,7 +1,7 @@
 //
 //  ========================================================================
 //  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ========================================================================
+//  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
 //  and Apache License v2.0 which accompanies this distribution.
@@ -16,9 +16,22 @@
 //  ========================================================================
 //
 
-[[continuations]]
-== Continuations
+package org.eclipse.jetty.websocket.tests.autobahn;
 
-include::continuations-intro.adoc[]
-include::continuations-using.adoc[]
-include::continuations-patterns.adoc[]
+import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.annotations.WebSocket;
+import org.eclipse.jetty.websocket.core.WebSocketConstants;
+import org.eclipse.jetty.websocket.tests.EchoSocket;
+
+@WebSocket
+public class JettyAutobahnSocket extends EchoSocket
+{
+    @Override
+    public void onOpen(Session session)
+    {
+        super.onOpen(session);
+        session.setMaxTextMessageSize(Long.MAX_VALUE);
+        session.setMaxBinaryMessageSize(Long.MAX_VALUE);
+        session.setMaxFrameSize(WebSocketConstants.DEFAULT_MAX_FRAME_SIZE*2);
+    }
+}

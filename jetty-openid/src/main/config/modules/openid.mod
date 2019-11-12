@@ -5,6 +5,7 @@ Adds OpenId Connect authentication.
 
 [depend]
 security
+client
 
 [lib]
 lib/jetty-openid-${jetty.version}.jar
@@ -18,11 +19,17 @@ etc/openid-baseloginservice.xml
 etc/jetty-openid.xml
 
 [ini-template]
-## The OpenID Identity Provider
-# jetty.openid.openIdProvider=https://accounts.google.com/
+## The OpenID Identity Provider's issuer ID (the entire URL *before* ".well-known/openid-configuration")
+# jetty.openid.provider=https://id.example.com/~
+
+## The OpenID Identity Provider's authorization endpoint (optional if the metadata of the OP is accessible)
+# jetty.openid.provider.authorizationEndpoint=https://id.example.com/authorization
+
+## The OpenID Identity Provider's token endpoint (optional if the metadata of the OP is accessible)
+# jetty.openid.provider.tokenEndpoint=https://id.example.com/token
 
 ## The Client Identifier
-# jetty.openid.clientId=test1234.apps.googleusercontent.com
+# jetty.openid.clientId=test1234
 
 ## The Client Secret
 # jetty.openid.clientSecret=XT_Mafv_aUCGheuCaKY8P
@@ -32,3 +39,6 @@ etc/jetty-openid.xml
 
 ## Whether to Authenticate users not found by base LoginService
 # jetty.openid.authenticateNewUsers=false
+
+## True if all certificates should be trusted by the default SslContextFactory
+# jetty.openid.sslContextFactory.trustAll=false

@@ -39,8 +39,6 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 
 /**
  * A HTTP Testing helper class.
@@ -70,8 +68,6 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class HttpTester
 {
-    private static final Logger LOG = Log.getLogger(HttpTester.class);
-
     public abstract static class Input
     {
         protected final ByteBuffer _buffer;
@@ -508,18 +504,6 @@ public class HttpTester
         }
 
         public abstract MetaData getInfo();
-
-        @Override
-        public int getHeaderCacheSize()
-        {
-            return 0;
-        }
-
-        @Override
-        public boolean isHeaderCacheCaseSensitive()
-        {
-            return false;
-        }
     }
 
     public static class Request extends Message implements HttpParser.RequestHandler
@@ -528,12 +512,11 @@ public class HttpTester
         private String _uri;
 
         @Override
-        public boolean startRequest(String method, String uri, HttpVersion version)
+        public void startRequest(String method, String uri, HttpVersion version)
         {
             _method = method;
             _uri = uri;
             _version = version;
-            return false;
         }
 
         public String getMethod()
@@ -580,12 +563,11 @@ public class HttpTester
         private String _reason;
 
         @Override
-        public boolean startResponse(HttpVersion version, int status, String reason)
+        public void startResponse(HttpVersion version, int status, String reason)
         {
             _version = version;
             _status = status;
             _reason = reason;
-            return false;
         }
 
         public int getStatus()

@@ -132,7 +132,10 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
 
     protected HttpParser newHttpParser(HttpCompliance compliance)
     {
-        return new HttpParser(newRequestHandler(), getHttpConfiguration().getRequestHeaderSize(), compliance);
+        HttpParser parser = new HttpParser(newRequestHandler(), getHttpConfiguration().getRequestHeaderSize(), compliance);
+        parser.setHeaderCacheSize(getHttpConfiguration().getHeaderCacheSize());
+        parser.setHeaderCacheCaseSensitive(getHttpConfiguration().isHeaderCacheCaseSensitive());
+        return parser;
     }
 
     protected HttpParser.RequestHandler newRequestHandler()
@@ -871,19 +874,22 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             }
         }
 
-        private void releaseHeader()
+        private Callback release()
         {
-            ByteBuffer h = _header;
+            Callback complete = _callback;
+            _callback = null;
+            _info = null;
+            _content = null;
+            if (_header != null)
+                _bufferPool.release(_header);
             _header = null;
-            if (h != null)
-                _bufferPool.release(h);
+            return complete;
         }
 
         @Override
         protected void onCompleteSuccess()
         {
-            releaseHeader();
-            _callback.succeeded();
+            release().succeeded();
             if (_shutdownOut)
                 getEndPoint().shutdownOutput();
         }
@@ -891,8 +897,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         @Override
         public void onCompleteFailure(final Throwable x)
         {
-            releaseHeader();
-            failedCallback(_callback, x);
+            failedCallback(release(), x);
             if (_shutdownOut)
                 getEndPoint().shutdownOutput();
         }

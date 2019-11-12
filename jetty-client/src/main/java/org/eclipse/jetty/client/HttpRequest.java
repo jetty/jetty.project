@@ -41,6 +41,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
+import java.util.function.LongConsumer;
 import java.util.function.Supplier;
 
 import org.eclipse.jetty.client.api.ContentProvider;
@@ -307,7 +308,7 @@ public class HttpRequest implements Request
     @Override
     public List<HttpCookie> getCookies()
     {
-        return cookies != null ? cookies : Collections.<HttpCookie>emptyList();
+        return cookies != null ? cookies : Collections.emptyList();
     }
 
     @Override
@@ -331,7 +332,7 @@ public class HttpRequest implements Request
     @Override
     public Map<String, Object> getAttributes()
     {
-        return attributes != null ? attributes : Collections.<String, Object>emptyMap();
+        return attributes != null ? attributes : Collections.emptyMap();
     }
 
     @Override
@@ -347,7 +348,7 @@ public class HttpRequest implements Request
         // This method is invoked often in a request/response conversation,
         // so we avoid allocation if there is no need to filter.
         if (type == null || requestListeners == null)
-            return requestListeners != null ? (List<T>)requestListeners : Collections.<T>emptyList();
+            return requestListeners != null ? (List<T>)requestListeners : Collections.emptyList();
 
         ArrayList<T> result = new ArrayList<>();
         for (RequestListener listener : requestListeners)
@@ -508,15 +509,16 @@ public class HttpRequest implements Request
     @Override
     public Request onResponseContent(final Response.ContentListener listener)
     {
-        this.responseListeners.add(new Response.AsyncContentListener()
+        this.responseListeners.add(new Response.DemandedContentListener()
         {
             @Override
-            public void onContent(Response response, ByteBuffer content, Callback callback)
+            public void onContent(Response response, LongConsumer demand, ByteBuffer content, Callback callback)
             {
                 try
                 {
                     listener.onContent(response, content);
                     callback.succeeded();
+                    demand.accept(1);
                 }
                 catch (Throwable x)
                 {
@@ -530,12 +532,30 @@ public class HttpRequest implements Request
     @Override
     public Request onResponseContentAsync(final Response.AsyncContentListener listener)
     {
-        this.responseListeners.add(new Response.AsyncContentListener()
+        this.responseListeners.add(new Response.DemandedContentListener()
         {
             @Override
-            public void onContent(Response response, ByteBuffer content, Callback callback)
+            public void onContent(Response response, LongConsumer demand, ByteBuffer content, Callback callback)
             {
-                listener.onContent(response, content, callback);
+                listener.onContent(response, content, Callback.from(() ->
+                {
+                    callback.succeeded();
+                    demand.accept(1);
+                }, callback::failed));
+            }
+        });
+        return this;
+    }
+
+    @Override
+    public Request onResponseContentDemanded(Response.DemandedContentListener listener)
+    {
+        this.responseListeners.add(new Response.DemandedContentListener()
+        {
+            @Override
+            public void onContent(Response response, LongConsumer demand, ByteBuffer content, Callback callback)
+            {
+                listener.onContent(response, demand, content, callback);
             }
         });
         return this;
@@ -885,6 +905,6 @@ public class HttpRequest implements Request
     @Override
     public String toString()
     {
-        return String.format("%s[%s %s %s]@%x", this.getClass().getSimpleName(), getMethod(), getPath(), getVersion(), hashCode());
+        return String.format("%s[%s %s %s]@%x", getClass().getSimpleName(), getMethod(), getPath(), getVersion(), hashCode());
     }
 }

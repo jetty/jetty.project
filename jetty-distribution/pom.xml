@@ -121,7 +121,7 @@
                   <destFileName>test-spec.war</destFileName>
                 </artifactItem>
                 <artifactItem>
-                  <groupId>org.eclipse.jetty</groupId>
+                  <groupId>org.eclipse.jetty.tests</groupId>
                   <artifactId>test-proxy-webapp</artifactId>
                   <version>${project.version}</version>
                   <type>war</type>
@@ -416,7 +416,7 @@
       <optional>true</optional>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty</groupId>
+      <groupId>org.eclipse.jetty.tests</groupId>
       <artifactId>test-proxy-webapp</artifactId>
       <type>war</type>
       <version>${project.version}</version>

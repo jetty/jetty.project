@@ -19,6 +19,7 @@
 package org.eclipse.jetty.alpn.java.server;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
@@ -26,6 +27,7 @@ import java.nio.charset.StandardCharsets;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLParameters;
 import javax.net.ssl.SSLSocket;
+import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -85,10 +87,10 @@ public class JDK9ALPNTest
     @Test
     public void testClientNotSupportingALPNServerSpeaksDefaultProtocol() throws Exception
     {
-        startServer(new AbstractHandler.ErrorDispatchHandler()
+        startServer(new AbstractHandler()
         {
             @Override
-            protected void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 baseRequest.setHandled(true);
             }
@@ -127,10 +129,10 @@ public class JDK9ALPNTest
     @Test
     public void testClientSupportingALPNServerSpeaksNegotiatedProtocol() throws Exception
     {
-        startServer(new AbstractHandler.ErrorDispatchHandler()
+        startServer(new AbstractHandler()
         {
             @Override
-            protected void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 baseRequest.setHandled(true);
             }

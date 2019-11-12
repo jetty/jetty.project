@@ -32,6 +32,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.either;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpGeneratorServerHTTPTest
@@ -70,7 +71,7 @@ public class HttpGeneratorServerHTTPTest
         assertEquals("OK??Test", _reason);
 
         if (_content == null)
-            assertTrue(run.result._body == null, msg);
+            assertNull(run.result._body, msg);
         else
             assertThat(msg, run.result._contentLength, either(equalTo(_content.length())).or(equalTo(-1)));
     }
@@ -248,28 +249,15 @@ public class HttpGeneratorServerHTTPTest
         }
 
         @Override
-        public boolean startResponse(HttpVersion version, int status, String reason)
+        public void startResponse(HttpVersion version, int status, String reason)
         {
             _reason = reason;
-            return false;
         }
 
         @Override
         public void badMessage(BadMessageException failure)
         {
             throw failure;
-        }
-
-        @Override
-        public int getHeaderCacheSize()
-        {
-            return 4096;
-        }
-
-        @Override
-        public boolean isHeaderCacheCaseSensitive()
-        {
-            return false;
         }
     }
 

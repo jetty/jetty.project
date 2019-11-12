@@ -33,7 +33,6 @@ The Denial of Service (DoS) filter limits exposure to request flooding, whether 
 The DoS filter keeps track of the number of requests from a connection per second.
 If the requests exceed the limit, Jetty rejects, delays, or throttles the request, and sends a warning message.
 The filter works on the assumption that the attacker might be written in simple blocking style, so by suspending requests you are hopefully consuming the attacker's resources.
-The DoS filter is related to the QoS filter, using Continuations to prioritize requests and avoid thread starvation.
 
 [[dos-filter-using]]
 ==== Using the DoS Filter

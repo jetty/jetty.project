@@ -364,6 +364,13 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             State state = _state.get();
             switch (state)
             {
+                case CLOSING:
+                {
+                    if (!_state.compareAndSet(state, State.CLOSED))
+                        break;
+                    releaseBuffer();
+                    return;
+                }
                 case CLOSED:
                 {
                     return;

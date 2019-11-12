@@ -19,6 +19,7 @@
 package org.eclipse.jetty.client;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
@@ -34,10 +35,12 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.ClientConnectionFactory;
+import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 public class HttpProxy extends ProxyConfiguration.Proxy
 {
@@ -50,12 +53,27 @@ public class HttpProxy extends ProxyConfiguration.Proxy
 
     public HttpProxy(Origin.Address address, boolean secure)
     {
-        this(address, secure, new HttpDestination.Protocol(List.of("http/1.1"), false));
+        this(address, secure, null, new HttpDestination.Protocol(List.of("http/1.1"), false));
     }
 
     public HttpProxy(Origin.Address address, boolean secure, HttpDestination.Protocol protocol)
     {
-        super(address, secure, Objects.requireNonNull(protocol));
+        this(address, secure, null, Objects.requireNonNull(protocol));
+    }
+
+    public HttpProxy(Origin.Address address, SslContextFactory.Client sslContextFactory)
+    {
+        this(address, true, sslContextFactory, new HttpDestination.Protocol(List.of("http/1.1"), false));
+    }
+
+    public HttpProxy(Origin.Address address, SslContextFactory.Client sslContextFactory, HttpDestination.Protocol protocol)
+    {
+        this(address, true, sslContextFactory, Objects.requireNonNull(protocol));
+    }
+
+    private HttpProxy(Origin.Address address, boolean secure, SslContextFactory.Client sslContextFactory, HttpDestination.Protocol protocol)
+    {
+        super(address, secure, sslContextFactory, Objects.requireNonNull(protocol));
     }
 
     @Override
@@ -206,7 +224,12 @@ public class HttpProxy extends ProxyConfiguration.Proxy
                 HttpDestination destination = (HttpDestination)context.get(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY);
                 ClientConnectionFactory connectionFactory = this.connectionFactory;
                 if (destination.isSecure())
-                    connectionFactory = destination.newSslClientConnectionFactory(connectionFactory);
+                {
+                    // Don't want to do DNS resolution here.
+                    InetSocketAddress address = InetSocketAddress.createUnresolved(destination.getHost(), destination.getPort());
+                    context.put(ClientConnector.REMOTE_SOCKET_ADDRESS_CONTEXT_KEY, address);
+                    connectionFactory = destination.newSslClientConnectionFactory(null, connectionFactory);
+                }
                 var oldConnection = endPoint.getConnection();
                 var newConnection = connectionFactory.newConnection(endPoint, context);
                 endPoint.upgrade(newConnection);

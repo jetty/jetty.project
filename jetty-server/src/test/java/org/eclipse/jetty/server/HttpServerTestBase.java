@@ -252,6 +252,24 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     }
 
     @Test
+    public void testBadURI() throws Exception
+    {
+        configureServer(new HelloWorldHandler());
+
+        try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
+        {
+            OutputStream os = client.getOutputStream();
+
+            os.write("GET /%xx HTTP/1.0\r\n\r\n".getBytes(StandardCharsets.ISO_8859_1));
+            os.flush();
+
+            // Read the response.
+            String response = readResponse(client);
+
+            assertThat(response, Matchers.containsString("HTTP/1.1 400 "));
+        }
+    }
+    @Test
     public void testExceptionThrownInHandlerLoop() throws Exception
     {
         configureServer(new AbstractHandler()
@@ -283,10 +301,10 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     @Test
     public void testExceptionThrownInHandler() throws Exception
     {
-        configureServer(new AbstractHandler.ErrorDispatchHandler()
+        configureServer(new AbstractHandler()
         {
             @Override
-            public void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 throw new QuietServletException("TEST handler exception");
             }
@@ -314,10 +332,10 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     {
         final AtomicBoolean fourBytesRead = new AtomicBoolean(false);
         final AtomicBoolean earlyEOFException = new AtomicBoolean(false);
-        configureServer(new AbstractHandler.ErrorDispatchHandler()
+        configureServer(new AbstractHandler()
         {
             @Override
-            public void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 baseRequest.setHandled(true);
                 int contentLength = request.getContentLength();

@@ -116,7 +116,7 @@ public class HttpClientCustomProxyTest
     {
         private CAFEBABEProxy(Origin.Address address, boolean secure)
         {
-            super(address, secure, null);
+            super(address, secure, null, null);
         }
 
         @Override

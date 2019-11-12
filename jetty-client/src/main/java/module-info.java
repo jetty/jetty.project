@@ -26,14 +26,13 @@ module org.eclipse.jetty.client
     exports org.eclipse.jetty.client.proxy;
     exports org.eclipse.jetty.client.util;
 
+    requires org.eclipse.jetty.alpn.client;
     requires org.eclipse.jetty.http;
     requires org.eclipse.jetty.io;
     requires org.eclipse.jetty.util;
 
     // Only required if using SPNEGO.
     requires static java.security.jgss;
-    // Only required if using the dynamic transport.
-    requires static org.eclipse.jetty.alpn.client;
     // Only required if using JMX.
     requires static org.eclipse.jetty.jmx;
 }

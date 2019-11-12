@@ -143,6 +143,7 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
         _scanner.setRecursive(_recursive);
         _scanner.setFilenameFilter(_filenameFilter);
         _scanner.setReportDirs(true);
+        _scanner.setScanDepth(1); //consider direct dir children of monitored dir
         _scanner.addListener(_scannerListener);
 
         addBean(_scanner);
