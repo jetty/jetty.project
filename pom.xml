@@ -45,7 +45,7 @@
     <jpms-module-name>${bundle-symbolic-name}</jpms-module-name>
 
     <!-- some maven plugins versions -->
-    <maven.surefire.version>3.0.0-M3</maven.surefire.version>
+    <maven.surefire.version>3.0.0-SNAPSHOT</maven.surefire.version>
     <maven.compiler.plugin.version>3.8.1</maven.compiler.plugin.version>
     <maven.dependency.plugin.version>3.1.1</maven.dependency.plugin.version>
     <maven.resources.plugin.version>3.1.0</maven.resources.plugin.version>
@@ -643,6 +643,7 @@
           <artifactId>maven-surefire-plugin</artifactId>
           <version>${maven.surefire.version}</version>
           <configuration>
+            <rerunFailingTestsCount>3</rerunFailingTestsCount>
             <forkedProcessTimeoutInSeconds>3600</forkedProcessTimeoutInSeconds>
             <argLine>@{argLine} -Dfile.encoding=UTF-8 -Duser.language=en -Duser.region=US -showversion -Xmx1g -Xms1g -XX:+PrintGCDetails</argLine>
             <failIfNoTests>false</failIfNoTests>
