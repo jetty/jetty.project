@@ -381,40 +381,67 @@ public abstract class HttpReceiver
             }
         }
 
+        boolean proceed = true;
         if (demand() <= 0)
         {
             callback.failed(new IllegalStateException("No demand for response content"));
-            return false;
+            proceed = false;
         }
 
         HttpResponse response = exchange.getResponse();
-        if (LOG.isDebugEnabled())
-            LOG.debug("Response content {}{}{}", response, System.lineSeparator(), BufferUtil.toDetailString(buffer));
+        if (proceed)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Response content {}{}{}", response, System.lineSeparator(), BufferUtil.toDetailString(buffer));
 
-        if (contentListeners.isEmpty())
-        {
-            callback.succeeded();
-        }
-        else
-        {
-            Decoder decoder = this.decoder;
-            if (decoder == null)
+            ContentListeners listeners = this.contentListeners;
+            if (listeners != null)
             {
-                contentListeners.notifyContent(response, buffer, callback);
+                if (listeners.isEmpty())
+                {
+                    callback.succeeded();
+                }
+                else
+                {
+                    Decoder decoder = this.decoder;
+                    if (decoder == null)
+                    {
+                        listeners.notifyContent(response, buffer, callback);
+                    }
+                    else
+                    {
+                        try
+                        {
+                            proceed = decoder.decode(buffer, callback);
+                        }
+                        catch (Throwable x)
+                        {
+                            callback.failed(x);
+                            proceed = false;
+                        }
+                    }
+                }
             }
             else
             {
-                if (!decoder.decode(buffer, callback))
-                    return false;
+                // May happen in case of concurrent abort.
+                proceed = false;
             }
         }
 
         if (updateResponseState(ResponseState.TRANSIENT, ResponseState.CONTENT))
         {
-            boolean hasDemand = hasDemandOrStall();
-            if (LOG.isDebugEnabled())
-                LOG.debug("Response content {}, hasDemand={}", response, hasDemand);
-            return hasDemand;
+            if (proceed)
+            {
+                boolean hasDemand = hasDemandOrStall();
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Response content {}, hasDemand={}", response, hasDemand);
+                return hasDemand;
+            }
+            else
+            {
+                return false;
+            }
         }
 
         terminateResponse(exchange);
@@ -580,6 +607,9 @@ public abstract class HttpReceiver
         ResponseNotifier notifier = getHttpDestination().getResponseNotifier();
         notifier.notifyFailure(listeners, response, failure);
 
+        // We want to deliver the "complete" event as last,
+        // so we emit it here only if no event handlers are
+        // executing, otherwise they will emit it.
         if (terminate)
         {
             // Mark atomically the response as terminated, with
@@ -758,56 +788,48 @@ public abstract class HttpReceiver
 
         private boolean decode(ByteBuffer encoded, Callback callback)
         {
-            try
+            this.encoded = encoded;
+            this.callback = callback;
+            return decode();
+        }
+
+        private boolean decode()
+        {
+            while (true)
             {
+                ByteBuffer buffer;
                 while (true)
                 {
-                    ByteBuffer buffer;
-                    while (true)
+                    buffer = decoder.decode(encoded);
+                    if (buffer.hasRemaining())
+                        break;
+                    if (!encoded.hasRemaining())
                     {
-                        buffer = decoder.decode(encoded);
-                        if (buffer.hasRemaining())
-                            break;
-                        if (!encoded.hasRemaining())
-                        {
-                            callback.succeeded();
-                            return true;
-                        }
-                    }
-                    ByteBuffer decoded = buffer;
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Response content decoded ({}) {}{}{}", decoder, response, System.lineSeparator(), BufferUtil.toDetailString(decoded));
-
-                    contentListeners.notifyContent(response, decoded, Callback.from(() -> decoder.release(decoded), callback::failed));
-
-                    synchronized (this)
-                    {
-                        if (demand() <= 0)
-                        {
-                            this.encoded = encoded;
-                            this.callback = callback;
-                            return false;
-                        }
+                        callback.succeeded();
+                        encoded = null;
+                        callback = null;
+                        return true;
                     }
                 }
-            }
-            catch (Throwable x)
-            {
-                callback.failed(x);
-                return true;
+                ByteBuffer decoded = buffer;
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Response content decoded ({}) {}{}{}", decoder, response, System.lineSeparator(), BufferUtil.toDetailString(decoded));
+
+                contentListeners.notifyContent(response, decoded, Callback.from(() -> decoder.release(decoded), callback::failed));
+
+                boolean hasDemand = hasDemandOrStall();
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Response content decoded {}, hasDemand={}", response, hasDemand);
+                if (!hasDemand)
+                    return false;
             }
         }
 
         private void resume()
         {
-            ByteBuffer encoded;
-            Callback callback;
-            synchronized (this)
-            {
-                encoded = this.encoded;
-                callback = this.callback;
-            }
-            if (decode(encoded, callback))
+            if (LOG.isDebugEnabled())
+                LOG.debug("Response content resuming decoding {}", response);
+            if (decode())
                 receive();
         }
 
