@@ -1969,7 +1969,6 @@ public class HttpParser
         /**
          * @return the size in bytes of the per parser header cache
          */
-        // TODO: move this to the Parser in Jetty 10.
         int getHeaderCacheSize();
     }
 
@@ -1983,7 +1982,6 @@ public class HttpParser
          * @param version the http version in use
          * @return true if handling parsing should return.
          */
-        // TODO: make this a void method in Jetty 10.
         boolean startRequest(String method, String uri, HttpVersion version);
     }
 
@@ -1997,7 +1995,6 @@ public class HttpParser
          * @param reason the response reason phrase
          * @return true if handling parsing should return
          */
-        // TODO: make this a void method in Jetty 10.
         boolean startResponse(HttpVersion version, int status, String reason);
     }
 
