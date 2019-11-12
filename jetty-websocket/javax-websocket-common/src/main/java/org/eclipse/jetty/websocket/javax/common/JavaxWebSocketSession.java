@@ -95,7 +95,12 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
             this.pathParameters = Collections.emptyMap();
         }
 
-        this.userProperties = new HashMap<>(this.config.getUserProperties());
+        this.userProperties = this.config.getUserProperties();
+    }
+
+    public FrameHandler.CoreSession getCoreSession()
+    {
+        return coreSession;
     }
 
     /**

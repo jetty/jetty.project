@@ -97,7 +97,7 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
     private UpgradeRequest upgradeRequest;
     private UpgradeResponse upgradeResponse;
 
-    private final EndpointConfig endpointConfig;
+    private EndpointConfig endpointConfig;
     private MessageSink textSink;
     private MessageSink binarySink;
     private MessageSink activeMessageSink;
@@ -158,6 +158,18 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
         try
         {
             this.coreSession = coreSession;
+
+            // Rewire EndpointConfig to call CoreSession setters if Jetty specific properties are set.
+            final Map<String, Object> listenerMap = new PutListenerMap(endpointConfig.getUserProperties(), this::configListener);
+            endpointConfig = new EndpointConfigWrapper(endpointConfig)
+            {
+                @Override
+                public Map<String, Object> getUserProperties()
+                {
+                    return listenerMap;
+                }
+            };
+
             session = new JavaxWebSocketSession(container, coreSession, this, endpointConfig);
 
             openHandle = InvokerUtils.bindTo(openHandle, session, endpointConfig);
@@ -622,5 +634,30 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
     public UpgradeResponse getUpgradeResponse()
     {
         return upgradeResponse;
+    }
+
+    private void configListener(String key, Object value)
+    {
+        if (!key.startsWith("org.eclipse.jetty.websocket."))
+            return;
+
+        switch (key)
+        {
+            case "org.eclipse.jetty.websocket.autoFragment":
+                coreSession.setAutoFragment((Boolean)value);
+                break;
+
+            case "org.eclipse.jetty.websocket.maxFrameSize":
+                coreSession.setMaxFrameSize((Long)value);
+                break;
+
+            case "org.eclipse.jetty.websocket.outputBufferSize":
+                coreSession.setOutputBufferSize((Integer)value);
+                break;
+
+            case "org.eclipse.jetty.websocket.inputBufferSize":
+                coreSession.setInputBufferSize((Integer)value);
+                break;
+        }
     }
 }
