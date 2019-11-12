@@ -27,6 +27,9 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.Frame;
 
+/**
+ * This is used to iteratively transform or process a frame.
+ */
 public abstract class TransformingFlusher
 {
     private final Logger log = Log.getLogger(this.getClass());
