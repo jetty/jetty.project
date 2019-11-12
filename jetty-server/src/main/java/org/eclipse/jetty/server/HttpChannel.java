@@ -1184,17 +1184,16 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             _length = _content.remaining();
             _commit = commit;
             _complete = complete;
-
-            if (_commit)
-                _combinedListener.onResponseCommit(_request);
-            if (_length > 0)
-                _combinedListener.onResponseContent(_request, _content);
         }
 
         @Override
         public void succeeded()
         {
             _written += _length;
+            if (_commit)
+                _combinedListener.onResponseCommit(_request);
+            if (_length > 0)
+                _combinedListener.onResponseContent(_request, _content);
             if (_complete && _state.completeResponse())
             {
                 _response.getHttpOutput().closed();
