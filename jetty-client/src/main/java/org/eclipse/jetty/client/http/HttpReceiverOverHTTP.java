@@ -22,6 +22,7 @@ import java.io.EOFException;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.client.HttpReceiver;
 import org.eclipse.jetty.client.HttpResponse;
@@ -50,8 +51,13 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         super(channel);
         HttpClient httpClient = channel.getHttpDestination().getHttpClient();
         parser = new HttpParser(this, -1, httpClient.getHttpCompliance());
-        parser.setHeaderCacheSize(((HttpClientTransportOverHTTP)httpClient.getTransport()).getHeaderCacheSize());
-        parser.setHeaderCacheCaseSensitive(((HttpClientTransportOverHTTP)httpClient.getTransport()).isHeaderCacheCaseSensitive());
+        HttpClientTransport transport = httpClient.getTransport();
+        if (transport instanceof HttpClientTransportOverHTTP)
+        {
+            HttpClientTransportOverHTTP httpTransport = (HttpClientTransportOverHTTP)transport;
+            parser.setHeaderCacheSize(httpTransport.getHeaderCacheSize());
+            parser.setHeaderCacheCaseSensitive(httpTransport.isHeaderCacheCaseSensitive());
+        }
     }
 
     @Override
