@@ -25,6 +25,8 @@ import java.net.ServerSocket;
 import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.util.EnumSet;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -170,6 +172,27 @@ public class ClientConnectTest
         try (Session sess = future.get(30, TimeUnit.SECONDS))
         {
             assertThat("Connect.UpgradeRequest", sess.getUpgradeRequest(), notNullValue());
+            assertThat("Connect.UpgradeResponse", sess.getUpgradeResponse(), notNullValue());
+        }
+    }
+
+    @Test
+    public void testUpgradeRequest_PercentEncodedQuery() throws Exception
+    {
+        CloseTrackingEndpoint cliSock = new CloseTrackingEndpoint();
+        client.getPolicy().setIdleTimeout(10000);
+
+        URI wsUri = WSURI.toWebsocket(server.getURI().resolve("/echo?name=%25foo"));
+        ClientUpgradeRequest request = new ClientUpgradeRequest();
+        request.setSubProtocols("echo");
+        Future<Session> future = client.connect(cliSock, wsUri);
+
+        try (Session sess = future.get(30, TimeUnit.SECONDS))
+        {
+            assertThat("Connect.UpgradeRequest", sess.getUpgradeRequest(), notNullValue());
+            Map<String, List<String>> paramMap = sess.getUpgradeRequest().getParameterMap();
+            List<String> values = paramMap.get("name");
+            assertThat("Params[name]", values.get(0), is("%foo"));
             assertThat("Connect.UpgradeResponse", sess.getUpgradeResponse(), notNullValue());
         }
     }
