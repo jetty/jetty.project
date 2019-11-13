@@ -33,7 +33,7 @@ public class StopLifeCycle extends AbstractLifeCycle implements LifeCycle.Listen
     public StopLifeCycle(LifeCycle lifecycle)
     {
         _lifecycle = lifecycle;
-        addLifeCycleListener(this);
+        addEventListener(this);
     }
 
     @Override

@@ -30,7 +30,6 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Connector;
@@ -211,10 +210,7 @@ public final class RFC6455Handshaker implements Handshaker
         if (connection == null)
             throw new WebSocketException("not upgraded: no connection");
 
-        for (Connection.Listener listener : connector.getBeans(Connection.Listener.class))
-        {
-            connection.addListener(listener);
-        }
+        connector.getEventListeners().forEach(connection::addEventListener);
 
         coreSession.setWebSocketConnection(connection);
 

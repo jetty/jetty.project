@@ -223,10 +223,8 @@ public class ServerConnector extends AbstractNetworkConnector
     @Override
     protected void doStart() throws Exception
     {
-        for (EventListener l : getBeans(EventListener.class))
-        {
+        for (EventListener l : getBeans(SelectorManager.SelectorManagerListener.class))
             _manager.addEventListener(l);
-        }
 
         super.doStart();
 
