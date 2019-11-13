@@ -28,7 +28,10 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.Frame;
 
 /**
- * This is used to iteratively transform or process a frame.
+ * This is used to iteratively transform or process a frame into one or more other frames.
+ * When a frame is ready to be processed {@link #onFrame(Frame, Callback, boolean)} is called.
+ * Then {@link #transform(Callback)} is called on each callback success until {@link #finished()} is called.
+ * The {@link Callback} passed in to both these method must be succeeded in order to continue processing.
  */
 public abstract class TransformingFlusher
 {
@@ -48,7 +51,10 @@ public abstract class TransformingFlusher
     protected abstract void onFrame(Frame frame, Callback callback, boolean batch);
 
     /**
-     * Called multiple times to transform the frame given in {@link TransformingFlusher#onFrame(Frame, Callback, boolean)}.
+     * Called to transform the frame given in {@link TransformingFlusher#onFrame(Frame, Callback, boolean)}.
+     * This method is called on each callback success until {@link #finished()} is called.
+     * If {@link #finished()} is called during the call to {@link #onFrame(Frame, Callback, boolean)}
+     * then this method will not be called.
      * @param callback used to signal to start processing again.
      */
     protected abstract void transform(Callback callback);
@@ -56,11 +62,10 @@ public abstract class TransformingFlusher
     /**
      * Called to indicate that you have finished transforming this frame and are ready to receive a new one
      * after the next the callback is succeeded.
-     * @param finished
      */
-    public final void setFinished(boolean finished)
+    protected final void finished()
     {
-        this.finished = finished;
+        this.finished = true;
     }
 
     public final void sendFrame(Frame frame, Callback callback, boolean batch)
@@ -115,25 +120,21 @@ public abstract class TransformingFlusher
             if (finished)
             {
                 current = pollEntry();
-                if (log.isDebugEnabled())
-                    log.debug("Polled {}", current);
                 if (current == null)
                     return Action.IDLE;
+
+                if (log.isDebugEnabled())
+                    log.debug("onFrame {}", current);
+
+                finished = false;
+                onFrame(current.frame, this, current.batch);
+                return Action.SCHEDULED;
             }
 
             if (log.isDebugEnabled())
-                log.debug("Processing {}", current);
+                log.debug("transform {}", current);
 
-            if (finished)
-            {
-                finished = false;
-                onFrame(current.frame, this, current.batch);
-            }
-            else
-            {
-                transform(this);
-            }
-
+            transform(this);
             return Action.SCHEDULED;
         }
 

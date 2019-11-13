@@ -245,7 +245,7 @@ public class PerMessageDeflateExtension extends AbstractExtension
         {
             if (OpCode.isControlFrame(frame.getOpCode()))
             {
-                setFinished(true);
+                finished();
                 nextOutgoingFrame(frame, callback, batch);
                 return;
             }
@@ -327,7 +327,8 @@ public class PerMessageDeflateExtension extends AbstractExtension
             chunk.setPayload(payload);
             chunk.setFin(_frame.isFin() && finished);
 
-            setFinished(finished);
+            if (finished)
+                finished();
             nextOutgoingFrame(chunk, callback, _batch);
         }
     }
@@ -347,7 +348,7 @@ public class PerMessageDeflateExtension extends AbstractExtension
 
             if (OpCode.isControlFrame(_frame.getOpCode()))
             {
-                setFinished(true);
+                finished();
                 nextIncomingFrame(_frame, callback);
                 return;
             }
@@ -372,7 +373,7 @@ public class PerMessageDeflateExtension extends AbstractExtension
 
             if (_first && !incomingCompressed)
             {
-                setFinished(true);
+                finished();
                 nextIncomingFrame(_frame, callback);
                 return;
             }
@@ -445,7 +446,8 @@ public class PerMessageDeflateExtension extends AbstractExtension
             chunk.setPayload(payload);
             chunk.setFin(_frame.isFin() && finished);
 
-            setFinished(finished);
+            if (finished)
+                finished();
             nextIncomingFrame(chunk, callback);
 
             if (LOG.isDebugEnabled())
