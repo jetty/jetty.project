@@ -16,69 +16,49 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.javax.server.internal;
+package org.eclipse.jetty.websocket.javax.common;
 
 import java.util.List;
-import java.util.Map;
-import javax.websocket.Decoder;
-import javax.websocket.Encoder;
 import javax.websocket.Extension;
 import javax.websocket.server.ServerEndpointConfig;
 
-public abstract class ServerEndpointConfigWrapper implements ServerEndpointConfig
+public class ServerEndpointConfigWrapper extends EndpointConfigWrapper implements ServerEndpointConfig
 {
-    private final ServerEndpointConfig delegate;
+    private final ServerEndpointConfig _endpointConfig;
 
-    public ServerEndpointConfigWrapper(ServerEndpointConfig delegate)
+    public ServerEndpointConfigWrapper(ServerEndpointConfig endpointConfig)
     {
-        this.delegate = delegate;
-    }
-
-    @Override
-    public List<Class<? extends Encoder>> getEncoders()
-    {
-        return delegate.getEncoders();
-    }
-
-    @Override
-    public List<Class<? extends Decoder>> getDecoders()
-    {
-        return delegate.getDecoders();
-    }
-
-    @Override
-    public Map<String, Object> getUserProperties()
-    {
-        return delegate.getUserProperties();
+        super(endpointConfig);
+        _endpointConfig = endpointConfig;
     }
 
     @Override
     public Class<?> getEndpointClass()
     {
-        return delegate.getEndpointClass();
+        return _endpointConfig.getEndpointClass();
     }
 
     @Override
     public String getPath()
     {
-        return delegate.getPath();
+        return _endpointConfig.getPath();
     }
 
     @Override
     public List<String> getSubprotocols()
     {
-        return delegate.getSubprotocols();
+        return _endpointConfig.getSubprotocols();
     }
 
     @Override
     public List<Extension> getExtensions()
     {
-        return delegate.getExtensions();
+        return _endpointConfig.getExtensions();
     }
 
     @Override
     public Configurator getConfigurator()
     {
-        return delegate.getConfigurator();
+        return _endpointConfig.getConfigurator();
     }
 }

@@ -18,19 +18,26 @@
 
 package org.eclipse.jetty.websocket.javax.common;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import javax.websocket.Decoder;
 import javax.websocket.Encoder;
 import javax.websocket.EndpointConfig;
 
-public class EndpointConfigWrapper implements EndpointConfig
+public class EndpointConfigWrapper implements EndpointConfig, PathParamProvider
 {
-    protected final EndpointConfig _endpointConfig;
+    private final EndpointConfig _endpointConfig;
+    private final Map<String, String> _pathParameters;
 
     public EndpointConfigWrapper(EndpointConfig endpointConfig)
     {
         _endpointConfig = endpointConfig;
+
+        if (endpointConfig instanceof PathParamProvider)
+            _pathParameters = ((PathParamProvider)endpointConfig).getPathParams();
+        else
+            _pathParameters = Collections.emptyMap();
     }
 
     @Override
@@ -49,5 +56,11 @@ public class EndpointConfigWrapper implements EndpointConfig
     public Map<String, Object> getUserProperties()
     {
         return _endpointConfig.getUserProperties();
+    }
+
+    @Override
+    public Map<String, String> getPathParams()
+    {
+        return _pathParameters;
     }
 }
