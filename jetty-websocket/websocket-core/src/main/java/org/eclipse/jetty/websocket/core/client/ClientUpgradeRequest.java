@@ -49,7 +49,6 @@ import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
@@ -380,14 +379,8 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
 
         HttpClient httpClient = wsClient.getHttpClient();
         WebSocketConnection wsConnection = newWebSocketConnection(endp, httpClient.getExecutor(), httpClient.getScheduler(), httpClient.getByteBufferPool(), coreSession);
-
-        for (Connection.Listener listener : wsClient.getBeans(Connection.Listener.class))
-        {
-            wsConnection.addListener(listener);
-        }
-
+        wsClient.getEventListeners().forEach(wsConnection::addEventListener);
         coreSession.setWebSocketConnection(wsConnection);
-
         notifyUpgradeListeners((listener) -> listener.onHandshakeResponse(this, response));
 
         // Now swap out the connection

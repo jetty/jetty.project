@@ -16,12 +16,12 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core.autobahn;
+package org.eclipse.jetty.websocket.javax.tests.autobahn;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.websocket.core.server.WebSocketUpgradeHandler;
+import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.websocket.javax.server.config.JavaxWebSocketServletContainerInitializer;
 
 /**
  * WebSocket Server for use with <a href="https://github.com/crossbario/autobahn-testsuite">autobahn websocket testsuite</a> (wstest).
@@ -49,15 +49,15 @@ import org.eclipse.jetty.websocket.core.server.WebSocketUpgradeHandler;
  * Running Autobahn Fuzzing Client (against this server implementation):
  * </p>
  * <pre>
- *     # Change to websocket-core first
- *     $ cd jetty-websocket/websocket-core
+ *     # Change to javax-websocket-tests directory first.
+ *     $ cd jetty-websocket/javax-websocket-tests/
  *     $ wstest --mode=fuzzingclient --spec=fuzzingclient.json
  *
  *     # Report output is configured (in the fuzzingclient.json) at location:
  *     $ ls target/reports/servers/
  * </pre>
  */
-public class AutobahnWebSocketServer
+public class JavaxAutobahnServer
 {
     public static void main(String[] args) throws Exception
     {
@@ -69,11 +69,12 @@ public class AutobahnWebSocketServer
         ServerConnector connector = new ServerConnector(server);
         connector.setIdleTimeout(10000);
         server.addConnector(connector);
-        ContextHandler context = new ContextHandler("/");
+        ServletContextHandler context = new ServletContextHandler();
+        context.setContextPath("/");
         server.setHandler(context);
 
-        WebSocketUpgradeHandler handler = new WebSocketUpgradeHandler((neg) -> new AutobahnFrameHandler());
-        context.setHandler(handler);
+        JavaxWebSocketServletContainerInitializer.configure(context, (servletContext, container)->
+            container.addEndpoint(JavaxAutobahnSocket.class));
 
         server.start();
         server.join();

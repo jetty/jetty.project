@@ -39,7 +39,6 @@ public class HttpClientJMXTest
         String name = "foo";
         HttpClient httpClient = new HttpClient();
         httpClient.setName(name);
-        httpClient.start();
 
         try
         {
@@ -47,6 +46,7 @@ public class HttpClientJMXTest
             MBeanContainer mbeanContainer = new MBeanContainer(mbeanServer);
             // Adding MBeanContainer as a bean will trigger the registration of MBeans.
             httpClient.addBean(mbeanContainer);
+            httpClient.start();
 
             String domain = HttpClient.class.getPackage().getName();
             ObjectName pattern = new ObjectName(domain + ":type=" + HttpClient.class.getSimpleName().toLowerCase(Locale.ENGLISH) + ",*");

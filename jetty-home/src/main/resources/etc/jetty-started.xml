@@ -5,7 +5,7 @@
 <!-- Mixin the Start FileNoticeLifeCycleListener                     -->
 <!-- =============================================================== -->
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
-  <Call name="addLifeCycleListener">
+  <Call name="addEventListener">
     <Arg>
       <New class="org.eclipse.jetty.util.component.FileNoticeLifeCycleListener">
         <Arg><Property name="jetty.state" default="./jetty.state"/></Arg>

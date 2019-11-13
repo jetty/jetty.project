@@ -21,6 +21,7 @@ package org.eclipse.jetty.servlet;
 import java.io.IOException;
 import java.util.EnumSet;
 import java.util.EventListener;
+import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import javax.servlet.DispatcherType;
@@ -120,9 +121,19 @@ public class ServletLifeCycleTest
             "Destroy class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestListener"));
 
         // Listener added before start is not destroyed
-        EventListener[] listeners = context.getEventListeners();
-        assertThat(listeners.length, is(1));
-        assertThat(listeners[0].getClass(), is(TestListener2.class));
+        List<EventListener> listeners = context.getEventListeners();
+        assertThat(listeners.size(), is(1));
+        assertThat(listeners.get(0).getClass(), is(TestListener2.class));
+
+        server.start();
+        context.addEventListener(new EventListener() {});listeners = context.getEventListeners();
+        listeners = context.getEventListeners();
+        assertThat(listeners.size(), is(3));
+
+        server.stop();
+        listeners = context.getEventListeners();
+        assertThat(listeners.size(), is(1));
+        assertThat(listeners.get(0).getClass(), is(TestListener2.class));
     }
 
     public static class TestDecorator implements Decorator

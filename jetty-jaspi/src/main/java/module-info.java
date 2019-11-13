@@ -16,6 +16,9 @@
 //  ========================================================================
 //
 
+import org.eclipse.jetty.security.Authenticator;
+import org.eclipse.jetty.security.jaspi.JaspiAuthenticatorFactory;
+
 module org.eclipse.jetty.security.jaspi
 {
     exports org.eclipse.jetty.security.jaspi;
@@ -28,4 +31,6 @@ module org.eclipse.jetty.security.jaspi
     requires org.eclipse.jetty.security;
     requires org.eclipse.jetty.server;
     requires org.eclipse.jetty.util;
+
+    provides Authenticator.Factory with JaspiAuthenticatorFactory;
 }
