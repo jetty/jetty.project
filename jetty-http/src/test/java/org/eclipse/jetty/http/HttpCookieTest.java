@@ -351,20 +351,4 @@ public class HttpCookieTest
         assertThat(HttpCookie.getCommentWithAttributes("__HTTP_ONLY____SAME_SITE_LAX__hello", true, HttpCookie.SameSite.LAX),
             is("hello__HTTP_ONLY____SAME_SITE_LAX__"));
     }
-
-    /**
-     * Per implementation on browsers (chrome, firefox, and safari), a Cookie which
-     * declares `SameSite=None` MUST declare `Secure` as well.
-     */
-    @Test
-    public void testRejectSameSiteNoneWithoutSecure()
-    {
-        boolean secure = false;
-        HttpCookie httpCookie = new HttpCookie("everything", "value", "domain", "path", 0, true, secure, null, -1, HttpCookie.SameSite.NONE);
-        String cookieString = httpCookie.getRFC6265SetCookie();
-        assertThat(cookieString, allOf(
-            containsString("SameSite=None"),
-            containsString("Secure")
-        ));
-    }
 }
