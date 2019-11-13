@@ -144,7 +144,7 @@ public class ServerFCGIConnection extends AbstractConnection
         }
 
         @Override
-        public void onHeaders(int request)
+        public boolean onHeaders(int request)
         {
             HttpChannelOverFCGI channel = channels.get(request);
             if (LOG.isDebugEnabled())
@@ -154,6 +154,7 @@ public class ServerFCGIConnection extends AbstractConnection
                 channel.onRequest();
                 channel.dispatch();
             }
+            return false;
         }
 
         @Override

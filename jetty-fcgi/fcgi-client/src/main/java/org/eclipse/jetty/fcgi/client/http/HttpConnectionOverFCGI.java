@@ -416,13 +416,13 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
         }
 
         @Override
-        public void onHeaders(int request)
+        public boolean onHeaders(int request)
         {
             HttpChannelOverFCGI channel = activeChannels.get(request);
             if (channel != null)
-                channel.responseHeaders();
-            else
-                noChannel(request);
+                return !channel.responseHeaders();
+            noChannel(request);
+            return false;
         }
 
         @Override

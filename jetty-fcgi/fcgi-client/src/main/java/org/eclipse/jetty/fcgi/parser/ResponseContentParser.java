@@ -82,7 +82,7 @@ public class ResponseContentParser extends StreamContentParser
         parsers.remove(request);
     }
 
-    private class ResponseParser implements HttpParser.ResponseHandler
+    private static class ResponseParser implements HttpParser.ResponseHandler
     {
         private final HttpFields fields = new HttpFields();
         private ClientParser.Listener listener;
@@ -90,6 +90,7 @@ public class ResponseContentParser extends StreamContentParser
         private final FCGIHttpParser httpParser;
         private State state = State.HEADERS;
         private boolean seenResponseCode;
+        private boolean stalled;
 
         private ResponseParser(ClientParser.Listener listener, int request)
         {
@@ -111,7 +112,11 @@ public class ResponseContentParser extends StreamContentParser
                     case HEADERS:
                     {
                         if (httpParser.parseNext(buffer))
+                        {
                             state = State.CONTENT_MODE;
+                            if (stalled)
+                                return true;
+                        }
                         remaining = buffer.remaining();
                         break;
                     }
@@ -233,16 +238,17 @@ public class ResponseContentParser extends StreamContentParser
             }
         }
 
-        private void notifyHeaders()
+        private boolean notifyHeaders()
         {
             try
             {
-                listener.onHeaders(request);
+                return listener.onHeaders(request);
             }
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Exception while invoking listener " + listener, x);
+                return false;
             }
         }
 
@@ -255,8 +261,10 @@ public class ResponseContentParser extends StreamContentParser
                 notifyBegin(200, "OK");
                 notifyHeaders(fields);
             }
-            notifyHeaders();
-            // Return from HTTP parsing so that we can parse the content.
+            // Remember whether we have demand.
+            stalled = notifyHeaders();
+            // Always return from HTTP parsing so that we
+            // can parse the content with the FCGI parser.
             return true;
         }
 

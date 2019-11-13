@@ -553,6 +553,12 @@ public class HttpRequest implements Request
         this.responseListeners.add(new Response.DemandedContentListener()
         {
             @Override
+            public void onBeforeContent(Response response, LongConsumer demand)
+            {
+                listener.onBeforeContent(response, demand);
+            }
+
+            @Override
             public void onContent(Response response, LongConsumer demand, ByteBuffer content, Callback callback)
             {
                 listener.onContent(response, demand, content, callback);

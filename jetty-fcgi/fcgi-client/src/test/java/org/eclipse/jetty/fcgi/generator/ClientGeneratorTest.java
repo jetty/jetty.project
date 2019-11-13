@@ -109,10 +109,11 @@ public class ClientGeneratorTest
             }
 
             @Override
-            public void onHeaders(int request)
+            public boolean onHeaders(int request)
             {
                 assertEquals(id, request);
                 params.set(params.get() * primes[4]);
+                return false;
             }
         });
 
