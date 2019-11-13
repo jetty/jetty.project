@@ -27,11 +27,9 @@ import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -95,7 +93,7 @@ public class ErrorHandler extends AbstractHandler
     }
 
     @Override
-    public void doError(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    public void doError(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
     {
         String cacheControl = getCacheControl();
         if (cacheControl != null)
@@ -113,15 +111,23 @@ public class ErrorHandler extends AbstractHandler
         {
             if (errorDispatcher != null)
             {
-                errorDispatcher.error(request, response);
+                try
+                {
+                    errorDispatcher.error(request, response);
+                    return;
+                }
+                catch (ServletException e)
+                {
+                    LOG.debug(e);
+                    if (response.isCommitted())
+                        return;
+                }
             }
-            else
-            {
-                String message = (String)request.getAttribute(Dispatcher.ERROR_MESSAGE);
-                if (message == null)
-                    message = baseRequest.getResponse().getReason();
-                generateAcceptableResponse(baseRequest, request, response, response.getStatus(), message);
-            }
+
+            String message = (String)request.getAttribute(Dispatcher.ERROR_MESSAGE);
+            if (message == null)
+                message = baseRequest.getResponse().getReason();
+            generateAcceptableResponse(baseRequest, request, response, response.getStatus(), message);
         }
         finally
         {

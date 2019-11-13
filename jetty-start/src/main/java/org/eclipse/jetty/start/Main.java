@@ -603,11 +603,11 @@ public class Main
         }
         catch (ConnectException e)
         {
-            usageExit(e, ERR_NOT_STOPPED, jsvcStartArgs.isTestingModeEnabled());
+            usageExit(e, ERR_NOT_STOPPED, jsvcStartArgs != null && jsvcStartArgs.isTestingModeEnabled());
         }
         catch (Exception e)
         {
-            usageExit(e, ERR_UNKNOWN, jsvcStartArgs.isTestingModeEnabled());
+            usageExit(e, ERR_UNKNOWN, jsvcStartArgs != null && jsvcStartArgs.isTestingModeEnabled());
         }
     }
 

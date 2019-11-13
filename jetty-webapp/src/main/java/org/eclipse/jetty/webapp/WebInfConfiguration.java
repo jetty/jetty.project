@@ -42,6 +42,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.resource.JarFileResource;
 import org.eclipse.jetty.util.resource.JarResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
@@ -766,7 +767,7 @@ public class WebInfConfiguration extends AbstractConfiguration
             }
         }
 
-        //Resource  base
+        // Resource base
         try
         {
             Resource resource = context.getBaseResource();
@@ -775,24 +776,21 @@ public class WebInfConfiguration extends AbstractConfiguration
                 if (context.getWar() == null || context.getWar().length() == 0)
                     throw new IllegalStateException("No resourceBase or war set for context");
 
-                // Set dir or WAR
+                // Set dir or WAR to resource
                 resource = context.newResource(context.getWar());
             }
 
-            String tmp = URIUtil.decodePath(resource.getURI().getPath());
-            if (tmp.endsWith("/"))
-                tmp = tmp.substring(0, tmp.length() - 1);
-            if (tmp.endsWith("!"))
-                tmp = tmp.substring(0, tmp.length() - 1);
-            //get just the last part which is the filename
-            int i = tmp.lastIndexOf("/");
-            canonicalName.append(tmp.substring(i + 1));
+            String resourceBaseName = getResourceBaseName(resource);
+            canonicalName.append(resourceBaseName);
             canonicalName.append("-");
         }
         catch (Exception e)
         {
-            LOG.warn("Can't generate resourceBase as part of webapp tmp dir name: " + e);
-            LOG.debug(e);
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("Can't get resource base name", e);
+            }
+            canonicalName.append("-"); // empty resourceBaseName segment
         }
 
         //Context name
@@ -809,6 +807,44 @@ public class WebInfConfiguration extends AbstractConfiguration
         canonicalName.append("-");
 
         return StringUtil.sanitizeFileSystemName(canonicalName.toString());
+    }
+
+    protected static String getResourceBaseName(Resource resource)
+    {
+        // Use File System and File interface if present
+        try
+        {
+            File resourceFile = resource.getFile();
+            if ((resourceFile != null) && (resource instanceof JarFileResource))
+            {
+                resourceFile = ((JarFileResource)resource).getJarFile();
+            }
+
+            if (resourceFile != null)
+            {
+                return resourceFile.getName();
+            }
+        }
+        catch (IOException e)
+        {
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("Resource has no File reference: {}", resource);
+            }
+        }
+
+        // Use URI itself.
+        URI uri = resource.getURI();
+        if (uri == null)
+        {
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("Resource has no URI reference: {}", resource);
+            }
+            return "";
+        }
+
+        return URIUtil.getUriLastPathSegment(uri);
     }
 
     protected List<Resource> findClassDirs(WebAppContext context)

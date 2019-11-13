@@ -21,7 +21,6 @@ package org.eclipse.jetty.server;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.Socket;
-import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
@@ -73,11 +72,6 @@ public class ExtendedServerTest extends HttpServerTestBase
     private static class ExtendedEndPoint extends SocketChannelEndPoint
     {
         private volatile long _lastSelected;
-
-        public ExtendedEndPoint(SelectableChannel channel, ManagedSelector selector, SelectionKey key, Scheduler scheduler)
-        {
-            super(channel, selector, key, scheduler);
-        }
 
         public ExtendedEndPoint(SocketChannel channel, ManagedSelector selector, SelectionKey key, Scheduler scheduler)
         {

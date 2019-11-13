@@ -31,6 +31,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.LongConsumer;
+import java.util.zip.GZIPOutputStream;
+import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -38,6 +40,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.BufferingResponseListener;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.server.Request;
@@ -359,5 +362,56 @@ public class HttpClientDemandTest extends AbstractTest<TransportScenario>
         assertNotNull(demand);
         demand.accept(Long.MAX_VALUE);
         assertTrue(resultLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(TransportProvider.class)
+    public void testGZippedResponseContentWithAsyncDemand(Transport transport) throws Exception
+    {
+        init(transport);
+
+        int chunks = 64;
+        byte[] content = new byte[chunks * 1024];
+        new Random().nextBytes(content);
+
+        scenario.start(new EmptyServerHandler()
+        {
+            @Override
+            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                try (GZIPOutputStream gzip = new GZIPOutputStream(response.getOutputStream()))
+                {
+                    response.setHeader(HttpHeader.CONTENT_ENCODING.asString(), "gzip");
+                    for (int i = 0; i < chunks; ++i)
+                    {
+                        Thread.sleep(10);
+                        gzip.write(content, i * 1024, 1024);
+                    }
+                }
+                catch (InterruptedException x)
+                {
+                    throw new InterruptedIOException();
+                }
+            }
+        });
+
+        byte[] bytes = new byte[content.length];
+        ByteBuffer received = ByteBuffer.wrap(bytes);
+        CountDownLatch resultLatch = new CountDownLatch(1);
+        scenario.client.newRequest(scenario.newURI())
+            .onResponseContentDemanded((response, demand, buffer, callback) ->
+            {
+                received.put(buffer);
+                callback.succeeded();
+                new Thread(() -> demand.accept(1)).start();
+            })
+            .send(result ->
+            {
+                assertTrue(result.isSucceeded());
+                assertEquals(HttpStatus.OK_200, result.getResponse().getStatus());
+                resultLatch.countDown();
+            });
+        assertTrue(resultLatch.await(5, TimeUnit.SECONDS));
+        assertArrayEquals(content, bytes);
     }
 }

@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.alpn.java.client;
+package org.eclipse.jetty.alpn.openjdk8.client;
 
 import java.util.List;
 import javax.net.ssl.SSLEngine;
