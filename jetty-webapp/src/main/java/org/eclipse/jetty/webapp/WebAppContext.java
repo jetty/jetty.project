@@ -1014,16 +1014,18 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         {
             if (_war != null)
             {
-                if (_war.contains("/webapps/"))
-                    name = _war.substring(_war.indexOf("/webapps/") + 8);
+                int webapps = _war.indexOf("/webapps/");
+                if (webapps >= 0)
+                    name = _war.substring(webapps + 8);
                 else
                     name = _war;
             }
             else if (getResourceBase() != null)
             {
                 name = getResourceBase();
-                if (name.indexOf("/webapps/") >= 0)
-                    name = name.substring(name.indexOf("/webapps/") + 8);
+                int webapps = name.indexOf("/webapps/");
+                if (webapps >= 0)
+                    name = name.substring(webapps + 8);
             }
             else
             {
