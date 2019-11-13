@@ -19,6 +19,8 @@
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
+import java.util.Map;
+
 import javax.servlet.DispatcherType;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
@@ -30,6 +32,7 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.util.ajax.JSON;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -53,32 +56,6 @@ public class ErrorHandlerTest
         connector = new LocalConnector(server);
         server.addConnector(connector);
 
-        server.setHandler(new AbstractHandler()
-        {
-            @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
-            {
-                if (baseRequest.getDispatcherType() == DispatcherType.ERROR)
-                {
-                    baseRequest.setHandled(true);
-                    response.sendError(((Integer)request.getAttribute(RequestDispatcher.ERROR_STATUS_CODE)).intValue());
-                    return;
-                }
-
-                if (target.startsWith("/charencoding/"))
-                {
-                    baseRequest.setHandled(true);
-                    response.setCharacterEncoding("utf-8");
-                    response.sendError(404);
-                    return;
-                }
-
-                if (target.startsWith("/badmessage/"))
-                {
-                    throw new ServletException(new BadMessageException(Integer.valueOf(target.substring(12))));
-                }
-            }
-        });
         server.setHandler(new AbstractHandler()
         {
             @Override
@@ -328,5 +305,26 @@ public class ErrorHandlerTest
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
         assertThat("Response status code", response.getStatus(), is(444));
+    }
+
+    @Test
+    public void testJsonResponse() throws Exception
+    {
+        String rawResponse = connector.getResponse(
+                "GET /badmessage/444 HTTP/1.1\r\n" +
+                        "Host: Localhost\r\n" +
+                        "Accept: text/json\r\n" +
+                        "\r\n");
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+
+        assertThat("Response status code", response.getStatus(), is(444));
+
+        System.out.println("response:" + response.getContent());
+
+        Map<Object,Object> jo = (Map) JSON.parse(response.getContent());
+
+        assertThat("url field null", jo.get("url"), is(notNullValue()));
+        assertThat("status field null", jo.get("status"), is(notNullValue()));
+        assertThat("message field null", jo.get("message"), is(notNullValue()));
     }
 }

@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>tests-parent</artifactId>
-    <version>9.4.22-SNAPSHOT</version>
+    <version>9.4.23-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>test-integration</artifactId>
@@ -30,11 +30,11 @@
               <goal>copy-dependencies</goal>
             </goals>
             <configuration>
-              <includeGroupId>org.eclipse.jetty.tests</includeGroupId>
+              <includeGroupIds>org.eclipse.jetty.tests</includeGroupIds>
               <includeScope>test</includeScope>
               <includeTypes>war</includeTypes>
-              <overwriteSnapshots>true</overwriteSnapshots>
-              <overwriteReleases>true</overwriteReleases>
+              <overWriteReleases>true</overWriteReleases>
+              <overWriteSnapshots>true</overWriteSnapshots>
               <stripVersion>true</stripVersion>
               <outputDirectory>${project.build.directory}/webapps</outputDirectory>
             </configuration>
@@ -142,6 +142,11 @@
       <artifactId>jetty-alpn-server</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-classic</artifactId>
+      <version>1.2.3</version>
     </dependency>
   </dependencies>
 </project>

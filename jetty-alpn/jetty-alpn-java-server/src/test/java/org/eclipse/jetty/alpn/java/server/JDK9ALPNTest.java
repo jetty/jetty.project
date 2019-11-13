@@ -80,10 +80,10 @@ public class JDK9ALPNTest
     @Test
     public void testClientNotSupportingALPNServerSpeaksDefaultProtocol() throws Exception
     {
-        startServer(new AbstractHandler.ErrorDispatchHandler()
+        startServer(new AbstractHandler()
         {
             @Override
-            protected void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 baseRequest.setHandled(true);
             }
@@ -122,10 +122,10 @@ public class JDK9ALPNTest
     @Test
     public void testClientSupportingALPNServerSpeaksNegotiatedProtocol() throws Exception
     {
-        startServer(new AbstractHandler.ErrorDispatchHandler()
+        startServer(new AbstractHandler()
         {
             @Override
-            protected void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 baseRequest.setHandled(true);
             }

@@ -403,6 +403,13 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             State state = _state.get();
             switch (state)
             {
+                case CLOSING:
+                {
+                    if (!_state.compareAndSet(state, State.CLOSED))
+                        break;
+                    releaseBuffer();
+                    return;
+                }
                 case CLOSED:
                 {
                     return;
@@ -418,22 +425,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                     if (!_state.compareAndSet(state, State.CLOSED))
                         break;
 
-                    // Just make sure write and output stream really are closed
-                    try
-                    {
-                        _channel.getResponse().closeOutput();
-                    }
-                    catch (Throwable x)
-                    {
-                        if (LOG.isDebugEnabled())
-                            LOG.debug(x);
-                        abort(x);
-                    }
-                    finally
-                    {
-                        releaseBuffer();
-                    }
-                    // Return even if an exception is thrown by closeOutput().
+                    releaseBuffer();
                     return;
                 }
             }

@@ -704,17 +704,24 @@ public class HttpGenerator
             _endOfContent = EndOfContent.NO_CONTENT;
 
             // But it is an error if there actually is content
-            if (_contentPrepared > 0 || contentLength > 0)
+            if (_contentPrepared > 0)
+                throw new BadMessageException(INTERNAL_SERVER_ERROR_500, "Content for no content response");
+
+            if (contentLengthField)
             {
-                if (_contentPrepared == 0 && last)
+                if (response != null && response.getStatus() == HttpStatus.NOT_MODIFIED_304)
+                    putContentLength(header, contentLength);
+                else if (contentLength > 0)
                 {
-                    // TODO discard content for backward compatibility with 9.3 releases
-                    // TODO review if it is still needed in 9.4 or can we just throw.
-                    content.clear();
-                    contentLength = 0;
+                    if (_contentPrepared == 0 && last)
+                    {
+                        // TODO discard content for backward compatibility with 9.3 releases
+                        // TODO review if it is still needed in 9.4 or can we just throw.
+                        content.clear();
+                    }
+                    else
+                        throw new BadMessageException(INTERNAL_SERVER_ERROR_500, "Content for no content response");
                 }
-                else
-                    throw new BadMessageException(INTERNAL_SERVER_ERROR_500, "Content for no content response");
             }
         }
         // Else if we are HTTP/1.1 and the content length is unknown and we are either persistent

@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>test-servlet-spec-parent</artifactId>
-    <version>9.4.22-SNAPSHOT</version>
+    <version>9.4.23-SNAPSHOT</version>
   </parent>
   <name>Jetty Tests :: Webapps :: Spec Webapp</name>
   <artifactId>test-spec-webapp</artifactId>
@@ -218,12 +218,6 @@
       <groupId>org.eclipse.jetty.tests</groupId>
       <artifactId>test-container-initializer</artifactId>
       <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-util</artifactId>
-      <!-- deliberately old version to test classloading -->
-      <version>9.3.0.RC0</version>
     </dependency>
   </dependencies>
 </project>

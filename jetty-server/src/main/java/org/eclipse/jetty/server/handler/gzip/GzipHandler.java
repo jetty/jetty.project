@@ -26,7 +26,6 @@ import java.util.ListIterator;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.zip.Deflater;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
@@ -93,8 +92,7 @@ import org.eclipse.jetty.util.log.Logger;
  * </li>
  * <li>
  * Is the Response {@code Content-Length} header present, and does its
- * value meet the minimum gzip size requirements?
- * <br> (Default: 16 bytes. see {@link GzipHandler#DEFAULT_MIN_GZIP_SIZE})
+ * value meet the minimum gzip size requirements (default 32 bytes)?
  * </li>
  * <li>
  * Is the Request {@code Accept} header present and does it contain the
@@ -156,7 +154,8 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
 {
     public static final String GZIP = "gzip";
     public static final String DEFLATE = "deflate";
-    public static final int DEFAULT_MIN_GZIP_SIZE = 16;
+    public static final int DEFAULT_MIN_GZIP_SIZE = 32;
+    public static final int BREAK_EVEN_GZIP_SIZE = 23;
     private static final Logger LOG = Log.getLogger(GzipHandler.class);
     private static final HttpField X_CE_GZIP = new PreEncodedHttpField("X-Content-Encoding", "gzip");
     private static final HttpField TE_CHUNKED = new PreEncodedHttpField(HttpHeader.TRANSFER_ENCODING, HttpHeaderValue.CHUNKED.asString());
@@ -658,6 +657,9 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
 
             if (inflate)
             {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("{} inflate {}", this, request);
+
                 baseRequest.getHttpInput().addInterceptor(new GzipHttpInputInterceptor(baseRequest.getHttpChannel().getByteBufferPool(), _inflateBufferSize));
 
                 for (ListIterator<HttpField> i = baseRequest.getHttpFields().listIterator(); i.hasNext(); )
@@ -946,13 +948,19 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     }
 
     /**
-     * Set the minimum response size to trigger dynamic compression
+     * Set the minimum response size to trigger dynamic compression.
+     * <p>
+     *     Sizes below {@link #BREAK_EVEN_GZIP_SIZE} will result a compressed response that is larger than the
+     *     original data.
+     * </p>
      *
-     * @param minGzipSize minimum response size in bytes
+     * @param minGzipSize minimum response size in bytes (not allowed to be lower then {@link #BREAK_EVEN_GZIP_SIZE})
      */
     public void setMinGzipSize(int minGzipSize)
     {
-        _minGzipSize = minGzipSize;
+        if (minGzipSize < BREAK_EVEN_GZIP_SIZE)
+            LOG.warn("minGzipSize of {} is inefficient for short content, break even is size {}", minGzipSize, BREAK_EVEN_GZIP_SIZE);
+        _minGzipSize = Math.max(0, minGzipSize);
     }
 
     /**
@@ -1023,5 +1031,11 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     protected DeflaterPool newDeflaterPool(int capacity)
     {
         return new DeflaterPool(capacity, getCompressionLevel(), true);
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%x{%s,min=%s,inflate=%s}", getClass().getSimpleName(), hashCode(), getState(), _minGzipSize, _inflateBufferSize);
     }
 }

@@ -30,10 +30,13 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.io.StringReader;
+import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -54,6 +57,9 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -263,43 +269,172 @@ public class HttpConnectionTest
         }
     }
 
+    static final int CHUNKED = -1;
+    static final int DQUOTED_CHUNKED = -2;
+    static final int BAD_CHUNKED = -3;
+    static final int UNKNOWN_TE = -4;
+
+    public static Stream<Arguments> http11ContentLengthAndChunkedData()
+    {
+        return Stream.of(
+            Arguments.of(new int[]{CHUNKED, 8}),
+            Arguments.of(new int[]{8, CHUNKED}),
+            Arguments.of(new int[]{8, CHUNKED, 8}),
+            Arguments.of(new int[]{DQUOTED_CHUNKED, 8}),
+            Arguments.of(new int[]{8, DQUOTED_CHUNKED}),
+            Arguments.of(new int[]{8, DQUOTED_CHUNKED, 8}),
+            Arguments.of(new int[]{BAD_CHUNKED, 8}),
+            Arguments.of(new int[]{8, BAD_CHUNKED}),
+            Arguments.of(new int[]{8, BAD_CHUNKED, 8}),
+            Arguments.of(new int[]{UNKNOWN_TE, 8}),
+            Arguments.of(new int[]{8, UNKNOWN_TE}),
+            Arguments.of(new int[]{8, UNKNOWN_TE, 8}),
+            Arguments.of(new int[]{8, UNKNOWN_TE, CHUNKED, DQUOTED_CHUNKED, BAD_CHUNKED, 8})
+        );
+    }
+
     /**
      * More then 1 Content-Length is a bad requests per HTTP rfcs.
      */
-    @Test
-    public void testHttp11ContentLengthAndChunk() throws Exception
+    @ParameterizedTest
+    @MethodSource("http11ContentLengthAndChunkedData")
+    public void testHttp11ContentLengthAndChunk(int[] contentLengths) throws Exception
     {
         HttpParser.LOG.info("badMessage: 400 Bad messages EXPECTED...");
-        int[][] contentLengths = {
-            {-1, 8},
-            {8, -1},
-            {8, -1, 8},
-            };
 
-        for (int x = 0; x < contentLengths.length; x++)
+        StringBuilder request = new StringBuilder();
+        request.append("POST / HTTP/1.1\r\n");
+        request.append("Host: local\r\n");
+        for (int n = 0; n < contentLengths.length; n++)
         {
-            StringBuilder request = new StringBuilder();
-            request.append("POST /?id=").append(Integer.toString(x)).append(" HTTP/1.1\r\n");
-            request.append("Host: local\r\n");
-            int[] clen = contentLengths[x];
-            for (int n = 0; n < clen.length; n++)
+            switch (contentLengths[n])
             {
-                if (clen[n] == -1)
+                case CHUNKED:
                     request.append("Transfer-Encoding: chunked\r\n");
-                else
-                    request.append("Content-Length: ").append(Integer.toString(clen[n])).append("\r\n");
+                    break;
+                case DQUOTED_CHUNKED:
+                    request.append("Transfer-Encoding: \"chunked\"\r\n");
+                    break;
+                case BAD_CHUNKED:
+                    request.append("Transfer-Encoding: 'chunked'\r\n");
+                    break;
+                case UNKNOWN_TE:
+                    request.append("Transfer-Encoding: bogus\r\n");
+                    break;
+                default:
+                    request.append("Content-Length: ").append(contentLengths[n]).append("\r\n");
+                    break;
             }
-            request.append("Content-Type: text/plain\r\n");
-            request.append("Connection: close\r\n");
-            request.append("\r\n");
-            request.append("8;\r\n"); // chunk header
-            request.append("abcdefgh"); // actual content of 8 bytes
-            request.append("\r\n0;\r\n"); // last chunk
-
-            String rawResponse = connector.getResponse(request.toString());
-            HttpTester.Response response = HttpTester.parseResponse(rawResponse);
-            assertThat("Response.status", response.getStatus(), is(HttpServletResponse.SC_BAD_REQUEST));
         }
+        request.append("Content-Type: text/plain\r\n");
+        request.append("\r\n");
+        request.append("8;\r\n"); // chunk header
+        request.append("abcdefgh"); // actual content of 8 bytes
+        request.append("\r\n0;\r\n\r\n"); // last chunk
+
+        String rawResponse = connector.getResponse(request.toString());
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat("Response.status", response.getStatus(), is(HttpServletResponse.SC_BAD_REQUEST));
+    }
+
+    /**
+     * Examples of valid Chunked behaviors.
+     */
+    public static Stream<Arguments> http11TransferEncodingChunked()
+    {
+        return Stream.of(
+            Arguments.of(Arrays.asList("chunked, ")), // results in 1 entry
+            Arguments.of(Arrays.asList(", chunked")),
+
+            // invalid tokens with chunked as last
+            // no conflicts, chunked token is specified and is last, will result in chunked
+            Arguments.of(Arrays.asList("bogus, chunked")),
+            Arguments.of(Arrays.asList("'chunked', chunked")), // apostrophe characters with and without
+            Arguments.of(Arrays.asList("identity, chunked")), // identity was removed in RFC2616 errata and has been dropped in RFC7230
+
+            // multiple headers
+            Arguments.of(Arrays.asList("identity", "chunked")), // 2 separate headers
+            Arguments.of(Arrays.asList("", "chunked")) // 2 separate headers
+        );
+    }
+
+    /**
+     * Test Chunked Transfer-Encoding behavior indicated by
+     * https://tools.ietf.org/html/rfc7230#section-3.3.1
+     */
+    @ParameterizedTest
+    @MethodSource("http11TransferEncodingChunked")
+    public void testHttp11TransferEncodingChunked(List<String> tokens) throws Exception
+    {
+        StringBuilder request = new StringBuilder();
+        request.append("POST / HTTP/1.1\r\n");
+        request.append("Host: local\r\n");
+        tokens.forEach((token) -> request.append("Transfer-Encoding: ").append(token).append("\r\n"));
+        request.append("Content-Type: text/plain\r\n");
+        request.append("\r\n");
+        request.append("8;\r\n"); // chunk header
+        request.append("abcdefgh"); // actual content of 8 bytes
+        request.append("\r\n0;\r\n\r\n"); // last chunk
+
+        System.out.println(request.toString());
+
+        String rawResponse = connector.getResponse(request.toString());
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat("Response.status (" + response.getReason() + ")", response.getStatus(), is(HttpServletResponse.SC_OK));
+    }
+
+    public static Stream<Arguments> http11TransferEncodingInvalidChunked()
+    {
+        return Stream.of(
+            // == Results in 400 Bad Request
+            Arguments.of(Arrays.asList("bogus", "identity")), // 2 separate headers
+
+            Arguments.of(Arrays.asList("bad")),
+            Arguments.of(Arrays.asList("identity")),  // identity was removed in RFC2616 errata and has been dropped in RFC7230
+            Arguments.of(Arrays.asList("'chunked'")), // apostrophe characters
+            Arguments.of(Arrays.asList("`chunked`")), // backtick "quote" characters
+            Arguments.of(Arrays.asList("[chunked]")), // bracketed (seen as mistake in several REST libraries)
+            Arguments.of(Arrays.asList("{chunked}")), // json'd (seen as mistake in several REST libraries)
+            Arguments.of(Arrays.asList("\u201Cchunked\u201D")), // opening and closing (fancy) double quotes characters
+
+            // invalid tokens with chunked not as last
+            Arguments.of(Arrays.asList("chunked, bogus")),
+            Arguments.of(Arrays.asList("chunked, 'chunked'")),
+            Arguments.of(Arrays.asList("chunked, identity")),
+            Arguments.of(Arrays.asList("chunked, identity, chunked")), // duplicate chunked
+            Arguments.of(Arrays.asList("chunked", "identity")), // 2 separate header lines
+
+            // multiple chunked tokens present
+            Arguments.of(Arrays.asList("chunked", "identity", "chunked")), // 3 separate header lines
+            Arguments.of(Arrays.asList("chunked", "chunked")), // 2 separate header lines
+            Arguments.of(Arrays.asList("chunked, chunked")) // on same line
+        );
+    }
+
+    /**
+     * Test bad Transfer-Encoding behavior as indicated by
+     * https://tools.ietf.org/html/rfc7230#section-3.3.1
+     */
+    @ParameterizedTest
+    @MethodSource("http11TransferEncodingInvalidChunked")
+    public void testHttp11TransferEncodingInvalidChunked(List<String> tokens) throws Exception
+    {
+        HttpParser.LOG.info("badMessage: 400 Bad messages EXPECTED...");
+        StringBuilder request = new StringBuilder();
+        request.append("POST / HTTP/1.1\r\n");
+        request.append("Host: local\r\n");
+        tokens.forEach((token) -> request.append("Transfer-Encoding: ").append(token).append("\r\n"));
+        request.append("Content-Type: text/plain\r\n");
+        request.append("\r\n");
+        request.append("8;\r\n"); // chunk header
+        request.append("abcdefgh"); // actual content of 8 bytes
+        request.append("\r\n0;\r\n\r\n"); // last chunk
+
+        System.out.println(request.toString());
+
+        String rawResponse = connector.getResponse(request.toString());
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat("Response.status", response.getStatus(), is(HttpServletResponse.SC_BAD_REQUEST));
     }
 
     @Test
@@ -541,11 +676,10 @@ public class HttpConnectionTest
             "Host: localhost\r\n" +
             "Transfer-Encoding: chunked\r\n" +
             "Content-Type: text/plain\r\n" +
-            "Connection: close\r\n" +
             "\r\n" +
             "A\r\n" +
             "0123456789\r\n" +
-            "0\r\n");
+            "0\r\n\r\n");
 
         int offset = 0;
         offset = checkContains(response, offset, "HTTP/1.1 200");
@@ -690,12 +824,11 @@ public class HttpConnectionTest
     @Test
     public void testBadURIencoding() throws Exception
     {
-        // The URI is being leniently decoded, leaving the "%x" alone
         String response = connector.getResponse("GET /bad/encoding%x HTTP/1.1\r\n" +
             "Host: localhost\r\n" +
             "Connection: close\r\n" +
             "\r\n");
-        checkContains(response, 0, "HTTP/1.1 200");
+        checkContains(response, 0, "HTTP/1.1 400");
     }
 
     @Test
@@ -1085,11 +1218,11 @@ public class HttpConnectionTest
         final String longstr = str;
         final CountDownLatch checkError = new CountDownLatch(1);
         server.stop();
-        server.setHandler(new AbstractHandler.ErrorDispatchHandler()
+        server.setHandler(new AbstractHandler()
         {
             @SuppressWarnings("unused")
             @Override
-            protected void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 baseRequest.setHandled(true);
                 response.setHeader(HttpHeader.CONTENT_TYPE.toString(), MimeTypes.Type.TEXT_HTML.toString());

@@ -742,10 +742,10 @@ public class HttpClientContinueTest extends AbstractTest<TransportScenario>
     public void test_NoExpect_Respond100Continue(Transport transport) throws Exception
     {
         init(transport);
-        scenario.start(new AbstractHandler.ErrorDispatchHandler()
+        scenario.start(new AbstractHandler()
         {
             @Override
-            protected void doNonErrorHandle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void handle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 jettyRequest.setHandled(true);
                 // Force a 100 Continue response.

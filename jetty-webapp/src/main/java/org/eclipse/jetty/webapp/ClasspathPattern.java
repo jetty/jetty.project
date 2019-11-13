@@ -71,7 +71,7 @@ public class ClasspathPattern extends AbstractSet<String>
 {
     private static final Logger LOG = Log.getLogger(ClasspathPattern.class);
 
-    private static class Entry
+    static class Entry
     {
         private final String _pattern;
         private final String _name;
@@ -727,21 +727,43 @@ public class ClasspathPattern extends AbstractSet<String>
         });
     }
 
-    private static boolean combine(IncludeExcludeSet<Entry, String> names, String name, IncludeExcludeSet<Entry, URI> locations, Supplier<URI> location)
+    /**
+     * Match a class against inclusions and exclusions by name and location.
+     * Name based checks are performed before location checks. For a class to match,
+     * it must not be excluded by either name or location, and must either be explicitly
+     * included, or for there to be no inclusions. In the case where the location
+     * of the class is null, it will match if it is included by name, or
+     * if there are no location exclusions.
+     * 
+     * @param names configured inclusions and exclusions by name
+     * @param name the name to check
+     * @param locations configured inclusions and exclusions by location
+     * @param location the location of the class (can be null)
+     * @return true if the class is not excluded but is included, or there are
+     * no inclusions. False otherwise.
+     */
+    static boolean combine(IncludeExcludeSet<Entry, String> names, String name, IncludeExcludeSet<Entry, URI> locations, Supplier<URI> location)
     {
+        // check the name set
         Boolean byName = names.isIncludedAndNotExcluded(name);
+
+        // If we excluded by name, then no match
         if (Boolean.FALSE == byName)
             return false;
 
+        // check the location set
         URI uri = location.get();
-        if (uri == null)
-            return locations.isEmpty() || locations.hasExcludes() && !locations.hasIncludes();
+        Boolean byLocation = uri == null ? null : locations.isIncludedAndNotExcluded(uri);
 
-        Boolean byLocation = locations.isIncludedAndNotExcluded(uri);
-        if (Boolean.FALSE == byLocation)
+        // If we excluded by location or couldn't check location exclusion, then no match
+        if (Boolean.FALSE == byLocation || (locations.hasExcludes() && uri == null))
             return false;
 
-        return Boolean.TRUE.equals(byName) || Boolean.TRUE.equals(byLocation) || !(names.hasIncludes() || locations.hasIncludes());
+        // If there are includes, then we must be included to match.
+        if (names.hasIncludes() || locations.hasIncludes())
+            return byName == Boolean.TRUE || byLocation == Boolean.TRUE;
 
+        // Otherwise there are no includes and it was not excluded, so match
+        return true;
     }
 }

@@ -50,7 +50,7 @@
       <Set name="responseHeaderSize"><Property name="jetty.httpConfig.responseHeaderSize" deprecated="jetty.response.header.size" default="8192" /></Set>
       <Set name="sendServerVersion"><Property name="jetty.httpConfig.sendServerVersion" deprecated="jetty.send.server.version" default="true" /></Set>
       <Set name="sendDateHeader"><Property name="jetty.httpConfig.sendDateHeader" deprecated="jetty.send.date.header" default="false" /></Set>
-      <Set name="headerCacheSize"><Property name="jetty.httpConfig.headerCacheSize" default="4096" /></Set>
+      <Set name="headerCacheSize"><Property name="jetty.httpConfig.headerCacheSize" default="1024" /></Set>
       <Set name="delayDispatchUntilContent"><Property name="jetty.httpConfig.delayDispatchUntilContent" deprecated="jetty.delayDispatchUntilContent" default="true"/></Set>
       <Set name="maxErrorDispatches"><Property name="jetty.httpConfig.maxErrorDispatches" default="10"/></Set>
       <Set name="blockingTimeout"><Property deprecated="jetty.httpConfig.blockingTimeout" name="jetty.httpConfig.blockingTimeout.DEPRECATED" default="-1"/></Set>

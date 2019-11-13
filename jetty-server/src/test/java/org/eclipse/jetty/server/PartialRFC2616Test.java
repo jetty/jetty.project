@@ -35,6 +35,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -106,6 +107,33 @@ public class PartialRFC2616Test
             assertTrue(false);
         }
     }
+
+
+    @Test
+    public void test3_3_2()
+    {
+        try
+        {
+            String get = connector.getResponse("GET /R1 HTTP/1.0\n" + "Host: localhost\n" + "\n");
+            checkContains(get, 0, "HTTP/1.1 200", "GET");
+            checkContains(get, 0, "Content-Type: text/html", "GET _content");
+            checkContains(get, 0, "<html>", "GET body");
+            int cli = get.indexOf("Content-Length");
+            String contentLength = get.substring(cli,get.indexOf("\r",cli));
+
+            String head = connector.getResponse("HEAD /R1 HTTP/1.0\n" + "Host: localhost\n" + "\n");
+            checkContains(head, 0, "HTTP/1.1 200", "HEAD");
+            checkContains(head, 0, "Content-Type: text/html", "HEAD _content");
+            assertEquals(-1, head.indexOf("<html>"), "HEAD no body");
+            checkContains(head, 0, contentLength, "3.3.2 HEAD");
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+            assertTrue(false);
+        }
+    }
+
 
     @Test
     public void test3_6_a() throws Exception
@@ -321,12 +349,10 @@ public class PartialRFC2616Test
                 "\n");
         offset = 0;
         response = endp.getResponse();
-        offset = checkContains(response, offset, "HTTP/1.1 200 OK", "2. identity") + 10;
-        offset = checkContains(response, offset, "/R1", "2. identity") + 3;
+        offset = checkContains(response, offset, "HTTP/1.1 400 ", "2. identity") + 10;
         offset = 0;
         response = endp.getResponse();
-        offset = checkContains(response, offset, "HTTP/1.1 200 OK", "2. identity") + 10;
-        offset = checkContains(response, offset, "/R2", "2. identity") + 3;
+        assertThat("There should be no next response as first one closed connection", response, is(nullValue()));
     }
 
     @Test
@@ -358,7 +384,7 @@ public class PartialRFC2616Test
                 "\n" +
                 "abcdef");
         response = endp.getResponse();
-        offset = checkContains(response, offset, "HTTP/1.1 400 Bad", "3. ignore c-l") + 1;
+        offset = checkContains(response, offset, "HTTP/1.1 400 ", "3. ignore c-l") + 1;
         checkNotContained(response, offset, "/R2", "3. _content-length");
     }
 

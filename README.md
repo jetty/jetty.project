@@ -23,7 +23,7 @@ Documentation
 
 Project documentation is available on the Jetty Eclipse website.
 
-- [http://www.eclipse.org/jetty/documentation](http://www.eclipse.org/jetty/documentation)
+- [https://www.eclipse.org/jetty/documentation](https://www.eclipse.org/jetty/documentation)
 
 Building
 ========
@@ -45,4 +45,4 @@ It is possible to bypass tests by building with `mvn clean install -DskipTests`.
 Professional Services
 ---------------------
 
-Expert advice and production support are available through [Webtide.com](http://webtide.com).
+Expert advice and production support are available through [Webtide.com](https://webtide.com).

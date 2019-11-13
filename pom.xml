@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-project</artifactId>
-  <version>9.4.22-SNAPSHOT</version>
+  <version>9.4.23-SNAPSHOT</version>
   <name>Jetty :: Project</name>
   <description>The Eclipse Jetty Project</description>
   <packaging>pom</packaging>
@@ -669,7 +669,7 @@
         <plugin>
           <groupId>org.jacoco</groupId>
           <artifactId>jacoco-maven-plugin</artifactId>
-          <version>0.8.4</version>
+          <version>0.8.5</version>
         </plugin>
         <plugin>
           <groupId>com.agilejava.docbkx</groupId>
@@ -1960,6 +1960,30 @@
         <property>
           <name>java.version</name>
           <value>1.8.0_222</value>
+        </property>
+      </activation>
+      <properties>
+        <alpn.version>8.1.13.v20181017</alpn.version>
+      </properties>
+    </profile>
+    <profile>
+      <id>8u231</id>
+      <activation>
+        <property>
+          <name>java.version</name>
+          <value>1.8.0_231</value>
+        </property>
+      </activation>
+      <properties>
+        <alpn.version>8.1.13.v20181017</alpn.version>
+      </properties>
+    </profile>
+    <profile>
+      <id>8u232</id>
+      <activation>
+        <property>
+          <name>java.version</name>
+          <value>1.8.0_232</value>
         </property>
       </activation>
       <properties>

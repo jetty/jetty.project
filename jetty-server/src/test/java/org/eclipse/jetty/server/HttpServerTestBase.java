@@ -28,10 +28,12 @@ import java.io.LineNumberReader;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.net.URL;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.concurrent.Exchanger;
 import java.util.concurrent.atomic.AtomicBoolean;
+import javax.servlet.AsyncContext;
 import javax.servlet.ServletException;
 import javax.servlet.ServletInputStream;
 import javax.servlet.ServletOutputStream;
@@ -42,6 +44,8 @@ import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.AbstractLogger;
 import org.eclipse.jetty.util.log.Log;
@@ -252,6 +256,24 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     }
 
     @Test
+    public void testBadURI() throws Exception
+    {
+        configureServer(new HelloWorldHandler());
+
+        try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
+        {
+            OutputStream os = client.getOutputStream();
+
+            os.write("GET /%xx HTTP/1.0\r\n\r\n".getBytes(StandardCharsets.ISO_8859_1));
+            os.flush();
+
+            // Read the response.
+            String response = readResponse(client);
+
+            assertThat(response, Matchers.containsString("HTTP/1.1 400 "));
+        }
+    }
+    @Test
     public void testExceptionThrownInHandlerLoop() throws Exception
     {
         configureServer(new AbstractHandler()
@@ -283,10 +305,10 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     @Test
     public void testExceptionThrownInHandler() throws Exception
     {
-        configureServer(new AbstractHandler.ErrorDispatchHandler()
+        configureServer(new AbstractHandler()
         {
             @Override
-            public void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 throw new QuietServletException("TEST handler exception");
             }
@@ -314,10 +336,10 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     {
         final AtomicBoolean fourBytesRead = new AtomicBoolean(false);
         final AtomicBoolean earlyEOFException = new AtomicBoolean(false);
-        configureServer(new AbstractHandler.ErrorDispatchHandler()
+        configureServer(new AbstractHandler()
         {
             @Override
-            public void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 baseRequest.setHandled(true);
                 int contentLength = request.getContentLength();
@@ -1796,6 +1818,55 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
 
             // Read the close
             assertThat(client.getInputStream().read(), is(-1));
+        }
+    }
+
+    @Test
+    public void testSendAsyncContent() throws Exception
+    {
+        int size = 64 * 1024;
+        configureServer(new SendAsyncContentHandler(size));
+
+        try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
+        {
+            OutputStream os = client.getOutputStream();
+            os.write(("GET / HTTP/1.1\r\nHost: localhost\r\n\r\n").getBytes(StandardCharsets.ISO_8859_1));
+            os.flush();
+
+            HttpTester.Response response = HttpTester.parseResponse(client.getInputStream());
+            assertThat(response.getStatus(), is(200));
+            assertThat(response.getContentBytes().length, is(size));
+
+            // Try again to check previous request completed OK
+            os.write(("GET / HTTP/1.1\r\nHost: localhost\r\n\r\n").getBytes(StandardCharsets.ISO_8859_1));
+            os.flush();
+            response = HttpTester.parseResponse(client.getInputStream());
+            assertThat(response.getStatus(), is(200));
+            assertThat(response.getContentBytes().length, is(size));
+        }
+    }
+
+    private class SendAsyncContentHandler extends AbstractHandler
+    {
+        final ByteBuffer content;
+
+        public SendAsyncContentHandler(int size)
+        {
+            content = BufferUtil.allocate(size);
+            Arrays.fill(content.array(),0,size,(byte)'X');
+            content.position(0);
+            content.limit(size);
+        }
+
+        @Override
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        {
+            baseRequest.setHandled(true);
+            response.setStatus(200);
+            response.setContentType("application/unknown");
+            response.setContentLength(content.remaining());
+            AsyncContext async = request.startAsync();
+            ((HttpOutput)response.getOutputStream()).sendContent(content.slice(), Callback.from(async::complete));
         }
     }
 }

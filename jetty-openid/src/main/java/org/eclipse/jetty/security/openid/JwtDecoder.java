@@ -53,7 +53,10 @@ public class JwtDecoder
         String jwtClaimString = new String(decoder.decode(padJWTSection(sections[1])), StandardCharsets.UTF_8);
         String jwtSignature = sections[2];
 
-        Map<String, Object> jwtHeader = (Map)JSON.parse(jwtHeaderString);
+        Object parsedJwtHeader = JSON.parse(jwtHeaderString);
+        if (!(parsedJwtHeader instanceof Map))
+            throw new IllegalStateException("Invalid JWT header");
+        Map<String, Object> jwtHeader = (Map)parsedJwtHeader;
         if (LOG.isDebugEnabled())
             LOG.debug("JWT Header: {}", jwtHeader);
 
@@ -63,7 +66,10 @@ public class JwtDecoder
         if (LOG.isDebugEnabled())
             LOG.debug("JWT signature not validated {}", jwtSignature);
 
-        return (Map)JSON.parse(jwtClaimString);
+        Object parsedClaims = JSON.parse(jwtClaimString);
+        if (!(parsedClaims instanceof Map))
+            throw new IllegalStateException("Could not decode JSON for JWT claims.");
+        return (Map)parsedClaims;
     }
 
     static byte[] padJWTSection(String unpaddedEncodedJwtSection)

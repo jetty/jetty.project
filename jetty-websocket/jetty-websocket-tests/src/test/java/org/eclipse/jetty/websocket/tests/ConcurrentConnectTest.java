@@ -41,6 +41,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ConcurrentConnectTest
@@ -130,7 +131,7 @@ public class ConcurrentConnectTest
             assertTrue(l.closed.await(5, TimeUnit.SECONDS));
             assertThat(l.closeCode, is(StatusCode.NORMAL));
             assertThat(l.closeReason, is("close from client"));
-            //assertNull(l.failure); //TODO: we can get failures after close??
+            assertNull(l.failure);
         }
 
         closeListener.closeLatch.await(5, TimeUnit.SECONDS);

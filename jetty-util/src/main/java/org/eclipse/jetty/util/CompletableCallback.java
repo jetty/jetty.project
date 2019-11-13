@@ -56,7 +56,10 @@ import java.util.concurrent.atomic.AtomicReference;
  * else
  *     // continue processing, async operation already done
  * </pre>
+ *
+ * @deprecated not used anymore
  */
+@Deprecated
 public abstract class CompletableCallback implements Callback
 {
     private final AtomicReference<State> state = new AtomicReference<>(State.IDLE);

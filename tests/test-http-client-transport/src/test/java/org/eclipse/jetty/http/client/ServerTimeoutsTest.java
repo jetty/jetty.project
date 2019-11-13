@@ -426,10 +426,10 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
         long blockingTimeout = 2 * idleTimeout;
         scenario.httpConfig.setBlockingTimeout(blockingTimeout);
         CountDownLatch handlerLatch = new CountDownLatch(1);
-        scenario.start(new AbstractHandler.ErrorDispatchHandler()
+        scenario.start(new AbstractHandler()
         {
             @Override
-            protected void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 try
                 {
@@ -487,10 +487,10 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
     {
         init(transport);
         CountDownLatch handlerLatch = new CountDownLatch(1);
-        scenario.start(new AbstractHandler.ErrorDispatchHandler()
+        scenario.start(new AbstractHandler()
         {
             @Override
-            protected void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 baseRequest.setHandled(true);
                 AsyncContext asyncContext = request.startAsync();
@@ -551,10 +551,10 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
         init(transport);
 
         CountDownLatch handlerLatch = new CountDownLatch(1);
-        scenario.start(new AbstractHandler.ErrorDispatchHandler()
+        scenario.start(new AbstractHandler()
         {
             @Override
-            protected void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 baseRequest.setHandled(true);
                 AsyncContext asyncContext = request.startAsync();
@@ -619,10 +619,10 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
         scenario.requestLog.clear();
         scenario.httpConfig.setMinRequestDataRate(bytesPerSecond);
         CountDownLatch handlerLatch = new CountDownLatch(1);
-        scenario.start(new AbstractHandler.ErrorDispatchHandler()
+        scenario.start(new AbstractHandler()
         {
             @Override
-            public void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 try
                 {
@@ -683,10 +683,10 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
         int bytesPerSecond = 20;
         scenario.httpConfig.setMinRequestDataRate(bytesPerSecond);
         CountDownLatch handlerLatch = new CountDownLatch(1);
-        scenario.start(new AbstractHandler.ErrorDispatchHandler()
+        scenario.start(new AbstractHandler()
         {
             @Override
-            protected void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 baseRequest.setHandled(true);
                 ServletInputStream input = request.getInputStream();
@@ -762,10 +762,10 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
         long idleTimeout = 3 * httpIdleTimeout;
         scenario.httpConfig.setIdleTimeout(httpIdleTimeout);
         CountDownLatch handlerLatch = new CountDownLatch(1);
-        scenario.start(new AbstractHandler.ErrorDispatchHandler()
+        scenario.start(new AbstractHandler()
         {
             @Override
-            protected void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 baseRequest.setHandled(true);
                 AsyncContext asyncContext = request.startAsync();
@@ -946,7 +946,7 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
         assertTrue(clientLatch.await(15, TimeUnit.SECONDS));
     }
 
-    private static class BlockingReadHandler extends AbstractHandler.ErrorDispatchHandler
+    private static class BlockingReadHandler extends AbstractHandler
     {
         private final CountDownLatch handlerLatch;
 
@@ -956,7 +956,7 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
         }
 
         @Override
-        protected void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
         {
             baseRequest.setHandled(true);
             ServletInputStream input = request.getInputStream();

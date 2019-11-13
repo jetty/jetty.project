@@ -26,8 +26,12 @@ import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import javax.servlet.RequestDispatcher;
+import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -82,12 +86,9 @@ public class ErrorHandler extends AbstractHandler
         }
     }
 
-    /*
-     * @see org.eclipse.jetty.server.server.Handler#handle(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, int)
-     */
-    @Override
-    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
+        // TODO inline this and remove method in jetty-10
         doError(target, baseRequest, request, response);
     }
 
@@ -98,10 +99,40 @@ public class ErrorHandler extends AbstractHandler
         if (cacheControl != null)
             response.setHeader(HttpHeader.CACHE_CONTROL.asString(), cacheControl);
 
-        String message = (String)request.getAttribute(Dispatcher.ERROR_MESSAGE);
-        if (message == null)
-            message = baseRequest.getResponse().getReason();
-        generateAcceptableResponse(baseRequest, request, response, response.getStatus(), message);
+        // Look for an error page dispatcher
+        // This logic really should be in ErrorPageErrorHandler, but some implementations extend ErrorHandler
+        // and implement ErrorPageMapper directly, so we do this here in the base class.
+        String errorPage = (this instanceof ErrorPageMapper) ? ((ErrorPageMapper)this).getErrorPage(request) : null;
+        ContextHandler.Context context = baseRequest.getErrorContext();
+        Dispatcher errorDispatcher = (errorPage != null && context != null)
+            ? (Dispatcher)context.getRequestDispatcher(errorPage) : null;
+
+        try
+        {
+            if (errorDispatcher != null)
+            {
+                try
+                {
+                    errorDispatcher.error(request, response);
+                    return;
+                }
+                catch (ServletException e)
+                {
+                    LOG.debug(e);
+                    if (response.isCommitted())
+                        return;
+                }
+            }
+
+            String message = (String)request.getAttribute(Dispatcher.ERROR_MESSAGE);
+            if (message == null)
+                message = baseRequest.getResponse().getReason();
+            generateAcceptableResponse(baseRequest, request, response, response.getStatus(), message);
+        }
+        finally
+        {
+            baseRequest.setHandled(true);
+        }
     }
 
     /**
@@ -429,23 +460,31 @@ public class ErrorHandler extends AbstractHandler
 
     private void writeErrorJson(HttpServletRequest request, PrintWriter writer, int code, String message)
     {
-        writer
-            .append("{\n")
-            .append("  url: \"").append(request.getRequestURI()).append("\",\n")
-            .append("  status: \"").append(Integer.toString(code)).append("\",\n")
-            .append("  message: ").append(QuotedStringTokenizer.quote(message)).append(",\n");
-        Object servlet = request.getAttribute(Dispatcher.ERROR_SERVLET_NAME);
-        if (servlet != null)
-            writer.append("servlet: \"").append(servlet.toString()).append("\",\n");
         Throwable cause = (Throwable)request.getAttribute(Dispatcher.ERROR_EXCEPTION);
+        Object servlet = request.getAttribute(Dispatcher.ERROR_SERVLET_NAME);
+        Map<String,String> json = new HashMap<>();
+
+        json.put("url", request.getRequestURI());
+        json.put("status", Integer.toString(code));
+        json.put("message", message);
+        if (servlet != null)
+        {
+            json.put("servlet", servlet.toString());
+        }
         int c = 0;
         while (cause != null)
         {
-            writer.append("  cause").append(Integer.toString(c++)).append(": ")
-                .append(QuotedStringTokenizer.quote(cause.toString())).append(",\n");
+            json.put("cause" + c++, cause.toString());
             cause = cause.getCause();
         }
-        writer.append("}");
+
+        writer.append(json.entrySet().stream()
+                .map(e -> QuotedStringTokenizer.quote(e.getKey()) +
+                        ":" +
+                        QuotedStringTokenizer.quote((e.getValue())))
+                .collect(Collectors.joining(",\n", "{\n", "\n}")));
+
+
     }
 
     protected void writeErrorPageStacks(HttpServletRequest request, Writer writer)
