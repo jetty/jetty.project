@@ -140,7 +140,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
      * Compute the mappingFunction to create a Session object iff the session 
      * with the given id isn't already in the map, otherwise return the existing Session.
      * This method is expected to have precisely the same behaviour as 
-     * @link ConcurrentHashMap#computeIfAbsent
+     * {@link java.util.concurrent.ConcurrentHashMap#computeIfAbsent}
      * 
      * @param id the session id
      * @param mappingFunction the function to load the data for the session
