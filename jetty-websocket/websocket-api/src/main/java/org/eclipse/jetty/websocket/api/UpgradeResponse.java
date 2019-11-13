@@ -103,7 +103,9 @@ public interface UpgradeResponse
      * or was failed (resulting in no upgrade handshake)
      *
      * @return true if upgrade response was generated, false if no upgrade response was generated
+     * @deprecated this has no replacement, will be removed in Jetty 10
      */
+    @Deprecated
     boolean isSuccess();
 
     /**
@@ -174,6 +176,8 @@ public interface UpgradeResponse
      *
      * @param success true to indicate a response to the upgrade handshake was sent, false to indicate no upgrade
      * response was sent
+     * @deprecated this has no replacement, will be removed in Jetty 10
      */
+    @Deprecated
     void setSuccess(boolean success);
 }
