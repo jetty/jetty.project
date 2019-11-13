@@ -247,7 +247,7 @@ public class HttpCookieTest
     @ParameterizedTest
     @ValueSource(strings = {
         "__SAME_SITE_NONE__",
-        "__SAME_SITE_NONE____SAME_SITE_STRICT__"
+        "__SAME_SITE_NONE____SAME_SITE_NONE__"
     })
     public void testGetSameSiteFromCommentNONE(String comment)
     {
@@ -257,7 +257,8 @@ public class HttpCookieTest
     @ParameterizedTest
     @ValueSource(strings = {
         "__SAME_SITE_LAX__",
-        "__SAME_SITE_LAX____SAME_SITE_STRICT__",
+        "__SAME_SITE_LAX____SAME_SITE_NONE__",
+        "__SAME_SITE_NONE____SAME_SITE_LAX__",
         "__SAME_SITE_LAX____SAME_SITE_NONE__"
     })
     public void testGetSameSiteFromCommentLAX(String comment)
@@ -268,8 +269,9 @@ public class HttpCookieTest
     @ParameterizedTest
     @ValueSource(strings = {
         "__SAME_SITE_STRICT__",
-        "__SAME_SITE_STRICT____SAME_SITE_LAX__",
-        "__SAME_SITE_STRICT____SAME_SITE_NONE__"
+        "__SAME_SITE_NONE____SAME_SITE_STRICT____SAME_SITE_LAX__",
+        "__SAME_SITE_STRICT____SAME_SITE_LAX____SAME_SITE_NONE__",
+        "__SAME_SITE_STRICT____SAME_SITE_STRICT__"
     })
     public void testGetSameSiteFromCommentSTRICT(String comment)
     {

@@ -431,17 +431,17 @@ public class HttpCookie
     {
         if (comment != null)
         {
-            if (comment.contains(SAME_SITE_NONE_COMMENT))
+            if (comment.contains(SAME_SITE_STRICT_COMMENT))
             {
-                return SameSite.NONE;
+                return SameSite.STRICT;
             }
             if (comment.contains(SAME_SITE_LAX_COMMENT))
             {
                 return SameSite.LAX;
             }
-            if (comment.contains(SAME_SITE_STRICT_COMMENT))
+            if (comment.contains(SAME_SITE_NONE_COMMENT))
             {
-                return SameSite.STRICT;
+                return SameSite.NONE;
             }
         }
 
