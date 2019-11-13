@@ -832,12 +832,11 @@ public class HttpConnectionTest
     @Test
     public void testBadURIencoding() throws Exception
     {
-        // The URI is being leniently decoded, leaving the "%x" alone
         String response = connector.getResponse("GET /bad/encoding%x HTTP/1.1\r\n" +
             "Host: localhost\r\n" +
             "Connection: close\r\n" +
             "\r\n");
-        checkContains(response, 0, "HTTP/1.1 200");
+        checkContains(response, 0, "HTTP/1.1 400");
     }
 
     @Test

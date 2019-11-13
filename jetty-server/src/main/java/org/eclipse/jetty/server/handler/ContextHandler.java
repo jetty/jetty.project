@@ -198,7 +198,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     private boolean _compactPath = false;
     private boolean _usingSecurityManager = System.getSecurityManager() != null;
 
-    private final List<EventListener> _eventListeners = new CopyOnWriteArrayList<>();
     private final List<EventListener> _programmaticListeners = new CopyOnWriteArrayList<>();
     private final List<ServletContextListener> _servletContextListeners = new CopyOnWriteArrayList<>();
     private final List<ServletContextListener> _destroySerletContextListeners = new ArrayList<>();
@@ -206,7 +205,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     private final List<ServletRequestListener> _servletRequestListeners = new CopyOnWriteArrayList<>();
     private final List<ServletRequestAttributeListener> _servletRequestAttributeListeners = new CopyOnWriteArrayList<>();
     private final List<ContextScopeListener> _contextListeners = new CopyOnWriteArrayList<>();
-    private final List<EventListener> _durableListeners = new CopyOnWriteArrayList<>();
+    private final Set<EventListener> _durableListeners = new HashSet<>();
     private String[] _protectedTargets;
     private final CopyOnWriteArrayList<AliasCheck> _aliasChecks = new CopyOnWriteArrayList<ContextHandler.AliasCheck>();
 
@@ -260,7 +259,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     {
         dumpObjects(out, indent,
             new ClassLoaderDump(getClassLoader()),
-            new DumpableCollection("eventListeners " + this, _eventListeners),
             new DumpableCollection("handler attributes " + this, ((AttributesMap)getAttributes()).getAttributeEntrySet()),
             new DumpableCollection("context attributes " + this, ((Context)getServletContext()).getAttributeEntrySet()),
             new DumpableCollection("initparams " + this, getInitParams().entrySet()));
@@ -606,101 +604,68 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         return _displayName;
     }
 
-    public EventListener[] getEventListeners()
-    {
-        return _eventListeners.toArray(new EventListener[_eventListeners.size()]);
-    }
-
-    /**
-     * Set the context event listeners.
-     *
-     * @param eventListeners the event listeners
-     * @see ServletContextListener
-     * @see ServletContextAttributeListener
-     * @see ServletRequestListener
-     * @see ServletRequestAttributeListener
-     */
-    public void setEventListeners(EventListener[] eventListeners)
-    {
-        _contextListeners.clear();
-        _servletContextListeners.clear();
-        _servletContextAttributeListeners.clear();
-        _servletRequestListeners.clear();
-        _servletRequestAttributeListeners.clear();
-        _eventListeners.clear();
-
-        if (eventListeners != null)
-            for (EventListener listener : eventListeners)
-            {
-                addEventListener(listener);
-            }
-    }
-
     /**
      * Add a context event listeners.
      *
      * @param listener the event listener to add
+     * @return true if the listener was added
+     * @see ContextScopeListener
      * @see ServletContextListener
      * @see ServletContextAttributeListener
      * @see ServletRequestListener
      * @see ServletRequestAttributeListener
      */
-    public void addEventListener(EventListener listener)
+    @Override
+    public boolean addEventListener(EventListener listener)
     {
-        _eventListeners.add(listener);
-
-        if (!(isStarted() || isStarting()))
+        if (super.addEventListener(listener))
         {
-            _durableListeners.add(listener);
+            if (listener instanceof ContextScopeListener)
+            {
+                _contextListeners.add((ContextScopeListener)listener);
+                if (__context.get() != null)
+                    ((ContextScopeListener)listener).enterScope(__context.get(), null, "Listener registered");
+            }
+
+            if (listener instanceof ServletContextListener)
+                _servletContextListeners.add((ServletContextListener)listener);
+
+            if (listener instanceof ServletContextAttributeListener)
+                _servletContextAttributeListeners.add((ServletContextAttributeListener)listener);
+
+            if (listener instanceof ServletRequestListener)
+                _servletRequestListeners.add((ServletRequestListener)listener);
+
+            if (listener instanceof ServletRequestAttributeListener)
+                _servletRequestAttributeListeners.add((ServletRequestAttributeListener)listener);
+
+            return true;
         }
-
-        if (listener instanceof ContextScopeListener)
-        {
-            _contextListeners.add((ContextScopeListener)listener);
-            if (__context.get() != null)
-                ((ContextScopeListener)listener).enterScope(__context.get(), null, "Listener registered");
-        }
-
-        if (listener instanceof ServletContextListener)
-            _servletContextListeners.add((ServletContextListener)listener);
-
-        if (listener instanceof ServletContextAttributeListener)
-            _servletContextAttributeListeners.add((ServletContextAttributeListener)listener);
-
-        if (listener instanceof ServletRequestListener)
-            _servletRequestListeners.add((ServletRequestListener)listener);
-
-        if (listener instanceof ServletRequestAttributeListener)
-            _servletRequestAttributeListeners.add((ServletRequestAttributeListener)listener);
+        return false;
     }
 
-    /**
-     * Remove a context event listeners.
-     *
-     * @param listener the event listener to remove
-     * @see ServletContextListener
-     * @see ServletContextAttributeListener
-     * @see ServletRequestListener
-     * @see ServletRequestAttributeListener
-     */
-    public void removeEventListener(EventListener listener)
+    @Override
+    public boolean removeEventListener(EventListener listener)
     {
-        _eventListeners.remove(listener);
+        if (super.removeEventListener(listener))
+        {
+            if (listener instanceof ContextScopeListener)
+                _contextListeners.remove(listener);
 
-        if (listener instanceof ContextScopeListener)
-            _contextListeners.remove(listener);
+            if (listener instanceof ServletContextListener)
+                _servletContextListeners.remove(listener);
 
-        if (listener instanceof ServletContextListener)
-            _servletContextListeners.remove(listener);
+            if (listener instanceof ServletContextAttributeListener)
+                _servletContextAttributeListeners.remove(listener);
 
-        if (listener instanceof ServletContextAttributeListener)
-            _servletContextAttributeListeners.remove(listener);
+            if (listener instanceof ServletRequestListener)
+                _servletRequestListeners.remove(listener);
 
-        if (listener instanceof ServletRequestListener)
-            _servletRequestListeners.remove(listener);
-
-        if (listener instanceof ServletRequestAttributeListener)
-            _servletRequestAttributeListeners.remove(listener);
+            if (listener instanceof ServletRequestAttributeListener)
+                _servletRequestAttributeListeners.remove(listener);
+            return true;
+        }
+        return false;
     }
 
     /**
@@ -720,7 +685,11 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     
     public boolean isDurableListener(EventListener listener)
     {
-        return _durableListeners.contains(listener);
+        // The durable listeners are those set when the context is started
+        if (isStarted())
+            return _durableListeners.contains(listener);
+        // If we are not yet started then all set listeners are durable
+        return getEventListeners().contains(listener);
     }
 
     /**
@@ -799,6 +768,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
         if (_mimeTypes == null)
             _mimeTypes = new MimeTypes();
+
+        _durableListeners.addAll(getEventListeners());
 
         try
         {
@@ -975,7 +946,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             stopContext();
 
             // retain only durable listeners
-            setEventListeners(_durableListeners.toArray(new EventListener[_durableListeners.size()]));
+            setEventListeners(_durableListeners);
             _durableListeners.clear();
 
             if (_errorHandler != null)

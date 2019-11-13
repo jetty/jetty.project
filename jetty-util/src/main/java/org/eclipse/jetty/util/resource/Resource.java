@@ -482,6 +482,7 @@ public abstract class Resource implements ResourceFactory, Closeable
      * @param parent True if the parent directory should be included
      * @param query query params
      * @return String of HTML
+     * @throws IOException on failure to generate a list.
      */
     public String getListHTML(String base, boolean parent, String query) throws IOException
     {
