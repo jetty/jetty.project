@@ -6,7 +6,7 @@
 <!-- ================================================================ -->
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
 
-  <Call name="addLifeCycleListener">
+  <Call name="addEventListener">
     <Arg>
       <New class="org.eclipse.jetty.setuid.SetUIDListener">
         <Set name="startServerAsPrivileged"><Property name="jetty.setuid.startServerAsPrivileged" default="false"/></Set>

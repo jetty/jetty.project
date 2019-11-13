@@ -261,33 +261,26 @@ public class SessionHandler extends ScopedHandler
      * Individual SessionManagers implementations may accept arbitrary listener types,
      * but they are expected to at least handle HttpSessionActivationListener,
      * HttpSessionAttributeListener, HttpSessionBindingListener and HttpSessionListener.
+     * @return true if the listener was added
      * @see #removeEventListener(EventListener)
+     * @see HttpSessionAttributeListener
+     * @see HttpSessionListener
+     * @see HttpSessionIdListener
      */
-    public void addEventListener(EventListener listener)
+    @Override
+    public boolean addEventListener(EventListener listener)
     {
-        if (listener instanceof HttpSessionAttributeListener)
-            _sessionAttributeListeners.add((HttpSessionAttributeListener)listener);
-        if (listener instanceof HttpSessionListener)
-            _sessionListeners.add((HttpSessionListener)listener);
-        if (listener instanceof HttpSessionIdListener)
-            _sessionIdListeners.add((HttpSessionIdListener)listener);
-        addBean(listener, false);
-    }
-
-    /**
-     * Removes all event listeners for session-related events.
-     *
-     * @see #removeEventListener(EventListener)
-     */
-    public void clearEventListeners()
-    {
-        for (EventListener e : getBeans(EventListener.class))
+        if (super.addEventListener(listener))
         {
-            removeBean(e);
+            if (listener instanceof HttpSessionAttributeListener)
+                _sessionAttributeListeners.add((HttpSessionAttributeListener)listener);
+            if (listener instanceof HttpSessionListener)
+                _sessionListeners.add((HttpSessionListener)listener);
+            if (listener instanceof HttpSessionIdListener)
+                _sessionIdListeners.add((HttpSessionIdListener)listener);
+            return true;
         }
-        _sessionAttributeListeners.clear();
-        _sessionListeners.clear();
-        _sessionIdListeners.clear();
+        return false;
     }
 
     /**
@@ -785,21 +778,20 @@ public class SessionHandler extends ScopedHandler
         }
     }
 
-    /**
-     * Removes an event listener for for session-related events.
-     *
-     * @param listener the session event listener to remove
-     * @see #addEventListener(EventListener)
-     */
-    public void removeEventListener(EventListener listener)
+    @Override
+    public boolean removeEventListener(EventListener listener)
     {
-        if (listener instanceof HttpSessionAttributeListener)
-            _sessionAttributeListeners.remove(listener);
-        if (listener instanceof HttpSessionListener)
-            _sessionListeners.remove(listener);
-        if (listener instanceof HttpSessionIdListener)
-            _sessionIdListeners.remove(listener);
-        removeBean(listener);
+        if (super.removeEventListener(listener))
+        {
+            if (listener instanceof HttpSessionAttributeListener)
+                _sessionAttributeListeners.remove(listener);
+            if (listener instanceof HttpSessionListener)
+                _sessionListeners.remove(listener);
+            if (listener instanceof HttpSessionIdListener)
+                _sessionIdListeners.remove(listener);
+            return true;
+        }
+        return false;
     }
 
     /**

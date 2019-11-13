@@ -30,7 +30,7 @@
             </Item>
           </Array>
         </Arg>
-        <Call name="addLifeCycleListener">
+        <Call name="addEventListener">
           <Arg>
             <New class="org.eclipse.jetty.maven.plugin.ServerConnectorListener">
             </New>
