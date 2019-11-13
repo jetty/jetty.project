@@ -19,6 +19,8 @@
 package org.eclipse.jetty.server.session;
 
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
+
 import javax.servlet.http.HttpServletRequest;
 
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -80,18 +82,12 @@ public class DefaultSessionCache extends AbstractSessionCache
         return _stats.getTotal();
     }
 
-    /**
-     *
-     */
     @ManagedOperation(value = "reset statistics", impact = "ACTION")
     public void resetStats()
     {
         _stats.reset();
     }
 
-    /**
-     * @see org.eclipse.jetty.server.session.AbstractSessionCache#doGet(java.lang.String)
-     */
     @Override
     public Session doGet(String id)
     {
@@ -103,26 +99,32 @@ public class DefaultSessionCache extends AbstractSessionCache
         return session;
     }
 
-    /**
-     * @see org.eclipse.jetty.server.session.AbstractSessionCache#doPutIfAbsent(java.lang.String, org.eclipse.jetty.server.session.Session)
-     */
     @Override
     public Session doPutIfAbsent(String id, Session session)
     {
         Session s = _sessions.putIfAbsent(id, session);
-        if (s == null && !(session instanceof PlaceHolderSession))
+        if (s == null)
             _stats.increment();
         return s;
     }
 
-    /**
-     * @see org.eclipse.jetty.server.session.AbstractSessionCache#doDelete(java.lang.String)
-     */
+    @Override
+    protected Session doComputeIfAbsent(String id, Function<String, Session> mappingFunction)
+    {
+        return _sessions.computeIfAbsent(id, k ->
+        {
+            Session s = mappingFunction.apply(k);
+            if (s != null)
+                _stats.increment();
+            return s;
+        });
+    }
+
     @Override
     public Session doDelete(String id)
     {
         Session s = _sessions.remove(id);
-        if (s != null && !(s instanceof PlaceHolderSession))
+        if (s != null)
             _stats.decrement();
         return s;
     }
@@ -168,9 +170,6 @@ public class DefaultSessionCache extends AbstractSessionCache
         }
     }
 
-    /**
-     * @see org.eclipse.jetty.server.session.AbstractSessionCache#newSession(javax.servlet.http.HttpServletRequest, org.eclipse.jetty.server.session.SessionData)
-     */
     @Override
     public Session newSession(HttpServletRequest request, SessionData data)
     {
@@ -178,9 +177,6 @@ public class DefaultSessionCache extends AbstractSessionCache
         return s;
     }
 
-    /**
-     * @see org.eclipse.jetty.server.session.AbstractSessionCache#newSession(org.eclipse.jetty.server.session.SessionData)
-     */
     @Override
     public Session newSession(SessionData data)
     {
@@ -188,15 +184,10 @@ public class DefaultSessionCache extends AbstractSessionCache
         return s;
     }
 
-    /**
-     * @see org.eclipse.jetty.server.session.AbstractSessionCache#doReplace(java.lang.String, org.eclipse.jetty.server.session.Session, org.eclipse.jetty.server.session.Session)
-     */
     @Override
     public boolean doReplace(String id, Session oldValue, Session newValue)
     {
         boolean result = _sessions.replace(id, oldValue, newValue);
-        if (result && (oldValue instanceof PlaceHolderSession))
-            _stats.increment();
         return result;
     }
 }

@@ -21,6 +21,8 @@ package org.eclipse.jetty.server.session;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.Function;
+
 import javax.servlet.http.HttpServletRequest;
 
 import org.eclipse.jetty.util.StringUtil;
@@ -133,6 +135,18 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
      * @return null if the session wasn't already in the map, or the existing entry otherwise
      */
     protected abstract Session doPutIfAbsent(String id, Session session);
+    
+    /**
+     * Compute the mappingFunction to create a Session object iff the session 
+     * with the given id isn't already in the map, otherwise return the existing Session.
+     * This method is expected to have precisely the same behaviour as 
+     * @link ConcurrentHashMap#computeIfAbsent
+     * 
+     * @param id the session id
+     * @param mappingFunction the function to load the data for the session
+     * @return an existing Session from the cache
+     */
+    protected abstract Session doComputeIfAbsent(String id, Function<String, Session> mappingFunction);
 
     /**
      * Replace the mapping from id to oldValue with newValue
@@ -151,22 +165,6 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
      * @return Session that was removed or null
      */
     public abstract Session doDelete(String id);
-
-    /**
-     * PlaceHolder
-     */
-    protected class PlaceHolderSession extends Session
-    {
-
-        /**
-         * @param handler SessionHandler to which this session belongs
-         * @param data the session data
-         */
-        public PlaceHolderSession(SessionHandler handler, SessionData data)
-        {
-            super(handler, data);
-        }
-    }
 
     /**
      * @param handler the {@link SessionHandler} to use
@@ -343,113 +341,60 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
     protected Session getAndEnter(String id, boolean enter) throws Exception
     {
         Session session = null;
-        Exception ex = null;
 
-        while (true)
+        session = doGet(id);
+
+        if (session == null)
         {
-            session = doGet(id);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Session {} not found locally in {}, attempting to load", id, this);
 
-            if (_sessionDataStore == null)
-                break; //can't load any session data so just return null or the session object
+            session = doComputeIfAbsent(id, k ->
+            {
+                try
+                {
+                    return loadSession(k);
+                }
+                catch (Exception e)
+                {
+                    LOG.warn("Error loading session {}", id, e);
+                    return null;
+                }
+            });
 
-            if (session == null)
+            if (session == null) //session does not exist in store
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Session {} not found locally in {}, attempting to load", id, this);
-
-                //didn't get a session, try and create one and put in a placeholder for it
-                PlaceHolderSession phs = new PlaceHolderSession(_handler, new SessionData(id, null, null, 0, 0, 0, 0));
-                Lock phsLock = phs.lock();
-                Session s = doPutIfAbsent(id, phs);
-                if (s == null)
-                {
-                    //My placeholder won, go ahead and load the full session data
-                    try
-                    {
-                        session = loadSession(id);
-                        if (session == null)
-                        {
-                            //session does not exist, remove the placeholder
-                            doDelete(id);
-                            phsLock.close();
-                            break;
-                        }
-
-                        try (Lock lock = session.lock())
-                        {
-                            //swap it in instead of the placeholder
-                            boolean success = doReplace(id, phs, session);
-                            if (!success)
-                            {
-                                //something has gone wrong, it should have been our placeholder
-                                doDelete(id);
-                                session = null;
-                                LOG.warn("Replacement of placeholder for session {} failed", id);
-                                phsLock.close();
-                                break;
-                            }
-                            else
-                            {
-                                //successfully swapped in the session
-                                session.setResident(true);
-                                if (enter)
-                                    session.use();
-                                phsLock.close();
-                                break;
-                            }
-                        }
-                    }
-                    catch (Exception e)
-                    {
-                        ex = e; //remember a problem happened loading the session
-                        doDelete(id); //remove the placeholder
-                        phsLock.close();
-                        session = null;
-                        break;
-                    }
-                }
-                else
-                {
-                    //my placeholder didn't win, check the session returned
-                    phsLock.close();
-                    try (Lock lock = s.lock())
-                    {
-                        //is it a placeholder? or is a non-resident session? In both cases, chuck it away and start again
-                        if (!s.isResident() || s instanceof PlaceHolderSession)
-                        {
-                            session = null;
-                            continue;
-                        }
-                        //I will use this session too
-                        session = s;
-                        if (enter)
-                            session.use();
-                        break;
-                    }
-                }
+                    LOG.debug("Session {} not loaded by store", id);
+                return null;
             }
             else
             {
-                //check the session returned
                 try (Lock lock = session.lock())
                 {
-                    //is it a placeholder? or is it passivated? In both cases, chuck it away and start again
-                    if (!session.isResident() || session instanceof PlaceHolderSession)
-                    {
-                        session = null;
-                        continue;
-                    }
-
-                    //got the session
+                    session.setResident(true); //ensure freshly loaded session is resident
                     if (enter)
                         session.use();
-                    break;
+                }
+            }
+        }
+        else
+        {
+            try (Lock lock = session.lock())
+            {
+                if (!session.isResident()) //session isn't marked as resident in cache
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Non-resident session {} in cache", id);
+                    return null;
+                }
+                else if (enter)
+                {
+                    session.use();
                 }
             }
         }
 
-        if (ex != null)
-            throw ex;
         return session;
     }
 

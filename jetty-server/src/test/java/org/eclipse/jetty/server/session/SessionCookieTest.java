@@ -19,6 +19,8 @@
 package org.eclipse.jetty.server.session;
 
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
+
 import javax.servlet.SessionCookieConfig;
 import javax.servlet.http.HttpServletRequest;
 
@@ -35,10 +37,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class SessionCookieTest
 {
 
-    public class MockSessionStore extends AbstractSessionCache
+    public class MockSessionCache extends AbstractSessionCache
     {
 
-        public MockSessionStore(SessionHandler manager)
+        public MockSessionCache(SessionHandler manager)
         {
             super(manager);
         }
@@ -83,6 +85,12 @@ public class SessionCookieTest
         {
             return null;
         }
+
+        @Override
+        protected Session doComputeIfAbsent(String id, Function<String, Session> mappingFunction)
+        {
+            return mappingFunction.apply(id);
+        }
     }
 
     public class MockSessionIdManager extends DefaultSessionIdManager
@@ -118,9 +126,9 @@ public class SessionCookieTest
         MockSessionIdManager idMgr = new MockSessionIdManager(server);
         idMgr.setWorkerName("node1");
         SessionHandler mgr = new SessionHandler();
-        MockSessionStore store = new MockSessionStore(mgr);
-        store.setSessionDataStore(new NullSessionDataStore());
-        mgr.setSessionCache(store);
+        MockSessionCache cache = new MockSessionCache(mgr);
+        cache.setSessionDataStore(new NullSessionDataStore());
+        mgr.setSessionCache(cache);
         mgr.setSessionIdManager(idMgr);
 
         long now = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
