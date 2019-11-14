@@ -80,9 +80,9 @@ public class ClientParser extends Parser
         }
 
         @Override
-        public void onHeaders(int request)
+        public boolean onHeaders(int request)
         {
-            listener.onHeaders(request);
+            return listener.onHeaders(request);
         }
 
         @Override

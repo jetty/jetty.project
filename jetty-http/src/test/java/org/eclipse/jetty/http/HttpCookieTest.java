@@ -18,17 +18,25 @@
 
 package org.eclipse.jetty.http;
 
+import java.util.stream.Stream;
+
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 public class HttpCookieTest
 {
@@ -93,7 +101,6 @@ public class HttpCookieTest
         httpCookie = new HttpCookie("everything", "value", "domain", "path", 0, true, true, null, -1);
         assertEquals("everything=value; Path=path; Domain=domain; Expires=Thu, 01-Jan-1970 00:00:00 GMT; Max-Age=0; Secure; HttpOnly", httpCookie.getRFC6265SetCookie());
 
-
         httpCookie = new HttpCookie("everything", "value", "domain", "path", 0, true, true, null, -1, HttpCookie.SameSite.NONE);
         assertEquals("everything=value; Path=path; Domain=domain; Expires=Thu, 01-Jan-1970 00:00:00 GMT; Max-Age=0; Secure; HttpOnly; SameSite=None", httpCookie.getRFC6265SetCookie());
 
@@ -102,8 +109,11 @@ public class HttpCookieTest
 
         httpCookie = new HttpCookie("everything", "value", "domain", "path", 0, true, true, null, -1, HttpCookie.SameSite.STRICT);
         assertEquals("everything=value; Path=path; Domain=domain; Expires=Thu, 01-Jan-1970 00:00:00 GMT; Max-Age=0; Secure; HttpOnly; SameSite=Strict", httpCookie.getRFC6265SetCookie());
+    }
 
-        String[] badNameExamples = {
+    public static Stream<String> rfc6265BadNameSource()
+    {
+        return Stream.of(
             "\"name\"",
             "name\t",
             "na me",
@@ -113,25 +123,32 @@ public class HttpCookieTest
             "{name}",
             "[name]",
             "\""
-        };
+        );
+    }
 
-        for (String badNameExample : badNameExamples)
-        {
-            try
+    @ParameterizedTest
+    @MethodSource("rfc6265BadNameSource")
+    public void testSetRFC6265CookieBadName(String badNameExample)
+    {
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+            () ->
             {
-                httpCookie = new HttpCookie(badNameExample, "value", null, "/", 1, true, true, null, -1);
+                HttpCookie httpCookie = new HttpCookie(badNameExample, "value", null, "/", 1, true, true, null, -1);
                 httpCookie.getRFC6265SetCookie();
-                fail(badNameExample);
-            }
-            catch (IllegalArgumentException ex)
-            {
-                // System.err.printf("%s: %s%n", ex.getClass().getSimpleName(), ex.getMessage());
-                assertThat("Testing bad name: [" + badNameExample + "]", ex.getMessage(),
-                    allOf(containsString("RFC6265"), containsString("RFC2616")));
-            }
-        }
+            });
+        // make sure that exception mentions just how mad of a name it truly is
+        assertThat("message", ex.getMessage(),
+            allOf(
+                // violation of Cookie spec
+                containsString("RFC6265"),
+                // violation of HTTP spec
+                containsString("RFC2616")
+            ));
+    }
 
-        String[] badValueExamples = {
+    public static Stream<String> rfc6265BadValueSource()
+    {
+        return Stream.of(
             "va\tlue",
             "\t",
             "value\u0000",
@@ -143,39 +160,44 @@ public class HttpCookieTest
             "val\\ue",
             "val\"ue",
             "\""
-        };
+        );
+    }
 
-        for (String badValueExample : badValueExamples)
-        {
-            try
+    @ParameterizedTest
+    @MethodSource("rfc6265BadValueSource")
+    public void testSetRFC6265CookieBadValue(String badValueExample)
+    {
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+            () ->
             {
-                httpCookie = new HttpCookie("name", badValueExample, null, "/", 1, true, true, null, -1);
+                HttpCookie httpCookie = new HttpCookie("name", badValueExample, null, "/", 1, true, true, null, -1);
                 httpCookie.getRFC6265SetCookie();
-                fail();
-            }
-            catch (IllegalArgumentException ex)
-            {
-                // System.err.printf("%s: %s%n", ex.getClass().getSimpleName(), ex.getMessage());
-                assertThat("Testing bad value [" + badValueExample + "]", ex.getMessage(), Matchers.containsString("RFC6265"));
-            }
-        }
+            });
+        assertThat("message", ex.getMessage(), containsString("RFC6265"));
+    }
 
-        String[] goodNameExamples = {
+    public static Stream<String> rfc6265GoodNameSource()
+    {
+        return Stream.of(
             "name",
             "n.a.m.e",
             "na-me",
             "+name",
             "na*me",
             "na$me",
-            "#name"
-        };
+            "#name");
+    }
 
-        for (String goodNameExample : goodNameExamples)
-        {
-            httpCookie = new HttpCookie(goodNameExample, "value", null, "/", 1, true, true, null, -1);
-            // should not throw an exception
-        }
+    @ParameterizedTest
+    @MethodSource("rfc6265GoodNameSource")
+    public void testSetRFC6265CookieGoodName(String goodNameExample)
+    {
+        new HttpCookie(goodNameExample, "value", null, "/", 1, true, true, null, -1);
+        // should not throw an exception
+    }
 
+    public static Stream<String> rfc6265GoodValueSource()
+    {
         String[] goodValueExamples = {
             "value",
             "",
@@ -185,37 +207,150 @@ public class HttpCookieTest
             "val/ue",
             "v.a.l.u.e"
         };
+        return Stream.of(goodValueExamples);
+    }
 
-        for (String goodValueExample : goodValueExamples)
+    @ParameterizedTest
+    @MethodSource("rfc6265GoodValueSource")
+    public void testSetRFC6265CookieGoodValue(String goodValueExample)
+    {
+        new HttpCookie("name", goodValueExample, null, "/", 1, true, true, null, -1);
+        // should not throw an exception
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "__HTTP_ONLY__",
+        "__HTTP_ONLY__comment",
+        "comment__HTTP_ONLY__"
+    })
+    public void testIsHttpOnlyInCommentTrue(String comment)
+    {
+        assertTrue(HttpCookie.isHttpOnlyInComment(comment), "Comment \"" + comment + "\"");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "comment",
+        "",
+        "__",
+        "__HTTP__ONLY__",
+        "__http_only__",
+        "HTTP_ONLY",
+        "__HTTP__comment__ONLY__"
+    })
+    public void testIsHttpOnlyInCommentFalse(String comment)
+    {
+        assertFalse(HttpCookie.isHttpOnlyInComment(comment), "Comment \"" + comment + "\"");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "__SAME_SITE_NONE__",
+        "__SAME_SITE_NONE____SAME_SITE_NONE__"
+    })
+    public void testGetSameSiteFromCommentNONE(String comment)
+    {
+        assertEquals(HttpCookie.getSameSiteFromComment(comment), HttpCookie.SameSite.NONE, "Comment \"" + comment + "\"");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "__SAME_SITE_LAX__",
+        "__SAME_SITE_LAX____SAME_SITE_NONE__",
+        "__SAME_SITE_NONE____SAME_SITE_LAX__",
+        "__SAME_SITE_LAX____SAME_SITE_NONE__"
+    })
+    public void testGetSameSiteFromCommentLAX(String comment)
+    {
+        assertEquals(HttpCookie.getSameSiteFromComment(comment), HttpCookie.SameSite.LAX, "Comment \"" + comment + "\"");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "__SAME_SITE_STRICT__",
+        "__SAME_SITE_NONE____SAME_SITE_STRICT____SAME_SITE_LAX__",
+        "__SAME_SITE_STRICT____SAME_SITE_LAX____SAME_SITE_NONE__",
+        "__SAME_SITE_STRICT____SAME_SITE_STRICT__"
+    })
+    public void testGetSameSiteFromCommentSTRICT(String comment)
+    {
+        assertEquals(HttpCookie.getSameSiteFromComment(comment), HttpCookie.SameSite.STRICT, "Comment \"" + comment + "\"");
+    }
+
+    /**
+     * A comment that does not have a declared SamesSite attribute defined
+     */
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "__HTTP_ONLY__",
+        "comment",
+        // not jetty attributes
+        "SameSite=None",
+        "SameSite=Lax",
+        "SameSite=Strict",
+        // incomplete jetty attributes
+        "SAME_SITE_NONE",
+        "SAME_SITE_LAX",
+        "SAME_SITE_STRICT",
+    })
+    public void testGetSameSiteFromCommentUndefined(String comment)
+    {
+        assertNull(HttpCookie.getSameSiteFromComment(comment), "Comment \"" + comment + "\"");
+    }
+
+    public static Stream<Arguments> getCommentWithoutAttributesSource()
+    {
+        return Stream.of(
+            // normal - only attribute comment
+            Arguments.of("__SAME_SITE_LAX__", null),
+            // normal - no attribute comment
+            Arguments.of("comment", "comment"),
+            // mixed - attributes at end
+            Arguments.of("comment__SAME_SITE_NONE__", "comment"),
+            Arguments.of("comment__HTTP_ONLY____SAME_SITE_NONE__", "comment"),
+            // mixed - attributes at start
+            Arguments.of("__SAME_SITE_NONE__comment", "comment"),
+            Arguments.of("__HTTP_ONLY____SAME_SITE_NONE__comment", "comment"),
+            // mixed - attributes at start and end
+            Arguments.of("__SAME_SITE_NONE__comment__HTTP_ONLY__", "comment"),
+            Arguments.of("__HTTP_ONLY__comment__SAME_SITE_NONE__", "comment")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("getCommentWithoutAttributesSource")
+    public void testGetCommentWithoutAttributes(String rawComment, String expectedComment)
+    {
+        String actualComment = HttpCookie.getCommentWithoutAttributes(rawComment);
+        if (expectedComment == null)
         {
-            httpCookie = new HttpCookie("name", goodValueExample, null, "/", 1, true, true, null, -1);
-            // should not throw an exception
+            assertNull(actualComment);
+        }
+        else
+        {
+            assertEquals(actualComment, expectedComment);
         }
     }
 
     @Test
-    public void testGetHttpOnlyFromComment()
+    public void testGetCommentWithAttributes()
     {
-        assertTrue(HttpCookie.isHttpOnlyInComment("__HTTP_ONLY__"));
-        assertTrue(HttpCookie.isHttpOnlyInComment("__HTTP_ONLY__comment"));
-        assertFalse(HttpCookie.isHttpOnlyInComment("comment"));
-    }
+        assertThat(HttpCookie.getCommentWithAttributes(null, false, null), nullValue());
+        assertThat(HttpCookie.getCommentWithAttributes("", false, null), nullValue());
+        assertThat(HttpCookie.getCommentWithAttributes("hello", false, null), is("hello"));
 
-    @Test
-    public void testGetSameSiteFromComment()
-    {
-        assertEquals(HttpCookie.getSameSiteFromComment("__SAME_SITE_NONE__"), HttpCookie.SameSite.NONE);
-        assertEquals(HttpCookie.getSameSiteFromComment("__SAME_SITE_LAX__"), HttpCookie.SameSite.LAX);
-        assertEquals(HttpCookie.getSameSiteFromComment("__SAME_SITE_STRICT__"), HttpCookie.SameSite.STRICT);
-        assertEquals(HttpCookie.getSameSiteFromComment("__SAME_SITE_NONE____SAME_SITE_STRICT__"), HttpCookie.SameSite.NONE);
-        assertNull(HttpCookie.getSameSiteFromComment("comment"));
-    }
+        assertThat(HttpCookie.getCommentWithAttributes(null, true, HttpCookie.SameSite.STRICT),
+            is("__HTTP_ONLY____SAME_SITE_STRICT__"));
+        assertThat(HttpCookie.getCommentWithAttributes("", true, HttpCookie.SameSite.NONE),
+            is("__HTTP_ONLY____SAME_SITE_NONE__"));
+        assertThat(HttpCookie.getCommentWithAttributes("hello", true, HttpCookie.SameSite.LAX),
+            is("hello__HTTP_ONLY____SAME_SITE_LAX__"));
 
-    @Test
-    public void getCommentWithoutAttributes()
-    {
-        assertEquals(HttpCookie.getCommentWithoutAttributes("comment__SAME_SITE_NONE__"), "comment");
-        assertEquals(HttpCookie.getCommentWithoutAttributes("comment__HTTP_ONLY____SAME_SITE_NONE__"), "comment");
-        assertNull(HttpCookie.getCommentWithoutAttributes("__SAME_SITE_LAX__"));
+        assertThat(HttpCookie.getCommentWithAttributes("__HTTP_ONLY____SAME_SITE_LAX__", false, null), nullValue());
+        assertThat(HttpCookie.getCommentWithAttributes("__HTTP_ONLY____SAME_SITE_LAX__", true, HttpCookie.SameSite.NONE),
+            is("__HTTP_ONLY____SAME_SITE_NONE__"));
+        assertThat(HttpCookie.getCommentWithAttributes("__HTTP_ONLY____SAME_SITE_LAX__hello", true, HttpCookie.SameSite.LAX),
+            is("hello__HTTP_ONLY____SAME_SITE_LAX__"));
     }
 }

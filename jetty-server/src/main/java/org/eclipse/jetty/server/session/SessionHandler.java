@@ -523,6 +523,16 @@ public class SessionHandler extends ScopedHandler
     }
 
     /**
+     * @return The sameSite setting for session cookies or null for no setting
+     * @see HttpCookie#getSameSite()
+     */
+    @ManagedAttribute("SameSite setting for session cookies")
+    public HttpCookie.SameSite getSameSite()
+    {
+        return HttpCookie.getSameSiteFromComment(_sessionComment);
+    }
+
+    /**
      * Returns the <code>HttpSession</code> with the given session id
      *
      * @param extendedId the session id
@@ -642,30 +652,18 @@ public class SessionHandler extends ScopedHandler
             sessionPath = (StringUtil.isEmpty(sessionPath)) ? "/" : sessionPath;
             String id = getExtendedId(session);
             HttpCookie cookie = null;
-            if (_sessionComment == null)
-            {
-                cookie = new HttpCookie(
-                    _cookieConfig.getName(),
-                    id,
-                    _cookieConfig.getDomain(),
-                    sessionPath,
-                    _cookieConfig.getMaxAge(),
-                    _cookieConfig.isHttpOnly(),
-                    _cookieConfig.isSecure() || (isSecureRequestOnly() && requestIsSecure));
-            }
-            else
-            {
-                cookie = new HttpCookie(
-                    _cookieConfig.getName(),
-                    id,
-                    _cookieConfig.getDomain(),
-                    sessionPath,
-                    _cookieConfig.getMaxAge(),
-                    _cookieConfig.isHttpOnly(),
-                    _cookieConfig.isSecure() || (isSecureRequestOnly() && requestIsSecure),
-                    _sessionComment,
-                    1);
-            }
+
+            cookie = new HttpCookie(
+                _cookieConfig.getName(),
+                id,
+                _cookieConfig.getDomain(),
+                sessionPath,
+                _cookieConfig.getMaxAge(),
+                _cookieConfig.isHttpOnly(),
+                _cookieConfig.isSecure() || (isSecureRequestOnly() && requestIsSecure),
+                HttpCookie.getCommentWithoutAttributes(_cookieConfig.getComment()),
+                0,
+                HttpCookie.getSameSiteFromComment(_cookieConfig.getComment()));
 
             return cookie;
         }
@@ -805,11 +803,26 @@ public class SessionHandler extends ScopedHandler
     }
 
     /**
-     * @param httpOnly The httpOnly to set.
+     * Set if Session cookies should use HTTP Only
+     * @param httpOnly True if cookies should be HttpOnly.
+     * @see HttpCookie
      */
     public void setHttpOnly(boolean httpOnly)
     {
         _httpOnly = httpOnly;
+    }
+
+    /**
+     * Set Session cookie sameSite mode.
+     * Currently this is encoded in the session comment until sameSite is supported by {@link SessionCookieConfig}
+     * @param sameSite The sameSite setting for Session cookies (or null for no sameSite setting)
+     */
+    public void setSameSite(HttpCookie.SameSite sameSite)
+    {
+        // Encode in comment whilst not supported by SessionConfig, so that it can be set/saved in
+        // web.xml and quickstart.
+        // Always pass false for httpOnly as it has it's own setter.
+        _sessionComment = HttpCookie.getCommentWithAttributes(_sessionComment, false, sameSite);
     }
 
     /**
@@ -1345,6 +1358,8 @@ public class SessionHandler extends ScopedHandler
      * CookieConfig
      *
      * Implementation of the javax.servlet.SessionCookieConfig.
+     * SameSite configuration can be achieved by using setComment
+     * @see HttpCookie
      */
     public final class CookieConfig implements SessionCookieConfig
     {

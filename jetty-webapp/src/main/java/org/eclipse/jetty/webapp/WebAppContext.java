@@ -318,7 +318,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     {
         super.setDisplayName(servletContextName);
         ClassLoader cl = getClassLoader();
-        if (cl != null && cl instanceof WebAppClassLoader && servletContextName != null)
+        if (cl instanceof WebAppClassLoader && servletContextName != null)
             ((WebAppClassLoader)cl).setName(servletContextName);
     }
 
@@ -344,7 +344,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     public void setResourceAlias(String alias, String uri)
     {
         if (_resourceAliases == null)
-            _resourceAliases = new HashMap<String, String>(5);
+            _resourceAliases = new HashMap<>(5);
         _resourceAliases.put(alias, uri);
     }
 
@@ -398,7 +398,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         if (name == null)
             name = getContextPath();
 
-        if (classLoader != null && classLoader instanceof WebAppClassLoader && getDisplayName() != null)
+        if (classLoader instanceof WebAppClassLoader && getDisplayName() != null)
             ((WebAppClassLoader)classLoader).setName(name);
     }
 
@@ -429,7 +429,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             }
         }
 
-        if (ioe != null && ioe instanceof MalformedURLException)
+        if (ioe instanceof MalformedURLException)
             throw (MalformedURLException)ioe;
 
         return resource;
@@ -537,7 +537,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         {
             _metadata.setAllowDuplicateFragmentNames(isAllowDuplicateFragmentNames());
             Boolean validate = (Boolean)getAttribute(MetaData.VALIDATE_XML);
-            _metadata.setValidateXml((validate != null && validate.booleanValue()));
+            _metadata.setValidateXml((validate != null && validate));
             preConfigure();
             super.doStart();
             postConfigure();
@@ -922,16 +922,18 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         {
             if (_war != null)
             {
-                if (_war.indexOf("/webapps/") >= 0)
-                    name = _war.substring(_war.indexOf("/webapps/") + 8);
+                int webapps = _war.indexOf("/webapps/");
+                if (webapps >= 0)
+                    name = _war.substring(webapps + 8);
                 else
                     name = _war;
             }
             else if (getResourceBase() != null)
             {
                 name = getResourceBase();
-                if (name.indexOf("/webapps/") >= 0)
-                    name = name.substring(name.indexOf("/webapps/") + 8);
+                int webapps = name.indexOf("/webapps/");
+                if (webapps >= 0)
+                    name = name.substring(webapps + 8);
             }
             else
             {
@@ -966,7 +968,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
     public void setConfigurationClasses(List<String> configurations)
     {
-        setConfigurationClasses(configurations.toArray(new String[configurations.size()]));
+        setConfigurationClasses(configurations.toArray(new String[0]));
     }
 
     /**
@@ -1313,7 +1315,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             if (_ownClassLoader)
             {
                 ClassLoader loader = getClassLoader();
-                if (loader != null && loader instanceof URLClassLoader)
+                if (loader instanceof URLClassLoader)
                     ((URLClassLoader)loader).close();
                 setClassLoader(null);
             }
@@ -1326,7 +1328,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     @Override
     public Set<String> setServletSecurity(Dynamic registration, ServletSecurityElement servletSecurityElement)
     {
-        Set<String> unchangedURLMappings = new HashSet<String>();
+        Set<String> unchangedURLMappings = new HashSet<>();
         //From javadoc for ServletSecurityElement:
         /*
         If a URL pattern of this ServletRegistration is an exact target of a security-constraint that 
@@ -1400,7 +1402,6 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
     public class Context extends ServletContextHandler.Context
     {
-
         @Override
         public void checkListener(Class<? extends EventListener> listener) throws IllegalStateException
         {

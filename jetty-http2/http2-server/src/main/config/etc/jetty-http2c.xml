@@ -1,9 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
 
-<!-- ============================================================= -->
-<!-- Configure an HTTP2 on the ssl connector.                       -->
-<!-- ============================================================= -->
 <Configure id="httpConnector" class="org.eclipse.jetty.server.ServerConnector">
   <Call name="addConnectionFactory">
     <Arg>
@@ -12,10 +9,10 @@
         <Set name="maxConcurrentStreams" property="jetty.http2c.maxConcurrentStreams"/>
         <Set name="initialStreamRecvWindow" property="jetty.http2c.initialStreamRecvWindow"/>
         <Set name="maxSettingsKeys"><Property name="jetty.http2.maxSettingsKeys" default="64"/></Set>
-        <Set name="rateControl">
-          <Call class="org.eclipse.jetty.http2.parser.WindowRateControl" name="fromEventsPerSecond">
+        <Set name="rateControlFactory">
+          <New class="org.eclipse.jetty.http2.parser.WindowRateControl$Factory">
             <Arg type="int"><Property name="jetty.http2.rateControl.maxEventsPerSecond" default="20"/></Arg>
-          </Call>
+          </New>
         </Set>
       </New>
     </Arg>

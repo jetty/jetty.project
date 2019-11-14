@@ -258,7 +258,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     public synchronized void setUserRoleLink(String name, String link)
     {
         if (_roleMap == null)
-            _roleMap = new HashMap<String, String>();
+            _roleMap = new HashMap<>();
         _roleMap.put(name, link);
     }
 
@@ -639,7 +639,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         }
 
         /* ensure scratch dir */
-        File scratch = null;
+        File scratch;
         if (getInitParameter("scratchdir") == null)
         {
             File tmp = (File)getServletHandler().getServletContext().getAttribute(ServletContext.TEMPDIR);
@@ -848,8 +848,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         {
             Class<?> jspUtil = Loader.loadClass("org.apache.jasper.compiler.JspUtil");
             Method makeJavaPackage = jspUtil.getMethod("makeJavaPackage", String.class);
-            String p = (String)makeJavaPackage.invoke(null, jsp.substring(0, i));
-            return p;
+            return (String)makeJavaPackage.invoke(null, jsp.substring(0, i));
         }
         catch (Exception e)
         {
@@ -953,7 +952,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
                     if (!mapping.isDefault())
                     {
                         if (clash == null)
-                            clash = new HashSet<String>();
+                            clash = new HashSet<>();
                         clash.add(pattern);
                     }
                 }
@@ -976,7 +975,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         public Collection<String> getMappings()
         {
             ServletMapping[] mappings = getServletHandler().getServletMappings();
-            List<String> patterns = new ArrayList<String>();
+            List<String> patterns = new ArrayList<>();
             if (mappings != null)
             {
                 for (ServletMapping mapping : mappings)
@@ -1042,7 +1041,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
 
     private class SingleThreadedWrapper implements Servlet
     {
-        Stack<Servlet> _stack = new Stack<Servlet>();
+        Stack<Servlet> _stack = new Stack<>();
 
         @Override
         public void destroy()
@@ -1154,7 +1153,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         try
         {
             ServletContext ctx = getServletHandler().getServletContext();
-            if (ctx instanceof ServletContextHandler.Context)
+            if (ctx != null)
                 return ctx.createServlet(getHeldClass());
             return getHeldClass().getDeclaredConstructor().newInstance();
 
