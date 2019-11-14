@@ -10,7 +10,7 @@ assignees: ''
 
 **Java version:**
 
-**OS/Type version:**
+**OS type/version:**
 
 **Description:**
 
