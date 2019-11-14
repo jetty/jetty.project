@@ -262,3 +262,16 @@ You might need to escape the slash "\|" to use this on some environments.
 maven.repo.uri=[url]::
 The url to use to download Maven dependencies.
 Default is https://repo1.maven.org/maven2/.
+
+==== Shaded Start.jar
+
+If you have a need for a shaded version of `start.jar` (such as for Gradle), you can achieve this via a Maven dependency.
+[source, xml, subs="{sub-order}"]
+....
+<dependency>
+    <groupId>org.eclipse.jetty</groupId>
+    <artifactId>jetty-start</artifactId>
+    <version>{VERSION}</version>
+    <classifier>shaded</classifier>
+</dependency>
+....

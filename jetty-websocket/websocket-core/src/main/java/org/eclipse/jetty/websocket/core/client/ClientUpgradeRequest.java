@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.core.client;
 
+import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -42,7 +43,6 @@ import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
@@ -186,9 +186,17 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
     @Override
     public void send(final Response.CompleteListener listener)
     {
-        frameHandler = getFrameHandler();
-        if (frameHandler == null)
-            throw new IllegalArgumentException("FrameHandler could not be created");
+        try
+        {
+            frameHandler = getFrameHandler();
+            if (frameHandler == null)
+                throw new IllegalArgumentException("FrameHandler could not be created");
+        }
+        catch (Throwable t)
+        {
+            throw new IllegalArgumentException("FrameHandler could not be created", t);
+        }
+
         initWebSocketHeaders();
         super.send(listener);
     }
@@ -226,19 +234,18 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
             }
 
             Throwable failure = result.getFailure();
-            boolean wrapFailure = !((failure instanceof java.net.SocketException) ||
-                (failure instanceof java.io.InterruptedIOException) ||
-                (failure instanceof UpgradeException));
+            boolean wrapFailure = !(failure instanceof IOException) && !(failure instanceof UpgradeException);
             if (wrapFailure)
                 failure = new UpgradeException(requestURI, responseStatusCode, responseLine, failure);
             handleException(failure);
+            return;
         }
 
         if (responseStatusCode != HttpStatus.SWITCHING_PROTOCOLS_101)
         {
             // Failed to upgrade (other reason)
-            handleException(
-                new UpgradeException(requestURI, responseStatusCode, "Failed to upgrade to websocket: Unexpected HTTP Response Status Code: " + responseLine));
+            handleException(new UpgradeException(requestURI, responseStatusCode,
+                "Failed to upgrade to websocket: Unexpected HTTP Response Status Code: " + responseLine));
         }
     }
 
@@ -387,14 +394,8 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
 
         HttpClient httpClient = wsClient.getHttpClient();
         WebSocketConnection wsConnection = newWebSocketConnection(endPoint, httpClient.getExecutor(), httpClient.getScheduler(), httpClient.getByteBufferPool(), coreSession);
-
-        for (Connection.Listener listener : wsClient.getBeans(Connection.Listener.class))
-        {
-            wsConnection.addListener(listener);
-        }
-
+        wsClient.getEventListeners().forEach(wsConnection::addEventListener);
         coreSession.setWebSocketConnection(wsConnection);
-
         notifyUpgradeListeners((listener) -> listener.onHandshakeResponse(this, response));
 
         // Now swap out the connection

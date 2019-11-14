@@ -46,7 +46,7 @@ public class SslClientConnectionFactory implements ClientConnectionFactory
     private final ClientConnectionFactory connectionFactory;
     private boolean _directBuffersForEncryption = true;
     private boolean _directBuffersForDecryption = true;
-    private boolean allowMissingCloseMessage = true;
+    private boolean _requireCloseMessage;
 
     public SslClientConnectionFactory(SslContextFactory sslContextFactory, ByteBufferPool byteBufferPool, Executor executor, ClientConnectionFactory connectionFactory)
     {
@@ -76,14 +76,22 @@ public class SslClientConnectionFactory implements ClientConnectionFactory
         return _directBuffersForEncryption;
     }
 
-    public boolean isAllowMissingCloseMessage()
+    /**
+     * @return whether peers must send the TLS {@code close_notify} message
+     * @see SslConnection#isRequireCloseMessage()
+     */
+    public boolean isRequireCloseMessage()
     {
-        return allowMissingCloseMessage;
+        return _requireCloseMessage;
     }
 
-    public void setAllowMissingCloseMessage(boolean allowMissingCloseMessage)
+    /**
+     * @param requireCloseMessage whether peers must send the TLS {@code close_notify} message
+     * @see SslConnection#setRequireCloseMessage(boolean)
+     */
+    public void setRequireCloseMessage(boolean requireCloseMessage)
     {
-        this.allowMissingCloseMessage = allowMissingCloseMessage;
+        _requireCloseMessage = requireCloseMessage;
     }
 
     @Override
@@ -95,7 +103,6 @@ public class SslClientConnectionFactory implements ClientConnectionFactory
         context.put(SSL_ENGINE_CONTEXT_KEY, engine);
 
         SslConnection sslConnection = newSslConnection(byteBufferPool, executor, endPoint, engine);
-        endPoint.setConnection(sslConnection);
 
         EndPoint appEndPoint = sslConnection.getDecryptedEndPoint();
         appEndPoint.setConnection(connectionFactory.newConnection(appEndPoint, context));
@@ -119,7 +126,7 @@ public class SslClientConnectionFactory implements ClientConnectionFactory
             SslConnection sslConnection = (SslConnection)connection;
             sslConnection.setRenegotiationAllowed(sslContextFactory.isRenegotiationAllowed());
             sslConnection.setRenegotiationLimit(sslContextFactory.getRenegotiationLimit());
-            sslConnection.setAllowMissingCloseMessage(isAllowMissingCloseMessage());
+            sslConnection.setRequireCloseMessage(isRequireCloseMessage());
             ContainerLifeCycle client = (ContainerLifeCycle)context.get(ClientConnectionFactory.CLIENT_CONTEXT_KEY);
             if (client != null)
                 client.getBeans(SslHandshakeListener.class).forEach(sslConnection::addHandshakeListener);

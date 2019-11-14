@@ -90,7 +90,7 @@ public class WebAppContextTest
         server.setHandler(wac);
         wac.addEventListener(new MySessionListener());
 
-        Collection<MySessionListener> listeners = wac.getSessionHandler().getBeans(org.eclipse.jetty.webapp.WebAppContextTest.MySessionListener.class);
+        Collection<MySessionListener> listeners = wac.getSessionHandler().getBeans(MySessionListener.class);
         assertNotNull(listeners);
         assertEquals(1, listeners.size());
     }
@@ -100,7 +100,7 @@ public class WebAppContextTest
     {
         Configurations.cleanKnown();
         String[] known_and_enabled = Configurations.getKnown().stream()
-            .filter(c -> !c.isDisabledByDefault())
+            .filter(c -> c.isEnabledByDefault())
             .map(c -> c.getClass().getName())
             .toArray(String[]::new);
 
@@ -108,7 +108,7 @@ public class WebAppContextTest
 
         //test if no classnames set, its the defaults
         WebAppContext wac = new WebAppContext();
-        assertThat(wac.getWebAppConfigurations().stream()
+        assertThat(wac.getConfigurations().stream()
                 .map(c -> c.getClass().getName())
                 .collect(Collectors.toList()),
             Matchers.containsInAnyOrder(known_and_enabled));
@@ -126,7 +126,7 @@ public class WebAppContextTest
         Configurations.cleanKnown();
         WebAppContext wac = new WebAppContext();
         wac.setServer(new Server());
-        assertThat(wac.getWebAppConfigurations().stream().map(c -> c.getClass().getName()).collect(Collectors.toList()),
+        assertThat(wac.getConfigurations().stream().map(c -> c.getClass().getName()).collect(Collectors.toList()),
             Matchers.contains(
                 "org.eclipse.jetty.webapp.JmxConfiguration",
                 "org.eclipse.jetty.webapp.WebInfConfiguration",
@@ -144,14 +144,14 @@ public class WebAppContextTest
         Configuration[] configs = {new WebInfConfiguration()};
         WebAppContext wac = new WebAppContext();
         wac.setConfigurations(configs);
-        assertThat(wac.getWebAppConfigurations(), Matchers.contains(configs));
+        assertThat(wac.getConfigurations(), Matchers.contains(configs));
 
         //test that explicit config instances override any from server
         String[] classNames = {"x.y.z"};
         Server server = new Server();
         server.setAttribute(Configuration.ATTR, classNames);
         wac.setServer(server);
-        assertThat(wac.getWebAppConfigurations(), Matchers.contains(configs));
+        assertThat(wac.getConfigurations(), Matchers.contains(configs));
     }
 
     @Test

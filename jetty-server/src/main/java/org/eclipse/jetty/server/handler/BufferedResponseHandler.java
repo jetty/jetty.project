@@ -271,12 +271,6 @@ public class BufferedResponseHandler extends HandlerWrapper
             return _next;
         }
 
-        @Override
-        public boolean isOptimizedForDirectBuffers()
-        {
-            return false;
-        }
-
         protected void commit(Queue<ByteBuffer> buffers, Callback callback)
         {
             // If only 1 buffer

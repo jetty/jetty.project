@@ -27,7 +27,6 @@ import java.security.CodeSource;
 import java.security.PermissionCollection;
 import java.util.ArrayList;
 import java.util.Enumeration;
-import java.util.EventListener;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -615,9 +614,9 @@ public class AntWebAppContext extends WebAppContext
             TaskLog.logWithTimestamp("Stopping web application " + this);
             Thread.currentThread().sleep(500L);
             super.doStop();
-            //remove all filters, servlets and listeners. They will be recreated
-            //either via application of a context xml file or web.xml or annotation or servlet api
-            setEventListeners(new EventListener[0]);
+            // remove all filters and servlets. They will be recreated
+            // either via application of a context xml file or web.xml or annotation or servlet api.
+            // Event listeners are reset in ContextHandler.doStop()
             getServletHandler().setFilters(new FilterHolder[0]);
             getServletHandler().setFilterMappings(new FilterMapping[0]);
             getServletHandler().setServlets(new ServletHolder[0]);

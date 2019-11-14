@@ -128,14 +128,6 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         Interceptor getNextInterceptor();
 
         /**
-         * @return True if the Interceptor is optimized to receive direct
-         * {@link ByteBuffer}s in the {@link #write(ByteBuffer, boolean, Callback)}
-         * method.   If false is returned, then passing direct buffers may cause
-         * inefficiencies.
-         */
-        boolean isOptimizedForDirectBuffers();
-
-        /**
          * Reset the buffers.
          * <p>If the Interceptor contains buffers then reset them.
          *
@@ -372,6 +364,13 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             State state = _state.get();
             switch (state)
             {
+                case CLOSING:
+                {
+                    if (!_state.compareAndSet(state, State.CLOSED))
+                        break;
+                    releaseBuffer();
+                    return;
+                }
                 case CLOSED:
                 {
                     return;
@@ -387,22 +386,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                     if (!_state.compareAndSet(state, State.CLOSED))
                         break;
 
-                    // Just make sure write and output stream really are closed
-                    try
-                    {
-                        _channel.getResponse().closeOutput();
-                    }
-                    catch (Throwable x)
-                    {
-                        if (LOG.isDebugEnabled())
-                            LOG.debug(x);
-                        abort(x);
-                    }
-                    finally
-                    {
-                        releaseBuffer();
-                    }
-                    // Return even if an exception is thrown by closeOutput().
+                    releaseBuffer();
                     return;
                 }
             }
@@ -417,7 +401,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     public ByteBuffer acquireBuffer()
     {
         if (_aggregate == null)
-            _aggregate = _channel.getByteBufferPool().acquire(getBufferSize(), _interceptor.isOptimizedForDirectBuffers());
+            _aggregate = _channel.getByteBufferPool().acquire(getBufferSize(), _channel.isUseOutputDirectByteBuffers());
         return _aggregate;
     }
 
@@ -591,17 +575,18 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         // handle blocking write
 
         // Should we aggregate?
-        int capacity = getBufferSize();
+        // Yes - if the write is smaller than the commitSize (==aggregate buffer size)
+        //       and the write is not the last one, or is last but will fit in an already allocated aggregate buffer.
         boolean last = isLastContentToWrite(len);
-        if (!last && len <= _commitSize)
+        if (len <= _commitSize && (!last || len <= BufferUtil.space(_aggregate)))
         {
             acquireBuffer();
 
             // YES - fill the aggregate with content from the buffer
             int filled = BufferUtil.fill(_aggregate, b, off, len);
 
-            // return if we are not complete, not full and filled all the content
-            if (filled == len && !BufferUtil.isFull(_aggregate))
+            // return if we are not the last write and have aggregated all of the content
+            if (!last && filled == len && !BufferUtil.isFull(_aggregate))
                 return;
 
             // adjust offset/length
@@ -1065,7 +1050,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             break;
         }
 
-        ByteBuffer buffer = _channel.useDirectBuffers() ? httpContent.getDirectBuffer() : null;
+        ByteBuffer buffer = _channel.isUseOutputDirectByteBuffers() ? httpContent.getDirectBuffer() : null;
         if (buffer == null)
             buffer = httpContent.getIndirectBuffer();
 
@@ -1483,6 +1468,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         {
             super(callback);
             _in = in;
+            // Reading from InputStream requires byte[], don't use direct buffers.
             _buffer = _channel.getByteBufferPool().acquire(getBufferSize(), false);
         }
 
@@ -1535,7 +1521,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
      * An iterating callback that will take content from a
      * ReadableByteChannel and write it to the {@link HttpChannel}.
      * A {@link ByteBuffer} of size {@link HttpOutput#getBufferSize()} is used that will be direct if
-     * {@link HttpChannel#useDirectBuffers()} is true.
+     * {@link HttpChannel#isUseOutputDirectByteBuffers()} is true.
      * This callback is passed to the {@link HttpChannel#write(ByteBuffer, boolean, Callback)} to
      * be notified as each buffer is written and only once all the input is consumed will the
      * wrapped {@link Callback#succeeded()} method be called.
@@ -1550,7 +1536,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         {
             super(callback);
             _in = in;
-            _buffer = _channel.getByteBufferPool().acquire(getBufferSize(), _channel.useDirectBuffers());
+            _buffer = _channel.getByteBufferPool().acquire(getBufferSize(), _channel.isUseOutputDirectByteBuffers());
         }
 
         @Override

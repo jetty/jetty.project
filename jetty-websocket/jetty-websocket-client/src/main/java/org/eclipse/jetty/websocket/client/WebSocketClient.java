@@ -41,6 +41,7 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.util.thread.ShutdownThread;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
@@ -65,7 +66,8 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
     private final List<WebSocketSessionListener> sessionListeners = new CopyOnWriteArrayList<>();
     private final SessionTracker sessionTracker = new SessionTracker();
     private final FrameHandler.ConfigurationCustomizer configurationCustomizer = new FrameHandler.ConfigurationCustomizer();
-    private WebSocketComponents components = new WebSocketComponents();
+    private final WebSocketComponents components = new WebSocketComponents();
+    private boolean stopAtShutdown = false;
 
     /**
      * Instantiate a WebSocketClient with defaults
@@ -236,9 +238,22 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
     }
 
     @Override
+    public long getMaxFrameSize()
+    {
+        return configurationCustomizer.getMaxFrameSize();
+    }
+
+    @Override
+    public boolean isAutoFragment()
+    {
+        return configurationCustomizer.isAutoFragment();
+    }
+
+    @Override
     public void setIdleTimeout(Duration duration)
     {
         configurationCustomizer.setIdleTimeout(duration);
+        getHttpClient().setIdleTimeout(duration.toMillis());
     }
 
     @Override
@@ -263,6 +278,18 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
     public void setMaxTextMessageSize(long size)
     {
         configurationCustomizer.setMaxTextMessageSize(size);
+    }
+
+    @Override
+    public void setMaxFrameSize(long maxFrameSize)
+    {
+        configurationCustomizer.setMaxFrameSize(maxFrameSize);
+    }
+
+    @Override
+    public void setAutoFragment(boolean autoFragment)
+    {
+        configurationCustomizer.setAutoFragment(autoFragment);
     }
 
     public SocketAddress getBindAddress()
@@ -337,6 +364,31 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
     public SslContextFactory getSslContextFactory()
     {
         return getHttpClient().getSslContextFactory();
+    }
+
+    /**
+     * Set JVM shutdown behavior.
+     * @param stop If true, this client instance will be explicitly stopped when the
+     * JVM is shutdown. Otherwise the application is responsible for maintaining the WebSocketClient lifecycle.
+     * @see Runtime#addShutdownHook(Thread)
+     * @see ShutdownThread
+     */
+    public synchronized void setStopAtShutdown(boolean stop)
+    {
+        if (stop)
+        {
+            if (!stopAtShutdown && !ShutdownThread.isRegistered(this))
+                ShutdownThread.register(this);
+        }
+        else
+            ShutdownThread.deregister(this);
+
+        stopAtShutdown = stop;
+    }
+
+    public boolean isStopAtShutdown()
+    {
+        return stopAtShutdown;
     }
 
     @Override

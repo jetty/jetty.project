@@ -1,0 +1,41 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+  <Get id="ThreadPool" name="threadPool"/>
+  <New id="HttpClient" class="org.eclipse.jetty.client.HttpClient">
+    <Arg>
+      <New class="org.eclipse.jetty.util.ssl.SslContextFactory$Client">
+        <Set name="trustAll" type="boolean"><Property name="jetty.openid.sslContextFactory.trustAll" default="false"/></Set>
+      </New>
+    </Arg>
+    <Set name="executor"><Ref refid="ThreadPool"/></Set>
+  </New>
+  <New id="OpenIdConfiguration" class="org.eclipse.jetty.security.openid.OpenIdConfiguration">
+    <Arg><Property name="jetty.openid.provider" deprecated="jetty.openid.openIdProvider"/></Arg>
+    <Arg><Property name="jetty.openid.provider.authorizationEndpoint"/></Arg>
+    <Arg><Property name="jetty.openid.provider.tokenEndpoint"/></Arg>
+    <Arg><Property name="jetty.openid.clientId"/></Arg>
+    <Arg><Property name="jetty.openid.clientSecret"/></Arg>
+    <Arg><Ref refid="HttpClient"/></Arg>
+    <Call name="addScopes">
+      <Arg>
+        <Call class="org.eclipse.jetty.util.StringUtil" name="csvSplit">
+          <Arg><Property name="jetty.openid.scopes"/></Arg>
+        </Call>
+      </Arg>
+    </Call>
+  </New>
+  <Call name="addBean">
+    <Arg>
+      <New class="org.eclipse.jetty.security.openid.OpenIdLoginService">
+        <Arg><Ref refid="OpenIdConfiguration"/></Arg>
+        <Arg><Ref refid="BaseLoginService"/></Arg>
+        <Call name="setAuthenticateNewUsers">
+          <Arg type="boolean">
+            <Property name="jetty.openid.authenticateNewUsers" default="false"/>
+          </Arg>
+        </Call>
+      </New>
+    </Arg>
+  </Call>
+</Configure>

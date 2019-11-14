@@ -23,6 +23,8 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.eclipse.jetty.io.EndPoint;
+
 /**
  * <p>An implementation of {@link RateControl} that limits the number of
  * events within a time period.</p>
@@ -39,10 +41,30 @@ public class WindowRateControl implements RateControl
     private final int maxEvents;
     private final long window;
 
+    public static WindowRateControl fromEventsPerSecond(int maxEvents)
+    {
+        return new WindowRateControl(maxEvents, Duration.ofSeconds(1));
+    }
+
     public WindowRateControl(int maxEvents, Duration window)
     {
         this.maxEvents = maxEvents;
         this.window = window.toNanos();
+        if (this.window == 0)
+            throw new IllegalArgumentException("Invalid duration " + window);
+    }
+
+    public int getEventsPerSecond()
+    {
+        try
+        {
+            long rate = maxEvents * 1_000_000_000L / window;
+            return Math.toIntExact(rate);
+        }
+        catch (ArithmeticException x)
+        {
+            return Integer.MAX_VALUE;
+        }
     }
 
     @Override
@@ -61,5 +83,21 @@ public class WindowRateControl implements RateControl
         }
         events.add(now + window);
         return size.incrementAndGet() <= maxEvents;
+    }
+
+    public static class Factory implements RateControl.Factory
+    {
+        private final int maxEventRate;
+
+        public Factory(int maxEventRate)
+        {
+            this.maxEventRate = maxEventRate;
+        }
+
+        @Override
+        public RateControl newRateControl(EndPoint endPoint)
+        {
+            return WindowRateControl.fromEventsPerSecond(maxEventRate);
+        }
     }
 }

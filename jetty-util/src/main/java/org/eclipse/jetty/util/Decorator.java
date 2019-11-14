@@ -19,10 +19,7 @@
 package org.eclipse.jetty.util;
 
 /**
- * Interface for 3rd party libraries to decorate recently created objects in Jetty.
- * <p>
- * Most common use is weld/CDI.
- * <p>
+ * Interface to decorate objects created by the {@link DecoratedObjectFactory}
  */
 public interface Decorator
 {

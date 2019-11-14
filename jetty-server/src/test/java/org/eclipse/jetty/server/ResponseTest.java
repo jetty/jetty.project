@@ -174,12 +174,6 @@ public class ResponseTest
             {
                 _channelError = failure;
             }
-
-            @Override
-            public boolean isOptimizedForDirectBuffers()
-            {
-                return false;
-            }
         });
     }
 
@@ -690,6 +684,10 @@ public class ResponseTest
         assertTrue(response.getHttpOutput().isClosed());
         assertEquals(code, response.getStatus());
         assertEquals(null, response.getReason());
+
+        response.setHeader("Should-Be-Ignored", "value");
+        assertFalse(response.getHttpFields().containsKey("Should-Be-Ignored"));
+
         assertEquals(expectedMessage, response.getHttpChannel().getRequest().getAttribute(RequestDispatcher.ERROR_MESSAGE));
         assertThat(response.getHttpChannel().getState().unhandle(), is(HttpChannelState.Action.SEND_ERROR));
         assertThat(response.getHttpChannel().getState().unhandle(), is(HttpChannelState.Action.COMPLETE));

@@ -261,7 +261,7 @@ public class HpackContext
         _dynamicTableSizeInBytes += size;
         _dynamicTable.add(entry);
         _fieldMap.put(field, entry);
-        _nameMap.put(StringUtil.asciiToLowerCase(field.getName()), entry);
+        _nameMap.put(field.getLowerCaseName(), entry);
 
         if (LOG.isDebugEnabled())
             LOG.debug(String.format("HdrTbl[%x] added %s", hashCode(), entry));
@@ -383,7 +383,7 @@ public class HpackContext
                 _dynamicTableSizeInBytes -= entry.getSize();
                 entry._slot = -1;
                 _fieldMap.remove(entry.getHttpField());
-                String lc = StringUtil.asciiToLowerCase(entry.getHttpField().getName());
+                String lc = entry.getHttpField().getLowerCaseName();
                 if (entry == _nameMap.get(lc))
                     _nameMap.remove(lc);
             }
@@ -461,6 +461,8 @@ public class HpackContext
             if (value != null && value.length() > 0)
             {
                 int huffmanLen = Huffman.octetsNeeded(value);
+                if (huffmanLen < 0)
+                    throw new IllegalStateException("bad value");
                 int lenLen = NBitInteger.octectsNeeded(7, huffmanLen);
                 _huffmanValue = new byte[1 + lenLen + huffmanLen];
                 ByteBuffer buffer = ByteBuffer.wrap(_huffmanValue);

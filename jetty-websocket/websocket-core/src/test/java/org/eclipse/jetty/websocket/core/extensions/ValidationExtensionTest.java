@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.Frame;
@@ -88,7 +89,7 @@ public class ValidationExtensionTest extends WebSocketTester
             Frame frame = serverHandler.receivedFrames.poll(5, TimeUnit.SECONDS);
             assertNotNull(frame);
             assertThat(frame.getOpCode(), is(OpCode.BINARY));
-            assertThat(frame.getPayload().array(), is(nonUtf8Payload));
+            assertThat(BufferUtil.toArray(frame.getPayload()), is(nonUtf8Payload));
 
             //close normally
             client.getOutputStream().write(RawFrameBuilder.buildClose(CloseStatus.NORMAL_STATUS, true));
@@ -113,13 +114,13 @@ public class ValidationExtensionTest extends WebSocketTester
             Frame frame = serverHandler.receivedFrames.poll(5, TimeUnit.SECONDS);
             assertNotNull(frame);
             assertThat(frame.getOpCode(), is(OpCode.TEXT));
-            assertThat(frame.getPayload().array(), is(initialPayload));
+            assertThat(BufferUtil.toArray(frame.getPayload()), is(initialPayload));
 
             client.getOutputStream().write(RawFrameBuilder.buildFrame(OpCode.CONTINUATION, continuationPayload, true));
             frame = serverHandler.receivedFrames.poll(5, TimeUnit.SECONDS);
             assertNotNull(frame);
             assertThat(frame.getOpCode(), is(OpCode.CONTINUATION));
-            assertThat(frame.getPayload().array(), is(continuationPayload));
+            assertThat(BufferUtil.toArray(frame.getPayload()), is(continuationPayload));
 
             //close normally
             client.getOutputStream().write(RawFrameBuilder.buildClose(CloseStatus.NORMAL_STATUS, true));
@@ -144,7 +145,7 @@ public class ValidationExtensionTest extends WebSocketTester
             Frame frame = serverHandler.receivedFrames.poll(5, TimeUnit.SECONDS);
             assertNotNull(frame);
             assertThat(frame.getOpCode(), is(OpCode.TEXT));
-            assertThat(frame.getPayload().array(), is(initialPayload));
+            assertThat(BufferUtil.toArray(frame.getPayload()), is(initialPayload));
 
             client.getOutputStream().write(RawFrameBuilder.buildFrame(OpCode.CONTINUATION, incompleteContinuationPayload, true));
             frame = receiveFrame(client.getInputStream());

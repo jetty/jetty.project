@@ -188,13 +188,16 @@ public class InetAccessHandler extends HandlerWrapper
     protected boolean isAllowed(InetAddress addr, Request baseRequest, HttpServletRequest request)
     {
         String name = baseRequest.getHttpChannel().getConnector().getName();
+        boolean filterAppliesToConnector = _names.test(name);
+        boolean allowedByAddr = _addrs.test(addr);
         if (LOG.isDebugEnabled())
         {
-            Boolean allowedByName = _names.isIncludedAndNotExcluded(name);
-            Boolean allowedByAddr = _addrs.isIncludedAndNotExcluded(addr);
-            LOG.debug("{} allowedByName={} allowedByAddr={} for {}/{}", this, allowedByName, allowedByAddr, addr, request);
+            LOG.debug("name = {}/{} addr={}/{} appliesToConnector={} allowedByAddr={}",
+                name, _names, addr, _addrs, filterAppliesToConnector, allowedByAddr);
         }
-        return _names.test(name) && _addrs.test(addr);
+        if (!filterAppliesToConnector)
+            return true;
+        return allowedByAddr;
     }
 
     @Override

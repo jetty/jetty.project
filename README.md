@@ -23,7 +23,7 @@ Documentation
 
 Project documentation is available on the Jetty Eclipse website.
 
-- [http://www.eclipse.org/jetty/documentation](http://www.eclipse.org/jetty/documentation)
+- [https://www.eclipse.org/jetty/documentation](https://www.eclipse.org/jetty/documentation)
 
 Building
 ========
@@ -40,9 +40,9 @@ The first build may take a longer than expected as Maven downloads all the depen
 
 The build tests do a lot of stress testing, and on some machines it is necessary to set the file descriptor limit to greater than 2048 for the tests to all pass successfully.
 
-It is possible to bypass tests by building with `mvn -Dmaven.test.skip=true install` but note that this will not produce some of the test jars that are leveraged in other places in the build.
+It is possible to bypass tests by building with `mvn clean install -DskipTests`.
 
 Professional Services
 ---------------------
 
-Expert advice and production support are available through [Webtide.com](http://webtide.com).
+Expert advice and production support are available through [Webtide.com](https://webtide.com).

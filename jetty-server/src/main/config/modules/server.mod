@@ -51,7 +51,7 @@ etc/jetty.xml
 # jetty.httpConfig.sendDateHeader=false
 
 ## Max per-connection header cache size (in nodes)
-# jetty.httpConfig.headerCacheSize=4096
+# jetty.httpConfig.headerCacheSize=1024
 
 ## Whether, for requests with content, delay dispatch until some content has arrived
 # jetty.httpConfig.delayDispatchUntilContent=true
@@ -80,3 +80,8 @@ etc/jetty.xml
 
 ## Dump the state of the Jetty server, components, and webapps before shutdown
 # jetty.server.dumpBeforeStop=false
+
+## Scheduler Configuration
+# jetty.scheduler.name=
+# jetty.scheduler.deamon=false
+# jetty.scheduler.threads=-1

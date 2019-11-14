@@ -50,6 +50,7 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.util.PathWatcher;
+import org.eclipse.jetty.util.Scanner;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
@@ -223,7 +224,7 @@ public abstract class AbstractJettyMojo extends AbstractMojo
     /**
      * A scanner to check for changes to the webapp
      */
-    protected PathWatcher scanner;
+    protected Scanner scanner;
 
     /**
      * A scanner to check ENTER hits on the console
@@ -459,7 +460,25 @@ public abstract class AbstractJettyMojo extends AbstractMojo
             // start the scanner thread (if necessary) on the main webapp
             if (isScanningEnabled())
             {
-                scanner = new PathWatcher();
+                scanner = new Scanner();
+                scanner.setScanInterval(scanIntervalSeconds);
+                scanner.setScanDepth(Scanner.MAX_SCAN_DEPTH); //always fully walk directory hierarchies
+                scanner.setReportExistingFilesOnStartup(false);
+                scanner.addListener(new Scanner.BulkListener()
+                {
+                    public void filesChanged(List<String> changes)
+                    {
+                        try
+                        {
+                            boolean reconfigure = changes.contains(project.getFile().getCanonicalPath());
+                            restartWebApp(reconfigure);
+                        }
+                        catch (Exception e)
+                        {
+                            getLog().error("Error reconfiguring/restarting webapp after change in watched files",e);
+                        }
+                    }
+                });
                 configureScanner();
                 startScanner();
             }
@@ -524,7 +543,6 @@ public abstract class AbstractJettyMojo extends AbstractMojo
 
             XmlConfiguration xmlConfiguration = new XmlConfiguration(new PathResource(path));
             getLog().info("Applying context xml file " + contextXml);
-            xmlConfiguration.configure(webApp);
         }
 
         //If no contextPath was specified, go with default of project artifactid
@@ -562,8 +580,6 @@ public abstract class AbstractJettyMojo extends AbstractMojo
     {
         if (!isScanningEnabled())
             return;
-
-        scanner.setNotifyExistingOnStart(false);
 
         scanner.start();
     }

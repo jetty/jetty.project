@@ -141,7 +141,7 @@
                 </goals>
                 <configuration>
                   <!-- The class that contains a main method which accepts the port as a parameter to start the server. -->
-                  <mainClass>org.eclipse.jetty.websocket.core.autobahn.AutobahnWebSocketServer</mainClass>
+                  <mainClass>org.eclipse.jetty.websocket.core.autobahn.CoreAutobahnServer</mainClass>
                 </configuration>
               </execution>
             </executions>

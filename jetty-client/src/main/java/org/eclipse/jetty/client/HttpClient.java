@@ -497,27 +497,6 @@ public class HttpClient extends ContainerLifeCycle
         return uri;
     }
 
-    /**
-     * Returns a {@link Destination} for the given scheme, host and port.
-     * Applications may use {@link Destination}s to create {@link Connection}s
-     * that will be outside HttpClient's pooling mechanism, to explicitly
-     * control the connection lifecycle (in particular their termination with
-     * {@link Connection#close()}).
-     *
-     * @param scheme the destination scheme
-     * @param host the destination host
-     * @param port the destination port
-     * @return the destination
-     * @see #getDestinations()
-     * @deprecated use {@link #resolveDestination(Request)} instead
-     */
-    @Deprecated
-    public Destination getDestination(String scheme, String host, int port)
-    {
-        Origin origin = createOrigin(scheme, host, port);
-        return resolveDestination(new HttpDestination.Key(origin, null));
-    }
-
     public Destination resolveDestination(Request request)
     {
         Origin origin = createOrigin(request.getScheme(), request.getHost(), request.getPort());
@@ -544,25 +523,15 @@ public class HttpClient extends ContainerLifeCycle
 
     HttpDestination resolveDestination(HttpDestination.Key key)
     {
-        HttpDestination destination = destinations.get(key);
-        if (destination == null)
+        return destinations.computeIfAbsent(key, k ->
         {
-            destination = getTransport().newHttpDestination(key);
+            HttpDestination destination = getTransport().newHttpDestination(k);
             // Start the destination before it's published to other threads.
             addManaged(destination);
-            HttpDestination existing = destinations.putIfAbsent(key, destination);
-            if (existing != null)
-            {
-                removeBean(destination);
-                destination = existing;
-            }
-            else
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Created {}", destination);
-            }
-        }
-        return destination;
+            if (LOG.isDebugEnabled())
+                LOG.debug("Created {}", destination);
+            return destination;
+        });
     }
 
     protected boolean removeDestination(HttpDestination destination)
@@ -1137,9 +1106,11 @@ public class HttpClient extends ContainerLifeCycle
         return HttpScheme.HTTPS.is(scheme) || HttpScheme.WSS.is(scheme);
     }
 
-    protected ClientConnectionFactory newSslClientConnectionFactory(ClientConnectionFactory connectionFactory)
+    protected ClientConnectionFactory newSslClientConnectionFactory(SslContextFactory.Client sslContextFactory, ClientConnectionFactory connectionFactory)
     {
-        return new SslClientConnectionFactory(getSslContextFactory(), getByteBufferPool(), getExecutor(), connectionFactory);
+        if (sslContextFactory == null)
+            sslContextFactory = getSslContextFactory();
+        return new SslClientConnectionFactory(sslContextFactory, getByteBufferPool(), getExecutor(), connectionFactory);
     }
 
     private class ContentDecoderFactorySet implements Set<ContentDecoder.Factory>

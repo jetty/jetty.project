@@ -233,7 +233,7 @@ public class ServletPathSpec extends PathSpec
         {
             this.group = PathSpecGroup.EXACT;
             this.prefix = servletPathSpec;
-            if (servletPathSpec.endsWith("*") )
+            if (servletPathSpec.endsWith("*"))
             {
                 LOG.warn("Suspicious URL pattern: '{}'; see sections 12.1 and 12.2 of the Servlet specification",
                         servletPathSpec);

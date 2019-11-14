@@ -30,7 +30,6 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Connector;
@@ -185,15 +184,17 @@ public final class RFC6455Handshaker implements Handshaker
         HttpChannel httpChannel = baseRequest.getHttpChannel();
         Connector connector = httpChannel.getConnector();
         WebSocketConnection connection = newWebSocketConnection(httpChannel.getEndPoint(), connector.getExecutor(), connector.getScheduler(), connector.getByteBufferPool(), coreSession);
+        // TODO: perhaps use of direct buffers should be WebSocket specific
+        //  rather than inheriting the setting from HttpConfiguration.
+        HttpConfiguration httpConfig = httpChannel.getHttpConfiguration();
+        connection.setUseInputDirectByteBuffers(httpConfig.isUseInputDirectByteBuffers());
+        connection.setUseOutputDirectByteBuffers(httpChannel.isUseOutputDirectByteBuffers());
         if (LOG.isDebugEnabled())
             LOG.debug("connection {}", connection);
         if (connection == null)
             throw new WebSocketException("not upgraded: no connection");
 
-        for (Connection.Listener listener : connector.getBeans(Connection.Listener.class))
-        {
-            connection.addListener(listener);
-        }
+        connector.getEventListeners().forEach(connection::addEventListener);
 
         coreSession.setWebSocketConnection(connection);
 

@@ -602,12 +602,6 @@ public class ProxyConnectionFactory extends AbstractConnectionFactory
         }
 
         @Override
-        public boolean isOptimizedForDirectBuffers()
-        {
-            return _endp.isOptimizedForDirectBuffers();
-        }
-
-        @Override
         public InetSocketAddress getLocalAddress()
         {
             return _local;

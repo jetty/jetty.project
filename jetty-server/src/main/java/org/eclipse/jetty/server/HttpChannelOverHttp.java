@@ -70,6 +70,12 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
     }
 
     @Override
+    public boolean isUseOutputDirectByteBuffers()
+    {
+        return _httpConnection.isUseOutputDirectByteBuffers();
+    }
+
+    @Override
     protected HttpInput newHttpInput(HttpChannelState state)
     {
         return new HttpInputOverHTTP(state);
@@ -102,7 +108,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
     }
 
     @Override
-    public boolean startRequest(String method, String uri, HttpVersion version)
+    public void startRequest(String method, String uri, HttpVersion version)
     {
         _metadata.setMethod(method);
         _metadata.getURI().parseRequestTarget(method, uri);
@@ -110,7 +116,6 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
         _unknownExpectation = false;
         _expect100Continue = false;
         _expect102Processing = false;
-        return false;
     }
 
     @Override
@@ -513,18 +518,6 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
         if (_trailers != null)
             onTrailers(_trailers);
         return onRequestComplete();
-    }
-
-    @Override
-    public int getHeaderCacheSize()
-    {
-        return getHttpConfiguration().getHeaderCacheSize();
-    }
-
-    @Override
-    public boolean isHeaderCacheCaseSensitive()
-    {
-        return getHttpConfiguration().isHeaderCacheCaseSensitive();
     }
 
     @Override

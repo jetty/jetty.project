@@ -72,6 +72,8 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     private final boolean _recordHttpComplianceViolations;
     private final LongAdder bytesIn = new LongAdder();
     private final LongAdder bytesOut = new LongAdder();
+    private boolean _useInputDirectByteBuffers;
+    private boolean _useOutputDirectByteBuffers;
 
     /**
      * Get the current connection that this thread is dispatched to.
@@ -130,7 +132,10 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
 
     protected HttpParser newHttpParser(HttpCompliance compliance)
     {
-        return new HttpParser(newRequestHandler(), getHttpConfiguration().getRequestHeaderSize(), compliance);
+        HttpParser parser = new HttpParser(newRequestHandler(), getHttpConfiguration().getRequestHeaderSize(), compliance);
+        parser.setHeaderCacheSize(getHttpConfiguration().getHeaderCacheSize());
+        parser.setHeaderCacheCaseSensitive(getHttpConfiguration().isHeaderCacheCaseSensitive());
+        return parser;
     }
 
     protected HttpParser.RequestHandler newRequestHandler()
@@ -164,12 +169,6 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     }
 
     @Override
-    public boolean isOptimizedForDirectBuffers()
-    {
-        return getEndPoint().isOptimizedForDirectBuffers();
-    }
-
-    @Override
     public long getMessagesIn()
     {
         return getHttpChannel().getRequests();
@@ -179,6 +178,26 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     public long getMessagesOut()
     {
         return getHttpChannel().getRequests();
+    }
+
+    public boolean isUseInputDirectByteBuffers()
+    {
+        return _useInputDirectByteBuffers;
+    }
+
+    public void setUseInputDirectByteBuffers(boolean useInputDirectByteBuffers)
+    {
+        _useInputDirectByteBuffers = useInputDirectByteBuffers;
+    }
+
+    public boolean isUseOutputDirectByteBuffers()
+    {
+        return _useOutputDirectByteBuffers;
+    }
+
+    public void setUseOutputDirectByteBuffers(boolean useOutputDirectByteBuffers)
+    {
+        _useOutputDirectByteBuffers = useOutputDirectByteBuffers;
     }
 
     @Override
@@ -223,7 +242,10 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     public ByteBuffer getRequestBuffer()
     {
         if (_requestBuffer == null)
-            _requestBuffer = _bufferPool.acquire(getInputBufferSize(), _config.isUseDirectByteBuffers());
+        {
+            boolean useDirectByteBuffers = isUseInputDirectByteBuffers();
+            _requestBuffer = _bufferPool.acquire(getInputBufferSize(), useDirectByteBuffers);
+        }
         return _requestBuffer;
     }
 
@@ -253,6 +275,8 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                 // Parse the request buffer.
                 boolean handle = parseRequestBuffer();
 
+                // There could be a connection upgrade before handling
+                // the HTTP/1.1 request, for example PRI * HTTP/2.
                 // If there was a connection upgrade, the other
                 // connection took over, nothing more to do here.
                 if (getEndPoint().getConnection() != this)
@@ -263,7 +287,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                 {
                     boolean suspended = !_channel.handle();
 
-                    // We should break iteration if we have suspended or changed connection or this is not the handling thread.
+                    // We should break iteration if we have suspended or upgraded the connection.
                     if (suspended || getEndPoint().getConnection() != this)
                         break;
                 }
@@ -731,14 +755,15 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             if (_callback == null)
                 throw new IllegalStateException();
 
+            boolean useDirectByteBuffers = isUseOutputDirectByteBuffers();
             ByteBuffer chunk = _chunk;
             while (true)
             {
                 HttpGenerator.Result result = _generator.generateResponse(_info, _head, _header, chunk, _content, _lastContent);
                 if (LOG.isDebugEnabled())
-                    LOG.debug("{} generate: {} ({},{},{})@{}",
-                        this,
+                    LOG.debug("generate: {} for {} ({},{},{})@{}",
                         result,
+                        this,
                         BufferUtil.toSummaryString(_header),
                         BufferUtil.toSummaryString(_content),
                         _lastContent,
@@ -751,19 +776,19 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                         
                     case NEED_HEADER:
                     {
-                        _header = _bufferPool.acquire(_config.getResponseHeaderSize(), _config.isUseDirectByteBuffers());
+                        _header = _bufferPool.acquire(_config.getResponseHeaderSize(), useDirectByteBuffers);
                         continue;
                     }
                     case NEED_CHUNK:
                     {
-                        chunk = _chunk = _bufferPool.acquire(HttpGenerator.CHUNK_SIZE, _config.isUseDirectByteBuffers());
+                        chunk = _chunk = _bufferPool.acquire(HttpGenerator.CHUNK_SIZE, useDirectByteBuffers);
                         continue;
                     }
                     case NEED_CHUNK_TRAILER:
                     {
                         if (_chunk != null)
                             _bufferPool.release(_chunk);
-                        chunk = _chunk = _bufferPool.acquire(_config.getResponseHeaderSize(), _config.isUseDirectByteBuffers());
+                        chunk = _chunk = _bufferPool.acquire(_config.getResponseHeaderSize(), useDirectByteBuffers);
                         continue;
                     }
                     case FLUSH:
@@ -829,8 +854,10 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                     }
                     case DONE:
                     {   
-                        // If shutdown after commit, we can still close here.
-                        if (getConnector().isShutdown())
+                        // If this is the end of the response and the connector was shutdown after response was committed,
+                        // we can't add the Connection:close header, but we are still allowed to close the connection
+                        // by shutting down the output.
+                        if (getConnector().isShutdown() && _generator.isEnd() && _generator.isPersistent())
                             _shutdownOut = true;
 
                         return Action.SUCCEEDED;
@@ -847,19 +874,22 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             }
         }
 
-        private void releaseHeader()
+        private Callback release()
         {
-            ByteBuffer h = _header;
+            Callback complete = _callback;
+            _callback = null;
+            _info = null;
+            _content = null;
+            if (_header != null)
+                _bufferPool.release(_header);
             _header = null;
-            if (h != null)
-                _bufferPool.release(h);
+            return complete;
         }
 
         @Override
         protected void onCompleteSuccess()
         {
-            releaseHeader();
-            _callback.succeeded();
+            release().succeeded();
             if (_shutdownOut)
                 getEndPoint().shutdownOutput();
         }
@@ -867,8 +897,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         @Override
         public void onCompleteFailure(final Throwable x)
         {
-            releaseHeader();
-            failedCallback(_callback, x);
+            failedCallback(release(), x);
             if (_shutdownOut)
                 getEndPoint().shutdownOutput();
         }

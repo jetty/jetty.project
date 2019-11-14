@@ -52,28 +52,32 @@ public class EventSocket
     public void onOpen(Session session)
     {
         this.session = session;
-        LOG.info("{}  onOpen(): {}", toString(), session);
+        if (LOG.isDebugEnabled())
+            LOG.debug("{}  onOpen(): {}", toString(), session);
         openLatch.countDown();
     }
 
     @OnMessage
     public void onMessage(String message) throws IOException
     {
-        LOG.info("{}  onMessage(): {}", toString(), message);
+        if (LOG.isDebugEnabled())
+            LOG.debug("{}  onMessage(): {}", toString(), message);
         messageQueue.offer(message);
     }
 
     @OnClose
     public void onClose(CloseReason reason)
     {
-        LOG.info("{}  onClose(): {}", toString(), reason);
+        if (LOG.isDebugEnabled())
+            LOG.debug("{}  onClose(): {}", toString(), reason);
         closeLatch.countDown();
     }
 
     @OnError
     public void onError(Throwable cause)
     {
-        LOG.info("{}  onError(): {}", toString(), cause);
+        if (LOG.isDebugEnabled())
+            LOG.debug("{}  onError(): {}", toString(), cause);
         error = cause;
     }
 }

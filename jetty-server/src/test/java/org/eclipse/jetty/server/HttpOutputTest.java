@@ -652,12 +652,6 @@ public class HttpOutputTest
             }
 
             @Override
-            public boolean isOptimizedForDirectBuffers()
-            {
-                return _next.isOptimizedForDirectBuffers();
-            }
-
-            @Override
             public Interceptor getNextInterceptor()
             {
                 return _next;

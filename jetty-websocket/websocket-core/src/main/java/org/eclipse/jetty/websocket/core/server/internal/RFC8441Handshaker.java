@@ -187,7 +187,7 @@ public class RFC8441Handshaker implements Handshaker
 
         for (Connection.Listener listener : connector.getBeans(Connection.Listener.class))
         {
-            connection.addListener(listener);
+            connection.addEventListener(listener);
         }
 
         coreSession.setWebSocketConnection(connection);

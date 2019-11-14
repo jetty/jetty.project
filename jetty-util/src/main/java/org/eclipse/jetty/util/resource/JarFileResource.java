@@ -381,4 +381,11 @@ public class JarFileResource extends JarResource
         URL url = new URL(string);
         return url.sameFile(resource.getURI().toURL());
     }
+
+    public File getJarFile()
+    {
+        if (_file != null)
+            return _file;
+        return null;
+    }
 }

@@ -167,7 +167,7 @@ if proceedyn "Are you sure you want to release using above? (y/N)" n; then
     # This is equivalent to 'mvn release:perform'
     if proceedyn "Build/Deploy from tag $TAG_NAME? (Y/n)" y; then
         git checkout $TAG_NAME
-        mvn clean package source:jar javadoc:jar gpg:sign javadoc:aggregate-jar deploy \
+        mvn clean package source:jar javadoc:jar gpg:sign deploy \
             -Peclipse-release $DEPLOY_OPTS
         reportMavenTestFailures
         git checkout $GIT_BRANCH_ID
@@ -190,7 +190,7 @@ if proceedyn "Are you sure you want to release using above? (y/N)" n; then
     fi
     if proceedyn "Push git commits to remote $GIT_REMOTE_ID? (Y/n)" y; then
         git push $GIT_REMOTE_ID $GIT_BRANCH_ID
-        git push $GIT_REMOTE_ID --tags
+        git push $GIT_REMOTE_ID $TAG_NAME
     fi
 else
     echo "Not performing release"

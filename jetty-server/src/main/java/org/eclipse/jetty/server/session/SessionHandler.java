@@ -44,6 +44,7 @@ import javax.servlet.http.HttpSessionEvent;
 import javax.servlet.http.HttpSessionIdListener;
 import javax.servlet.http.HttpSessionListener;
 
+import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
@@ -260,33 +261,26 @@ public class SessionHandler extends ScopedHandler
      * Individual SessionManagers implementations may accept arbitrary listener types,
      * but they are expected to at least handle HttpSessionActivationListener,
      * HttpSessionAttributeListener, HttpSessionBindingListener and HttpSessionListener.
+     * @return true if the listener was added
      * @see #removeEventListener(EventListener)
+     * @see HttpSessionAttributeListener
+     * @see HttpSessionListener
+     * @see HttpSessionIdListener
      */
-    public void addEventListener(EventListener listener)
+    @Override
+    public boolean addEventListener(EventListener listener)
     {
-        if (listener instanceof HttpSessionAttributeListener)
-            _sessionAttributeListeners.add((HttpSessionAttributeListener)listener);
-        if (listener instanceof HttpSessionListener)
-            _sessionListeners.add((HttpSessionListener)listener);
-        if (listener instanceof HttpSessionIdListener)
-            _sessionIdListeners.add((HttpSessionIdListener)listener);
-        addBean(listener, false);
-    }
-
-    /**
-     * Removes all event listeners for session-related events.
-     *
-     * @see #removeEventListener(EventListener)
-     */
-    public void clearEventListeners()
-    {
-        for (EventListener e : getBeans(EventListener.class))
+        if (super.addEventListener(listener))
         {
-            removeBean(e);
+            if (listener instanceof HttpSessionAttributeListener)
+                _sessionAttributeListeners.add((HttpSessionAttributeListener)listener);
+            if (listener instanceof HttpSessionListener)
+                _sessionListeners.add((HttpSessionListener)listener);
+            if (listener instanceof HttpSessionIdListener)
+                _sessionIdListeners.add((HttpSessionIdListener)listener);
+            return true;
         }
-        _sessionAttributeListeners.clear();
-        _sessionListeners.clear();
-        _sessionIdListeners.clear();
+        return false;
     }
 
     /**
@@ -529,6 +523,16 @@ public class SessionHandler extends ScopedHandler
     }
 
     /**
+     * @return The sameSite setting for session cookies or null for no setting
+     * @see HttpCookie#getSameSite()
+     */
+    @ManagedAttribute("SameSite setting for session cookies")
+    public HttpCookie.SameSite getSameSite()
+    {
+        return HttpCookie.getSameSiteFromComment(_sessionComment);
+    }
+
+    /**
      * Returns the <code>HttpSession</code> with the given session id
      *
      * @param extendedId the session id
@@ -648,30 +652,18 @@ public class SessionHandler extends ScopedHandler
             sessionPath = (StringUtil.isEmpty(sessionPath)) ? "/" : sessionPath;
             String id = getExtendedId(session);
             HttpCookie cookie = null;
-            if (_sessionComment == null)
-            {
-                cookie = new HttpCookie(
-                    _cookieConfig.getName(),
-                    id,
-                    _cookieConfig.getDomain(),
-                    sessionPath,
-                    _cookieConfig.getMaxAge(),
-                    _cookieConfig.isHttpOnly(),
-                    _cookieConfig.isSecure() || (isSecureRequestOnly() && requestIsSecure));
-            }
-            else
-            {
-                cookie = new HttpCookie(
-                    _cookieConfig.getName(),
-                    id,
-                    _cookieConfig.getDomain(),
-                    sessionPath,
-                    _cookieConfig.getMaxAge(),
-                    _cookieConfig.isHttpOnly(),
-                    _cookieConfig.isSecure() || (isSecureRequestOnly() && requestIsSecure),
-                    _sessionComment,
-                    1);
-            }
+
+            cookie = new HttpCookie(
+                _cookieConfig.getName(),
+                id,
+                _cookieConfig.getDomain(),
+                sessionPath,
+                _cookieConfig.getMaxAge(),
+                _cookieConfig.isHttpOnly(),
+                _cookieConfig.isSecure() || (isSecureRequestOnly() && requestIsSecure),
+                HttpCookie.getCommentWithoutAttributes(_cookieConfig.getComment()),
+                0,
+                HttpCookie.getSameSiteFromComment(_cookieConfig.getComment()));
 
             return cookie;
         }
@@ -784,21 +776,20 @@ public class SessionHandler extends ScopedHandler
         }
     }
 
-    /**
-     * Removes an event listener for for session-related events.
-     *
-     * @param listener the session event listener to remove
-     * @see #addEventListener(EventListener)
-     */
-    public void removeEventListener(EventListener listener)
+    @Override
+    public boolean removeEventListener(EventListener listener)
     {
-        if (listener instanceof HttpSessionAttributeListener)
-            _sessionAttributeListeners.remove(listener);
-        if (listener instanceof HttpSessionListener)
-            _sessionListeners.remove(listener);
-        if (listener instanceof HttpSessionIdListener)
-            _sessionIdListeners.remove(listener);
-        removeBean(listener);
+        if (super.removeEventListener(listener))
+        {
+            if (listener instanceof HttpSessionAttributeListener)
+                _sessionAttributeListeners.remove(listener);
+            if (listener instanceof HttpSessionListener)
+                _sessionListeners.remove(listener);
+            if (listener instanceof HttpSessionIdListener)
+                _sessionIdListeners.remove(listener);
+            return true;
+        }
+        return false;
     }
 
     /**
@@ -812,11 +803,26 @@ public class SessionHandler extends ScopedHandler
     }
 
     /**
-     * @param httpOnly The httpOnly to set.
+     * Set if Session cookies should use HTTP Only
+     * @param httpOnly True if cookies should be HttpOnly.
+     * @see HttpCookie
      */
     public void setHttpOnly(boolean httpOnly)
     {
         _httpOnly = httpOnly;
+    }
+
+    /**
+     * Set Session cookie sameSite mode.
+     * Currently this is encoded in the session comment until sameSite is supported by {@link SessionCookieConfig}
+     * @param sameSite The sameSite setting for Session cookies (or null for no sameSite setting)
+     */
+    public void setSameSite(HttpCookie.SameSite sameSite)
+    {
+        // Encode in comment whilst not supported by SessionConfig, so that it can be set/saved in
+        // web.xml and quickstart.
+        // Always pass false for httpOnly as it has it's own setter.
+        _sessionComment = HttpCookie.getCommentWithAttributes(_sessionComment, false, sameSite);
     }
 
     /**
@@ -884,7 +890,7 @@ public class SessionHandler extends ScopedHandler
      * @param id The session ID stripped of any worker name.
      * @return A Session or null if none exists.
      */
-    protected Session getSession(String id)
+    public Session getSession(String id)
     {
         try
         {
@@ -1352,6 +1358,8 @@ public class SessionHandler extends ScopedHandler
      * CookieConfig
      *
      * Implementation of the javax.servlet.SessionCookieConfig.
+     * SameSite configuration can be achieved by using setComment
+     * @see HttpCookie
      */
     public final class CookieConfig implements SessionCookieConfig
     {
@@ -1511,19 +1519,22 @@ public class SessionHandler extends ScopedHandler
                     oldSessionHandler = baseRequest.getSessionHandler();
                     oldSession = baseRequest.getSession(false);
 
-                    //find any existing session for this request that has already been accessed
-                    existingSession = baseRequest.getSession(this);
-                    if (existingSession == null)
+                    if (oldSessionHandler != this)
                     {
-                        //session for this context has not been visited previously,
-                        //try getting it
-                        baseRequest.setSession(null);
-                        checkRequestedSessionId(baseRequest, request);
-                        existingSession = baseRequest.getSession(false);
-                    }
+                        //find any existing session for this request that has already been accessed
+                        existingSession = baseRequest.getSession(this);
+                        if (existingSession == null)
+                        {
+                            //session for this context has not been visited previously,
+                            //try getting it
+                            baseRequest.setSession(null);
+                            checkRequestedSessionId(baseRequest, request);
+                            existingSession = baseRequest.getSession(false);
+                        }
 
-                    baseRequest.setSession(existingSession);
-                    baseRequest.setSessionHandler(this);
+                        baseRequest.setSession(existingSession);
+                        baseRequest.setSessionHandler(this);
+                    }
                     break;
                 }
                 default:
@@ -1615,13 +1626,34 @@ public class SessionHandler extends ScopedHandler
                 {
                     if (sessionCookie.equalsIgnoreCase(cookies[i].getName()))
                     {
-                        requestedSessionId = cookies[i].getValue();
+                        String id = cookies[i].getValue();
                         requestedSessionIdFromCookie = true;
                         if (LOG.isDebugEnabled())
-                            LOG.debug("Got Session ID {} from cookie {}", requestedSessionId, sessionCookie);
-                        if (requestedSessionId != null)
+                            LOG.debug("Got Session ID {} from cookie {}", id, sessionCookie);
+
+                        HttpSession s = getHttpSession(id);
+                        
+                        if (requestedSessionId == null)
                         {
-                            break;
+                            //no previous id, always accept this one
+                            requestedSessionId = id;
+                            session = s;
+                        }
+                        else if (requestedSessionId.equals(id))
+                        {
+                            //really a bad request, but will forgive the duplication
+                        }
+                        else if (session == null || !isValid(session))
+                        {
+                            //no previous session or invalid, accept this one
+                            requestedSessionId = id;
+                            session = s;
+                        }
+                        else
+                        {
+                            //previous session is valid, use it unless both valid
+                            if (s != null && isValid(s))
+                                throw new BadMessageException("Duplicate valid session cookies: " + requestedSessionId + "," + id);
                         }
                     }
                 }
@@ -1652,6 +1684,7 @@ public class SessionHandler extends ScopedHandler
                     requestedSessionIdFromCookie = false;
                     if (LOG.isDebugEnabled())
                         LOG.debug("Got Session ID {} from URL", requestedSessionId);
+                    session = getHttpSession(requestedSessionId);
                 }
             }
         }
@@ -1661,11 +1694,10 @@ public class SessionHandler extends ScopedHandler
 
         if (requestedSessionId != null)
         {
-            session = getHttpSession(requestedSessionId);
             if (session != null && isValid(session))
             {
                 baseRequest.enterSession(session); //request enters this session for first time
-                baseRequest.setSession(session);
+                baseRequest.setSession(session);  //associate the session with the request
             }
         }
     }

@@ -119,8 +119,8 @@ public abstract class CompressExtension extends AbstractExtension
 
     public void releaseDeflater()
     {
-        getInflaterPool().release(inflaterImpl);
-        inflaterImpl = null;
+        getDeflaterPool().release(deflaterImpl);
+        deflaterImpl = null;
     }
 
     /**

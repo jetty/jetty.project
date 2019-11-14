@@ -42,7 +42,7 @@ import org.eclipse.jetty.util.log.Logger;
  * Dumps GET and POST requests.
  * Useful for testing and debugging.
  */
-public class DumpHandler extends AbstractHandler.ErrorDispatchHandler
+public class DumpHandler extends AbstractHandler
 {
     private static final Logger LOG = Log.getLogger(DumpHandler.class);
 
@@ -58,7 +58,7 @@ public class DumpHandler extends AbstractHandler.ErrorDispatchHandler
     }
 
     @Override
-    protected void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
         if (!isStarted())
             return;
@@ -113,7 +113,7 @@ public class DumpHandler extends AbstractHandler.ErrorDispatchHandler
         writer.write("<pre>\nlocal=" + request.getLocalAddr() + ":" + request.getLocalPort() + "\n</pre>\n");
         writer.write("<pre>\nremote=" + request.getRemoteAddr() + ":" + request.getRemotePort() + "\n</pre>\n");
         writer.write("<h3>Header:</h3><pre>");
-        writer.write(request.getMethod() + " " + request.getRequestURI() + " " + request.getProtocol() + "\n");
+        writer.write(String.format("%4s %s %s\n", request.getMethod(), request.getRequestURI(), request.getProtocol()));
         Enumeration<String> headers = request.getHeaderNames();
         while (headers.hasMoreElements())
         {

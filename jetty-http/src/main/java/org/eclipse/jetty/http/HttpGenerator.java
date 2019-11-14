@@ -78,7 +78,7 @@ public class HttpGenerator
         FLUSH,                  // The buffers previously generated should be flushed 
         CONTINUE,               // Continue generating the message
         SHUTDOWN_OUT,           // Need EOF to be signaled
-        DONE                    // Message generation complete
+        DONE                    // The current phase of generation is complete
     }
 
     // other statics
@@ -686,17 +686,24 @@ public class HttpGenerator
             _endOfContent = EndOfContent.NO_CONTENT;
 
             // But it is an error if there actually is content
-            if (_contentPrepared > 0 || contentLength > 0)
+            if (_contentPrepared > 0)
+                throw new BadMessageException(INTERNAL_SERVER_ERROR_500, "Content for no content response");
+
+            if (contentLengthField)
             {
-                if (_contentPrepared == 0 && last)
+                if (response != null && response.getStatus() == HttpStatus.NOT_MODIFIED_304)
+                    putContentLength(header, contentLength);
+                else if (contentLength > 0)
                 {
-                    // TODO discard content for backward compatibility with 9.3 releases
-                    // TODO review if it is still needed in 9.4 or can we just throw.
-                    content.clear();
-                    contentLength = 0;
+                    if (_contentPrepared == 0 && last)
+                    {
+                        // TODO discard content for backward compatibility with 9.3 releases
+                        // TODO review if it is still needed in 9.4 or can we just throw.
+                        content.clear();
+                    }
+                    else
+                        throw new BadMessageException(INTERNAL_SERVER_ERROR_500, "Content for no content response");
                 }
-                else
-                    throw new BadMessageException(INTERNAL_SERVER_ERROR_500, "Content for no content response");
             }
         }
         // Else if we are HTTP/1.1 and the content length is unknown and we are either persistent

@@ -470,7 +470,7 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
         if (!demanding)
             throw new IllegalStateException("FrameHandler is not demanding: " + this);
         if (!sessionState.isInputOpen())
-            throw new IllegalStateException("FrameHandler input not open: " + this); // TODO Perhaps this is a NOOP?
+            throw new IllegalStateException("FrameHandler input not open: " + this);
         connection.demand(n);
     }
 
