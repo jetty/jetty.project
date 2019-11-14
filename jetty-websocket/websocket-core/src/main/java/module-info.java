@@ -19,8 +19,8 @@
 import org.eclipse.jetty.websocket.core.Extension;
 import org.eclipse.jetty.websocket.core.internal.FragmentExtension;
 import org.eclipse.jetty.websocket.core.internal.IdentityExtension;
+import org.eclipse.jetty.websocket.core.internal.PerMessageDeflateExtension;
 import org.eclipse.jetty.websocket.core.internal.ValidationExtension;
-import org.eclipse.jetty.websocket.core.internal.compress.PerMessageDeflateExtension;
 
 module org.eclipse.jetty.websocket.core
 {

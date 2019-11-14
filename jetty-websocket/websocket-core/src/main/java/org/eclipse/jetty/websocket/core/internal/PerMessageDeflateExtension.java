@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core.internal.compress;
+package org.eclipse.jetty.websocket.core.internal;
 
 import java.nio.ByteBuffer;
 import java.util.HashMap;
@@ -37,7 +37,6 @@ import org.eclipse.jetty.websocket.core.MessageTooLargeException;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.ProtocolException;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
-import org.eclipse.jetty.websocket.core.internal.TransformingFlusher;
 
 /**
  * Per Message Deflate Compression extension for WebSocket.

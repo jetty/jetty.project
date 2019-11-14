@@ -41,8 +41,8 @@ import org.eclipse.jetty.websocket.core.ProtocolException;
 import org.eclipse.jetty.websocket.core.TestMessageHandler;
 import org.eclipse.jetty.websocket.core.internal.ExtensionStack;
 import org.eclipse.jetty.websocket.core.internal.Negotiated;
+import org.eclipse.jetty.websocket.core.internal.PerMessageDeflateExtension;
 import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
-import org.eclipse.jetty.websocket.core.internal.compress.PerMessageDeflateExtension;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
