@@ -28,7 +28,6 @@ module org.eclipse.jetty.websocket.core
     exports org.eclipse.jetty.websocket.core.client;
     exports org.eclipse.jetty.websocket.core.server;
     exports org.eclipse.jetty.websocket.core.internal to org.eclipse.jetty.util;
-    exports org.eclipse.jetty.websocket.core.internal.compress to org.eclipse.jetty.util;
 
     requires jetty.servlet.api;
     requires org.eclipse.jetty.client;
