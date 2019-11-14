@@ -7,10 +7,10 @@ assignees: ''
 
 ---
 
-**Jetty version:**
+**Jetty version**
 
-**Java version:**
+**Java version**
 
-**Question:**
+**Question**
 
 
