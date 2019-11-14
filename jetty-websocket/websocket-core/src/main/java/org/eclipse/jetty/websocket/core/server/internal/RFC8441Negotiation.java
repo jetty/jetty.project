@@ -22,6 +22,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.server.Negotiation;
@@ -34,11 +35,11 @@ public class RFC8441Negotiation extends Negotiation
     }
 
     @Override
-    public boolean isUpgrade()
+    public boolean isSuccessful()
     {
-        if (!getBaseRequest().hasMetaData())
+        MetaData.Request metaData = getBaseRequest().getMetaData();
+        if (metaData == null)
             return false;
-
-        return "websocket".equals(getBaseRequest().getMetaData().getProtocol());
+        return "websocket".equals(metaData.getProtocol());
     }
 }

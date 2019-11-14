@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -34,8 +33,6 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.MessageHandler;
@@ -47,8 +44,6 @@ import static org.eclipse.jetty.util.Callback.NOOP;
 
 public class ChatWebSocketServer
 {
-    private static Logger LOG = Log.getLogger(ChatWebSocketServer.class);
-
     private Set<MessageHandler> members = new HashSet<>();
 
     private FrameHandler negotiate(Negotiation negotiation)
@@ -77,7 +72,7 @@ public class ChatWebSocketServer
                 {
                     members.add(this);
                     callback.succeeded();
-                }, x -> callback.failed(x)));
+                }, callback::failed));
             }
 
             @Override
