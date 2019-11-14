@@ -342,43 +342,36 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
     {
         Session session = null;
 
-        session = doGet(id);
-
-        if (session == null)
+        session = doComputeIfAbsent(id, k ->
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Session {} not found locally in {}, attempting to load", id, this);
 
-            session = doComputeIfAbsent(id, k ->
+            try
             {
-                try
+                Session s = loadSession(k);
+                if (s != null)
                 {
-                    return loadSession(k);
+                    try (Lock lock = s.lock())
+                    {
+                        s.setResident(true); //ensure freshly loaded session is resident
+                    }
                 }
-                catch (Exception e)
+                else
                 {
-                    LOG.warn("Error loading session {}", id, e);
-                    return null;
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Session {} not loaded by store", id);
                 }
-            });
-
-            if (session == null) //session does not exist in store
+                return s;
+            }
+            catch (Exception e)
             {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Session {} not loaded by store", id);
+                LOG.warn("Error loading session {}", id, e);
                 return null;
             }
-            else
-            {
-                try (Lock lock = session.lock())
-                {
-                    session.setResident(true); //ensure freshly loaded session is resident
-                    if (enter)
-                        session.use();
-                }
-            }
-        }
-        else
+        });
+
+        if (session != null)
         {
             try (Lock lock = session.lock())
             {
