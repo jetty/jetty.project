@@ -1,0 +1,11 @@
+*.sh	eol=lf
+*.bat	eol=crlf
+*.txt	eol=lf
+*.properties	eol=lf
+*.java	eol=lf
+*.mod	eol=lf
+*.adoc	eol=lf
+*.xml	eol=lf
+Jenkinsfile	eol=lf
+*.js    eol=lf
+*.raw   binary
