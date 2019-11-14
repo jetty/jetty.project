@@ -374,6 +374,11 @@ public class DataDemandTest extends AbstractTest
         ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
         for (int i = 512; i >= 0; --i)
             generator.data(lease, new DataFrame(clientStream.getId(), ByteBuffer.allocate(1), i == 0), 1);
+
+        // Since this is a naked write, we need to wait that the
+        // client finishes writing the SETTINGS reply to the server
+        // during connection initialization, or we risk a WritePendingException.
+        Thread.sleep(1000);
         ((HTTP2Session)clientStream.getSession()).getEndPoint().write(Callback.NOOP, lease.getByteBuffers().toArray(new ByteBuffer[0]));
 
         assertTrue(latch.await(15, TimeUnit.SECONDS));
