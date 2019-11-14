@@ -56,6 +56,13 @@ public class ClientUpgradeResponse extends UpgradeResponseAdapter
     }
 
     @Override
+    public boolean isSuccess()
+    {
+        // If we reached this point, where we have a UpgradeResponse object, then the upgrade is a success.
+        return true;
+    }
+
+    @Override
     public List<ExtensionConfig> getExtensions()
     {
         return this.extensions;

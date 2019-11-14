@@ -698,6 +698,8 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         // Process (version specific) handshake response
         handshaker.doHandshakeResponse(request, response);
 
+        response.setSuccess(true);
+
         if (LOG.isDebugEnabled())
             LOG.debug("Websocket upgrade {} {} {} {}", request.getRequestURI(), version, response.getAcceptedSubProtocol(), wsConnection);
 

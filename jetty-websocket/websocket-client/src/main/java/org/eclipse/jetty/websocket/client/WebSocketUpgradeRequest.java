@@ -596,9 +596,11 @@ public class WebSocketUpgradeRequest extends HttpRequest implements CompleteList
 
         URI requestURI = this.getURI();
 
+        ClientUpgradeResponse upgradeResponse = new ClientUpgradeResponse(response);
+
         WebSocketSession session = getSessionFactory().createSession(requestURI, localEndpoint, connection);
         session.setUpgradeRequest(new ClientUpgradeRequest(this));
-        session.setUpgradeResponse(new ClientUpgradeResponse(response));
+        session.setUpgradeResponse(upgradeResponse);
         connection.addListener(session);
 
         List<ExtensionConfig> extensions = new ArrayList<>();
@@ -637,7 +639,7 @@ public class WebSocketUpgradeRequest extends HttpRequest implements CompleteList
 
         if (upgradeListener != null)
         {
-            upgradeListener.onHandshakeResponse(new ClientUpgradeResponse(response));
+            upgradeListener.onHandshakeResponse(upgradeResponse);
         }
 
         // Now swap out the connection
