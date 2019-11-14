@@ -6,13 +6,13 @@ assignees: ''
 
 ---
 
-**Jetty version:**
+**Jetty version**
 
-**Java version:**
+**Java version**
 
-**OS type/version:**
+**OS type/version**
 
-**Description:**
+**Description**
 
 
 
