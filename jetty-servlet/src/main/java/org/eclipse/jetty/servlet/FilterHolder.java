@@ -114,7 +114,7 @@ public class FilterHolder extends Holder<Filter>
                 try
                 {
                     ServletContext context = getServletHandler().getServletContext();
-                    _filter = (context instanceof ServletContextHandler.Context)
+                    _filter = (context != null)
                         ? context.createFilter(getHeldClass())
                         : getHeldClass().getDeclaredConstructor().newInstance();
                 }
@@ -234,7 +234,7 @@ public class FilterHolder extends Holder<Filter>
         public Collection<String> getServletNameMappings()
         {
             FilterMapping[] mappings = getServletHandler().getFilterMappings();
-            List<String> names = new ArrayList<String>();
+            List<String> names = new ArrayList<>();
             for (FilterMapping mapping : mappings)
             {
                 if (mapping.getFilterHolder() != FilterHolder.this)
@@ -250,7 +250,7 @@ public class FilterHolder extends Holder<Filter>
         public Collection<String> getUrlPatternMappings()
         {
             FilterMapping[] mappings = getServletHandler().getFilterMappings();
-            List<String> patterns = new ArrayList<String>();
+            List<String> patterns = new ArrayList<>();
             for (FilterMapping mapping : mappings)
             {
                 if (mapping.getFilterHolder() != FilterHolder.this)

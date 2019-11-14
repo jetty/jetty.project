@@ -305,7 +305,6 @@ public class ServletContextHandler extends ContextHandler
 
             if (handler.getHandler() != _servletHandler)
                 doSetHandler(handler, _servletHandler);
-            handler = _servletHandler;
         }
     }
 
@@ -356,7 +355,7 @@ public class ServletContextHandler extends ContextHandler
     {
         try
         {
-            return _defaultSecurityHandlerClass.getDeclaredConstructor().newInstance();
+            return getDefaultSecurityHandlerClass().getDeclaredConstructor().newInstance();
         }
         catch (Exception e)
         {
@@ -547,7 +546,7 @@ public class ServletContextHandler extends ContextHandler
         //Get a reference to the SecurityHandler, which must be ConstraintAware
         if (_securityHandler != null && _securityHandler instanceof ConstraintAware)
         {
-            HashSet<String> union = new HashSet<String>();
+            HashSet<String> union = new HashSet<>();
             Set<String> existing = ((ConstraintAware)_securityHandler).getRoles();
             if (existing != null)
                 union.addAll(existing);
@@ -745,13 +744,13 @@ public class ServletContextHandler extends ContextHandler
 
     public static class JspPropertyGroup implements JspPropertyGroupDescriptor
     {
-        private List<String> _urlPatterns = new ArrayList<String>();
+        private List<String> _urlPatterns = new ArrayList<>();
         private String _elIgnored;
         private String _pageEncoding;
         private String _scriptingInvalid;
         private String _isXml;
-        private List<String> _includePreludes = new ArrayList<String>();
-        private List<String> _includeCodas = new ArrayList<String>();
+        private List<String> _includePreludes = new ArrayList<>();
+        private List<String> _includeCodas = new ArrayList<>();
         private String _deferredSyntaxAllowedAsLiteral;
         private String _trimDirectiveWhitespaces;
         private String _defaultContentType;
@@ -764,7 +763,7 @@ public class ServletContextHandler extends ContextHandler
         @Override
         public Collection<String> getUrlPatterns()
         {
-            return new ArrayList<String>(_urlPatterns); // spec says must be a copy
+            return new ArrayList<>(_urlPatterns); // spec says must be a copy
         }
 
         public void addUrlPattern(String s)
@@ -860,7 +859,7 @@ public class ServletContextHandler extends ContextHandler
         @Override
         public Collection<String> getIncludePreludes()
         {
-            return new ArrayList<String>(_includePreludes); //must be a copy
+            return new ArrayList<>(_includePreludes); //must be a copy
         }
 
         public void addIncludePrelude(String prelude)
@@ -875,7 +874,7 @@ public class ServletContextHandler extends ContextHandler
         @Override
         public Collection<String> getIncludeCodas()
         {
-            return new ArrayList<String>(_includeCodas); //must be a copy
+            return new ArrayList<>(_includeCodas); //must be a copy
         }
 
         public void addIncludeCoda(String coda)
@@ -932,24 +931,24 @@ public class ServletContextHandler extends ContextHandler
         @Override
         public String toString()
         {
-            StringBuffer sb = new StringBuffer();
+            StringBuilder sb = new StringBuilder();
             sb.append("JspPropertyGroupDescriptor:");
-            sb.append(" el-ignored=" + _elIgnored);
-            sb.append(" is-xml=" + _isXml);
-            sb.append(" page-encoding=" + _pageEncoding);
-            sb.append(" scripting-invalid=" + _scriptingInvalid);
-            sb.append(" deferred-syntax-allowed-as-literal=" + _deferredSyntaxAllowedAsLiteral);
-            sb.append(" trim-directive-whitespaces" + _trimDirectiveWhitespaces);
-            sb.append(" default-content-type=" + _defaultContentType);
-            sb.append(" buffer=" + _buffer);
-            sb.append(" error-on-undeclared-namespace=" + _errorOnUndeclaredNamespace);
+            sb.append(" el-ignored=").append(_elIgnored);
+            sb.append(" is-xml=").append(_isXml);
+            sb.append(" page-encoding=").append(_pageEncoding);
+            sb.append(" scripting-invalid=").append(_scriptingInvalid);
+            sb.append(" deferred-syntax-allowed-as-literal=").append(_deferredSyntaxAllowedAsLiteral);
+            sb.append(" trim-directive-whitespaces").append(_trimDirectiveWhitespaces);
+            sb.append(" default-content-type=").append(_defaultContentType);
+            sb.append(" buffer=").append(_buffer);
+            sb.append(" error-on-undeclared-namespace=").append(_errorOnUndeclaredNamespace);
             for (String prelude : _includePreludes)
             {
-                sb.append(" include-prelude=" + prelude);
+                sb.append(" include-prelude=").append(prelude);
             }
             for (String coda : _includeCodas)
             {
-                sb.append(" include-coda=" + coda);
+                sb.append(" include-coda=").append(coda);
             }
             return sb.toString();
         }
@@ -997,8 +996,8 @@ public class ServletContextHandler extends ContextHandler
 
     public static class JspConfig implements JspConfigDescriptor
     {
-        private List<TaglibDescriptor> _taglibs = new ArrayList<TaglibDescriptor>();
-        private List<JspPropertyGroupDescriptor> _jspPropertyGroups = new ArrayList<JspPropertyGroupDescriptor>();
+        private List<TaglibDescriptor> _taglibs = new ArrayList<>();
+        private List<JspPropertyGroupDescriptor> _jspPropertyGroups = new ArrayList<>();
 
         public JspConfig()
         {
@@ -1010,7 +1009,7 @@ public class ServletContextHandler extends ContextHandler
         @Override
         public Collection<TaglibDescriptor> getTaglibs()
         {
-            return new ArrayList<TaglibDescriptor>(_taglibs);
+            return new ArrayList<>(_taglibs);
         }
 
         public void addTaglibDescriptor(TaglibDescriptor d)
@@ -1024,7 +1023,7 @@ public class ServletContextHandler extends ContextHandler
         @Override
         public Collection<JspPropertyGroupDescriptor> getJspPropertyGroups()
         {
-            return new ArrayList<JspPropertyGroupDescriptor>(_jspPropertyGroups);
+            return new ArrayList<>(_jspPropertyGroups);
         }
 
         public void addJspPropertyGroup(JspPropertyGroupDescriptor g)
@@ -1035,15 +1034,15 @@ public class ServletContextHandler extends ContextHandler
         @Override
         public String toString()
         {
-            StringBuffer sb = new StringBuffer();
+            StringBuilder sb = new StringBuilder();
             sb.append("JspConfigDescriptor: \n");
             for (TaglibDescriptor taglib : _taglibs)
             {
-                sb.append(taglib + "\n");
+                sb.append(taglib).append("\n");
             }
             for (JspPropertyGroupDescriptor jpg : _jspPropertyGroups)
             {
-                sb.append(jpg + "\n");
+                sb.append(jpg).append("\n");
             }
             return sb.toString();
         }
@@ -1051,7 +1050,6 @@ public class ServletContextHandler extends ContextHandler
 
     public class Context extends ContextHandler.Context
     {
-
         /*
          * @see javax.servlet.ServletContext#getNamedDispatcher(java.lang.String)
          */
@@ -1272,38 +1270,14 @@ public class ServletContextHandler extends ContextHandler
         }
 
         @Override
-        public <T extends Filter> T createFilter(Class<T> c) throws ServletException
+        protected <T> T createInstance(Class<T> clazz) throws ServletException
         {
-            try
-            {
-                T f = createInstance(c);
-                f = _objFactory.decorate(f);
-                return f;
-            }
-            catch (Exception e)
-            {
-                throw new ServletException(e);
-            }
+            return _objFactory.decorate(super.createInstance(clazz));
         }
 
         public <T extends Filter> void destroyFilter(T f)
         {
             _objFactory.destroy(f);
-        }
-
-        @Override
-        public <T extends Servlet> T createServlet(Class<T> c) throws ServletException
-        {
-            try
-            {
-                T s = createInstance(c);
-                s = _objFactory.decorate(s);
-                return s;
-            }
-            catch (Exception e)
-            {
-                throw new ServletException(e);
-            }
         }
 
         public <T extends Servlet> void destroyServlet(T s)
@@ -1343,7 +1317,7 @@ public class ServletContextHandler extends ContextHandler
             if (!_enabled)
                 throw new UnsupportedOperationException();
 
-            HashMap<String, FilterRegistration> registrations = new HashMap<String, FilterRegistration>();
+            HashMap<String, FilterRegistration> registrations = new HashMap<>();
             ServletHandler handler = ServletContextHandler.this.getServletHandler();
             FilterHolder[] holders = handler.getFilters();
             if (holders != null)
@@ -1372,7 +1346,7 @@ public class ServletContextHandler extends ContextHandler
             if (!_enabled)
                 throw new UnsupportedOperationException();
 
-            HashMap<String, ServletRegistration> registrations = new HashMap<String, ServletRegistration>();
+            HashMap<String, ServletRegistration> registrations = new HashMap<>();
             ServletHandler handler = ServletContextHandler.this.getServletHandler();
             ServletHolder[] holders = handler.getServlets();
             if (holders != null)
@@ -1453,21 +1427,6 @@ public class ServletContextHandler extends ContextHandler
             if (!_enabled)
                 throw new UnsupportedOperationException();
             super.addListener(listenerClass);
-        }
-
-        @Override
-        public <T extends EventListener> T createListener(Class<T> clazz) throws ServletException
-        {
-            try
-            {
-                T l = createInstance(clazz);
-                l = _objFactory.decorate(l);
-                return l;
-            }
-            catch (Exception e)
-            {
-                throw new ServletException(e);
-            }
         }
 
         @Override
