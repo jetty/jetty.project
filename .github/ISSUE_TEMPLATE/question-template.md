@@ -9,8 +9,6 @@ assignees: ''
 
 **Jetty version:**
 
-**OS version:**
-
 **Java version:**
 
 **Question:**

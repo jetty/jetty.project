@@ -8,12 +8,11 @@ assignees: ''
 
 **Jetty version:**
 
-**OS version:**
-
 **Java version:**
+
+**OS/Type version:**
 
 **Description:**
 
-**Steps to reproduce:**
 
 
