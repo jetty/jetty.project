@@ -53,7 +53,7 @@ import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 
 public abstract class AbstractHandshaker implements Handshaker
 {
-    protected static final Logger LOG = Log.getLogger(RFC8441Handshaker.class);
+    protected static final Logger LOG = Log.getLogger(AbstractHandshaker.class);
     private static final HttpField SERVER_VERSION = new PreEncodedHttpField(HttpHeader.SERVER, HttpConfiguration.SERVER_VERSION);
 
     @Override
@@ -97,7 +97,6 @@ public abstract class AbstractHandshaker implements Handshaker
             baseRequest.setHandled(true);
             return false;
         }
-
 
         // Validate negotiated protocol
         String protocol = negotiation.getSubprotocol();

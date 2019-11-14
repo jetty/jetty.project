@@ -29,12 +29,12 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.server.Negotiation;
 
-public class RFC6544Negotiation extends Negotiation
+public class RFC6455Negotiation extends Negotiation
 {
     private boolean successful;
     private String key;
 
-    public RFC6544Negotiation(Request baseRequest, HttpServletRequest request, HttpServletResponse response, WebSocketComponents components) throws BadMessageException
+    public RFC6455Negotiation(Request baseRequest, HttpServletRequest request, HttpServletResponse response, WebSocketComponents components) throws BadMessageException
     {
         super(baseRequest, request, response, components);
     }

@@ -66,7 +66,7 @@ public final class RFC6455Handshaker extends AbstractHandshaker
     @Override
     protected Negotiation newNegotiation(HttpServletRequest request, HttpServletResponse response, WebSocketComponents webSocketComponents)
     {
-        return new RFC6544Negotiation(Request.getBaseRequest(request), request, response, webSocketComponents);
+        return new RFC6455Negotiation(Request.getBaseRequest(request), request, response, webSocketComponents);
     }
 
     @Override
@@ -75,7 +75,7 @@ public final class RFC6455Handshaker extends AbstractHandshaker
         boolean result = super.validateNegotiation(negotiation);
         if (!result)
             return false;
-        if (((RFC6544Negotiation)negotiation).getKey() == null)
+        if (((RFC6455Negotiation)negotiation).getKey() == null)
             throw new BadMessageException("Missing request header 'Sec-WebSocket-Key'");
         return true;
     }
@@ -95,6 +95,6 @@ public final class RFC6455Handshaker extends AbstractHandshaker
         HttpFields responseFields = response.getHttpFields();
         responseFields.put(UPGRADE_WEBSOCKET);
         responseFields.put(CONNECTION_UPGRADE);
-        responseFields.put(HttpHeader.SEC_WEBSOCKET_ACCEPT, WebSocketCore.hashKey(((RFC6544Negotiation)negotiation).getKey()));
+        responseFields.put(HttpHeader.SEC_WEBSOCKET_ACCEPT, WebSocketCore.hashKey(((RFC6455Negotiation)negotiation).getKey()));
     }
 }
