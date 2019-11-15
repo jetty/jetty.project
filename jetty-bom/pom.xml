@@ -321,6 +321,11 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-start</artifactId>
+        <version>9.4.23-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-spring</artifactId>
         <version>9.4.23-SNAPSHOT</version>
       </dependency>
