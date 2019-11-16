@@ -29,6 +29,7 @@ import java.util.stream.Collectors;
 import org.eclipse.jetty.alpn.client.ALPNClientConnection;
 import org.eclipse.jetty.alpn.client.ALPNClientConnectionFactory;
 import org.eclipse.jetty.client.AbstractConnectorHttpClientTransport;
+import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.HttpRequest;
@@ -36,7 +37,6 @@ import org.eclipse.jetty.client.MultiplexConnectionPool;
 import org.eclipse.jetty.client.MultiplexHttpDestination;
 import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.http.HttpClientConnectionFactory;
-import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
@@ -121,7 +121,7 @@ public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTrans
     @Override
     public HttpDestination.Key newDestinationKey(HttpRequest request, Origin origin)
     {
-        boolean ssl = HttpScheme.HTTPS.is(request.getScheme());
+        boolean ssl = HttpClient.isSchemeSecure(request.getScheme());
         String http1 = "http/1.1";
         String http2 = ssl ? "h2" : "h2c";
         List<String> protocols = List.of();
