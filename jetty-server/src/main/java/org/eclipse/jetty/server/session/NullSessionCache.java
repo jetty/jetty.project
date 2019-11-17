@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.server.session;
 
+import java.util.function.Function;
+
 import javax.servlet.http.HttpServletRequest;
 
 /**
@@ -39,35 +41,23 @@ public class NullSessionCache extends AbstractSessionCache
         super.setEvictionPolicy(EVICT_ON_SESSION_EXIT);
     }
 
-    /**
-     * @see org.eclipse.jetty.server.session.SessionCache#shutdown()
-     */
     @Override
     public void shutdown()
     {
     }
 
-    /**
-     * @see org.eclipse.jetty.server.session.AbstractSessionCache#newSession(org.eclipse.jetty.server.session.SessionData)
-     */
     @Override
     public Session newSession(SessionData data)
     {
         return new Session(getSessionHandler(), data);
     }
 
-    /**
-     * @see org.eclipse.jetty.server.session.AbstractSessionCache#newSession(javax.servlet.http.HttpServletRequest, org.eclipse.jetty.server.session.SessionData)
-     */
     @Override
     public Session newSession(HttpServletRequest request, SessionData data)
     {
         return new Session(getSessionHandler(), request, data);
     }
 
-    /**
-     * @see org.eclipse.jetty.server.session.AbstractSessionCache#doGet(java.lang.String)
-     */
     @Override
     public Session doGet(String id)
     {
@@ -75,9 +65,6 @@ public class NullSessionCache extends AbstractSessionCache
         return null;
     }
 
-    /**
-     * @see org.eclipse.jetty.server.session.AbstractSessionCache#doPutIfAbsent(java.lang.String, org.eclipse.jetty.server.session.Session)
-     */
     @Override
     public Session doPutIfAbsent(String id, Session session)
     {
@@ -85,9 +72,6 @@ public class NullSessionCache extends AbstractSessionCache
         return null;
     }
 
-    /**
-     * @see org.eclipse.jetty.server.session.AbstractSessionCache#doReplace(java.lang.String, org.eclipse.jetty.server.session.Session, org.eclipse.jetty.server.session.Session)
-     */
     @Override
     public boolean doReplace(String id, Session oldValue, Session newValue)
     {
@@ -95,21 +79,21 @@ public class NullSessionCache extends AbstractSessionCache
         return true;
     }
 
-    /**
-     * @see org.eclipse.jetty.server.session.AbstractSessionCache#doDelete(java.lang.String)
-     */
     @Override
     public Session doDelete(String id)
     {
         return null;
     }
 
-    /**
-     * @see org.eclipse.jetty.server.session.AbstractSessionCache#setEvictionPolicy(int)
-     */
     @Override
     public void setEvictionPolicy(int evictionTimeout)
     {
         LOG.warn("Ignoring eviction setting:" + evictionTimeout);
+    }
+
+    @Override
+    protected Session doComputeIfAbsent(String id, Function<String, Session> mappingFunction)
+    {
+        return mappingFunction.apply(id);
     }
 }
