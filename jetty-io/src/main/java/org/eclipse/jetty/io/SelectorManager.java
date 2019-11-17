@@ -38,6 +38,7 @@ import java.util.function.IntUnaryOperator;
 import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.component.Container;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
@@ -389,31 +390,37 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
      */
     public abstract Connection newConnection(SelectableChannel channel, EndPoint endpoint, Object attachment) throws IOException;
 
-    public void addEventListener(EventListener listener)
+    /**
+     * @param listener An EventListener
+     * @see AcceptListener
+     * @see Container#addEventListener(EventListener)
+     */
+    @Override
+    public boolean addEventListener(EventListener listener)
     {
         if (isRunning())
             throw new IllegalStateException(this.toString());
-        if (listener instanceof AcceptListener)
-            addAcceptListener(AcceptListener.class.cast(listener));
+        if (super.addEventListener(listener))
+        {
+            if (listener instanceof AcceptListener)
+                _acceptListeners.add((AcceptListener)listener);
+            return true;
+        }
+        return false;
     }
 
-    public void removeEventListener(EventListener listener)
+    @Override
+    public boolean removeEventListener(EventListener listener)
     {
         if (isRunning())
             throw new IllegalStateException(this.toString());
-        if (listener instanceof AcceptListener)
-            removeAcceptListener(AcceptListener.class.cast(listener));
-    }
-
-    public void addAcceptListener(AcceptListener listener)
-    {
-        if (!_acceptListeners.contains(listener))
-            _acceptListeners.add(listener);
-    }
-
-    public void removeAcceptListener(AcceptListener listener)
-    {
-        _acceptListeners.remove(listener);
+        if (super.removeEventListener(listener))
+        {
+            if (listener instanceof AcceptListener)
+                _acceptListeners.remove(listener);
+            return true;
+        }
+        return false;
     }
 
     protected void onAccepting(SelectableChannel channel)
@@ -461,12 +468,16 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
         }
     }
 
+    public interface SelectorManagerListener extends EventListener
+    {
+    }
+
     /**
      * <p>A listener for accept events.</p>
      * <p>This listener is called from either the selector or acceptor thread
      * and implementations must be non blocking and fast.</p>
      */
-    public interface AcceptListener extends EventListener
+    public interface AcceptListener extends SelectorManagerListener
     {
         /**
          * Called immediately after a new SelectableChannel is accepted, but

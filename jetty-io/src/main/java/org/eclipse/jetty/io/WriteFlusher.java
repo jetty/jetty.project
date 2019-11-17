@@ -571,7 +571,8 @@ public abstract class WriteFlusher
     }
 
     /**
-     * <p>A listener of {@link WriteFlusher} events.</p>
+     * <p>A listener of {@link WriteFlusher} events.
+     * If implemented by a Connection class, the {@link #onFlushed(long)} event will be delivered to it.</p>
      */
     public interface Listener
     {

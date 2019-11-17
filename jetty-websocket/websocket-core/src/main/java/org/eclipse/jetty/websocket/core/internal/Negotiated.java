@@ -28,6 +28,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.util.MultiMap;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.UrlEncoded;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.WebSocketConstants;
@@ -50,14 +51,17 @@ public class Negotiated
         this.extensions = extensions;
         this.protocolVersion = protocolVersion;
 
+        String rawQuery = requestURI.getRawQuery();
         Map<String, List<String>> map;
-        if (requestURI.getQuery() == null)
+        if (StringUtil.isBlank(rawQuery))
+        {
             map = Collections.emptyMap();
+        }
         else
         {
             map = new HashMap<>();
             MultiMap<String> params = new MultiMap<>();
-            UrlEncoded.decodeUtf8To(requestURI.getQuery(), params);
+            UrlEncoded.decodeUtf8To(rawQuery, params);
             for (String p : params.keySet())
             {
                 map.put(p, Collections.unmodifiableList(params.getValues(p)));

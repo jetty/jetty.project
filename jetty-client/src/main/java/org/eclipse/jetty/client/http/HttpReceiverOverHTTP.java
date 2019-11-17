@@ -22,6 +22,7 @@ import java.io.EOFException;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.client.HttpReceiver;
 import org.eclipse.jetty.client.HttpResponse;
@@ -48,7 +49,15 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     public HttpReceiverOverHTTP(HttpChannelOverHTTP channel)
     {
         super(channel);
-        parser = new HttpParser(this, -1, channel.getHttpDestination().getHttpClient().getHttpCompliance());
+        HttpClient httpClient = channel.getHttpDestination().getHttpClient();
+        parser = new HttpParser(this, -1, httpClient.getHttpCompliance());
+        HttpClientTransport transport = httpClient.getTransport();
+        if (transport instanceof HttpClientTransportOverHTTP)
+        {
+            HttpClientTransportOverHTTP httpTransport = (HttpClientTransportOverHTTP)transport;
+            parser.setHeaderCacheSize(httpTransport.getHeaderCacheSize());
+            parser.setHeaderCacheCaseSensitive(httpTransport.isHeaderCacheCaseSensitive());
+        }
     }
 
     @Override
@@ -243,32 +252,18 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     }
 
     @Override
-    public int getHeaderCacheSize()
-    {
-        // TODO get from configuration
-        return 4096;
-    }
-
-    @Override
-    public boolean isHeaderCacheCaseSensitive()
-    {
-        // TODO get from configuration
-        return false;
-    }
-
-    @Override
-    public boolean startResponse(HttpVersion version, int status, String reason)
+    public void startResponse(HttpVersion version, int status, String reason)
     {
         HttpExchange exchange = getHttpExchange();
         if (exchange == null)
-            return false;
+            return;
 
         String method = exchange.getRequest().getMethod();
         parser.setHeadResponse(HttpMethod.HEAD.is(method) ||
             (HttpMethod.CONNECT.is(method) && status == HttpStatus.OK_200));
         exchange.getResponse().version(version).status(status).reason(reason);
 
-        return !responseBegin(exchange);
+        responseBegin(exchange);
     }
 
     @Override

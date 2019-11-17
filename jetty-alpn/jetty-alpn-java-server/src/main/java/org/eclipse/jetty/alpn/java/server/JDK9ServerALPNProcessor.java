@@ -55,7 +55,7 @@ public class JDK9ServerALPNProcessor implements ALPNProcessor.Server, SslHandsha
         sslEngine.setHandshakeApplicationProtocolSelector(new ALPNCallback((ALPNServerConnection)connection));
     }
 
-    private final class ALPNCallback implements BiFunction<SSLEngine, List<String>, String>, SslHandshakeListener
+    private static final class ALPNCallback implements BiFunction<SSLEngine, List<String>, String>, SslHandshakeListener
     {
         private final ALPNServerConnection alpnConnection;
 
@@ -68,10 +68,19 @@ public class JDK9ServerALPNProcessor implements ALPNProcessor.Server, SslHandsha
         @Override
         public String apply(SSLEngine engine, List<String> protocols)
         {
-            if (LOG.isDebugEnabled())
-                LOG.debug("apply {} {}", alpnConnection, protocols);
-            alpnConnection.select(protocols);
-            return alpnConnection.getProtocol();
+            try
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("apply {} {}", alpnConnection, protocols);
+                alpnConnection.select(protocols);
+                return alpnConnection.getProtocol();
+            }
+            catch (Throwable x)
+            {
+                // Cannot negotiate the protocol, return null to have
+                // JSSE send Alert.NO_APPLICATION_PROTOCOL to the client.
+                return null;
+            }
         }
 
         @Override

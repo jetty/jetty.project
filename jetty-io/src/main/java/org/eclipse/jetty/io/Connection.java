@@ -20,6 +20,7 @@ package org.eclipse.jetty.io;
 
 import java.io.Closeable;
 import java.nio.ByteBuffer;
+import java.util.EventListener;
 
 import org.eclipse.jetty.util.component.Container;
 
@@ -38,14 +39,14 @@ public interface Connection extends Closeable
      *
      * @param listener the listener to add
      */
-    public void addListener(Listener listener);
+    public void addEventListener(EventListener listener);
 
     /**
      * <p>Removes a listener of connection events.</p>
      *
      * @param listener the listener to remove
      */
-    public void removeListener(Listener listener);
+    public void removeEventListener(EventListener listener);
 
     /**
      * <p>Callback method invoked when this connection is opened.</p>
@@ -133,7 +134,7 @@ public interface Connection extends Closeable
      * the Connector or ConnectionFactory are added as listeners to all new connections
      * </p>
      */
-    public interface Listener
+    public interface Listener extends EventListener
     {
         public void onOpened(Connection connection);
 

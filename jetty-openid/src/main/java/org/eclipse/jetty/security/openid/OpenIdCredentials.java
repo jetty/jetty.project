@@ -18,20 +18,19 @@
 
 package org.eclipse.jetty.security.openid;
 
-import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.Serializable;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Base64;
-import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.UrlEncoded;
+import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.client.util.FormContentProvider;
+import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.ajax.JSON;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -42,7 +41,7 @@ import org.eclipse.jetty.util.log.Logger;
  *
  * <p>
  * This is constructed with an authorization code from the authentication request. This authorization code
- * is then exchanged using {@link #redeemAuthCode()} for a response containing the ID Token and Access Token.
+ * is then exchanged using {@link #redeemAuthCode(HttpClient)} for a response containing the ID Token and Access Token.
  * The response is then validated against the {@link OpenIdConfiguration}.
  * </p>
  */
@@ -79,7 +78,7 @@ public class OpenIdCredentials implements Serializable
         return response;
     }
 
-    public void redeemAuthCode() throws IOException
+    public void redeemAuthCode(HttpClient httpClient) throws Exception
     {
         if (LOG.isDebugEnabled())
             LOG.debug("redeemAuthCode() {}", this);
@@ -88,7 +87,7 @@ public class OpenIdCredentials implements Serializable
         {
             try
             {
-                response = claimAuthCode(authCode);
+                response = claimAuthCode(httpClient, authCode);
                 if (LOG.isDebugEnabled())
                     LOG.debug("response: {}", response);
 
@@ -186,7 +185,10 @@ public class OpenIdCredentials implements Serializable
         String jwtClaimString = new String(decoder.decode(padJWTSection(sections[1])), StandardCharsets.UTF_8);
         String jwtSignature = sections[2];
 
-        Map<String, Object> jwtHeader = (Map)JSON.parse(jwtHeaderString);
+        Object parsedJwtHeader = JSON.parse(jwtHeaderString);
+        if (!(parsedJwtHeader instanceof Map))
+            throw new IllegalStateException("Invalid JWT header");
+        Map<String, Object> jwtHeader = (Map)parsedJwtHeader;
         LOG.debug("JWT Header: {}", jwtHeader);
 
         /* If the ID Token is received via direct communication between the Client
@@ -195,7 +197,11 @@ public class OpenIdCredentials implements Serializable
         if (LOG.isDebugEnabled())
             LOG.debug("JWT signature not validated {}", jwtSignature);
 
-        return (Map)JSON.parse(jwtClaimString);
+        Object parsedClaims = JSON.parse(jwtClaimString);
+        if (!(parsedClaims instanceof Map))
+            throw new IllegalStateException("Could not decode JSON for JWT claims.");
+
+        return (Map)parsedClaims;
     }
 
     private static byte[] padJWTSection(String unpaddedEncodedJwtSection)
@@ -224,40 +230,27 @@ public class OpenIdCredentials implements Serializable
         return paddedEncodedJwtSection;
     }
 
-    private Map<String, Object> claimAuthCode(String authCode) throws IOException
+    private Map<String, Object> claimAuthCode(HttpClient httpClient, String authCode) throws Exception
     {
+        Fields fields = new Fields();
+        fields.add("code", authCode);
+        fields.add("client_id", configuration.getClientId());
+        fields.add("client_secret", configuration.getClientSecret());
+        fields.add("redirect_uri", redirectUri);
+        fields.add("grant_type", "authorization_code");
+        FormContentProvider formContentProvider = new FormContentProvider(fields);
+        Request request = httpClient.POST(configuration.getTokenEndpoint())
+                .content(formContentProvider)
+                .timeout(10, TimeUnit.SECONDS);
+        ContentResponse response = request.send();
+        String responseBody = response.getContentAsString();
         if (LOG.isDebugEnabled())
-            LOG.debug("claimAuthCode {}", authCode);
+            LOG.debug("Authentication response: {}", responseBody);
 
-        // Use the authorization code to get the id_token from the OpenID Provider
-        String urlParameters = "code=" + authCode +
-            "&client_id=" + UrlEncoded.encodeString(configuration.getClientId(), StandardCharsets.UTF_8) +
-            "&client_secret=" + UrlEncoded.encodeString(configuration.getClientSecret(), StandardCharsets.UTF_8) +
-            "&redirect_uri=" + UrlEncoded.encodeString(redirectUri, StandardCharsets.UTF_8) +
-            "&grant_type=authorization_code";
+        Object parsedResponse = JSON.parse(responseBody);
+        if (!(parsedResponse instanceof Map))
+            throw new IllegalStateException("Malformed response from OpenID Provider");
 
-        URL url = new URL(configuration.getTokenEndpoint());
-        HttpURLConnection connection = (HttpURLConnection)url.openConnection();
-        try
-        {
-            connection.setDoOutput(true);
-            connection.setRequestMethod("POST");
-            connection.setRequestProperty("Host", configuration.getIssuer());
-            connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
-
-            try (DataOutputStream wr = new DataOutputStream(connection.getOutputStream()))
-            {
-                wr.write(urlParameters.getBytes(StandardCharsets.UTF_8));
-            }
-
-            try (InputStream content = (InputStream)connection.getContent())
-            {
-                return (Map)JSON.parse(IO.toString(content));
-            }
-        }
-        finally
-        {
-            connection.disconnect();
-        }
+        return (Map)parsedResponse;
     }
 }

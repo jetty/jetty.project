@@ -36,7 +36,7 @@ public class LifeCycleListenerTest
     {
         TestLifeCycle lifecycle = new TestLifeCycle();
         TestListener listener = new TestListener();
-        lifecycle.addLifeCycleListener(listener);
+        lifecycle.addEventListener(listener);
 
         lifecycle.setCause(cause);
 
@@ -72,7 +72,7 @@ public class LifeCycleListenerTest
     {
         TestLifeCycle lifecycle = new TestLifeCycle();
         TestListener listener = new TestListener();
-        lifecycle.addLifeCycleListener(listener);
+        lifecycle.addEventListener(listener);
 
         // need to set the state to something other than stopped or stopping or
         // else
@@ -116,11 +116,11 @@ public class LifeCycleListenerTest
     {
         TestLifeCycle lifecycle = new TestLifeCycle();
         TestListener listener = new TestListener();
-        lifecycle.addLifeCycleListener(listener);
+        lifecycle.addEventListener(listener);
 
         lifecycle.start();
         assertTrue(listener.starting, "The starting event didn't occur");
-        lifecycle.removeLifeCycleListener(listener);
+        lifecycle.removeEventListener(listener);
         lifecycle.stop();
         assertFalse(listener.stopping, "The stopping event occurred");
     }

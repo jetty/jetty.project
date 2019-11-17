@@ -104,7 +104,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         _state = new HttpChannelState(this);
         _request = new Request(this, newHttpInput(_state));
         _response = new Response(this, newHttpOutput());
-
         _executor = connector.getServer().getThreadPool();
         _requestLog = connector.getServer().getRequestLog();
         _combinedListener = (connector instanceof AbstractConnector)
@@ -1224,15 +1223,16 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         public void succeeded()
         {
             _written += _length;
-            if (_complete)
-                _response.getHttpOutput().closed();
-            super.succeeded();
             if (_commit)
                 _combinedListener.onResponseCommit(_request);
             if (_length > 0)
                 _combinedListener.onResponseContent(_request, _content);
             if (_complete && _state.completeResponse())
+            {
+                _response.getHttpOutput().closed();
                 _combinedListener.onResponseEnd(_request);
+            }
+            super.succeeded();
         }
 
         @Override

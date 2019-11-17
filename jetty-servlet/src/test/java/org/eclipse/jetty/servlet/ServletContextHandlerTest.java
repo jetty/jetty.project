@@ -29,7 +29,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -462,11 +461,9 @@ public class ServletContextHandlerTest
                 assertTrue(root.isProgrammaticListener(l.getListener()));
             }
         }
-        
-        EventListener[] listeners = root.getEventListeners();
-        assertNotNull(listeners);
+
         List<String> listenerClassNames = new ArrayList<>();
-        for (EventListener l : listeners)
+        for (EventListener l : root.getEventListeners())
             listenerClassNames.add(l.getClass().getName());
  
         assertTrue(listenerClassNames.contains("org.eclipse.jetty.servlet.ServletContextHandlerTest$MySCAListener"));

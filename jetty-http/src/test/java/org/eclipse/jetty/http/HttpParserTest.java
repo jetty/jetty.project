@@ -43,6 +43,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -859,8 +860,9 @@ public class HttpParserTest
                 "HOST: localhost\r\n" +
                 "cOnNeCtIoN: ClOsE\r\n" +
                 "\r\n");
-        HttpParser.RequestHandler handler = new Handler(true);
+        HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, -1, HttpCompliance.LEGACY);
+        parser.setHeaderCacheCaseSensitive(true);
         parseAll(parser, buffer);
         assertNull(_bad);
         assertEquals("GET", _methodOrVersion);
@@ -2156,6 +2158,662 @@ public class HttpParserTest
         assertNull(_bad);
     }
 
+    @Test
+    public void testForHTTP09HeaderCompleteTrueDoesNotEmitContentComplete()
+    {
+        HttpParser.RequestHandler handler = new Handler()
+        {
+            @Override
+            public boolean headerComplete()
+            {
+                super.headerComplete();
+                return true;
+            }
+        };
+
+        HttpParser parser = new HttpParser(handler, HttpCompliance.RFC2616_LEGACY);
+        ByteBuffer buffer = BufferUtil.toBuffer("GET /path\r\n");
+        boolean handle = parser.parseNext(buffer);
+        assertTrue(handle);
+        assertFalse(buffer.hasRemaining());
+        assertFalse(_contentCompleted);
+        assertFalse(_messageCompleted);
+
+        assertEquals("GET", _methodOrVersion);
+        assertEquals("/path", _uriOrStatus);
+        assertEquals("HTTP/0.9", _versionOrReason);
+        assertEquals(-1, _headers);
+
+        // Need to parse more to advance the parser.
+        handle = parser.parseNext(buffer);
+        assertTrue(handle);
+        assertTrue(_contentCompleted);
+        assertTrue(_messageCompleted);
+    }
+
+    @Test
+    public void testForContentLengthZeroHeaderCompleteTrueDoesNotEmitContentComplete()
+    {
+        HttpParser.ResponseHandler handler = new Handler()
+        {
+            @Override
+            public boolean headerComplete()
+            {
+                super.headerComplete();
+                return true;
+            }
+        };
+        HttpParser parser = new HttpParser(handler);
+
+        ByteBuffer buffer = BufferUtil.toBuffer(
+            "HTTP/1.1 200 OK\r\n" +
+                "Content-Length: 0\r\n" +
+                "\r\n");
+        boolean handle = parser.parseNext(buffer);
+        assertTrue(handle);
+        assertFalse(buffer.hasRemaining());
+        assertFalse(_contentCompleted);
+        assertFalse(_messageCompleted);
+
+        // Need to parse more to advance the parser.
+        handle = parser.parseNext(buffer);
+        assertTrue(handle);
+        assertTrue(_contentCompleted);
+        assertTrue(_messageCompleted);
+    }
+
+    @Test
+    public void testForEmptyChunkedContentHeaderCompleteTrueDoesNotEmitContentComplete()
+    {
+        HttpParser.ResponseHandler handler = new Handler()
+        {
+            @Override
+            public boolean headerComplete()
+            {
+                super.headerComplete();
+                return true;
+            }
+        };
+        HttpParser parser = new HttpParser(handler);
+
+        ByteBuffer buffer = BufferUtil.toBuffer(
+            "HTTP/1.1 200 OK\r\n" +
+                "Transfer-Encoding: chunked\r\n" +
+                "\r\n" +
+                "0\r\n" +
+                "\r\n");
+        boolean handle = parser.parseNext(buffer);
+        assertTrue(handle);
+        assertTrue(buffer.hasRemaining());
+        assertFalse(_contentCompleted);
+        assertFalse(_messageCompleted);
+
+        // Need to parse more to advance the parser.
+        handle = parser.parseNext(buffer);
+        assertTrue(handle);
+        assertTrue(_contentCompleted);
+        assertTrue(_messageCompleted);
+    }
+
+    @Test
+    public void testForContentLengthZeroContentCompleteTrueDoesNotEmitMessageComplete()
+    {
+        HttpParser.ResponseHandler handler = new Handler()
+        {
+            @Override
+            public boolean contentComplete()
+            {
+                super.contentComplete();
+                return true;
+            }
+        };
+        HttpParser parser = new HttpParser(handler);
+
+        ByteBuffer buffer = BufferUtil.toBuffer(
+            "HTTP/1.1 200 OK\r\n" +
+                "Content-Length: 0\r\n" +
+                "\r\n");
+        boolean handle = parser.parseNext(buffer);
+        assertTrue(handle);
+        assertFalse(buffer.hasRemaining());
+        assertFalse(_messageCompleted);
+
+        // Need to parse more to advance the parser.
+        handle = parser.parseNext(buffer);
+        assertTrue(handle);
+        assertTrue(_messageCompleted);
+    }
+
+    @Test
+    public void testForEmptyChunkedContentContentCompleteTrueDoesNotEmitMessageComplete()
+    {
+        HttpParser.ResponseHandler handler = new Handler()
+        {
+            @Override
+            public boolean contentComplete()
+            {
+                super.contentComplete();
+                return true;
+            }
+        };
+        HttpParser parser = new HttpParser(handler);
+
+        ByteBuffer buffer = BufferUtil.toBuffer(
+            "HTTP/1.1 200 OK\r\n" +
+                "Transfer-Encoding: chunked\r\n" +
+                "\r\n" +
+                "0\r\n" +
+                "\r\n");
+        boolean handle = parser.parseNext(buffer);
+        assertTrue(handle);
+        assertTrue(buffer.hasRemaining());
+        assertFalse(_messageCompleted);
+
+        // Need to parse more to advance the parser.
+        handle = parser.parseNext(buffer);
+        assertTrue(handle);
+        assertTrue(_messageCompleted);
+    }
+
+    @Test
+    public void testHeaderAfterContentLengthZeroContentCompleteTrue()
+    {
+        HttpParser.ResponseHandler handler = new Handler()
+        {
+            @Override
+            public boolean contentComplete()
+            {
+                super.contentComplete();
+                return true;
+            }
+        };
+        HttpParser parser = new HttpParser(handler);
+
+        String header = "Header: Foobar\r\n";
+        ByteBuffer buffer = BufferUtil.toBuffer(
+            "HTTP/1.1 200 OK\r\n" +
+                "Content-Length: 0\r\n" +
+                "\r\n" +
+                header);
+        boolean handle = parser.parseNext(buffer);
+        assertTrue(handle);
+        assertTrue(buffer.hasRemaining());
+        assertEquals(header, BufferUtil.toString(buffer));
+        assertTrue(_contentCompleted);
+        assertFalse(_messageCompleted);
+
+        // Need to parse more to advance the parser.
+        handle = parser.parseNext(buffer);
+        assertTrue(handle);
+        assertTrue(buffer.hasRemaining());
+        assertEquals(header, BufferUtil.toString(buffer));
+        assertTrue(_messageCompleted);
+    }
+
+    @Test
+    public void testSmallContentLengthContentCompleteTrue()
+    {
+        HttpParser.ResponseHandler handler = new Handler()
+        {
+            @Override
+            public boolean contentComplete()
+            {
+                super.contentComplete();
+                return true;
+            }
+        };
+        HttpParser parser = new HttpParser(handler);
+
+        String header = "Header: Foobar\r\n";
+        ByteBuffer buffer = BufferUtil.toBuffer(
+            "HTTP/1.1 200 OK\r\n" +
+                "Content-Length: 1\r\n" +
+                "\r\n" +
+                "0" +
+                header);
+        boolean handle = parser.parseNext(buffer);
+        assertTrue(handle);
+        assertTrue(buffer.hasRemaining());
+        assertEquals(header, BufferUtil.toString(buffer));
+        assertTrue(_contentCompleted);
+        assertFalse(_messageCompleted);
+
+        // Need to parse more to advance the parser.
+        handle = parser.parseNext(buffer);
+        assertTrue(handle);
+        assertTrue(buffer.hasRemaining());
+        assertEquals(header, BufferUtil.toString(buffer));
+        assertTrue(_messageCompleted);
+    }
+
+    @Test
+    public void testHeaderAfterSmallContentLengthContentCompleteTrue()
+    {
+        HttpParser.ResponseHandler handler = new Handler()
+        {
+            @Override
+            public boolean contentComplete()
+            {
+                super.contentComplete();
+                return true;
+            }
+        };
+        HttpParser parser = new HttpParser(handler);
+
+        ByteBuffer buffer = BufferUtil.toBuffer(
+            "HTTP/1.1 200 OK\r\n" +
+                "Content-Length: 1\r\n" +
+                "\r\n" +
+                "0");
+        boolean handle = parser.parseNext(buffer);
+        assertTrue(handle);
+        assertFalse(buffer.hasRemaining());
+        assertTrue(_contentCompleted);
+        assertFalse(_messageCompleted);
+
+        // Need to parse more to advance the parser.
+        handle = parser.parseNext(buffer);
+        assertTrue(handle);
+        assertFalse(buffer.hasRemaining());
+        assertTrue(_messageCompleted);
+    }
+
+    @Test
+    public void testEOFContentContentCompleteTrue()
+    {
+        HttpParser.ResponseHandler handler = new Handler()
+        {
+            @Override
+            public boolean contentComplete()
+            {
+                super.contentComplete();
+                return true;
+            }
+        };
+        HttpParser parser = new HttpParser(handler);
+
+        ByteBuffer buffer = BufferUtil.toBuffer(
+            "HTTP/1.1 200 OK\r\n" +
+                "\r\n" +
+                "0");
+        boolean handle = parser.parseNext(buffer);
+        assertFalse(handle);
+        assertFalse(buffer.hasRemaining());
+        assertEquals("0", _content);
+        assertFalse(_contentCompleted);
+        assertFalse(_messageCompleted);
+
+        parser.atEOF();
+
+        // Need to parse more to advance the parser.
+        handle = parser.parseNext(buffer);
+        assertTrue(handle);
+        assertFalse(buffer.hasRemaining());
+        assertTrue(_contentCompleted);
+        assertFalse(_messageCompleted);
+
+        // Need to parse more to advance the parser.
+        handle = parser.parseNext(buffer);
+        assertTrue(handle);
+        assertFalse(buffer.hasRemaining());
+        assertTrue(_messageCompleted);
+    }
+
+    @Test
+    public void testHEADRequestHeaderCompleteTrue()
+    {
+        HttpParser.ResponseHandler handler = new Handler()
+        {
+            @Override
+            public boolean headerComplete()
+            {
+                super.headerComplete();
+                return true;
+            }
+
+            @Override
+            public boolean contentComplete()
+            {
+                super.contentComplete();
+                return true;
+            }
+        };
+        HttpParser parser = new HttpParser(handler);
+        parser.setHeadResponse(true);
+
+        ByteBuffer buffer = BufferUtil.toBuffer(
+            "HTTP/1.1 200 OK\r\n" +
+                "\r\n");
+        boolean handle = parser.parseNext(buffer);
+        assertTrue(handle);
+        assertFalse(buffer.hasRemaining());
+        assertFalse(_contentCompleted);
+        assertFalse(_messageCompleted);
+
+        // Need to parse more to advance the parser.
+        handle = parser.parseNext(buffer);
+        assertTrue(handle);
+        assertFalse(buffer.hasRemaining());
+        assertTrue(_contentCompleted);
+        assertFalse(_messageCompleted);
+
+        // Need to parse more to advance the parser.
+        handle = parser.parseNext(buffer);
+        assertTrue(handle);
+        assertFalse(buffer.hasRemaining());
+        assertTrue(_messageCompleted);
+    }
+
+    @Test
+    public void testNoContentHeaderCompleteTrue()
+    {
+        HttpParser.ResponseHandler handler = new Handler()
+        {
+            @Override
+            public boolean headerComplete()
+            {
+                super.headerComplete();
+                return true;
+            }
+
+            @Override
+            public boolean contentComplete()
+            {
+                super.contentComplete();
+                return true;
+            }
+        };
+        HttpParser parser = new HttpParser(handler);
+
+        // HTTP 304 does not have a body.
+        ByteBuffer buffer = BufferUtil.toBuffer(
+            "HTTP/1.1 304 Not Modified\r\n" +
+                "\r\n");
+        boolean handle = parser.parseNext(buffer);
+        assertTrue(handle);
+        assertFalse(buffer.hasRemaining());
+        assertFalse(_contentCompleted);
+        assertFalse(_messageCompleted);
+
+        // Need to parse more to advance the parser.
+        handle = parser.parseNext(buffer);
+        assertTrue(handle);
+        assertFalse(buffer.hasRemaining());
+        assertTrue(_contentCompleted);
+        assertFalse(_messageCompleted);
+
+        // Need to parse more to advance the parser.
+        handle = parser.parseNext(buffer);
+        assertTrue(handle);
+        assertFalse(buffer.hasRemaining());
+        assertTrue(_messageCompleted);
+    }
+
+    @Test
+    public void testCRLFAfterResponseHeaderCompleteTrue()
+    {
+        HttpParser.ResponseHandler handler = new Handler()
+        {
+            @Override
+            public boolean headerComplete()
+            {
+                super.headerComplete();
+                return true;
+            }
+        };
+        HttpParser parser = new HttpParser(handler);
+
+        ByteBuffer buffer = BufferUtil.toBuffer(
+            "HTTP/1.1 304 Not Modified\r\n" +
+                "\r\n" +
+                "\r\n" +
+                "\r\n" +
+                "HTTP/1.1 200 OK\r\n" +
+                "Content-Length: 0\r\n" +
+                "\r\n" +
+                "\r\n" +
+                "\r\n" +
+                "HTTP/1.1 303 See Other\r\n" +
+                "Content-Length: 0\r\n" +
+                "\r\n");
+        boolean handle = parser.parseNext(buffer);
+        assertTrue(handle);
+        assertTrue(buffer.hasRemaining());
+        assertEquals("304", _uriOrStatus);
+        assertFalse(_contentCompleted);
+        assertFalse(_messageCompleted);
+
+        // Need to parse more to advance the parser.
+        handle = parser.parseNext(buffer);
+        assertTrue(handle);
+        assertTrue(buffer.hasRemaining());
+        assertTrue(_contentCompleted);
+        assertTrue(_messageCompleted);
+
+        // Parse next response.
+        parser.reset();
+        init();
+        handle = parser.parseNext(buffer);
+        assertTrue(handle);
+        assertTrue(buffer.hasRemaining());
+        assertEquals("200", _uriOrStatus);
+        assertFalse(_contentCompleted);
+        assertFalse(_messageCompleted);
+
+        // Need to parse more to advance the parser.
+        handle = parser.parseNext(buffer);
+        assertTrue(handle);
+        assertTrue(buffer.hasRemaining());
+        assertTrue(_contentCompleted);
+        assertTrue(_messageCompleted);
+
+        // Parse next response.
+        parser.reset();
+        init();
+        handle = parser.parseNext(buffer);
+        assertTrue(handle);
+        assertFalse(buffer.hasRemaining());
+        assertEquals("303", _uriOrStatus);
+        assertFalse(_contentCompleted);
+        assertFalse(_messageCompleted);
+
+        // Need to parse more to advance the parser.
+        handle = parser.parseNext(buffer);
+        assertTrue(handle);
+        assertFalse(buffer.hasRemaining());
+        assertTrue(_contentCompleted);
+        assertTrue(_messageCompleted);
+    }
+
+    @Test
+    public void testCRLFAfterResponseContentCompleteTrue()
+    {
+        HttpParser.ResponseHandler handler = new Handler()
+        {
+            @Override
+            public boolean contentComplete()
+            {
+                super.contentComplete();
+                return true;
+            }
+        };
+        HttpParser parser = new HttpParser(handler);
+
+        ByteBuffer buffer = BufferUtil.toBuffer(
+            "HTTP/1.1 304 Not Modified\r\n" +
+                "\r\n" +
+                "\r\n" +
+                "\r\n" +
+                "HTTP/1.1 200 OK\r\n" +
+                "Content-Length: 0\r\n" +
+                "\r\n" +
+                "\r\n" +
+                "\r\n" +
+                "HTTP/1.1 303 See Other\r\n" +
+                "Content-Length: 0\r\n" +
+                "\r\n");
+        boolean handle = parser.parseNext(buffer);
+        assertTrue(handle);
+        assertTrue(buffer.hasRemaining());
+        assertEquals("304", _uriOrStatus);
+        assertTrue(_contentCompleted);
+        assertFalse(_messageCompleted);
+
+        // Need to parse more to advance the parser.
+        handle = parser.parseNext(buffer);
+        assertTrue(handle);
+        assertTrue(buffer.hasRemaining());
+        assertTrue(_messageCompleted);
+
+        // Parse next response.
+        parser.reset();
+        init();
+        handle = parser.parseNext(buffer);
+        assertTrue(handle);
+        assertTrue(buffer.hasRemaining());
+        assertEquals("200", _uriOrStatus);
+        assertTrue(_contentCompleted);
+        assertFalse(_messageCompleted);
+
+        // Need to parse more to advance the parser.
+        handle = parser.parseNext(buffer);
+        assertTrue(handle);
+        assertTrue(buffer.hasRemaining());
+        assertTrue(_messageCompleted);
+
+        // Parse next response.
+        parser.reset();
+        init();
+        handle = parser.parseNext(buffer);
+        assertTrue(handle);
+        assertFalse(buffer.hasRemaining());
+        assertEquals("303", _uriOrStatus);
+        assertTrue(_contentCompleted);
+        assertFalse(_messageCompleted);
+
+        // Need to parse more to advance the parser.
+        handle = parser.parseNext(buffer);
+        assertTrue(handle);
+        assertFalse(buffer.hasRemaining());
+        assertTrue(_messageCompleted);
+    }
+
+    @Test
+    public void testCRLFAfterResponseMessageCompleteFalse()
+    {
+        HttpParser.ResponseHandler handler = new Handler()
+        {
+            @Override
+            public boolean messageComplete()
+            {
+                super.messageComplete();
+                return false;
+            }
+        };
+        HttpParser parser = new HttpParser(handler);
+
+        ByteBuffer buffer = BufferUtil.toBuffer(
+            "HTTP/1.1 304 Not Modified\r\n" +
+                "\r\n" +
+                "\r\n" +
+                "\r\n" +
+                "HTTP/1.1 200 OK\r\n" +
+                "Content-Length: 0\r\n" +
+                "\r\n" +
+                "\r\n" +
+                "\r\n" +
+                "HTTP/1.1 303 See Other\r\n" +
+                "Content-Length: 0\r\n" +
+                "\r\n");
+        boolean handle = parser.parseNext(buffer);
+        assertFalse(handle);
+        assertTrue(buffer.hasRemaining());
+        assertEquals("304", _uriOrStatus);
+        assertTrue(_contentCompleted);
+        assertTrue(_messageCompleted);
+
+        // Parse next response.
+        parser.reset();
+        init();
+        handle = parser.parseNext(buffer);
+        assertFalse(handle);
+        assertTrue(buffer.hasRemaining());
+        assertEquals("200", _uriOrStatus);
+        assertTrue(_contentCompleted);
+        assertTrue(_messageCompleted);
+
+        // Parse next response.
+        parser.reset();
+        init();
+        handle = parser.parseNext(buffer);
+        assertFalse(handle);
+        assertFalse(buffer.hasRemaining());
+        assertEquals("303", _uriOrStatus);
+        assertTrue(_contentCompleted);
+        assertTrue(_messageCompleted);
+    }
+
+    @Test
+    public void testSPAfterResponseMessageCompleteFalse()
+    {
+        HttpParser.ResponseHandler handler = new Handler()
+        {
+            @Override
+            public boolean messageComplete()
+            {
+                super.messageComplete();
+                return false;
+            }
+        };
+        HttpParser parser = new HttpParser(handler);
+
+        ByteBuffer buffer = BufferUtil.toBuffer(
+            "HTTP/1.1 304 Not Modified\r\n" +
+                "\r\n" +
+                " " + // Single SP.
+                "HTTP/1.1 200 OK\r\n" +
+                "Content-Length: 0\r\n" +
+                "\r\n");
+        boolean handle = parser.parseNext(buffer);
+        assertFalse(handle);
+        assertTrue(buffer.hasRemaining());
+        assertEquals("304", _uriOrStatus);
+        assertTrue(_contentCompleted);
+        assertTrue(_messageCompleted);
+
+        // Parse next response.
+        parser.reset();
+        init();
+        handle = parser.parseNext(buffer);
+        assertFalse(handle);
+        assertFalse(buffer.hasRemaining());
+        assertNotNull(_bad);
+
+        buffer = BufferUtil.toBuffer(
+            "HTTP/1.1 200 OK\r\n" +
+                "Content-Length: 0\r\n" +
+                "\r\n" +
+                " " + // Single SP.
+                "HTTP/1.1 303 See Other\r\n" +
+                "Content-Length: 0\r\n" +
+                "\r\n");
+        parser = new HttpParser(handler);
+        handle = parser.parseNext(buffer);
+        assertFalse(handle);
+        assertTrue(buffer.hasRemaining());
+        assertEquals("200", _uriOrStatus);
+        assertTrue(_contentCompleted);
+        assertTrue(_messageCompleted);
+
+        // Parse next response.
+        parser.reset();
+        init();
+        handle = parser.parseNext(buffer);
+        assertFalse(handle);
+        assertFalse(buffer.hasRemaining());
+        assertNotNull(_bad);
+    }
+
     @BeforeEach
     public void init()
     {
@@ -2168,6 +2826,7 @@ public class HttpParserTest
         _val = null;
         _headers = 0;
         _headerCompleted = false;
+        _contentCompleted = false;
         _messageCompleted = false;
         _complianceViolation.clear();
     }
@@ -2186,23 +2845,12 @@ public class HttpParserTest
     private int _headers;
     private boolean _early;
     private boolean _headerCompleted;
+    private boolean _contentCompleted;
     private boolean _messageCompleted;
     private final List<ComplianceViolation> _complianceViolation = new ArrayList<>();
 
     private class Handler implements HttpParser.RequestHandler, HttpParser.ResponseHandler, ComplianceViolation.Listener
     {
-        private boolean _headerCacheCaseSensitive;
-
-        public Handler()
-        {
-            this(false);
-        }
-
-        public Handler(boolean headerCacheCaseSensitive)
-        {
-            _headerCacheCaseSensitive = headerCacheCaseSensitive;
-        }
-
         @Override
         public boolean content(ByteBuffer ref)
         {
@@ -2215,7 +2863,7 @@ public class HttpParserTest
         }
 
         @Override
-        public boolean startRequest(String method, String uri, HttpVersion version)
+        public void startRequest(String method, String uri, HttpVersion version)
         {
             _fields.clear();
             _trailers.clear();
@@ -2228,7 +2876,6 @@ public class HttpParserTest
             _messageCompleted = false;
             _headerCompleted = false;
             _early = false;
-            return false;
         }
 
         @Override
@@ -2263,6 +2910,7 @@ public class HttpParserTest
         @Override
         public boolean contentComplete()
         {
+            _contentCompleted = true;
             return false;
         }
 
@@ -2281,7 +2929,7 @@ public class HttpParserTest
         }
 
         @Override
-        public boolean startResponse(HttpVersion version, int status, String reason)
+        public void startResponse(HttpVersion version, int status, String reason)
         {
             _fields.clear();
             _trailers.clear();
@@ -2293,25 +2941,12 @@ public class HttpParserTest
             _val = new String[10];
             _messageCompleted = false;
             _headerCompleted = false;
-            return false;
         }
 
         @Override
         public void earlyEOF()
         {
             _early = true;
-        }
-
-        @Override
-        public int getHeaderCacheSize()
-        {
-            return 4096;
-        }
-
-        @Override
-        public boolean isHeaderCacheCaseSensitive()
-        {
-            return _headerCacheCaseSensitive;
         }
 
         @Override

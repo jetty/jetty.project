@@ -120,12 +120,24 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
                     if (frame.isEndStream() || informational)
                         responseSuccess(exchange);
                 }
+                else
+                {
+                    if (frame.isEndStream())
+                    {
+                        // There is no demand to trigger response success, so add
+                        // a poison pill to trigger it when there will be demand.
+                        notifyContent(exchange, new DataFrame(stream.getId(), BufferUtil.EMPTY_BUFFER, true), Callback.NOOP);
+                    }
+                }
             }
         }
         else // Response trailers.
         {
             HttpFields trailers = metaData.getFields();
             trailers.forEach(httpResponse::trailer);
+            // Previous DataFrames had endStream=false, so
+            // add a poison pill to trigger response success
+            // after all normal DataFrames have been consumed.
             notifyContent(exchange, new DataFrame(stream.getId(), BufferUtil.EMPTY_BUFFER, true), Callback.NOOP);
         }
     }
@@ -212,7 +224,7 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
         contentNotifier.offer(exchange, frame, callback);
     }
 
-    private static class ContentNotifier
+    private class ContentNotifier
     {
         private final Queue<DataInfo> queue = new ArrayDeque<>();
         private final HttpReceiverOverHTTP2 receiver;
@@ -246,8 +258,24 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
         private void process(boolean resume)
         {
             // Allow only one thread at a time.
-            if (active(resume))
+            boolean busy = active(resume);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Resuming({}) processing({}) of content", resume, !busy);
+            if (busy)
                 return;
+
+            // Process only if there is demand.
+            synchronized (this)
+            {
+                if (!resume && demand() <= 0)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Stalling processing, content available but no demand");
+                    active = false;
+                    stalled = true;
+                    return;
+                }
+            }
 
             while (true)
             {
@@ -265,7 +293,7 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
                 {
                     dataInfo = queue.poll();
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Dequeued content {}", dataInfo);
+                        LOG.debug("Processing content {}", dataInfo);
                     if (dataInfo == null)
                     {
                         active = false;
@@ -281,8 +309,12 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
                     boolean proceed = receiver.responseContent(dataInfo.exchange, buffer, Callback.from(callback::succeeded, x -> fail(callback, x)));
                     if (!proceed)
                     {
-                        // Should stall, unless just resumed.
-                        if (stall())
+                        // The call to responseContent() said we should
+                        // stall, but another thread may have just resumed.
+                        boolean stall = stall();
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Stalling({}) processing", stall);
+                        if (stall)
                             return;
                     }
                 }
@@ -299,27 +331,46 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
             {
                 if (active)
                 {
+                    // There is a thread in process(),
+                    // but it may be about to exit, so
+                    // remember "resume" to signal the
+                    // processing thread to continue.
                     if (resume)
                         this.resume = true;
                     return true;
                 }
+
+                // If there is no demand (i.e. stalled
+                // and not resuming) then don't process.
                 if (stalled && !resume)
                     return true;
+
+                // Start processing.
                 active = true;
                 stalled = false;
                 return false;
             }
         }
 
+        /**
+         * Called when there is no demand, this method checks whether
+         * the processing should really stop or it should continue.
+         *
+         * @return true to stop processing, false to continue processing
+         */
         private boolean stall()
         {
             synchronized (this)
             {
                 if (resume)
                 {
+                    // There was no demand, but another thread
+                    // just demanded, continue processing.
                     resume = false;
                     return false;
                 }
+
+                // There is no demand, stop processing.
                 active = false;
                 stalled = true;
                 return true;
@@ -344,7 +395,7 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
             receiver.responseFailure(failure);
         }
 
-        private static class DataInfo
+        private class DataInfo
         {
             private final HttpExchange exchange;
             private final DataFrame frame;

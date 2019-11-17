@@ -33,10 +33,12 @@ import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
+import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.unixsocket.client.HttpClientTransportOverUnixSockets;
 import org.eclipse.jetty.unixsocket.server.UnixSocketConnector;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnJre;
 import org.junit.jupiter.api.condition.JRE;
@@ -212,6 +214,18 @@ public class DistributionTests extends AbstractDistributionTest
     @DisabledOnJre(JRE.JAVA_8)
     public void testSimpleWebAppWithJSPOverH2C() throws Exception
     {
+        testSimpleWebAppWithJSPOverHTTP2(false);
+    }
+
+    @Test
+    @DisabledOnJre(JRE.JAVA_8)
+    public void testSimpleWebAppWithJSPOverH2() throws Exception
+    {
+        testSimpleWebAppWithJSPOverHTTP2(true);
+    }
+
+    private void testSimpleWebAppWithJSPOverHTTP2(boolean ssl) throws Exception
+    {
         String jettyVersion = System.getProperty("jettyVersion");
         DistributionTester distribution = DistributionTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
@@ -220,7 +234,7 @@ public class DistributionTests extends AbstractDistributionTest
 
         String[] args1 = {
             "--create-startd",
-            "--add-to-start=http2c,jsp,deploy"
+            "--add-to-start=jsp,deploy," + (ssl ? "http2,test-keystore" : "http2c")
         };
         try (DistributionTester.Run run1 = distribution.start(args1))
         {
@@ -231,13 +245,16 @@ public class DistributionTests extends AbstractDistributionTest
             distribution.installWarFile(war, "test");
 
             int port = distribution.freePort();
-            try (DistributionTester.Run run2 = distribution.start("jetty.http.port=" + port))
+            String portProp = ssl ? "jetty.ssl.port" : "jetty.http.port";
+            try (DistributionTester.Run run2 = distribution.start(portProp + "=" + port))
             {
                 assertTrue(run2.awaitConsoleLogsFor("Started Server@", 10, TimeUnit.SECONDS));
 
-                HTTP2Client h2Client = new HTTP2Client();
+                ClientConnector connector = new ClientConnector();
+                connector.setSslContextFactory(new SslContextFactory.Client(true));
+                HTTP2Client h2Client = new HTTP2Client(connector);
                 startHttpClient(() -> new HttpClient(new HttpClientTransportOverHTTP2(h2Client)));
-                ContentResponse response = client.GET("http://localhost:" + port + "/test/index.jsp");
+                ContentResponse response = client.GET((ssl ? "https" : "http") + "://localhost:" + port + "/test/index.jsp");
                 assertEquals(HttpStatus.OK_200, response.getStatus());
                 assertThat(response.getContentAsString(), containsString("Hello"));
                 assertThat(response.getContentAsString(), not(containsString("<%")));

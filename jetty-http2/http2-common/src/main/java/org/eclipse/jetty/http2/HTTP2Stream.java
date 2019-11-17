@@ -21,6 +21,8 @@ package org.eclipse.jetty.http2;
 import java.io.EOFException;
 import java.io.IOException;
 import java.nio.channels.WritePendingException;
+import java.util.ArrayDeque;
+import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
@@ -42,16 +44,20 @@ import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.io.IdleTimeout;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.MathUtils;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Scheduler;
 
 public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpable
 {
     private static final Logger LOG = Log.getLogger(HTTP2Stream.class);
 
+    private final AutoLock lock = new AutoLock();
+    private final Queue<DataEntry> dataQueue = new ArrayDeque<>();
     private final AtomicReference<Object> attachment = new AtomicReference<>();
     private final AtomicReference<ConcurrentMap<String, Object>> attributes = new AtomicReference<>();
     private final AtomicReference<CloseState> closeState = new AtomicReference<>(CloseState.NOT_CLOSED);
@@ -67,6 +73,9 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
     private Listener listener;
     private boolean remoteReset;
     private long dataLength;
+    private long dataDemand;
+    private boolean dataInitial;
+    private boolean dataProcess;
 
     public HTTP2Stream(Scheduler scheduler, ISession session, int streamId, MetaData.Request request, boolean local)
     {
@@ -76,6 +85,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
         this.request = request;
         this.local = local;
         this.dataLength = Long.MIN_VALUE;
+        this.dataInitial = true;
     }
 
     @Override
@@ -343,10 +353,88 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
             }
         }
 
-        if (updateClose(frame.isEndStream(), CloseState.Event.RECEIVED))
-            session.removeStream(this);
+        boolean initial;
+        boolean proceed = false;
+        DataEntry entry = new DataEntry(frame, callback);
+        try (AutoLock l = lock.lock())
+        {
+            dataQueue.offer(entry);
+            initial = dataInitial;
+            if (initial)
+            {
+                dataInitial = false;
+                // Fake that we are processing data so we return
+                // from onBeforeData() before calling onData().
+                dataProcess = true;
+            }
+            else if (!dataProcess)
+            {
+                dataProcess = proceed = dataDemand > 0;
+            }
+        }
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} data processing of {} for {}", initial ? "Starting" : proceed ? "Proceeding" : "Stalling", frame, this);
+        if (initial)
+        {
+            notifyBeforeData(this);
+            try (AutoLock l = lock.lock())
+            {
+                dataProcess = proceed = dataDemand > 0;
+            }
+        }
+        if (proceed)
+            processData();
+    }
 
-        notifyData(this, frame, callback);
+    @Override
+    public void demand(long n)
+    {
+        if (n <= 0)
+            throw new IllegalArgumentException("Invalid demand " + n);
+        long demand;
+        boolean proceed = false;
+        try (AutoLock l = lock.lock())
+        {
+            demand = dataDemand = MathUtils.cappedAdd(dataDemand, n);
+            if (!dataProcess)
+                dataProcess = proceed = !dataQueue.isEmpty();
+        }
+        if (LOG.isDebugEnabled())
+            LOG.debug("Demand {}/{}, {} data processing for {}", n, demand, proceed ? "proceeding" : "stalling", this);
+        if (proceed)
+            processData();
+    }
+
+    private void processData()
+    {
+        while (true)
+        {
+            DataEntry dataEntry;
+            try (AutoLock l = lock.lock())
+            {
+                if (dataQueue.isEmpty() || dataDemand == 0)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Stalling data processing for {}", this);
+                    dataProcess = false;
+                    return;
+                }
+                --dataDemand;
+                dataEntry = dataQueue.poll();
+            }
+            DataFrame frame = dataEntry.frame;
+            if (updateClose(frame.isEndStream(), CloseState.Event.RECEIVED))
+                session.removeStream(this);
+            notifyDataDemanded(this, frame, dataEntry.callback);
+        }
+    }
+
+    private long demand()
+    {
+        try (AutoLock l = lock.lock())
+        {
+            return dataDemand;
+        }
     }
 
     private void onReset(ResetFrame frame, Callback callback)
@@ -573,14 +661,34 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
         }
     }
 
-    private void notifyData(Stream stream, DataFrame frame, Callback callback)
+    private void notifyBeforeData(Stream stream)
     {
         Listener listener = this.listener;
         if (listener != null)
         {
             try
             {
-                listener.onData(stream, frame, callback);
+                listener.onBeforeData(stream);
+            }
+            catch (Throwable x)
+            {
+                LOG.info("Failure while notifying listener " + listener, x);
+            }
+        }
+        else
+        {
+            stream.demand(1);
+        }
+    }
+
+    private void notifyDataDemanded(Stream stream, DataFrame frame, Callback callback)
+    {
+        Listener listener = this.listener;
+        if (listener != null)
+        {
+            try
+            {
+                listener.onDataDemanded(stream, frame, callback);
             }
             catch (Throwable x)
             {
@@ -591,6 +699,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
         else
         {
             callback.succeeded();
+            stream.demand(1);
         }
     }
 
@@ -682,16 +791,29 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
     @Override
     public String toString()
     {
-        return String.format("%s@%x#%d{sendWindow=%s,recvWindow=%s,reset=%b/%b,%s,age=%d,attachment=%s}",
+        return String.format("%s@%x#%d{sendWindow=%s,recvWindow=%s,demand=%d,reset=%b/%b,%s,age=%d,attachment=%s}",
             getClass().getSimpleName(),
             hashCode(),
             getId(),
             sendWindow,
             recvWindow,
+            demand(),
             localReset,
             remoteReset,
             closeState,
             TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - timeStamp),
             attachment);
+    }
+
+    private static class DataEntry
+    {
+        private final DataFrame frame;
+        private final Callback callback;
+
+        private DataEntry(DataFrame frame, Callback callback)
+        {
+            this.frame = frame;
+            this.callback = callback;
+        }
     }
 }
