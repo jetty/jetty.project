@@ -45,7 +45,7 @@ public class OverlayManager
         this.warPlugin = warPlugin;
     }
 
-    public void applyOverlays (MavenWebAppContext webApp)
+    public void applyOverlays(MavenWebAppContext webApp)
         throws Exception
     {
         List<Resource> resourceBases = new ArrayList<Resource>();
