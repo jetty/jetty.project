@@ -66,7 +66,7 @@
     <jackson-databind.version>2.9.9</jackson-databind.version>
     <localRepoPath>${project.build.directory}/local-repo</localRepoPath>
     <settingsPath>src/it/settings.xml</settingsPath>
-
+    <surefire.rerunFailingTestsCount>3</surefire.rerunFailingTestsCount>
   </properties>
 
   <licenses>
@@ -634,7 +634,7 @@
           <artifactId>maven-surefire-plugin</artifactId>
           <version>${maven.surefire.version}</version>
           <configuration>
-            <rerunFailingTestsCount>3</rerunFailingTestsCount>
+            <rerunFailingTestsCount>${surefire.rerunFailingTestsCount}</rerunFailingTestsCount>
             <forkedProcessTimeoutInSeconds>3600</forkedProcessTimeoutInSeconds>
             <argLine>
               @{argLine} ${jetty.surefire.argLine}
