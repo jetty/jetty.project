@@ -19,7 +19,6 @@
 package org.eclipse.jetty.http2.server;
 
 import java.io.IOException;
-import java.time.Duration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -61,7 +60,7 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
     private int maxHeaderBlockFragment = 0;
     private int maxFrameLength = Frame.DEFAULT_MAX_LENGTH;
     private int maxSettingsKeys = SettingsFrame.DEFAULT_MAX_KEYS;
-    private RateControl rateControl = new WindowRateControl(20, Duration.ofSeconds(1));
+    private RateControl.Factory rateControlFactory = new WindowRateControl.Factory(20);
     private FlowControlStrategy.Factory flowControlStrategyFactory = () -> new BufferingFlowControlStrategy(0.5F);
     private long streamIdleTimeout;
 
@@ -182,14 +181,47 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         this.maxSettingsKeys = maxSettingsKeys;
     }
 
+    /**
+     * @return null
+     * @deprecated use {@link #getRateControlFactory()} instead
+     */
+    @Deprecated
     public RateControl getRateControl()
     {
-        return rateControl;
+        return null;
     }
 
+    /**
+     * @param rateControl ignored, unless {@code rateControl} it is precisely a WindowRateControl
+     * (not a subclass) object in which case it is used as a prototype in a WindowRateControl.Factory.
+     * @throws UnsupportedOperationException when invoked, unless precisely a WindowRateControl object
+     * @deprecated use {@link #setRateControlFactory(RateControl.Factory)} instead
+     */
+    @Deprecated
     public void setRateControl(RateControl rateControl)
     {
-        this.rateControl = rateControl;
+        if (rateControl.getClass() == WindowRateControl.class)
+            setRateControlFactory(new WindowRateControl.Factory(((WindowRateControl)rateControl).getEventsPerSecond()));
+        else
+            throw new UnsupportedOperationException();
+    }
+
+    /**
+     * @return the factory that creates RateControl objects
+     */
+    public RateControl.Factory getRateControlFactory()
+    {
+        return rateControlFactory;
+    }
+
+    /**
+     * <p>Sets the factory that creates a per-connection RateControl object.</p>
+     *
+     * @param rateControlFactory the factory that creates RateControl objects
+     */
+    public void setRateControlFactory(RateControl.Factory rateControlFactory)
+    {
+        this.rateControlFactory = Objects.requireNonNull(rateControlFactory);
     }
 
     /**
@@ -251,7 +283,7 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         session.setInitialSessionRecvWindow(getInitialSessionRecvWindow());
         session.setWriteThreshold(getHttpConfiguration().getOutputBufferSize());
 
-        ServerParser parser = newServerParser(connector, session, getRateControl());
+        ServerParser parser = newServerParser(connector, session, getRateControlFactory().newRateControl(endPoint));
         parser.setMaxFrameLength(getMaxFrameLength());
         parser.setMaxSettingsKeys(getMaxSettingsKeys());
 

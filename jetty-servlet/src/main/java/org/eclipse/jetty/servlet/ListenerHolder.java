@@ -87,9 +87,9 @@ public class ListenerHolder extends BaseHolder<EventListener>
                 //create an instance of the listener and decorate it
                 try
                 {
-                    ServletContext scontext = contextHandler.getServletContext();
-                    _listener = (scontext instanceof ServletContextHandler.Context)
-                        ? scontext.createListener(getHeldClass())
+                    ServletContext context = contextHandler.getServletContext();
+                    _listener = (context != null)
+                        ? context.createListener(getHeldClass())
                         : getHeldClass().getDeclaredConstructor().newInstance();
                 }
                 catch (ServletException ex)

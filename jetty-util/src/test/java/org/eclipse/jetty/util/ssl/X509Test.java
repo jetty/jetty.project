@@ -19,11 +19,17 @@
 package org.eclipse.jetty.util.ssl;
 
 import java.security.cert.X509Certificate;
+import javax.net.ssl.KeyManager;
+import javax.net.ssl.X509ExtendedKeyManager;
 
+import org.eclipse.jetty.util.resource.Resource;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class X509Test
 {
@@ -122,5 +128,57 @@ public class X509Test
         };
 
         assertThat("Normal X509", X509.isCertSign(bogusX509), is(false));
+    }
+
+    private X509ExtendedKeyManager getX509ExtendedKeyManager(SslContextFactory sslContextFactory) throws Exception
+    {
+        Resource keystoreResource = Resource.newSystemResource("keystore");
+        Resource truststoreResource = Resource.newSystemResource("keystore");
+        sslContextFactory.setKeyStoreResource(keystoreResource);
+        sslContextFactory.setTrustStoreResource(truststoreResource);
+        sslContextFactory.setKeyStorePassword("storepwd");
+        sslContextFactory.setKeyManagerPassword("keypwd");
+        sslContextFactory.setTrustStorePassword("storepwd");
+        sslContextFactory.start();
+
+        KeyManager[] keyManagers = sslContextFactory.getKeyManagers(sslContextFactory.getKeyStore());
+        X509ExtendedKeyManager x509ExtendedKeyManager = null;
+
+        for (KeyManager keyManager : keyManagers)
+        {
+            if (keyManager instanceof X509ExtendedKeyManager)
+            {
+                x509ExtendedKeyManager = (X509ExtendedKeyManager)keyManager;
+                break;
+            }
+        }
+        assertThat("Found X509ExtendedKeyManager", x509ExtendedKeyManager, is(notNullValue()));
+        return x509ExtendedKeyManager;
+    }
+
+    @Test
+    public void testSniX509ExtendedKeyManager_BaseClass() throws Exception
+    {
+        SslContextFactory baseSsl = new SslContextFactory();
+        X509ExtendedKeyManager x509ExtendedKeyManager = getX509ExtendedKeyManager(baseSsl);
+        UnsupportedOperationException npe = assertThrows(UnsupportedOperationException.class, () -> baseSsl.newSniX509ExtendedKeyManager(x509ExtendedKeyManager));
+        assertThat("UnsupportedOperationException.message", npe.getMessage(), containsString("X509ExtendedKeyManager only supported on Server"));
+    }
+
+    @Test
+    public void testSniX509ExtendedKeyManager_ClientClass() throws Exception
+    {
+        SslContextFactory clientSsl = new SslContextFactory.Client();
+        X509ExtendedKeyManager x509ExtendedKeyManager = getX509ExtendedKeyManager(clientSsl);
+        UnsupportedOperationException re = assertThrows(UnsupportedOperationException.class, () -> clientSsl.newSniX509ExtendedKeyManager(x509ExtendedKeyManager));
+        assertThat("UnsupportedOperationException.message", re.getMessage(), containsString("X509ExtendedKeyManager only supported on Server"));
+    }
+
+    @Test
+    public void testSniX509ExtendedKeyManager_ServerClass() throws Exception
+    {
+        SslContextFactory serverSsl = new SslContextFactory.Server();
+        X509ExtendedKeyManager x509ExtendedKeyManager = getX509ExtendedKeyManager(serverSsl);
+        serverSsl.newSniX509ExtendedKeyManager(x509ExtendedKeyManager);
     }
 }

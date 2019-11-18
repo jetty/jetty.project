@@ -119,7 +119,7 @@ public abstract class HttpReceiver
         }
     }
 
-    private long demand()
+    protected long demand()
     {
         return demand(LongUnaryOperator.identity());
     }

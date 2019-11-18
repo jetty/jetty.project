@@ -90,10 +90,11 @@ public class ClientParserTest
             }
 
             @Override
-            public void onHeaders(int request)
+            public boolean onHeaders(int request)
             {
                 assertEquals(id, request);
                 params.set(params.get() * primes[2]);
+                return false;
             }
         });
 

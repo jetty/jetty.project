@@ -152,19 +152,19 @@ public class ClientUpgradeRequest extends UpgradeRequestAdapter
         // parse parameter map
         Map<String, List<String>> pmap = new HashMap<>();
 
-        String query = uri.getQuery();
+        String query = uri.getRawQuery();
 
         if (StringUtil.isNotBlank(query))
         {
-            MultiMap<String> params = new MultiMap<String>();
-            UrlEncoded.decodeTo(uri.getQuery(), params, StandardCharsets.UTF_8);
+            MultiMap<String> params = new MultiMap<>();
+            UrlEncoded.decodeTo(query, params, StandardCharsets.UTF_8);
 
             for (String key : params.keySet())
             {
                 List<String> values = params.getValues(key);
                 if (values == null)
                 {
-                    pmap.put(key, new ArrayList<String>());
+                    pmap.put(key, new ArrayList<>());
                 }
                 else
                 {

@@ -196,7 +196,8 @@ public class CookieTest
         serverConn.write(serverCookieFrame);
 
         // Confirm client connect on future
-        clientConnectFuture.get(10, TimeUnit.SECONDS);
+        Session session = clientConnectFuture.get(10, TimeUnit.SECONDS);
+        assertTrue(session.getUpgradeResponse().isSuccess(), "UpgradeResponse.isSuccess()");
         clientSocket.awaitOpen(2, TimeUnit.SECONDS);
 
         // Wait for client receipt of cookie frame via client websocket

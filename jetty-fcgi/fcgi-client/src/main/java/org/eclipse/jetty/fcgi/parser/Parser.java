@@ -135,7 +135,11 @@ public abstract class Parser
     {
         void onHeader(int request, HttpField field);
 
-        void onHeaders(int request);
+        /**
+         * @param request the request id
+         * @return true to signal to the parser to stop parsing, false to continue parsing
+         */
+        boolean onHeaders(int request);
 
         /**
          * @param request the request id
@@ -158,8 +162,9 @@ public abstract class Parser
             }
 
             @Override
-            public void onHeaders(int request)
+            public boolean onHeaders(int request)
             {
+                return false;
             }
 
             @Override
