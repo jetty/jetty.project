@@ -117,7 +117,7 @@ public abstract class TransformingFlusher
         @Override
         protected Action process()
         {
-            if (finished)
+            if (current == null)
             {
                 current = pollEntry();
                 if (current == null)
@@ -160,6 +160,8 @@ public abstract class TransformingFlusher
 
             if (finished)
                 notifyCallbackSuccess(current.callback);
+
+            current = null;
             super.succeeded();
         }
 
@@ -170,6 +172,8 @@ public abstract class TransformingFlusher
                 log.debug("failed {}", cause);
 
             notifyCallbackFailure(current.callback, cause);
+
+            current = null;
             super.failed(cause);
         }
     }
