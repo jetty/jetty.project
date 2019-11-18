@@ -197,7 +197,6 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
             throw new IllegalArgumentException("FrameHandler could not be created", t);
         }
 
-        initWebSocketHeaders();
         super.send(listener);
     }
 
@@ -295,7 +294,7 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
 
     public abstract FrameHandler getFrameHandler();
 
-    private void initWebSocketHeaders()
+    void requestComplete()
     {
         notifyUpgradeListeners((listener) -> listener.onHandshakeRequest(this));
     }

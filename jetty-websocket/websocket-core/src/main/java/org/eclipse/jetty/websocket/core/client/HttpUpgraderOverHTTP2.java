@@ -41,6 +41,9 @@ public class HttpUpgraderOverHTTP2 implements HttpUpgrader
         request.method(HttpMethod.CONNECT);
         request.upgradeProtocol("websocket");
         request.header(HttpHeader.SEC_WEBSOCKET_VERSION, WebSocketConstants.SPEC_VERSION_STRING);
+
+        // Notify the UpgradeListeners now the headers are set.
+        clientUpgradeRequest.requestComplete();
     }
 
     @Override

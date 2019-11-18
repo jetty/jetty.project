@@ -51,12 +51,16 @@ public class HttpUpgraderOverHTTP implements HttpUpgrader
         request.header(HttpHeader.UPGRADE, "websocket");
         request.header(HttpHeader.CONNECTION, "Upgrade");
         request.header(HttpHeader.SEC_WEBSOCKET_KEY, generateRandomKey());
+
         // Per the hybi list: Add no-cache headers to avoid compatibility issue.
         // There are some proxies that rewrite "Connection: upgrade" to
         // "Connection: close" in the response if a request doesn't contain
         // these headers.
         request.header(HttpHeader.PRAGMA, "no-cache");
         request.header(HttpHeader.CACHE_CONTROL, "no-cache");
+
+        // Notify the UpgradeListeners now the headers are set.
+        clientUpgradeRequest.requestComplete();
     }
 
     private String generateRandomKey()

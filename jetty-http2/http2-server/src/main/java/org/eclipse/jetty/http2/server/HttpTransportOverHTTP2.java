@@ -327,6 +327,10 @@ public class HttpTransportOverHTTP2 implements HttpTransport
         // Only now that we have switched the attachment,
         // we can demand DATA frames to process them.
         stream.demand(1);
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("Upgrading to {}", connection);
+
         return false;
     }
 
