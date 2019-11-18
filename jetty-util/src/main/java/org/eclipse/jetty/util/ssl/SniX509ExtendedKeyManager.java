@@ -50,6 +50,10 @@ public class SniX509ExtendedKeyManager extends X509ExtendedKeyManager
     private final X509ExtendedKeyManager _delegate;
     private final SslContextFactory.Server _sslContextFactory;
 
+    /**
+     * @deprecated not supported, you must have a {@link SslContextFactory.Server} for this to work.
+     */
+    @Deprecated
     public SniX509ExtendedKeyManager(X509ExtendedKeyManager keyManager)
     {
         this(keyManager, null);
@@ -58,7 +62,7 @@ public class SniX509ExtendedKeyManager extends X509ExtendedKeyManager
     public SniX509ExtendedKeyManager(X509ExtendedKeyManager keyManager, SslContextFactory.Server sslContextFactory)
     {
         _delegate = keyManager;
-        _sslContextFactory = sslContextFactory;
+        _sslContextFactory = Objects.requireNonNull(sslContextFactory, "SslContextFactory.Server must be provided");
     }
 
     @Override
