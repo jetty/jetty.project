@@ -1159,9 +1159,13 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
         return managers;
     }
 
+    /**
+     * @deprecated use {@link SslContextFactory.Server#newSniX509ExtendedKeyManager(X509ExtendedKeyManager)} instead
+     */
+    @Deprecated
     protected X509ExtendedKeyManager newSniX509ExtendedKeyManager(X509ExtendedKeyManager keyManager)
     {
-        return new SniX509ExtendedKeyManager(keyManager);
+        throw new UnsupportedOperationException("X509ExtendedKeyManager only supported on Server");
     }
 
     protected TrustManager[] getTrustManagers(KeyStore trustStore, Collection<? extends CRL> crls) throws Exception
