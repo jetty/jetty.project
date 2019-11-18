@@ -159,26 +159,26 @@ public class X509Test
     @Test
     public void testSniX509ExtendedKeyManager_BaseClass() throws Exception
     {
-        SslContextFactory base = new SslContextFactory();
-        X509ExtendedKeyManager x509ExtendedKeyManager = getX509ExtendedKeyManager(base);
-        NullPointerException npe = assertThrows(NullPointerException.class, () -> base.newSniX509ExtendedKeyManager(x509ExtendedKeyManager));
-        assertThat("NullPointerException.message", npe.getMessage(), containsString("SslContextFactory.Server"));
+        SslContextFactory baseSsl = new SslContextFactory();
+        X509ExtendedKeyManager x509ExtendedKeyManager = getX509ExtendedKeyManager(baseSsl);
+        UnsupportedOperationException npe = assertThrows(UnsupportedOperationException.class, () -> baseSsl.newSniX509ExtendedKeyManager(x509ExtendedKeyManager));
+        assertThat("UnsupportedOperationException.message", npe.getMessage(), containsString("X509ExtendedKeyManager only supported on Server"));
     }
 
     @Test
     public void testSniX509ExtendedKeyManager_ClientClass() throws Exception
     {
-        SslContextFactory base = new SslContextFactory.Client();
-        X509ExtendedKeyManager x509ExtendedKeyManager = getX509ExtendedKeyManager(base);
-        RuntimeException re = assertThrows(RuntimeException.class, () -> base.newSniX509ExtendedKeyManager(x509ExtendedKeyManager));
-        assertThat("RuntimeException.message", re.getMessage(), containsString("X509ExtendedKeyManager not supported on Client"));
+        SslContextFactory clientSsl = new SslContextFactory.Client();
+        X509ExtendedKeyManager x509ExtendedKeyManager = getX509ExtendedKeyManager(clientSsl);
+        UnsupportedOperationException re = assertThrows(UnsupportedOperationException.class, () -> clientSsl.newSniX509ExtendedKeyManager(x509ExtendedKeyManager));
+        assertThat("UnsupportedOperationException.message", re.getMessage(), containsString("X509ExtendedKeyManager only supported on Server"));
     }
 
     @Test
     public void testSniX509ExtendedKeyManager_ServerClass() throws Exception
     {
-        SslContextFactory base = new SslContextFactory.Server();
-        X509ExtendedKeyManager x509ExtendedKeyManager = getX509ExtendedKeyManager(base);
-        base.newSniX509ExtendedKeyManager(x509ExtendedKeyManager);
+        SslContextFactory serverSsl = new SslContextFactory.Server();
+        X509ExtendedKeyManager x509ExtendedKeyManager = getX509ExtendedKeyManager(serverSsl);
+        serverSsl.newSniX509ExtendedKeyManager(x509ExtendedKeyManager);
     }
 }
