@@ -30,7 +30,8 @@ import org.eclipse.jetty.websocket.core.Frame;
 /**
  * This is used to iteratively transform or process a frame into one or more other frames.
  * When a frame is ready to be processed {@link #onFrame(Frame, Callback, boolean)} is called.
- * Then {@link #transform(Callback)} is called on each callback success until {@link #finished()} is called.
+ * Subsequent calls to {@link #transform(Callback)} are made on each callback success until one of these calls returns
+ * true to indicate they are done processing the frame and are ready to receive a new one.
  * The {@link Callback} passed in to both these method must be succeeded in order to continue processing.
  */
 public abstract class TransformingFlusher
@@ -47,26 +48,18 @@ public abstract class TransformingFlusher
      * @param frame the frame to transform.
      * @param callback used to signal to start processing again.
      * @param batch whether this frame can be batched.
+     * @return true to indicate that you have finished transforming this frame.
      */
-    protected abstract void onFrame(Frame frame, Callback callback, boolean batch);
+    protected abstract boolean onFrame(Frame frame, Callback callback, boolean batch);
 
     /**
      * Called to transform the frame given in {@link TransformingFlusher#onFrame(Frame, Callback, boolean)}.
-     * This method is called on each callback success until {@link #finished()} is called.
-     * If {@link #finished()} is called during the call to {@link #onFrame(Frame, Callback, boolean)}
-     * then this method will not be called.
+     * This method is called on each callback success until it returns true.
+     * If the call to {@link #onFrame(Frame, Callback, boolean)} returns true then this method will not be called.
      * @param callback used to signal to start processing again.
+     * @return true to indicate that you have finished transforming this frame.
      */
-    protected abstract void transform(Callback callback);
-
-    /**
-     * Called to indicate that you have finished transforming this frame and are ready to receive a new one
-     * after the next the callback is succeeded.
-     */
-    protected final void finished()
-    {
-        this.finished = true;
-    }
+    protected abstract boolean transform(Callback callback);
 
     public final void sendFrame(Frame frame, Callback callback, boolean batch)
     {
@@ -117,8 +110,11 @@ public abstract class TransformingFlusher
         @Override
         protected Action process()
         {
-            if (current == null)
+            if (finished)
             {
+                if (current != null)
+                    notifyCallbackSuccess(current.callback);
+
                 current = pollEntry();
                 if (current == null)
                     return Action.IDLE;
@@ -126,55 +122,26 @@ public abstract class TransformingFlusher
                 if (log.isDebugEnabled())
                     log.debug("onFrame {}", current);
 
-                finished = false;
-                onFrame(current.frame, this, current.batch);
+                finished = onFrame(current.frame, this, current.batch);
                 return Action.SCHEDULED;
             }
 
             if (log.isDebugEnabled())
                 log.debug("transform {}", current);
 
-            transform(this);
+            finished = transform(this);
             return Action.SCHEDULED;
-        }
-
-        @Override
-        protected void onCompleteSuccess()
-        {
-            // This IteratingCallback never completes.
         }
 
         @Override
         protected void onCompleteFailure(Throwable t)
         {
+            if (log.isDebugEnabled())
+                log.debug("failed {}", t);
+
+            notifyCallbackFailure(current.callback, t);
+            current = null;
             onFailure(t);
-        }
-
-        @Override
-        public void succeeded()
-        {
-            // Notify first then call succeeded(), otherwise
-            // write callbacks may be invoked out of order.
-            if (log.isDebugEnabled())
-                log.debug("succeeded");
-
-            if (finished)
-                notifyCallbackSuccess(current.callback);
-
-            current = null;
-            super.succeeded();
-        }
-
-        @Override
-        public void failed(Throwable cause)
-        {
-            if (log.isDebugEnabled())
-                log.debug("failed {}", cause);
-
-            notifyCallbackFailure(current.callback, cause);
-
-            current = null;
-            super.failed(cause);
         }
     }
 

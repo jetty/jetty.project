@@ -240,13 +240,12 @@ public class PerMessageDeflateExtension extends AbstractExtension
         private boolean _batch;
 
         @Override
-        protected void onFrame(Frame frame, Callback callback, boolean batch)
+        protected boolean onFrame(Frame frame, Callback callback, boolean batch)
         {
             if (OpCode.isControlFrame(frame.getOpCode()))
             {
-                finished();
                 nextOutgoingFrame(frame, callback, batch);
-                return;
+                return true;
             }
 
             _first = true;
@@ -256,16 +255,18 @@ public class PerMessageDeflateExtension extends AbstractExtension
             // Provide the frames payload as input to the Deflater.
             getDeflater().setInput(frame.getPayload());
             callback.succeeded();
+            return false;
         }
 
         @Override
-        protected void transform(Callback callback)
+        protected boolean transform(Callback callback)
         {
-            deflate(callback);
+            boolean finished = deflate(callback);
             _first = false;
+            return finished;
         }
 
-        private void deflate(Callback callback)
+        private boolean deflate(Callback callback)
         {
             // Get a buffer for the inflated payload.
             long maxFrameSize = getWebSocketCoreSession().getMaxFrameSize();
@@ -326,9 +327,8 @@ public class PerMessageDeflateExtension extends AbstractExtension
             chunk.setPayload(payload);
             chunk.setFin(_frame.isFin() && finished);
 
-            if (finished)
-                finished();
             nextOutgoingFrame(chunk, callback, _batch);
+            return finished;
         }
     }
 
@@ -339,7 +339,7 @@ public class PerMessageDeflateExtension extends AbstractExtension
         private boolean _tailBytes;
 
         @Override
-        protected void onFrame(Frame frame, Callback callback, boolean batch)
+        protected boolean onFrame(Frame frame, Callback callback, boolean batch)
         {
             _tailBytes = false;
             _first = true;
@@ -347,9 +347,8 @@ public class PerMessageDeflateExtension extends AbstractExtension
 
             if (OpCode.isControlFrame(_frame.getOpCode()))
             {
-                finished();
                 nextIncomingFrame(_frame, callback);
-                return;
+                return true;
             }
 
             // This extension requires the RSV1 bit set only in the first frame.
@@ -372,9 +371,8 @@ public class PerMessageDeflateExtension extends AbstractExtension
 
             if (_first && !incomingCompressed)
             {
-                finished();
                 nextIncomingFrame(_frame, callback);
-                return;
+                return true;
             }
 
             if (_frame.isFin())
@@ -383,15 +381,17 @@ public class PerMessageDeflateExtension extends AbstractExtension
             // Provide the frames payload as input to the Inflater.
             getInflater().setInput(_frame.getPayload());
             callback.succeeded();
+            return false;
         }
 
         @Override
-        protected void transform(Callback callback)
+        protected boolean transform(Callback callback)
         {
             try
             {
-                inflate(callback);
+                boolean finished = inflate(callback);
                 _first = false;
+                return finished;
             }
             catch (DataFormatException e)
             {
@@ -399,7 +399,7 @@ public class PerMessageDeflateExtension extends AbstractExtension
             }
         }
 
-        private void inflate(Callback callback) throws DataFormatException
+        private boolean inflate(Callback callback) throws DataFormatException
         {
             // Get a buffer for the inflated payload.
             long maxFrameSize = getWebSocketCoreSession().getMaxFrameSize();
@@ -445,12 +445,12 @@ public class PerMessageDeflateExtension extends AbstractExtension
             chunk.setPayload(payload);
             chunk.setFin(_frame.isFin() && finished);
 
-            if (finished)
-                finished();
             nextIncomingFrame(chunk, callback);
 
             if (LOG.isDebugEnabled())
                 LOG.debug("Decompress finished: {} {}", finished, chunk);
+
+            return finished;
         }
     }
 }
