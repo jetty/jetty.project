@@ -38,12 +38,12 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class WriteAfterStopTest
+public class WebSocketStopTest
 {
-
     public class UpgradeServlet extends JettyWebSocketServlet
     {
         @Override
@@ -83,7 +83,28 @@ public class WriteAfterStopTest
     }
 
     @Test
-    public void test() throws Exception
+    public void stopWithOpenSessions() throws Exception
+    {
+        final URI uri = new URI("ws://localhost:" + connector.getLocalPort() + "/");
+
+        // Connect to two sessions to the server.
+        EventSocket clientSocket1 = new EventSocket();
+        EventSocket clientSocket2 = new EventSocket();
+        assertNotNull(client.connect(clientSocket1, uri).get(5, TimeUnit.SECONDS));
+        assertNotNull(client.connect(clientSocket2, uri).get(5, TimeUnit.SECONDS));
+        assertTrue(clientSocket1.openLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(clientSocket2.openLatch.await(5, TimeUnit.SECONDS));
+
+        // WS client is stopped and closes sessions with SHUTDOWN code.
+        client.stop();
+        assertTrue(clientSocket1.closeLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(clientSocket2.closeLatch.await(5, TimeUnit.SECONDS));
+        assertThat(clientSocket1.statusCode, is(StatusCode.SHUTDOWN));
+        assertThat(clientSocket2.statusCode, is(StatusCode.SHUTDOWN));
+    }
+
+    @Test
+    public void testWriteAfterStop() throws Exception
     {
         URI uri = new URI("ws://localhost:" + connector.getLocalPort() + "/");
         EventSocket clientSocket = new EventSocket();

@@ -23,14 +23,12 @@ import java.net.SocketAddress;
 import java.time.Duration;
 import java.util.Objects;
 
-import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.CloseStatus;
 import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.SuspendToken;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
@@ -241,25 +239,6 @@ public class WebSocketSession extends AbstractLifeCycle implements Session, Susp
     public FrameHandler.CoreSession getCoreSession()
     {
         return coreSession;
-    }
-
-    @Override
-    protected void doStop() throws Exception
-    {
-        coreSession.close(StatusCode.SHUTDOWN, "Container being shut down", new Callback()
-        {
-            @Override
-            public void succeeded()
-            {
-                coreSession.abort();
-            }
-
-            @Override
-            public void failed(Throwable x)
-            {
-                coreSession.abort();
-            }
-        });
     }
 
     @Override

@@ -311,9 +311,7 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
         if (LOG.isDebugEnabled())
             LOG.debug("closeConnection() {} {} {}", closeStatus, this);
 
-        connection.cancelDemand();
-        if (connection.getEndPoint().isOpen())
-            connection.close();
+        abort();
 
         // Forward Errors to Local WebSocket EndPoint
         if (closeStatus.isAbnormal() && closeStatus.getCause() != null)
