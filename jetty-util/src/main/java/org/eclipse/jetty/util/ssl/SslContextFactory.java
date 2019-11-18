@@ -1264,8 +1264,13 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
         return managers;
     }
 
+    /**
+     * @deprecated use {@link SslContextFactory.Server#newSniX509ExtendedKeyManager(X509ExtendedKeyManager)} instead
+     */
+    @Deprecated
     protected X509ExtendedKeyManager newSniX509ExtendedKeyManager(X509ExtendedKeyManager keyManager)
     {
+        // Will throw a NPE.
         return new SniX509ExtendedKeyManager(keyManager);
     }
 
@@ -2173,6 +2178,16 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
             checkTrustAll();
             checkEndPointIdentificationAlgorithm();
             super.checkConfiguration();
+        }
+
+        /**
+         * @deprecated Not supported on Client, only {@link SslContextFactory.Server}
+         */
+        @Deprecated
+        @Override
+        protected X509ExtendedKeyManager newSniX509ExtendedKeyManager(X509ExtendedKeyManager keyManager)
+        {
+            throw new RuntimeException("X509ExtendedKeyManager not supported on Client");
         }
     }
 
