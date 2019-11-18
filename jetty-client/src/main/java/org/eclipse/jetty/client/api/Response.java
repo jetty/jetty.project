@@ -259,70 +259,77 @@ public interface Response
      */
     interface Listener extends BeginListener, HeaderListener, HeadersListener, ContentListener, AsyncContentListener, DemandedContentListener, SuccessListener, FailureListener, CompleteListener
     {
+        @Override
+        public default void onBegin(Response response)
+        {
+        }
+
+        @Override
+        public default boolean onHeader(Response response, HttpField field)
+        {
+            return true;
+        }
+
+        @Override
+        public default void onHeaders(Response response)
+        {
+        }
+
+        @Override
+        default void onBeforeContent(Response response, LongConsumer demand)
+        {
+            demand.accept(1);
+        }
+
+        @Override
+        public default void onContent(Response response, ByteBuffer content)
+        {
+        }
+
+        @Override
+        public default void onContent(Response response, ByteBuffer content, Callback callback)
+        {
+            try
+            {
+                onContent(response, content);
+                callback.succeeded();
+            }
+            catch (Throwable x)
+            {
+                callback.failed(x);
+            }
+        }
+
+        @Override
+        public default void onContent(Response response, LongConsumer demand, ByteBuffer content, Callback callback)
+        {
+            onContent(response, content, Callback.from(() ->
+            {
+                callback.succeeded();
+                demand.accept(1);
+            }, callback::failed));
+        }
+
+        @Override
+        public default void onSuccess(Response response)
+        {
+        }
+
+        @Override
+        public default void onFailure(Response response, Throwable failure)
+        {
+        }
+
+        @Override
+        public default void onComplete(Result result)
+        {
+        }
+
         /**
          * An empty implementation of {@link Listener}
          */
         class Adapter implements Listener
         {
-            @Override
-            public void onBegin(Response response)
-            {
-            }
-
-            @Override
-            public boolean onHeader(Response response, HttpField field)
-            {
-                return true;
-            }
-
-            @Override
-            public void onHeaders(Response response)
-            {
-            }
-
-            @Override
-            public void onContent(Response response, ByteBuffer content)
-            {
-            }
-
-            @Override
-            public void onContent(Response response, ByteBuffer content, Callback callback)
-            {
-                try
-                {
-                    onContent(response, content);
-                    callback.succeeded();
-                }
-                catch (Throwable x)
-                {
-                    callback.failed(x);
-                }
-            }
-
-            @Override
-            public void onContent(Response response, LongConsumer demand, ByteBuffer content, Callback callback)
-            {
-                onContent(response, content, Callback.from(() ->
-                {
-                    callback.succeeded();
-                    demand.accept(1);
-                }, callback::failed));
-            }
-
-            @Override
-            public void onSuccess(Response response)
-            {
-            }
-
-            @Override
-            public void onFailure(Response response, Throwable failure)
-            {
-            }
-
-            @Override
-            public void onComplete(Result result)
-            {
-            }
         }
     }
 }
