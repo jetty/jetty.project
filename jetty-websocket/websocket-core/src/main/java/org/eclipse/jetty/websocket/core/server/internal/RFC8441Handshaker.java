@@ -29,6 +29,7 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.internal.WebSocketConnection;
 import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
@@ -60,6 +61,20 @@ public class RFC8441Handshaker extends AbstractHandshaker
     protected Negotiation newNegotiation(HttpServletRequest request, HttpServletResponse response, WebSocketComponents webSocketComponents)
     {
         return new RFC8441Negotiation(Request.getBaseRequest(request), request, response, webSocketComponents);
+    }
+
+    @Override
+    protected boolean validateFrameHandler(FrameHandler frameHandler, HttpServletResponse response)
+    {
+        if (frameHandler == null)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("not upgraded: no frame handler provided");
+
+            response.setStatus(HttpStatus.SERVICE_UNAVAILABLE_503);
+        }
+
+        return true;
     }
 
     @Override

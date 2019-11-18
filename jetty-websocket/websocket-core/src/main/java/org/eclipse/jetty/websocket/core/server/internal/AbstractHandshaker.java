@@ -72,12 +72,8 @@ public abstract class AbstractHandshaker implements Handshaker
 
         // Negotiate the FrameHandler
         FrameHandler handler = negotiator.negotiate(negotiation);
-        if (handler == null)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("not upgraded: no frame handler provided {}", request);
+        if (!validateFrameHandler(handler, response))
             return false;
-        }
 
         // Handle error responses
         Request baseRequest = negotiation.getBaseRequest();
@@ -175,9 +171,11 @@ public abstract class AbstractHandshaker implements Handshaker
 
     protected abstract Negotiation newNegotiation(HttpServletRequest request, HttpServletResponse response, WebSocketComponents webSocketComponents);
 
+    protected abstract boolean validateFrameHandler(FrameHandler frameHandler, HttpServletResponse response);
+
     protected boolean validateNegotiation(Negotiation negotiation)
     {
-        if (!negotiation.isSuccessful())
+        if (!negotiation.validateHeaders())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("not upgraded: no upgrade header or connection upgrade", negotiation.getBaseRequest());

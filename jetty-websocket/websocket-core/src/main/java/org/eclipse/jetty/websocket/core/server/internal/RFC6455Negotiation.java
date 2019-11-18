@@ -78,7 +78,7 @@ public class RFC6455Negotiation extends Negotiation
     }
 
     @Override
-    public boolean isSuccessful()
+    public boolean validateHeaders()
     {
         return successful;
     }

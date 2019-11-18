@@ -140,7 +140,7 @@ public abstract class Negotiation
         }
     }
 
-    public abstract boolean isSuccessful();
+    public abstract boolean validateHeaders();
 
     public String getVersion()
     {

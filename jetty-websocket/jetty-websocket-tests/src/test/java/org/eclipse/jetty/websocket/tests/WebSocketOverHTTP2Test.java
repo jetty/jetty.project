@@ -20,6 +20,7 @@ package org.eclipse.jetty.websocket.tests;
 
 import java.io.IOException;
 import java.io.InterruptedIOException;
+import java.net.ConnectException;
 import java.net.URI;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -41,6 +42,7 @@ import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
+import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
@@ -49,10 +51,12 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
+import org.eclipse.jetty.websocket.api.UpgradeException;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServlet;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServletFactory;
@@ -63,6 +67,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsStringIgnoringCase;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -108,7 +113,7 @@ public class WebSocketOverHTTP2Test
 
         ServletContextHandler context = new ServletContextHandler(server, "/");
         context.addServlet(new ServletHolder(servlet), "/ws/*");
-        JettyWebSocketServletContainerInitializer.initialize(context);
+        JettyWebSocketServletContainerInitializer.configure(context, null);
 
         server.start();
     }
@@ -229,12 +234,85 @@ public class WebSocketOverHTTP2Test
         assertTrue(wsEndPoint.closeLatch.await(5, TimeUnit.SECONDS));
     }
 
+    @Test void testWebSocketConnectPortDoesNotExist() throws Exception
+    {
+        startServer();
+        startClient(clientConnector -> new ClientConnectionFactoryOverHTTP2.H2(new HTTP2Client(clientConnector)));
+
+        EventSocket wsEndPoint = new EventSocket();
+        URI uri = URI.create("ws://localhost:" + (connector.getLocalPort()+1) + "/ws/echo");
+
+        ExecutionException failure = Assertions.assertThrows(ExecutionException.class, () ->
+            wsClient.connect(wsEndPoint, uri).get(5, TimeUnit.SECONDS));
+
+        Throwable cause = failure.getCause();
+        assertThat(cause, instanceOf(ConnectException.class));
+        assertThat(cause.getMessage(), containsStringIgnoringCase("Connection refused"));
+    }
+
+    @Test void testWebSocketNotFound() throws Exception
+    {
+        startServer();
+        startClient(clientConnector -> new ClientConnectionFactoryOverHTTP2.H2(new HTTP2Client(clientConnector)));
+
+        EventSocket wsEndPoint = new EventSocket();
+        URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/nothing");
+
+        ExecutionException failure = Assertions.assertThrows(ExecutionException.class, () ->
+            wsClient.connect(wsEndPoint, uri).get(5, TimeUnit.SECONDS));
+
+        Throwable cause = failure.getCause();
+        assertThat(cause, instanceOf(UpgradeException.class));
+        assertThat(cause.getMessage(), containsStringIgnoringCase("Unexpected HTTP Response Status Code: 501"));
+    }
+
+    @Test void testNotNegotiated() throws Exception
+    {
+        startServer();
+        startClient(clientConnector -> new ClientConnectionFactoryOverHTTP2.H2(new HTTP2Client(clientConnector)));
+
+        EventSocket wsEndPoint = new EventSocket();
+        URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/ws/null");
+
+        ExecutionException failure = Assertions.assertThrows(ExecutionException.class, () ->
+            wsClient.connect(wsEndPoint, uri).get(5, TimeUnit.SECONDS));
+
+        Throwable cause = failure.getCause();
+        assertThat(cause, instanceOf(UpgradeException.class));
+        assertThat(cause.getMessage(), containsStringIgnoringCase("Unexpected HTTP Response Status Code: 503"));
+    }
+
+    @Test void testThrowFromCreator() throws Exception
+    {
+        startServer();
+        startClient(clientConnector -> new ClientConnectionFactoryOverHTTP2.H2(new HTTP2Client(clientConnector)));
+
+        EventSocket wsEndPoint = new EventSocket();
+        URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/ws/throw");
+
+        ExecutionException failure;
+        try (StacklessLogging stacklessLogging = new StacklessLogging(HttpChannel.class))
+        {
+            failure = Assertions.assertThrows(ExecutionException.class, () ->
+                wsClient.connect(wsEndPoint, uri).get(5, TimeUnit.SECONDS));
+        }
+
+        Throwable cause = failure.getCause();
+        assertThat(cause, instanceOf(UpgradeException.class));
+        assertThat(cause.getMessage(), containsStringIgnoringCase("Unexpected HTTP Response Status Code: 500"));
+    }
+
     private static class TestJettyWebSocketServlet extends JettyWebSocketServlet
     {
         @Override
         protected void configure(JettyWebSocketServletFactory factory)
         {
             factory.addMapping("/ws/echo", (request, response) -> new EchoSocket());
+            factory.addMapping("/ws/null", (request, response) -> null);
+            factory.addMapping("/ws/throw", (request, response) ->
+            {
+                throw new RuntimeException("throwing from creator");
+            });
         }
     }
 }

@@ -32,6 +32,7 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.internal.WebSocketConnection;
 import org.eclipse.jetty.websocket.core.internal.WebSocketCore;
@@ -77,6 +78,19 @@ public final class RFC6455Handshaker extends AbstractHandshaker
             return false;
         if (((RFC6455Negotiation)negotiation).getKey() == null)
             throw new BadMessageException("Missing request header 'Sec-WebSocket-Key'");
+        return true;
+    }
+
+    @Override
+    protected boolean validateFrameHandler(FrameHandler frameHandler, HttpServletResponse response)
+    {
+        if (frameHandler == null)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("not upgraded: no frame handler provided");
+            return false;
+        }
+
         return true;
     }
 

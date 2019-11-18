@@ -35,7 +35,7 @@ public class RFC8441Negotiation extends Negotiation
     }
 
     @Override
-    public boolean isSuccessful()
+    public boolean validateHeaders()
     {
         MetaData.Request metaData = getBaseRequest().getMetaData();
         if (metaData == null)
