@@ -1,3 +1,5 @@
+jetty-9.4.24-SNAPSHOT
+
 jetty-9.4.23.v20191118 - 18 November 2019
  + 1485 Add systemd service file
  + 2266 Jetty maven plugin reload is triggered each time the
