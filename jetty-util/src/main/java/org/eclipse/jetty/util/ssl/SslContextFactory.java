@@ -2143,24 +2143,25 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
         protected KeyManager[] getKeyManagers(KeyStore keyStore) throws Exception
         {
             KeyManager[] managers = super.getKeyManagers(keyStore);
-            if (isSniRequired())
-            {
-                boolean hasSniKeyManager = false;
 
-                // Is SNI needed to select a certificate?
-                if (!_certWilds.isEmpty() || _certHosts.size() > 1 || (_certHosts.size() == 1 && _aliasX509.size() > 1))
+            boolean hasSniX509ExtendedKeyManager = false;
+
+            // Is SNI needed to select a certificate?
+            if (!_certWilds.isEmpty() || _certHosts.size() > 1 || (_certHosts.size() == 1 && _aliasX509.size() > 1))
+            {
+                for (int idx = 0; idx < managers.length; idx++)
                 {
-                    for (int idx = 0; idx < managers.length; idx++)
+                    if (managers[idx] instanceof X509ExtendedKeyManager)
                     {
-                        if (managers[idx] instanceof X509ExtendedKeyManager)
-                        {
-                            managers[idx] = newSniX509ExtendedKeyManager((X509ExtendedKeyManager)managers[idx]);
-                            hasSniKeyManager = true;
-                        }
+                        managers[idx] = newSniX509ExtendedKeyManager((X509ExtendedKeyManager)managers[idx]);
+                        hasSniX509ExtendedKeyManager = true;
                     }
                 }
+            }
 
-                if (managers == null || !hasSniKeyManager)
+            if (isSniRequired())
+            {
+                if (managers == null || !hasSniX509ExtendedKeyManager)
                     throw new IllegalStateException("No SNI Key managers when SNI is required");
             }
             return managers;
