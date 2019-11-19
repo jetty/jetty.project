@@ -177,14 +177,13 @@ public class DemoBaseTests extends AbstractDistributionTest
             String responseContent = response.getContentAsString();
 
             assertThat(responseContent, allOf(
-                containsString("Webapp loaded <code>org.eclipse.jetty.util.IO</code>(9.3.0.RC0)"),
+                containsString("Webapp loaded <code>org.eclipse.jetty.util.IO</code>"),
                 containsString("WEB-INF/lib/jetty-util-9.3.0.RC0.jar"))
             );
             assertThat(responseContent, allOf(
-                containsString("Server loaded <code>org.eclipse.jetty.util.IO</code>(" + jettyVersion + ")"),
+                containsString("Server loaded <code>org.eclipse.jetty.util.IO</code>"),
                 containsString("jetty-distribution-" + jettyVersion + "/lib/jetty-util-" + jettyVersion + ".jar"))
             );
-            assertThat(responseContent, containsString("<b>Version Result: <span class=\"pass\">PASS</span></b>"));
             assertThat(responseContent, containsString("<b>URI Result: <span class=\"pass\">PASS</span></b>"));
             assertThat(responseContent, not(containsString("<span class=\"fail\">FAIL</span>")));
         }

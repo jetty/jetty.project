@@ -26,8 +26,6 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.util.IO;
-
 @WebServlet(urlPatterns = "/classloader")
 public class ClassLoaderServlet extends HttpServlet
 {
@@ -36,26 +34,23 @@ public class ClassLoaderServlet extends HttpServlet
     {
         try
         {
-
             PrintWriter writer = resp.getWriter();
             writer.println("<html>");
             writer.println("<HEAD><link rel=\"stylesheet\" type=\"text/css\"  href=\"stylesheet.css\"/></HEAD>");
             writer.println("<body>");
             writer.println("<h1>ClassLoader Isolation Test</h1>");
 
-            Class<?> webappIO = IO.class;
+            writer.printf("<p>Java version: %s</p>%n", System.getProperty("java.version"));
+
+            Class<?> webappIO = Thread.currentThread().getContextClassLoader().loadClass("org.eclipse.jetty.util.IO");
             URI webappURI = ClassInfo.getLocationOfClass(webappIO);
-            String webappVersion = webappIO.getPackage().getImplementationVersion();
+
             Class<?> serverIO = req.getServletContext().getClass().getClassLoader().loadClass("org.eclipse.jetty.util.IO");
             URI serverURI = ClassInfo.getLocationOfClass(serverIO);
-            String serverVersion = serverIO.getPackage().getImplementationVersion();
 
-            writer.printf("<p>Webapp loaded <code>org.eclipse.jetty.util.IO</code>(%s) from %s%n", webappVersion, webappURI);
-            writer.printf("<br/>Server loaded <code>org.eclipse.jetty.util.IO</code>(%s) from %s%n", serverVersion, serverURI);
-            if (webappVersion.equals(serverVersion))
-                writer.println("<br/><b>Version Result: <span class=\"fail\">FAIL</span></b>");
-            else
-                writer.println("<br/><b>Version Result: <span class=\"pass\">PASS</span></b>");
+            writer.printf("<p>Webapp loaded <code>org.eclipse.jetty.util.IO</code> from %s%n", webappURI);
+            writer.printf("<br/>Server loaded <code>org.eclipse.jetty.util.IO</code> from %s%n", serverURI);
+
             if (webappURI.equals(serverURI))
                 writer.println("<br/><b>URI Result: <span class=\"fail\">FAIL</span></b></p>");
             else
