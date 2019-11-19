@@ -309,9 +309,10 @@ public class DuplexConnectionPool extends AbstractConnectionPool implements Swee
             unlock();
         }
 
-        return String.format("%s@%x[c=%d/%d,a=%d,i=%d]",
+        return String.format("%s@%x[c=%d/%d/%d,a=%d,i=%d]",
             getClass().getSimpleName(),
             hashCode(),
+            getPendingConnectionCount(),
             getConnectionCount(),
             getMaxConnectionCount(),
             activeSize,

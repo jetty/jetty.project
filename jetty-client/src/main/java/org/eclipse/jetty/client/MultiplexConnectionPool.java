@@ -382,9 +382,10 @@ public class MultiplexConnectionPool extends AbstractConnectionPool implements C
         {
             unlock();
         }
-        return String.format("%s@%x[c=%d/%d,b=%d,m=%d,i=%d]",
+        return String.format("%s@%x[c=%d/%d/%d,b=%d,m=%d,i=%d]",
             getClass().getSimpleName(),
             hashCode(),
+            getPendingConnectionCount(),
             getConnectionCount(),
             getMaxConnectionCount(),
             busySize,

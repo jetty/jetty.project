@@ -67,8 +67,19 @@ public abstract class AbstractConnectionPool implements ConnectionPool, Dumpable
         return connections.getLo();
     }
 
+    /**
+     * @return the number of pending connections
+     * @deprecated use {@link #getPendingConnectionCount()} instead
+     */
     @ManagedAttribute(value = "The number of pending connections", readonly = true)
+    @Deprecated
     public int getPendingCount()
+    {
+        return getPendingConnectionCount();
+    }
+
+    @ManagedAttribute(value = "The number of pending connections", readonly = true)
+    public int getPendingConnectionCount()
     {
         return connections.getHi();
     }
