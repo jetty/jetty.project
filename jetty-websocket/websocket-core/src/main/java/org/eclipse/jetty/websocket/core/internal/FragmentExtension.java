@@ -25,7 +25,6 @@ import org.eclipse.jetty.websocket.core.AbstractExtension;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 
 /**
@@ -65,12 +64,6 @@ public class FragmentExtension extends AbstractExtension
     @Override
     public void sendFrame(Frame frame, Callback callback, boolean batch)
     {
-        if (OpCode.isControlFrame(frame.getOpCode()))
-        {
-            nextOutgoingFrame(frame, callback, batch);
-            return;
-        }
-
         flusher.sendFrame(frame, callback, batch);
     }
 

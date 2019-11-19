@@ -19,12 +19,8 @@
 package org.eclipse.jetty.websocket.core.internal;
 
 import java.nio.ByteBuffer;
-import java.nio.channels.ClosedChannelException;
-import java.util.ArrayDeque;
-import java.util.Queue;
 
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.Frame;
@@ -33,15 +29,14 @@ import org.eclipse.jetty.websocket.core.OpCode;
 
 /**
  * Used to split large data frames into multiple frames below the maxFrameSize.
+ * Control frames and dataFrames smaller than the maxFrameSize will be forwarded
+ * directly to {@link #forwardFrame(Frame, Callback, boolean)}.
  */
-public abstract class FragmentingFlusher
+public abstract class FragmentingFlusher extends TransformingFlusher
 {
     private static final Logger LOG = Log.getLogger(FragmentingFlusher.class);
-
-    private final Queue<FrameEntry> entries = new ArrayDeque<>();
-    private final IteratingCallback flusher = new Flusher();
     private final Configuration configuration;
-    private boolean canEnqueue = true;
+    private FrameEntry current;
 
     public FragmentingFlusher(Configuration configuration)
     {
@@ -50,156 +45,65 @@ public abstract class FragmentingFlusher
 
     abstract void forwardFrame(Frame frame, Callback callback, boolean batch);
 
-    public void sendFrame(Frame frame, Callback callback, boolean batch)
+    @Override
+    protected boolean onFrame(Frame frame, Callback callback, boolean batch)
     {
-        boolean enqueued = false;
-        synchronized (this)
+        long maxFrameSize = configuration.getMaxFrameSize();
+        if (frame.isControlFrame() || maxFrameSize <= 0 || frame.getPayloadLength() <= maxFrameSize)
         {
-            if (canEnqueue)
-                enqueued = entries.offer(new FrameEntry(frame, callback, batch));
+            forwardFrame(frame, callback, batch);
+            return true;
         }
 
-        if (enqueued)
-            flusher.iterate();
-        else
-            notifyCallbackFailure(callback, new ClosedChannelException());
+        current = new FrameEntry(frame, callback, batch);
+        boolean finished = fragment(callback, true);
+        if (finished)
+            current = null;
+        return finished;
     }
 
-    protected void onFailure(Throwable t)
+    @Override
+    protected boolean transform(Callback callback)
     {
-        synchronized (this)
-        {
-            canEnqueue = false;
-        }
-
-        for (FrameEntry entry : entries)
-            notifyCallbackFailure(entry.callback, t);
-        entries.clear();
+        boolean finished = fragment(callback, false);
+        if (finished)
+            current = null;
+        return finished;
     }
 
-    private FrameEntry pollEntry()
+    private boolean fragment(Callback callback, boolean first)
     {
-        synchronized (this)
+        Frame frame = current.frame;
+        ByteBuffer payload = frame.getPayload();
+        int remaining = payload.remaining();
+        long maxFrameSize = configuration.getMaxFrameSize();
+        int fragmentSize = (int)Math.min(remaining, maxFrameSize);
+
+        boolean continuation = (frame.getOpCode() == OpCode.CONTINUATION) || !first;
+        Frame fragment = new Frame(continuation ? OpCode.CONTINUATION : frame.getOpCode());
+        boolean finished = (maxFrameSize <= 0 || remaining <= maxFrameSize);
+        fragment.setFin(frame.isFin() && finished);
+
+        // If we don't need to fragment just forward with original payload.
+        if (finished)
         {
-            return entries.poll();
-        }
-    }
-
-    private class Flusher extends IteratingCallback implements Callback
-    {
-        private FrameEntry current;
-        private boolean finished = true;
-
-        @Override
-        protected Action process()
-        {
-            if (finished)
-            {
-                current = pollEntry();
-                LOG.debug("Processing {}", current);
-                if (current == null)
-                    return Action.IDLE;
-
-                finished = false;
-                fragment(current, true);
-            }
-            else
-            {
-                fragment(current, false);
-            }
-            return Action.SCHEDULED;
+            fragment.setPayload(frame.getPayload());
+            forwardFrame(fragment, callback, current.batch);
+            return true;
         }
 
-        private void fragment(FrameEntry entry, boolean first)
-        {
-            Frame frame = entry.frame;
-            ByteBuffer payload = frame.getPayload();
-            int remaining = payload.remaining();
-            long maxFrameSize = configuration.getMaxFrameSize();
-            int fragmentSize = (int)Math.min(remaining, maxFrameSize);
+        // Slice the fragmented payload from the buffer.
+        int limit = payload.limit();
+        int newLimit = payload.position() + fragmentSize;
+        payload.limit(newLimit);
+        ByteBuffer payloadFragment = payload.slice();
+        payload.limit(limit);
+        fragment.setPayload(payloadFragment);
+        payload.position(newLimit);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Fragmented {}->{}", frame, fragment);
 
-            boolean continuation = (frame.getOpCode() == OpCode.CONTINUATION) || !first;
-            Frame fragment = new Frame(continuation ? OpCode.CONTINUATION : frame.getOpCode());
-            finished = (maxFrameSize <= 0 || remaining <= maxFrameSize);
-            fragment.setFin(frame.isFin() && finished);
-
-            // If we don't need to fragment just forward with original payload.
-            if (finished)
-            {
-                fragment.setPayload(frame.getPayload());
-                forwardFrame(fragment, this, entry.batch);
-                return;
-            }
-
-            // Slice the fragmented payload from the buffer.
-            int limit = payload.limit();
-            int newLimit = payload.position() + fragmentSize;
-            payload.limit(newLimit);
-            ByteBuffer payloadFragment = payload.slice();
-            payload.limit(limit);
-            fragment.setPayload(payloadFragment);
-            payload.position(newLimit);
-            if (LOG.isDebugEnabled())
-                LOG.debug("Fragmented {}->{}", frame, fragment);
-
-            forwardFrame(fragment, this, entry.batch);
-        }
-
-        @Override
-        protected void onCompleteSuccess()
-        {
-            // This IteratingCallback never completes.
-        }
-
-        @Override
-        protected void onCompleteFailure(Throwable t)
-        {
-            onFailure(t);
-        }
-
-        @Override
-        public void succeeded()
-        {
-            // Notify first then call succeeded(), otherwise
-            // write callbacks may be invoked out of order.
-            if (finished)
-                notifyCallbackSuccess(current.callback);
-            super.succeeded();
-        }
-
-        @Override
-        public void failed(Throwable cause)
-        {
-            notifyCallbackFailure(current.callback, cause);
-            super.failed(cause);
-        }
-    }
-
-    private static void notifyCallbackSuccess(Callback callback)
-    {
-        try
-        {
-            if (callback != null)
-                callback.succeeded();
-        }
-        catch (Throwable x)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Exception while notifying success of callback " + callback, x);
-        }
-    }
-
-    private static void notifyCallbackFailure(Callback callback, Throwable failure)
-    {
-        try
-        {
-            if (callback != null)
-                callback.failed(failure);
-        }
-        catch (Throwable x)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Exception while notifying failure of callback " + callback, x);
-        }
+        forwardFrame(fragment, callback, current.batch);
+        return false;
     }
 }
