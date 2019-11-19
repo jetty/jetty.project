@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.websocket.tests;
 
-import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 
@@ -26,14 +26,9 @@ import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
-import org.eclipse.jetty.websocket.api.annotations.WebSocket;
+import org.eclipse.jetty.websocket.api.WebSocketListener;
 
-@WebSocket
-public class EventSocket
+public class EventSocket implements WebSocketListener
 {
     private static Logger LOG = Log.getLogger(EventSocket.class);
 
@@ -43,64 +38,67 @@ public class EventSocket
     public volatile int closeCode = -1;
     public volatile String closeReason = null;
 
-    public BlockingQueue<String> receivedMessages = new BlockingArrayQueue<>();
+    public BlockingQueue<String> textMessages = new BlockingArrayQueue<>();
+    public BlockingQueue<ByteBuffer> binaryMessages = new BlockingArrayQueue<>();
 
-    public CountDownLatch open = new CountDownLatch(1);
-    public CountDownLatch error = new CountDownLatch(1);
-    public CountDownLatch closed = new CountDownLatch(1);
+    public CountDownLatch openLatch = new CountDownLatch(1);
+    public CountDownLatch closeLatch = new CountDownLatch(1);
+    public CountDownLatch errorLatch = new CountDownLatch(1);
 
     public Session getSession()
     {
         return session;
     }
 
-    @OnWebSocketConnect
-    public void onOpen(Session session)
+    @Override
+    public void onWebSocketConnect(Session session)
     {
         this.session = session;
         behavior = session.getPolicy().getBehavior().name();
-        LOG.info("{}  onOpen(): {}", toString(), session);
-        open.countDown();
+        if (LOG.isDebugEnabled())
+            LOG.debug("{}  onOpen(): {}", toString(), session);
+        openLatch.countDown();
     }
 
-    @OnWebSocketMessage
-    public void onMessage(String message) throws IOException
+    @Override
+    public void onWebSocketText(String message)
     {
-        LOG.info("{}  onMessage(): {}", toString(), message);
-        receivedMessages.offer(message);
+        if (LOG.isDebugEnabled())
+            LOG.debug("{}  onMessage(): {}", toString(), message);
+        textMessages.offer(message);
     }
 
-    @OnWebSocketClose
-    public void onClose(int statusCode, String reason)
+    @Override
+    public void onWebSocketBinary(byte[] payload, int offset, int length)
     {
-        LOG.debug("{}  onClose(): {}:{}", toString(), statusCode, reason);
+        ByteBuffer message = ByteBuffer.wrap(payload, offset, length);
+        if (LOG.isDebugEnabled())
+            LOG.debug("{}  onMessage(): {}", toString(), message);
+        binaryMessages.offer(message);
+    }
+
+    @Override
+    public void onWebSocketClose(int statusCode, String reason)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("{}  onClose(): {}:{}", toString(), statusCode, reason);
         closeCode = statusCode;
         closeReason = reason;
-        closed.countDown();
+        closeLatch.countDown();
     }
 
-    @OnWebSocketError
-    public void onError(Throwable cause)
+    @Override
+    public void onWebSocketError(Throwable cause)
     {
-        LOG.info("{}  onError(): {}", toString(), cause);
+        if (LOG.isDebugEnabled())
+            LOG.debug("{}  onError(): {}", toString(), cause);
         failure = cause;
-        error.countDown();
+        errorLatch.countDown();
     }
 
     @Override
     public String toString()
     {
         return String.format("[%s@%s]", behavior, Integer.toHexString(hashCode()));
-    }
-
-    @WebSocket
-    public static class EchoSocket extends EventSocket
-    {
-        @Override
-        public void onMessage(String message) throws IOException
-        {
-            super.onMessage(message);
-            session.getRemote().sendStringByFuture(message);
-        }
     }
 }

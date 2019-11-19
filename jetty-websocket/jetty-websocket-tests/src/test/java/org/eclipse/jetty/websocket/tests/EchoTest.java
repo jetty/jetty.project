@@ -27,21 +27,17 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
-import org.eclipse.jetty.websocket.api.WebSocketException;
-import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class WriteAfterStopTest
+public class EchoTest
 {
     public class UpgradeServlet extends WebSocketServlet
     {
@@ -54,13 +50,13 @@ public class WriteAfterStopTest
 
     private Server server = new Server();
     private WebSocketClient client = new WebSocketClient();
-    private EventSocket serverSocket = new EventSocket();
-    private ServerConnector connector;
+    private EventSocket serverSocket;
+    private URI serverUri;
 
-    @BeforeEach
-    public void start() throws Exception
+    public void start(EventSocket serverSocket) throws Exception
     {
-        connector = new ServerConnector(server);
+        this.serverSocket = serverSocket;
+        ServerConnector connector = new ServerConnector(server);
         server.addConnector(connector);
 
         ServletContextHandler contextHandler = new ServletContextHandler(ServletContextHandler.SESSIONS);
@@ -70,6 +66,7 @@ public class WriteAfterStopTest
 
         server.start();
         client.start();
+        serverUri = new URI("ws://localhost:" + connector.getLocalPort() + "/");
     }
 
     @AfterEach
@@ -80,29 +77,21 @@ public class WriteAfterStopTest
     }
 
     @Test
-    public void test() throws Exception
+    public void testEcho() throws Exception
     {
-        URI uri = new URI("ws://localhost:" + connector.getLocalPort() + "/");
+        start(new EchoSocket());
         EventSocket clientSocket = new EventSocket();
+        Session session = client.connect(clientSocket, serverUri).get(5, TimeUnit.SECONDS);
 
-        ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
-        upgradeRequest.addExtensions("permessage-deflate");
-        Session session = client.connect(clientSocket, uri, upgradeRequest).get(5, TimeUnit.SECONDS);
-        clientSocket.getSession().getRemote().sendStringByFuture("init deflater");
-        assertThat(serverSocket.textMessages.poll(5, TimeUnit.SECONDS), is("init deflater"));
+        // Send and receive an echo text message.
+        clientSocket.getSession().getRemote().sendStringByFuture("hello world");
+        assertThat(clientSocket.textMessages.poll(5, TimeUnit.SECONDS), is("hello world"));
+
+        // Make sure both sides close successfully.
         session.close(StatusCode.NORMAL, null);
-
-        // make sure both sides are closed
-        clientSocket.session.close();
         assertTrue(clientSocket.closeLatch.await(5, TimeUnit.SECONDS));
         assertTrue(serverSocket.closeLatch.await(5, TimeUnit.SECONDS));
-
-        // check we closed normally
         assertThat(clientSocket.closeCode, is(StatusCode.NORMAL));
         assertThat(serverSocket.closeCode, is(StatusCode.NORMAL));
-
-        WebSocketException failure = assertThrows(WebSocketException.class, () ->
-            clientSocket.session.getRemote().sendString("this should fail before ExtensionStack"));
-        assertThat(failure.getMessage(), is("Session closed"));
     }
 }

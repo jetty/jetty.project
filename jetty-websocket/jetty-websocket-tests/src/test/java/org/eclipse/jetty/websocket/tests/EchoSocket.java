@@ -18,26 +18,21 @@
 
 package org.eclipse.jetty.websocket.tests;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
-import org.eclipse.jetty.websocket.api.annotations.WebSocket;
-
-@SuppressWarnings("unused")
-@WebSocket
-public class EchoSocket
+public class EchoSocket extends EventSocket
 {
-    @OnWebSocketMessage
-    public void onMessage(Session session, String msg) throws IOException
+    @Override
+    public void onWebSocketText(String message)
     {
-        session.getRemote().sendString(msg);
+        super.onWebSocketText(message);
+        session.getRemote().sendString(message, null);
     }
 
-    @OnWebSocketMessage
-    public void onBinaryMessage(Session session, byte[] data, int offset, int len) throws IOException
+    @Override
+    public void onWebSocketBinary(byte[] payload, int offset, int length)
     {
-        session.getRemote().sendBytes(ByteBuffer.wrap(data, offset, len));
+        super.onWebSocketBinary(payload, offset, length);
+        session.getRemote().sendBytes(ByteBuffer.wrap(payload, offset, length), null);
     }
 }
