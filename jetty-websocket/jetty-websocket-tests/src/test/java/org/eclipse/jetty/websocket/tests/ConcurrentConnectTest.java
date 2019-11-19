@@ -69,7 +69,7 @@ public class ConcurrentConnectTest
             @Override
             public void configure(WebSocketServletFactory factory)
             {
-                factory.register(EchoSocket.class);
+                factory.register(EventSocket.EchoSocket.class);
                 serverFactory = (WebSocketServerFactory)factory;
             }
         };
@@ -116,19 +116,19 @@ public class ConcurrentConnectTest
 
         for (EventSocket l : listeners)
         {
-            assertTrue(l.openLatch.await(5, TimeUnit.SECONDS));
+            assertTrue(l.open.await(5, TimeUnit.SECONDS));
         }
 
         for (EventSocket l : listeners)
         {
             l.getSession().getRemote().sendString("ping");
-            assertThat(l.textMessages.poll(5, TimeUnit.SECONDS), is("ping"));
+            assertThat(l.receivedMessages.poll(5, TimeUnit.SECONDS), is("ping"));
             l.getSession().close(StatusCode.NORMAL, "close from client");
         }
 
         for (EventSocket l : listeners)
         {
-            assertTrue(l.closeLatch.await(5, TimeUnit.SECONDS));
+            assertTrue(l.closed.await(5, TimeUnit.SECONDS));
             assertThat(l.closeCode, is(StatusCode.NORMAL));
             assertThat(l.closeReason, is("close from client"));
             assertNull(l.failure);
