@@ -28,6 +28,7 @@ import org.junit.jupiter.api.condition.DisabledOnJre;
 import org.junit.jupiter.api.condition.JRE;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
@@ -172,9 +173,20 @@ public class DemoBaseTests extends AbstractDistributionTest
             startHttpClient();
             ContentResponse response = client.GET("http://localhost:" + httpPort + "/test-spec/classloader");
             assertEquals(HttpStatus.OK_200, response.getStatus());
-            assertThat(response.getContentAsString(), containsString("<b>Version Result: <span class=\"pass\">PASS</span></b>"));
-            assertThat(response.getContentAsString(), containsString("<b>URI Result: <span class=\"pass\">PASS</span></b>"));
-            assertThat(response.getContentAsString(), not(containsString("<span class=\"fail\">FAIL</span>")));
+
+            String responseContent = response.getContentAsString();
+
+            assertThat(responseContent, allOf(
+                containsString("Webapp loaded <code>org.eclipse.jetty.util.IO</code>(9.3.0.RC0)"),
+                containsString("WEB-INF/lib/jetty-util-9.3.0.RC0.jar"))
+            );
+            assertThat(responseContent, allOf(
+                containsString("Server loaded <code>org.eclipse.jetty.util.IO</code>(" + jettyVersion + ")"),
+                containsString("jetty-distribution-" + jettyVersion + "/lib/jetty-util-" + jettyVersion + ".jar"))
+            );
+            assertThat(responseContent, containsString("<b>Version Result: <span class=\"pass\">PASS</span></b>"));
+            assertThat(responseContent, containsString("<b>URI Result: <span class=\"pass\">PASS</span></b>"));
+            assertThat(responseContent, not(containsString("<span class=\"fail\">FAIL</span>")));
         }
     }
 
