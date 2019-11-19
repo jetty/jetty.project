@@ -269,6 +269,7 @@ public class HugeResourceTest
         multipart.addFilePart(name, filename, new PathContentProvider(inputFile), null);
 
         URI destUri = server.getURI().resolve("/multipart");
+        client.setIdleTimeout(90_000);
         Request request = client.newRequest(destUri).method(HttpMethod.POST).content(multipart);
         ContentResponse response = request.send();
         assertThat("HTTP Response Code", response.getStatus(), is(200));

@@ -418,7 +418,7 @@ public class HpackEncoder
         if (_debug)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("encode {}:'{}' to '{}'", encoding, field, BufferUtil.toHexString(buffer));
+                LOG.debug("encode {}:'{}' to '{}'", encoding, field, BufferUtil.toHexString(buffer.duplicate().flip()));
         }
     }
 

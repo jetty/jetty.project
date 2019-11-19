@@ -55,13 +55,13 @@ public class JDK9ClientALPNProcessor implements ALPNProcessor.Client
         ALPNClientConnection alpn = (ALPNClientConnection)connection;
         SSLParameters sslParameters = sslEngine.getSSLParameters();
         List<String> protocols = alpn.getProtocols();
-        sslParameters.setApplicationProtocols(protocols.toArray(new String[protocols.size()]));
+        sslParameters.setApplicationProtocols(protocols.toArray(new String[0]));
         sslEngine.setSSLParameters(sslParameters);
         ((DecryptedEndPoint)connection.getEndPoint()).getSslConnection()
             .addHandshakeListener(new ALPNListener(alpn));
     }
 
-    private final class ALPNListener implements SslHandshakeListener
+    private static final class ALPNListener implements SslHandshakeListener
     {
         private final ALPNClientConnection alpnConnection;
 

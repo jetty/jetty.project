@@ -152,10 +152,10 @@ public class ServerConnectorTimeoutTest extends ConnectorTimeoutTest
     public void testHttpWriteIdleTimeout() throws Exception
     {
         _httpConfiguration.setIdleTimeout(500);
-        configureServer(new AbstractHandler.ErrorDispatchHandler()
+        configureServer(new AbstractHandler()
         {
             @Override
-            protected void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 baseRequest.setHandled(true);
                 IO.copy(request.getInputStream(), response.getOutputStream());

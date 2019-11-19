@@ -25,6 +25,7 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Locale;
@@ -251,7 +252,11 @@ public class CGI extends HttpServlet
                 String parameterName = names.nextElement();
                 parameterMap.addValues(parameterName, req.getParameterValues(parameterName));
             }
-            bodyFormEncoded = UrlEncoded.encode(parameterMap, Charset.forName(req.getCharacterEncoding()), true);
+
+            String characterEncoding = req.getCharacterEncoding();
+            Charset charset = characterEncoding != null
+                ? Charset.forName(characterEncoding) : StandardCharsets.UTF_8;
+            bodyFormEncoded = UrlEncoded.encode(parameterMap, charset, true);
         }
 
         EnvList env = new EnvList(_env);

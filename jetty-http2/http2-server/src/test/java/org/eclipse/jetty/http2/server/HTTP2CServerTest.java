@@ -125,7 +125,7 @@ public class HTTP2CServerTest extends AbstractServerTest
                     "Host: localhost\r\n" +
                     "Connection: something, else, upgrade, HTTP2-Settings\r\n" +
                     "Upgrade: h2c\r\n" +
-                    "HTTP2-Settings: \r\n" +
+                    "HTTP2-Settings: AAEAAEAAAAIAAAABAAMAAABkAAQBAAAAAAUAAEAA\r\n" +
                     "\r\n").getBytes(StandardCharsets.ISO_8859_1));
             output.flush();
 

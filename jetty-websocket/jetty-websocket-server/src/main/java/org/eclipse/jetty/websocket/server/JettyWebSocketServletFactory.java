@@ -22,7 +22,6 @@ import java.time.Duration;
 import java.util.Set;
 
 import org.eclipse.jetty.http.pathmap.PathSpec;
-import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
@@ -50,44 +49,25 @@ public class JettyWebSocketServletFactory implements WebSocketPolicy
         return WebSocketBehavior.SERVER;
     }
 
-    /**
-     * If true, frames are automatically fragmented to respect the maximum frame size.
-     *
-     * @return whether to automatically fragment incoming WebSocket Frames.
-     */
+    @Override
     public boolean isAutoFragment()
     {
         return factory.isAutoFragment();
     }
 
-    /**
-     * If set to true, frames are automatically fragmented to respect the maximum frame size.
-     *
-     * @param autoFragment whether to automatically fragment incoming WebSocket Frames.
-     */
+    @Override
     public void setAutoFragment(boolean autoFragment)
     {
         factory.setAutoFragment(autoFragment);
     }
 
-    /**
-     * The maximum payload size of any WebSocket Frame which can be received.
-     *
-     * @return the maximum size of a WebSocket Frame.
-     */
+    @Override
     public long getMaxFrameSize()
     {
         return factory.getMaxFrameSize();
     }
 
-    /**
-     * The maximum payload size of any WebSocket Frame which can be received.
-     * <p>
-     * WebSocket Frames over this maximum will result in a close code 1009 {@link StatusCode#MESSAGE_TOO_LARGE}
-     * </p>
-     *
-     * @param maxFrameSize the maximum allowed size of a WebSocket Frame.
-     */
+    @Override
     public void setMaxFrameSize(long maxFrameSize)
     {
         factory.setMaxFrameSize(maxFrameSize);

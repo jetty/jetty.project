@@ -545,13 +545,7 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
 
     public void onPing(Frame frame, Callback callback)
     {
-        ByteBuffer payload = BufferUtil.EMPTY_BUFFER;
-
-        if (frame.hasPayload())
-        {
-            payload = ByteBuffer.allocate(frame.getPayloadLength());
-            BufferUtil.put(frame.getPayload(), payload);
-        }
+        ByteBuffer payload = BufferUtil.copy(frame.getPayload());
         coreSession.sendFrame(new Frame(OpCode.PONG).setPayload(payload), Callback.NOOP, false);
         callback.succeeded();
     }

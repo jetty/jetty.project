@@ -24,7 +24,6 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
 
-import org.eclipse.jetty.http.HttpCompliance.Violation;
 import org.eclipse.jetty.http.HttpTokens.EndOfContent;
 import org.eclipse.jetty.util.ArrayTernaryTrie;
 import org.eclipse.jetty.util.ArrayTrie;
@@ -35,6 +34,8 @@ import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
+import static org.eclipse.jetty.http.HttpCompliance.RFC7230;
+import static org.eclipse.jetty.http.HttpCompliance.Violation;
 import static org.eclipse.jetty.http.HttpCompliance.Violation.CASE_SENSITIVE_FIELD_NAME;
 import static org.eclipse.jetty.http.HttpCompliance.Violation.MULTIPLE_CONTENT_LENGTHS;
 import static org.eclipse.jetty.http.HttpCompliance.Violation.NO_COLON_AFTER_FIELD_NAME;
@@ -136,6 +137,7 @@ public class HttpParser
         CHUNK_SIZE,
         CHUNK_PARAMS,
         CHUNK,
+        CONTENT_END,
         TRAILER,
         END,
         CLOSE,  // The associated stream/endpoint should be closed
@@ -160,7 +162,6 @@ public class HttpParser
     private int _headerBytes;
     private boolean _host;
     private boolean _headerComplete;
-
     private volatile State _state = State.START;
     private volatile FieldState _fieldState = FieldState.FIELD;
     private volatile boolean _eof;
@@ -179,9 +180,10 @@ public class HttpParser
     private boolean _cr;
     private ByteBuffer _contentChunk;
     private Trie<HttpField> _fieldCache;
-
     private int _length;
     private final StringBuilder _string = new StringBuilder();
+    private int _headerCacheSize = 1024;
+    private boolean _headerCacheCaseSensitive;
 
     static
     {
@@ -238,7 +240,7 @@ public class HttpParser
 
     private static HttpCompliance compliance()
     {
-        return HttpCompliance.RFC7230;
+        return RFC7230;
     }
 
     public HttpParser(RequestHandler handler)
@@ -289,6 +291,26 @@ public class HttpParser
     public HttpHandler getHandler()
     {
         return _handler;
+    }
+
+    public int getHeaderCacheSize()
+    {
+        return _headerCacheSize;
+    }
+
+    public void setHeaderCacheSize(int headerCacheSize)
+    {
+        _headerCacheSize = headerCacheSize;
+    }
+
+    public boolean isHeaderCacheCaseSensitive()
+    {
+        return _headerCacheCaseSensitive;
+    }
+
+    public void setHeaderCacheCaseSensitive(boolean headerCacheCaseSensitive)
+    {
+        _headerCacheCaseSensitive = headerCacheCaseSensitive;
     }
 
     protected void checkViolation(Violation violation) throws BadMessageException
@@ -529,16 +551,19 @@ public class HttpParser
     {
         boolean handleHeader = _handler.headerComplete();
         _headerComplete = true;
-        boolean handleContent = _handler.contentComplete();
-        boolean handleMessage = _handler.messageComplete();
-        return handleHeader || handleContent || handleMessage;
+        if (handleHeader)
+            return true;
+        setState(State.CONTENT_END);
+        return handleContentMessage();
     }
 
     private boolean handleContentMessage()
     {
         boolean handleContent = _handler.contentComplete();
-        boolean handleMessage = _handler.messageComplete();
-        return handleContent || handleMessage;
+        if (handleContent)
+            return true;
+        setState(State.END);
+        return _handler.messageComplete();
     }
 
     /* Parse a request or response line
@@ -708,7 +733,7 @@ public class HttpParser
 
                         case LF:
                             setState(State.HEADER);
-                            handle |= _responseHandler.startResponse(_version, _responseStatus, null);
+                            _responseHandler.startResponse(_version, _responseStatus, null);
                             break;
 
                         default:
@@ -726,10 +751,11 @@ public class HttpParser
                         case LF:
                             // HTTP/0.9
                             checkViolation(Violation.HTTP_0_9);
-                            handle = _requestHandler.startRequest(_methodString, _uri.toString(), HttpVersion.HTTP_0_9);
-                            setState(State.END);
+                            _requestHandler.startRequest(_methodString, _uri.toString(), HttpVersion.HTTP_0_9);
+                            setState(State.CONTENT);
+                            _endOfContent = EndOfContent.NO_CONTENT;
                             BufferUtil.clear(buffer);
-                            handle |= handleHeaderContentMessage();
+                            handle = handleHeaderContentMessage();
                             break;
 
                         case ALPHA:
@@ -805,16 +831,17 @@ public class HttpParser
                             if (_responseHandler != null)
                             {
                                 setState(State.HEADER);
-                                handle |= _responseHandler.startResponse(_version, _responseStatus, null);
+                                _responseHandler.startResponse(_version, _responseStatus, null);
                             }
                             else
                             {
                                 // HTTP/0.9
                                 checkViolation(Violation.HTTP_0_9);
-                                handle = _requestHandler.startRequest(_methodString, _uri.toString(), HttpVersion.HTTP_0_9);
-                                setState(State.END);
+                                _requestHandler.startRequest(_methodString, _uri.toString(), HttpVersion.HTTP_0_9);
+                                setState(State.CONTENT);
+                                _endOfContent = EndOfContent.NO_CONTENT;
                                 BufferUtil.clear(buffer);
-                                handle |= handleHeaderContentMessage();
+                                handle = handleHeaderContentMessage();
                             }
                             break;
 
@@ -835,15 +862,13 @@ public class HttpParser
                             checkVersion();
 
                             // Should we try to cache header fields?
-                            if (_fieldCache == null && _version.getVersion() >= HttpVersion.HTTP_1_1.getVersion() && _handler.getHeaderCacheSize() > 0)
-                            {
-                                int headerCache = _handler.getHeaderCacheSize();
+                            int headerCache = getHeaderCacheSize();
+                            if (_fieldCache == null && _version.getVersion() >= HttpVersion.HTTP_1_1.getVersion() && headerCache > 0)
                                 _fieldCache = new ArrayTernaryTrie<>(headerCache);
-                            }
 
                             setState(State.HEADER);
 
-                            handle |= _requestHandler.startRequest(_methodString, _uri.toString(), _version);
+                            _requestHandler.startRequest(_methodString, _uri.toString(), _version);
                             continue;
 
                         case ALPHA:
@@ -865,7 +890,7 @@ public class HttpParser
                         case LF:
                             String reason = takeString();
                             setState(State.HEADER);
-                            handle |= _responseHandler.startResponse(_version, _responseStatus, reason);
+                            _responseHandler.startResponse(_version, _responseStatus, reason);
                             continue;
 
                         case ALPHA:
@@ -1169,11 +1194,6 @@ public class HttpParser
                                     _headerComplete = true;
                                     return handle;
                                 }
-                                case NO_CONTENT:
-                                {
-                                    setState(State.END);
-                                    return handleHeaderContentMessage();
-                                }
                                 default:
                                 {
                                     setState(State.CONTENT);
@@ -1219,7 +1239,7 @@ public class HttpParser
                                         }
                                     }
 
-                                    if (v != null && _handler.isHeaderCacheCaseSensitive())
+                                    if (v != null && isHeaderCacheCaseSensitive())
                                     {
                                         String ev = BufferUtil.toString(buffer, buffer.position() + n.length() + 1, v.length(), StandardCharsets.ISO_8859_1);
                                         if (!v.equals(ev))
@@ -1472,8 +1492,16 @@ public class HttpParser
                 // Handle HEAD response
                 if (_responseStatus > 0 && _headResponse)
                 {
-                    setState(State.END);
-                    return handleContentMessage();
+                    if (_state != State.CONTENT_END)
+                    {
+                        setState(State.CONTENT_END);
+                        return handleContentMessage();
+                    }
+                    else
+                    {
+                        setState(State.END);
+                        return _handler.messageComplete();
+                    }
                 }
                 else
                 {
@@ -1492,11 +1520,18 @@ public class HttpParser
             // handle end states
             if (_state == State.END)
             {
-                // eat white space
-                while (buffer.remaining() > 0 && buffer.get(buffer.position()) <= HttpTokens.SPACE)
+                // Eat CR or LF white space, but not SP.
+                int whiteSpace = 0;
+                while (buffer.remaining() > 0)
                 {
+                    byte b = buffer.get(buffer.position());
+                    if (b != HttpTokens.CARRIAGE_RETURN && b != HttpTokens.LINE_FEED)
+                        break;
                     buffer.get();
+                    ++whiteSpace;
                 }
+                if (debugEnabled && whiteSpace > 0)
+                    LOG.debug("Discarded {} CR or LF characters", whiteSpace);
             }
             else if (isClose() || isClosed())
             {
@@ -1504,16 +1539,11 @@ public class HttpParser
             }
 
             // Handle EOF
-            if (_eof && !buffer.hasRemaining())
+            if (isAtEOF() && !buffer.hasRemaining())
             {
                 switch (_state)
                 {
                     case CLOSED:
-                        break;
-
-                    case START:
-                        setState(State.CLOSED);
-                        _handler.earlyEOF();
                         break;
 
                     case END:
@@ -1526,13 +1556,18 @@ public class HttpParser
                         if (_fieldState == FieldState.FIELD)
                         {
                             // Be forgiving of missing last CRLF
+                            setState(State.CONTENT_END);
+                            boolean handle = handleContentMessage();
+                            if (handle && _state == State.CONTENT_END)
+                                return true;
                             setState(State.CLOSED);
-                            return handleContentMessage();
+                            return handle;
                         }
                         setState(State.CLOSED);
                         _handler.earlyEOF();
                         break;
 
+                    case START:
                     case CONTENT:
                     case CHUNKED_CONTENT:
                     case CHUNK_SIZE:
@@ -1578,18 +1613,28 @@ public class HttpParser
     protected boolean parseContent(ByteBuffer buffer)
     {
         int remaining = buffer.remaining();
-        if (remaining == 0 && _state == State.CONTENT)
+        if (remaining == 0)
         {
-            long content = _contentLength - _contentPosition;
-            if (content == 0)
+            switch (_state)
             {
-                setState(State.END);
-                return handleContentMessage();
+                case CONTENT:
+                    long content = _contentLength - _contentPosition;
+                    if (_endOfContent == EndOfContent.NO_CONTENT || content == 0)
+                    {
+                        setState(State.CONTENT_END);
+                        return handleContentMessage();
+                    }
+                    break;
+                case CONTENT_END:
+                    setState(_endOfContent == EndOfContent.EOF_CONTENT ? State.CLOSED : State.END);
+                    return _handler.messageComplete();
+                default:
+                    // No bytes to parse, return immediately.
+                    return false;
             }
         }
 
-        // Handle _content
-        byte ch;
+        // Handle content.
         while (_state.ordinal() < State.TRAILER.ordinal() && remaining > 0)
         {
             switch (_state)
@@ -1605,9 +1650,9 @@ public class HttpParser
                 case CONTENT:
                 {
                     long content = _contentLength - _contentPosition;
-                    if (content == 0)
+                    if (_endOfContent == EndOfContent.NO_CONTENT || content == 0)
                     {
-                        setState(State.END);
+                        setState(State.CONTENT_END);
                         return handleContentMessage();
                     }
                     else
@@ -1630,7 +1675,7 @@ public class HttpParser
 
                         if (_contentPosition == _contentLength)
                         {
-                            setState(State.END);
+                            setState(State.CONTENT_END);
                             return handleContentMessage();
                         }
                     }
@@ -1755,10 +1800,10 @@ public class HttpParser
                     break;
                 }
 
-                case CLOSED:
+                case CONTENT_END:
                 {
-                    BufferUtil.clear(buffer);
-                    return false;
+                    setState(_endOfContent == EndOfContent.EOF_CONTENT ? State.CLOSED : State.END);
+                    return _handler.messageComplete();
                 }
 
                 default:
@@ -1842,8 +1887,8 @@ public class HttpParser
         return String.format("%s{s=%s,%d of %d}",
             getClass().getSimpleName(),
             _state,
-            _contentPosition,
-            _contentLength);
+            getContentRead(),
+            getContentLength());
     }
 
     /* Event Handler interface
@@ -1893,13 +1938,6 @@ public class HttpParser
         default void badMessage(BadMessageException failure)
         {
         }
-
-        /**
-         * @return the size in bytes of the per parser header cache
-         */
-        int getHeaderCacheSize();
-
-        boolean isHeaderCacheCaseSensitive();
     }
 
     public interface RequestHandler extends HttpHandler
@@ -1910,9 +1948,8 @@ public class HttpParser
          * @param method The method
          * @param uri The raw bytes of the URI.  These are copied into a ByteBuffer that will not be changed until this parser is reset and reused.
          * @param version the http version in use
-         * @return true if handling parsing should return.
          */
-        boolean startRequest(String method, String uri, HttpVersion version);
+        void startRequest(String method, String uri, HttpVersion version);
     }
 
     public interface ResponseHandler extends HttpHandler
@@ -1923,9 +1960,8 @@ public class HttpParser
          * @param version the http version in use
          * @param status the response status
          * @param reason the response reason phrase
-         * @return true if handling parsing should return
          */
-        boolean startResponse(HttpVersion version, int status, String reason);
+        void startResponse(HttpVersion version, int status, String reason);
     }
 
     @SuppressWarnings("serial")

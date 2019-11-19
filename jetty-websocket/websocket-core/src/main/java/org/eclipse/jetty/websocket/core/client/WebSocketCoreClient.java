@@ -28,7 +28,6 @@ import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.thread.ShutdownThread;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
@@ -92,18 +91,7 @@ public class WebSocketCoreClient extends ContainerLifeCycle
         if (LOG.isDebugEnabled())
             LOG.debug("connect to websocket {}", request.getURI());
 
-        init();
-
         return request.sendAsync();
-    }
-
-    // TODO: review need for this.
-    private synchronized void init() throws IOException
-    {
-        if (!ShutdownThread.isRegistered(this))
-        {
-            ShutdownThread.register(this);
-        }
     }
 
     public WebSocketExtensionRegistry getExtensionRegistry()

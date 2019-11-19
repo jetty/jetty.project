@@ -382,18 +382,6 @@ public class LocalConnector extends AbstractConnector
                 }
 
                 @Override
-                public int getHeaderCacheSize()
-                {
-                    return 0;
-                }
-
-                @Override
-                public boolean isHeaderCacheCaseSensitive()
-                {
-                    return false;
-                }
-
-                @Override
                 public void earlyEOF()
                 {
                 }
@@ -405,9 +393,8 @@ public class LocalConnector extends AbstractConnector
                 }
 
                 @Override
-                public boolean startResponse(HttpVersion version, int status, String reason)
+                public void startResponse(HttpVersion version, int status, String reason)
                 {
-                    return false;
                 }
             };
 

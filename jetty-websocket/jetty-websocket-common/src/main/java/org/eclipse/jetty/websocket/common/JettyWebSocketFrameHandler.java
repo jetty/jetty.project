@@ -29,6 +29,7 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
+import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.common.invoke.InvalidSignatureException;
 import org.eclipse.jetty.websocket.core.BadPayloadException;
 import org.eclipse.jetty.websocket.core.CloseException;
@@ -359,10 +360,8 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         else
         {
             // Automatically respond
-            Frame pong = new Frame(OpCode.PONG);
-            if (frame.hasPayload())
-                pong.setPayload(frame.getPayload());
-            getSession().getRemote().getCoreSession().sendFrame(pong, Callback.NOOP, false);
+            ByteBuffer payload = BufferUtil.copy(frame.getPayload());
+            getSession().getRemote().sendPong(payload, WriteCallback.NOOP);
         }
         callback.succeeded();
     }

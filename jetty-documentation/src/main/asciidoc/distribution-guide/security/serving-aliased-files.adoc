@@ -19,8 +19,8 @@
 [[serving-aliased-files]]
 === Aliased Files and Symbolic links
 
-Web applications will often server static content from the file system provided by the operating system running underneath the JVM.
-However because file systems often implement multiple aliased names for the same file, then security constraints and other servlet URI space mappings my inadvertently be bypassed by aliases.
+Web applications will often serve static content from the file system provided by the operating system running underneath the JVM.
+However, because file systems often implement multiple aliased names for the same file, then security constraints and other servlet URI space mappings may inadvertently be bypassed by aliases.
 
 A key example of this is case insensitivity and 8.3 filenames implemented by the Windows file system.
 If a file within a web application called `/mysecretfile.txt` is protected by a security constraint on the URI `/mysecretfile.txt`, then a request to `/MySecretFile.TXT` will not match the URI constraint because URIs are case sensitive, but the Windows file system will report that a file does exist at that name and it will be served despite the security constraint.

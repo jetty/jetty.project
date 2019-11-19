@@ -204,10 +204,10 @@ public class OptionalSslConnectionTest
         }
     }
 
-    private static class EmptyServerHandler extends AbstractHandler.ErrorDispatchHandler
+    private static class EmptyServerHandler extends AbstractHandler
     {
         @Override
-        protected void doNonErrorHandle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
+        public void handle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
         {
             jettyRequest.setHandled(true);
         }

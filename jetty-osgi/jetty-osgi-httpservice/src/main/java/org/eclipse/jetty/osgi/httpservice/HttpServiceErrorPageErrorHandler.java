@@ -49,7 +49,7 @@ public class HttpServiceErrorPageErrorHandler extends ErrorPageErrorHandler
     @Override
     public void handle(String target, Request baseRequest,
                        HttpServletRequest request, HttpServletResponse response)
-        throws IOException
+        throws IOException, ServletException
     {
         if (HttpServiceErrorHandlerHelper.getCustomErrorHandler() != null)
         {

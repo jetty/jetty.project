@@ -81,10 +81,10 @@ public class HttpTrailersTest extends AbstractTest<TransportScenario>
     {
         String trailerName = "Trailer";
         String trailerValue = "value";
-        scenario.start(new AbstractHandler.ErrorDispatchHandler()
+        scenario.start(new AbstractHandler()
         {
             @Override
-            protected void doNonErrorHandle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void handle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 jettyRequest.setHandled(true);
 
@@ -120,10 +120,10 @@ public class HttpTrailersTest extends AbstractTest<TransportScenario>
     public void testEmptyRequestTrailers(Transport transport) throws Exception
     {
         init(transport);
-        scenario.start(new AbstractHandler.ErrorDispatchHandler()
+        scenario.start(new AbstractHandler()
         {
             @Override
-            protected void doNonErrorHandle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void handle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 jettyRequest.setHandled(true);
 
@@ -169,10 +169,10 @@ public class HttpTrailersTest extends AbstractTest<TransportScenario>
     {
         String trailerName = "Trailer";
         String trailerValue = "value";
-        scenario.start(new AbstractHandler.ErrorDispatchHandler()
+        scenario.start(new AbstractHandler()
         {
             @Override
-            protected void doNonErrorHandle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void handle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 jettyRequest.setHandled(true);
 
@@ -216,10 +216,10 @@ public class HttpTrailersTest extends AbstractTest<TransportScenario>
     public void testEmptyResponseTrailers(Transport transport) throws Exception
     {
         init(transport);
-        scenario.start(new AbstractHandler.ErrorDispatchHandler()
+        scenario.start(new AbstractHandler()
         {
             @Override
-            protected void doNonErrorHandle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
+            public void handle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
             {
                 jettyRequest.setHandled(true);
 
@@ -262,10 +262,10 @@ public class HttpTrailersTest extends AbstractTest<TransportScenario>
         String trailerName = "Trailer";
         String trailerValue = "value";
         init(transport);
-        scenario.start(new AbstractHandler.ErrorDispatchHandler()
+        scenario.start(new AbstractHandler()
         {
             @Override
-            protected void doNonErrorHandle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void handle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 jettyRequest.setHandled(true);
 

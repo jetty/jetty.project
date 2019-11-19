@@ -85,6 +85,20 @@ public interface WebSocketPolicy
     long getMaxTextMessageSize();
 
     /**
+     * The maximum payload size of any WebSocket Frame which can be received.
+     *
+     * @return the maximum size of a WebSocket Frame.
+     */
+    long getMaxFrameSize();
+
+    /**
+     * If true, frames are automatically fragmented to respect the maximum frame size.
+     *
+     * @return whether to automatically fragment incoming WebSocket Frames.
+     */
+    boolean isAutoFragment();
+
+    /**
      * The duration that a websocket may be idle before being closed by the implementation
      *
      * @param duration the timeout duration (may not be null or negative)
@@ -123,4 +137,21 @@ public interface WebSocketPolicy
      * @param size the maximum allowed size of a text message.
      */
     void setMaxTextMessageSize(long size);
+
+    /**
+     * The maximum payload size of any WebSocket Frame which can be received.
+     * <p>
+     * WebSocket Frames over this maximum will result in a close code 1009 {@link StatusCode#MESSAGE_TOO_LARGE}
+     * </p>
+     *
+     * @param maxFrameSize the maximum allowed size of a WebSocket Frame.
+     */
+    void setMaxFrameSize(long maxFrameSize);
+
+    /**
+     * If set to true, frames are automatically fragmented to respect the maximum frame size.
+     *
+     * @param autoFragment whether to automatically fragment incoming WebSocket Frames.
+     */
+    void setAutoFragment(boolean autoFragment);
 }

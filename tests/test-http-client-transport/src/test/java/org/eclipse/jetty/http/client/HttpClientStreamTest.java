@@ -497,10 +497,10 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
     public void testInputStreamContentProviderThrowingWhileReading(Transport transport) throws Exception
     {
         init(transport);
-        scenario.start(new AbstractHandler.ErrorDispatchHandler()
+        scenario.start(new AbstractHandler()
         {
             @Override
-            public void doNonErrorHandle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 baseRequest.setHandled(true);
                 IO.copy(request.getInputStream(), response.getOutputStream());
@@ -988,7 +988,9 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
     public void testUploadWithOutputStreamFailureToConnect(Transport transport) throws Exception
     {
         init(transport);
-        scenario.start(new EmptyServerHandler());
+
+        long connectTimeout = 1000;
+        scenario.start(new EmptyServerHandler(), httpClient -> httpClient.setConnectTimeout(connectTimeout));
 
         final byte[] data = new byte[512];
         final CountDownLatch latch = new CountDownLatch(1);
@@ -1013,7 +1015,7 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
             }
         });
 
-        assertTrue(latch.await(5, TimeUnit.SECONDS));
+        assertTrue(latch.await(2 * connectTimeout, TimeUnit.SECONDS));
     }
 
     @ParameterizedTest
@@ -1070,7 +1072,9 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
     public void testUploadWithConnectFailureClosesStream(Transport transport) throws Exception
     {
         init(transport);
-        scenario.start(new EmptyServerHandler());
+
+        long connectTimeout = 1000;
+        scenario.start(new EmptyServerHandler(), httpClient -> httpClient.setConnectTimeout(connectTimeout));
 
         final CountDownLatch closeLatch = new CountDownLatch(1);
         InputStream stream = new ByteArrayInputStream("test".getBytes(StandardCharsets.UTF_8))
@@ -1097,7 +1101,7 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
                 completeLatch.countDown();
             });
 
-        assertTrue(completeLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(completeLatch.await(2 * connectTimeout, TimeUnit.SECONDS));
         assertTrue(closeLatch.await(5, TimeUnit.SECONDS));
     }
 

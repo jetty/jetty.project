@@ -76,7 +76,7 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
                 WebSocketComponents.ensureWebSocketComponents(servletContext), executor);
             servletContext.setAttribute(JETTY_WEBSOCKET_CONTAINER_ATTRIBUTE, container);
             contextHandler.addManaged(container);
-            contextHandler.addLifeCycleListener(container);
+            contextHandler.addEventListener(container);
         }
 
         return container;
@@ -112,7 +112,7 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
         {
             factory = new JettyServerFrameHandlerFactory(this);
             contextHandler.addManaged(factory);
-            contextHandler.addLifeCycleListener(factory);
+            contextHandler.addEventListener(factory);
         }
         frameHandlerFactory = factory;
 
@@ -207,6 +207,18 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
     }
 
     @Override
+    public long getMaxFrameSize()
+    {
+        return customizer.getMaxFrameSize();
+    }
+
+    @Override
+    public boolean isAutoFragment()
+    {
+        return customizer.isAutoFragment();
+    }
+
+    @Override
     public void setIdleTimeout(Duration duration)
     {
         customizer.setIdleTimeout(duration);
@@ -234,5 +246,17 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
     public void setMaxTextMessageSize(long size)
     {
         customizer.setMaxTextMessageSize(size);
+    }
+
+    @Override
+    public void setMaxFrameSize(long maxFrameSize)
+    {
+        customizer.setMaxFrameSize(maxFrameSize);
+    }
+
+    @Override
+    public void setAutoFragment(boolean autoFragment)
+    {
+        customizer.setAutoFragment(autoFragment);
     }
 }

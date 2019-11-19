@@ -72,9 +72,9 @@ public class ServletWriterTest
         char[] chars = new char[128 * 1024 * 1024];
         CountDownLatch latch = new CountDownLatch(1);
         AtomicReference<Thread> serverThreadRef = new AtomicReference<>();
-        start(chars.length, new AbstractHandler.ErrorDispatchHandler() {
+        start(chars.length, new AbstractHandler() {
             @Override
-            protected void doNonErrorHandle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 serverThreadRef.set(Thread.currentThread());
                 jettyRequest.setHandled(true);

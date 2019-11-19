@@ -57,6 +57,8 @@ public class ParserCapture
         ExtensionStack exStack = new ExtensionStack(components, Behavior.SERVER);
         exStack.negotiate(new LinkedList<>(), new LinkedList<>());
         this.coreSession = new WebSocketCoreSession(new TestMessageHandler(), behavior, Negotiated.from(exStack));
+        coreSession.setAutoFragment(false);
+        coreSession.setMaxFrameSize(0);
         this.parser = new Parser(components.getBufferPool(), coreSession);
     }
 

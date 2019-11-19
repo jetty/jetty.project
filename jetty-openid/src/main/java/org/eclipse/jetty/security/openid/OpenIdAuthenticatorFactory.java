@@ -21,13 +21,12 @@ package org.eclipse.jetty.security.openid;
 import javax.servlet.ServletContext;
 
 import org.eclipse.jetty.security.Authenticator;
-import org.eclipse.jetty.security.DefaultAuthenticatorFactory;
 import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.security.Constraint;
 
-public class OpenIdAuthenticatorFactory extends DefaultAuthenticatorFactory
+public class OpenIdAuthenticatorFactory implements Authenticator.Factory
 {
     @Override
     public Authenticator getAuthenticator(Server server, ServletContext context, Authenticator.AuthConfiguration configuration, IdentityService identityService, LoginService loginService)
@@ -35,6 +34,6 @@ public class OpenIdAuthenticatorFactory extends DefaultAuthenticatorFactory
         String auth = configuration.getAuthMethod();
         if (Constraint.__OPENID_AUTH.equalsIgnoreCase(auth))
             return new OpenIdAuthenticator();
-        return super.getAuthenticator(server, context, configuration, identityService, loginService);
+        return null;
     }
 }

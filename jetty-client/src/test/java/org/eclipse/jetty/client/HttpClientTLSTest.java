@@ -823,4 +823,124 @@ public class HttpClientTLSTest
         Throwable cause = failure.getCause();
         assertThat(cause, Matchers.instanceOf(SSLHandshakeException.class));
     }
+
+    @Test
+    public void testTLSLargeFragments() throws Exception
+    {
+        CountDownLatch serverLatch = new CountDownLatch(1);
+        SslContextFactory.Server serverTLSFactory = createServerSslContextFactory();
+        QueuedThreadPool serverThreads = new QueuedThreadPool();
+        serverThreads.setName("server");
+        server = new Server(serverThreads);
+        HttpConfiguration httpConfig = new HttpConfiguration();
+        httpConfig.addCustomizer(new SecureRequestCustomizer());
+        HttpConnectionFactory http = new HttpConnectionFactory(httpConfig);
+        SslConnectionFactory ssl = new SslConnectionFactory(serverTLSFactory, http.getProtocol())
+        {
+            @Override
+            protected SslConnection newSslConnection(Connector connector, EndPoint endPoint, SSLEngine engine)
+            {
+                return new SslConnection(connector.getByteBufferPool(), connector.getExecutor(), endPoint, engine, isDirectBuffersForEncryption(), isDirectBuffersForDecryption())
+                {
+                    @Override
+                    protected SSLEngineResult unwrap(SSLEngine sslEngine, ByteBuffer input, ByteBuffer output) throws SSLException
+                    {
+                        int inputBytes = input.remaining();
+                        SSLEngineResult result = super.unwrap(sslEngine, input, output);
+                        if (inputBytes == 5)
+                            serverLatch.countDown();
+                        return result;
+                    }
+                };
+            }
+        };
+        connector = new ServerConnector(server, 1, 1, ssl, http);
+        server.addConnector(connector);
+        server.setHandler(new EmptyServerHandler());
+        server.start();
+
+        long idleTimeout = 2000;
+
+        CountDownLatch clientLatch = new CountDownLatch(1);
+        SslContextFactory.Client clientTLSFactory = createClientSslContextFactory();
+        ClientConnector clientConnector = new ClientConnector();
+        clientConnector.setSelectors(1);
+        clientConnector.setSslContextFactory(clientTLSFactory);
+        QueuedThreadPool clientThreads = new QueuedThreadPool();
+        clientThreads.setName("client");
+        clientConnector.setExecutor(clientThreads);
+        client = new HttpClient(new HttpClientTransportOverHTTP(clientConnector))
+        {
+            @Override
+            protected ClientConnectionFactory newSslClientConnectionFactory(SslContextFactory.Client sslContextFactory, ClientConnectionFactory connectionFactory)
+            {
+                if (sslContextFactory == null)
+                    sslContextFactory = getSslContextFactory();
+                return new SslClientConnectionFactory(sslContextFactory, getByteBufferPool(), getExecutor(), connectionFactory)
+                {
+                    @Override
+                    protected SslConnection newSslConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, SSLEngine engine)
+                    {
+                        return new SslConnection(byteBufferPool, executor, endPoint, engine, isDirectBuffersForEncryption(), isDirectBuffersForDecryption())
+                        {
+                            @Override
+                            protected SSLEngineResult wrap(SSLEngine sslEngine, ByteBuffer[] input, ByteBuffer output) throws SSLException
+                            {
+                                try
+                                {
+                                    clientLatch.countDown();
+                                    assertTrue(serverLatch.await(5, TimeUnit.SECONDS));
+                                    return super.wrap(sslEngine, input, output);
+                                }
+                                catch (InterruptedException x)
+                                {
+                                    throw new SSLException(x);
+                                }
+                            }
+                        };
+                    }
+                };
+            }
+        };
+        client.setIdleTimeout(idleTimeout);
+        client.setExecutor(clientThreads);
+        client.start();
+
+        String host = "localhost";
+        int port = connector.getLocalPort();
+
+        CountDownLatch responseLatch = new CountDownLatch(1);
+        client.newRequest(host, port)
+            .scheme(HttpScheme.HTTPS.asString())
+            .send(result ->
+            {
+                assertTrue(result.isSucceeded());
+                assertEquals(HttpStatus.OK_200, result.getResponse().getStatus());
+                responseLatch.countDown();
+            });
+        // Wait for the TLS buffers to be acquired by the client, then the
+        // HTTP request will be paused waiting for the TLS buffer to be expanded.
+        assertTrue(clientLatch.await(5, TimeUnit.SECONDS));
+
+        // Send the large frame bytes that will enlarge the TLS buffers.
+        try (Socket socket = new Socket(host, port))
+        {
+            OutputStream output = socket.getOutputStream();
+            byte[] largeFrameBytes = new byte[5];
+            largeFrameBytes[0] = 22; // Type = handshake
+            largeFrameBytes[1] = 3; // Major TLS version
+            largeFrameBytes[2] = 3; // Minor TLS version
+            // Frame length is 0x7FFF == 32767, i.e. a "large fragment".
+            // Maximum allowed by RFC 8446 is 16384, but SSLEngine supports up to 33093.
+            largeFrameBytes[3] = 0x7F; // Length hi byte
+            largeFrameBytes[4] = (byte)0xFF; // Length lo byte
+            output.write(largeFrameBytes);
+            output.flush();
+            // Just close the connection now, the large frame
+            // length was enough to trigger the buffer expansion.
+        }
+
+        // The HTTP request will resume and be forced to handle the TLS buffer expansion.
+        assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
+    }
 }

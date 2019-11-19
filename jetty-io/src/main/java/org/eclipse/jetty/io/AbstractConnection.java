@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.io;
 
+import java.util.EventListener;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
@@ -57,13 +58,14 @@ public abstract class AbstractConnection implements Connection
     }
 
     @Override
-    public void addListener(Listener listener)
+    public void addEventListener(EventListener listener)
     {
-        _listeners.add(listener);
+        if (listener instanceof Listener)
+            _listeners.add((Listener)listener);
     }
 
     @Override
-    public void removeListener(Listener listener)
+    public void removeEventListener(EventListener listener)
     {
         _listeners.remove(listener);
     }

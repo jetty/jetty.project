@@ -176,7 +176,7 @@ public class ServletUpgradeResponse
             if (matches < 1)
                 throw new IllegalArgumentException("Extension not a requested extension");
 
-            matches = negotiation.getNegotiatedExtensions().stream().filter(e -> e.getName().equals(config.getName())).count();
+            matches = configs.stream().filter(e -> e.getName().equals(config.getName())).count();
             if (matches > 1)
                 throw new IllegalArgumentException("Multiple extensions of the same name");
         }

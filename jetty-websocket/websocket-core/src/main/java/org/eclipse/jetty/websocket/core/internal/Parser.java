@@ -256,12 +256,17 @@ public class Parser
 
     protected void checkFrameSize(byte opcode, int payloadLength) throws MessageTooLargeException, ProtocolException
     {
-        if (OpCode.isControlFrame(opcode) && payloadLength > Frame.MAX_CONTROL_PAYLOAD)
-            throw new ProtocolException("Invalid control frame payload length, [" + payloadLength + "] cannot exceed [" + Frame.MAX_CONTROL_PAYLOAD + "]");
-
-        long maxFrameSize = configuration.getMaxFrameSize();
-        if (!configuration.isAutoFragment() && maxFrameSize > 0 && payloadLength > maxFrameSize)
-            throw new MessageTooLargeException("Cannot handle payload lengths larger than " + maxFrameSize);
+        if (OpCode.isControlFrame(opcode))
+        {
+            if (payloadLength > Frame.MAX_CONTROL_PAYLOAD)
+                throw new ProtocolException("Invalid control frame payload length, [" + payloadLength + "] cannot exceed [" + Frame.MAX_CONTROL_PAYLOAD + "]");
+        }
+        else
+        {
+            long maxFrameSize = configuration.getMaxFrameSize();
+            if (!configuration.isAutoFragment() && maxFrameSize > 0 && payloadLength > maxFrameSize)
+                throw new MessageTooLargeException("Cannot handle payload lengths larger than " + maxFrameSize);
+        }
     }
 
     protected ParsedFrame newFrame(byte firstByte, byte[] mask, ByteBuffer payload, boolean releaseable)
@@ -279,6 +284,32 @@ public class Parser
         return new ParsedFrame(firstByte, mask, payload, releaseable);
     }
 
+    private ParsedFrame autoFragment(ByteBuffer buffer, int fragmentSize)
+    {
+        payloadLength -= fragmentSize;
+
+        byte[] nextMask = null;
+        if (mask != null)
+        {
+            int shift = fragmentSize % 4;
+            nextMask = new byte[4];
+            nextMask[0] = mask[(0 + shift) % 4];
+            nextMask[1] = mask[(1 + shift) % 4];
+            nextMask[2] = mask[(2 + shift) % 4];
+            nextMask[3] = mask[(3 + shift) % 4];
+        }
+
+        ByteBuffer content = buffer.slice();
+        content.limit(fragmentSize);
+        buffer.position(buffer.position() + fragmentSize);
+
+        final ParsedFrame frame = newFrame((byte)(firstByte & 0x7F), mask, content, false);
+        mask = nextMask;
+        firstByte = (byte)((firstByte & 0x80) | OpCode.CONTINUATION);
+        state = State.FRAGMENT;
+        return frame;
+    }
+
     private ParsedFrame parsePayload(ByteBuffer buffer)
     {
         if (payloadLength == 0)
@@ -288,35 +319,21 @@ public class Parser
             return null;
 
         int available = buffer.remaining();
+        boolean isDataFrame = OpCode.isDataFrame(OpCode.getOpCode(firstByte));
+
+        // Always autoFragment data frames if payloadLength is greater than maxFrameSize.
+        long maxFrameSize = configuration.getMaxFrameSize();
+        if (maxFrameSize > 0 && isDataFrame && payloadLength > maxFrameSize)
+            return autoFragment(buffer, (int)Math.min(available, maxFrameSize));
 
         if (aggregate == null)
         {
             if (available < payloadLength)
             {
-                // not enough to complete this frame 
-
+                // not enough to complete this frame
                 // Can we auto-fragment
-                if (configuration.isAutoFragment() && OpCode.isDataFrame(OpCode.getOpCode(firstByte)))
-                {
-                    payloadLength -= available;
-
-                    byte[] nextMask = null;
-                    if (mask != null)
-                    {
-                        int shift = available % 4;
-                        nextMask = new byte[4];
-                        nextMask[0] = mask[(0 + shift) % 4];
-                        nextMask[1] = mask[(1 + shift) % 4];
-                        nextMask[2] = mask[(2 + shift) % 4];
-                        nextMask[3] = mask[(3 + shift) % 4];
-                    }
-                    final ParsedFrame frame = newFrame((byte)(firstByte & 0x7F), mask, buffer.slice(), false);
-                    buffer.position(buffer.limit());
-                    mask = nextMask;
-                    firstByte = (byte)((firstByte & 0x80) | OpCode.CONTINUATION);
-                    state = State.FRAGMENT;
-                    return frame;
-                }
+                if (configuration.isAutoFragment() && isDataFrame)
+                    return autoFragment(buffer, available);
 
                 // No space in the buffer, so we have to copy the partial payload
                 aggregate = bufferPool.acquire(payloadLength, false);

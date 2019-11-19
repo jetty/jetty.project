@@ -42,7 +42,7 @@ import org.eclipse.jetty.util.log.Logger;
  * Dumps GET and POST requests.
  * Useful for testing and debugging.
  */
-public class DumpHandler extends AbstractHandler.ErrorDispatchHandler
+public class DumpHandler extends AbstractHandler
 {
     private static final Logger LOG = Log.getLogger(DumpHandler.class);
 
@@ -58,7 +58,7 @@ public class DumpHandler extends AbstractHandler.ErrorDispatchHandler
     }
 
     @Override
-    protected void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
         if (!isStarted())
             return;

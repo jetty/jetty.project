@@ -190,7 +190,7 @@ if proceedyn "Are you sure you want to release using above? (y/N)" n; then
     fi
     if proceedyn "Push git commits to remote $GIT_REMOTE_ID? (Y/n)" y; then
         git push $GIT_REMOTE_ID $GIT_BRANCH_ID
-        git push $GIT_REMOTE_ID --tags
+        git push $GIT_REMOTE_ID $TAG_NAME
     fi
 else
     echo "Not performing release"

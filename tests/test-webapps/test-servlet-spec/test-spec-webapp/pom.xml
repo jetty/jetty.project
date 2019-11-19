@@ -138,17 +138,17 @@
         <artifactId>jetty-maven-plugin</artifactId>
         <version>${project.version}</version>
         <configuration>
-          <scanIntervalSeconds>10</scanIntervalSeconds>
+          <scan>10</scan>
           <useTestClasspath>true</useTestClasspath>
-          <webAppXml>${project.build.directory}/plugin-context.xml</webAppXml>
-          <webAppConfig>
+          <contextXml>${project.build.directory}/plugin-context.xml</contextXml>
+          <webApp>
             <war>src/main/webapp</war>
             <descriptor>src/main/webapp/WEB-INF/web.xml</descriptor>
             <contextPath>/test-spec</contextPath>
             <containerIncludeJarPattern>.*/jetty-servlet-api-[^/]*\.jar$</containerIncludeJarPattern>
             <configurationDiscovered>true</configurationDiscovered>
             <jettyEnvXml>${basedir}/src/main/webapp/WEB-INF/jetty-env.xml</jettyEnvXml>
-          </webAppConfig>
+          </webApp>
           <loginServices>
             <loginService implementation="org.eclipse.jetty.security.HashLoginService">
               <name>Test Realm</name>

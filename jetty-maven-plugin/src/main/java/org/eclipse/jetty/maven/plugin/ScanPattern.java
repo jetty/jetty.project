@@ -24,7 +24,7 @@ import java.util.List;
 /**
  * ScanPattern
  *
- * A pattern of includes and excludes.
+ * Ant-style pattern of includes and excludes.
  */
 public class ScanPattern
 {

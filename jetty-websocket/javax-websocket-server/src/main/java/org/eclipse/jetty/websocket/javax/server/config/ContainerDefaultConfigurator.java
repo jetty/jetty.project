@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.javax.server.config;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.ServiceLoader;
 import javax.websocket.Extension;
@@ -28,6 +29,7 @@ import javax.websocket.server.ServerEndpointConfig.Configurator;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.core.ExtensionConfig;
 
 /**
  * The "Container Default Configurator" per the JSR-356 spec.
@@ -78,7 +80,16 @@ public final class ContainerDefaultConfigurator extends Configurator
     @Override
     public List<Extension> getNegotiatedExtensions(List<Extension> installed, List<Extension> requested)
     {
-        return requested;
+        List<Extension> negotiatedExtensions = new ArrayList<>();
+        for (Extension ext : requested)
+        {
+            // Only choose the first extension if multiple with the same name.
+            long matches = negotiatedExtensions.stream().filter(e -> e.getName().equals(ext.getName())).count();
+            if (matches == 0)
+                negotiatedExtensions.add(ext);
+        }
+
+        return negotiatedExtensions;
     }
 
     @Override

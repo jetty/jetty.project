@@ -131,6 +131,9 @@ public class Negotiation
                 .filter(ec -> available.contains(ec.getName().toLowerCase()) && !ec.getName().startsWith("@"))
                 .collect(Collectors.toList());
 
+            // Remove any parameters starting with "@", these are not to be negotiated by client (internal parameters).
+            offeredExtensions.forEach(ExtensionConfig::removeInternalParameters);
+
             offeredSubprotocols = subprotocols == null
                 ? Collections.emptyList()
                 : subprotocols.getValues();
@@ -141,7 +144,7 @@ public class Negotiation
                 long matches = negotiatedExtensions.stream()
                     .filter(negotiatedConfig -> negotiatedConfig.getName().equals(config.getName())).count();
                 if (matches == 0)
-                    negotiatedExtensions.add(config);
+                    negotiatedExtensions.add(new ExtensionConfig(config));
             }
         }
         catch (Throwable t)

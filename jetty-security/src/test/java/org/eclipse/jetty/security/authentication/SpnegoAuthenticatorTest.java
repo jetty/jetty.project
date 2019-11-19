@@ -125,6 +125,31 @@ public class SpnegoAuthenticatorTest
         assertEquals(HttpHeader.NEGOTIATE.asString(), res.getHeader(HttpHeader.WWW_AUTHENTICATE.asString()));
         assertEquals(HttpServletResponse.SC_UNAUTHORIZED, res.getStatus());
     }
+
+    class MockConnector extends AbstractConnector
+    {
+        public MockConnector()
+        {
+            super(new Server() , null, null, null, 0);
+        }
+
+        @Override
+        protected void accept(int acceptorID) throws IOException, InterruptedException
+        {
+        }
+
+        @Override
+        public Object getTransport()
+        {
+            return null;
+        }
+
+        @Override
+        public String dumpSelf()
+        {
+            return null;
+        }
+    }
     }
 
     class MockConnector extends AbstractConnector

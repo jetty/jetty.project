@@ -161,7 +161,7 @@ public class LifeCycleListenerNestedTest
         {
             if (child instanceof LifeCycle)
             {
-                ((LifeCycle)child).addLifeCycleListener(this);
+                ((LifeCycle)child).addEventListener(this);
             }
         }
 
@@ -170,7 +170,7 @@ public class LifeCycleListenerNestedTest
         {
             if (child instanceof LifeCycle)
             {
-                ((LifeCycle)child).removeLifeCycleListener(this);
+                ((LifeCycle)child).removeEventListener(this);
             }
         }
     }
@@ -185,7 +185,7 @@ public class LifeCycleListenerNestedTest
         foo.addBean(barb);
 
         CapturingListener listener = new CapturingListener();
-        foo.addLifeCycleListener(listener);
+        foo.addEventListener(listener);
         if (workaround)
             foo.addEventListener(listener);
 
@@ -216,7 +216,7 @@ public class LifeCycleListenerNestedTest
         Foo foo = new Foo();
 
         CapturingListener listener = new CapturingListener();
-        foo.addLifeCycleListener(listener);
+        foo.addEventListener(listener);
         if (workaround)
             foo.addEventListener(listener);
 
@@ -254,7 +254,7 @@ public class LifeCycleListenerNestedTest
         Bar barb = new Bar("b");
 
         CapturingListener listener = new CapturingListener();
-        foo.addLifeCycleListener(listener);
+        foo.addEventListener(listener);
         if (workaround)
             foo.addEventListener(listener);
 

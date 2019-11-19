@@ -83,12 +83,12 @@
         <artifactId>jetty-maven-plugin</artifactId>
         <version>${project.version}</version>
         <configuration>
-          <webAppXml>${project.build.directory}/plugin-context.xml</webAppXml>
-          <webAppConfig>
+          <contextXml>${project.build.directory}/plugin-context.xml</contextXml>
+          <webApp>
             <war>src/main/webapp</war>
             <descriptor>src/main/webapp/WEB-INF/web.xml</descriptor>
             <contextPath>/test-jndi</contextPath>
-          </webAppConfig>
+          </webApp>
         </configuration>
         <dependencies>
           <dependency>

@@ -61,7 +61,7 @@ public class MavenMetaInfConfiguration extends MetaInfConfiguration
         throws Exception
     {
         List<Resource> list = new ArrayList<>();
-        JettyWebAppContext jwac = (JettyWebAppContext)context;
+        MavenWebAppContext jwac = (MavenWebAppContext)context;
         List<File> files = jwac.getWebInfLib();
         if (files != null)
         {
@@ -90,15 +90,13 @@ public class MavenMetaInfConfiguration extends MetaInfConfiguration
 
     /**
      * Add in the classes dirs from test/classes and target/classes
-     *
-     * @see org.eclipse.jetty.webapp.MetaInfConfiguration#findClassDirs(org.eclipse.jetty.webapp.WebAppContext)
      */
     @Override
     protected List<Resource> findClassDirs(WebAppContext context) throws Exception
     {
         List<Resource> list = new ArrayList<>();
 
-        JettyWebAppContext jwac = (JettyWebAppContext)context;
+        MavenWebAppContext jwac = (MavenWebAppContext)context;
         List<File> files = jwac.getWebInfClasses();
         if (files != null)
         {

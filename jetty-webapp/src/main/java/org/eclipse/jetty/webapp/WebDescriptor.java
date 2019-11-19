@@ -41,7 +41,7 @@ public class WebDescriptor extends Descriptor
 
     protected static XmlParser _nonValidatingStaticParser;
     protected MetaDataComplete _metaDataComplete;
-    protected int _majorVersion = 3; //default to container version
+    protected int _majorVersion = 4; //default to container version
     protected int _minorVersion = 0;
     protected ArrayList<String> _classNames = new ArrayList<String>();
     protected boolean _distributable;

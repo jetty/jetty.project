@@ -18,13 +18,31 @@
 
 package org.eclipse.jetty.util;
 
+import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
+import java.nio.file.FileVisitOption;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.text.Normalizer;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
 
+import org.eclipse.jetty.toolchain.test.FS;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.OS;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -33,14 +51,19 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * URIUtil Tests.
  */
 @SuppressWarnings("SpellCheckingInspection")
+@ExtendWith(WorkDirExtension.class)
 public class URIUtilTest
 {
+    private static final Logger LOG = Log.getLogger(URIUtilTest.class);
+    public WorkDir workDir;
+
     public static Stream<Arguments> encodePathSource()
     {
         return Stream.of(
@@ -94,18 +117,6 @@ public class URIUtilTest
 
         // Deprecated Microsoft Percent-U encoding
         arguments.add(Arguments.of("abc%u3040", "abc\u3040"));
-
-        // Lenient decode
-        arguments.add(Arguments.of("abc%xyz", "abc%xyz")); // not a "%##"
-        arguments.add(Arguments.of("abc%", "abc%")); // percent at end of string
-        arguments.add(Arguments.of("abc%A", "abc%A")); // incomplete "%##" at end of string
-        arguments.add(Arguments.of("abc%uvwxyz", "abc%uvwxyz")); // not a valid "%u####"
-        arguments.add(Arguments.of("abc%uEFGHIJ", "abc%uEFGHIJ")); // not a valid "%u####"
-        arguments.add(Arguments.of("abc%uABC", "abc%uABC")); // incomplete "%u####"
-        arguments.add(Arguments.of("abc%uAB", "abc%uAB")); // incomplete "%u####"
-        arguments.add(Arguments.of("abc%uA", "abc%uA")); // incomplete "%u####"
-        arguments.add(Arguments.of("abc%u", "abc%u")); // incomplete "%u####"
-
         return arguments.stream();
     }
 
@@ -115,6 +126,60 @@ public class URIUtilTest
     {
         String path = URIUtil.decodePath(encodedPath);
         assertEquals(expectedPath, path);
+    }
+
+    public static Stream<Arguments> decodeBadPathSource()
+    {
+        List<Arguments> arguments = new ArrayList<>();
+
+        // Test for null character (real world ugly test case)
+        // TODO is this a bad decoding or a bad URI ?
+        // arguments.add(Arguments.of("/%00/"));
+
+        // Deprecated Microsoft Percent-U encoding
+        // TODO still supported for now ?
+        // arguments.add(Arguments.of("abc%u3040"));
+
+        // Bad %## encoding
+        arguments.add(Arguments.of("abc%xyz"));
+
+        // Incomplete %## encoding
+        arguments.add(Arguments.of("abc%"));
+        arguments.add(Arguments.of("abc%A"));
+
+        // Invalid microsoft %u#### encoding
+        arguments.add(Arguments.of("abc%uvwxyz"));
+        arguments.add(Arguments.of("abc%uEFGHIJ"));
+
+        // Incomplete microsoft %u#### encoding
+        arguments.add(Arguments.of("abc%uABC"));
+        arguments.add(Arguments.of("abc%uAB"));
+        arguments.add(Arguments.of("abc%uA"));
+        arguments.add(Arguments.of("abc%u"));
+
+        // Invalid UTF-8 and ISO8859-1
+        // TODO currently ISO8859 is too forgiving to detect these
+        /*
+        arguments.add(Arguments.of("abc%C3%28")); // invalid 2 octext sequence
+        arguments.add(Arguments.of("abc%A0%A1")); // invalid 2 octext sequence
+        arguments.add(Arguments.of("abc%e2%28%a1")); // invalid 3 octext sequence
+        arguments.add(Arguments.of("abc%e2%82%28")); // invalid 3 octext sequence
+        arguments.add(Arguments.of("abc%f0%28%8c%bc")); // invalid 4 octext sequence
+        arguments.add(Arguments.of("abc%f0%90%28%bc")); // invalid 4 octext sequence
+        arguments.add(Arguments.of("abc%f0%28%8c%28")); // invalid 4 octext sequence
+        arguments.add(Arguments.of("abc%f8%a1%a1%a1%a1")); // valid sequence, but not unicode
+        arguments.add(Arguments.of("abc%fc%a1%a1%a1%a1%a1")); // valid sequence, but not unicode
+        arguments.add(Arguments.of("abc%f8%a1%a1%a1")); // incomplete sequence
+         */
+
+        return arguments.stream();
+    }
+
+    @ParameterizedTest(name = "[{index}] {0}")
+    @MethodSource("decodeBadPathSource")
+    public void testBadDecodePath(String encodedPath)
+    {
+        assertThrows(IllegalArgumentException.class, () -> URIUtil.decodePath(encodedPath));
     }
 
     @Test
@@ -547,5 +612,98 @@ public class URIUtilTest
     public void testDecodeSpecific(String raw, String chars, String expected)
     {
         assertThat(URIUtil.decodeSpecific(raw, chars), is(expected));
+    }
+
+    public static Stream<Arguments> resourceUriLastSegmentSource()
+    {
+        return Stream.of(
+            Arguments.of("test.war", "test.war"),
+            Arguments.of("a/b/c/test.war", "test.war"),
+            Arguments.of("bar%2Fbaz/test.war", "test.war"),
+            Arguments.of("fizz buzz/test.war", "test.war"),
+            Arguments.of("another one/bites the dust/", "bites the dust"),
+            Arguments.of("another+one/bites+the+dust/", "bites+the+dust"),
+            Arguments.of("another%20one/bites%20the%20dust/", "bites%20the%20dust"),
+            Arguments.of("spanish/n\u00FAmero.war", "n\u00FAmero.war"),
+            Arguments.of("spanish/n%C3%BAmero.war", "n%C3%BAmero.war"),
+            Arguments.of("a/b!/", "b"),
+            Arguments.of("a/b!/c/", "b"),
+            Arguments.of("a/b!/c/d/", "b"),
+            Arguments.of("a/b%21/", "b%21")
+        );
+    }
+
+    /**
+     * Using FileSystem provided URIs, attempt to get last URI path segment
+     */
+    @ParameterizedTest
+    @MethodSource("resourceUriLastSegmentSource")
+    public void testFileUriGetUriLastPathSegment(String basePath, String expectedName) throws IOException
+    {
+        Path root = workDir.getPath();
+        Path base = root.resolve(basePath);
+        if (basePath.endsWith("/"))
+        {
+            FS.ensureDirExists(base);
+        }
+        else
+        {
+            FS.ensureDirExists(base.getParent());
+            FS.touch(base);
+        }
+        URI uri = base.toUri();
+        if (OS.MAC.isCurrentOs())
+        {
+            // Normalize Unicode to NFD form that OSX Path/FileSystem produces
+            expectedName = Normalizer.normalize(expectedName, Normalizer.Form.NFD);
+        }
+        assertThat(URIUtil.getUriLastPathSegment(uri), is(expectedName));
+    }
+
+    public static Stream<Arguments> uriLastSegmentSource() throws URISyntaxException, IOException
+    {
+        final String TEST_RESOURCE_JAR = "test-base-resource.jar";
+        Path testJar = MavenTestingUtils.getTestResourcePathFile(TEST_RESOURCE_JAR);
+        URI uri = new URI("jar", testJar.toUri().toASCIIString(), null);
+
+        Map<String, Object> env = new HashMap<>();
+        env.put("multi-release", "runtime");
+
+        List<Arguments> arguments = new ArrayList<>();
+        arguments.add(Arguments.of(uri, TEST_RESOURCE_JAR));
+        try (FileSystem zipFs = FileSystems.newFileSystem(uri, env))
+        {
+            FileVisitOption[] fileVisitOptions = new FileVisitOption[]{};
+
+            for (Path root : zipFs.getRootDirectories())
+            {
+                Stream<Path> entryStream = Files.find(root, 10, (path, attrs) -> true, fileVisitOptions);
+                entryStream.forEach((path) ->
+                {
+                    if (path.toString().endsWith("!/"))
+                    {
+                        // skip - JAR entry type not supported by Jetty
+                        // TODO: re-enable once we start to use zipfs
+                        LOG.warn("Skipping Unsupported entry: " + path.toUri());
+                    }
+                    else
+                    {
+                        arguments.add(Arguments.of(path.toUri(), TEST_RESOURCE_JAR));
+                    }
+                });
+            }
+        }
+
+        return arguments.stream();
+    }
+
+    /**
+     * Tests of URIs last segment, including "jar:file:" based URIs.
+     */
+    @ParameterizedTest
+    @MethodSource("uriLastSegmentSource")
+    public void testGetUriLastPathSegment(URI uri, String expectedName)
+    {
+        assertThat(URIUtil.getUriLastPathSegment(uri), is(expectedName));
     }
 }

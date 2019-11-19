@@ -61,6 +61,7 @@ public class ListenerHolder extends BaseHolder<EventListener>
      * just like ServletHolder and FilterHolder,
      * the listener will not be introspected for
      * annotations like Resource etc.
+     * @param listener The listener instance
      */
     public void setListener(EventListener listener)
     {
@@ -87,9 +88,9 @@ public class ListenerHolder extends BaseHolder<EventListener>
                 //create an instance of the listener and decorate it
                 try
                 {
-                    ServletContext scontext = contextHandler.getServletContext();
-                    _listener = (scontext instanceof ServletContextHandler.Context)
-                        ? scontext.createListener(getHeldClass())
+                    ServletContext context = contextHandler.getServletContext();
+                    _listener = (context != null)
+                        ? context.createListener(getHeldClass())
                         : getHeldClass().getDeclaredConstructor().newInstance();
                 }
                 catch (ServletException ex)

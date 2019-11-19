@@ -21,14 +21,15 @@ package org.eclipse.jetty.websocket.core.client;
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpConversation;
@@ -48,7 +49,6 @@ import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
@@ -88,6 +88,7 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
     private FrameHandler frameHandler;
     private FrameHandler.ConfigurationCustomizer customizer = new FrameHandler.ConfigurationCustomizer();
     private List<UpgradeListener> upgradeListeners = new ArrayList<>();
+    private List<ExtensionConfig> requestedExtensions = new ArrayList<>();
 
     public ClientUpgradeRequest(WebSocketCoreClient webSocketClient, URI requestURI)
     {
@@ -135,40 +136,25 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
 
     public void addExtensions(ExtensionConfig... configs)
     {
-        HttpFields headers = getHeaders();
-        for (ExtensionConfig config : configs)
-        {
-            headers.add(HttpHeader.SEC_WEBSOCKET_EXTENSIONS, config.getParameterizedName());
-        }
+        requestedExtensions.addAll(Arrays.asList(configs));
     }
 
     public void addExtensions(String... configs)
     {
-        HttpFields headers = getHeaders();
         for (String config : configs)
         {
-            headers.add(HttpHeader.SEC_WEBSOCKET_EXTENSIONS, ExtensionConfig.parse(config).getParameterizedName());
+            requestedExtensions.add(ExtensionConfig.parse(config));
         }
     }
 
     public List<ExtensionConfig> getExtensions()
     {
-        List<ExtensionConfig> extensions = getHeaders().getCSV(HttpHeader.SEC_WEBSOCKET_EXTENSIONS, true)
-            .stream()
-            .map(ExtensionConfig::parse)
-            .collect(Collectors.toList());
-
-        return extensions;
+        return requestedExtensions;
     }
 
     public void setExtensions(List<ExtensionConfig> configs)
     {
-        HttpFields headers = getHeaders();
-        headers.remove(HttpHeader.SEC_WEBSOCKET_EXTENSIONS);
-        for (ExtensionConfig config : configs)
-        {
-            headers.add(HttpHeader.SEC_WEBSOCKET_EXTENSIONS, config.getParameterizedName());
-        }
+        requestedExtensions = configs;
     }
 
     public List<String> getSubProtocols()
@@ -312,25 +298,47 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
             }
         }
 
+        // Put requested internal Extensions into the negotiatedExtension list.
+        int i = 0;
+        for (ExtensionConfig reqConfig : requestedExtensions)
+        {
+            if (reqConfig.isInternalExtension())
+                negotiatedExtensions.add(i++, reqConfig);
+            else if (i < negotiatedExtensions.size() && reqConfig.getName().equals(negotiatedExtensions.get(i).getName()))
+                i++;
+        }
+
         // Verify the Negotiated Extensions
-        List<ExtensionConfig> offeredExtensions = getExtensions();
         for (ExtensionConfig config : negotiatedExtensions)
         {
             if (config.getName().startsWith("@"))
                 continue;
 
-            long numMatch = offeredExtensions.stream().filter(c -> config.getName().equalsIgnoreCase(c.getName())).count();
-            if (numMatch < 1)
+            boolean wasRequested = false;
+            for (ExtensionConfig requestedConfig : requestedExtensions)
+            {
+                if (config.getName().equalsIgnoreCase(requestedConfig.getName()))
+                {
+                    for (Map.Entry<String, String> entry : requestedConfig.getInternalParameters())
+                    {
+                        config.setParameter(entry.getKey(), entry.getValue());
+                    }
+
+                    wasRequested = true;
+                    break;
+                }
+            }
+            if (!wasRequested)
                 throw new WebSocketException("Upgrade failed: Sec-WebSocket-Extensions contained extension not requested");
 
-            numMatch = negotiatedExtensions.stream().filter(c -> config.getName().equalsIgnoreCase(c.getName())).count();
-            if (numMatch > 1)
+            long numExtsWithSameName = negotiatedExtensions.stream().filter(c -> config.getName().equalsIgnoreCase(c.getName())).count();
+            if (numExtsWithSameName > 1)
                 throw new WebSocketException("Upgrade failed: Sec-WebSocket-Extensions contained more than one extension of the same name");
         }
 
         // Negotiate the extension stack
         ExtensionStack extensionStack = new ExtensionStack(wsClient.getWebSocketComponents(), Behavior.CLIENT);
-        extensionStack.negotiate(offeredExtensions, negotiatedExtensions);
+        extensionStack.negotiate(requestedExtensions, negotiatedExtensions);
 
         // Get the negotiated subprotocol
         String negotiatedSubProtocol = null;
@@ -371,14 +379,8 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
 
         HttpClient httpClient = wsClient.getHttpClient();
         WebSocketConnection wsConnection = newWebSocketConnection(endp, httpClient.getExecutor(), httpClient.getScheduler(), httpClient.getByteBufferPool(), coreSession);
-
-        for (Connection.Listener listener : wsClient.getBeans(Connection.Listener.class))
-        {
-            wsConnection.addListener(listener);
-        }
-
+        wsClient.getEventListeners().forEach(wsConnection::addEventListener);
         coreSession.setWebSocketConnection(wsConnection);
-
         notifyUpgradeListeners((listener) -> listener.onHandshakeResponse(this, response));
 
         // Now swap out the connection
@@ -440,6 +442,15 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
         // these headers.
         setHeaderIfNotPresent(HttpHeader.PRAGMA, "no-cache");
         setHeaderIfNotPresent(HttpHeader.CACHE_CONTROL, "no-cache");
+
+        // Add extensions header filtering out internal extensions and internal parameters.
+        HttpFields headers = getHeaders();
+        for (ExtensionConfig config : requestedExtensions)
+        {
+            if (config.getName().startsWith("@"))
+                continue;
+            headers.add(HttpHeader.SEC_WEBSOCKET_EXTENSIONS, config.getParameterizedNameWithoutInternalParams());
+        }
 
         // Notify upgrade hooks
         notifyUpgradeListeners((listener) -> listener.onHandshakeRequest(this));

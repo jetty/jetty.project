@@ -57,14 +57,16 @@ public class EventSocket
     {
         this.session = session;
         behavior = session.getPolicy().getBehavior().name();
-        LOG.info("{}  onOpen(): {}", toString(), session);
+        if (LOG.isDebugEnabled())
+            LOG.debug("{}  onOpen(): {}", toString(), session);
         openLatch.countDown();
     }
 
     @OnWebSocketMessage
     public void onMessage(String message) throws IOException
     {
-        LOG.info("{}  onMessage(): {}", toString(), message);
+        if (LOG.isDebugEnabled())
+            LOG.debug("{}  onMessage(): {}", toString(), message);
         messageQueue.offer(message);
     }
 
@@ -72,14 +74,16 @@ public class EventSocket
     public void onMessage(byte buf[], int offset, int len)
     {
         ByteBuffer message = ByteBuffer.wrap(buf, offset, len);
-        LOG.info("{}  onMessage(): {}", toString(), message);
+        if (LOG.isDebugEnabled())
+            LOG.debug("{}  onMessage(): {}", toString(), message);
         binaryMessageQueue.offer(message);
     }
 
     @OnWebSocketClose
     public void onClose(int statusCode, String reason)
     {
-        LOG.info("{}  onClose(): {}:{}", toString(), statusCode, reason);
+        if (LOG.isDebugEnabled())
+            LOG.debug("{}  onClose(): {}:{}", toString(), statusCode, reason);
         this.statusCode = statusCode;
         this.reason = reason;
         closeLatch.countDown();
@@ -88,7 +92,8 @@ public class EventSocket
     @OnWebSocketError
     public void onError(Throwable cause)
     {
-        LOG.info("{}  onError(): {}", toString(), cause);
+        if (LOG.isDebugEnabled())
+            LOG.debug("{}  onError(): {}", toString(), cause);
         error = cause;
         errorLatch.countDown();
     }

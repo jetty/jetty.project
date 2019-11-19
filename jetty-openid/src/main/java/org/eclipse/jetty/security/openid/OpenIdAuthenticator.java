@@ -246,6 +246,15 @@ public class OpenIdAuthenticator extends LoginAuthenticator
 
         try
         {
+            if (request.isRequestedSessionIdFromURL())
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Session ID should be cookie for OpenID authentication to work");
+
+                baseResponse.sendRedirect(getRedirectCode(baseRequest.getHttpVersion()), URIUtil.addPaths(request.getContextPath(), _errorPage));
+                return Authentication.SEND_FAILURE;
+            }
+
             // Handle a request for authentication.
             if (isJSecurityCheck(uri))
             {
@@ -287,8 +296,7 @@ public class OpenIdAuthenticator extends LoginAuthenticator
                             LOG.debug("authenticated {}->{}", openIdAuth, nuri);
 
                         response.setContentLength(0);
-                        int redirectCode = (baseRequest.getHttpVersion().getVersion() < HttpVersion.HTTP_1_1.getVersion() ? HttpServletResponse.SC_MOVED_TEMPORARILY : HttpServletResponse.SC_SEE_OTHER);
-                        baseResponse.sendRedirect(redirectCode, response.encodeRedirectURL(nuri));
+                        baseResponse.sendRedirect(getRedirectCode(baseRequest.getHttpVersion()), nuri);
                         return openIdAuth;
                     }
                 }
@@ -307,8 +315,7 @@ public class OpenIdAuthenticator extends LoginAuthenticator
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("auth failed {}", _errorPage);
-                    int redirectCode = (baseRequest.getHttpVersion().getVersion() < HttpVersion.HTTP_1_1.getVersion() ? HttpServletResponse.SC_MOVED_TEMPORARILY : HttpServletResponse.SC_SEE_OTHER);
-                    baseResponse.sendRedirect(redirectCode, response.encodeRedirectURL(URIUtil.addPaths(request.getContextPath(), _errorPage)));
+                    baseResponse.sendRedirect(getRedirectCode(baseRequest.getHttpVersion()), URIUtil.addPaths(request.getContextPath(), _errorPage));
                 }
 
                 return Authentication.SEND_FAILURE;
@@ -398,8 +405,7 @@ public class OpenIdAuthenticator extends LoginAuthenticator
             String challengeUri = getChallengeUri(request);
             if (LOG.isDebugEnabled())
                 LOG.debug("challenge {}->{}", session.getId(), challengeUri);
-            int redirectCode = (baseRequest.getHttpVersion().getVersion() < HttpVersion.HTTP_1_1.getVersion() ? HttpServletResponse.SC_MOVED_TEMPORARILY : HttpServletResponse.SC_SEE_OTHER);
-            baseResponse.sendRedirect(redirectCode, response.encodeRedirectURL(challengeUri));
+            baseResponse.sendRedirect(getRedirectCode(baseRequest.getHttpVersion()), challengeUri);
 
             return Authentication.SEND_CONTINUE;
         }
@@ -425,6 +431,12 @@ public class OpenIdAuthenticator extends LoginAuthenticator
     public boolean isErrorPage(String pathInContext)
     {
         return pathInContext != null && (pathInContext.equals(_errorPath));
+    }
+
+    private static int getRedirectCode(HttpVersion httpVersion)
+    {
+        return (httpVersion.getVersion() < HttpVersion.HTTP_1_1.getVersion()
+            ? HttpServletResponse.SC_MOVED_TEMPORARILY : HttpServletResponse.SC_SEE_OTHER);
     }
 
     private String getRedirectUri(HttpServletRequest request)

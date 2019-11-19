@@ -271,10 +271,10 @@ public class HttpChannelEventTest
         assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
-    private static class TestHandler extends AbstractHandler.ErrorDispatchHandler
+    private static class TestHandler extends AbstractHandler
     {
         @Override
-        protected final void doNonErrorHandle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public final void handle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             jettyRequest.setHandled(true);
             handle(request, response);
