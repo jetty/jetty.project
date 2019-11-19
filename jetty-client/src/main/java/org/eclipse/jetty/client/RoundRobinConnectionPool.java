@@ -214,9 +214,10 @@ public class RoundRobinConnectionPool extends AbstractConnectionPool implements 
                 }
             }
         }
-        return String.format("%s@%x[c=%d/%d,a=%d]",
+        return String.format("%s@%x[c=%d/%d/%d,a=%d]",
             getClass().getSimpleName(),
             hashCode(),
+            getPendingConnectionCount(),
             present,
             getMaxConnectionCount(),
             active
