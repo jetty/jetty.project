@@ -67,6 +67,7 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.junit.jupiter.api.condition.JRE;
 
 /**
  * <p>Helper class to test the Jetty Distribution</p>.
@@ -111,6 +112,7 @@ public class DistributionTester
     private static final Logger LOGGER = Log.getLogger(DistributionTester.class);
 
     private Config config;
+    public boolean remoteDebug = false;
 
     private DistributionTester(Config config)
     {
@@ -150,6 +152,13 @@ public class DistributionTester
         List<String> commands = new ArrayList<>();
         commands.add(getJavaExecutable());
         commands.add("-Djava.io.tmpdir=" + workDir.toAbsolutePath().toString());
+        if (remoteDebug)
+        {
+            if (JRE.JAVA_8.isCurrentVersion())
+                commands.add("-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=5005");
+            else // for Java 9+
+                commands.add("-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:5005");
+        }
         commands.add("-jar");
         commands.add(config.jettyHome.toAbsolutePath() + "/start.jar");
         // we get artifacts from local repo first
