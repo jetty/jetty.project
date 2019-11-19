@@ -20,6 +20,9 @@ package org.eclipse.jetty.security.openid;
 
 import java.util.Base64;
 
+/**
+ * A basic JWT encoder for testing purposes.
+ */
 public class JwtEncoder
 {
     private static final Base64.Encoder ENCODER = Base64.getUrlEncoder();
@@ -38,6 +41,9 @@ public class JwtEncoder
         return paddedBase64.split("=")[0];
     }
 
+    /**
+     * Create a basic JWT for testing using argument supplied attributes.
+     */
     public static String createIdToken(String provider, String clientId, String subject, String name, long expiry)
     {
         return "{" +
