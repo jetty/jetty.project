@@ -20,10 +20,6 @@ package com.acme.test;
 
 import java.io.PrintWriter;
 import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.security.CodeSource;
-import java.security.ProtectionDomain;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
@@ -48,10 +44,10 @@ public class ClassLoaderServlet extends HttpServlet
             writer.println("<h1>ClassLoader Isolation Test</h1>");
 
             Class<?> webappIO = IO.class;
-            URI webappURI = getLocationOfClass(webappIO);
+            URI webappURI = ClassInfo.getLocationOfClass(webappIO);
             String webappVersion = webappIO.getPackage().getImplementationVersion();
             Class<?> serverIO = req.getServletContext().getClass().getClassLoader().loadClass("org.eclipse.jetty.util.IO");
-            URI serverURI = getLocationOfClass(serverIO);
+            URI serverURI = ClassInfo.getLocationOfClass(serverIO);
             String serverVersion = serverIO.getPackage().getImplementationVersion();
 
             writer.printf("<p>Webapp loaded <code>org.eclipse.jetty.util.IO</code>(%s) from %s%n", webappVersion, webappURI);
@@ -73,57 +69,6 @@ public class ClassLoaderServlet extends HttpServlet
         catch (Exception e)
         {
             throw new ServletException(e);
-        }
-    }
-
-    public static URI getLocationOfClass(Class<?> clazz)
-    {
-        try
-        {
-            ProtectionDomain domain = clazz.getProtectionDomain();
-            if (domain != null)
-            {
-                CodeSource source = domain.getCodeSource();
-                if (source != null)
-                {
-                    URL location = source.getLocation();
-
-                    if (location != null)
-                        return location.toURI();
-                }
-            }
-
-            String resourceName = clazz.getName().replace('.', '/') + ".class";
-            ClassLoader loader = clazz.getClassLoader();
-            URL url = (loader == null ? ClassLoader.getSystemClassLoader() : loader).getResource(resourceName);
-            if (url != null)
-            {
-                return getJarSource(url.toURI());
-            }
-        }
-        catch (URISyntaxException e)
-        {
-            throw new RuntimeException(e);
-        }
-        return null;
-    }
-
-    public static URI getJarSource(URI uri)
-    {
-        try
-        {
-            if (!"jar".equals(uri.getScheme()))
-                return uri;
-            // Get SSP (retaining encoded form)
-            String s = uri.getRawSchemeSpecificPart();
-            int bangSlash = s.indexOf("!/");
-            if (bangSlash >= 0)
-                s = s.substring(0, bangSlash);
-            return new URI(s);
-        }
-        catch (URISyntaxException e)
-        {
-            throw new IllegalArgumentException(e);
         }
     }
 }
