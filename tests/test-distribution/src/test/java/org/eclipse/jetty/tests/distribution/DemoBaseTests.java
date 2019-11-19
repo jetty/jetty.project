@@ -22,7 +22,10 @@ import java.nio.file.Paths;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.util.FormContentProvider;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.util.Fields;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnJre;
 import org.junit.jupiter.api.condition.JRE;
@@ -32,6 +35,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class DemoBaseTests extends AbstractDistributionTest
@@ -171,6 +175,42 @@ public class DemoBaseTests extends AbstractDistributionTest
             startHttpClient();
             ContentResponse response = client.GET("http://localhost:" + httpPort + "/test/hello");
             assertEquals(HttpStatus.OK_200, response.getStatus());
+        }
+    }
+
+    @Test
+    public void testSessionDump() throws Exception
+    {
+        String jettyVersion = System.getProperty("jettyVersion");
+        DistributionTester distribution = DistributionTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .jettyBase(Paths.get("demo-base"))
+            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
+            .build();
+
+        int httpPort = distribution.freePort();
+        int httpsPort = distribution.freePort();
+        String[] args = {
+            "jetty.http.port=" + httpPort,
+            "jetty.httpConfig.port=" + httpsPort,
+            "jetty.ssl.port=" + httpsPort
+        };
+        try (DistributionTester.Run run = distribution.start(args))
+        {
+            assertTrue(run.awaitConsoleLogsFor("Started @", 10, TimeUnit.SECONDS));
+
+            startHttpClient();
+            ContentResponse response = client.GET("http://localhost:" + httpPort + "/test/session/");
+            assertEquals(HttpStatus.OK_200, response.getStatus());
+
+            Fields action = new Fields();
+            action.add("Action", "New Session");
+            response = client.POST("http://localhost:" + httpPort + "/test/session/")
+                .content(new FormContentProvider(action))
+                .send();
+            assertEquals(HttpStatus.FOUND_302, response.getStatus());
+            String location = response.getHeaders().get(HttpHeader.LOCATION);
+            assertNotNull(location);
         }
     }
 }

@@ -124,6 +124,7 @@ public class SessionDump extends HttpServlet
         }
         catch (IllegalStateException e)
         {
+            e.printStackTrace(System.err);
             session = null;
         }
 
