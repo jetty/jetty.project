@@ -146,6 +146,39 @@ public class DemoBaseTests extends AbstractDistributionTest
     }
 
     @Test
+    public void testSpecClassloader() throws Exception
+    {
+        String jettyVersion = System.getProperty("jettyVersion");
+        DistributionTester distribution = DistributionTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .jettyBase(Paths.get("demo-base"))
+            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
+            .build();
+
+        int httpPort = distribution.freePort();
+        int httpsPort = distribution.freePort();
+        assertThat("httpPort != httpsPort", httpPort, is(not(httpsPort)));
+
+        String[] args = {
+            "jetty.http.port=" + httpPort,
+            "jetty.httpConfig.port=" + httpsPort,
+            "jetty.ssl.port=" + httpsPort
+        };
+
+        try (DistributionTester.Run run1 = distribution.start(args))
+        {
+            assertTrue(run1.awaitConsoleLogsFor("Started @", 20, TimeUnit.SECONDS));
+
+            startHttpClient();
+            ContentResponse response = client.GET("http://localhost:" + httpPort + "/test-spec/classloader");
+            assertEquals(HttpStatus.OK_200, response.getStatus());
+            assertThat(response.getContentAsString(), containsString("<b>Version Result: <span class=\"pass\">PASS</span></b>"));
+            assertThat(response.getContentAsString(), containsString("<b>URI Result: <span class=\"pass\">PASS</span></b>"));
+            assertThat(response.getContentAsString(), not(containsString("<span class=\"fail\">FAIL</span>")));
+        }
+    }
+
+    @Test
     @DisabledOnJre(JRE.JAVA_8)
     public void testJPMS() throws Exception
     {
