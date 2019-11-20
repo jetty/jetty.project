@@ -1,3 +1,5 @@
+jetty-9.4.25-SNAPSHOT
+
 jetty-9.4.24.v20191120 - 20 November 2019
  + 3083 The ini-template for jetty.console-capture.dir does not match the
    default value
