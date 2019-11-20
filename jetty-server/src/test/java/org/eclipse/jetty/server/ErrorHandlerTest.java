@@ -19,7 +19,9 @@
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import javax.servlet.DispatcherType;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
@@ -42,10 +44,12 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ErrorHandlerTest
 {
@@ -91,7 +95,7 @@ public class ErrorHandlerTest
                 // produce an exception with an JSON formatted cause message
                 if (target.startsWith("/jsonmessage/"))
                 {
-                    String message = "{\n \"glossary\": {\n \"title\": \"example\"\n }\n }";
+                    String message = "\"}, \"glossary\": {\n \"title\": \"example\"\n }\n {\"";
                     throw new ServletException(new RuntimeException(message));
                 }
 
@@ -472,6 +476,25 @@ public class ErrorHandlerTest
         else if (contentType.contains("text/json"))
         {
             Map jo = (Map)JSON.parse(response.getContent());
+
+            Set<String> acceptableKeyNames = new HashSet<>();
+            acceptableKeyNames.add("url");
+            acceptableKeyNames.add("status");
+            acceptableKeyNames.add("message");
+            acceptableKeyNames.add("servlet");
+            acceptableKeyNames.add("cause0");
+            acceptableKeyNames.add("cause1");
+            acceptableKeyNames.add("cause2");
+
+            for (Object key : jo.keySet())
+            {
+                String keyStr = (String)key;
+                assertTrue(acceptableKeyNames.contains(keyStr), "Unexpected Key [" + keyStr + "]");
+
+                Object value = jo.get(key);
+                assertThat("Unexpected value type (" + value.getClass().getName() + ")",
+                    value, instanceOf(String.class));
+            }
 
             assertThat("url field", jo.get("url"), is(notNullValue()));
             String expectedStatus = String.valueOf(response.getStatus());
