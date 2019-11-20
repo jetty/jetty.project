@@ -353,7 +353,7 @@ public class CGI extends HttpServlet
         LOG.debug("Environment: " + env.getExportString());
         LOG.debug("Command: " + execCmd);
 
-        final Process p = Runtime.getRuntime().exec(execCmd, env.getEnvArray(), _docRoot);
+        final Process p = Runtime.getRuntime().exec(execCmd, env.getEnvArray(), command.getAbsoluteFile().getParentFile());
 
         // hook processes input to browser's output (async)
         if (bodyFormEncoded != null)
