@@ -21,6 +21,7 @@ package org.eclipse.jetty.server.handler;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.io.Writer;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
@@ -491,16 +492,18 @@ public class ErrorHandler extends AbstractHandler
         throws IOException
     {
         Throwable th = (Throwable)request.getAttribute(RequestDispatcher.ERROR_EXCEPTION);
-        if (_showStacks && th != null)
+        while (th != null)
         {
-            PrintWriter pw = writer instanceof PrintWriter ? (PrintWriter)writer : new PrintWriter(writer);
-            pw.write("<pre>");
-            while (th != null)
-            {
-                th.printStackTrace(pw);
-                th = th.getCause();
-            }
+            writer.write("<h3>Caused by:</h3><pre>");
+            // You have to pre-generate and then use #write(writer, String)
+            StringWriter sw = new StringWriter();
+            PrintWriter pw = new PrintWriter(sw);
+            th.printStackTrace(pw);
+            pw.flush();
+            write(writer, sw.getBuffer().toString()); // IMPORTANT STEP
             writer.write("</pre>\n");
+
+            th = th.getCause();
         }
     }
 

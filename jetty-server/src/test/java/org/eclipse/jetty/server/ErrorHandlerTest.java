@@ -20,7 +20,6 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.util.Map;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
@@ -28,7 +27,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.BadMessageException;
-import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.handler.AbstractHandler;
@@ -36,13 +34,16 @@ import org.eclipse.jetty.util.ajax.JSON;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.startsWith;
+import static org.hamcrest.Matchers.nullValue;
 
 public class ErrorHandlerTest
 {
@@ -79,7 +80,43 @@ public class ErrorHandlerTest
 
                 if (target.startsWith("/badmessage/"))
                 {
-                    throw new ServletException(new BadMessageException(Integer.valueOf(target.substring(12))));
+                    int code = Integer.valueOf(target.substring(target.lastIndexOf('/') + 1));
+                    throw new ServletException(new BadMessageException(code));
+                }
+
+                // produce an exception with an JSON formatted cause message
+                if (target.startsWith("/jsonmessage/"))
+                {
+                    StringBuilder message = new StringBuilder();
+                    message.append("{\n \"glossary\": {\n \"title\": \"example\"\n }\n }");
+                    throw new ServletException(new RuntimeException(message.toString()));
+                }
+
+                // produce an exception with an XML cause message
+                if (target.startsWith("/xmlmessage/"))
+                {
+                    StringBuilder message = new StringBuilder();
+                    message.append("<!DOCTYPE glossary PUBLIC \"-//OASIS//DTD DocBook V3.1//EN\">\n");
+                    message.append(" <glossary>\n");
+                    message.append("  <title>example glossary</title>\n");
+                    message.append(" </glossary>");
+                    throw new ServletException(new RuntimeException(message.toString()));
+                }
+
+                // produce an exception with an HTML cause message
+                if (target.startsWith("/htmlmessage/"))
+                {
+                    StringBuilder message = new StringBuilder();
+                    message.append("<hr/><script>alert(42)</script>");
+                    throw new ServletException(new RuntimeException(message.toString()));
+                }
+
+                // produce an exception with a UTF-8 cause message
+                if (target.startsWith("/utf8message/"))
+                {
+                    StringBuilder message = new StringBuilder();
+                    message.append("Euro is &euro; and \u20AC and %E2%82%AC");
+                    throw new ServletException(new RuntimeException(message.toString()));
                 }
             }
         });
@@ -95,188 +132,232 @@ public class ErrorHandlerTest
     @Test
     public void test404NoAccept() throws Exception
     {
-        String response = connector.getResponse(
+        String rawResponse = connector.getResponse(
             "GET / HTTP/1.1\r\n" +
                 "Host: Localhost\r\n" +
                 "\r\n");
 
-        assertThat(response, startsWith("HTTP/1.1 404 "));
-        assertThat(response, not(containsString("Content-Length: 0")));
-        assertThat(response, containsString("Content-Type: text/html;charset=iso-8859-1"));
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+
+        assertThat("Response status code", response.getStatus(), is(404));
+        assertThat("Response Content-Length", response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
+        assertThat("Response Content-Type", response.get(HttpHeader.CONTENT_TYPE), containsString("text/html;charset=ISO-8859-1"));
+
+        assertContent(response);
     }
 
     @Test
     public void test404EmptyAccept() throws Exception
     {
-        String response = connector.getResponse(
+        String rawResponse = connector.getResponse(
             "GET / HTTP/1.1\r\n" +
                 "Accept: \r\n" +
                 "Host: Localhost\r\n" +
                 "\r\n");
-        assertThat(response, startsWith("HTTP/1.1 404 "));
-        assertThat(response, containsString("Content-Length: 0"));
-        assertThat(response, not(containsString("Content-Type")));
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+
+        assertThat("Response status code", response.getStatus(), is(404));
+        assertThat("Response Content-Length", response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), is(0));
+        assertThat("Response Content-Type", response.getField(HttpHeader.CONTENT_TYPE), is(nullValue()));
     }
 
     @Test
     public void test404UnAccept() throws Exception
     {
-        String response = connector.getResponse(
+        String rawResponse = connector.getResponse(
             "GET / HTTP/1.1\r\n" +
                 "Accept: text/*;q=0\r\n" +
                 "Host: Localhost\r\n" +
                 "\r\n");
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
-        assertThat(response, startsWith("HTTP/1.1 404 "));
-        assertThat(response, containsString("Content-Length: 0"));
-        assertThat(response, not(containsString("Content-Type")));
+        assertThat("Response status code", response.getStatus(), is(404));
+        assertThat("Response Content-Length", response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), is(0));
+        assertThat("Response Content-Type", response.getField(HttpHeader.CONTENT_TYPE), is(nullValue()));
     }
 
     @Test
     public void test404AllAccept() throws Exception
     {
-        String response = connector.getResponse(
+        String rawResponse = connector.getResponse(
             "GET / HTTP/1.1\r\n" +
                 "Host: Localhost\r\n" +
                 "Accept: */*\r\n" +
                 "\r\n");
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
-        assertThat(response, startsWith("HTTP/1.1 404 "));
-        assertThat(response, not(containsString("Content-Length: 0")));
-        assertThat(response, containsString("Content-Type: text/html;charset=iso-8859-1"));
+        assertThat("Response status code", response.getStatus(), is(404));
+        assertThat("Response Content-Length", response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
+        assertThat("Response Content-Type", response.get(HttpHeader.CONTENT_TYPE), containsString("text/html;charset=ISO-8859-1"));
+
+        assertContent(response);
     }
 
     @Test
     public void test404HtmlAccept() throws Exception
     {
-        String response = connector.getResponse(
+        String rawResponse = connector.getResponse(
             "GET / HTTP/1.1\r\n" +
                 "Host: Localhost\r\n" +
                 "Accept: text/html\r\n" +
                 "\r\n");
 
-        assertThat(response, startsWith("HTTP/1.1 404 "));
-        assertThat(response, not(containsString("Content-Length: 0")));
-        assertThat(response, containsString("Content-Type: text/html;charset=iso-8859-1"));
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+
+        assertThat("Response status code", response.getStatus(), is(404));
+        assertThat("Response Content-Length", response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
+        assertThat("Response Content-Type", response.get(HttpHeader.CONTENT_TYPE), containsString("text/html;charset=ISO-8859-1"));
+
+        assertContent(response);
     }
 
     @Test
     public void testMoreSpecificAccept() throws Exception
     {
-        String response = connector.getResponse(
+        String rawResponse = connector.getResponse(
             "GET / HTTP/1.1\r\n" +
                 "Host: Localhost\r\n" +
                 "Accept: text/html, some/other;specific=true\r\n" +
                 "\r\n");
 
-        assertThat(response, startsWith("HTTP/1.1 404 "));
-        assertThat(response, not(containsString("Content-Length: 0")));
-        assertThat(response, containsString("Content-Type: text/html;charset=iso-8859-1"));
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+
+        assertThat("Response status code", response.getStatus(), is(404));
+        assertThat("Response Content-Length", response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
+        assertThat("Response Content-Type", response.get(HttpHeader.CONTENT_TYPE), containsString("text/html;charset=ISO-8859-1"));
+
+        assertContent(response);
     }
 
     @Test
     public void test404HtmlAcceptAnyCharset() throws Exception
     {
-        String response = connector.getResponse(
+        String rawResponse = connector.getResponse(
             "GET / HTTP/1.1\r\n" +
                 "Host: Localhost\r\n" +
                 "Accept: text/html\r\n" +
                 "Accept-Charset: *\r\n" +
                 "\r\n");
 
-        assertThat(response, startsWith("HTTP/1.1 404 "));
-        assertThat(response, not(containsString("Content-Length: 0")));
-        assertThat(response, containsString("Content-Type: text/html;charset=utf-8"));
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+
+        assertThat("Response status code", response.getStatus(), is(404));
+        assertThat("Response Content-Length", response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
+        assertThat("Response Content-Type", response.get(HttpHeader.CONTENT_TYPE), containsString("text/html;charset=UTF-8"));
+
+        assertContent(response);
     }
 
     @Test
     public void test404HtmlAcceptUtf8Charset() throws Exception
     {
-        String response = connector.getResponse(
+        String rawResponse = connector.getResponse(
             "GET / HTTP/1.1\r\n" +
                 "Host: Localhost\r\n" +
                 "Accept: text/html\r\n" +
                 "Accept-Charset: utf-8\r\n" +
                 "\r\n");
 
-        assertThat(response, startsWith("HTTP/1.1 404 "));
-        assertThat(response, not(containsString("Content-Length: 0")));
-        assertThat(response, containsString("Content-Type: text/html;charset=utf-8"));
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+
+        assertThat("Response status code", response.getStatus(), is(404));
+        assertThat("Response Content-Length", response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
+        assertThat("Response Content-Type", response.get(HttpHeader.CONTENT_TYPE), containsString("text/html;charset=UTF-8"));
+
+        assertContent(response);
     }
 
     @Test
     public void test404HtmlAcceptNotUtf8Charset() throws Exception
     {
-        String response = connector.getResponse(
+        String rawResponse = connector.getResponse(
             "GET / HTTP/1.1\r\n" +
                 "Host: Localhost\r\n" +
                 "Accept: text/html\r\n" +
                 "Accept-Charset: utf-8;q=0\r\n" +
                 "\r\n");
 
-        assertThat(response, startsWith("HTTP/1.1 404 "));
-        assertThat(response, not(containsString("Content-Length: 0")));
-        assertThat(response, containsString("Content-Type: text/html;charset=iso-8859-1"));
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+
+        assertThat("Response status code", response.getStatus(), is(404));
+        assertThat("Response Content-Length", response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
+        assertThat("Response Content-Type", response.get(HttpHeader.CONTENT_TYPE), containsString("text/html;charset=ISO-8859-1"));
+
+        assertContent(response);
     }
 
     @Test
     public void test404HtmlAcceptNotUtf8UnknownCharset() throws Exception
     {
-        String response = connector.getResponse(
+        String rawResponse = connector.getResponse(
             "GET / HTTP/1.1\r\n" +
                 "Host: Localhost\r\n" +
                 "Accept: text/html\r\n" +
                 "Accept-Charset: utf-8;q=0,unknown\r\n" +
                 "\r\n");
 
-        assertThat(response, startsWith("HTTP/1.1 404 "));
-        assertThat(response, containsString("Content-Length: 0"));
-        assertThat(response, not(containsString("Content-Type")));
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+
+        assertThat("Response status code", response.getStatus(), is(404));
+        assertThat("Response Content-Length", response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), is(0));
+        assertThat("Response Content-Type", response.getField(HttpHeader.CONTENT_TYPE), is(nullValue()));
     }
 
     @Test
     public void test404HtmlAcceptUnknownUtf8Charset() throws Exception
     {
-        String response = connector.getResponse(
+        String rawResponse = connector.getResponse(
             "GET / HTTP/1.1\r\n" +
                 "Host: Localhost\r\n" +
                 "Accept: text/html\r\n" +
                 "Accept-Charset: utf-8;q=0.1,unknown\r\n" +
                 "\r\n");
 
-        assertThat(response, startsWith("HTTP/1.1 404 "));
-        assertThat(response, not(containsString("Content-Length: 0")));
-        assertThat(response, containsString("Content-Type: text/html;charset=utf-8"));
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+
+        assertThat("Response status code", response.getStatus(), is(404));
+        assertThat("Response Content-Length", response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
+        assertThat("Response Content-Type", response.get(HttpHeader.CONTENT_TYPE), containsString("text/html;charset=UTF-8"));
+
+        assertContent(response);
     }
 
     @Test
     public void test404PreferHtml() throws Exception
     {
-        String response = connector.getResponse(
+        String rawResponse = connector.getResponse(
             "GET / HTTP/1.1\r\n" +
                 "Host: Localhost\r\n" +
                 "Accept: text/html;q=1.0,text/json;q=0.5,*/*\r\n" +
                 "Accept-Charset: *\r\n" +
                 "\r\n");
 
-        assertThat(response, startsWith("HTTP/1.1 404 "));
-        assertThat(response, not(containsString("Content-Length: 0")));
-        assertThat(response, containsString("Content-Type: text/html;charset=utf-8"));
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+
+        assertThat("Response status code", response.getStatus(), is(404));
+        assertThat("Response Content-Length", response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
+        assertThat("Response Content-Type", response.get(HttpHeader.CONTENT_TYPE), containsString("text/html;charset=UTF-8"));
+
+        assertContent(response);
     }
 
     @Test
     public void test404PreferJson() throws Exception
     {
-        String response = connector.getResponse(
+        String rawResponse = connector.getResponse(
             "GET / HTTP/1.1\r\n" +
                 "Host: Localhost\r\n" +
                 "Accept: text/html;q=0.5,text/json;q=1.0,*/*\r\n" +
                 "Accept-Charset: *\r\n" +
                 "\r\n");
 
-        assertThat(response, startsWith("HTTP/1.1 404 "));
-        assertThat(response, not(containsString("Content-Length: 0")));
-        assertThat(response, containsString("Content-Type: text/json"));
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+
+        assertThat("Response status code", response.getStatus(), is(404));
+        assertThat("Response Content-Length", response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
+        assertThat("Response Content-Type", response.get(HttpHeader.CONTENT_TYPE), containsString("text/json"));
+
+        assertContent(response);
     }
 
     @Test
@@ -287,12 +368,14 @@ public class ErrorHandlerTest
                 "Host: Localhost\r\n" +
                 "Accept: text/plain\r\n" +
                 "\r\n");
+
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
         assertThat("Response status code", response.getStatus(), is(404));
-        HttpField contentType = response.getField(HttpHeader.CONTENT_TYPE);
-        assertThat("Response Content-Type", contentType, is(notNullValue()));
-        assertThat("Response Content-Type value", contentType.getValue(), not(containsString("null")));
+        assertThat("Response Content-Length", response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
+        assertThat("Response Content-Type", response.get(HttpHeader.CONTENT_TYPE), containsString("text/plain"));
+
+        assertContent(response);
     }
 
     @Test
@@ -302,29 +385,150 @@ public class ErrorHandlerTest
             "GET /badmessage/444 HTTP/1.1\r\n" +
                 "Host: Localhost\r\n" +
                 "\r\n");
+
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
         assertThat("Response status code", response.getStatus(), is(444));
+        assertThat("Response Content-Length", response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
+        assertThat("Response Content-Type", response.get(HttpHeader.CONTENT_TYPE), containsString("text/html;charset=ISO-8859-1"));
+
+        assertContent(response);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "/jsonmessage/",
+        "/xmlmessage/",
+        "/htmlmessage/",
+        "/utf8message/",
+    })
+    public void testComplexCauseMessageNoAcceptHeader(String path) throws Exception
+    {
+        String rawResponse = connector.getResponse(
+            "GET " + path + " HTTP/1.1\r\n" +
+                "Host: Localhost\r\n" +
+                "\r\n");
+
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+
+        assertThat("Response status code", response.getStatus(), is(500));
+        assertThat("Response Content-Length", response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
+        assertThat("Response Content-Type", response.get(HttpHeader.CONTENT_TYPE), containsString("text/html;charset=ISO-8859-1"));
+
+        String content = assertContent(response);
+
+        if (path.startsWith("/utf8"))
+        {
+            // we are Not expecting UTF-8 output, look for mangled ISO-8859-1 version
+            assertThat("content", content, containsString("Euro is &amp;euro; and ? and %E2%82%AC"));
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "/jsonmessage/",
+        "/xmlmessage/",
+        "/htmlmessage/",
+        "/utf8message/",
+    })
+    public void testComplexCauseMessageAcceptUtf8Header(String path) throws Exception
+    {
+        String rawResponse = connector.getResponse(
+            "GET " + path + " HTTP/1.1\r\n" +
+                "Host: Localhost\r\n" +
+                "Accept: text/html\r\n" +
+                "Accept-Charset: utf-8\r\n" +
+                "\r\n");
+
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+
+        assertThat("Response status code", response.getStatus(), is(500));
+        assertThat("Response Content-Length", response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
+        assertThat("Response Content-Type", response.get(HttpHeader.CONTENT_TYPE), containsString("text/html;charset=UTF-8"));
+
+        String content = assertContent(response);
+
+        if (path.startsWith("/utf8"))
+        {
+            // we are Not expecting UTF-8 output, look for mangled ISO-8859-1 version
+            assertThat("content", content, containsString("Euro is &amp;euro; and \u20AC and %E2%82%AC"));
+        }
+    }
+
+    private String assertContent(HttpTester.Response response)
+    {
+        String contentType = response.get(HttpHeader.CONTENT_TYPE);
+        String content = response.getContent();
+
+        if (contentType.contains("text/html"))
+        {
+            assertThat(content, not(containsString("<script>")));
+            assertThat(content, not(containsString("<glossary>")));
+            assertThat(content, not(containsString("<!DOCTYPE>")));
+            assertThat(content, not(containsString("&euro;")));
+        }
+        else if (contentType.contains("text/json"))
+        {
+            Map<Object, Object> jo = (Map)JSON.parse(response.getContent());
+
+            assertThat("url field", jo.get("url"), is(notNullValue()));
+            String expectedStatus = String.valueOf(response.getStatus());
+            assertThat("status field", jo.get("status"), is(expectedStatus));
+            assertThat("message field", jo.get("message"), is(notNullValue()));
+        }
+        else if (contentType.contains("text/plain"))
+        {
+            assertThat(content, containsString("STATUS: " + response.getStatus()));
+        }
+        else
+        {
+            System.out.println("Not checked Content-Type: " + contentType);
+            System.out.println(content);
+        }
+
+        return content;
     }
 
     @Test
     public void testJsonResponse() throws Exception
     {
         String rawResponse = connector.getResponse(
-                "GET /badmessage/444 HTTP/1.1\r\n" +
-                        "Host: Localhost\r\n" +
-                        "Accept: text/json\r\n" +
-                        "\r\n");
+            "GET /badmessage/444 HTTP/1.1\r\n" +
+                "Host: Localhost\r\n" +
+                "Accept: text/json\r\n" +
+                "\r\n");
+
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
         assertThat("Response status code", response.getStatus(), is(444));
 
-        System.out.println("response:" + response.getContent());
+        assertContent(response);
+    }
 
-        Map<Object,Object> jo = (Map) JSON.parse(response.getContent());
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "/jsonmessage/",
+        "/xmlmessage/",
+        "/htmlmessage/",
+        "/utf8message/",
+    })
+    public void testJsonResponseWorse(String path) throws Exception
+    {
+        String rawResponse = connector.getResponse(
+            "GET " + path + " HTTP/1.1\r\n" +
+                "Host: Localhost\r\n" +
+                "Accept: text/json\r\n" +
+                "\r\n");
 
-        assertThat("url field null", jo.get("url"), is(notNullValue()));
-        assertThat("status field null", jo.get("status"), is(notNullValue()));
-        assertThat("message field null", jo.get("message"), is(notNullValue()));
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat("Response status code", response.getStatus(), is(500));
+
+        String content = assertContent(response);
+
+        if (path.startsWith("/utf8"))
+        {
+            // we are expecting UTF-8 output, look for it.
+            assertThat("content", content, containsString("Euro is &euro; and \u20AC and %E2%82%AC"));
+        }
     }
 }
