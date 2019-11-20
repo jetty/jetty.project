@@ -1,4 +1,8 @@
-jetty-9.4.24-SNAPSHOT
+jetty-9.4.24.v20191120 - 20 November 2019
+ + 3083 The ini-template for jetty.console-capture.dir does not match the
+   default value
+ + 4128 OpenIdCredetials can't decode JWT ID token
+ + 4334 Better test ErrorHandler changes
 
 jetty-9.4.23.v20191118 - 18 November 2019
  + 1485 Add systemd service file
@@ -13,7 +17,7 @@ jetty-9.4.23.v20191118 - 18 November 2019
    URIUtil.equalsIgnoreEncodings()
  + 4138 OpenID module should use HttpClient instead of HttpURLConnection
  + 4156 IllegalStateException when forwarding to jsp with new session
- + 4161 Regression: EofException: request lifecycle violation 
+ + 4161 Regression: EofException: request lifecycle violation
  + 4173 NullPointerException warning in log from WebInfConfiguration after
    upgrade
  + 4217 SslConnection.DecryptedEnpoint.flush eternal busy loop
@@ -30,7 +34,7 @@ jetty-9.4.23.v20191118 - 18 November 2019
  + 4277 Reading streamed gzipped body never terminates
  + 4279 Regression: ResponseWriter#close blocks indefinitely
  + 4282 Review HttpParser handling in case of no content
- + 4283 Wrong package for OpenJDK8ClientALPNProcessor 
+ + 4283 Wrong package for OpenJDK8ClientALPNProcessor
  + 4284 Possible NullPointerException in Main.java when stopped from command
    line
  + 4287 Move getUriLastPathSegment(URI uri) to URIUtil
