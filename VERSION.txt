@@ -193,6 +193,48 @@ jetty-10.0.0-alpha0 - 11 July
  + 3849 ClosedChannelException from jetty-test-webapp javax websocket chat
    example
 
+jetty-9.4.23.v20191118 - 18 November 2019
+ + 1485 Add systemd service file
+ + 2266 Jetty maven plugin reload is triggered each time the
+   `scanIntervalSeconds` pass
+ + 2340 Remove raw ServletHandler usage examples from documentation
+ + 2709 current default for headerCacheSize is not large enough for many
+   requests
+ + 3863 Enforce use of SNI
+ + 3869 Update to ASM 7.2 for jdk 13
+ + 4033 Ignore bad percent encodings in paths during
+   URIUtil.equalsIgnoreEncodings()
+ + 4138 OpenID module should use HttpClient instead of HttpURLConnection
+ + 4156 IllegalStateException when forwarding to jsp with new session
+ + 4161 Regression: EofException: request lifecycle violation
+ + 4173 NullPointerException warning in log from WebInfConfiguration after
+   upgrade
+ + 4217 SslConnection.DecryptedEnpoint.flush eternal busy loop
+ + 4236 clean up redirect code calculation for OpenIdAuthenticator
+ + 4237 simplify openid module configuration
+ + 4240 CGI form post results in 500 response if no character encoding
+ + 4243 ErrorHandler produces invalid json error response
+ + 4247 Cookie security attributes are going to mandated by Google Chrome
+ + 4248 Websocket client UpgradeListener never reports success
+ + 4251 Http 2.0 clients cannot upgrade protocol
+ + 4258 RateControl should be per-connection
+ + 4264 Spring Boot BasicErrorController no longer invoked
+ + 4265 HttpChannel SEND_ERROR should use ErrorHandler.doError()
+ + 4277 Reading streamed gzipped body never terminates
+ + 4279 Regression: ResponseWriter#close blocks indefinitely
+ + 4282 Review HttpParser handling in case of no content
+ + 4283 Wrong package for OpenJDK8ClientALPNProcessor
+ + 4284 Possible NullPointerException in Main.java when stopped from command
+   line
+ + 4287 Move getUriLastPathSegment(URI uri) to URIUtil
+ + 4296 Unable to create WebSocket connect if the query string of the URL has %
+   symbol.
+ + 4301 Demand beforeContent is not forwarded
+ + 4305 Jetty server ALPN shall alert fatal no_application_protocol if no
+   client application protocol is supported
+ + 4325 Deprecate SniX509ExtendedKeyManager constructor without
+   SslContextFactory$Server
+
 jetty-9.4.22.v20191022 - 22 October 2019
  + 2429 HttpClient backpressure improved
  + 3558 Error notifications can be received after a successful websocket
