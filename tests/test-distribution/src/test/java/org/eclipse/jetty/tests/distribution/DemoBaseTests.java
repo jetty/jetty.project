@@ -18,12 +18,12 @@
 
 package org.eclipse.jetty.tests.distribution;
 
+import java.net.URI;
 import java.nio.file.Paths;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.util.FormContentProvider;
-import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.util.Fields;
 import org.junit.jupiter.api.Test;
@@ -35,7 +35,6 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class DemoBaseTests extends AbstractDistributionTest
@@ -200,17 +199,35 @@ public class DemoBaseTests extends AbstractDistributionTest
             assertTrue(run.awaitConsoleLogsFor("Started @", 10, TimeUnit.SECONDS));
 
             startHttpClient();
+            client.setFollowRedirects(true);
             ContentResponse response = client.GET("http://localhost:" + httpPort + "/test/session/");
             assertEquals(HttpStatus.OK_200, response.getStatus());
 
-            Fields action = new Fields();
-            action.add("Action", "New Session");
+            // Submit "New Session"
+            Fields form = new Fields();
+            form.add("Action", "New Session");
             response = client.POST("http://localhost:" + httpPort + "/test/session/")
-                .content(new FormContentProvider(action))
+                .content(new FormContentProvider(form))
                 .send();
-            assertEquals(HttpStatus.FOUND_302, response.getStatus());
-            String location = response.getHeaders().get(HttpHeader.LOCATION);
-            assertNotNull(location);
+            assertEquals(HttpStatus.OK_200, response.getStatus());
+            String content = response.getContentAsString();
+            assertThat("Content", content, containsString("<b>test:</b> value<br/>"));
+            assertThat("Content", content, containsString("<b>WEBCL:</b> {}<br/>"));
+
+            // Last Location
+            URI location = response.getRequest().getURI();
+
+            // Submit a "Set" for a new entry in the cookie
+            form = new Fields();
+            form.add("Action", "Set");
+            form.add("Name", "Zed");
+            form.add("Value", "[alpha]");
+            response = client.POST(location)
+                .content(new FormContentProvider(form))
+                .send();
+            assertEquals(HttpStatus.OK_200, response.getStatus());
+            content = response.getContentAsString();
+            assertThat("Content", content, containsString("<b>Zed:</b> [alpha]<br/>"));
         }
     }
 }
