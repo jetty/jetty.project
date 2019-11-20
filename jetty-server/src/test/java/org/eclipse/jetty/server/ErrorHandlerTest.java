@@ -31,6 +31,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.ajax.JSON;
+import org.eclipse.jetty.util.log.StacklessLogging;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -38,6 +39,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
@@ -47,12 +49,14 @@ import static org.hamcrest.Matchers.nullValue;
 
 public class ErrorHandlerTest
 {
+    static StacklessLogging stacklessLogging;
     static Server server;
     static LocalConnector connector;
 
     @BeforeAll
     public static void before() throws Exception
     {
+        stacklessLogging = new StacklessLogging(HttpChannel.class);
         server = new Server();
         connector = new LocalConnector(server);
         server.addConnector(connector);
@@ -66,7 +70,7 @@ public class ErrorHandlerTest
                 if (baseRequest.getDispatcherType() == DispatcherType.ERROR)
                 {
                     baseRequest.setHandled(true);
-                    response.sendError(((Integer)request.getAttribute(RequestDispatcher.ERROR_STATUS_CODE)).intValue());
+                    response.sendError((Integer)request.getAttribute(RequestDispatcher.ERROR_STATUS_CODE));
                     return;
                 }
 
@@ -80,43 +84,40 @@ public class ErrorHandlerTest
 
                 if (target.startsWith("/badmessage/"))
                 {
-                    int code = Integer.valueOf(target.substring(target.lastIndexOf('/') + 1));
+                    int code = Integer.parseInt(target.substring(target.lastIndexOf('/') + 1));
                     throw new ServletException(new BadMessageException(code));
                 }
 
                 // produce an exception with an JSON formatted cause message
                 if (target.startsWith("/jsonmessage/"))
                 {
-                    StringBuilder message = new StringBuilder();
-                    message.append("{\n \"glossary\": {\n \"title\": \"example\"\n }\n }");
-                    throw new ServletException(new RuntimeException(message.toString()));
+                    String message = "{\n \"glossary\": {\n \"title\": \"example\"\n }\n }";
+                    throw new ServletException(new RuntimeException(message));
                 }
 
                 // produce an exception with an XML cause message
                 if (target.startsWith("/xmlmessage/"))
                 {
-                    StringBuilder message = new StringBuilder();
-                    message.append("<!DOCTYPE glossary PUBLIC \"-//OASIS//DTD DocBook V3.1//EN\">\n");
-                    message.append(" <glossary>\n");
-                    message.append("  <title>example glossary</title>\n");
-                    message.append(" </glossary>");
-                    throw new ServletException(new RuntimeException(message.toString()));
+                    String message =
+                        "<!DOCTYPE glossary PUBLIC \"-//OASIS//DTD DocBook V3.1//EN\">\n" +
+                            " <glossary>\n" +
+                            "  <title>example glossary</title>\n" +
+                            " </glossary>";
+                    throw new ServletException(new RuntimeException(message));
                 }
 
                 // produce an exception with an HTML cause message
                 if (target.startsWith("/htmlmessage/"))
                 {
-                    StringBuilder message = new StringBuilder();
-                    message.append("<hr/><script>alert(42)</script>");
-                    throw new ServletException(new RuntimeException(message.toString()));
+                    String message = "<hr/><script>alert(42)</script>%3Cscript%3E";
+                    throw new ServletException(new RuntimeException(message));
                 }
 
                 // produce an exception with a UTF-8 cause message
                 if (target.startsWith("/utf8message/"))
                 {
-                    StringBuilder message = new StringBuilder();
-                    message.append("Euro is &euro; and \u20AC and %E2%82%AC");
-                    throw new ServletException(new RuntimeException(message.toString()));
+                    String message = "Euro is &euro; and \u20AC and %E2%82%AC";
+                    throw new ServletException(new RuntimeException(message));
                 }
             }
         });
@@ -127,6 +128,7 @@ public class ErrorHandlerTest
     public static void after() throws Exception
     {
         server.stop();
+        stacklessLogging.close();
     }
 
     @Test
@@ -469,12 +471,16 @@ public class ErrorHandlerTest
         }
         else if (contentType.contains("text/json"))
         {
-            Map<Object, Object> jo = (Map)JSON.parse(response.getContent());
+            Map jo = (Map)JSON.parse(response.getContent());
 
             assertThat("url field", jo.get("url"), is(notNullValue()));
             String expectedStatus = String.valueOf(response.getStatus());
             assertThat("status field", jo.get("status"), is(expectedStatus));
-            assertThat("message field", jo.get("message"), is(notNullValue()));
+            String message = (String)jo.get("message");
+            assertThat("message field", message, is(notNullValue()));
+            assertThat("message field", message, anyOf(
+                not(containsString("<")),
+                not(containsString(">"))));
         }
         else if (contentType.contains("text/plain"))
         {
@@ -528,7 +534,7 @@ public class ErrorHandlerTest
         if (path.startsWith("/utf8"))
         {
             // we are expecting UTF-8 output, look for it.
-            assertThat("content", content, containsString("Euro is &euro; and \u20AC and %E2%82%AC"));
+            assertThat("content", content, containsString("Euro is &amp;euro; and \u20AC and %E2%82%AC"));
         }
     }
 }

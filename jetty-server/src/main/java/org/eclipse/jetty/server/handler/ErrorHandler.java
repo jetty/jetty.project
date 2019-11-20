@@ -482,28 +482,26 @@ public class ErrorHandler extends AbstractHandler
         writer.append(json.entrySet().stream()
                 .map(e -> QuotedStringTokenizer.quote(e.getKey()) +
                         ":" +
-                        QuotedStringTokenizer.quote((e.getValue())))
+                    QuotedStringTokenizer.quote(StringUtil.sanitizeXmlString((e.getValue()))))
                 .collect(Collectors.joining(",\n", "{\n", "\n}")));
-
-
     }
 
     protected void writeErrorPageStacks(HttpServletRequest request, Writer writer)
         throws IOException
     {
         Throwable th = (Throwable)request.getAttribute(RequestDispatcher.ERROR_EXCEPTION);
-        while (th != null)
+        if (th != null)
         {
             writer.write("<h3>Caused by:</h3><pre>");
             // You have to pre-generate and then use #write(writer, String)
-            StringWriter sw = new StringWriter();
-            PrintWriter pw = new PrintWriter(sw);
-            th.printStackTrace(pw);
-            pw.flush();
-            write(writer, sw.getBuffer().toString()); // IMPORTANT STEP
+            try (StringWriter sw = new StringWriter();
+                 PrintWriter pw = new PrintWriter(sw))
+            {
+                th.printStackTrace(pw);
+                pw.flush();
+                write(writer, sw.getBuffer().toString()); // sanitize
+            }
             writer.write("</pre>\n");
-
-            th = th.getCause();
         }
     }
 
