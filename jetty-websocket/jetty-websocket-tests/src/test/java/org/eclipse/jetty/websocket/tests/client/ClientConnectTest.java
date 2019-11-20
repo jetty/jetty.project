@@ -24,6 +24,7 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.SocketTimeoutException;
 import java.net.URI;
+import java.time.Duration;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
@@ -106,7 +107,6 @@ public class ClientConnectTest
         client.setBufferPool(bufferPool);
         client.setConnectTimeout(TimeUnit.SECONDS.toMillis(3));
         client.setMaxIdleTimeout(TimeUnit.SECONDS.toMillis(3));
-        client.getPolicy().setIdleTimeout(TimeUnit.SECONDS.toMillis(10));
         client.start();
     }
 
@@ -454,6 +454,41 @@ public class ClientConnectTest
             {
                 assertThat("Should have been a TimeoutException", e, instanceOf(TimeoutException.class));
             }
+        }
+    }
+
+    @Test
+    public void testIdleTimeout() throws Exception
+    {
+        client.getHttpClient().setIdleTimeout(-1);
+        client.setMaxIdleTimeout(Duration.ofSeconds(3).toMillis());
+
+        CloseTrackingEndpoint cliSock = new CloseTrackingEndpoint();
+        try (ServerSocket serverSocket = new ServerSocket())
+        {
+            InetAddress addr = InetAddress.getByName("localhost");
+            InetSocketAddress endpoint = new InetSocketAddress(addr, 0);
+            serverSocket.bind(endpoint, 1);
+            int port = serverSocket.getLocalPort();
+            URI wsUri = URI.create(String.format("ws://%s:%d/", addr.getHostAddress(), port));
+            Future<Session> future = client.connect(cliSock, wsUri);
+
+            // Accept the connection, but do nothing on it (no response, no upgrade, etc)
+            serverSocket.accept();
+
+            // The attempt to get upgrade response future should throw error
+            Exception e = assertThrows(Exception.class,
+                () -> future.get(5, TimeUnit.SECONDS));
+
+            // Check we failed with the correct timeout.
+            assertThat(e, instanceOf(ExecutionException.class));
+            assertThat(e.getCause(), instanceOf(UpgradeException.class));
+            Throwable cause = e.getCause().getCause();
+            assertThat(cause, instanceOf(TimeoutException.class));
+            assertThat(cause.getMessage(), containsString("Idle timeout 3000 ms"));
+
+            // HttpClient idleTimeout has not been changed.
+            assertThat(client.getHttpClient().getIdleTimeout(), is(-1L));
         }
     }
 }
