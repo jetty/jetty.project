@@ -4,8 +4,18 @@
   <Get id="ThreadPool" name="threadPool"/>
   <New id="HttpClient" class="org.eclipse.jetty.client.HttpClient">
     <Arg>
-      <New class="org.eclipse.jetty.util.ssl.SslContextFactory$Client">
-        <Set name="trustAll" type="boolean"><Property name="jetty.openid.sslContextFactory.trustAll" default="false"/></Set>
+      <New class="org.eclipse.jetty.client.http.HttpClientTransportOverHTTP">
+        <Arg>
+          <New class="org.eclipse.jetty.io.ClientConnector">
+            <Set name="sslContextFactory">
+              <New class="org.eclipse.jetty.util.ssl.SslContextFactory$Client">
+                <Set name="trustAll" type="boolean">
+                  <Property name="jetty.openid.sslContextFactory.trustAll" default="false"/>
+                </Set>
+              </New>
+            </Set>
+          </New>
+        </Arg>
       </New>
     </Arg>
     <Set name="executor"><Ref refid="ThreadPool"/></Set>
