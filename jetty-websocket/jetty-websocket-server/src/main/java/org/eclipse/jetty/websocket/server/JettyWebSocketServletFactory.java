@@ -80,9 +80,21 @@ public class JettyWebSocketServletFactory implements WebSocketPolicy
     }
 
     @Override
+    public Duration getWriteTimeout()
+    {
+        return factory.getWriteTimeout();
+    }
+
+    @Override
     public void setIdleTimeout(Duration duration)
     {
         factory.setIdleTimeout(duration);
+    }
+
+    @Override
+    public void setWriteTimeout(Duration duration)
+    {
+        factory.setWriteTimeout(duration);
     }
 
     @Override

@@ -183,6 +183,12 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
     }
 
     @Override
+    public Duration getWriteTimeout()
+    {
+        return customizer.getWriteTimeout();
+    }
+
+    @Override
     public int getInputBufferSize()
     {
         return customizer.getInputBufferSize();
@@ -222,6 +228,12 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
     public void setIdleTimeout(Duration duration)
     {
         customizer.setIdleTimeout(duration);
+    }
+
+    @Override
+    public void setWriteTimeout(Duration duration)
+    {
+        customizer.setWriteTimeout(duration);
     }
 
     @Override

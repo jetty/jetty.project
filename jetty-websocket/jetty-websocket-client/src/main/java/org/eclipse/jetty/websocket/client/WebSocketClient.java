@@ -214,6 +214,12 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
     }
 
     @Override
+    public Duration getWriteTimeout()
+    {
+        return configurationCustomizer.getWriteTimeout();
+    }
+
+    @Override
     public int getInputBufferSize()
     {
         return configurationCustomizer.getInputBufferSize();
@@ -254,6 +260,12 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
     {
         configurationCustomizer.setIdleTimeout(duration);
         getHttpClient().setIdleTimeout(duration.toMillis());
+    }
+
+    @Override
+    public void setWriteTimeout(Duration duration)
+    {
+        configurationCustomizer.setWriteTimeout(duration);
     }
 
     @Override

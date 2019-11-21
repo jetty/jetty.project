@@ -94,6 +94,12 @@ public class WebSocketSession extends AbstractLifeCycle implements Session, Susp
     }
 
     @Override
+    public Duration getWriteTimeout()
+    {
+        return coreSession.getWriteTimeout();
+    }
+
+    @Override
     public int getInputBufferSize()
     {
         return coreSession.getInputBufferSize();
@@ -133,6 +139,12 @@ public class WebSocketSession extends AbstractLifeCycle implements Session, Susp
     public void setIdleTimeout(Duration duration)
     {
         coreSession.setIdleTimeout(duration);
+    }
+
+    @Override
+    public void setWriteTimeout(Duration duration)
+    {
+        coreSession.setWriteTimeout(duration);
     }
 
     @Override

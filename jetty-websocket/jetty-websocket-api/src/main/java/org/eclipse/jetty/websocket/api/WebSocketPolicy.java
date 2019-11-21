@@ -28,11 +28,18 @@ public interface WebSocketPolicy
     WebSocketBehavior getBehavior();
 
     /**
-     * The duration that a websocket may be idle before being closed by the implementation
+     * The duration that a websocket may be idle before being closed by the implementation.
      *
      * @return the timeout duration
      */
     Duration getIdleTimeout();
+
+    /**
+     * The maximum duration that a websocket can take to send a message before being closed by the implementation.
+     *
+     * @return the timeout duration
+     */
+    Duration getWriteTimeout();
 
     /**
      * The input (read from network layer) buffer size.
@@ -99,11 +106,18 @@ public interface WebSocketPolicy
     boolean isAutoFragment();
 
     /**
-     * The duration that a websocket may be idle before being closed by the implementation
+     * The duration that a websocket may be idle before being closed by the implementation.
      *
      * @param duration the timeout duration (may not be null or negative)
      */
     void setIdleTimeout(Duration duration);
+
+    /**
+     * The maximum duration that a websocket can take to send a message before being closed by the implementation.
+     *
+     * @param duration the timeout duration (may not be null or negative)
+     */
+    void setWriteTimeout(Duration duration);
 
     /**
      * The input (read from network layer) buffer size.
