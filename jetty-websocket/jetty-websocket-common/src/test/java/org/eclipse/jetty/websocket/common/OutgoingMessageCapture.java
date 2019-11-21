@@ -272,6 +272,12 @@ public class OutgoingMessageCapture extends FrameHandler.CoreSession.Empty imple
             }
 
             @Override
+            public Duration getWriteTimeout()
+            {
+                return null;
+            }
+
+            @Override
             public int getInputBufferSize()
             {
                 return 0;
@@ -309,6 +315,11 @@ public class OutgoingMessageCapture extends FrameHandler.CoreSession.Empty imple
 
             @Override
             public void setIdleTimeout(Duration duration)
+            {
+            }
+
+            @Override
+            public void setWriteTimeout(Duration duration)
             {
             }
 
