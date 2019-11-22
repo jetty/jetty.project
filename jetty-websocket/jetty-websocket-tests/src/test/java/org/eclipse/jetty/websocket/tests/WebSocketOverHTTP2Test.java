@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.net.ConnectException;
 import java.net.URI;
+import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -45,6 +46,7 @@ import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -61,6 +63,7 @@ import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServlet;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServletFactory;
 import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
+import org.eclipse.jetty.websocket.servlet.internal.UpgradeHttpServletRequest;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -234,7 +237,8 @@ public class WebSocketOverHTTP2Test
         assertTrue(wsEndPoint.closeLatch.await(5, TimeUnit.SECONDS));
     }
 
-    @Test void testWebSocketConnectPortDoesNotExist() throws Exception
+    @Test
+    public void testWebSocketConnectPortDoesNotExist() throws Exception
     {
         startServer();
         startClient(clientConnector -> new ClientConnectionFactoryOverHTTP2.H2(new HTTP2Client(clientConnector)));
@@ -250,7 +254,8 @@ public class WebSocketOverHTTP2Test
         assertThat(cause.getMessage(), containsStringIgnoringCase("Connection refused"));
     }
 
-    @Test void testWebSocketNotFound() throws Exception
+    @Test
+    public void testWebSocketNotFound() throws Exception
     {
         startServer();
         startClient(clientConnector -> new ClientConnectionFactoryOverHTTP2.H2(new HTTP2Client(clientConnector)));
@@ -266,7 +271,8 @@ public class WebSocketOverHTTP2Test
         assertThat(cause.getMessage(), containsStringIgnoringCase("Unexpected HTTP Response Status Code: 501"));
     }
 
-    @Test void testNotNegotiated() throws Exception
+    @Test
+    public void testNotNegotiated() throws Exception
     {
         startServer();
         startClient(clientConnector -> new ClientConnectionFactoryOverHTTP2.H2(new HTTP2Client(clientConnector)));
@@ -282,7 +288,8 @@ public class WebSocketOverHTTP2Test
         assertThat(cause.getMessage(), containsStringIgnoringCase("Unexpected HTTP Response Status Code: 503"));
     }
 
-    @Test void testThrowFromCreator() throws Exception
+    @Test
+    public void testThrowFromCreator() throws Exception
     {
         startServer();
         startClient(clientConnector -> new ClientConnectionFactoryOverHTTP2.H2(new HTTP2Client(clientConnector)));
@@ -302,6 +309,22 @@ public class WebSocketOverHTTP2Test
         assertThat(cause.getMessage(), containsStringIgnoringCase("Unexpected HTTP Response Status Code: 500"));
     }
 
+    @Test
+    public void testServerConnectionClose() throws Exception
+    {
+        startServer();
+        startClient(clientConnector -> new ClientConnectionFactoryOverHTTP2.H2(new HTTP2Client(clientConnector)));
+
+        EventSocket wsEndPoint = new EventSocket();
+        URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/ws/connectionClose");
+
+        ExecutionException failure = Assertions.assertThrows(ExecutionException.class, () ->
+            wsClient.connect(wsEndPoint, uri).get(5, TimeUnit.SECONDS));
+
+        Throwable cause = failure.getCause();
+        assertThat(cause, instanceOf(ClosedChannelException.class));
+    }
+
     private static class TestJettyWebSocketServlet extends JettyWebSocketServlet
     {
         @Override
@@ -312,6 +335,13 @@ public class WebSocketOverHTTP2Test
             factory.addMapping("/ws/throw", (request, response) ->
             {
                 throw new RuntimeException("throwing from creator");
+            });
+            factory.addMapping("/ws/connectionClose", (request, response) ->
+            {
+                UpgradeHttpServletRequest servletRequest = (UpgradeHttpServletRequest)request.getHttpServletRequest();
+                Request baseRequest = servletRequest.getBaseRequest();
+                baseRequest.getHttpChannel().getEndPoint().close();
+                return new EchoSocket();
             });
         }
     }
