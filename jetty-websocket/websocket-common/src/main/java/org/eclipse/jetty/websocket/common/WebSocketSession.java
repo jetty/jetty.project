@@ -380,27 +380,41 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
     public void callApplicationOnClose(CloseInfo closeInfo)
     {
         if (LOG.isDebugEnabled())
-        {
             LOG.debug("callApplicationOnClose({})", closeInfo);
-        }
+
         if (onCloseCalled.compareAndSet(false, true))
         {
-            websocket.onClose(closeInfo);
+            try
+            {
+                websocket.onClose(closeInfo);
+            }
+            catch (Throwable t)
+            {
+                LOG.warn("Exception while notifying onClose", t);
+            }
         }
     }
 
     public void callApplicationOnError(Throwable cause)
     {
         if (LOG.isDebugEnabled())
-        {
             LOG.debug("callApplicationOnError()", cause);
-        }
+
         if (openFuture != null && !openFuture.isDone())
             openFuture.completeExceptionally(cause);
 
         // Only notify onError if onClose has not been called.
         if (!onCloseCalled.get())
-            websocket.onError(cause);
+        {
+            try
+            {
+                websocket.onError(cause);
+            }
+            catch (Throwable t)
+            {
+                LOG.warn("Exception while notifying onError", t);
+            }
+        }
     }
 
     /**

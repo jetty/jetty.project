@@ -535,7 +535,15 @@ public class WebSocketUpgradeRequest extends HttpRequest implements CompleteList
 
     private void handleException(Throwable failure)
     {
-        localEndpoint.onError(failure);
+        try
+        {
+            localEndpoint.onError(failure);
+        }
+        catch (Throwable t)
+        {
+            LOG.warn("Exception while notifying onError", t);
+        }
+
         fut.completeExceptionally(failure);
     }
 
