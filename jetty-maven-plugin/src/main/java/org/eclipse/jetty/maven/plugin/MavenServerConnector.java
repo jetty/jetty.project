@@ -144,72 +144,48 @@ public class MavenServerConnector extends ContainerLifeCycle implements Connecto
         return checkDelegate().getExecutor();
     }
 
-    /**
-     * @see org.eclipse.jetty.server.Connector#getScheduler()
-     */
     @Override
     public Scheduler getScheduler()
     {
         return checkDelegate().getScheduler();
     }
 
-    /**
-     * @see org.eclipse.jetty.server.Connector#getByteBufferPool()
-     */
     @Override
     public ByteBufferPool getByteBufferPool()
     {
         return checkDelegate().getByteBufferPool();
     }
 
-    /**
-     * @see org.eclipse.jetty.server.Connector#getConnectionFactory(java.lang.String)
-     */
     @Override
     public ConnectionFactory getConnectionFactory(String nextProtocol)
     {
         return checkDelegate().getConnectionFactory(nextProtocol);
     }
 
-    /**
-     * @see org.eclipse.jetty.server.Connector#getConnectionFactory(java.lang.Class)
-     */
     @Override
     public <T> T getConnectionFactory(Class<T> factoryType)
     {
         return checkDelegate().getConnectionFactory(factoryType);
     }
 
-    /**
-     * @see org.eclipse.jetty.server.Connector#getDefaultConnectionFactory()
-     */
     @Override
     public ConnectionFactory getDefaultConnectionFactory()
     {
         return checkDelegate().getDefaultConnectionFactory();
     }
 
-    /**
-     * @see org.eclipse.jetty.server.Connector#getConnectionFactories()
-     */
     @Override
     public Collection<ConnectionFactory> getConnectionFactories()
     {
         return checkDelegate().getConnectionFactories();
     }
 
-    /**
-     * @see org.eclipse.jetty.server.Connector#getProtocols()
-     */
     @Override
     public List<String> getProtocols()
     {
         return checkDelegate().getProtocols();
     }
 
-    /**
-     * @see org.eclipse.jetty.server.Connector#getIdleTimeout()
-     */
     @Override
     @ManagedAttribute("maximum time a connection can be idle before being closed (in ms)")
     public long getIdleTimeout()
@@ -217,27 +193,18 @@ public class MavenServerConnector extends ContainerLifeCycle implements Connecto
         return checkDelegate().getIdleTimeout();
     }
 
-    /**
-     * @see org.eclipse.jetty.server.Connector#getTransport()
-     */
     @Override
     public Object getTransport()
     {
         return checkDelegate().getTransport();
     }
 
-    /**
-     * @see org.eclipse.jetty.server.Connector#getConnectedEndPoints()
-     */
     @Override
     public Collection<EndPoint> getConnectedEndPoints()
     {
         return checkDelegate().getConnectedEndPoints();
     }
 
-    /**
-     * @see org.eclipse.jetty.server.Connector#getName()
-     */
     @Override
     public String getName()
     {

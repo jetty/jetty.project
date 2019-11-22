@@ -107,12 +107,9 @@
         <configuration>
           <stopPort>8087</stopPort>
           <stopKey>foo</stopKey>
-          <scanIntervalSeconds>1</scanIntervalSeconds>
+          <scan>1</scan>
           <systemProperties>
-            <systemProperty>
-              <name>fooprop</name>
-              <value>222</value>
-            </systemProperty>
+              <fooprop>222</fooprop>
           </systemProperties>
           <webApp>
             <contextPath>/test</contextPath>

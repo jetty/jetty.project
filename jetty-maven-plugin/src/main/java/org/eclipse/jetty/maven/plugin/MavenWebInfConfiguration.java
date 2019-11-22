@@ -51,13 +51,10 @@ public class MavenWebInfConfiguration extends WebInfConfiguration
         return WebInfConfiguration.class;
     }
 
-    /**
-     * @see org.eclipse.jetty.webapp.WebInfConfiguration#configure(org.eclipse.jetty.webapp.WebAppContext)
-     */
     @Override
     public void configure(WebAppContext context) throws Exception
     {
-        JettyWebAppContext jwac = (JettyWebAppContext)context;
+        MavenWebAppContext jwac = (MavenWebAppContext)context;
 
         //put the classes dir and all dependencies into the classpath
         if (jwac.getClassPathFiles() != null && context.getClassLoader() instanceof WebAppClassLoader)

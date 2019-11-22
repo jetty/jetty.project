@@ -265,9 +265,10 @@ public class MultiplexConnectionPool extends AbstractConnectionPool implements C
             activeSize = activeConnections.size();
             idleSize = idleConnections.size();
         }
-        return String.format("%s@%x[connections=%d/%d,multiplex=%d,active=%d,idle=%d]",
+        return String.format("%s@%x[connections=%d/%d/%d,multiplex=%d,active=%d,idle=%d]",
             getClass().getSimpleName(),
             hashCode(),
+            getPendingConnectionCount(),
             getConnectionCount(),
             getMaxConnectionCount(),
             getMaxMultiplex(),

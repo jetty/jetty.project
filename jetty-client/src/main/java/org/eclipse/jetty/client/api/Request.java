@@ -551,45 +551,46 @@ public interface Request
      */
     public interface Listener extends QueuedListener, BeginListener, HeadersListener, CommitListener, ContentListener, SuccessListener, FailureListener
     {
+        @Override
+        public default void onQueued(Request request)
+        {
+        }
+
+        @Override
+        public default void onBegin(Request request)
+        {
+        }
+
+        @Override
+        public default void onHeaders(Request request)
+        {
+        }
+
+        @Override
+        public default void onCommit(Request request)
+        {
+        }
+
+        @Override
+        public default void onContent(Request request, ByteBuffer content)
+        {
+        }
+
+        @Override
+        public default void onSuccess(Request request)
+        {
+        }
+
+        @Override
+        public default void onFailure(Request request, Throwable failure)
+        {
+        }
+
         /**
          * An empty implementation of {@link Listener}
          */
         public static class Adapter implements Listener
         {
-            @Override
-            public void onQueued(Request request)
-            {
-            }
-
-            @Override
-            public void onBegin(Request request)
-            {
-            }
-
-            @Override
-            public void onHeaders(Request request)
-            {
-            }
-
-            @Override
-            public void onCommit(Request request)
-            {
-            }
-
-            @Override
-            public void onContent(Request request, ByteBuffer content)
-            {
-            }
-
-            @Override
-            public void onSuccess(Request request)
-            {
-            }
-
-            @Override
-            public void onFailure(Request request, Throwable failure)
-            {
-            }
         }
     }
 }

@@ -19,11 +19,15 @@
 package org.eclipse.jetty.util.ssl;
 
 import java.security.cert.X509Certificate;
+import javax.net.ssl.KeyManager;
+import javax.net.ssl.X509ExtendedKeyManager;
 
+import org.eclipse.jetty.util.resource.Resource;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 
 public class X509Test
 {
@@ -122,5 +126,59 @@ public class X509Test
         };
 
         assertThat("Normal X509", X509.isCertSign(bogusX509), is(false));
+    }
+
+    private X509ExtendedKeyManager getX509ExtendedKeyManager(SslContextFactory sslContextFactory) throws Exception
+    {
+        Resource keystoreResource = Resource.newSystemResource("keystore");
+        Resource truststoreResource = Resource.newSystemResource("keystore");
+        sslContextFactory.setKeyStoreResource(keystoreResource);
+        sslContextFactory.setTrustStoreResource(truststoreResource);
+        sslContextFactory.setKeyStorePassword("storepwd");
+        sslContextFactory.setKeyManagerPassword("keypwd");
+        sslContextFactory.setTrustStorePassword("storepwd");
+        sslContextFactory.start();
+
+        KeyManager[] keyManagers = sslContextFactory.getKeyManagers(sslContextFactory.getKeyStore());
+        X509ExtendedKeyManager x509ExtendedKeyManager = null;
+
+        for (KeyManager keyManager : keyManagers)
+        {
+            if (keyManager instanceof X509ExtendedKeyManager)
+            {
+                x509ExtendedKeyManager = (X509ExtendedKeyManager)keyManager;
+                break;
+            }
+        }
+        assertThat("Found X509ExtendedKeyManager", x509ExtendedKeyManager, is(notNullValue()));
+        return x509ExtendedKeyManager;
+    }
+
+    @Test
+    public void testSniX509ExtendedKeyManager_ServerClass() throws Exception
+    {
+        SslContextFactory.Server serverSsl = new SslContextFactory.Server();
+        Resource keystoreResource = Resource.newSystemResource("keystore");
+        Resource truststoreResource = Resource.newSystemResource("keystore");
+        serverSsl.setKeyStoreResource(keystoreResource);
+        serverSsl.setTrustStoreResource(truststoreResource);
+        serverSsl.setKeyStorePassword("storepwd");
+        serverSsl.setKeyManagerPassword("keypwd");
+        serverSsl.setTrustStorePassword("storepwd");
+        serverSsl.start();
+
+        KeyManager[] keyManagers = serverSsl.getKeyManagers(serverSsl.getKeyStore());
+        X509ExtendedKeyManager x509ExtendedKeyManager = null;
+
+        for (KeyManager keyManager : keyManagers)
+        {
+            if (keyManager instanceof X509ExtendedKeyManager)
+            {
+                x509ExtendedKeyManager = (X509ExtendedKeyManager)keyManager;
+                break;
+            }
+        }
+        assertThat("Found X509ExtendedKeyManager", x509ExtendedKeyManager, is(notNullValue()));
+        serverSsl.newSniX509ExtendedKeyManager(x509ExtendedKeyManager);
     }
 }

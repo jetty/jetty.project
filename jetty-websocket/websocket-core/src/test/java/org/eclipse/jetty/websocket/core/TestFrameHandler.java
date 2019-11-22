@@ -83,7 +83,7 @@ public class TestFrameHandler implements SynchronousFrameHandler
     public void onError(Throwable cause)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("onError {} ", cause == null ? null : cause.toString());
+            LOG.debug("onError ", cause);
         failure = cause;
         error.countDown();
     }
@@ -98,9 +98,14 @@ public class TestFrameHandler implements SynchronousFrameHandler
 
     public void sendFrame(Frame frame)
     {
+        sendFrame(frame, Callback.NOOP, false);
+    }
+
+    public void sendFrame(Frame frame, Callback callback, boolean batch)
+    {
         if (LOG.isDebugEnabled())
             LOG.debug("sendFrame {} ", frame);
-        getCoreSession().sendFrame(frame, Callback.NOOP, false);
+        getCoreSession().sendFrame(frame, callback, batch);
     }
 
     public void sendClose()

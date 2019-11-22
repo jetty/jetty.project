@@ -68,7 +68,7 @@ public abstract class AbstractConnectionPool implements ConnectionPool, Dumpable
     }
 
     @ManagedAttribute(value = "The number of pending connections", readonly = true)
-    public int getPendingCount()
+    public int getPendingConnectionCount()
     {
         return connections.getHi();
     }
