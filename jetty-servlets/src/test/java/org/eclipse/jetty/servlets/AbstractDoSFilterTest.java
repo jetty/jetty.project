@@ -36,6 +36,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.server.session.DefaultSessionCache;
 import org.eclipse.jetty.server.session.FileSessionDataStore;
+import org.eclipse.jetty.server.session.SessionDataStore;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletTester;
 import org.eclipse.jetty.toolchain.test.FS;
@@ -58,17 +59,22 @@ public abstract class AbstractDoSFilterTest
     protected int _port;
     protected long _requestMaxTime = 200;
 
+    protected SessionDataStore getSessionDataStore(WorkDir workDir) throws Exception
+    {
+        FileSessionDataStore fileStore = new FileSessionDataStore();
+        Path p = workDir.getPathFile("sessions");
+        FS.ensureEmpty(p);
+        fileStore.setStoreDir(p.toFile());
+        return fileStore;
+    }
+
     public void startServer(WorkDir workDir, Class<? extends Filter> filter) throws Exception
     {
         _tester = new ServletTester("/ctx");
 
         DefaultSessionCache sessionCache = new DefaultSessionCache(_tester.getContext().getSessionHandler());
-        FileSessionDataStore fileStore = new FileSessionDataStore();
 
-        Path p = workDir.getPathFile("sessions");
-        FS.ensureEmpty(p);
-        fileStore.setStoreDir(p.toFile());
-        sessionCache.setSessionDataStore(fileStore);
+        sessionCache.setSessionDataStore(getSessionDataStore(workDir));
 
         _tester.getContext().getSessionHandler().setSessionCache(sessionCache);
 

@@ -1109,6 +1109,16 @@
         <artifactId>grpc-core</artifactId>
         <version>1.0.1</version>
       </dependency>
+      <dependency>
+        <groupId>org.apache.derby</groupId>
+        <artifactId>derby</artifactId>
+        <version>10.12.1.1</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.derby</groupId>
+        <artifactId>derbytools</artifactId>
+        <version>10.12.1.1</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 
