@@ -470,21 +470,16 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     public Servlet getServlet()
         throws ServletException
     {
-        Servlet servlet = _servlet;
-        if (servlet == null)
+        synchronized (this)
         {
-            synchronized (this)
+            if (_servlet == null && isRunning())
             {
-                servlet = _servlet;
-                if (servlet == null && isRunning())
-                {
-                    if (getHeldClass() != null)
-                        initServlet();
-                    servlet = _servlet;
-                }
+                if (getHeldClass() != null)
+                    initServlet();
             }
         }
-        return servlet;
+
+        return _servlet;
     }
 
     /**
