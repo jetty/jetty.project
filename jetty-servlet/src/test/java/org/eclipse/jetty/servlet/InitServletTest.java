@@ -47,7 +47,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class InitServletTest
 {
-
     public static class DemoServlet extends HttpServlet
     {
         AtomicInteger initCount = new AtomicInteger();
@@ -66,14 +65,14 @@ public class InitServletTest
             {
                 throw new ServletException(e);
             }
-            //check the servlet hasn't been initialized before
-            int val = initCount.addAndGet(1);
-            assertThat(val, Matchers.equalTo(1));
+            initCount.addAndGet(1);
         }
 
         @Override
         public void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
         {
+            //Check that the init() method has been totally finished (by another request) before
+            //the servlet service() method is called.
             if (initCount.get() != 1)
             {
                 resp.sendError(500, "Servlet not initialized!");
@@ -83,14 +82,15 @@ public class InitServletTest
     
     private static class AsyncResponseListener implements Response.CompleteListener
     {
+
         private CountDownLatch resultsLatch;
         private Integer[] results;
         private AtomicInteger index = new AtomicInteger();
         
-        public AsyncResponseListener(int count)
+        public AsyncResponseListener(CountDownLatch resultsLatch, Integer[] results)
         {
-            resultsLatch = new CountDownLatch(count);
-            results = new Integer[count];
+           this.resultsLatch = resultsLatch;
+           this.results = results;
         }
         
         public void onComplete(Result result)
@@ -103,11 +103,6 @@ public class InitServletTest
         {
             assertTrue(resultsLatch.await(60L, TimeUnit.SECONDS));
         }
-        
-        public Integer[] getResults()
-        {
-            return results;
-        }
     }
 
     @Test
@@ -119,29 +114,31 @@ public class InitServletTest
         //add a lazily instantiated servlet
         context.addServlet(new ServletHolder(DemoServlet.class), "/*");
         server.start();
-        final int port = ((NetworkConnector)server.getConnectors()[0]).getLocalPort();
+        int port = ((NetworkConnector)server.getConnectors()[0]).getLocalPort();
         HttpClient client = new HttpClient();
         try
         {
             client.start();
 
             //Expect 2 responses
-            final AsyncResponseListener l = new AsyncResponseListener(2);
+            CountDownLatch resultsLatch = new CountDownLatch(2);
+            Integer[] results = new Integer[2];
+            AsyncResponseListener l = new AsyncResponseListener(resultsLatch, results);
             
-            //req1
+            //req1: should initialize servlet
             Request r1 = client.newRequest("http://localhost:" + port + "/r1");
             r1.method(HttpMethod.GET).send(l);
 
             //Need to give 1st request a head start before request2
             Thread.sleep(1000);
             
-            //req2
+            //req2: should see servlet fully initialized by request1
             Request r2 = client.newRequest("http://localhost:" + port + "/r2");
             r2.method(HttpMethod.GET).send(l);
 
             l.awaitCompletion();
             
-            assertThat(l.getResults(), is(array(equalTo(HttpStatus.OK_200), equalTo(HttpStatus.OK_200))));
+            assertThat(results, is(array(equalTo(HttpStatus.OK_200), equalTo(HttpStatus.OK_200))));
         }
         finally
         {

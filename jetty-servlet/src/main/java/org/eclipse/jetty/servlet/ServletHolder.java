@@ -621,7 +621,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         ContextHandler ch = ContextHandler.getContextHandler(getServletHandler().getServletContext());
 
         /* Set the webapp's classpath for Jasper */
-        ch.setAttribute("org.apache.catalina.jspgetHeldClass()path", ch.getClassPath());
+        ch.setAttribute("org.apache.catalina.jsp_classpath", ch.getClassPath());
 
         /* Set up other classpath attribute */
         if ("?".equals(getInitParameter("classpath")))
