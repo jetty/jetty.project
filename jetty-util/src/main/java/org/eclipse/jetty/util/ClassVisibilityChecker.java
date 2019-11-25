@@ -41,7 +41,7 @@ public interface ClassVisibilityChecker
     /**
      * Is the class a Server Class.
      * A Server class is a class that is part of the implementation of
-     * the server and is NIT visible to a webapplication. The web
+     * the server and is NOT visible to a web application. The web
      * application may provide it's own implementation of the class,
      * to be loaded from WEB-INF/lib or WEB-INF/classes
      *

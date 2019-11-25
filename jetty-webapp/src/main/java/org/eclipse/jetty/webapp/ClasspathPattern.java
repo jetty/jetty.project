@@ -739,8 +739,7 @@ public class ClasspathPattern extends AbstractSet<String>
      * @param name the name to check
      * @param locations configured inclusions and exclusions by location
      * @param location the location of the class (can be null)
-     * @return true if the class is not excluded but is included, or there are
-     * no inclusions. False otherwise.
+     * @return true if the class is not excluded but is included. False otherwise.
      */
     static boolean combine(IncludeExcludeSet<Entry, String> names, String name, IncludeExcludeSet<Entry, URI> locations, Supplier<URI> location)
     {
@@ -763,7 +762,7 @@ public class ClasspathPattern extends AbstractSet<String>
         if (names.hasIncludes() || locations.hasIncludes())
             return byName == Boolean.TRUE || byLocation == Boolean.TRUE;
 
-        // Otherwise there are no includes and it was not excluded, so match
-        return true;
+        // Otherwise there are no includes and it was not excluded, bypass
+        return false;
     }
 }
