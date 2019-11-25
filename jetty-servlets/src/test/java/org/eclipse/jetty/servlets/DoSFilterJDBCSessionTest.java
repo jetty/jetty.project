@@ -25,10 +25,8 @@ import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 
 public class DoSFilterJDBCSessionTest extends DoSFilterTest
 {
-
     private static final String DRIVER_CLASS = "org.apache.derby.jdbc.EmbeddedDriver";
     private static final String DEFAULT_CONNECTION_URL = "jdbc:derby:memory:sessions;create=true";
-
 
     @Override
     protected SessionDataStore getSessionDataStore(WorkDir workDir) throws Exception
@@ -39,5 +37,4 @@ public class DoSFilterJDBCSessionTest extends DoSFilterTest
         factory.setDatabaseAdaptor(da);
         return factory.getSessionDataStore(null);
     }
-
 }
