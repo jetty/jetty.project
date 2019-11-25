@@ -442,8 +442,17 @@ public class OpenIdAuthenticator extends LoginAuthenticator
     private String getRedirectUri(HttpServletRequest request)
     {
         final StringBuffer redirectUri = new StringBuffer(128);
-        URIUtil.appendSchemeHostPort(redirectUri, request.getScheme(),
-            request.getServerName(), request.getServerPort());
+        String scheme = request.getScheme();
+        int serverPort = request.getServerPort();
+        String forward_proto = request.getHeader("x-forwarded-proto");
+        if (forward_proto != null && !scheme.equals(forward_proto)) {
+            scheme = forward_proto;
+            // Clear the server port so that it does not interfere with the
+            // scheme change. This will use the default value.
+            serverPort = 0;
+        }
+        URIUtil.appendSchemeHostPort(redirectUri, scheme,
+        request.getServerName(), serverPort);
         redirectUri.append(request.getContextPath());
         redirectUri.append(J_SECURITY_CHECK);
         return redirectUri.toString();
