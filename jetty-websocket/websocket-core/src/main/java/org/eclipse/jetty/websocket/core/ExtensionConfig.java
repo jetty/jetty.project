@@ -30,6 +30,7 @@ import java.util.stream.Collectors;
 
 import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.util.ArrayTrie;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.Trie;
 
 /**
@@ -161,17 +162,9 @@ public class ExtensionConfig
 
     public ExtensionConfig(String parameterizedName)
     {
-        ParamParser paramParser = new ParamParser(parameterizedName);
-        List<String> keys = paramParser.parse();
-
-        if (keys.size() > 1)
-            throw new IllegalStateException("parameterizedName contains multiple ExtensionConfigs: " + parameterizedName);
-        if (keys.isEmpty())
-            throw new IllegalStateException("parameterizedName contains no ExtensionConfigs: " + parameterizedName);
-
-        this.name = keys.get(0);
-        this.parameters = new HashMap<>();
-        this.parameters.putAll(paramParser.params.get(this.name));
+        ParamParser paramParser = new ParamParser(parameterizedName).parse();
+        this.name = paramParser.getName();
+        this.parameters = paramParser.getParams();
     }
 
     public boolean isInternalExtension()
@@ -319,17 +312,29 @@ public class ExtensionConfig
 
     private static class ParamParser extends QuotedCSV
     {
-        Map<String, Map<String, String>> params;
+        private final String parameterizedName;
+        private String name;
+        private Map<String, String> params = new HashMap<>();
 
-        public ParamParser(String rawParams)
+        public ParamParser(String parameterizedName)
         {
-            super(false, rawParams);
+            super(false);
+            this.parameterizedName = parameterizedName;
+        }
+
+        public String getName()
+        {
+            return name;
+        }
+
+        public Map<String, String> getParams()
+        {
+            return params;
         }
 
         @Override
         protected void parsedParam(StringBuffer buffer, int valueLength, int paramNameIdx, int paramValueIdx)
         {
-            String extName = buffer.substring(0, valueLength);
             String paramName = "";
             String paramValue = null;
 
@@ -343,9 +348,7 @@ public class ExtensionConfig
                 paramName = buffer.substring(paramNameIdx);
             }
 
-            Map<String, String> paramMap = getParamMap(extName);
-            paramMap.put(paramName, paramValue);
-
+            params.put(paramName, paramValue);
             super.parsedParam(buffer, valueLength, paramNameIdx, paramValueIdx);
         }
 
@@ -353,35 +356,18 @@ public class ExtensionConfig
         protected void parsedValue(StringBuffer buffer)
         {
             String extName = buffer.toString();
-            getParamMap(extName);
+            if (name != null)
+                throw new IllegalArgumentException("parameterizedName contains multiple ExtensionConfigs: " + parameterizedName);
+            name = extName;
             super.parsedValue(buffer);
         }
 
-        private Map<String, String> getParamMap(String extName)
+        public ParamParser parse()
         {
-            if (params == null)
-            {
-                params = new HashMap<>();
-            }
-
-            Map<String, String> paramMap = params.get(extName);
-            if (paramMap == null)
-            {
-                paramMap = new HashMap<>();
-                params.put(extName, paramMap);
-            }
-            return paramMap;
-        }
-
-        public List<String> parse()
-        {
-            Iterator<String> iter = iterator();
-            while (iter.hasNext())
-            {
-                iter.next();
-            }
-
-            return new ArrayList<>(params.keySet());
+            addValue(parameterizedName);
+            if (StringUtil.isEmpty(name))
+                throw new IllegalArgumentException("parameterizedName contains no ExtensionConfigs: " + parameterizedName);
+            return this;
         }
     }
 }
