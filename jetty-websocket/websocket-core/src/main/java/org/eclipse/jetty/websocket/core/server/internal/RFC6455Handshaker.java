@@ -45,7 +45,6 @@ import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.websocket.core.Behavior;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.WebSocketConstants;
 import org.eclipse.jetty.websocket.core.WebSocketException;
 import org.eclipse.jetty.websocket.core.internal.ExtensionStack;
@@ -100,7 +99,7 @@ public final class RFC6455Handshaker implements Handshaker
             baseRequest,
             request,
             response,
-            new WebSocketComponents());
+            negotiator.getWebSocketComponents());
         if (LOG.isDebugEnabled())
             LOG.debug("negotiation {}", negotiation);
 
