@@ -298,10 +298,13 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
             }
         }
 
-        // Put requested internal Extensions into the negotiatedExtension list.
+        // Insert client requested internal Extensions into the negotiatedExtension list from the server.
+        // The order of extensions in the response is assumed to be the same as what the client negotiated.
         int i = 0;
         for (ExtensionConfig reqConfig : requestedExtensions)
         {
+            // If this is an internal extension insert in negotiatedExtensions at position i.
+            // If this is not an internal extension we must advance i only if this extension was negotiated by the server.
             if (reqConfig.isInternalExtension())
                 negotiatedExtensions.add(i++, reqConfig);
             else if (i < negotiatedExtensions.size() && reqConfig.getName().equals(negotiatedExtensions.get(i).getName()))

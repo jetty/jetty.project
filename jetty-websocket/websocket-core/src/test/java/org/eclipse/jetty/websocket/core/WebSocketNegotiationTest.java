@@ -369,7 +369,8 @@ public class WebSocketNegotiationTest extends WebSocketTester
             Arguments.of("ext1, ext2, @int1", "ext1, ext2, @int1"),
             Arguments.of("@int1, ext1, @int2, ext2, @int3", "@int1, ext1, @int2, ext2, @int3"),
             Arguments.of("ext1, ext1, ext1, @int1, ext2", "ext1, @int1, ext2"),
-            Arguments.of("ext1, @int1, ext1, ext1, ext2", "ext1, @int1, ext2")
+            Arguments.of("ext1, @int1, ext1, ext1, ext2", "ext1, @int1, ext2"),
+            Arguments.of("ext1, ext2, ext3, @int1", "ext1, ext2, ext3, @int1")
         );
     }
 
