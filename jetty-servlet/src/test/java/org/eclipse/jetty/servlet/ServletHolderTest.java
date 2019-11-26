@@ -20,10 +20,16 @@ package org.eclipse.jetty.servlet;
 
 import java.util.Collections;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import javax.servlet.ServletException;
 import javax.servlet.ServletRegistration;
 import javax.servlet.UnavailableException;
 import javax.servlet.http.HttpServlet;
 
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.log.StacklessLogging;
@@ -42,6 +48,89 @@ public class ServletHolderTest
 {
     public static class FakeServlet extends HttpServlet
     {
+        public AtomicInteger initCount = new AtomicInteger();
+
+        @Override
+        public void init() throws ServletException
+        {
+            super.init();
+            try
+            {
+                //Make the initialization last a little while so
+                //other request can run
+                Thread.sleep(1000);
+            }
+            catch (InterruptedException e)
+            {
+                throw new ServletException(e);
+            }
+            initCount.addAndGet(1);
+        }
+    }
+
+    @Test
+    public void testServletInitAtomic() throws Exception
+    {
+        Server server = new Server();
+        ServletContextHandler context = new ServletContextHandler();
+        final ServletHolder holder = new ServletHolder(Source.EMBEDDED);
+        holder.setHeldClass(FakeServlet.class);
+        holder.setName("Fake");
+        context.addServlet(holder, "/fake/*");
+        server.setHandler(context);
+        server.start();
+
+        final AtomicInteger t1Count = new AtomicInteger();
+        final AtomicInteger t2Count = new AtomicInteger();
+        final CountDownLatch t1Latch = new CountDownLatch(1);
+        final CountDownLatch t2Latch = new CountDownLatch(1);
+
+        //Test that 2 calls to holder.getServlet are atomic - only
+        //one should call servlet.init() and the other should be
+        //held waiting until that fully finishes.
+        Thread t1 = new Thread()
+        {
+            public void run()
+            {
+                try
+                {
+                    FakeServlet s = (FakeServlet)holder.getServlet();
+                    t1Count.set(s.initCount.get());
+                    t1Latch.countDown();
+                }
+                catch (ServletException e)
+                {
+                    fail(e);
+                }
+            }
+        };
+
+        Thread t2 = new Thread()
+        {
+            public void run()
+            {
+                try
+                {
+                    FakeServlet s = (FakeServlet)holder.getServlet();
+                    t2Count.set(s.initCount.get());
+                    t2Latch.countDown();
+                }
+                catch (ServletException e)
+                {
+                    fail(e);
+                }
+            }
+        };
+
+        t1.start();
+        Thread.sleep(500);
+        t2.start();
+
+        t1Latch.await(10L, TimeUnit.SECONDS);
+        t2Latch.await(10L, TimeUnit.SECONDS);
+
+        assertEquals(1, t1Count.get());
+        assertEquals(1, t2Count.get());
     }
 
     @Test
