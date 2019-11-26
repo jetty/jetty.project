@@ -124,6 +124,13 @@
       <version>1.1.1</version>
       <scope>test</scope>
     </dependency>
+    <!-- transitive dependency defined as a range and we don't want that -->
+    <dependency>
+      <groupId>net.minidev</groupId>
+      <artifactId>json-smart</artifactId>
+      <version>2.3</version>
+      <classifier>test</classifier>
+    </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-simple</artifactId>
