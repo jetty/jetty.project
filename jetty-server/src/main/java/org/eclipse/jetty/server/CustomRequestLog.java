@@ -231,10 +231,11 @@ import static java.lang.invoke.MethodType.methodType;
  * </tr>
  *
  * <tr>
- * <td valign="top">%{d}u</td>
+ * <td valign="top">%{d|r}u</td>
  * <td>
  * Remote user if the request was authenticated. May be bogus if return status (%s) is 401 (unauthorized).
  * Optional parameter d, with this parameter deferred authentication will also be checked.
+ * Optional parameter r, with this parameter {@link javax.servlet.http.HttpServletRequest#getRemoteUser()} is reported.
  * </td>
  * </tr>
  *
@@ -868,8 +869,12 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
                 String method;
                 if (arg == null || arg.isEmpty())
                     method = "logRequestAuthenticationWithDeferred";
-                else
+                else if ("d".equals(arg))
                     method = "logRequestAuthentication";
+                else if ("r".equals(arg))
+                    method = "logRequestRemoteUser";
+                else
+                    throw new IllegalArgumentException("Invalid arg for %u: " + arg);
 
                 specificHandle = lookup.findStatic(CustomRequestLog.class, method, logType);
                 break;
@@ -1165,6 +1170,11 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
     {
         long latency = System.currentTimeMillis() - request.getTimeStamp();
         b.append(TimeUnit.MILLISECONDS.toSeconds(latency));
+    }
+
+    private static void logRequestRemoteUser(StringBuilder b, Request request, Response response)
+    {
+        append(b, request.getRemoteUser());
     }
 
     private static void logRequestAuthentication(StringBuilder b, Request request, Response response)
