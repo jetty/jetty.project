@@ -54,21 +54,6 @@ public class Generator
      * The overhead (maximum) for a framing header. Assuming a maximum sized payload with masking key.
      */
     public static final int MAX_HEADER_LENGTH = 28;
-    private static byte[] mask = {0x00, (byte)0xF0, 0x0F, (byte)0xFF};
-
-    public static void putMask(ByteBuffer buffer)
-    {
-        buffer.put(mask, 0, mask.length);
-    }
-
-    public static void putPayload(ByteBuffer buffer, byte[] payload)
-    {
-        int len = payload.length;
-        for (int i = 0; i < len; i++)
-        {
-            buffer.put((byte)(payload[i] ^ mask[i % 4]));
-        }
-    }
 
     private final ByteBufferPool bufferPool;
     private final boolean readOnly;
@@ -80,7 +65,7 @@ public class Generator
      */
     public Generator(ByteBufferPool bufferPool)
     {
-        this(bufferPool, false);
+        this(bufferPool, true);
     }
 
     /**
@@ -177,10 +162,60 @@ public class Generator
         }
 
         // masking key
-        if (frame.isMasked() && !readOnly)
+        if (frame.isMasked())
+            buffer.put(frame.getMask());
+    }
+
+    /**
+     * Generate the whole frame (header + payload copy) into a single ByteBuffer.
+     * <p>
+     * Note: This is slow, moves lots of memory around. Only use this if you must (such as in unit testing).
+     *
+     * @param frame the frame to generate
+     * @param buf the buffer to output the generated frame to
+     */
+    public void generateWholeFrame(Frame frame, ByteBuffer buf)
+    {
+        generateHeaderBytes(frame, buf);
+        putPayload(buf, frame);
+    }
+
+    public ByteBuffer generatePayload(Frame frame)
+    {
+        ByteBuffer payload = readOnly ? frame.getPayload().slice() : frame.getPayload();
+        if (!frame.isMasked())
+            return payload;
+
+        ByteBuffer maskedPayload = bufferPool.acquire(frame.getPayloadLength(), false);
+        BufferUtil.clearToFill(maskedPayload);
+        putPayload(maskedPayload, frame);
+        BufferUtil.flipToFlush(maskedPayload, 0);
+        return maskedPayload;
+    }
+
+    public void putPayload(ByteBuffer buffer, Frame frame)
+    {
+        ByteBuffer payload = readOnly ? frame.getPayload().slice() : frame.getPayload();
+        if (!frame.isMasked())
+        {
+            buffer.put(payload);
+        }
+        else
+        {
+            // TODO: Is it more efficient to mask an int at a time? see maskPayload(ByteBuffer, Frame)
+            int len = payload.remaining();
+            for (int i = 0; i < len; i++)
+            {
+                buffer.put((byte)(payload.get(i) ^ frame.getMask()[i % 4]));
+            }
+        }
+    }
+
+    private void maskPayload(ByteBuffer buffer, Frame frame)
+    {
+        if (frame.isMasked())
         {
             byte[] mask = frame.getMask();
-            buffer.put(mask);
             int maskInt = 0;
             for (byte maskByte : mask)
             {
@@ -199,12 +234,12 @@ public class Generator
                 {
                     if (remaining >= 4)
                     {
-                        payload.putInt(start, payload.getInt(start) ^ maskInt);
+                        buffer.putInt(payload.getInt(start) ^ maskInt);
                         start += 4;
                     }
                     else
                     {
-                        payload.put(start, (byte)(payload.get(start) ^ mask[maskOffset & 3]));
+                        buffer.put((byte)(payload.get(start) ^ mask[maskOffset & 3]));
                         ++start;
                         ++maskOffset;
                     }
@@ -213,28 +248,9 @@ public class Generator
         }
     }
 
-    /**
-     * Generate the whole frame (header + payload copy) into a single ByteBuffer.
-     * <p>
-     * Note: This is slow, moves lots of memory around. Only use this if you must (such as in unit testing).
-     *
-     * @param frame the frame to generate
-     * @param buf the buffer to output the generated frame to
-     */
-    public void generateWholeFrame(Frame frame, ByteBuffer buf)
+    public boolean isReadOnly()
     {
-        generateHeaderBytes(frame, buf);
-        if (frame.hasPayload())
-        {
-            if (readOnly)
-            {
-                buf.put(frame.getPayload().slice());
-            }
-            else
-            {
-                buf.put(frame.getPayload());
-            }
-        }
+        return readOnly;
     }
 
     public ByteBufferPool getBufferPool()

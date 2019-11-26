@@ -1278,10 +1278,9 @@ public class GeneratorTest
             {
                 ByteBuffer header = generator.generateHeaderBytes(f);
                 totalBytes += BufferUtil.put(header, completeBuf);
-
-                if (f.hasPayload())
+                ByteBuffer payload = generator.generatePayload(f);
+                if (payload.hasRemaining())
                 {
-                    ByteBuffer payload = f.getPayload();
                     totalBytes += payload.remaining();
                     totalParts++;
                     completeBuf.put(payload.slice());
