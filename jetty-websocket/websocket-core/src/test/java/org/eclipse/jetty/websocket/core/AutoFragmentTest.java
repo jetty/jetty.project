@@ -71,7 +71,50 @@ public class AutoFragmentTest
     }
 
     @Test
-    public void testAutoFragmentToMaxFrameSize() throws Exception
+    public void testOutgoingAutoFragmentToMaxFrameSize() throws Exception
+    {
+        TestFrameHandler clientHandler = new TestFrameHandler();
+        CompletableFuture<FrameHandler.CoreSession> connect = client.connect(clientHandler, serverUri);
+        connect.get(5, TimeUnit.SECONDS);
+
+        // Turn off fragmentation on the server.
+        assertTrue(serverHandler.open.await(5, TimeUnit.SECONDS));
+        serverHandler.coreSession.setMaxFrameSize(0);
+        serverHandler.coreSession.setAutoFragment(false);
+
+        // Set the client to fragment to the maxFrameSize.
+        int maxFrameSize = 30;
+        clientHandler.coreSession.setMaxFrameSize(maxFrameSize);
+        clientHandler.coreSession.setAutoFragment(true);
+
+        // Send a message which is too large.
+        int size = maxFrameSize * 2;
+        byte[] message = new byte[size];
+        Arrays.fill(message, 0, size, (byte)'X');
+        clientHandler.coreSession.sendFrame(new Frame(OpCode.BINARY, BufferUtil.toBuffer(message)), Callback.NOOP, false);
+
+        // We should not receive any frames larger than the max frame size.
+        // So our message should be split into two frames.
+        Frame frame = serverHandler.receivedFrames.poll(5, TimeUnit.SECONDS);
+        assertNotNull(frame);
+        assertThat(frame.getOpCode(), is(OpCode.BINARY));
+        assertThat(frame.getPayloadLength(), is(maxFrameSize));
+        assertThat(frame.isFin(), is(false));
+
+        // Second frame should be final and contain rest of the data.
+        frame = serverHandler.receivedFrames.poll(5, TimeUnit.SECONDS);
+        assertNotNull(frame);
+        assertThat(frame.getOpCode(), is(OpCode.CONTINUATION));
+        assertThat(frame.getPayloadLength(), is(maxFrameSize));
+        assertThat(frame.isFin(), is(true));
+
+        clientHandler.sendClose();
+        assertTrue(serverHandler.closed.await(5, TimeUnit.SECONDS));
+        assertTrue(clientHandler.closed.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testIncomingAutoFragmentToMaxFrameSize() throws Exception
     {
         TestFrameHandler clientHandler = new TestFrameHandler();
         CompletableFuture<FrameHandler.CoreSession> connect = client.connect(clientHandler, serverUri);
