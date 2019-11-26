@@ -32,7 +32,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class GeneratorParserRoundtripTest
+public class GeneratorParserRoundTripTest
 {
     private ByteBufferPool bufferPool = new MappedByteBufferPool();
 
@@ -91,7 +91,7 @@ public class GeneratorParserRoundtripTest
 
             // Generate Buffer
             ByteBuffer header = gen.generateHeaderBytes(frame);
-            ByteBuffer payload = frame.getPayload();
+            ByteBuffer payload = gen.generatePayload(frame);
             out.put(header);
             out.put(payload);
 

@@ -172,7 +172,7 @@ public class Generator
      * Note: This is slow, moves lots of memory around. Only use this if you must (such as in unit testing).
      *
      * @param frame the frame to generate
-     * @param buf the buffer to output the generated frame to
+     * @param buf the buffer in fill mode to output the generated frame to
      */
     public void generateWholeFrame(Frame frame, ByteBuffer buf)
     {

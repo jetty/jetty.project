@@ -246,7 +246,11 @@ public class FrameFlusher extends IteratingCallback
                     entry.generateHeaderBytes(batchBuffer);
                     ByteBuffer payload = entry.frame.getPayload();
                     if (BufferUtil.hasContent(payload))
+                    {
+                        int pos = BufferUtil.flipToFill(batchBuffer);
                         generator.putPayload(batchBuffer, entry.frame);
+                        BufferUtil.flipToFlush(batchBuffer, pos);
+                    }
                 }
                 else
                 {

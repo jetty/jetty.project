@@ -117,6 +117,7 @@ public class MessageOutputStream extends OutputStream
             frame.setPayload(buffer);
             frame.setFin(fin);
 
+            int initialBufferSize = buffer.remaining();
             try (SharedBlockingCallback.Blocker b = blocker.acquire())
             {
                 coreSession.sendFrame(frame, b, false);
@@ -127,8 +128,8 @@ public class MessageOutputStream extends OutputStream
             // Any flush after the first will be a CONTINUATION frame.
             frame = new Frame(OpCode.CONTINUATION);
 
-            // Buffer has been sent, buffer should have been consumed
-            assert buffer.remaining() == 0;
+            // Buffer has been sent, but buffer should not have been consumed.
+            assert buffer.remaining() == initialBufferSize;
 
             BufferUtil.clearToFill(buffer);
         }
