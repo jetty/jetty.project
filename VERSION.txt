@@ -1,3 +1,5 @@
+jetty-10.0.0-SNAPSHOT
+
 jetty-10.0.0.alpha1 - 26 November 2019
  + 97 Permanent UnavailableException thrown during servlet request handling
    should cause servlet destroy
