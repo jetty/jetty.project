@@ -193,6 +193,12 @@ jetty-10.0.0-alpha0 - 11 July
  + 3849 ClosedChannelException from jetty-test-webapp javax websocket chat
    example
 
+jetty-9.4.24.v20191120 - 20 November 2019
+ + 3083 The ini-template for jetty.console-capture.dir does not match the
+   default value
+ + 4128 OpenIdCredetials can't decode JWT ID token
+ + 4334 Better test ErrorHandler changes
+
 jetty-9.4.23.v20191118 - 18 November 2019
  + 1485 Add systemd service file
  + 2266 Jetty maven plugin reload is triggered each time the
