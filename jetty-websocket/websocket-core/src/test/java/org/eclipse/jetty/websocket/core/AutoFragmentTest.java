@@ -247,7 +247,8 @@ public class AutoFragmentTest
         serverHandler.coreSession.setAutoFragment(true);
 
         // Send the payload which should be fragmented by the server permessage-deflate.
-        serverHandler.sendFrame(new Frame(OpCode.BINARY, BufferUtil.copy(payload)), Callback.NOOP, false);
+        ByteBuffer sendPayload = BufferUtil.copy(payload);
+        serverHandler.sendFrame(new Frame(OpCode.BINARY, sendPayload), Callback.NOOP, false);
 
         // Assemble the message from the fragmented frames.
         ByteBuffer message = BufferUtil.allocate(payload.remaining()*2);
@@ -266,6 +267,7 @@ public class AutoFragmentTest
 
         // We received correct payload in 2 frames.
         assertThat(message, is(payload));
+        assertThat(message, is(sendPayload));
         assertThat(numFrames, is(2));
 
         clientHandler.sendClose();
@@ -291,4 +293,6 @@ public class AutoFragmentTest
 
         return BufferUtil.toBuffer(out.toByteArray());
     }
+
+    // TODO: test buffer not changed with outgoing autoFragment when it gets merged.
 }
