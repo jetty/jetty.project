@@ -235,49 +235,46 @@ public class FrameFlusher extends IteratingCallback
 
                 if (batch)
                 {
-                    // Acquire a batchBuffer if we don't have one
+                    // Acquire a batchBuffer if we don't have one.
                     if (batchBuffer == null)
                     {
                         batchBuffer = acquireBuffer(bufferSize);
                         buffers.add(batchBuffer);
                     }
 
-                    // generate the frame into the batchBuffer
-                    entry.generateHeaderBytes(batchBuffer);
-                    ByteBuffer payload = entry.frame.getPayload();
-                    if (BufferUtil.hasContent(payload))
-                    {
-                        int pos = BufferUtil.flipToFill(batchBuffer);
-                        generator.putPayload(batchBuffer, entry.frame);
-                        BufferUtil.flipToFlush(batchBuffer, pos);
-                    }
+                    // Generate the frame into the batchBuffer.
+                    generator.generateHeader(entry.frame, batchBuffer);
+                    generator.generatePayload(entry.frame, batchBuffer);
                 }
                 else
                 {
                     if (batchBuffer != null && batchSpace >= Generator.MAX_HEADER_LENGTH)
                     {
                         // Use the batch space for our header.
-                        entry.generateHeaderBytes(batchBuffer);
+                        generator.generateHeader(entry.frame, batchBuffer);
                     }
                     else
                     {
-                        // Add headers and payload to the list of buffers.
+                        // Add headers to the list of buffers.
                         ByteBuffer headerBuffer = acquireBuffer(Generator.MAX_HEADER_LENGTH);
                         releasableBuffers.add(headerBuffer);
+                        generator.generateHeader(entry.frame, headerBuffer);
                         buffers.add(headerBuffer);
-                        entry.generateHeaderBytes(headerBuffer);
                     }
 
                     // Add the payload to the list of buffers.
                     ByteBuffer payload = entry.frame.getPayload();
-                    if (entry.frame.isMasked())
-                    {
-                        payload = generator.generatePayload(entry.frame);
-                        releasableBuffers.add(payload);
-                    }
                     if (BufferUtil.hasContent(payload))
-                        buffers.add(payload.slice());
+                    {
+                        if (entry.frame.isMasked())
+                        {
+                            payload = acquireBuffer(entry.frame.getPayloadLength());
+                            releasableBuffers.add(payload);
+                            generator.generatePayload(entry.frame, payload);
+                        }
 
+                        buffers.add(payload.slice());
+                    }
                     flush = true;
                 }
 
@@ -313,7 +310,6 @@ public class FrameFlusher extends IteratingCallback
             if (entry.frame.getOpCode() == OpCode.CLOSE)
                 endPoint.shutdownOutput();
             notifyCallbackSuccess(entry.callback);
-            entry.release();
         }
         previousEntries.clear();
 
@@ -437,7 +433,6 @@ public class FrameFlusher extends IteratingCallback
         for (Entry entry : failedEntries)
         {
             notifyCallbackFailure(entry.callback, failure);
-            entry.release();
         }
 
         failedEntries.clear();
@@ -522,22 +517,6 @@ public class FrameFlusher extends IteratingCallback
         private Entry(Frame frame, Callback callback, boolean batch)
         {
             super(frame, callback, batch);
-        }
-
-        private void generateHeaderBytes(ByteBuffer buffer)
-        {
-            int pos = BufferUtil.flipToFill(buffer);
-            generator.generateHeaderBytes(frame, buffer);
-            BufferUtil.flipToFlush(buffer, pos);
-        }
-
-        private void release()
-        {
-            if (headerBuffer != null)
-            {
-                generator.getBufferPool().release(headerBuffer);
-                headerBuffer = null;
-            }
         }
 
         private long getTimeOfCreation()

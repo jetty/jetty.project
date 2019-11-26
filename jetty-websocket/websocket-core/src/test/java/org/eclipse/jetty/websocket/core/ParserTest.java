@@ -25,7 +25,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.toolchain.test.Hex;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
@@ -1660,13 +1659,12 @@ public class ParserTest
 
     private ByteBuffer generate(Behavior behavior, List<Frame> frames)
     {
-        Generator generator = new Generator(new MappedByteBufferPool());
+        Generator generator = new Generator();
         int length = frames.stream().mapToInt(frame -> frame.getPayloadLength() + Generator.MAX_HEADER_LENGTH).sum();
-        ByteBuffer buffer = ByteBuffer.allocate(length);
+        ByteBuffer buffer = BufferUtil.allocate(length);
         frames.stream()
             .peek(frame -> maskIfClient(behavior, frame))
             .forEach(frame -> generator.generateWholeFrame(frame, buffer));
-        BufferUtil.flipToFlush(buffer, 0);
         return buffer;
     }
 

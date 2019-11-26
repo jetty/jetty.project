@@ -20,7 +20,6 @@ package org.eclipse.jetty.websocket.core.internal;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.core.Frame;
 
@@ -55,41 +54,26 @@ public class Generator
      */
     public static final int MAX_HEADER_LENGTH = 28;
 
-    private final ByteBufferPool bufferPool;
-    private final boolean readOnly;
-
     /**
-     * Construct Generator with provided policy and bufferPool
-     *
-     * @param bufferPool the buffer pool to use
+     * Generate the whole frame (header + payload copy) into a single ByteBuffer.
+     * @param frame the frame to generate.
+     * @param buffer the buffer to output the generated frame to.
      */
-    public Generator(ByteBufferPool bufferPool)
+    public void generateWholeFrame(Frame frame, ByteBuffer buffer)
     {
-        this(bufferPool, true);
+        generateHeader(frame, buffer);
+        generatePayload(frame, buffer);
     }
 
     /**
-     * Construct Generator with provided policy and bufferPool
-     *
-     * @param bufferPool the buffer pool to use
+     * Generate the header bytes of a frame into a single ByteBuffer.
+     * @param frame the frame to generate.
+     * @param buffer the buffer to output the generated frame to.
      */
-    public Generator(ByteBufferPool bufferPool, boolean readOnly)
+    public void generateHeader(Frame frame, ByteBuffer buffer)
     {
-        this.bufferPool = bufferPool;
-        this.readOnly = readOnly;
-    }
+        int pos = BufferUtil.flipToFill(buffer);
 
-    public ByteBuffer generateHeaderBytes(Frame frame)
-    {
-        ByteBuffer buffer = bufferPool.acquire(MAX_HEADER_LENGTH, false);
-        BufferUtil.clearToFill(buffer);
-        generateHeaderBytes(frame, buffer);
-        BufferUtil.flipToFlush(buffer, 0);
-        return buffer;
-    }
-
-    public void generateHeaderBytes(Frame frame, ByteBuffer buffer)
-    {
         /*
          * start the generation process
          */
@@ -164,51 +148,28 @@ public class Generator
         // masking key
         if (frame.isMasked())
             buffer.put(frame.getMask());
+
+        BufferUtil.flipToFlush(buffer, pos);
     }
 
     /**
-     * Generate the whole frame (header + payload copy) into a single ByteBuffer.
-     * <p>
-     * Note: This is slow, moves lots of memory around. Only use this if you must (such as in unit testing).
-     *
-     * @param frame the frame to generate
-     * @param buf the buffer in fill mode to output the generated frame to
+     * Generate the payload of a frame into a single ByteBuffer, if the frame has a mask the payload
+     * will be masked as it is copied to the output buffer.
+     * @param frame the frame to generate.
+     * @param buffer the buffer to output the generated frame to.
      */
-    public void generateWholeFrame(Frame frame, ByteBuffer buf)
+    public void generatePayload(Frame frame, ByteBuffer buffer)
     {
-        generateHeaderBytes(frame, buf);
-        putPayload(buf, frame);
-    }
-
-    public ByteBuffer generatePayload(Frame frame)
-    {
-        ByteBuffer payload = readOnly ? frame.getPayload().slice() : frame.getPayload();
-        if (!frame.isMasked())
-            return payload;
-
-        ByteBuffer maskedPayload = bufferPool.acquire(frame.getPayloadLength(), false);
-        BufferUtil.clearToFill(maskedPayload);
-        putPayload(maskedPayload, frame);
-        BufferUtil.flipToFlush(maskedPayload, 0);
-        return maskedPayload;
-    }
-
-    public void putPayload(ByteBuffer buffer, Frame frame)
-    {
-        ByteBuffer payload = readOnly ? frame.getPayload().slice() : frame.getPayload();
-        if (!frame.isMasked())
+        int pos = BufferUtil.flipToFill(buffer);
+        ByteBuffer payload = frame.getPayload().slice();
+        if (BufferUtil.hasContent(payload))
         {
-            buffer.put(payload);
+            if (!frame.isMasked())
+                buffer.put(payload);
+            else
+                maskPayload(buffer, frame);
         }
-        else
-        {
-            // TODO: Is it more efficient to mask an int at a time? see maskPayload(ByteBuffer, Frame)
-            int len = payload.remaining();
-            for (int i = 0; i < len; i++)
-            {
-                buffer.put((byte)(payload.get(i) ^ frame.getMask()[i % 4]));
-            }
-        }
+        BufferUtil.flipToFlush(buffer, pos);
     }
 
     private void maskPayload(ByteBuffer buffer, Frame frame)
@@ -246,15 +207,5 @@ public class Generator
                 }
             }
         }
-    }
-
-    public boolean isReadOnly()
-    {
-        return readOnly;
-    }
-
-    public ByteBufferPool getBufferPool()
-    {
-        return bufferPool;
     }
 }

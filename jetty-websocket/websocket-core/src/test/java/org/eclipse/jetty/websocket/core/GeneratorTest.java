@@ -24,7 +24,6 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.toolchain.test.ByteBufferAssert;
 import org.eclipse.jetty.toolchain.test.Hex;
 import org.eclipse.jetty.util.BufferUtil;
@@ -46,7 +45,7 @@ public class GeneratorTest
 {
     private static final Logger LOG = Log.getLogger(Helper.class);
 
-    private static Generator generator = new Generator(new MappedByteBufferPool());
+    private static Generator generator = new Generator();
     private static WebSocketCoreSession coreSession = newWebSocketCoreSession(Behavior.SERVER);
 
     private static WebSocketCoreSession newWebSocketCoreSession(Behavior behavior)
@@ -1270,25 +1269,26 @@ public class GeneratorTest
                 completeBufSize += Generator.MAX_HEADER_LENGTH + f.getPayloadLength();
             }
 
-            ByteBuffer completeBuf = ByteBuffer.allocate(completeBufSize);
-            BufferUtil.clearToFill(completeBuf);
+            ByteBuffer completeBuf = BufferUtil.allocate(completeBufSize);
 
             // Generate from all frames
             for (Frame f : frames)
             {
-                ByteBuffer header = generator.generateHeaderBytes(f);
-                totalBytes += BufferUtil.put(header, completeBuf);
-                ByteBuffer payload = generator.generatePayload(f);
-                if (payload.hasRemaining())
+                int remaining = completeBuf.remaining();
+                generator.generateHeader(f, completeBuf);
+                totalBytes += completeBuf.remaining() - remaining;
+
+                remaining = completeBuf.remaining();
+                generator.generatePayload(f, completeBuf);
+
+                if (completeBuf.remaining() - remaining > 0)
                 {
-                    totalBytes += payload.remaining();
+                    totalBytes += completeBuf.remaining() - remaining;
                     totalParts++;
-                    completeBuf.put(payload.slice());
                 }
             }
 
             // Return results
-            BufferUtil.flipToFlush(completeBuf, 0);
             return completeBuf;
         }
     }
@@ -1322,9 +1322,8 @@ public class GeneratorTest
     private static ByteBuffer generate(Frame... frames)
     {
         int length = Arrays.stream(frames).mapToInt(frame -> frame.getPayloadLength() + Generator.MAX_HEADER_LENGTH).sum();
-        ByteBuffer buffer = ByteBuffer.allocate(length);
+        ByteBuffer buffer = BufferUtil.allocate(length);
         Arrays.stream(frames).forEach(frame -> generator.generateWholeFrame(frame, buffer));
-        BufferUtil.flipToFlush(buffer, 0);
         return buffer;
     }
 }

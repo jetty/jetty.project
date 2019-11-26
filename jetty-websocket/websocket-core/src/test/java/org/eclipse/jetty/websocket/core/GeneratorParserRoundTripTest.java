@@ -24,7 +24,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.core.internal.Generator;
 import org.junit.jupiter.api.Test;
 
@@ -39,7 +38,7 @@ public class GeneratorParserRoundTripTest
     @Test
     public void testParserAndGenerator() throws Exception
     {
-        Generator gen = new Generator(bufferPool);
+        Generator gen = new Generator();
         ParserCapture capture = new ParserCapture();
 
         String message = "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF";
@@ -48,15 +47,11 @@ public class GeneratorParserRoundTripTest
         try
         {
             // Generate Buffer
-            BufferUtil.flipToFill(out);
             Frame frame = new Frame(OpCode.TEXT).setPayload(message);
-            ByteBuffer header = gen.generateHeaderBytes(frame);
-            ByteBuffer payload = frame.getPayload();
-            out.put(header);
-            out.put(payload);
+            gen.generateHeader(frame, out);
+            gen.generatePayload(frame, out);
 
             // Parse Buffer
-            BufferUtil.flipToFlush(out, 0);
             capture.parse(out);
         }
         finally
@@ -72,13 +67,12 @@ public class GeneratorParserRoundTripTest
     @Test
     public void testParserAndGeneratorMasked() throws Exception
     {
-        Generator gen = new Generator(bufferPool);
+        Generator gen = new Generator();
         ParserCapture capture = new ParserCapture(true, Behavior.SERVER);
 
         String message = "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF";
 
         ByteBuffer out = bufferPool.acquire(8192, false);
-        BufferUtil.flipToFill(out);
         try
         {
             // Setup Frame
@@ -90,13 +84,10 @@ public class GeneratorParserRoundTripTest
             frame.setMask(mask);
 
             // Generate Buffer
-            ByteBuffer header = gen.generateHeaderBytes(frame);
-            ByteBuffer payload = gen.generatePayload(frame);
-            out.put(header);
-            out.put(payload);
+            gen.generateHeader(frame, out);
+            gen.generatePayload(frame, out);
 
             // Parse Buffer
-            BufferUtil.flipToFlush(out, 0);
             capture.parse(out);
         }
         finally
