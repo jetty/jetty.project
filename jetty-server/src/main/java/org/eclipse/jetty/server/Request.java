@@ -81,6 +81,7 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.http.MultiPartFormInputStream;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.io.RuntimeIOException;
@@ -141,7 +142,6 @@ import org.eclipse.jetty.util.log.Logger;
 public class Request implements HttpServletRequest
 {
     public static final String __MULTIPART_CONFIG_ELEMENT = "org.eclipse.jetty.multipartConfig";
-    public static final String __MULTIPARTS = "org.eclipse.jetty.multiParts";
 
     private static final Logger LOG = Log.getLogger(Request.class);
     private static final Collection<Locale> __defaultLocale = Collections.singleton(Locale.getDefault());
@@ -228,7 +228,7 @@ public class Request implements HttpServletRequest
     private HttpSession _session;
     private SessionHandler _sessionHandler;
     private long _timeStamp;
-    private MultiParts _multiParts; //if the request is a multi-part mime
+    private MultiPartFormInputStream _multiParts; //if the request is a multi-part mime
     private AsyncContextState _async;
     private List<Session> _sessions; //list of sessions used during lifetime of request
 
@@ -1504,6 +1504,19 @@ public class Request implements HttpServletRequest
             for (Session s:_sessions)
                 leaveSession(s);
         }
+
+        //Clean up any tmp files created by MultiPartInputStream
+        if (_multiParts != null)
+        {
+            try
+            {
+                _multiParts.deleteParts();
+            }
+            catch (Throwable e)
+            {
+                LOG.warn("Errors deleting multipart tmp files", e);
+            }
+        }
     }
     
     /**
@@ -2306,16 +2319,12 @@ public class Request implements HttpServletRequest
     private Collection<Part> getParts(MultiMap<String> params) throws IOException
     {
         if (_multiParts == null)
-            _multiParts = (MultiParts)getAttribute(__MULTIPARTS);
-
-        if (_multiParts == null)
         {
             MultipartConfigElement config = (MultipartConfigElement)getAttribute(__MULTIPART_CONFIG_ELEMENT);
             if (config == null)
                 throw new IllegalStateException("No multipart config for servlet");
 
             _multiParts = newMultiParts(config);
-            setAttribute(__MULTIPARTS, _multiParts);
             Collection<Part> parts = _multiParts.getParts();
 
             String formCharset = null;
@@ -2377,10 +2386,10 @@ public class Request implements HttpServletRequest
         return _multiParts.getParts();
     }
 
-    private MultiParts newMultiParts(MultipartConfigElement config) throws IOException
+    private MultiPartFormInputStream newMultiParts(MultipartConfigElement config) throws IOException
     {
-        return new MultiParts(getInputStream(), getContentType(), config,
-            (_context != null ? (File)_context.getAttribute("javax.servlet.context.tempdir") : null), this);
+        return new MultiPartFormInputStream(getInputStream(), getContentType(), config,
+            (_context != null ? (File)_context.getAttribute("javax.servlet.context.tempdir") : null));
     }
 
     @Override
