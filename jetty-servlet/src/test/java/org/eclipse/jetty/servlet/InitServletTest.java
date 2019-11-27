@@ -59,7 +59,7 @@ public class InitServletTest
             {
                 //Make the initialization last a little while so
                 //other request can run
-                Thread.sleep(5000);
+                Thread.sleep(2000);
             }
             catch (InterruptedException e)
             {
@@ -76,6 +76,7 @@ public class InitServletTest
             if (initCount.get() != 1)
             {
                 resp.sendError(500, "Servlet not initialized!");
+                System.err.println("NOT INIT");
             }
         }
     }
@@ -130,7 +131,7 @@ public class InitServletTest
             r1.method(HttpMethod.GET).send(l);
 
             //Need to give 1st request a head start before request2
-            Thread.sleep(1000);
+            Thread.sleep(500);
             
             //req2: should see servlet fully initialized by request1
             Request r2 = client.newRequest("http://localhost:" + port + "/r2");
