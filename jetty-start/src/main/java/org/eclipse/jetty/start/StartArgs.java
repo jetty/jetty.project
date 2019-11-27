@@ -705,7 +705,7 @@ public class StartArgs
                 }
                 else
                 {
-                    cmd.addRawArg(x);
+                    cmd.addRawArg(getProperties().expand(x));
                 }
             }
 

@@ -31,6 +31,7 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.startsWith;
@@ -167,6 +168,37 @@ public class MainTest
         assertThat("jetty.base", baseHome.getBase(), is(homePath.toString()));
 
         ConfigurationAssert.assertConfiguration(baseHome, args, "assert-home-with-jvm.txt");
+    }
+
+    @Test
+    public void testJvmArgExpansion() throws Exception
+    {
+        List<String> cmdLineArgs = new ArrayList<>();
+
+        Path homePath = MavenTestingUtils.getTestResourceDir("dist-home").toPath().toRealPath();
+        cmdLineArgs.add("jetty.home=" + homePath.toString());
+        cmdLineArgs.add("user.dir=" + homePath.toString());
+
+        // JVM args
+        cmdLineArgs.add("--exec");
+        cmdLineArgs.add("-Xms1g");
+        cmdLineArgs.add("-Xmx4g");
+        cmdLineArgs.add("-Xloggc:${jetty.base}/logs/gc-${java.version}.log");
+
+        Main main = new Main();
+
+        StartArgs args = main.processCommandLine(cmdLineArgs.toArray(new String[cmdLineArgs.size()]));
+        BaseHome baseHome = main.getBaseHome();
+
+        assertThat("jetty.home", baseHome.getHome(), is(homePath.toString()));
+        assertThat("jetty.base", baseHome.getBase(), is(homePath.toString()));
+
+        CommandLineBuilder commandLineBuilder = args.getMainArgs(true);
+        String commandLine = commandLineBuilder.toString("\n");
+        String expectedExpansion = String.format("-Xloggc:%s/logs/gc-%s.log",
+            baseHome.getBase(), System.getProperty("java.version")
+        );
+        assertThat(commandLine, containsString(expectedExpansion));
     }
 
     @Test
