@@ -23,7 +23,6 @@ import java.net.SocketAddress;
 import java.time.Duration;
 import java.util.Objects;
 
-import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -35,7 +34,7 @@ import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 
-public class WebSocketSession extends AbstractLifeCycle implements Session, SuspendToken, Dumpable
+public class WebSocketSession implements Session, SuspendToken, Dumpable
 {
     private static final Logger LOG = Log.getLogger(WebSocketSession.class);
     private final FrameHandler.CoreSession coreSession;
