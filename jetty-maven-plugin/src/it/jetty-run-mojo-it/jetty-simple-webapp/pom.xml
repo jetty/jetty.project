@@ -88,6 +88,7 @@
         <configuration>
           <systemPropertyVariables>
             <jetty.port.file>${jetty.port.file}</jetty.port.file>
+            <context.path>/setbycontextxml</context.path>
             <pingServlet>true</pingServlet>
             <helloServlet>true</helloServlet>
             <helloTestServlet>true</helloTestServlet>
@@ -117,6 +118,7 @@
               </systemProperties>
               <nonBlocking>true</nonBlocking>
               <jettyXml>${basedir}/src/config/jetty.xml</jettyXml>
+              <contextXml>${basedir}/src/config/context.xml</contextXml>
               <useTestScope>true</useTestScope>
             </configuration>
           </execution>
