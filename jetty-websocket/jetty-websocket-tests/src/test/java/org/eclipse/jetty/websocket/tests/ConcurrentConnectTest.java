@@ -134,11 +134,6 @@ public class ConcurrentConnectTest
         }
 
         closeListener.closeLatch.await(5, TimeUnit.SECONDS);
-        for (EventSocket l : listeners)
-        {
-            assertTrue(((WebSocketSession)l.session).isStopped());
-        }
-
         assertTrue(client.getOpenSessions().isEmpty());
         assertTrue(client.getContainedBeans(WebSocketSession.class).isEmpty());
     }
