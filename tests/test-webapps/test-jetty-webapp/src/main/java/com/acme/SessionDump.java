@@ -41,7 +41,7 @@ public class SessionDump extends HttpServlet
     /**
      * Simple object attribute to test serialization
      */
-    public class ObjectAttributeValue implements java.io.Serializable
+    public static class ObjectAttributeValue implements java.io.Serializable
     {
         long l;
 
@@ -58,8 +58,6 @@ public class SessionDump extends HttpServlet
 
     int redirectCount = 0;
 
-    String pageType;
-
     @Override
     public void init(ServletConfig config)
         throws ServletException
@@ -67,8 +65,7 @@ public class SessionDump extends HttpServlet
         super.init(config);
     }
 
-    protected void handleForm(HttpServletRequest request,
-                              HttpServletResponse response)
+    protected void handleForm(HttpServletRequest request)
     {
         HttpSession session = request.getSession(false);
         String action = request.getParameter("Action");
@@ -99,9 +96,9 @@ public class SessionDump extends HttpServlet
     @Override
     public void doPost(HttpServletRequest request,
                        HttpServletResponse response)
-        throws ServletException, IOException
+        throws IOException
     {
-        handleForm(request, response);
+        handleForm(request);
         String nextUrl = getURI(request) + "?R=" + redirectCount++;
         String encodedUrl = response.encodeRedirectURL(nextUrl);
         response.sendRedirect(encodedUrl);
@@ -110,9 +107,9 @@ public class SessionDump extends HttpServlet
     @Override
     public void doGet(HttpServletRequest request,
                       HttpServletResponse response)
-        throws ServletException, IOException
+        throws IOException
     {
-        handleForm(request, response);
+        handleForm(request);
 
         response.setContentType("text/html");
 
@@ -124,6 +121,7 @@ public class SessionDump extends HttpServlet
         }
         catch (IllegalStateException e)
         {
+            log("Session already invalidated", e);
             session = null;
         }
 
