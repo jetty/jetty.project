@@ -30,10 +30,6 @@ import org.eclipse.jetty.http.MultiPartFormInputStream;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
 
-/*
- * Used to switch between the old and new implementation of MultiPart Form InputStream Parsing.
- * The new implementation is preferred will be used as default unless specified otherwise constructor.
- */
 public interface MultiParts extends Closeable
 {
     Collection<Part> getParts() throws IOException;
