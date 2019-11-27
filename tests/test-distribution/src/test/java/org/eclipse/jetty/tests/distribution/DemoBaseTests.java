@@ -193,7 +193,7 @@ public class DemoBaseTests extends AbstractDistributionTest
         };
         try (DistributionTester.Run run = distribution.start(args))
         {
-            assertTrue(run.awaitConsoleLogsFor("Started @", 10, TimeUnit.SECONDS));
+            assertTrue(run.awaitConsoleLogsFor("Started ", 10, TimeUnit.SECONDS));
 
             startHttpClient();
             client.setFollowRedirects(true);
