@@ -2379,7 +2379,7 @@ public class Request implements HttpServletRequest
 
     private MultiParts newMultiParts(MultipartConfigElement config) throws IOException
     {
-        return new MultiParts.MultiPartsHttpParser(getInputStream(), getContentType(), config,
+        return new MultiParts(getInputStream(), getContentType(), config,
             (_context != null ? (File)_context.getAttribute("javax.servlet.context.tempdir") : null), this);
     }
 

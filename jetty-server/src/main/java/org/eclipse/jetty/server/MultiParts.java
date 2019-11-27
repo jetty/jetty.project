@@ -30,55 +30,40 @@ import org.eclipse.jetty.http.MultiPartFormInputStream;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
 
-public interface MultiParts extends Closeable
+public class MultiParts implements Closeable
 {
-    Collection<Part> getParts() throws IOException;
+    private final MultiPartFormInputStream _httpParser;
+    private final ContextHandler.Context _context;
 
-    Part getPart(String name) throws IOException;
-
-    boolean isEmpty();
-
-    ContextHandler.Context getContext();
-
-    class MultiPartsHttpParser implements MultiParts
+    public MultiParts(InputStream in, String contentType, MultipartConfigElement config, File contextTmpDir, Request request)
     {
-        private final MultiPartFormInputStream _httpParser;
-        private final ContextHandler.Context _context;
+        _httpParser = new MultiPartFormInputStream(in, contentType, config, contextTmpDir);
+        _context = request.getContext();
+    }
 
-        public MultiPartsHttpParser(InputStream in, String contentType, MultipartConfigElement config, File contextTmpDir, Request request) throws IOException
-        {
-            _httpParser = new MultiPartFormInputStream(in, contentType, config, contextTmpDir);
-            _context = request.getContext();
-        }
+    public Collection<Part> getParts() throws IOException
+    {
+        return _httpParser.getParts();
+    }
 
-        @Override
-        public Collection<Part> getParts() throws IOException
-        {
-            return _httpParser.getParts();
-        }
+    public Part getPart(String name) throws IOException
+    {
+        return _httpParser.getPart(name);
+    }
 
-        @Override
-        public Part getPart(String name) throws IOException
-        {
-            return _httpParser.getPart(name);
-        }
+    @Override
+    public void close()
+    {
+        _httpParser.deleteParts();
+    }
 
-        @Override
-        public void close()
-        {
-            _httpParser.deleteParts();
-        }
+    public boolean isEmpty()
+    {
+        return _httpParser.isEmpty();
+    }
 
-        @Override
-        public boolean isEmpty()
-        {
-            return _httpParser.isEmpty();
-        }
-
-        @Override
-        public Context getContext()
-        {
-            return _context;
-        }
+    public Context getContext()
+    {
+        return _context;
     }
 }
