@@ -1159,7 +1159,7 @@ public class DoSFilter implements Filter
         private static final long serialVersionUID = 3534663738034577872L;
 
         protected final String _filterName;
-        protected ServletContext _context;
+        protected transient ServletContext _context;
         protected final String _id;
         protected final int _type;
         protected final long[] _timestamps;
