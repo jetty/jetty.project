@@ -539,9 +539,10 @@ public abstract class AbstractJettyMojo extends AbstractMojo
                 path = workDir.resolve(path);
                 contextXml = path.toFile().getAbsolutePath();
             }
-
-            XmlConfiguration xmlConfiguration = new XmlConfiguration(Resource.toURL(path.toFile()));
+            
             getLog().info("Applying context xml file " + contextXml);
+            XmlConfiguration xmlConfiguration = new XmlConfiguration(Resource.toURL(path.toFile()));
+            xmlConfiguration.configure(webApp);
         }
 
         //If no contextPath was specified, go with default of project artifactid
