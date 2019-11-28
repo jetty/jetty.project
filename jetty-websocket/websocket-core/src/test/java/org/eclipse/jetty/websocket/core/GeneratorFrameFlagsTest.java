@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 import java.util.LinkedList;
 import java.util.stream.Stream;
 
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.core.internal.ExtensionStack;
 import org.eclipse.jetty.websocket.core.internal.Generator;
 import org.eclipse.jetty.websocket.core.internal.Negotiated;
@@ -71,8 +72,8 @@ public class GeneratorFrameFlagsTest
     {
         setup(invalidFrame);
 
-        ByteBuffer buffer = ByteBuffer.allocate(100);
-        new Generator(components.getBufferPool()).generateWholeFrame(invalidFrame, buffer);
+        ByteBuffer buffer = BufferUtil.allocate(100);
+        new Generator().generateWholeFrame(invalidFrame, buffer);
         assertThrows(ProtocolException.class, () -> coreSession.assertValidOutgoing(invalidFrame));
     }
 }

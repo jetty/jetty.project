@@ -89,9 +89,11 @@ public class AutoFragmentTest
 
         // Send a message which is too large.
         int size = maxFrameSize * 2;
-        byte[] message = new byte[size];
-        Arrays.fill(message, 0, size, (byte)'X');
-        clientHandler.coreSession.sendFrame(new Frame(OpCode.BINARY, BufferUtil.toBuffer(message)), Callback.NOOP, false);
+        byte[] array = new byte[size];
+        Arrays.fill(array, 0, size, (byte)'X');
+        ByteBuffer message = BufferUtil.toBuffer(array);
+        Frame sentFrame = new Frame(OpCode.BINARY, BufferUtil.copy(message));
+        clientHandler.coreSession.sendFrame(sentFrame, Callback.NOOP, false);
 
         // We should not receive any frames larger than the max frame size.
         // So our message should be split into two frames.
@@ -107,6 +109,9 @@ public class AutoFragmentTest
         assertThat(frame.getOpCode(), is(OpCode.CONTINUATION));
         assertThat(frame.getPayloadLength(), is(maxFrameSize));
         assertThat(frame.isFin(), is(true));
+
+        // Original frame payload should not have been changed.
+        assertThat(sentFrame.getPayload(), is(message));
 
         clientHandler.sendClose();
         assertTrue(serverHandler.closed.await(5, TimeUnit.SECONDS));
@@ -290,7 +295,8 @@ public class AutoFragmentTest
         serverHandler.coreSession.setAutoFragment(true);
 
         // Send the payload which should be fragmented by the server permessage-deflate.
-        serverHandler.sendFrame(new Frame(OpCode.BINARY, BufferUtil.copy(payload)), Callback.NOOP, false);
+        ByteBuffer sendPayload = BufferUtil.copy(payload);
+        serverHandler.sendFrame(new Frame(OpCode.BINARY, sendPayload), Callback.NOOP, false);
 
         // Assemble the message from the fragmented frames.
         ByteBuffer message = BufferUtil.allocate(payload.remaining()*2);
@@ -309,6 +315,7 @@ public class AutoFragmentTest
 
         // We received correct payload in 2 frames.
         assertThat(message, is(payload));
+        assertThat(message, is(sendPayload));
         assertThat(numFrames, is(2));
 
         clientHandler.sendClose();

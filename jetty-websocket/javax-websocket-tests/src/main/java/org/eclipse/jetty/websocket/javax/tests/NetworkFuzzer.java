@@ -91,12 +91,11 @@ public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseab
     public ByteBuffer asNetworkBuffer(List<Frame> frames)
     {
         int bufferLength = frames.stream().mapToInt((f) -> f.getPayloadLength() + Generator.MAX_HEADER_LENGTH).sum();
-        ByteBuffer buffer = ByteBuffer.allocate(bufferLength);
+        ByteBuffer buffer = BufferUtil.allocate(bufferLength);
         for (Frame f : frames)
         {
             generator.generate(buffer, f);
         }
-        BufferUtil.flipToFlush(buffer, 0);
         return buffer;
     }
 

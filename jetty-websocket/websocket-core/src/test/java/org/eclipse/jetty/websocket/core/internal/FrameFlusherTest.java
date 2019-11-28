@@ -79,7 +79,7 @@ public class FrameFlusherTest
     @Test
     public void testPostCloseFrameCallbacks() throws ExecutionException, InterruptedException, TimeoutException
     {
-        Generator generator = new Generator(bufferPool);
+        Generator generator = new Generator();
         CapturingEndPoint endPoint = new CapturingEndPoint(bufferPool);
         int bufferSize = WebSocketConstants.DEFAULT_MAX_TEXT_MESSAGE_SIZE;
         int maxGather = 1;
@@ -110,7 +110,7 @@ public class FrameFlusherTest
     @Test
     public void testLargeSmallText() throws ExecutionException, InterruptedException
     {
-        Generator generator = new Generator(bufferPool);
+        Generator generator = new Generator();
         CapturingEndPoint endPoint = new CapturingEndPoint(bufferPool);
         int bufferSize = WebSocketConstants.DEFAULT_MAX_TEXT_MESSAGE_SIZE;
         int maxGather = 8;
@@ -161,7 +161,7 @@ public class FrameFlusherTest
     @Test
     public void testWriteTimeout() throws Exception
     {
-        Generator generator = new Generator(bufferPool);
+        Generator generator = new Generator();
         BlockingEndpoint endPoint = new BlockingEndpoint(bufferPool);
         int bufferSize = WebSocketConstants.DEFAULT_MAX_TEXT_MESSAGE_SIZE;
         int maxGather = 8;
@@ -193,7 +193,7 @@ public class FrameFlusherTest
     @Test
     public void testErrorClose() throws Exception
     {
-        Generator generator = new Generator(bufferPool);
+        Generator generator = new Generator();
         BlockingEndpoint endPoint = new BlockingEndpoint(bufferPool);
         endPoint.setBlockTime(100);
         int bufferSize = WebSocketConstants.DEFAULT_MAX_TEXT_MESSAGE_SIZE;

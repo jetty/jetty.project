@@ -253,7 +253,7 @@ public class PerMessageDeflateExtension extends AbstractExtension
             _batch = batch;
 
             // Provide the frames payload as input to the Deflater.
-            getDeflater().setInput(frame.getPayload());
+            getDeflater().setInput(frame.getPayload().slice());
             callback.succeeded();
             return false;
         }
@@ -379,7 +379,7 @@ public class PerMessageDeflateExtension extends AbstractExtension
                 incomingCompressed = false;
 
             // Provide the frames payload as input to the Inflater.
-            getInflater().setInput(_frame.getPayload());
+            getInflater().setInput(_frame.getPayload().slice());
             callback.succeeded();
             return false;
         }
