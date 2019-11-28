@@ -33,6 +33,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
+import javax.servlet.AsyncContext;
+import javax.servlet.ServletException;
+import javax.servlet.ServletOutputStream;
+import javax.servlet.WriteListener;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpTester;
@@ -41,6 +47,7 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ManagedSelector;
 import org.eclipse.jetty.io.SocketChannelEndPoint;
+import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.hamcrest.Matchers;
@@ -164,6 +171,7 @@ public class AsyncCompletionTest extends HttpServerTestFixture
         List<Object[]> tests = new ArrayList<>();
         tests.add(new Object[]{new HelloWorldHandler(), 200, "Hello world"});
         tests.add(new Object[]{new SendErrorHandler(499,"Test async sendError"), 499, "Test async sendError"});
+        tests.add(new Object[]{new AsyncReadyCompleteHandler(), 200, AsyncReadyCompleteHandler.data});
         return tests.stream().map(Arguments::of);
     }
 
@@ -216,6 +224,46 @@ public class AsyncCompletionTest extends HttpServerTestFixture
                     throw new TimeoutException();
                 Thread.sleep(10);
             }
+        }
+    }
+
+    private static class AsyncReadyCompleteHandler extends AbstractHandler
+    {
+        static String data = "Now is the time for all good men to come to the aid of the party";
+
+        @Override
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        {
+            AsyncContext context = request.startAsync();
+            ServletOutputStream out = response.getOutputStream();
+            out.setWriteListener(new WriteListener() {
+                byte[] bytes = data.getBytes(StandardCharsets.ISO_8859_1);
+                @Override
+                public void onWritePossible() throws IOException
+                {
+                    while (out.isReady())
+                    {
+                        if (bytes != null)
+                        {
+                            response.setContentType("text/plain");
+                            response.setContentLength(bytes.length);
+                            out.write(bytes);
+                            bytes = null;
+                        }
+                        else
+                        {
+                            context.complete();
+                            return;
+                        }
+                    }
+                }
+
+                @Override
+                public void onError(Throwable t)
+                {
+                    t.printStackTrace();
+                }
+            });
         }
     }
 }

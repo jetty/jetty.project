@@ -323,6 +323,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             {
                 case CLOSING:
                 case CLOSED:
+                case ERROR:
                 {
                     _closeCallback = null;
                     closeCallback.succeeded();
@@ -403,13 +404,6 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             State state = _state.get();
             switch (state)
             {
-                case CLOSING:
-                {
-                    if (!_state.compareAndSet(state, State.CLOSED))
-                        break;
-                    releaseBuffer();
-                    return;
-                }
                 case CLOSED:
                 {
                     return;
@@ -417,7 +411,12 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                 case UNREADY:
                 {
                     if (_state.compareAndSet(state, State.ERROR))
-                        _writeListener.onError(_onError == null ? new EofException("Async closed") : _onError);
+                    {
+                        if (_onError == null)
+                            _onError = new EofException("Async closed");
+                        releaseBuffer();
+                        return;
+                    }
                     break;
                 }
                 default:
