@@ -470,21 +470,16 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     public Servlet getServlet()
         throws ServletException
     {
-        Servlet servlet = _servlet;
-        if (servlet == null)
+        synchronized (this)
         {
-            synchronized (this)
+            if (_servlet == null && isRunning())
             {
-                servlet = _servlet;
-                if (servlet == null && isRunning())
-                {
-                    if (getHeldClass() != null)
-                        initServlet();
-                    servlet = _servlet;
-                }
+                if (getHeldClass() != null)
+                    initServlet();
             }
         }
-        return servlet;
+
+        return _servlet;
     }
 
     /**
@@ -626,7 +621,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         ContextHandler ch = ContextHandler.getContextHandler(getServletHandler().getServletContext());
 
         /* Set the webapp's classpath for Jasper */
-        ch.setAttribute("org.apache.catalina.jspgetHeldClass()path", ch.getClassPath());
+        ch.setAttribute("org.apache.catalina.jsp_classpath", ch.getClassPath());
 
         /* Set up other classpath attribute */
         if ("?".equals(getInitParameter("classpath")))
