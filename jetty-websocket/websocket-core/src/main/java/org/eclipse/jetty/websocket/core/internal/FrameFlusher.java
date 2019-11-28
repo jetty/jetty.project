@@ -243,8 +243,7 @@ public class FrameFlusher extends IteratingCallback
                     }
 
                     // Generate the frame into the batchBuffer.
-                    generator.generateHeader(entry.frame, batchBuffer);
-                    generator.generatePayload(entry.frame, batchBuffer);
+                    generator.generateWholeFrame(entry.frame, batchBuffer);
                 }
                 else
                 {

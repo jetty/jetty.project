@@ -160,50 +160,47 @@ public class Generator
      */
     public void generatePayload(Frame frame, ByteBuffer buffer)
     {
+        ByteBuffer payload = frame.getPayload();
+        if (!BufferUtil.hasContent(payload))
+            return;
+
         int pos = BufferUtil.flipToFill(buffer);
-        ByteBuffer payload = frame.getPayload().slice();
-        if (BufferUtil.hasContent(payload))
-        {
-            if (!frame.isMasked())
-                buffer.put(payload);
-            else
-                maskPayload(buffer, frame);
-        }
+        if (frame.isMasked())
+            maskPayload(buffer, frame);
+        else
+            buffer.put(payload.slice());
         BufferUtil.flipToFlush(buffer, pos);
     }
 
     private void maskPayload(ByteBuffer buffer, Frame frame)
     {
-        if (frame.isMasked())
+        byte[] mask = frame.getMask();
+        int maskInt = 0;
+        for (byte maskByte : mask)
         {
-            byte[] mask = frame.getMask();
-            int maskInt = 0;
-            for (byte maskByte : mask)
-            {
-                maskInt = (maskInt << 8) + (maskByte & 0xFF);
-            }
+            maskInt = (maskInt << 8) + (maskByte & 0xFF);
+        }
 
-            // perform data masking here
-            ByteBuffer payload = frame.getPayload();
-            if ((payload != null) && (payload.remaining() > 0))
+        // perform data masking here
+        ByteBuffer payload = frame.getPayload();
+        if ((payload != null) && (payload.remaining() > 0))
+        {
+            int maskOffset = 0;
+            int start = payload.position();
+            int end = payload.limit();
+            int remaining;
+            while ((remaining = end - start) > 0)
             {
-                int maskOffset = 0;
-                int start = payload.position();
-                int end = payload.limit();
-                int remaining;
-                while ((remaining = end - start) > 0)
+                if (remaining >= 4)
                 {
-                    if (remaining >= 4)
-                    {
-                        buffer.putInt(payload.getInt(start) ^ maskInt);
-                        start += 4;
-                    }
-                    else
-                    {
-                        buffer.put((byte)(payload.get(start) ^ mask[maskOffset & 3]));
-                        ++start;
-                        ++maskOffset;
-                    }
+                    buffer.putInt(payload.getInt(start) ^ maskInt);
+                    start += 4;
+                }
+                else
+                {
+                    buffer.put((byte)(payload.get(start) ^ mask[maskOffset & 3]));
+                    ++start;
+                    ++maskOffset;
                 }
             }
         }
