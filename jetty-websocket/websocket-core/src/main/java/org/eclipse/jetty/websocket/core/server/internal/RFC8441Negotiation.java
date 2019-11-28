@@ -16,21 +16,30 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core.server;
+package org.eclipse.jetty.websocket.core.server.internal;
 
-import java.io.IOException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.core.server.internal.HandshakerSelector;
+import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.websocket.core.WebSocketComponents;
+import org.eclipse.jetty.websocket.core.server.Negotiation;
 
-public interface Handshaker
+public class RFC8441Negotiation extends Negotiation
 {
-    static Handshaker newInstance()
+    public RFC8441Negotiation(Request baseRequest, HttpServletRequest request, HttpServletResponse response, WebSocketComponents components) throws BadMessageException
     {
-        return new HandshakerSelector();
+        super(baseRequest, request, response, components);
     }
 
-    boolean upgradeRequest(WebSocketNegotiator negotiator, HttpServletRequest request, HttpServletResponse response, FrameHandler.Customizer defaultCustomizer) throws IOException;
+    @Override
+    public boolean validateHeaders()
+    {
+        MetaData.Request metaData = getBaseRequest().getMetaData();
+        if (metaData == null)
+            return false;
+        return "websocket".equals(metaData.getProtocol());
+    }
 }

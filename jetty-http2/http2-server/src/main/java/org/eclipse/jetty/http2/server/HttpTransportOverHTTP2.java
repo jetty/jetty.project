@@ -318,12 +318,19 @@ public class HttpTransportOverHTTP2 implements HttpTransport
     {
         HttpChannelOverHTTP2 channel = (HttpChannelOverHTTP2)stream.getAttachment();
         Request request = channel.getRequest();
+        if (request.getHttpInput().hasContent())
+            return channel.sendErrorOrAbort("Unexpected content in CONNECT request");
         Connection connection = (Connection)request.getAttribute(UPGRADE_CONNECTION_ATTRIBUTE);
         EndPoint endPoint = connection.getEndPoint();
         endPoint.upgrade(connection);
         stream.setAttachment(endPoint);
-        if (request.getHttpInput().hasContent())
-            return channel.sendErrorOrAbort("Unexpected content in CONNECT request");
+        // Only now that we have switched the attachment,
+        // we can demand DATA frames to process them.
+        stream.demand(1);
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("Upgrading to {}", connection);
+
         return false;
     }
 
@@ -333,6 +340,8 @@ public class HttpTransportOverHTTP2 implements HttpTransport
         Object attachment = stream.getAttachment();
         if (attachment instanceof HttpChannelOverHTTP2)
         {
+            // TODO: we used to "fake" a 101 response to upgrade the endpoint
+            //  but we don't anymore, so this code should be deleted.
             HttpChannelOverHTTP2 channel = (HttpChannelOverHTTP2)attachment;
             if (channel.getResponse().getStatus() == HttpStatus.SWITCHING_PROTOCOLS_101)
             {

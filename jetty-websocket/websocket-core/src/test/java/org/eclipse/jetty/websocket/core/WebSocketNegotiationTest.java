@@ -97,7 +97,7 @@ public class WebSocketNegotiationTest extends WebSocketTester
                         break;
 
                     case "testNotAcceptingExtensions":
-                        negotiation.setNegotiatedExtensions(Collections.EMPTY_LIST);
+                        negotiation.setNegotiatedExtensions(Collections.emptyList());
                         break;
 
                     case "testNoSubProtocolSelected":

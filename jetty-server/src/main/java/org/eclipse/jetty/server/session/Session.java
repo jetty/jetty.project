@@ -378,7 +378,7 @@ public class Session implements SessionHandler.SessionIf
         try 
         {
             HttpSessionEvent event = new HttpSessionEvent(this);
-        for (String name : _sessionData.getKeys())
+            for (String name : _sessionData.getKeys())
             {
                 Object value = _sessionData.getAttribute(name);
                 if (value instanceof HttpSessionActivationListener)
