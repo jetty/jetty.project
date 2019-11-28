@@ -156,7 +156,7 @@ public class SessionData implements Serializable
             LOG.info("Legacy serialization detected for {}", data.getId());
             //legacy serialization was used, we have just deserialized the 
             //entire attribute map
-            data._attributes = new ConcurrentHashMap<String, Object>();
+            data._attributes = new ConcurrentHashMap<>();
             data.putAllAttributes((Map<String, Object>)o);
         }
     }
