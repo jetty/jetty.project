@@ -285,15 +285,36 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
     void requestComplete()
     {
         // Add extensions header filtering out internal extensions and internal parameters.
-        HttpFields headers = getHeaders();
-        for (ExtensionConfig config : requestedExtensions)
+        StringBuilder exts = new StringBuilder();
+        for (int i = 0; i < requestedExtensions.size(); i++)
         {
+            ExtensionConfig config = requestedExtensions.get(i);
             if (config.getName().startsWith("@"))
                 continue;
-            headers.add(HttpHeader.SEC_WEBSOCKET_EXTENSIONS, config.getParameterizedNameWithoutInternalParams());
+
+            exts.append(config.getParameterizedNameWithoutInternalParams());
+            if (i != (requestedExtensions.size() - 1))
+                exts.append(",");
         }
 
+        String extensionString = exts.toString();
+        if (!StringUtil.isEmpty(extensionString))
+            getHeaders().add(HttpHeader.SEC_WEBSOCKET_EXTENSIONS, extensionString);
+
+        // Notify the listener which may change the headers directly.
         notifyUpgradeListeners((listener) -> listener.onHandshakeRequest(this));
+
+        // Check if extensions were set in the headers from the upgrade listener.
+        String extsAfterListener = String.join(",", getHeaders().getCSV(HttpHeader.SEC_WEBSOCKET_EXTENSIONS, true));
+        if (!extensionString.equals(extsAfterListener))
+        {
+            // If extensions were set in both the ClientUpgradeRequest and UpgradeListener throw ISE.
+            if (!requestedExtensions.isEmpty())
+                abort(new IllegalStateException("Extensions set in both the ClientUpgradeRequest and UpgradeListener"));
+
+            // Otherwise reparse the new set of requested extensions.
+            requestedExtensions = ExtensionConfig.parseList(extsAfterListener);
+        }
     }
 
     private void notifyUpgradeListeners(Consumer<UpgradeListener> action)
