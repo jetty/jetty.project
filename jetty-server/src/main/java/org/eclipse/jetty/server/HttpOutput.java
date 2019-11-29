@@ -323,7 +323,6 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             {
                 case CLOSING:
                 case CLOSED:
-                case ERROR:
                 {
                     _closeCallback = null;
                     closeCallback.succeeded();
