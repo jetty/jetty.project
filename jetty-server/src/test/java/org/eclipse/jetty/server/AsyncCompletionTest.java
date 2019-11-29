@@ -65,14 +65,16 @@ import static org.hamcrest.Matchers.is;
  */
 public class AsyncCompletionTest extends HttpServerTestFixture
 {
-    private static final Exchanger<DelayedCallback> X = new Exchanger<>();
-    private static final AtomicBoolean COMPLETE = new AtomicBoolean();
+    private static final Exchanger<PendingCallback> X = new Exchanger<>();
+    private static final AtomicBoolean __complete = new AtomicBoolean();
+    private static String __data = "Now is the time for all good men to come to the aid of the party";
 
-    private static class DelayedCallback extends Callback.Nested
+
+    private static class PendingCallback extends Callback.Nested
     {
-        private CompletableFuture<Void> _delay = new CompletableFuture<>();
+        private CompletableFuture<Void> _pending = new CompletableFuture<>();
 
-        public DelayedCallback(Callback callback)
+        public PendingCallback(Callback callback)
         {
             super(callback);
         }
@@ -80,20 +82,20 @@ public class AsyncCompletionTest extends HttpServerTestFixture
         @Override
         public void succeeded()
         {
-            _delay.complete(null);
+            _pending.complete(null);
         }
 
         @Override
         public void failed(Throwable x)
         {
-            _delay.completeExceptionally(x);
+            _pending.completeExceptionally(x);
         }
 
         public void proceed()
         {
             try
             {
-                _delay.get(10, TimeUnit.SECONDS);
+                _pending.get(10, TimeUnit.SECONDS);
                 getCallback().succeeded();
             }
             catch (Throwable th)
@@ -107,7 +109,7 @@ public class AsyncCompletionTest extends HttpServerTestFixture
     @BeforeEach
     public void init() throws Exception
     {
-        COMPLETE.set(false);
+        __complete.set(false);
 
         startServer(new ServerConnector(_server, new HttpConnectionFactory()
         {
@@ -136,7 +138,7 @@ public class AsyncCompletionTest extends HttpServerTestFixture
         @Override
         public void write(Callback callback, ByteBuffer... buffers) throws IllegalStateException
         {
-            DelayedCallback delay = new DelayedCallback(callback);
+            PendingCallback delay = new PendingCallback(callback);
             super.write(delay, buffers);
             try
             {
@@ -159,7 +161,7 @@ public class AsyncCompletionTest extends HttpServerTestFixture
         @Override
         public void onCompleted()
         {
-            COMPLETE.compareAndSet(false, true);
+            __complete.compareAndSet(false,true);
             super.onCompleted();
         }
     }
@@ -170,11 +172,11 @@ public class AsyncCompletionTest extends HttpServerTestFixture
         List<Object[]> tests = new ArrayList<>();
         tests.add(new Object[]{new HelloWorldHandler(), 200, "Hello world"});
         tests.add(new Object[]{new SendErrorHandler(499, "Test async sendError"), 499, "Test async sendError"});
-        tests.add(new Object[]{new AsyncReadyCompleteHandler(), 200, AsyncReadyCompleteHandler.data});
-        tests.add(new Object[]{new AsyncWriteCompleteHandler(false, false), 200, AsyncWriteCompleteHandler.data});
-        tests.add(new Object[]{new AsyncWriteCompleteHandler(false, true), 200, AsyncWriteCompleteHandler.data});
-        tests.add(new Object[]{new AsyncWriteCompleteHandler(true, false), 200, AsyncWriteCompleteHandler.data});
-        tests.add(new Object[]{new AsyncWriteCompleteHandler(true, true), 200, AsyncWriteCompleteHandler.data});
+        tests.add(new Object[]{new AsyncReadyCompleteHandler(), 200, __data});
+        tests.add(new Object[]{new AsyncWriteCompleteHandler(false, false), 200, __data});
+        tests.add(new Object[]{new AsyncWriteCompleteHandler(false, true), 200, __data});
+        tests.add(new Object[]{new AsyncWriteCompleteHandler(true, false), 200, __data});
+        tests.add(new Object[]{new AsyncWriteCompleteHandler(true, true), 200, __data});
         return tests.stream().map(Arguments::of);
     }
 
@@ -204,7 +206,7 @@ public class AsyncCompletionTest extends HttpServerTestFixture
             assertThat(_threadPool.getBusyThreads(), Matchers.greaterThan(base));
 
             // Getting the Delayed callback will free the thread
-            DelayedCallback delay = X.exchange(null, 10, TimeUnit.SECONDS);
+            PendingCallback delay = X.exchange(null, 10, TimeUnit.SECONDS);
 
             // wait for threads to return to base level
             long end = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
@@ -216,12 +218,12 @@ public class AsyncCompletionTest extends HttpServerTestFixture
             }
 
             // We are now asynchronously waiting!
-            assertThat(COMPLETE.get(), is(false));
+            assertThat(__complete.get(), is(false));
 
             // proceed with the completion
             delay.proceed();
 
-            while (!COMPLETE.get())
+            while(!__complete.get())
             {
                 if (System.nanoTime() > end)
                     throw new TimeoutException();
@@ -232,8 +234,6 @@ public class AsyncCompletionTest extends HttpServerTestFixture
 
     private static class AsyncReadyCompleteHandler extends AbstractHandler
     {
-        static String data = "Now is the time for all good men to come to the aid of the party";
-
         @Override
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
@@ -241,7 +241,7 @@ public class AsyncCompletionTest extends HttpServerTestFixture
             ServletOutputStream out = response.getOutputStream();
             out.setWriteListener(new WriteListener()
             {
-                byte[] bytes = data.getBytes(StandardCharsets.ISO_8859_1);
+                byte[] bytes = __data.getBytes(StandardCharsets.ISO_8859_1);
 
                 @Override
                 public void onWritePossible() throws IOException
@@ -274,15 +274,13 @@ public class AsyncCompletionTest extends HttpServerTestFixture
 
     private static class AsyncWriteCompleteHandler extends AbstractHandler
     {
-        static String data = "Now is the time for all good men to come to the aid of the party";
-
-        final boolean close;
-        final boolean unReady;
+        final boolean _unReady;
+        final boolean _close;
 
         AsyncWriteCompleteHandler(boolean unReady, boolean close)
         {
-            this.unReady = unReady;
-            this.close = close;
+            _unReady = unReady;
+            _close = close;
         }
 
         @Override
@@ -291,7 +289,7 @@ public class AsyncCompletionTest extends HttpServerTestFixture
             AsyncContext context = request.startAsync();
             ServletOutputStream out = response.getOutputStream();
             out.setWriteListener(new WriteListener() {
-                byte[] bytes = data.getBytes(StandardCharsets.ISO_8859_1);
+                byte[] bytes = __data.getBytes(StandardCharsets.ISO_8859_1);
                 @Override
                 public void onWritePossible() throws IOException
                 {
@@ -300,9 +298,9 @@ public class AsyncCompletionTest extends HttpServerTestFixture
                         response.setContentType("text/plain");
                         response.setContentLength(bytes.length);
                         out.write(bytes);
-                        if (unReady)
+                        if (_unReady)
                             assertThat(out.isReady(),Matchers.is(false));
-                        if (close)
+                        if (_close)
                             out.close();
                         context.complete();
                     }
