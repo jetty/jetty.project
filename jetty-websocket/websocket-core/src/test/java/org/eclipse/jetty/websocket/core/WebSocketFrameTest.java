@@ -20,14 +20,10 @@ package org.eclipse.jetty.websocket.core;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.io.LeakTrackingByteBufferPool;
-import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.toolchain.test.Hex;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.websocket.core.internal.Generator;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -36,48 +32,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class WebSocketFrameTest
 {
-    public LeakTrackingByteBufferPool bufferPool = new LeakTrackingByteBufferPool(new MappedByteBufferPool.Tagged());
-
-    @AfterEach
-    public void afterEach()
-    {
-        String id = WebSocketFrameTest.class.getSimpleName();
-        assertThat("Leaked Acquires Count for [" + id + "]", bufferPool.getLeakedAcquires(), is(0L));
-        assertThat("Leaked Releases Count for [" + id + "]", bufferPool.getLeakedReleases(), is(0L));
-        assertThat("Leaked Resource Count for [" + id + "]", bufferPool.getLeakedResources(), is(0L));
-    }
-
-    private Generator generator;
+    private Generator generator = new Generator();
 
     private ByteBuffer generateWholeFrame(Generator generator, Frame frame)
     {
-        ByteBuffer buf = ByteBuffer.allocate(frame.getPayloadLength() + Generator.MAX_HEADER_LENGTH);
+        ByteBuffer buf = BufferUtil.allocate(frame.getPayloadLength() + Generator.MAX_HEADER_LENGTH);
         generator.generateWholeFrame(frame, buf);
-        BufferUtil.flipToFlush(buf, 0);
         return buf;
-    }
-
-    @BeforeEach
-    public void initGenerator()
-    {
-        generator = new Generator(bufferPool);
-    }
-
-    @AfterEach
-    public void verifyNoLeaks()
-    {
-        //TODO is this right and should it be other way around
-        bufferPool.clearTracking();
-        assertNoLeaks(bufferPool);
-    }
-
-    public void assertNoLeaks(LeakTrackingByteBufferPool pool)
-    {
-        String id = this.getClass().getName();
-
-        assertThat("Leaked Acquires Count for [" + id + "]", pool.getLeakedAcquires(), is(0L));
-        assertThat("Leaked Releases Count for [" + id + "]", pool.getLeakedReleases(), is(0L));
-        assertThat("Leaked Resource Count for [" + id + "]", pool.getLeakedResources(), is(0L));
     }
 
     private void assertFrameHex(String message, String expectedHex, ByteBuffer actual)

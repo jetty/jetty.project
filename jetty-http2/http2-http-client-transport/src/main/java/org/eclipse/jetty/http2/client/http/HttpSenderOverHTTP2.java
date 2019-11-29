@@ -59,7 +59,16 @@ public class HttpSenderOverHTTP2 extends HttpSender
         MetaData.Request metaData;
         if (isTunnel)
         {
-            metaData = new MetaData.Request(request.getMethod(), null, new HostPortHttpField(request.getPath()), null, HttpVersion.HTTP_2, request.getHeaders());
+            String upgradeProtocol = request.getUpgradeProtocol();
+            if (upgradeProtocol == null)
+            {
+                metaData = new MetaData.ConnectRequest((String)null, new HostPortHttpField(request.getPath()), null, request.getHeaders(), null);
+            }
+            else
+            {
+                HostPortHttpField authority = new HostPortHttpField(request.getHost(), request.getPort());
+                metaData = new MetaData.ConnectRequest(request.getScheme(), authority, request.getPath(), request.getHeaders(), upgradeProtocol);
+            }
         }
         else
         {

@@ -108,6 +108,16 @@ public class HTTP2ServerSession extends HTTP2Session implements ServerParser.Lis
                     if (stream != null)
                     {
                         onStreamOpened(stream);
+
+                        if (metaData instanceof MetaData.ConnectRequest)
+                        {
+                            if (!isConnectProtocolEnabled() && ((MetaData.ConnectRequest)metaData).getProtocol() != null)
+                            {
+                                stream.reset(new ResetFrame(streamId, ErrorCode.PROTOCOL_ERROR.code), Callback.NOOP);
+                                return;
+                            }
+                        }
+
                         stream.process(frame, Callback.NOOP);
                         Stream.Listener listener = notifyNewStream(stream, frame);
                         stream.setListener(listener);

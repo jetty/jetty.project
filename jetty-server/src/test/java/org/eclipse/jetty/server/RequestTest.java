@@ -38,7 +38,6 @@ import javax.servlet.DispatcherType;
 import javax.servlet.MultipartConfigElement;
 import javax.servlet.ServletException;
 import javax.servlet.ServletInputStream;
-import javax.servlet.ServletRequestEvent;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -341,28 +340,13 @@ public class RequestTest
         testTmpDir.deleteOnExit();
         assertTrue(testTmpDir.list().length == 0);
 
+        // We should have two tmp files after parsing the multipart form.
+        RequestTester tester = (request, response) -> testTmpDir.list().length == 2;
+
         ContextHandler contextHandler = new ContextHandler();
         contextHandler.setContextPath("/foo");
         contextHandler.setResourceBase(".");
-        contextHandler.setHandler(new MultiPartRequestHandler(testTmpDir));
-        contextHandler.addEventListener(new MultiPartCleanerListener()
-        {
-
-            @Override
-            public void requestDestroyed(ServletRequestEvent sre)
-            {
-                MultiParts m = (MultiParts)sre.getServletRequest().getAttribute(Request.__MULTIPARTS);
-                assertNotNull(m);
-                ContextHandler.Context c = m.getContext();
-                assertNotNull(c);
-                assertTrue(c == sre.getServletContext());
-                assertTrue(!m.isEmpty());
-                assertTrue(testTmpDir.list().length == 2);
-                super.requestDestroyed(sre);
-                String[] files = testTmpDir.list();
-                assertTrue(files.length == 0);
-            }
-        });
+        contextHandler.setHandler(new MultiPartRequestHandler(testTmpDir, tester));
         _server.stop();
         _server.setHandler(contextHandler);
         _server.start();
@@ -387,51 +371,16 @@ public class RequestTest
             multipart;
 
         String responses = _connector.getResponse(request);
-        //System.err.println(responses);
         assertTrue(responses.startsWith("HTTP/1.1 200"));
-    }
 
-    @Test
-    public void testHttpMultiPart() throws Exception
-    {
-        final File testTmpDir = File.createTempFile("reqtest", null);
-        if (testTmpDir.exists())
-            testTmpDir.delete();
-        testTmpDir.mkdir();
-        testTmpDir.deleteOnExit();
-        assertTrue(testTmpDir.list().length == 0);
-
-        ContextHandler contextHandler = new ContextHandler();
-        contextHandler.setContextPath("/foo");
-        contextHandler.setResourceBase(".");
-        contextHandler.setHandler(new MultiPartRequestHandler(testTmpDir));
-
-        _server.stop();
-        _server.setHandler(contextHandler);
-        _server.start();
-
-        String multipart = "      --AaB03x\r" +
-            "content-disposition: form-data; name=\"field1\"\r" +
-            "\r" +
-            "Joe Blow\r" +
-            "--AaB03x\r" +
-            "content-disposition: form-data; name=\"stuff\"; filename=\"foo.upload\"\r" +
-            "Content-Type: text/plain;charset=ISO-8859-1\r" +
-            "\r" +
-            "000000000000000000000000000000000000000000000000000\r" +
-            "--AaB03x--\r";
-
-        String request = "GET /foo/x.html HTTP/1.1\r\n" +
+        // We know the previous request has completed if another request can be processed.
+        String cleanupRequest = "GET /foo/cleanup HTTP/1.1\r\n" +
             "Host: whatever\r\n" +
-            "Content-Type: multipart/form-data; boundary=\"AaB03x\"\r\n" +
-            "Content-Length: " + multipart.getBytes().length + "\r\n" +
             "Connection: close\r\n" +
-            "\r\n" +
-            multipart;
-
-        String responses = _connector.getResponse(request);
-        //System.err.println(responses);
-        assertThat(responses, Matchers.startsWith("HTTP/1.1 500"));
+            "\r\n";
+        String cleanupResponse = _connector.getResponse(cleanupRequest);
+        assertTrue(cleanupResponse.startsWith("HTTP/1.1 200"));
+        assertThat(testTmpDir.list().length, is(0));
     }
 
     @Test
@@ -449,22 +398,6 @@ public class RequestTest
         contextHandler.setContextPath("/foo");
         contextHandler.setResourceBase(".");
         contextHandler.setHandler(new BadMultiPartRequestHandler(testTmpDir));
-        contextHandler.addEventListener(new MultiPartCleanerListener()
-        {
-
-            @Override
-            public void requestDestroyed(ServletRequestEvent sre)
-            {
-                MultiParts m = (MultiParts)sre.getServletRequest().getAttribute(Request.__MULTIPARTS);
-                assertNotNull(m);
-                ContextHandler.Context c = m.getContext();
-                assertNotNull(c);
-                assertTrue(c == sre.getServletContext());
-                super.requestDestroyed(sre);
-                String[] files = testTmpDir.list();
-                assertTrue(files.length == 0);
-            }
-        });
         _server.stop();
         _server.setHandler(contextHandler);
         _server.start();
@@ -494,6 +427,15 @@ public class RequestTest
             //System.err.println(responses);
             assertTrue(responses.startsWith("HTTP/1.1 500"));
         }
+
+        // We know the previous request has completed if another request can be processed.
+        String cleanupRequest = "GET /foo/cleanup HTTP/1.1\r\n" +
+            "Host: whatever\r\n" +
+            "Connection: close\r\n" +
+            "\r\n";
+        String cleanupResponse = _connector.getResponse(cleanupRequest);
+        assertTrue(cleanupResponse.startsWith("HTTP/1.1 200"));
+        assertThat(testTmpDir.list().length, is(0));
     }
 
     @Test
@@ -1818,20 +1760,27 @@ public class RequestTest
 
     private class MultiPartRequestHandler extends AbstractHandler
     {
+        RequestTester checker;
         File tmpDir;
 
-        public MultiPartRequestHandler(File tmpDir)
+        public MultiPartRequestHandler(File tmpDir, RequestTester checker)
         {
             this.tmpDir = tmpDir;
+            this.checker = checker;
         }
 
         @Override
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             ((Request)request).setHandled(true);
+            if ("/cleanup".equals(target))
+            {
+                response.setStatus(200);
+                return;
+            }
+
             try
             {
-
                 MultipartConfigElement mpce = new MultipartConfigElement(tmpDir.getAbsolutePath(), -1, -1, 2);
                 request.setAttribute(Request.__MULTIPART_CONFIG_ELEMENT, mpce);
 
@@ -1850,6 +1799,9 @@ public class RequestTest
                         response.addHeader("Violation", v);
                     }
                 }
+
+                if (checker != null && !checker.check(request, response))
+                    response.sendError(500);
             }
             catch (IllegalStateException e)
             {
@@ -1877,6 +1829,12 @@ public class RequestTest
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             ((Request)request).setHandled(true);
+            if ("/cleanup".equals(target))
+            {
+                response.setStatus(200);
+                return;
+            }
+
             try
             {
 

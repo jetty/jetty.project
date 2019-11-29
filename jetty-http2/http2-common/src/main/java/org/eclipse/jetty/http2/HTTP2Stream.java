@@ -372,16 +372,18 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
                 dataProcess = proceed = dataDemand > 0;
             }
         }
-        if (LOG.isDebugEnabled())
-            LOG.debug("{} data processing of {} for {}", initial ? "Starting" : proceed ? "Proceeding" : "Stalling", frame, this);
         if (initial)
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Starting data processing of {} for {}", frame, this);
             notifyBeforeData(this);
             try (AutoLock l = lock.lock())
             {
                 dataProcess = proceed = dataDemand > 0;
             }
         }
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} data processing of {} for {}", proceed ? "Proceeding" : "Stalling", frame, this);
         if (proceed)
             processData();
     }

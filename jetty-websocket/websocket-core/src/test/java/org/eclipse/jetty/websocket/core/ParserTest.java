@@ -25,7 +25,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.toolchain.test.Hex;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
@@ -50,6 +49,16 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class ParserTest
 {
     private static final int MAX_ALLOWED_FRAME_SIZE = 4 * 1024 * 1024;
+    private static final byte[] mask = {0x00, (byte)0xF0, 0x0F, (byte)0xFF};
+
+    public static void putPayload(ByteBuffer buffer, byte[] payload)
+    {
+        int len = payload.length;
+        for (int i = 0; i < len; i++)
+        {
+            buffer.put((byte)(payload[i] ^ mask[i % 4]));
+        }
+    }
 
     private ParserCapture parse(Behavior behavior, int maxAllowedFrameSize, ByteBuffer buffer)
     {
@@ -83,8 +92,8 @@ public class ParserTest
         buffer.put(b);
         if (masked)
         {
-            Generator.putMask(buffer);
-            Generator.putPayload(buffer, messageBytes);
+            buffer.put(mask);
+            putPayload(buffer, messageBytes);
         }
         else
         {
@@ -1296,8 +1305,8 @@ public class ParserTest
         buf.put((byte)0x81); // text frame, fin = true
         buf.put((byte)(0x80 | 0x7E)); // 0x7E == 126 (a 2 byte payload length)
         buf.putShort((short)utf.length);
-        Generator.putMask(buf);
-        Generator.putPayload(buf, utf);
+        buf.put(mask);
+        putPayload(buf, utf);
         buf.flip();
 
         ParserCapture capture = new ParserCapture(true, Behavior.SERVER);
@@ -1325,8 +1334,8 @@ public class ParserTest
         buf.put((byte)0x81); // text frame, fin = true
         buf.put((byte)(0x80 | 0x7F)); // 0x7F == 127 (a 8 byte payload length)
         buf.putLong(utf.length);
-        Generator.putMask(buf);
-        Generator.putPayload(buf, utf);
+        buf.put(mask);
+        putPayload(buf, utf);
         buf.flip();
 
         ParserCapture capture = parse(Behavior.SERVER, 100000, buf, true);
@@ -1397,8 +1406,8 @@ public class ParserTest
         buf.put((byte)0x81);
         buf.put((byte)(0x80 | 0x7E)); // 0x7E == 126 (a 2 byte payload length)
         buf.putShort((short)utf.length);
-        Generator.putMask(buf);
-        Generator.putPayload(buf, utf);
+        buf.put(mask);
+        putPayload(buf, utf);
         buf.flip();
 
         ParserCapture capture = parse(Behavior.SERVER, MAX_ALLOWED_FRAME_SIZE, buf, true);
@@ -1417,8 +1426,8 @@ public class ParserTest
         ByteBuffer buf = ByteBuffer.allocate(24);
         buf.put((byte)0x81);
         buf.put((byte)(0x80 | utf.length));
-        Generator.putMask(buf);
-        Generator.putPayload(buf, utf);
+        buf.put(mask);
+        putPayload(buf, utf);
         buf.flip();
 
         ParserCapture capture = parse(Behavior.SERVER, MAX_ALLOWED_FRAME_SIZE, buf, true);
@@ -1442,14 +1451,14 @@ public class ParserTest
         // part 1
         buf.put((byte)0x01); // no fin + text
         buf.put((byte)(0x80 | b1.length));
-        Generator.putMask(buf);
-        Generator.putPayload(buf, b1);
+        buf.put(mask);
+        putPayload(buf, b1);
 
         // part 2
         buf.put((byte)0x80); // fin + continuation
         buf.put((byte)(0x80 | b2.length));
-        Generator.putMask(buf);
-        Generator.putPayload(buf, b2);
+        buf.put(mask);
+        putPayload(buf, b2);
 
         buf.flip();
 
@@ -1473,8 +1482,8 @@ public class ParserTest
         ByteBuffer buf = ByteBuffer.allocate(24);
         buf.put((byte)0x81);
         buf.put((byte)(0x80 | utf.length));
-        Generator.putMask(buf);
-        Generator.putPayload(buf, utf);
+        buf.put(mask);
+        putPayload(buf, utf);
         buf.flip();
 
         ParserCapture capture = parse(Behavior.SERVER, MAX_ALLOWED_FRAME_SIZE, buf, true);
@@ -1650,13 +1659,12 @@ public class ParserTest
 
     private ByteBuffer generate(Behavior behavior, List<Frame> frames)
     {
-        Generator generator = new Generator(new MappedByteBufferPool());
+        Generator generator = new Generator();
         int length = frames.stream().mapToInt(frame -> frame.getPayloadLength() + Generator.MAX_HEADER_LENGTH).sum();
-        ByteBuffer buffer = ByteBuffer.allocate(length);
+        ByteBuffer buffer = BufferUtil.allocate(length);
         frames.stream()
             .peek(frame -> maskIfClient(behavior, frame))
             .forEach(frame -> generator.generateWholeFrame(frame, buffer));
-        BufferUtil.flipToFlush(buffer, 0);
         return buffer;
     }
 

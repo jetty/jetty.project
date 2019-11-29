@@ -33,6 +33,7 @@ public class TestAsyncFrameHandler implements FrameHandler
 
     public CoreSession coreSession;
     public BlockingQueue<Frame> receivedFrames = new BlockingArrayQueue<>();
+    public CloseStatus closeStatus;
     public volatile Throwable error;
     public CountDownLatch openLatch = new CountDownLatch(1);
     public CountDownLatch errorLatch = new CountDownLatch(1);
@@ -72,6 +73,7 @@ public class TestAsyncFrameHandler implements FrameHandler
     {
         if (LOG.isDebugEnabled())
             LOG.debug("[{}] onClosed {}", name, closeStatus);
+        this.closeStatus = closeStatus;
         closeLatch.countDown();
         callback.succeeded();
     }

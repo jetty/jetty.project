@@ -22,30 +22,24 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Base64;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpConversation;
 import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.HttpResponse;
-import org.eclipse.jetty.client.HttpResponseException;
+import org.eclipse.jetty.client.HttpUpgrader;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
-import org.eclipse.jetty.client.http.HttpConnectionOverHTTP;
-import org.eclipse.jetty.client.http.HttpConnectionUpgrader;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
@@ -66,10 +60,9 @@ import org.eclipse.jetty.websocket.core.WebSocketException;
 import org.eclipse.jetty.websocket.core.internal.ExtensionStack;
 import org.eclipse.jetty.websocket.core.internal.Negotiated;
 import org.eclipse.jetty.websocket.core.internal.WebSocketConnection;
-import org.eclipse.jetty.websocket.core.internal.WebSocketCore;
 import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
 
-public abstract class ClientUpgradeRequest extends HttpRequest implements Response.CompleteListener, HttpConnectionUpgrader
+public abstract class ClientUpgradeRequest extends HttpRequest implements Response.CompleteListener, HttpUpgrader.Factory
 {
     public static ClientUpgradeRequest from(WebSocketCoreClient webSocketClient, URI requestURI, FrameHandler frameHandler)
     {
@@ -106,8 +99,8 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
             throw new IllegalArgumentException("WebSocket URI must include a scheme");
         }
 
-        String scheme = requestURI.getScheme().toLowerCase(Locale.ENGLISH);
-        if (!"ws".equals(scheme) && !"wss".equals(scheme))
+        String scheme = requestURI.getScheme();
+        if (!HttpScheme.WS.is(scheme) && !HttpScheme.WSS.is(scheme))
         {
             throw new IllegalArgumentException("WebSocket URI scheme only supports [ws] and [wss], not [" + scheme + "]");
         }
@@ -119,10 +112,6 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
 
         this.wsClient = webSocketClient;
         this.futureCoreSession = new CompletableFuture<>();
-        method(HttpMethod.GET);
-        version(HttpVersion.HTTP_1_1);
-
-        getConversation().setAttribute(HttpConnectionUpgrader.class.getName(), this);
     }
 
     public void setConfiguration(FrameHandler.ConfigurationCustomizer config)
@@ -197,7 +186,6 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
             throw new IllegalArgumentException("FrameHandler could not be created", t);
         }
 
-        initWebSocketHeaders();
         super.send(listener);
     }
 
@@ -234,7 +222,7 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
             }
 
             Throwable failure = result.getFailure();
-            boolean wrapFailure = !((failure instanceof IOException) || (failure instanceof UpgradeException));
+            boolean wrapFailure = !(failure instanceof IOException) && !(failure instanceof UpgradeException);
             if (wrapFailure)
                 failure = new UpgradeException(requestURI, responseStatusCode, responseLine, failure);
             handleException(failure);
@@ -265,20 +253,67 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
         }
     }
 
-    @SuppressWarnings("Duplicates")
     @Override
-    public void upgrade(HttpResponse response, HttpConnectionOverHTTP httpConnection)
+    public HttpUpgrader newHttpUpgrader(HttpVersion version)
     {
-        if (!this.getHeaders().get(HttpHeader.UPGRADE).equalsIgnoreCase("websocket"))
-            throw new HttpResponseException("Not a WebSocket Upgrade", response);
+        if (version == HttpVersion.HTTP_1_1)
+            return new HttpUpgraderOverHTTP(this);
+        else if (version == HttpVersion.HTTP_2)
+            return new HttpUpgraderOverHTTP2(this);
+        else
+            throw new UnsupportedOperationException("Unsupported HTTP version for upgrade: " + version);
+    }
 
-        // Check the Accept hash
-        String reqKey = this.getHeaders().get(HttpHeader.SEC_WEBSOCKET_KEY);
-        String expectedHash = WebSocketCore.hashKey(reqKey);
-        String respHash = response.getHeaders().get(HttpHeader.SEC_WEBSOCKET_ACCEPT);
-        if (!expectedHash.equalsIgnoreCase(respHash))
-            throw new HttpResponseException("Invalid Sec-WebSocket-Accept hash (was:" + respHash + ", expected:" + expectedHash + ")", response);
+    /**
+     * Allow for overridden customization of endpoint (such as special transport level properties: e.g. TCP keepAlive)
+     */
+    protected void customize(EndPoint endPoint)
+    {
+    }
 
+    protected WebSocketConnection newWebSocketConnection(EndPoint endPoint, Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, WebSocketCoreSession coreSession)
+    {
+        return new WebSocketConnection(endPoint, executor, scheduler, byteBufferPool, coreSession);
+    }
+
+    protected WebSocketCoreSession newWebSocketCoreSession(FrameHandler handler, Negotiated negotiated)
+    {
+        return new WebSocketCoreSession(handler, Behavior.CLIENT, negotiated);
+    }
+
+    public abstract FrameHandler getFrameHandler();
+
+    void requestComplete()
+    {
+        // Add extensions header filtering out internal extensions and internal parameters.
+        HttpFields headers = getHeaders();
+        for (ExtensionConfig config : requestedExtensions)
+        {
+            if (config.getName().startsWith("@"))
+                continue;
+            headers.add(HttpHeader.SEC_WEBSOCKET_EXTENSIONS, config.getParameterizedNameWithoutInternalParams());
+        }
+
+        notifyUpgradeListeners((listener) -> listener.onHandshakeRequest(this));
+    }
+
+    private void notifyUpgradeListeners(Consumer<UpgradeListener> action)
+    {
+        for (UpgradeListener listener : upgradeListeners)
+        {
+            try
+            {
+                action.accept(listener);
+            }
+            catch (Throwable t)
+            {
+                LOG.info("Exception while invoking listener " + listener, t);
+            }
+        }
+    }
+
+    public void upgrade(HttpResponse response, EndPoint endPoint)
+    {
         // Parse the Negotiated Extensions
         List<ExtensionConfig> negotiatedExtensions = new ArrayList<>();
         HttpField extField = response.getHeaders().getField(HttpHeader.SEC_WEBSOCKET_EXTENSIONS);
@@ -363,7 +398,7 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
             if (values != null)
             {
                 if (values.length > 1)
-                    throw new WebSocketException("Upgrade failed: Too many WebSocket subprotocol's in response: " + values);
+                    throw new WebSocketException("Upgrade failed: Too many WebSocket subprotocol's in response: " + Arrays.toString(values));
                 else if (values.length == 1)
                     negotiatedSubProtocol = values[0];
             }
@@ -377,8 +412,7 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
             throw new WebSocketException("Upgrade failed: subprotocol [" + negotiatedSubProtocol + "] not found in offered subprotocols " + offeredSubProtocols);
 
         // We can upgrade
-        EndPoint endp = httpConnection.getEndPoint();
-        customize(endp);
+        customize(endPoint);
 
         Request request = response.getRequest();
         Negotiated negotiated = new Negotiated(
@@ -392,7 +426,7 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
         customizer.customize(coreSession);
 
         HttpClient httpClient = wsClient.getHttpClient();
-        WebSocketConnection wsConnection = newWebSocketConnection(endp, httpClient.getExecutor(), httpClient.getScheduler(), httpClient.getByteBufferPool(), coreSession);
+        WebSocketConnection wsConnection = newWebSocketConnection(endPoint, httpClient.getExecutor(), httpClient.getScheduler(), httpClient.getByteBufferPool(), coreSession);
         wsClient.getEventListeners().forEach(wsConnection::addEventListener);
         coreSession.setWebSocketConnection(wsConnection);
         notifyUpgradeListeners((listener) -> listener.onHandshakeResponse(this, response));
@@ -400,96 +434,12 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
         // Now swap out the connection
         try
         {
-            endp.upgrade(wsConnection);
+            endPoint.upgrade(wsConnection);
             futureCoreSession.complete(coreSession);
         }
         catch (Throwable t)
         {
             futureCoreSession.completeExceptionally(t);
-        }
-    }
-
-    /**
-     * Allow for overridden customization of endpoint (such as special transport level properties: e.g. TCP keepAlive)
-     *
-     * @see <a href="https://github.com/eclipse/jetty.project/issues/1811">Issue #1811 - Customization of WebSocket Connections via WebSocketPolicy</a>
-     */
-    protected void customize(EndPoint endp)
-    {
-    }
-
-    protected WebSocketConnection newWebSocketConnection(EndPoint endp, Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, WebSocketCoreSession coreSession)
-    {
-        return new WebSocketConnection(endp, executor, scheduler, byteBufferPool, coreSession);
-    }
-
-    protected WebSocketCoreSession newWebSocketCoreSession(FrameHandler handler, Negotiated negotiated)
-    {
-        return new WebSocketCoreSession(handler, Behavior.CLIENT, negotiated);
-    }
-
-    public abstract FrameHandler getFrameHandler();
-
-    private String genRandomKey()
-    {
-        byte[] bytes = new byte[16];
-        ThreadLocalRandom.current().nextBytes(bytes);
-        return Base64.getEncoder().encodeToString(bytes);
-    }
-
-    private void initWebSocketHeaders()
-    {
-        method(HttpMethod.GET);
-        version(HttpVersion.HTTP_1_1);
-
-        // The Upgrade Headers
-        setHeaderIfNotPresent(HttpHeader.UPGRADE, "websocket");
-        setHeaderIfNotPresent(HttpHeader.CONNECTION, "Upgrade");
-
-        // The WebSocket Headers
-        setHeaderIfNotPresent(HttpHeader.SEC_WEBSOCKET_KEY, genRandomKey());
-        setHeaderIfNotPresent(HttpHeader.SEC_WEBSOCKET_VERSION, WebSocketConstants.SPEC_VERSION_STRING);
-
-        // (Per the hybi list): Add no-cache headers to avoid compatibility issue.
-        // There are some proxies that rewrite "Connection: upgrade"
-        // to "Connection: close" in the response if a request doesn't contain
-        // these headers.
-        setHeaderIfNotPresent(HttpHeader.PRAGMA, "no-cache");
-        setHeaderIfNotPresent(HttpHeader.CACHE_CONTROL, "no-cache");
-
-        // Add extensions header filtering out internal extensions and internal parameters.
-        HttpFields headers = getHeaders();
-        for (ExtensionConfig config : requestedExtensions)
-        {
-            if (config.getName().startsWith("@"))
-                continue;
-            headers.add(HttpHeader.SEC_WEBSOCKET_EXTENSIONS, config.getParameterizedNameWithoutInternalParams());
-        }
-
-        // Notify upgrade hooks
-        notifyUpgradeListeners((listener) -> listener.onHandshakeRequest(this));
-    }
-
-    private void setHeaderIfNotPresent(HttpHeader header, String value)
-    {
-        if (!getHeaders().contains(header))
-        {
-            getHeaders().put(header, value);
-        }
-    }
-
-    private void notifyUpgradeListeners(Consumer<UpgradeListener> action)
-    {
-        for (UpgradeListener listener : upgradeListeners)
-        {
-            try
-            {
-                action.accept(listener);
-            }
-            catch (Throwable t)
-            {
-                LOG.warn("Unhandled error: " + t.getMessage(), t);
-            }
         }
     }
 }

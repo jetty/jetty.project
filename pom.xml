@@ -66,7 +66,7 @@
     <jackson-databind.version>2.9.9</jackson-databind.version>
     <localRepoPath>${project.build.directory}/local-repo</localRepoPath>
     <settingsPath>src/it/settings.xml</settingsPath>
-    <surefire.rerunFailingTestsCount>3</surefire.rerunFailingTestsCount>
+    <surefire.rerunFailingTestsCount>0</surefire.rerunFailingTestsCount>
   </properties>
 
   <licenses>
@@ -667,7 +667,7 @@
         <plugin>
           <groupId>org.eclipse.jetty.toolchain</groupId>
           <artifactId>jetty-version-maven-plugin</artifactId>
-          <version>2.5</version>
+          <version>2.6</version>
         </plugin>
         <plugin>
           <groupId>org.jacoco</groupId>
@@ -1286,6 +1286,7 @@
       <id>ci</id>
       <properties>
         <settingsPath>${env.GLOBAL_MVN_SETTINGS}</settingsPath>
+        <surefire.rerunFailingTestsCount>3</surefire.rerunFailingTestsCount>
       </properties>
       <modules>
         <module>aggregates/jetty-all</module>

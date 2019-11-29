@@ -95,7 +95,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
 
         this.coreSession = coreSession;
 
-        this.generator = new Generator(bufferPool);
+        this.generator = new Generator();
         this.parser = new Parser(bufferPool, coreSession);
         this.flusher = new Flusher(scheduler, coreSession.getOutputBufferSize(), generator, endp);
         this.setInputBufferSize(coreSession.getInputBufferSize());

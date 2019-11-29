@@ -29,6 +29,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.TreeMap;
 import javax.servlet.AsyncContext;
 import javax.servlet.DispatcherType;
@@ -55,6 +56,7 @@ public class UpgradeHttpServletRequest implements HttpServletRequest
 {
     private static final String UNSUPPORTED_WITH_WEBSOCKET_UPGRADE = "Feature unsupported with a Upgraded to WebSocket HttpServletRequest";
 
+    private final Request baseRequest;
     private final ServletContext context;
     private final DispatcherType dispatcher;
     private final String method;
@@ -110,8 +112,9 @@ public class UpgradeHttpServletRequest implements HttpServletRequest
 
         remoteUser = httpRequest.getRemoteUser();
         principal = httpRequest.getUserPrincipal();
-        authentication = Request.getBaseRequest(httpRequest).getAuthentication();
-        scope = Request.getBaseRequest(httpRequest).getUserIdentityScope();
+        baseRequest = Objects.requireNonNull(Request.getBaseRequest(httpRequest));
+        authentication = baseRequest.getAuthentication();
+        scope = baseRequest.getUserIdentityScope();
 
         Enumeration<String> headerNames = httpRequest.getHeaderNames();
         while (headerNames.hasMoreElements())
@@ -276,6 +279,11 @@ public class UpgradeHttpServletRequest implements HttpServletRequest
     public HttpSession getSession()
     {
         return session;
+    }
+
+    public Request getBaseRequest()
+    {
+        return baseRequest;
     }
 
     @Override

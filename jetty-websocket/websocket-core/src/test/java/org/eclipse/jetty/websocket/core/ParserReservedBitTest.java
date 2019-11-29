@@ -23,8 +23,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.websocket.core.internal.Generator;
@@ -40,19 +38,15 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
  */
 public class ParserReservedBitTest
 {
-    private ByteBufferPool bufferPool = new MappedByteBufferPool();
-
     private void expectProtocolException(List<Frame> frames)
     {
         ParserCapture parserCapture = new ParserCapture();
 
         // generate raw bytebuffer of provided frames
         int size = frames.stream().mapToInt(frame -> frame.getPayloadLength() + Generator.MAX_HEADER_LENGTH).sum();
+        Generator generator = new Generator();
         ByteBuffer raw = BufferUtil.allocate(size);
-        BufferUtil.clearToFill(raw);
-        Generator generator = new Generator(bufferPool);
         frames.forEach(frame -> generator.generateWholeFrame(frame, raw));
-        BufferUtil.flipToFlush(raw, 0);
 
         // parse buffer
         try (StacklessLogging ignore = new StacklessLogging(Parser.class))

@@ -1101,7 +1101,7 @@ public class HttpClient extends ContainerLifeCycle
             return port == 80;
     }
 
-    static boolean isSchemeSecure(String scheme)
+    public static boolean isSchemeSecure(String scheme)
     {
         return HttpScheme.HTTPS.is(scheme) || HttpScheme.WSS.is(scheme);
     }

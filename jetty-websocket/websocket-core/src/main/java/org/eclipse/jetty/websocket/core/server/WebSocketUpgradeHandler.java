@@ -19,6 +19,7 @@
 package org.eclipse.jetty.websocket.core.server;
 
 import java.io.IOException;
+import java.util.Objects;
 import java.util.function.Function;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -47,7 +48,7 @@ public class WebSocketUpgradeHandler extends HandlerWrapper
 
     public WebSocketUpgradeHandler(WebSocketNegotiator negotiator, String... pathSpecs)
     {
-        this.negotiator = negotiator;
+        this.negotiator = Objects.requireNonNull(negotiator);
         addPathSpec(pathSpecs);
     }
 
