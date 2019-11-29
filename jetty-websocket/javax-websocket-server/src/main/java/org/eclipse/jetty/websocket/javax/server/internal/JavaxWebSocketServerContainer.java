@@ -171,8 +171,7 @@ public class JavaxWebSocketServerContainer extends JavaxWebSocketClientContainer
         ServerEndpoint anno = endpoint.getClass().getAnnotation(ServerEndpoint.class);
         if (anno != null)
         {
-            // Overwrite Config from Annotation
-            // TODO: should we merge with provided config?
+            // Overwrite with Config from Annotation.
             return new AnnotatedServerEndpointConfig(this, endpoint.getClass(), anno, config);
         }
         return config;

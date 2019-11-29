@@ -26,10 +26,19 @@ public class ClientEndpointConfigWrapper extends EndpointConfigWrapper implement
 {
     private ClientEndpointConfig _endpointConfig;
 
+    public ClientEndpointConfigWrapper()
+    {
+    }
+
     public ClientEndpointConfigWrapper(ClientEndpointConfig endpointConfig)
     {
-        super(endpointConfig);
+        init(endpointConfig);
+    }
+
+    public void init(ClientEndpointConfig endpointConfig)
+    {
         _endpointConfig = endpointConfig;
+        super.init(endpointConfig);
     }
 
     @Override

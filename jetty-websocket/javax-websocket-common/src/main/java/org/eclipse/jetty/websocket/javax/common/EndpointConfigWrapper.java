@@ -27,10 +27,19 @@ import javax.websocket.EndpointConfig;
 
 public class EndpointConfigWrapper implements EndpointConfig, PathParamProvider
 {
-    private final EndpointConfig _endpointConfig;
-    private final Map<String, String> _pathParameters;
+    private EndpointConfig _endpointConfig;
+    private Map<String, String> _pathParameters;
+
+    public EndpointConfigWrapper()
+    {
+    }
 
     public EndpointConfigWrapper(EndpointConfig endpointConfig)
+    {
+        init(endpointConfig);
+    }
+
+    public void init(EndpointConfig endpointConfig)
     {
         _endpointConfig = endpointConfig;
 

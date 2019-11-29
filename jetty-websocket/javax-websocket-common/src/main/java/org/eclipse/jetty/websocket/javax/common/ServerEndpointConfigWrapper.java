@@ -24,12 +24,21 @@ import javax.websocket.server.ServerEndpointConfig;
 
 public class ServerEndpointConfigWrapper extends EndpointConfigWrapper implements ServerEndpointConfig
 {
-    private final ServerEndpointConfig _endpointConfig;
+    private ServerEndpointConfig _endpointConfig;
+
+    public ServerEndpointConfigWrapper()
+    {
+    }
 
     public ServerEndpointConfigWrapper(ServerEndpointConfig endpointConfig)
     {
-        super(endpointConfig);
+        init(endpointConfig);
+    }
+
+    public void init(ServerEndpointConfig endpointConfig)
+    {
         _endpointConfig = endpointConfig;
+        super.init(endpointConfig);
     }
 
     @Override

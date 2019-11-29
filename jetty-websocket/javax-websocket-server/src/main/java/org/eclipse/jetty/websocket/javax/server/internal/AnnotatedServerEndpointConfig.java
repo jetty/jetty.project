@@ -19,107 +19,83 @@
 package org.eclipse.jetty.websocket.javax.server.internal;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import javax.websocket.Decoder;
 import javax.websocket.DeploymentException;
 import javax.websocket.Encoder;
 import javax.websocket.EndpointConfig;
-import javax.websocket.Extension;
 import javax.websocket.server.ServerEndpoint;
 import javax.websocket.server.ServerEndpointConfig;
 
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketContainer;
+import org.eclipse.jetty.websocket.javax.common.ServerEndpointConfigWrapper;
 import org.eclipse.jetty.websocket.javax.server.config.ContainerDefaultConfigurator;
 
-public class AnnotatedServerEndpointConfig implements ServerEndpointConfig
+public class AnnotatedServerEndpointConfig extends ServerEndpointConfigWrapper
 {
-    private final Class<?> endpointClass;
-    private final String path;
-    private final List<Class<? extends Decoder>> decoders;
-    private final List<Class<? extends Encoder>> encoders;
-    private final ServerEndpointConfig.Configurator configurator;
-    private final List<String> subprotocols;
-
-    private Map<String, Object> userProperties;
-    private List<Extension> extensions;
-
     public AnnotatedServerEndpointConfig(JavaxWebSocketContainer containerScope, Class<?> endpointClass, ServerEndpoint anno) throws DeploymentException
     {
         this(containerScope, endpointClass, anno, null);
     }
 
-    public AnnotatedServerEndpointConfig(JavaxWebSocketContainer containerScope, Class<?> endpointClass, ServerEndpoint anno, EndpointConfig baseConfig)
-        throws DeploymentException
+    public AnnotatedServerEndpointConfig(JavaxWebSocketContainer containerScope, Class<?> endpointClass, ServerEndpoint anno, EndpointConfig baseConfig) throws DeploymentException
     {
+        // Provided Base EndpointConfig.
         ServerEndpointConfig baseServerConfig = null;
-
         if (baseConfig instanceof ServerEndpointConfig)
         {
             baseServerConfig = (ServerEndpointConfig)baseConfig;
         }
 
-        // Decoders (favor provided config over annotation)
+        // Decoders (favor provided config over annotation).
+        List<Class<? extends Decoder>> decoders;
         if (baseConfig != null && baseConfig.getDecoders() != null && baseConfig.getDecoders().size() > 0)
-        {
-            this.decoders = Collections.unmodifiableList(baseConfig.getDecoders());
-        }
+            decoders = baseConfig.getDecoders();
         else
-        {
-            this.decoders = Collections.unmodifiableList(Arrays.asList(anno.decoders()));
-        }
+            decoders = List.of(anno.decoders());
 
-        // AvailableEncoders (favor provided config over annotation)
+        // AvailableEncoders (favor provided config over annotation).
+        List<Class<? extends Encoder>> encoders;
         if (baseConfig != null && baseConfig.getEncoders() != null && baseConfig.getEncoders().size() > 0)
-        {
-            this.encoders = Collections.unmodifiableList(baseConfig.getEncoders());
-        }
+            encoders = baseConfig.getEncoders();
         else
-        {
-            this.encoders = Collections.unmodifiableList(Arrays.asList(anno.encoders()));
-        }
+            encoders = List.of(anno.encoders());
 
-        // Sub Protocols (favor provided config over annotation)
+        // Sub Protocols (favor provided config over annotation).
+        List<String> subprotocols;
         if (baseServerConfig != null && baseServerConfig.getSubprotocols() != null && baseServerConfig.getSubprotocols().size() > 0)
-        {
-            this.subprotocols = Collections.unmodifiableList(baseServerConfig.getSubprotocols());
-        }
+            subprotocols = baseServerConfig.getSubprotocols();
         else
-        {
-            this.subprotocols = Collections.unmodifiableList(Arrays.asList(anno.subprotocols()));
-        }
+            subprotocols = List.of(anno.subprotocols());
 
-        // Path (favor provided config over annotation)
+        // Path (favor provided config over annotation).
+        String path;
         if (baseServerConfig != null && baseServerConfig.getPath() != null && baseServerConfig.getPath().length() > 0)
-        {
-            this.path = baseServerConfig.getPath();
-        }
+            path = baseServerConfig.getPath();
         else
-        {
-            this.path = anno.value();
-        }
+            path = anno.value();
 
-        // supplied by init lifecycle
-        this.extensions = new ArrayList<>();
-        // always what is passed in
-        this.endpointClass = endpointClass;
-        // UserProperties in annotation
-        this.userProperties = new HashMap<>();
-        if (baseConfig != null && baseConfig.getUserProperties() != null && baseConfig.getUserProperties().size() > 0)
-        {
-            userProperties.putAll(baseConfig.getUserProperties());
-        }
-
+        // Make sure all Configurators obtained are decorated.
         ServerEndpointConfig.Configurator rawConfigurator = getConfigurator(baseServerConfig, anno);
+        ServerEndpointConfig.Configurator configurator = containerScope.getObjectFactory().decorate(rawConfigurator);
 
-        // Make sure all Configurators obtained are decorated
-        this.configurator = containerScope.getObjectFactory().decorate(rawConfigurator);
+        // Build a ServerEndpointConfig with the Javax API builder to wrap.
+        ServerEndpointConfig endpointConfig = ServerEndpointConfig.Builder.create(endpointClass, path)
+            .configurator(configurator)
+            .encoders(encoders)
+            .decoders(decoders)
+            .extensions(new ArrayList<>())
+            .subprotocols(subprotocols)
+            .build();
+
+        // Set the UserProperties from annotation into the new EndpointConfig.
+        if (baseConfig != null && baseConfig.getUserProperties() != null && baseConfig.getUserProperties().size() > 0)
+            endpointConfig.getUserProperties().putAll(baseConfig.getUserProperties());
+
+        init(endpointConfig);
     }
 
-    private Configurator getConfigurator(ServerEndpointConfig baseServerConfig, ServerEndpoint anno) throws DeploymentException
+    private static Configurator getConfigurator(ServerEndpointConfig baseServerConfig, ServerEndpoint anno) throws DeploymentException
     {
         Configurator ret = null;
 
@@ -158,96 +134,5 @@ public class AnnotatedServerEndpointConfig implements ServerEndpointConfig
         }
 
         return ret;
-    }
-
-    @Override
-    public ServerEndpointConfig.Configurator getConfigurator()
-    {
-        return configurator;
-    }
-
-    @Override
-    public List<Class<? extends Decoder>> getDecoders()
-    {
-        return decoders;
-    }
-
-    @Override
-    public List<Class<? extends Encoder>> getEncoders()
-    {
-        return encoders;
-    }
-
-    @Override
-    public Class<?> getEndpointClass()
-    {
-        return endpointClass;
-    }
-
-    @Override
-    public List<Extension> getExtensions()
-    {
-        return extensions;
-    }
-
-    @Override
-    public String getPath()
-    {
-        return path;
-    }
-
-    @Override
-    public List<String> getSubprotocols()
-    {
-        return subprotocols;
-    }
-
-    @Override
-    public Map<String, Object> getUserProperties()
-    {
-        return userProperties;
-    }
-
-    @Override
-    public boolean equals(Object o)
-    {
-        if (this == o)
-            return true;
-        if (o == null || getClass() != o.getClass())
-            return false;
-
-        AnnotatedServerEndpointConfig that = (AnnotatedServerEndpointConfig)o;
-
-        if (endpointClass != null ? !endpointClass.equals(that.endpointClass) : that.endpointClass != null)
-            return false;
-        return path != null ? path.equals(that.path) : that.path == null;
-    }
-
-    @Override
-    public int hashCode()
-    {
-        int result = endpointClass != null ? endpointClass.hashCode() : 0;
-        result = 31 * result + (path != null ? path.hashCode() : 0);
-        return result;
-    }
-
-    @Override
-    public String toString()
-    {
-        StringBuilder builder = new StringBuilder();
-        builder.append("AnnotatedServerEndpointConfig[endpointClass=");
-        builder.append(endpointClass);
-        builder.append(",path=");
-        builder.append(path);
-        builder.append(",decoders=");
-        builder.append(decoders);
-        builder.append(",encoders=");
-        builder.append(encoders);
-        builder.append(",subprotocols=");
-        builder.append(subprotocols);
-        builder.append(",extensions=");
-        builder.append(extensions);
-        builder.append("]");
-        return builder.toString();
     }
 }

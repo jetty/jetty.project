@@ -18,67 +18,12 @@
 
 package org.eclipse.jetty.websocket.javax.client;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import javax.websocket.ClientEndpointConfig;
-import javax.websocket.Decoder;
-import javax.websocket.Encoder;
-import javax.websocket.Extension;
+import org.eclipse.jetty.websocket.javax.common.ClientEndpointConfigWrapper;
 
-public class EmptyClientEndpointConfig implements ClientEndpointConfig
+public class EmptyClientEndpointConfig extends ClientEndpointConfigWrapper
 {
-    private final List<Class<? extends Decoder>> decoders;
-    private final List<Class<? extends Encoder>> encoders;
-    private final List<Extension> extensions;
-    private final List<String> preferredSubprotocols;
-    private final Configurator configurator;
-    private Map<String, Object> userProperties;
-
     public EmptyClientEndpointConfig()
     {
-        this.decoders = new ArrayList<>();
-        this.encoders = new ArrayList<>();
-        this.preferredSubprotocols = new ArrayList<>();
-        this.extensions = new ArrayList<>();
-        this.userProperties = new HashMap<>();
-        this.configurator = EmptyConfigurator.INSTANCE;
-    }
-
-    @Override
-    public Configurator getConfigurator()
-    {
-        return configurator;
-    }
-
-    @Override
-    public List<Class<? extends Decoder>> getDecoders()
-    {
-        return decoders;
-    }
-
-    @Override
-    public List<Class<? extends Encoder>> getEncoders()
-    {
-        return encoders;
-    }
-
-    @Override
-    public List<Extension> getExtensions()
-    {
-        return extensions;
-    }
-
-    @Override
-    public List<String> getPreferredSubprotocols()
-    {
-        return preferredSubprotocols;
-    }
-
-    @Override
-    public Map<String, Object> getUserProperties()
-    {
-        return userProperties;
+        init(Builder.create().configurator(EmptyConfigurator.INSTANCE).build());
     }
 }
