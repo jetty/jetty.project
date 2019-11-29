@@ -234,6 +234,8 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         {
             write(content, complete, blocker);
             blocker.block();
+            if (complete)
+                closed();
         }
         catch (Exception failure)
         {
