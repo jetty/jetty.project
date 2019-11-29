@@ -172,6 +172,8 @@ public class AsyncCompletionTest extends HttpServerTestFixture
         tests.add(new Object[]{new HelloWorldHandler(), 200, "Hello world"});
         tests.add(new Object[]{new SendErrorHandler(499,"Test async sendError"), 499, "Test async sendError"});
         tests.add(new Object[]{new AsyncReadyCompleteHandler(), 200, AsyncReadyCompleteHandler.data});
+        tests.add(new Object[]{new AsyncWriteCompleteHandler(false), 200, AsyncWriteCompleteHandler.data});
+        tests.add(new Object[]{new AsyncWriteCompleteHandler(true), 200, AsyncWriteCompleteHandler.data});
         return tests.stream().map(Arguments::of);
     }
 
@@ -255,6 +257,47 @@ public class AsyncCompletionTest extends HttpServerTestFixture
                             context.complete();
                             return;
                         }
+                    }
+                }
+
+                @Override
+                public void onError(Throwable t)
+                {
+                    t.printStackTrace();
+                }
+            });
+        }
+    }
+
+    private static class AsyncWriteCompleteHandler extends AbstractHandler
+    {
+        static String data = "Now is the time for all good men to come to the aid of the party";
+
+        final boolean close;
+
+        AsyncWriteCompleteHandler(boolean close)
+        {
+            this.close = close;
+        }
+
+        @Override
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        {
+            AsyncContext context = request.startAsync();
+            ServletOutputStream out = response.getOutputStream();
+            out.setWriteListener(new WriteListener() {
+                byte[] bytes = data.getBytes(StandardCharsets.ISO_8859_1);
+                @Override
+                public void onWritePossible() throws IOException
+                {
+                    if (out.isReady())
+                    {
+                        response.setContentType("text/plain");
+                        response.setContentLength(bytes.length);
+                        out.write(bytes);
+                        if (close)
+                            out.close();
+                        context.complete();
                     }
                 }
 
