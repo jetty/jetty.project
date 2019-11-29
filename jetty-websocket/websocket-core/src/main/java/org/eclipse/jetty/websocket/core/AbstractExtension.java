@@ -29,7 +29,7 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
 
 @ManagedObject("Abstract Extension")
-public abstract class AbstractExtension implements Extension
+public class AbstractExtension implements Extension
 {
     private final Logger log;
     private ByteBufferPool bufferPool;
@@ -52,6 +52,18 @@ public abstract class AbstractExtension implements Extension
         this.bufferPool = components.getBufferPool();
         this.deflaterPool = components.getDeflaterPool();
         this.inflaterPool = components.getInflaterPool();
+    }
+
+    @Override
+    public void onFrame(Frame frame, Callback callback)
+    {
+        nextIncomingFrame(frame, callback);
+    }
+
+    @Override
+    public void sendFrame(Frame frame, Callback callback, boolean batch)
+    {
+        nextOutgoingFrame(frame, callback, batch);
     }
 
     public ByteBufferPool getBufferPool()

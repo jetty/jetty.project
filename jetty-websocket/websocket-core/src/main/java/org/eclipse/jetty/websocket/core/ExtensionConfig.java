@@ -162,7 +162,8 @@ public class ExtensionConfig
 
     public ExtensionConfig(String parameterizedName)
     {
-        ParamParser paramParser = new ParamParser(parameterizedName).parse();
+        ParamParser paramParser = new ParamParser(parameterizedName);
+        paramParser.parse();
         this.name = paramParser.getName();
         this.parameters = paramParser.getParams();
     }
@@ -362,12 +363,11 @@ public class ExtensionConfig
             super.parsedValue(buffer);
         }
 
-        public ParamParser parse()
+        public void parse()
         {
             addValue(parameterizedName);
             if (StringUtil.isEmpty(name))
                 throw new IllegalArgumentException("parameterizedName contains no ExtensionConfigs: " + parameterizedName);
-            return this;
         }
     }
 }

@@ -23,6 +23,7 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -106,7 +107,7 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
         }
 
         String scheme = requestURI.getScheme().toLowerCase(Locale.ENGLISH);
-        if (("ws".equals(scheme) == false) && ("wss".equals(scheme) == false))
+        if (!"ws".equals(scheme) && !"wss".equals(scheme))
         {
             throw new IllegalArgumentException("WebSocket URI scheme only supports [ws] and [wss], not [" + scheme + "]");
         }
@@ -159,8 +160,7 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
 
     public List<String> getSubProtocols()
     {
-        List<String> subProtocols = getHeaders().getCSV(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL, true);
-        return subProtocols;
+        return getHeaders().getCSV(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL, true);
     }
 
     public void setSubProtocols(String... protocols)
@@ -276,7 +276,7 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
         String reqKey = this.getHeaders().get(HttpHeader.SEC_WEBSOCKET_KEY);
         String expectedHash = WebSocketCore.hashKey(reqKey);
         String respHash = response.getHeaders().get(HttpHeader.SEC_WEBSOCKET_ACCEPT);
-        if (expectedHash.equalsIgnoreCase(respHash) == false)
+        if (!expectedHash.equalsIgnoreCase(respHash))
             throw new HttpResponseException("Invalid Sec-WebSocket-Accept hash (was:" + respHash + ", expected:" + expectedHash + ")", response);
 
         // Parse the Negotiated Extensions
@@ -298,17 +298,28 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
             }
         }
 
-        // Insert client requested internal Extensions into the negotiatedExtension list from the server.
-        // The order of extensions in the response is assumed to be the same as what the client negotiated.
-        int i = 0;
-        for (ExtensionConfig reqConfig : requestedExtensions)
+        // Get list of negotiated extensions with internal extensions in the correct order.
+        List<ExtensionConfig> negotiatedWithInternal = new ArrayList<>(requestedExtensions);
+        for (Iterator<ExtensionConfig> iterator = negotiatedWithInternal.iterator(); iterator.hasNext();)
         {
-            // If this is an internal extension insert in negotiatedExtensions at position i.
-            // If this is not an internal extension we must advance i only if this extension was negotiated by the server.
-            if (reqConfig.isInternalExtension())
-                negotiatedExtensions.add(i++, reqConfig);
-            else if (i < negotiatedExtensions.size() && reqConfig.getName().equals(negotiatedExtensions.get(i).getName()))
-                i++;
+            ExtensionConfig extConfig = iterator.next();
+
+            // Always keep internal extensions.
+            if (extConfig.isInternalExtension())
+                continue;
+
+            // If it was not negotiated by the server remove.
+            long negExtsCount = negotiatedExtensions.stream().filter(ec -> extConfig.getName().equals(ec.getName())).count();
+            if (negExtsCount < 1)
+            {
+                iterator.remove();
+                continue;
+            }
+
+            // Remove if we have duplicates.
+            long duplicateCount = negotiatedWithInternal.stream().filter(ec -> extConfig.getName().equals(ec.getName())).count();
+            if (duplicateCount > 1)
+                iterator.remove();
         }
 
         // Verify the Negotiated Extensions
@@ -341,7 +352,7 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
 
         // Negotiate the extension stack
         ExtensionStack extensionStack = new ExtensionStack(wsClient.getWebSocketComponents(), Behavior.CLIENT);
-        extensionStack.negotiate(requestedExtensions, negotiatedExtensions);
+        extensionStack.negotiate(requestedExtensions, negotiatedWithInternal);
 
         // Get the negotiated subprotocol
         String negotiatedSubProtocol = null;
@@ -419,7 +430,7 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
 
     public abstract FrameHandler getFrameHandler();
 
-    private final String genRandomKey()
+    private String genRandomKey()
     {
         byte[] bytes = new byte[16];
         ThreadLocalRandom.current().nextBytes(bytes);
