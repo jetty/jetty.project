@@ -171,8 +171,10 @@ public class AsyncCompletionTest extends HttpServerTestFixture
         tests.add(new Object[]{new HelloWorldHandler(), 200, "Hello world"});
         tests.add(new Object[]{new SendErrorHandler(499, "Test async sendError"), 499, "Test async sendError"});
         tests.add(new Object[]{new AsyncReadyCompleteHandler(), 200, AsyncReadyCompleteHandler.data});
-        tests.add(new Object[]{new AsyncWriteCompleteHandler(false), 200, AsyncWriteCompleteHandler.data});
-        tests.add(new Object[]{new AsyncWriteCompleteHandler(true), 200, AsyncWriteCompleteHandler.data});
+        tests.add(new Object[]{new AsyncWriteCompleteHandler(false, false), 200, AsyncWriteCompleteHandler.data});
+        tests.add(new Object[]{new AsyncWriteCompleteHandler(false, true), 200, AsyncWriteCompleteHandler.data});
+        tests.add(new Object[]{new AsyncWriteCompleteHandler(true, false), 200, AsyncWriteCompleteHandler.data});
+        tests.add(new Object[]{new AsyncWriteCompleteHandler(true, true), 200, AsyncWriteCompleteHandler.data});
         return tests.stream().map(Arguments::of);
     }
 
@@ -275,9 +277,11 @@ public class AsyncCompletionTest extends HttpServerTestFixture
         static String data = "Now is the time for all good men to come to the aid of the party";
 
         final boolean close;
+        final boolean unReady;
 
-        AsyncWriteCompleteHandler(boolean close)
+        AsyncWriteCompleteHandler(boolean unReady, boolean close)
         {
+            this.unReady = unReady;
             this.close = close;
         }
 
@@ -296,6 +300,8 @@ public class AsyncCompletionTest extends HttpServerTestFixture
                         response.setContentType("text/plain");
                         response.setContentLength(bytes.length);
                         out.write(bytes);
+                        if (unReady)
+                            assertThat(out.isReady(),Matchers.is(false));
                         if (close)
                             out.close();
                         context.complete();
