@@ -214,7 +214,11 @@ public class AsyncCompletionTest extends HttpServerTestFixture
             while(_threadPool.getBusyThreads() != base)
             {
                 if (System.nanoTime() > end)
+                {
+                    _threadPool.setDetailedDump(true);
+                    _threadPool.dumpStdErr();
                     throw new TimeoutException();
+                }
                 Thread.sleep(10);
             }
 
@@ -247,6 +251,7 @@ public class AsyncCompletionTest extends HttpServerTestFixture
                 {
                     while (out.isReady())
                     {
+                        System.err.println("isReady "+ (bytes!=null));
                         if (bytes != null)
                         {
                             response.setContentType("text/plain");
@@ -260,6 +265,7 @@ public class AsyncCompletionTest extends HttpServerTestFixture
                             return;
                         }
                     }
+                    System.err.println("!isReady ");
                 }
 
                 @Override

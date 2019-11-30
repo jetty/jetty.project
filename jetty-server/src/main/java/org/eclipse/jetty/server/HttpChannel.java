@@ -717,6 +717,13 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         return result;
     }
 
+    void onResponseComplete()
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("onResponseComplete {}", this);
+        _combinedListener.onResponseEnd(_request);
+    }
+
     public void onCompleted()
     {
         if (LOG.isDebugEnabled())
@@ -1194,8 +1201,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                 _combinedListener.onResponseCommit(_request);
             if (_length > 0)
                 _combinedListener.onResponseContent(_request, _content);
-            if (_complete && _state.completeResponse())
-                _combinedListener.onResponseEnd(_request);
             super.succeeded();
         }
 

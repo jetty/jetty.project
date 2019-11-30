@@ -582,7 +582,7 @@ public class NcsaRequestLogTest
                         {
                             try
                             {
-                                while (baseRequest.getHttpChannel().getState().getState() != HttpChannelState.State.WAITING)
+                                while (baseRequest.getHttpChannel().getState().getState() != HttpChannelState.DispatchState.WAITING)
                                 {
                                     Thread.sleep(10);
                                 }

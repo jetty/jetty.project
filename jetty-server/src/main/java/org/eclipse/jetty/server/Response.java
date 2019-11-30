@@ -148,7 +148,6 @@ public class Response implements HttpServletResponse
     public void closedBySendError()
     {
         setErrorSent(true);
-        _out.closedBySendError();
     }
 
     /**

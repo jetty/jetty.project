@@ -24,14 +24,12 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.channels.ReadableByteChannel;
-import java.nio.channels.WritePendingException;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetEncoder;
 import java.nio.charset.CoderResult;
 import java.nio.charset.CodingErrorAction;
 import java.util.ResourceBundle;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.ServletRequest;
@@ -65,28 +63,6 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     private static final String LSTRING_FILE = "javax.servlet.LocalStrings";
     private static final Callback BLOCKING_CLOSE_CALLBACK = new Callback() {};
     private static ResourceBundle lStrings = ResourceBundle.getBundle(LSTRING_FILE);
-
-    /*
-    ACTION             OPEN       ASYNC      READY      PENDING       UNREADY       CLOSING     CLOSED
-    --------------------------------------------------------------------------------------------------
-    setWriteListener() READY->owp ise        ise        ise           ise           ise         ise
-    write()            OPEN       ise        PENDING    wpe           wpe           eof         eof
-    flush()            OPEN       ise        PENDING    wpe           wpe           eof         eof
-    close()            CLOSING    CLOSING    CLOSING    CLOSED        CLOSED        CLOSING     CLOSED
-    isReady()          OPEN:true  READY:true READY:true UNREADY:false UNREADY:false CLOSED:true CLOSED:true
-    write completed    -          -          -          ASYNC         READY->owp    CLOSED      -
-    */
-    enum State
-    {
-        OPEN,     // Open in blocking mode
-        ASYNC,    // Open in async mode
-        READY,    // isReady() has returned true
-        PENDING,  // write operating in progress
-        UNREADY,  // write operating in progress, isReady has returned false
-        ERROR,    // An error has occured
-        CLOSING,  // Asynchronous close in progress
-        CLOSED    // Closed
-    }
 
     /**
      * The HttpOutput.Interceptor is a single intercept point for all
@@ -153,11 +129,11 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     private static Logger LOG = Log.getLogger(HttpOutput.class);
     private static final ThreadLocal<CharsetEncoder> _encoder = new ThreadLocal<>();
 
-    private final AtomicReference<State> _state = new AtomicReference<>(State.OPEN);
     private final HttpChannel _channel;
+    private final HttpChannelState _state;
     private final SharedBlockingCallback _writeBlocker;
     private Interceptor _interceptor;
-    private long _written;
+    private long _written; // Bytes written before interception (eg. before compression)
     private long _flushed;
     private long _firstByteTimeStamp = -1;
     private ByteBuffer _aggregate;
@@ -170,6 +146,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     public HttpOutput(HttpChannel channel)
     {
         _channel = channel;
+        _state = _channel.getState();
         _interceptor = channel;
         _writeBlocker = new WriteBlocker(channel);
         HttpConfiguration config = channel.getHttpConfiguration();
@@ -209,13 +186,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 
     public void reopen()
     {
-        _state.set(State.OPEN);
-    }
-
-    private boolean isLastContentToWrite(int len)
-    {
-        _written += len;
-        return _channel.getResponse().isAllContentWritten(_written);
+        _state.reopenOutput();
     }
 
     public boolean isAllContentWritten()
@@ -228,14 +199,12 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         return _writeBlocker.acquire();
     }
 
-    private void write(ByteBuffer content, boolean complete) throws IOException
+    private void blockingWrite(ByteBuffer content, boolean complete) throws IOException
     {
         try (Blocker blocker = _writeBlocker.acquire())
         {
             write(content, complete, blocker);
             blocker.block();
-            if (complete)
-                closed();
         }
         catch (Exception failure)
         {
@@ -265,26 +234,6 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     {
         closed();
         _channel.abort(failure);
-    }
-
-    public void closedBySendError()
-    {
-        while (true)
-        {
-            State state = _state.get();
-            switch (state)
-            {
-                case OPEN:
-                case READY:
-                case ASYNC:
-                    if (!_state.compareAndSet(state, State.CLOSED))
-                        continue;
-                    return;
-
-                default:
-                    throw new IllegalStateException(state.toString());
-            }
-        }
     }
 
     public void close(Closeable wrapper, Callback callback)
@@ -318,79 +267,46 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     {
         Callback closeCallback = _closeCallback == null ? BLOCKING_CLOSE_CALLBACK : _closeCallback;
 
-        while (true)
+        switch (_state.closeOutput())
         {
-            State state = _state.get();
-            switch (state)
+            case CLOSED:
             {
-                case CLOSING:
-                case CLOSED:
-                {
-                    _closeCallback = null;
-                    closeCallback.succeeded();
-                    return;
-                }
-                case ASYNC:
-                {
-                    // A close call implies a write operation, thus in asynchronous mode
-                    // a call to isReady() that returned true should have been made.
-                    // However it is desirable to allow a close at any time, specially if
-                    // complete is called.   Thus we simulate a call to isReady here, by
-                    // trying to move to READY state.  Either way we continue.
-                    _state.compareAndSet(state, State.READY);
-                    continue;
-                }
-                case UNREADY:
-                case PENDING:
-                {
-                    // A close call implies a write operation, thus in asynchronous mode
-                    // a call to isReady() that returned true should have been made.
-                    // However it is desirable to allow a close at any time, specially if 
-                    // complete is called.   Because the prior write has not yet completed
-                    // and/or isReady has not been called, this close is allowed, but will
-                    // abort the response.
-                    if (!_state.compareAndSet(state, State.CLOSED))
-                        continue;
-                    IOException ex = new IOException("Closed while Pending/Unready");
-                    LOG.warn(ex.toString());
-                    LOG.debug(ex);
-                    abort(ex);
-                    _closeCallback = null;
-                    closeCallback.failed(ex);
-                    return;
-                }
-                default:
-                {
-                    if (!_state.compareAndSet(state, State.CLOSING))
-                        continue;
-
-                    // Do a normal close by writing the aggregate buffer or an empty buffer. If we are
-                    // not including, then indicate this is the last write.
-                    try
-                    {
-                        ByteBuffer content = BufferUtil.hasContent(_aggregate) ? _aggregate : BufferUtil.EMPTY_BUFFER;
-                        if (closeCallback == BLOCKING_CLOSE_CALLBACK)
-                        {
-                            // Do a blocking close
-                            write(content, !_channel.getResponse().isIncluding());
-                            _closeCallback = null;
-                            closeCallback.succeeded();
-                        }
-                        else
-                        {
-                            _closeCallback = null;
-                            write(content, !_channel.getResponse().isIncluding(), closeCallback);
-                        }
-                    }
-                    catch (IOException x)
-                    {
-                        LOG.ignore(x); // Ignore it, it's been already logged in write().
-                        _closeCallback = null;
-                        closeCallback.failed(x);
-                    }
-                    return;
-                }
+                _closeCallback = null;
+                closeCallback.succeeded();
+                return;
             }
+            case CLOSING:
+            {
+                // Do a normal close by writing the aggregate buffer or an empty buffer. If we are
+                // not including, then indicate this is the last write.
+                try
+                {
+                    ByteBuffer content = BufferUtil.hasContent(_aggregate) ? _aggregate : BufferUtil.EMPTY_BUFFER;
+                    if (closeCallback == BLOCKING_CLOSE_CALLBACK)
+                    {
+                        // Do a blocking close
+                        blockingWrite(content, !_channel.getResponse().isIncluding());
+                        _state.onWriteComplete(true);
+                        _closeCallback = null;
+                        closeCallback.succeeded();
+                    }
+                    else
+                    {
+                        _closeCallback = null;
+                        write(content, !_channel.getResponse().isIncluding(), closeCallback);
+                    }
+                }
+                catch (IOException x)
+                {
+                    LOG.ignore(x); // Ignore it, it's been already logged in write().
+                    _closeCallback = null;
+                    closeCallback.failed(x);
+                }
+                break;
+            }
+
+            default:
+                throw new IllegalStateException();
         }
     }
 
@@ -400,36 +316,8 @@ public class HttpOutput extends ServletOutputStream implements Runnable
      */
     public void closed()
     {
-        while (true)
-        {
-            State state = _state.get();
-            switch (state)
-            {
-                case CLOSED:
-                {
-                    return;
-                }
-                case UNREADY:
-                {
-                    if (_state.compareAndSet(state, State.ERROR))
-                    {
-                        if (_onError == null)
-                            _onError = new EofException("Async closed");
-                        releaseBuffer();
-                        return;
-                    }
-                    break;
-                }
-                default:
-                {
-                    if (!_state.compareAndSet(state, State.CLOSED))
-                        break;
-
-                    releaseBuffer();
-                    return;
-                }
-            }
-        }
+        _state.closedOutput();
+        releaseBuffer();
     }
 
     public ByteBuffer getBuffer()
@@ -455,138 +343,56 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 
     public boolean isClosed()
     {
-        switch (_state.get())
-        {
-            case CLOSING:
-            case CLOSED:
-                return true;
-            default:
-                return false;
-        }
+        return _state.isOutputClosed();
     }
 
     public boolean isAsync()
     {
-        switch (_state.get())
-        {
-            case ASYNC:
-            case READY:
-            case PENDING:
-            case UNREADY:
-                return true;
-            default:
-                return false;
-        }
+        return _state.isOutputAsync();
     }
 
     @Override
     public void flush() throws IOException
     {
-        while (true)
+        switch (_state.onWrite(true))
         {
-            State state = _state.get();
-            switch (state)
-            {
-                case OPEN:
-                    write(BufferUtil.hasContent(_aggregate) ? _aggregate : BufferUtil.EMPTY_BUFFER, false);
-                    return;
+            case OPEN:
+                blockingWrite(BufferUtil.hasContent(_aggregate) ? _aggregate : BufferUtil.EMPTY_BUFFER, false);
+                _state.onWriteComplete(false);
+                break;
 
-                case ASYNC:
-                    throw new IllegalStateException("isReady() not called");
+            case PENDING:
+                new AsyncFlush().iterate();
+                break;
 
-                case READY:
-                    if (!_state.compareAndSet(state, State.PENDING))
-                        continue;
-                    new AsyncFlush().iterate();
-                    return;
+            case ERROR:
+                throw new IOException(_onError);
 
-                case UNREADY:
-                    throw new WritePendingException();
+            case CLOSING:
+            case CLOSED:
+                return;
 
-                case ERROR:
-                    throw new EofException(_onError);
-
-                case PENDING:
-                case CLOSING:
-                case CLOSED:
-                    return;
-
-                default:
-                    throw new IllegalStateException(state.toString());
-            }
+            default:
+                throw new IllegalStateException();
         }
     }
 
     @Override
     public void write(byte[] b, int off, int len) throws IOException
     {
-        // Async or Blocking ?
-        while (true)
-        {
-            State state = _state.get();
-            switch (state)
-            {
-                case OPEN:
-                    // process blocking below
-                    break;
-
-                case ASYNC:
-                    throw new IllegalStateException("isReady() not called");
-
-                case READY:
-                    if (!_state.compareAndSet(state, State.PENDING))
-                        continue;
-
-                    // Should we aggregate?
-                    boolean last = isLastContentToWrite(len);
-                    if (!last && len <= _commitSize)
-                    {
-                        acquireBuffer();
-
-                        // YES - fill the aggregate with content from the buffer
-                        int filled = BufferUtil.fill(_aggregate, b, off, len);
-
-                        // return if we are not complete, not full and filled all the content
-                        if (filled == len && !BufferUtil.isFull(_aggregate))
-                        {
-                            if (!_state.compareAndSet(State.PENDING, State.ASYNC))
-                                throw new IllegalStateException(_state.get().toString());
-                            return;
-                        }
-
-                        // adjust offset/length
-                        off += filled;
-                        len -= filled;
-                    }
-
-                    // Do the asynchronous writing from the callback
-                    new AsyncWrite(b, off, len, last).iterate();
-                    return;
-
-                case PENDING:
-                case UNREADY:
-                    throw new WritePendingException();
-
-                case ERROR:
-                    throw new EofException(_onError);
-
-                case CLOSING:
-                case CLOSED:
-                    throw new EofException("Closed");
-
-                default:
-                    throw new IllegalStateException(state.toString());
-            }
-            break;
-        }
-
-        // handle blocking write
-
+        boolean last = _channel.getResponse().isAllContentWritten(_written + len);
+        int space = _aggregate == null ? getBufferSize() : BufferUtil.space(_aggregate);
         // Should we aggregate?
-        // Yes - if the write is smaller than the commitSize (==aggregate buffer size)
+        // Yes - if the write is smaller than the commitSize
         //       and the write is not the last one, or is last but will fit in an already allocated aggregate buffer.
-        boolean last = isLastContentToWrite(len);
-        if (len <= _commitSize && (!last || len <= BufferUtil.space(_aggregate)))
+        boolean aggregate = len <= _commitSize && (!last || BufferUtil.hasContent(_aggregate) && len <= space);
+        boolean flush = !aggregate || len >= space;
+
+        HttpChannelState.OutputState state = _state.onWrite(flush);
+
+        _written += len;
+
+        if (aggregate)
         {
             acquireBuffer();
 
@@ -594,7 +400,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             int filled = BufferUtil.fill(_aggregate, b, off, len);
 
             // return if we are not the last write and have aggregated all of the content
-            if (!last && filled == len && !BufferUtil.isFull(_aggregate))
+            if (!flush)
                 return;
 
             // adjust offset/length
@@ -602,158 +408,149 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             len -= filled;
         }
 
-        // flush any content from the aggregate
-        if (BufferUtil.hasContent(_aggregate))
+        switch (state)
         {
-            write(_aggregate, last && len == 0);
-
-            // should we fill aggregate again from the buffer?
-            if (len > 0 && !last && len <= _commitSize && len <= BufferUtil.space(_aggregate))
+            case OPEN:
             {
-                BufferUtil.append(_aggregate, b, off, len);
+                // flush any content from the aggregate
+                if (BufferUtil.hasContent(_aggregate))
+                {
+                    blockingWrite(_aggregate, last && len == 0);
+
+                    // should we fill aggregate again from the buffer?
+                    if (len > 0 && !last && len <= BufferUtil.space(_aggregate))
+                    {
+                        BufferUtil.append(_aggregate, b, off, len);
+                        _state.onWriteComplete(false);
+                        return;
+                    }
+                }
+
+                // write any remaining content in the buffer directly
+                if (len > 0)
+                {
+                    // write a buffer capacity at a time to avoid JVM pooling large direct buffers
+                    // http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6210541
+                    ByteBuffer view = ByteBuffer.wrap(b, off, len);
+                    while (len > getBufferSize())
+                    {
+                        int p = view.position();
+                        int l = p + getBufferSize();
+                        view.limit(p + getBufferSize());
+                        blockingWrite(view, false);
+                        len -= getBufferSize();
+                        view.limit(l + Math.min(len, getBufferSize()));
+                        view.position(l);
+                    }
+                    blockingWrite(view, last);
+                }
+                else if (last)
+                {
+                    blockingWrite(BufferUtil.EMPTY_BUFFER, true);
+                }
+                _state.onWriteComplete(last);
+                break;
+            }
+
+            case PENDING:
+            {
+                // Do the asynchronous writing from the callback
+                new AsyncWrite(b, off, len, last).iterate();
                 return;
             }
-        }
 
-        // write any remaining content in the buffer directly
-        if (len > 0)
-        {
-            // write a buffer capacity at a time to avoid JVM pooling large direct buffers
-            // http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6210541
-            ByteBuffer view = ByteBuffer.wrap(b, off, len);
-            while (len > getBufferSize())
-            {
-                int p = view.position();
-                int l = p + getBufferSize();
-                view.limit(p + getBufferSize());
-                write(view, false);
-                len -= getBufferSize();
-                view.limit(l + Math.min(len, getBufferSize()));
-                view.position(l);
-            }
-            write(view, last);
-        }
-        else if (last)
-        {
-            write(BufferUtil.EMPTY_BUFFER, true);
+            case ERROR:
+                throw new IOException(_onError);
+
+            case CLOSING:
+            case CLOSED:
+                return;
+
+            default:
+                throw new IllegalStateException();
         }
     }
 
     public void write(ByteBuffer buffer) throws IOException
     {
-        // This write always bypasses aggregate buffer
-
-        // Async or Blocking ?
-        while (true)
-        {
-            State state = _state.get();
-            switch (state)
-            {
-                case OPEN:
-                    // process blocking below
-                    break;
-
-                case ASYNC:
-                    throw new IllegalStateException("isReady() not called");
-
-                case READY:
-                    if (!_state.compareAndSet(state, State.PENDING))
-                        continue;
-
-                    // Do the asynchronous writing from the callback
-                    boolean last = isLastContentToWrite(buffer.remaining());
-                    new AsyncWrite(buffer, last).iterate();
-                    return;
-
-                case PENDING:
-                case UNREADY:
-                    throw new WritePendingException();
-
-                case ERROR:
-                    throw new EofException(_onError);
-
-                case CLOSING:
-                case CLOSED:
-                    throw new EofException("Closed");
-
-                default:
-                    throw new IllegalStateException(state.toString());
-            }
-            break;
-        }
-
-        // handle blocking write
         int len = BufferUtil.length(buffer);
-        boolean last = isLastContentToWrite(len);
+        boolean last = _channel.getResponse().isAllContentWritten(_written + len);
 
-        // flush any content from the aggregate
-        if (BufferUtil.hasContent(_aggregate))
-            write(_aggregate, last && len == 0);
+        // This write always bypasses aggregate buffer
+        switch (_state.onWrite(true))
+        {
+            case OPEN:
+            {
+                // handle blocking write
+                _written += len;
 
-        // write any remaining content in the buffer directly
-        if (len > 0)
-            write(buffer, last);
-        else if (last)
-            write(BufferUtil.EMPTY_BUFFER, true);
+                // flush any content from the aggregate
+                if (BufferUtil.hasContent(_aggregate))
+                    blockingWrite(_aggregate, last && len == 0);
+
+                // write any remaining content in the buffer directly
+                if (len > 0)
+                    blockingWrite(buffer, last);
+                else if (last)
+                    blockingWrite(BufferUtil.EMPTY_BUFFER, true);
+
+                _state.onWriteComplete(last);
+                return;
+            }
+
+            case PENDING:
+            {
+                // Do the asynchronous writing from the callback
+                _written += len;
+                new AsyncWrite(buffer, last).iterate();
+                return;
+            }
+
+            case ERROR:
+                throw new EofException(_onError);
+
+            default:
+                throw new IllegalStateException();
+        }
     }
 
     @Override
     public void write(int b) throws IOException
     {
-        _written += 1;
-        boolean complete = _channel.getResponse().isAllContentWritten(_written);
+        boolean last = _channel.getResponse().isAllContentWritten(_written + 1);
+        int space = _aggregate == null ? getBufferSize() : BufferUtil.space(_aggregate);
+        boolean flush = last || space == 1;
 
-        // Async or Blocking ?
-        while (true)
+        HttpChannelState.OutputState state = _state.onWrite(flush);
+
+        _written++;
+
+        acquireBuffer();
+        BufferUtil.append(_aggregate, (byte)b);
+
+        if (!flush)
+            return;
+
+        switch (state)
         {
-            switch (_state.get())
+            case OPEN:
             {
-                case OPEN:
-                    acquireBuffer();
-                    BufferUtil.append(_aggregate, (byte)b);
-
-                    // Check if all written or full
-                    if (complete || BufferUtil.isFull(_aggregate))
-                        write(_aggregate, complete);
-                    break;
-
-                case ASYNC:
-                    throw new IllegalStateException("isReady() not called");
-
-                case READY:
-                    if (!_state.compareAndSet(State.READY, State.PENDING))
-                        continue;
-
-                    acquireBuffer();
-                    BufferUtil.append(_aggregate, (byte)b);
-
-                    // Check if all written or full
-                    if (!complete && !BufferUtil.isFull(_aggregate))
-                    {
-                        if (!_state.compareAndSet(State.PENDING, State.ASYNC))
-                            throw new IllegalStateException();
-                        return;
-                    }
-
-                    // Do the asynchronous writing from the callback
-                    new AsyncFlush().iterate();
-                    return;
-
-                case PENDING:
-                case UNREADY:
-                    throw new WritePendingException();
-
-                case ERROR:
-                    throw new EofException(_onError);
-
-                case CLOSING:
-                case CLOSED:
-                    throw new EofException("Closed");
-
-                default:
-                    throw new IllegalStateException();
+                blockingWrite(_aggregate, last);
+                _state.onWriteComplete(last);
+                return;
             }
-            break;
+
+            case PENDING:
+            {
+                // Do the asynchronous writing from the callback
+                new AsyncFlush().iterate();
+                return;
+            }
+
+            case ERROR:
+                throw new EofException(_onError);
+            default:
+                throw new IllegalStateException();
         }
     }
 
@@ -883,7 +680,8 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             LOG.debug("sendContent({})", BufferUtil.toDetailString(content));
 
         _written += content.remaining();
-        write(content, true);
+        blockingWrite(content, true);
+        _state.onWriteComplete(true);
     }
 
     /**
@@ -1028,34 +826,29 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             callback.failed(new IOException("cannot sendContent() after write()"));
             return;
         }
-        if (_channel.isCommitted())
-        {
-            callback.failed(new IOException("cannot sendContent(), output already committed"));
-            return;
-        }
 
-        while (true)
+        try
         {
-            switch (_state.get())
+            switch (_state.onWriteContent())
             {
-                case OPEN:
-                    if (!_state.compareAndSet(State.OPEN, State.PENDING))
-                        continue;
+                case PENDING:
                     break;
-
                 case ERROR:
-                    callback.failed(new EofException(_onError));
+                    callback.failed(_onError == null ? new IllegalStateException() : _onError);
                     return;
-
-                case CLOSING:
-                case CLOSED:
-                    callback.failed(new EofException("Closed"));
-                    return;
-
                 default:
                     throw new IllegalStateException();
             }
-            break;
+        }
+        catch (IOException e)
+        {
+            if (_onError != null && e != _onError)
+            {
+                _onError.addSuppressed(e);
+                callback.failed(_onError);
+            }
+            else
+                callback.failed(e);
         }
 
         ByteBuffer buffer = _channel.useDirectBuffers() ? httpContent.getDirectBuffer() : null;
@@ -1162,50 +955,16 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     @Override
     public void setWriteListener(WriteListener writeListener)
     {
-        if (!_channel.getState().isAsync())
-            throw new IllegalStateException("!ASYNC");
-
-        if (_state.compareAndSet(State.OPEN, State.READY))
-        {
-            _writeListener = writeListener;
-            if (_channel.getState().onWritePossible())
-                _channel.execute(_channel);
-        }
-        else
-            throw new IllegalStateException();
+        boolean execute = _state.setWriteListener();
+        _writeListener = writeListener;
+        if (execute)
+            _channel.execute(_channel);
     }
 
     @Override
     public boolean isReady()
     {
-        while (true)
-        {
-            switch (_state.get())
-            {
-                case OPEN:
-                case READY:
-                case ERROR:
-                case CLOSING:
-                case CLOSED:
-                    return true;
-
-                case ASYNC:
-                    if (!_state.compareAndSet(State.ASYNC, State.READY))
-                        continue;
-                    return true;
-
-                case PENDING:
-                    if (!_state.compareAndSet(State.PENDING, State.UNREADY))
-                        continue;
-                    return false;
-
-                case UNREADY:
-                    return false;
-
-                default:
-                    throw new IllegalStateException();
-            }
-        }
+        return _state.isOutputReady();
     }
 
     @Override
@@ -1213,42 +972,25 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     {
         while (true)
         {
-            State state = _state.get();
+            // TODO ERROR state?
 
             if (_onError != null)
             {
-                switch (state)
+                Throwable th = _onError;
+                _onError = null;
+                if (LOG.isDebugEnabled())
+                    LOG.debug("onError", th);
+
+                try
                 {
-                    case CLOSING:
-                    case CLOSED:
-                    case ERROR:
-                    {
-                        _onError = null;
-                        return;
-                    }
-                    default:
-                    {
-                        if (_state.compareAndSet(state, State.ERROR))
-                        {
-                            Throwable th = _onError;
-                            _onError = null;
-                            if (LOG.isDebugEnabled())
-                                LOG.debug("onError", th);
-
-                            try
-                            {
-                                _writeListener.onError(th);
-                            }
-                            finally
-                            {
-                                IO.close(this);
-                            }
-
-                            return;
-                        }
-                    }
+                    _writeListener.onError(th);
                 }
-                continue;
+                finally
+                {
+                    IO.close(this);
+                }
+
+                return;
             }
 
             // We do not check the state here.  Strictly speaking the state should 
@@ -1269,7 +1011,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             try
             {
                 _writeListener.onWritePossible();
-                break;
+                return;
             }
             catch (Throwable e)
             {
@@ -1281,7 +1023,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     @Override
     public String toString()
     {
-        return String.format("%s@%x{%s}", this.getClass().getSimpleName(), hashCode(), _state.get());
+        return String.format("%s@%x", this.getClass().getSimpleName(), hashCode());
     }
 
     private abstract class AsyncICB extends IteratingCallback
@@ -1302,41 +1044,14 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         @Override
         protected void onCompleteSuccess()
         {
-            while (true)
-            {
-                State last = _state.get();
-                switch (last)
-                {
-                    case PENDING:
-                        if (!_state.compareAndSet(State.PENDING, State.ASYNC))
-                            continue;
-                        break;
-
-                    case UNREADY:
-                        if (!_state.compareAndSet(State.UNREADY, State.READY))
-                            continue;
-                        if (_last)
-                            closed();
-                        if (_channel.getState().onWritePossible())
-                            _channel.execute(_channel);
-                        break;
-
-                    case CLOSED:
-                        break;
-
-                    default:
-                        throw new IllegalStateException();
-                }
-                break;
-            }
+            _state.onWriteComplete(_last);
         }
 
         @Override
         public void onCompleteFailure(Throwable e)
         {
             _onError = e == null ? new IOException() : e;
-            if (_channel.getState().onWritePossible())
-                _channel.execute(_channel);
+            _state.onWriteComplete(_last); // TODO pass error?
         }
     }
 
