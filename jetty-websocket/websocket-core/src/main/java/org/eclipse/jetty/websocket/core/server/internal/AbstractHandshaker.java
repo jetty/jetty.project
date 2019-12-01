@@ -62,7 +62,7 @@ public abstract class AbstractHandshaker implements Handshaker
         if (!validateRequest(request))
             return false;
 
-        Negotiation negotiation = newNegotiation(request, response, new WebSocketComponents());
+        Negotiation negotiation = newNegotiation(request, response, negotiator.getWebSocketComponents());
         if (LOG.isDebugEnabled())
             LOG.debug("negotiation {}", negotiation);
         negotiation.negotiate();
