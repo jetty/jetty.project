@@ -96,14 +96,13 @@ public class AsyncCompletionTest extends HttpServerTestFixture
                 _delay.get(10, TimeUnit.SECONDS);
                 getCallback().succeeded();
             }
-            catch(Throwable th)
+            catch (Throwable th)
             {
                 th.printStackTrace();
                 getCallback().failed(th);
             }
         }
     }
-
 
     @BeforeEach
     public void init() throws Exception
@@ -160,7 +159,7 @@ public class AsyncCompletionTest extends HttpServerTestFixture
         @Override
         public void onCompleted()
         {
-            COMPLETE.compareAndSet(false,true);
+            COMPLETE.compareAndSet(false, true);
             super.onCompleted();
         }
     }
@@ -170,7 +169,7 @@ public class AsyncCompletionTest extends HttpServerTestFixture
     {
         List<Object[]> tests = new ArrayList<>();
         tests.add(new Object[]{new HelloWorldHandler(), 200, "Hello world"});
-        tests.add(new Object[]{new SendErrorHandler(499,"Test async sendError"), 499, "Test async sendError"});
+        tests.add(new Object[]{new SendErrorHandler(499, "Test async sendError"), 499, "Test async sendError"});
         tests.add(new Object[]{new AsyncReadyCompleteHandler(), 200, AsyncReadyCompleteHandler.data});
         return tests.stream().map(Arguments::of);
     }
@@ -205,7 +204,7 @@ public class AsyncCompletionTest extends HttpServerTestFixture
 
             // wait for threads to return to base level
             long end = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
-            while(_threadPool.getBusyThreads() != base)
+            while (_threadPool.getBusyThreads() != base)
             {
                 if (System.nanoTime() > end)
                     throw new TimeoutException();
@@ -218,7 +217,7 @@ public class AsyncCompletionTest extends HttpServerTestFixture
             // proceed with the completion
             delay.proceed();
 
-            while(!COMPLETE.get())
+            while (!COMPLETE.get())
             {
                 if (System.nanoTime() > end)
                     throw new TimeoutException();
@@ -236,8 +235,10 @@ public class AsyncCompletionTest extends HttpServerTestFixture
         {
             AsyncContext context = request.startAsync();
             ServletOutputStream out = response.getOutputStream();
-            out.setWriteListener(new WriteListener() {
+            out.setWriteListener(new WriteListener()
+            {
                 byte[] bytes = data.getBytes(StandardCharsets.ISO_8859_1);
+
                 @Override
                 public void onWritePossible() throws IOException
                 {
