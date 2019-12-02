@@ -164,8 +164,8 @@ public class X509Test
     {
         SslContextFactory baseSsl = new SslContextFactory();
         X509ExtendedKeyManager x509ExtendedKeyManager = getX509ExtendedKeyManager(baseSsl);
-        UnsupportedOperationException npe = assertThrows(UnsupportedOperationException.class, () -> baseSsl.newSniX509ExtendedKeyManager(x509ExtendedKeyManager));
-        assertThat("UnsupportedOperationException.message", npe.getMessage(), containsString("X509ExtendedKeyManager only supported on " + SslContextFactory.Server.class.getName()));
+        UnsupportedOperationException ex = assertThrows(UnsupportedOperationException.class, () -> baseSsl.newSniX509ExtendedKeyManager(x509ExtendedKeyManager));
+        assertThat("UnsupportedOperationException.message", ex.getMessage(), containsString("X509ExtendedKeyManager only supported on " + SslContextFactory.Server.class.getName()));
     }
 
     @Test
@@ -184,8 +184,8 @@ public class X509Test
     {
         SslContextFactory clientSsl = new SslContextFactory.Client();
         X509ExtendedKeyManager x509ExtendedKeyManager = getX509ExtendedKeyManager(clientSsl);
-        UnsupportedOperationException npe = assertThrows(UnsupportedOperationException.class, () -> clientSsl.newSniX509ExtendedKeyManager(x509ExtendedKeyManager));
-        assertThat("SNI X509 ExtendedKeyManager is unsupported in Client mode", npe.getMessage(), containsString("X509ExtendedKeyManager only supported on " + SslContextFactory.Server.class.getName()));
+        UnsupportedOperationException ex = assertThrows(UnsupportedOperationException.class, () -> clientSsl.newSniX509ExtendedKeyManager(x509ExtendedKeyManager));
+        assertThat("SNI X509 ExtendedKeyManager is unsupported in Client mode", ex.getMessage(), containsString("X509ExtendedKeyManager only supported on " + SslContextFactory.Server.class.getName()));
     }
 
     @Test
