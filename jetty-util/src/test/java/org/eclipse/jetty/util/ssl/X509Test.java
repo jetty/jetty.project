@@ -18,17 +18,21 @@
 
 package org.eclipse.jetty.util.ssl;
 
+import java.nio.file.Path;
 import java.security.cert.X509Certificate;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.X509ExtendedKeyManager;
 
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class X509Test
 {
@@ -160,8 +164,19 @@ public class X509Test
     {
         SslContextFactory baseSsl = new SslContextFactory();
         X509ExtendedKeyManager x509ExtendedKeyManager = getX509ExtendedKeyManager(baseSsl);
-        X509ExtendedKeyManager sniX509ExtendedKeyManager = baseSsl.newSniX509ExtendedKeyManager(x509ExtendedKeyManager);
-        assertThat("SNI X509 ExtendedKeyManager is undefined in this context", sniX509ExtendedKeyManager, nullValue());
+        UnsupportedOperationException npe = assertThrows(UnsupportedOperationException.class, () -> baseSsl.newSniX509ExtendedKeyManager(x509ExtendedKeyManager));
+        assertThat("UnsupportedOperationException.message", npe.getMessage(), containsString("X509ExtendedKeyManager only supported on " + SslContextFactory.Server.class.getName()));
+    }
+
+    @Test
+    public void testSniX509ExtendedKeyManager_BaseClass_Start() throws Exception
+    {
+        SslContextFactory baseSsl = new SslContextFactory();
+        Path keystorePath = MavenTestingUtils.getTestResourcePathFile("keystore_sni.p12");
+        baseSsl.setKeyStoreResource(new PathResource(keystorePath));
+        baseSsl.setKeyStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
+        baseSsl.setKeyManagerPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");
+        baseSsl.start(); // should not throw an exception
     }
 
     @Test
@@ -170,7 +185,7 @@ public class X509Test
         SslContextFactory clientSsl = new SslContextFactory.Client();
         X509ExtendedKeyManager x509ExtendedKeyManager = getX509ExtendedKeyManager(clientSsl);
         X509ExtendedKeyManager sniX509ExtendedKeyManager = clientSsl.newSniX509ExtendedKeyManager(x509ExtendedKeyManager);
-        assertThat("SNI X509 ExtendedKeyManager is undefined in this context", sniX509ExtendedKeyManager, nullValue());
+        assertThat("SNI X509 ExtendedKeyManager is undefined in Client mode", sniX509ExtendedKeyManager, is(x509ExtendedKeyManager));
     }
 
     @Test
