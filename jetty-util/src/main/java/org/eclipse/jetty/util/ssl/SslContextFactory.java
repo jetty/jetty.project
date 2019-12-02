@@ -2185,13 +2185,6 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
             checkEndPointIdentificationAlgorithm();
             super.checkConfiguration();
         }
-
-        @Deprecated
-        protected X509ExtendedKeyManager newSniX509ExtendedKeyManager(X509ExtendedKeyManager keyManager)
-        {
-            // Overriding base implementation, as this context should have no WARN message.
-            return keyManager;
-        }
     }
 
     @ManagedObject
