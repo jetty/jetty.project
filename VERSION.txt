@@ -163,7 +163,7 @@ jetty-10.0.0.alpha1 - 26 November 2019
  + 4334 Better test ErrorHandler changes
  + 4342 OpenID module cannot create HttpClient in Jetty 10
 
-jetty-10.0.0-alpha0
+jetty-10.0.0-alpha0 - 11 July 2019
  + 113 Add support for NCSA Extended Log File Format
  + 114 Bring back overlay deployer
  + 132 ClientConnector abstraction
