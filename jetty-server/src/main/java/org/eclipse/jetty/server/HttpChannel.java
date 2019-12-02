@@ -1195,10 +1195,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             if (_length > 0)
                 _combinedListener.onResponseContent(_request, _content);
             if (_complete && _state.completeResponse())
-            {
-                _response.getHttpOutput().closed();
                 _combinedListener.onResponseEnd(_request);
-            }
             super.succeeded();
         }
 
@@ -1222,7 +1219,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                     @Override
                     public void failed(Throwable th)
                     {
-                        _response.getHttpOutput().closed();
                         abort(x);
                         super.failed(x);
                     }
