@@ -184,8 +184,8 @@ public class X509Test
     {
         SslContextFactory clientSsl = new SslContextFactory.Client();
         X509ExtendedKeyManager x509ExtendedKeyManager = getX509ExtendedKeyManager(clientSsl);
-        X509ExtendedKeyManager sniX509ExtendedKeyManager = clientSsl.newSniX509ExtendedKeyManager(x509ExtendedKeyManager);
-        assertThat("SNI X509 ExtendedKeyManager is undefined in Client mode", sniX509ExtendedKeyManager, is(x509ExtendedKeyManager));
+        UnsupportedOperationException npe = assertThrows(UnsupportedOperationException.class, () -> clientSsl.newSniX509ExtendedKeyManager(x509ExtendedKeyManager));
+        assertThat("SNI X509 ExtendedKeyManager is unsupported in Client mode", npe.getMessage(), containsString("X509ExtendedKeyManager only supported on " + SslContextFactory.Server.class.getName()));
     }
 
     @Test
