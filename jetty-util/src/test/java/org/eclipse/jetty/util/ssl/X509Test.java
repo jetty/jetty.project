@@ -26,10 +26,9 @@ import org.eclipse.jetty.util.resource.Resource;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.hamcrest.Matchers.nullValue;
 
 public class X509Test
 {
@@ -161,8 +160,8 @@ public class X509Test
     {
         SslContextFactory baseSsl = new SslContextFactory();
         X509ExtendedKeyManager x509ExtendedKeyManager = getX509ExtendedKeyManager(baseSsl);
-        UnsupportedOperationException npe = assertThrows(UnsupportedOperationException.class, () -> baseSsl.newSniX509ExtendedKeyManager(x509ExtendedKeyManager));
-        assertThat("UnsupportedOperationException.message", npe.getMessage(), containsString("X509ExtendedKeyManager only supported on Server"));
+        X509ExtendedKeyManager sniX509ExtendedKeyManager = baseSsl.newSniX509ExtendedKeyManager(x509ExtendedKeyManager);
+        assertThat("SNI X509 ExtendedKeyManager is undefined in this context", sniX509ExtendedKeyManager, nullValue());
     }
 
     @Test
@@ -170,8 +169,8 @@ public class X509Test
     {
         SslContextFactory clientSsl = new SslContextFactory.Client();
         X509ExtendedKeyManager x509ExtendedKeyManager = getX509ExtendedKeyManager(clientSsl);
-        UnsupportedOperationException re = assertThrows(UnsupportedOperationException.class, () -> clientSsl.newSniX509ExtendedKeyManager(x509ExtendedKeyManager));
-        assertThat("UnsupportedOperationException.message", re.getMessage(), containsString("X509ExtendedKeyManager only supported on Server"));
+        X509ExtendedKeyManager sniX509ExtendedKeyManager = clientSsl.newSniX509ExtendedKeyManager(x509ExtendedKeyManager);
+        assertThat("SNI X509 ExtendedKeyManager is undefined in this context", sniX509ExtendedKeyManager, nullValue());
     }
 
     @Test
