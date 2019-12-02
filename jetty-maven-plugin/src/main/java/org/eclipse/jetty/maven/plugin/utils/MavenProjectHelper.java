@@ -36,9 +36,9 @@ import org.apache.maven.execution.MavenSession;
 import org.apache.maven.project.DefaultProjectBuildingRequest;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.project.ProjectBuildingRequest;
-import org.apache.maven.shared.artifact.DefaultArtifactCoordinate;
-import org.apache.maven.shared.artifact.resolve.ArtifactResolver;
-import org.apache.maven.shared.artifact.resolve.ArtifactResolverException;
+import org.apache.maven.shared.transfer.artifact.DefaultArtifactCoordinate;
+import org.apache.maven.shared.transfer.artifact.resolve.ArtifactResolver;
+import org.apache.maven.shared.transfer.artifact.resolve.ArtifactResolverException;
 import org.eclipse.jetty.maven.plugin.OverlayManager;
 import org.eclipse.jetty.maven.plugin.WarPluginInfo;
 
