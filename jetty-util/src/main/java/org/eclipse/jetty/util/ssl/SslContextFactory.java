@@ -1271,7 +1271,7 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     protected X509ExtendedKeyManager newSniX509ExtendedKeyManager(X509ExtendedKeyManager keyManager)
     {
         LOG.warn("Using Deprecated SslContextFactory implementation, SNI does not work in this context, use SslContextFactory.Server instead.");
-        return null;
+        return keyManager;
     }
 
     protected TrustManager[] getTrustManagers(KeyStore trustStore, Collection<? extends CRL> crls) throws Exception
@@ -2184,7 +2184,7 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
         protected X509ExtendedKeyManager newSniX509ExtendedKeyManager(X509ExtendedKeyManager keyManager)
         {
             // Overriding base implementation, as this context should have no WARN message.
-            return null;
+            return keyManager;
         }
     }
 
