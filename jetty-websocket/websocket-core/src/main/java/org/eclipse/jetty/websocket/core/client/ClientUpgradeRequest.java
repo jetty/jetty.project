@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -353,14 +354,28 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
             }
         }
 
-        // Put requested internal Extensions into the negotiatedExtension list.
-        int i = 0;
-        for (ExtensionConfig reqConfig : requestedExtensions)
+        // Get list of negotiated extensions with internal extensions in the correct order.
+        List<ExtensionConfig> negotiatedWithInternal = new ArrayList<>(requestedExtensions);
+        for (Iterator<ExtensionConfig> iterator = negotiatedWithInternal.iterator(); iterator.hasNext();)
         {
-            if (reqConfig.isInternalExtension())
-                negotiatedExtensions.add(i++, reqConfig);
-            else if (i < negotiatedExtensions.size() && reqConfig.getName().equals(negotiatedExtensions.get(i).getName()))
-                i++;
+            ExtensionConfig extConfig = iterator.next();
+
+            // Always keep internal extensions.
+            if (extConfig.isInternalExtension())
+                continue;
+
+            // If it was not negotiated by the server remove.
+            long negExtsCount = negotiatedExtensions.stream().filter(ec -> extConfig.getName().equals(ec.getName())).count();
+            if (negExtsCount < 1)
+            {
+                iterator.remove();
+                continue;
+            }
+
+            // Remove if we have duplicates.
+            long duplicateCount = negotiatedWithInternal.stream().filter(ec -> extConfig.getName().equals(ec.getName())).count();
+            if (duplicateCount > 1)
+                iterator.remove();
         }
 
         // Verify the Negotiated Extensions
@@ -393,7 +408,7 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
 
         // Negotiate the extension stack
         ExtensionStack extensionStack = new ExtensionStack(wsClient.getWebSocketComponents(), Behavior.CLIENT);
-        extensionStack.negotiate(requestedExtensions, negotiatedExtensions);
+        extensionStack.negotiate(requestedExtensions, negotiatedWithInternal);
 
         // Get the negotiated subprotocol
         String negotiatedSubProtocol = null;

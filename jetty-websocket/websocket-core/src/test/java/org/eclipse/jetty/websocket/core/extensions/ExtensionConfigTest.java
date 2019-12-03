@@ -26,8 +26,10 @@ import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class ExtensionConfigTest
 {
@@ -157,5 +159,29 @@ public class ExtensionConfigTest
         assertThat("Configs[0]", configs.get(0).getName(), is("permessage-compress"));
         assertThat("Configs[1]", configs.get(1).getName(), is("identity"));
         assertThat("Configs[2]", configs.get(2).getName(), is("capture"));
+    }
+
+    @Test
+    public void testParseNoExtensions()
+    {
+        IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
+            () -> ExtensionConfig.parse("=params"));
+        assertThat(error.getMessage(), containsString("contains no ExtensionConfigs"));
+    }
+
+    @Test
+    public void testParseMultipleExtensions()
+    {
+        IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
+            () -> ExtensionConfig.parse("ext1;param1, ext2;param2"));
+        assertThat(error.getMessage(), containsString("contains multiple ExtensionConfigs"));
+    }
+
+    @Test
+    public void testParseMultipleExtensionsSameName()
+    {
+        IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
+            () -> ExtensionConfig.parse("ext1;paramOption1, ext1;paramOption2"));
+        assertThat(error.getMessage(), containsString("contains multiple ExtensionConfigs"));
     }
 }

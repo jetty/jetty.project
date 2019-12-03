@@ -48,13 +48,11 @@ import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.AbstractEndPoint;
 import org.eclipse.jetty.io.ByteArrayEndPoint;
-import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
@@ -702,7 +700,7 @@ public class ResponseTest
     }
 
     @Test
-    public void testWriteRuntimeIOException() throws Exception
+    public void testWriteCheckError() throws Exception
     {
         Response response = getResponse();
 
@@ -716,8 +714,8 @@ public class ResponseTest
         writer.println("test");
         assertTrue(writer.checkError());
 
-        RuntimeIOException e = assertThrows(RuntimeIOException.class, () -> writer.println("test"));
-        assertEquals(cause, e.getCause());
+        writer.println("test"); // this should not cause an Exception
+        assertTrue(writer.checkError());
     }
 
     @Test
