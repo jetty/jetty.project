@@ -26,6 +26,8 @@ import java.util.Dictionary;
 import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.List;
+import java.util.Map;
+import java.util.Properties;
 import java.util.StringTokenizer;
 
 import org.eclipse.jetty.osgi.boot.JettyBootstrapActivator;
@@ -148,9 +150,8 @@ public class DefaultJettyAtJettyHomeHelper
             LOG.warn("No default jetty created.");
             return null;
         }
-
-        //configure the server here rather than letting the JettyServerServiceTracker do it, because we want to be able to
-        //configure the ThreadPool, which can only be done via the constructor, ie from within the xml configuration processing
+        
+        //resolve the jetty xml config files
         List<URL> configURLs = jettyHomeDir != null ? getJettyConfigurationURLs(jettyHomeDir) : getJettyConfigurationURLs(jettyHomeBundle, properties);
 
         LOG.info("Configuring the default jetty server with {}", configURLs);
@@ -174,14 +175,34 @@ public class DefaultJettyAtJettyHomeHelper
             }
             Thread.currentThread().setContextClassLoader(cl);
 
-            // these properties usually are the ones passed to this type of
-            // configuration.
+            //the default server name
             properties.put(OSGiServerConstants.MANAGED_JETTY_SERVER_NAME, OSGiServerConstants.MANAGED_JETTY_SERVER_DEFAULT_NAME);
-            Util.setProperty(properties, OSGiServerConstants.JETTY_HOST, System.getProperty(OSGiServerConstants.JETTY_HOST, System.getProperty("jetty.host")));
-            Util.setProperty(properties, OSGiServerConstants.JETTY_PORT, System.getProperty(OSGiServerConstants.JETTY_PORT, System.getProperty("jetty.port")));
-            Util.setProperty(properties, OSGiServerConstants.JETTY_PORT_SSL, System.getProperty(OSGiServerConstants.JETTY_PORT_SSL, System.getProperty("ssl.port")));
+            
+            //Always set home and base
             Util.setProperty(properties, OSGiServerConstants.JETTY_HOME, home);
             Util.setProperty(properties, OSGiServerConstants.JETTY_BASE, base);
+            
+            // copy all system properties starting with "jetty." to service properties for the jetty server service.
+            // these will be used as xml configuration properties.
+            for (Map.Entry<Object, Object> prop : System.getProperties().entrySet())
+            {
+                if (prop.getKey() instanceof String)
+                {
+                    String skey = (String)prop.getKey();
+                    //never copy the jetty xml config files into the properties as we pass them explicitly into
+                    //the call to configure
+                    if (OSGiServerConstants.MANAGED_JETTY_XML_CONFIG_URLS.equals(skey))
+                        continue;
+                    
+                    if (skey.startsWith("jetty."))
+                    {
+                        Util.setProperty(properties, skey, prop.getValue());
+                    }
+                }
+            }
+
+            //configure the server here rather than letting the JettyServerServiceTracker do it, because we want to be able to
+            //configure the ThreadPool, which can only be done via the constructor, ie from within the xml configuration processing
             Server server = ServerInstanceWrapper.configure(null, configURLs, properties);
 
             //Register the default Server instance as an OSGi service.
