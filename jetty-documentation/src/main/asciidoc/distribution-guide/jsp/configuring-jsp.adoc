@@ -236,7 +236,7 @@ You can use the entry in link:#webdefault-xml[{$jetty.home}/etc/webdefault.xml] 
      <servlet-class>org.eclipse.jetty.jsp.JettyJspServlet</servlet-class>
      <init-param>
          <param-name>keepgenerated</param-name>
-         <param-value>>true</param-value>
+         <param-value>true</param-value>
      </init-param>
      ...
 
