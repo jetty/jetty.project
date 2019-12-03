@@ -59,11 +59,10 @@ import org.eclipse.jetty.util.log.Logger;
 public class MultiPartFormInputStream
 {
     private static final Logger LOG = Log.getLogger(MultiPartFormInputStream.class);
-    private static final MultiMap<Part> EMPTY_MAP = new MultiMap<>(Collections.emptyMap());
     private InputStream _in;
     private MultipartConfigElement _config;
     private String _contentType;
-    private MultiMap<Part> _parts;
+    private MultiMap<Part> _parts = new MultiMap<>();
     private Throwable _err;
     private File _tmpDir;
     private File _contextTmpDir;
@@ -345,7 +344,6 @@ public class MultiPartFormInputStream
         {
             if (((ServletInputStream)in).isFinished())
             {
-                _parts = EMPTY_MAP;
                 _parsed = true;
                 return;
             }
@@ -358,7 +356,7 @@ public class MultiPartFormInputStream
      */
     public boolean isEmpty()
     {
-        if (_parts == null)
+        if (_parts.isEmpty())
             return true;
 
         Collection<List<Part>> values = _parts.values();
@@ -379,7 +377,7 @@ public class MultiPartFormInputStream
     @Deprecated
     public Collection<Part> getParsedParts()
     {
-        if (_parts == null)
+        if (_parts.isEmpty())
             return Collections.emptyList();
 
         Collection<List<Part>> values = _parts.values();
@@ -492,9 +490,6 @@ public class MultiPartFormInputStream
         Handler handler = new Handler();
         try
         {
-            // initialize
-            _parts = new MultiMap<>();
-
             // if its not a multipart request, don't parse it
             if (_contentType == null || !_contentType.startsWith("multipart/form-data"))
                 return;
