@@ -18,10 +18,13 @@
 
 package org.eclipse.jetty.util.ssl;
 
+import java.nio.file.Path;
 import java.security.cert.X509Certificate;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.X509ExtendedKeyManager;
 
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.junit.jupiter.api.Test;
 
@@ -161,8 +164,19 @@ public class X509Test
     {
         SslContextFactory baseSsl = new SslContextFactory();
         X509ExtendedKeyManager x509ExtendedKeyManager = getX509ExtendedKeyManager(baseSsl);
-        UnsupportedOperationException npe = assertThrows(UnsupportedOperationException.class, () -> baseSsl.newSniX509ExtendedKeyManager(x509ExtendedKeyManager));
-        assertThat("UnsupportedOperationException.message", npe.getMessage(), containsString("X509ExtendedKeyManager only supported on Server"));
+        UnsupportedOperationException ex = assertThrows(UnsupportedOperationException.class, () -> baseSsl.newSniX509ExtendedKeyManager(x509ExtendedKeyManager));
+        assertThat("UnsupportedOperationException.message", ex.getMessage(), containsString("X509ExtendedKeyManager only supported on " + SslContextFactory.Server.class.getName()));
+    }
+
+    @Test
+    public void testSniX509ExtendedKeyManager_BaseClass_Start() throws Exception
+    {
+        SslContextFactory baseSsl = new SslContextFactory();
+        Path keystorePath = MavenTestingUtils.getTestResourcePathFile("keystore_sni.p12");
+        baseSsl.setKeyStoreResource(new PathResource(keystorePath));
+        baseSsl.setKeyStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
+        baseSsl.setKeyManagerPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");
+        baseSsl.start(); // should not throw an exception
     }
 
     @Test
@@ -170,8 +184,8 @@ public class X509Test
     {
         SslContextFactory clientSsl = new SslContextFactory.Client();
         X509ExtendedKeyManager x509ExtendedKeyManager = getX509ExtendedKeyManager(clientSsl);
-        UnsupportedOperationException re = assertThrows(UnsupportedOperationException.class, () -> clientSsl.newSniX509ExtendedKeyManager(x509ExtendedKeyManager));
-        assertThat("UnsupportedOperationException.message", re.getMessage(), containsString("X509ExtendedKeyManager only supported on Server"));
+        UnsupportedOperationException ex = assertThrows(UnsupportedOperationException.class, () -> clientSsl.newSniX509ExtendedKeyManager(x509ExtendedKeyManager));
+        assertThat("SNI X509 ExtendedKeyManager is unsupported in Client mode", ex.getMessage(), containsString("X509ExtendedKeyManager only supported on " + SslContextFactory.Server.class.getName()));
     }
 
     @Test
