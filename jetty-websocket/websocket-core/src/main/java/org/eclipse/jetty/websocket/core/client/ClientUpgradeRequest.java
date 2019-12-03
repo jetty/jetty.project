@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpConversation;
@@ -286,19 +287,11 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
     void requestComplete()
     {
         // Add extensions header filtering out internal extensions and internal parameters.
-        StringBuilder exts = new StringBuilder();
-        for (int i = 0; i < requestedExtensions.size(); i++)
-        {
-            ExtensionConfig config = requestedExtensions.get(i);
-            if (config.getName().startsWith("@"))
-                continue;
+        String extensionString = requestedExtensions.stream()
+            .filter(ec -> !ec.getName().startsWith("@"))
+            .map(ExtensionConfig::getParameterizedNameWithoutInternalParams)
+            .collect(Collectors.joining(","));
 
-            exts.append(config.getParameterizedNameWithoutInternalParams());
-            if (i != (requestedExtensions.size() - 1))
-                exts.append(",");
-        }
-
-        String extensionString = exts.toString();
         if (!StringUtil.isEmpty(extensionString))
             getHeaders().add(HttpHeader.SEC_WEBSOCKET_EXTENSIONS, extensionString);
 
