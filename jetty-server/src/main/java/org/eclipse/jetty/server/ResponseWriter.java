@@ -148,7 +148,7 @@ public class ResponseWriter extends PrintWriter
                 out.flush();
             }
         }
-        catch (IOException ex)
+        catch (Throwable ex)
         {
             setError(ex);
         }
