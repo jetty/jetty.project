@@ -122,7 +122,8 @@ public abstract class JavaxWebSocketFrameHandlerFactory
         else
         {
             endpoint = endpointInstance;
-            config = newDefaultEndpointConfig(endpoint.getClass(), upgradeRequest.getRequestURI().getPath());
+            String path = (upgradeRequest.getRequestURI() == null) ? null : upgradeRequest.getRequestURI().getPath();
+            config = newDefaultEndpointConfig(endpoint.getClass(), path);
         }
 
         JavaxWebSocketFrameHandlerMetadata metadata = getMetadata(endpoint.getClass(), config);

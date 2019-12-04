@@ -29,7 +29,7 @@ public class BasicServerEndpointConfig extends ServerEndpointConfigWrapper
 
     public BasicServerEndpointConfig(Class<?> endpointClass, String path)
     {
-        ServerEndpointConfig config = Builder.create(endpointClass, "")
+        ServerEndpointConfig config = Builder.create(endpointClass, "/")
             .configurator(new ContainerDefaultConfigurator())
             .build();
         _path = path;
