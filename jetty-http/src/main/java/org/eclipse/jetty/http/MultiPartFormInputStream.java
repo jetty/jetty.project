@@ -64,12 +64,12 @@ public class MultiPartFormInputStream
     private final MultipartConfigElement _config;
     private final File _contextTmpDir;
     private final String _contentType;
-    private Throwable _err;
-    private File _tmpDir;
-    private boolean _deleteOnExit;
-    private boolean _writeFilesWithFilenames;
-    private boolean _parsed;
-    private int _bufferSize = 16 * 1024;
+    private volatile Throwable _err;
+    private volatile File _tmpDir;
+    private volatile boolean _deleteOnExit;
+    private volatile boolean _writeFilesWithFilenames;
+    private volatile boolean _parsed;
+    private volatile int _bufferSize = 16 * 1024;
 
     public class MultiPart implements Part
     {
