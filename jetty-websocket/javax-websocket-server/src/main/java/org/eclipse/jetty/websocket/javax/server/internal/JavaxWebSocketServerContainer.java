@@ -160,12 +160,6 @@ public class JavaxWebSocketServerContainer extends JavaxWebSocketClientContainer
         return frameHandlerFactory;
     }
 
-    @Override
-    protected EndpointConfig newEmptyConfig(Object endpoint)
-    {
-        return new UndefinedServerEndpointConfig(endpoint.getClass());
-    }
-
     protected EndpointConfig readAnnotatedConfig(Object endpoint, EndpointConfig config) throws DeploymentException
     {
         ServerEndpoint anno = endpoint.getClass().getAnnotation(ServerEndpoint.class);

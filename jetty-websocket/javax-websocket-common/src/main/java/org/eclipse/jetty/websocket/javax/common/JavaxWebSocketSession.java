@@ -79,8 +79,7 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
         this.container = container;
         this.coreSession = coreSession;
         this.frameHandler = frameHandler;
-
-        this.config = endpointConfig == null ? new BasicEndpointConfig() : endpointConfig;
+        this.config = Objects.requireNonNull(endpointConfig);
 
         this.availableDecoders = new AvailableDecoders(this.config);
         this.availableEncoders = new AvailableEncoders(this.config);

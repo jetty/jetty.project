@@ -23,19 +23,25 @@ import javax.websocket.server.ServerEndpointConfig;
 import org.eclipse.jetty.websocket.javax.common.ServerEndpointConfigWrapper;
 import org.eclipse.jetty.websocket.javax.server.config.ContainerDefaultConfigurator;
 
-public class UndefinedServerEndpointConfig extends ServerEndpointConfigWrapper
+public class BasicServerEndpointConfig extends ServerEndpointConfigWrapper
 {
-    public UndefinedServerEndpointConfig(Class<?> endpointClass)
+    private final String _path;
+
+    public BasicServerEndpointConfig(Class<?> endpointClass, String path)
     {
         ServerEndpointConfig config = Builder.create(endpointClass, "")
             .configurator(new ContainerDefaultConfigurator())
             .build();
+        _path = path;
         init(config);
     }
 
     @Override
     public String getPath()
     {
-        throw new RuntimeException("Using an UndefinedServerEndpointConfig");
+        if (_path == null)
+            throw new RuntimeException("Path is undefined");
+
+        return _path;
     }
 }

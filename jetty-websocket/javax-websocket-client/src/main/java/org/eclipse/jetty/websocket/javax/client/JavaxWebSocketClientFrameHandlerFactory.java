@@ -35,6 +35,12 @@ public class JavaxWebSocketClientFrameHandlerFactory extends JavaxWebSocketFrame
     }
 
     @Override
+    public EndpointConfig newDefaultEndpointConfig(Class<?> endpointClass, String path)
+    {
+        return new BasicClientEndpointConfig();
+    }
+
+    @Override
     public JavaxWebSocketFrameHandlerMetadata createMetadata(Class<?> endpointClass, EndpointConfig endpointConfig)
     {
         if (javax.websocket.Endpoint.class.isAssignableFrom(endpointClass))

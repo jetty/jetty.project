@@ -25,7 +25,7 @@ import javax.websocket.Decoder;
 import javax.websocket.Encoder;
 import javax.websocket.EndpointConfig;
 
-public class EndpointConfigWrapper implements EndpointConfig, PathParamProvider
+public abstract class EndpointConfigWrapper implements EndpointConfig, PathParamProvider
 {
     private EndpointConfig _endpointConfig;
     private Map<String, String> _pathParameters;

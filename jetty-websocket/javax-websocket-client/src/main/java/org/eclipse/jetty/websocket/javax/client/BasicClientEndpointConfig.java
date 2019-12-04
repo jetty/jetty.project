@@ -20,9 +20,9 @@ package org.eclipse.jetty.websocket.javax.client;
 
 import org.eclipse.jetty.websocket.javax.common.ClientEndpointConfigWrapper;
 
-public class EmptyClientEndpointConfig extends ClientEndpointConfigWrapper
+public class BasicClientEndpointConfig extends ClientEndpointConfigWrapper
 {
-    public EmptyClientEndpointConfig()
+    public BasicClientEndpointConfig()
     {
         init(Builder.create().configurator(EmptyConfigurator.INSTANCE).build());
     }
