@@ -59,13 +59,13 @@ import org.eclipse.jetty.util.log.Logger;
 public class MultiPartFormInputStream
 {
     private static final Logger LOG = Log.getLogger(MultiPartFormInputStream.class);
-    private InputStream _in;
-    private MultipartConfigElement _config;
-    private String _contentType;
-    private MultiMap<Part> _parts = new MultiMap<>();
+    private final MultiMap<Part> _parts = new MultiMap<>();
+    private final InputStream _in;
+    private final MultipartConfigElement _config;
+    private final File _contextTmpDir;
+    private final String _contentType;
     private Throwable _err;
     private File _tmpDir;
-    private File _contextTmpDir;
     private boolean _deleteOnExit;
     private boolean _writeFilesWithFilenames;
     private boolean _parsed;
@@ -332,14 +332,10 @@ public class MultiPartFormInputStream
     public MultiPartFormInputStream(InputStream in, String contentType, MultipartConfigElement config, File contextTmpDir)
     {
         _contentType = contentType;
-        _config = config;
-        _contextTmpDir = contextTmpDir;
-        if (_contextTmpDir == null)
-            _contextTmpDir = new File(System.getProperty("java.io.tmpdir"));
+        _contextTmpDir =  (contextTmpDir != null) ? contextTmpDir : new File(System.getProperty("java.io.tmpdir"));
+        _config = (config != null) ? config : new MultipartConfigElement(_contextTmpDir.getAbsolutePath());
 
-        if (_config == null)
-            _config = new MultipartConfigElement(_contextTmpDir.getAbsolutePath());
-
+        _in = new BufferedInputStream(in);
         if (in instanceof ServletInputStream)
         {
             if (((ServletInputStream)in).isFinished())
@@ -348,7 +344,6 @@ public class MultiPartFormInputStream
                 return;
             }
         }
-        _in = new BufferedInputStream(in);
     }
 
     /**
