@@ -836,7 +836,7 @@ public class Response implements HttpServletResponse
 
     public void closeOutput(Callback callback)
     {
-        _out.close((_outputType == OutputType.WRITER) ? _writer : _out, callback);
+        _out.complete((_outputType == OutputType.WRITER) ? _writer : _out, callback);
     }
 
     public long getLongContentLength()
