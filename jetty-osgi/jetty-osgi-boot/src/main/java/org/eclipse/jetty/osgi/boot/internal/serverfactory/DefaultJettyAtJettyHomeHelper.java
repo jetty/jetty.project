@@ -190,8 +190,10 @@ public class DefaultJettyAtJettyHomeHelper
                 {
                     String skey = (String)prop.getKey();
                     //never copy the jetty xml config files into the properties as we pass them explicitly into
-                    //the call to configure
-                    if (OSGiServerConstants.MANAGED_JETTY_XML_CONFIG_URLS.equals(skey))
+                    //the call to configure, also we set home and base explicitly
+                    if (OSGiServerConstants.MANAGED_JETTY_XML_CONFIG_URLS.equals(skey) ||
+                        OSGiServerConstants.JETTY_HOME.equals(skey) ||
+                        OSGiServerConstants.JETTY_BASE.equals(skey))
                         continue;
                     
                     if (skey.startsWith("jetty."))
