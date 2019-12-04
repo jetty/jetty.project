@@ -414,4 +414,119 @@ public class HttpClientDemandTest extends AbstractTest<TransportScenario>
         assertTrue(resultLatch.await(5, TimeUnit.SECONDS));
         assertArrayEquals(content, bytes);
     }
+
+    @ParameterizedTest
+    @ArgumentsSource(TransportProvider.class)
+    public void testDelayedBeforeContentDemand(Transport transport) throws Exception
+    {
+        init(transport);
+
+        byte[] content = new byte[1024];
+        new Random().nextBytes(content);
+        scenario.start(new EmptyServerHandler()
+        {
+            @Override
+            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                response.setContentLength(content.length);
+                response.getOutputStream().write(content);
+            }
+        });
+
+        byte[] bytes = new byte[content.length];
+        ByteBuffer received = ByteBuffer.wrap(bytes);
+        AtomicReference<LongConsumer> beforeContentDemandRef = new AtomicReference<>();
+        CountDownLatch beforeContentLatch = new CountDownLatch(1);
+        CountDownLatch contentLatch = new CountDownLatch(1);
+        CountDownLatch resultLatch = new CountDownLatch(1);
+        scenario.client.newRequest(scenario.newURI())
+            .onResponseContentDemanded(new Response.DemandedContentListener()
+            {
+                @Override
+                public void onBeforeContent(Response response, LongConsumer demand)
+                {
+                    // Do not demand now.
+                    beforeContentDemandRef.set(demand);
+                    beforeContentLatch.countDown();
+                }
+
+                @Override
+                public void onContent(Response response, LongConsumer demand, ByteBuffer buffer, Callback callback)
+                {
+                    contentLatch.countDown();
+                    received.put(buffer);
+                    callback.succeeded();
+                    demand.accept(1);
+                }
+            })
+            .send(result ->
+            {
+                assertTrue(result.isSucceeded());
+                assertEquals(HttpStatus.OK_200, result.getResponse().getStatus());
+                resultLatch.countDown();
+            });
+
+        assertTrue(beforeContentLatch.await(5, TimeUnit.SECONDS));
+        LongConsumer demand = beforeContentDemandRef.get();
+
+        // Content must not be notified until we demand.
+        assertFalse(contentLatch.await(1, TimeUnit.SECONDS));
+
+        demand.accept(1);
+
+        assertTrue(resultLatch.await(5, TimeUnit.SECONDS));
+        assertArrayEquals(content, bytes);
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(TransportProvider.class)
+    public void testDelayedBeforeContentDemandWithNoResponseContent(Transport transport) throws Exception
+    {
+        init(transport);
+
+        scenario.start(new EmptyServerHandler());
+
+        AtomicReference<LongConsumer> beforeContentDemandRef = new AtomicReference<>();
+        CountDownLatch beforeContentLatch = new CountDownLatch(1);
+        CountDownLatch contentLatch = new CountDownLatch(1);
+        CountDownLatch resultLatch = new CountDownLatch(1);
+        scenario.client.newRequest(scenario.newURI())
+            .onResponseContentDemanded(new Response.DemandedContentListener()
+            {
+                @Override
+                public void onBeforeContent(Response response, LongConsumer demand)
+                {
+                    // Do not demand now.
+                    beforeContentDemandRef.set(demand);
+                    beforeContentLatch.countDown();
+                }
+
+                @Override
+                public void onContent(Response response, LongConsumer demand, ByteBuffer buffer, Callback callback)
+                {
+                    contentLatch.countDown();
+                    callback.succeeded();
+                    demand.accept(1);
+                }
+            })
+            .send(result ->
+            {
+                assertTrue(result.isSucceeded());
+                assertEquals(HttpStatus.OK_200, result.getResponse().getStatus());
+                resultLatch.countDown();
+            });
+
+        assertTrue(beforeContentLatch.await(5, TimeUnit.SECONDS));
+        LongConsumer demand = beforeContentDemandRef.get();
+
+        // Content must not be notified until we demand.
+        assertFalse(contentLatch.await(1, TimeUnit.SECONDS));
+
+        demand.accept(1);
+
+        // Content must not be notified as there is no content.
+        assertFalse(contentLatch.await(1, TimeUnit.SECONDS));
+
+        assertTrue(resultLatch.await(5, TimeUnit.SECONDS));
+    }
 }

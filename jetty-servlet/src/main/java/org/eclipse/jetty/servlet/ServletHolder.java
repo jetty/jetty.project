@@ -49,7 +49,6 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.RunAsToken;
-import org.eclipse.jetty.server.MultiPartCleanerListener;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -258,7 +257,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     public synchronized void setUserRoleLink(String name, String link)
     {
         if (_roleMap == null)
-            _roleMap = new HashMap<String, String>();
+            _roleMap = new HashMap<>();
         _roleMap.put(name, link);
     }
 
@@ -470,21 +469,16 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     public Servlet getServlet()
         throws ServletException
     {
-        Servlet servlet = _servlet;
-        if (servlet == null)
+        synchronized (this)
         {
-            synchronized (this)
+            if (_servlet == null && isRunning())
             {
-                servlet = _servlet;
-                if (servlet == null && isRunning())
-                {
-                    if (getHeldClass() != null)
-                        initServlet();
-                    servlet = _servlet;
-                }
+                if (getHeldClass() != null)
+                    initServlet();
             }
         }
-        return servlet;
+
+        return _servlet;
     }
 
     /**
@@ -592,8 +586,6 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
             else if (_forcedPath != null)
                 detectJspContainer();
 
-            initMultiPart();
-
             if (LOG.isDebugEnabled())
                 LOG.debug("Servlet.init {} for {}", _servlet, getName());
             _servlet.init(_config);
@@ -626,7 +618,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         ContextHandler ch = ContextHandler.getContextHandler(getServletHandler().getServletContext());
 
         /* Set the webapp's classpath for Jasper */
-        ch.setAttribute("org.apache.catalina.jspgetHeldClass()path", ch.getClassPath());
+        ch.setAttribute("org.apache.catalina.jsp_classpath", ch.getClassPath());
 
         /* Set up other classpath attribute */
         if ("?".equals(getInitParameter("classpath")))
@@ -639,7 +631,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         }
 
         /* ensure scratch dir */
-        File scratch = null;
+        File scratch;
         if (getInitParameter("scratchdir") == null)
         {
             File tmp = (File)getServletHandler().getServletContext().getAttribute(ServletContext.TEMPDIR);
@@ -650,29 +642,6 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         scratch = new File(getInitParameter("scratchdir"));
         if (!scratch.exists())
             scratch.mkdir();
-    }
-
-    /**
-     * Register a ServletRequestListener that will ensure tmp multipart
-     * files are deleted when the request goes out of scope.
-     *
-     * @throws Exception if unable to init the multipart
-     */
-    protected void initMultiPart() throws Exception
-    {
-        //if this servlet can handle multipart requests, ensure tmp files will be
-        //cleaned up correctly
-        if (((Registration)getRegistration()).getMultipartConfig() != null)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("multipart cleanup listener added for {}", this);
-
-            //Register a listener to delete tmp files that are created as a result of this
-            //servlet calling Request.getPart() or Request.getParts()
-            ContextHandler ch = ContextHandler.getContextHandler(getServletHandler().getServletContext());
-            if (!ch.getEventListeners().contains(MultiPartCleanerListener.INSTANCE))
-                ch.addEventListener(MultiPartCleanerListener.INSTANCE);
-        }
     }
 
     @Override
@@ -848,8 +817,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         {
             Class<?> jspUtil = Loader.loadClass("org.apache.jasper.compiler.JspUtil");
             Method makeJavaPackage = jspUtil.getMethod("makeJavaPackage", String.class);
-            String p = (String)makeJavaPackage.invoke(null, jsp.substring(0, i));
-            return p;
+            return (String)makeJavaPackage.invoke(null, jsp.substring(0, i));
         }
         catch (Exception e)
         {
@@ -953,7 +921,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
                     if (!mapping.isDefault())
                     {
                         if (clash == null)
-                            clash = new HashSet<String>();
+                            clash = new HashSet<>();
                         clash.add(pattern);
                     }
                 }
@@ -976,7 +944,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         public Collection<String> getMappings()
         {
             ServletMapping[] mappings = getServletHandler().getServletMappings();
-            List<String> patterns = new ArrayList<String>();
+            List<String> patterns = new ArrayList<>();
             if (mappings != null)
             {
                 for (ServletMapping mapping : mappings)
@@ -1042,7 +1010,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
 
     private class SingleThreadedWrapper implements Servlet
     {
-        Stack<Servlet> _stack = new Stack<Servlet>();
+        Stack<Servlet> _stack = new Stack<>();
 
         @Override
         public void destroy()
@@ -1154,7 +1122,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         try
         {
             ServletContext ctx = getServletHandler().getServletContext();
-            if (ctx instanceof ServletContextHandler.Context)
+            if (ctx != null)
                 return ctx.createServlet(getHeldClass());
             return getHeldClass().getDeclaredConstructor().newInstance();
 

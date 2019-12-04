@@ -36,6 +36,12 @@ include::{SRCDIR}/jetty-home/src/main/resources/modules/jsp.mod[]
 Note that the availability of some JSP features may depend on which JSP container implementation you are using.
 Note also that it may not be possible to precompile your JSPs with one container and deploy to the other.
 
+===== Logging
+
+The Apache Jasper logging system is bridged to the jetty logging system.
+Thus, you can enable logging for jsps in the same way you have setup for your webapp.
+For example, assuming you are using Jetty's default StdErr logger, you would enable DEBUG level logging for jsps by adding the system property `-Dorg.apache.jasper.LEVEL=DEBUG` to the command line.
+
 ===== JSPs and Embedding
 
 If you have an embedded setup for your webapp and wish to use JSPs, you will need to ensure that a JSP engine is correctly initialized.
@@ -79,53 +85,60 @@ If you wish to use a different compiler, you will need to configure the `compile
 [cols=",,,",options="header",]
 |=======================================================================
 |init param |Description |Default |`webdefault.xml`
-|classpath |`Classpath used for jsp compilation. Only used if
-                org.apache.catalina.jsp_classpath context attribute is not
-                set, which it is in Jetty.` |- |–
+
+|checkInterval |If non-zero and `development` is `false`, background jsp recompilation is enabled. This value is the interval in seconds between background recompile checks.
+               |0 |–
+|classpath |The classpath is dynamically generated if the context has a URL classloader. The `org.apache.catalina.jsp_classpath`
+context attribute is used to add to the classpath, but if this is not set, this `classpath` configuration item is added to the classpath instead.` |- |–
 
 |classdebuginfo |Include debugging info in class file. |TRUE |–
 
-|checkInterval |Interval in seconds between background recompile checks.
-Only relevant if `
-                development=false`. |0 |–
+|compilerClassName |If not set, defaults to the Eclipse jdt compiler. |- |–
 
-|development |`development=true`, recompilation checks occur on each
-request. See also `
-                modificationTestInterval`. |TRUE |–
+|compiler |Used if the Eclipse jdt compiler cannot be found on the
+classpath. It is the classname of a compiler that Ant should invoke. |–
+|–
+
+|compilerTargetVM |Target vm to compile for. |1.8 |1.8
+
+|compilerSourceVM |Sets source compliance level for the jdt compiler.
+|1.8 |1.8
+
+|development |If `true` recompilation checks occur at the frequency governed by `modificationTestInterval`. |TRUE |–
 
 |displaySourceFragment |Should a source fragment be included in
 exception messages |TRUE |–
+
+|dumpSmap |Dump SMAP JSR45 info to a file. |FALSE |–
+
+|enablePooling |Determines whether tag handler pooling is enabled. |TRUE |–
+
+|engineOptionsClass |Allows specifying the Options class used to
+configure Jasper. If not present, the default EmbeddedServletOptions
+will be used. |- |–
 
 |errorOnUseBeanInvalidClassAttribute |Should Jasper issue an error when
 the value of the class attribute in an useBean action is not a valid
 bean class |TRUE |–
 
-|fork |Should Ant fork its Java compiles of JSP pages? |TRUE |FALSE
+|fork |Only relevant if you use Ant to compile jsps: by default Jetty will use the Eclipse jdt compiler.|TRUE |-
+
+|genStrAsCharArray |Option for generating Strings as char arrays. |FALSE |–
+
+|ieClassId |The class-id value to be sent to Internet Explorer when
+using <jsp:plugin> tags. |clsid:8AD9C840-044E-11D1-B3E9-00805F499D93 |–
+
+|javaEncoding |Pass through the encoding to use for the compilation.
+|UTF8 |–
+
+|jspIdleTimeout |The amount of time in seconds a JSP can be idle before
+it is unloaded. A value of zero or less indicates never unload. |-1 |–
 
 |keepgenerated |Do you want to keep the generated Java files around?
 |TRUE |–
 
-|trimSpaces |Should white spaces between directives or actions be
-trimmed? |FALSE |–
-
-|enablePooling |Determines whether tag handler pooling is enabled. |TRUE
-|–
-
-|engineOptionsClass |Allows specifying the Options class used to
-configure Jasper. If not present, the default EmbeddedServletOptions
-will be used. |–
-
 |mappedFile |Support for mapped Files. Generates a servlet that has a
 print statement per line of the JSP file  |TRUE |–
-
-|suppressSmap |Generation of SMAP info for JSR45 debugging. |FALSE |–
-
-|dumpSmap |Dump SMAP JSR45 info to a file. |FALSE |–
-
-|genStrAsCharArray |Option for generating Strings. |FALSE |–
-
-|ieClassId |The class-id value to be sent to Internet Explorer when
-using <jsp:plugin> tags. |clsid:8AD9C840-044E-11D1-B3E9-00805F499D93 |–
 
 |maxLoadedJsps |The maximum number of JSPs that will be loaded for a web
 application. If more than this number of JSPs are loaded, the least
@@ -133,35 +146,30 @@ recently used JSPs will be unloaded so that the number of JSPs loaded at
 any one time does not exceed this limit. A value of zero or less
 indicates no limit. |-1 |–
 
-|jspIdleTimeout |The amount of time in seconds a JSP can be idle before
-it is unloaded. A value of zero or less indicates never unload. |-1 |–
-
-|scratchDir |Directory where servlets are generated. See |– |–
-
-|compilerClassName |If not set, defaults to the Eclipse jdt compiler. |–
-
-|compiler |Used if the Eclipse jdt compiler cannot be found on the
-classpath. It is the classname of a compiler that Ant should invoke. |–
-|–
-
-|compilerTargetVM |Target vm to compile for. |1.7 |–
-
-|compilerSourceVM |Sets source compliance level for the jdt compiler.
-|1.7 |–
-
-|javaEncoding |Pass through the encoding to use for the compilation.
-|UTF8 |–
-
 |modificationTestInterval |If `development=true`, interval between
 recompilation checks, triggered by a request. |4 |–
 
-|xpoweredBy |Generate an X-Powered-By response header. |FALSE |FALSE
+|quoteAttributeEL | When EL is used in an attribute value on a JSP page, should the rules for quoting of attributes described in JSP.1.6 be applied to the expression
+                 |TRUE |-
 
 |recompileOnFail |If a JSP compilation fails should the
 modificationTestInterval be ignored and the next access trigger a
 re-compilation attempt? Used in development mode only and is disabled by
 default as compilation may be expensive and could lead to excessive
-resource usage. |- |–
+resource usage. |FALSE |–
+
+|scratchDir |Directory where servlets are generated. The default is the value of the context attribute `javax.servlet.context.tempdir`, or the system property `java.io.tmpdir` if the context attribute is not set. |– |–
+
+|strictQuoteEscaping |Should the quote escaping required by section JSP.1.6 of the JSP specification be applied to scriplet expression.
+             |TRUE|-
+
+|suppressSmap |Generation of SMAP info for JSR45 debugging. |FALSE |–
+
+|trimSpaces |Should template text that consists entirely of whitespace be removed from the output (true), replaced with a single space (single) or left unchanged (false)? Note that if a JSP page or tag file specifies a trimDirectiveWhitespaces value of true, that will take precedence over this configuration setting for that page/tag.
+trimmed? |FALSE |–
+
+|xpoweredBy |Generate an X-Powered-By response header. |FALSE |FALSE
+
 |=======================================================================
 
 [[configuring-jsp-for-jetty]]
@@ -171,7 +179,7 @@ The JSP engine has many configuration parameters.
 Some parameters affect only precompilation, and some affect runtime recompilation checking.
 Parameters also differ among the various versions of the JSP engine.
 This page lists the configuration parameters, their meanings, and their default settings.
-Set all parameters on the `org.apache.jasper.servlet.JspServlet` instance defined in the link:#webdefault-xml[`webdefault.xml`] file.
+Set all parameters on the `org.eclipse.jetty.jsp.JettyJspServlet` instance defined in the link:#webdefault-xml[`webdefault.xml`] file.
 
 ____
 [NOTE]
@@ -225,18 +233,10 @@ You can use the entry in link:#webdefault-xml[{$jetty.home}/etc/webdefault.xml] 
 ----
  <servlet id="jsp">
      <servlet-name>jsp</servlet-name>
-     <servlet-class>org.apache.jasper.servlet.JspServlet</servlet-class>
-     <init-param>
-         <param-name>logVerbosityLevel</param-name>
-         <param-value>DEBUG</param-value>
-     </init-param>
-     <init-param>
-         <param-name>fork</param-name>
-         <param-value>>false</param-value>
-     </init-param>
+     <servlet-class>org.eclipse.jetty.jsp.JettyJspServlet</servlet-class>
      <init-param>
          <param-name>keepgenerated</param-name>
-         <param-value>>true</param-value>
+         <param-value>true</param-value>
      </init-param>
      ...
 

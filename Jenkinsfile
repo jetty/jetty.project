@@ -11,7 +11,7 @@ pipeline {
           agent { node { label 'linux' } }
           options { timeout(time: 120, unit: 'MINUTES') }
           steps {
-            mavenBuild("jdk11", "-Pmongodb install", "maven3", true) // -Pautobahn
+            mavenBuild("jdk11", "-Pmongodb clean install", "maven3", true) // -Pautobahn
             // Collect up the jacoco execution results (only on main build)
             jacoco inclusionPattern: '**/org/eclipse/jetty/**/*.class',
               exclusionPattern: '' +
@@ -44,7 +44,7 @@ pipeline {
           agent { node { label 'linux' } }
           steps {
             timeout(time: 120, unit: 'MINUTES') {
-              mavenBuild("jdk13", "-Pmongodb install", "maven3", true)
+              mavenBuild("jdk13", "-Pmongodb clean install", "maven3", true)
               warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'Java']]
               junit testResults: '**/target/surefire-reports/*.xml,**/target/invoker-reports/TEST*.xml'
             }
@@ -65,7 +65,7 @@ pipeline {
           agent { node { label 'linux' } }
           steps {
             timeout(time: 30, unit: 'MINUTES') {
-              mavenBuild("jdk11", "install -f build-resources", "maven3", true)
+              mavenBuild("jdk11", "clean install -f build-resources", "maven3", true)
               mavenBuild("jdk11", "install checkstyle:check -DskipTests", "maven3", true)
               recordIssues(
                 enabledForFailure: true, aggregatingResults: true,

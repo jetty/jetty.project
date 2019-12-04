@@ -88,6 +88,7 @@ public class HttpRequest implements Request
     private List<RequestListener> requestListeners;
     private BiFunction<Request, Request, Response.CompleteListener> pushListener;
     private Supplier<HttpFields> trailers;
+    private String upgradeProtocol;
 
     protected HttpRequest(HttpClient client, HttpConversation conversation, URI uri)
     {
@@ -553,6 +554,12 @@ public class HttpRequest implements Request
         this.responseListeners.add(new Response.DemandedContentListener()
         {
             @Override
+            public void onBeforeContent(Response response, LongConsumer demand)
+            {
+                listener.onBeforeContent(response, demand);
+            }
+
+            @Override
             public void onContent(Response response, LongConsumer demand, ByteBuffer content, Callback callback)
             {
                 listener.onContent(response, demand, content, callback);
@@ -626,6 +633,12 @@ public class HttpRequest implements Request
     public HttpRequest trailers(Supplier<HttpFields> trailers)
     {
         this.trailers = trailers;
+        return this;
+    }
+
+    public HttpRequest upgradeProtocol(String upgradeProtocol)
+    {
+        this.upgradeProtocol = upgradeProtocol;
         return this;
     }
 
@@ -783,6 +796,11 @@ public class HttpRequest implements Request
     public Supplier<HttpFields> getTrailers()
     {
         return trailers;
+    }
+
+    public String getUpgradeProtocol()
+    {
+        return upgradeProtocol;
     }
 
     @Override

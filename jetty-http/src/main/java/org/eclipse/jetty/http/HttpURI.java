@@ -608,6 +608,15 @@ public class HttpURI
         return _param;
     }
 
+    public void setParam(String param)
+    {
+        _param = param;
+        if (_path != null && !_path.contains(_param))
+        {
+            _path += ";" + _param;
+        }
+    }
+
     public String getQuery()
     {
         return _query;

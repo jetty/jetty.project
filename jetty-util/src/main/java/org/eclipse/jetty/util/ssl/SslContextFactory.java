@@ -141,9 +141,9 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
     private final Set<String> _includeProtocols = new LinkedHashSet<>();
     private final Set<String> _excludeCipherSuites = new LinkedHashSet<>();
     private final List<String> _includeCipherSuites = new ArrayList<>();
-    private final Map<String, X509> _aliasX509 = new HashMap<>();
-    private final Map<String, X509> _certHosts = new HashMap<>();
-    private final Map<String, X509> _certWilds = new HashMap<>();
+    protected final Map<String, X509> _aliasX509 = new HashMap<>();
+    protected final Map<String, X509> _certHosts = new HashMap<>();
+    protected final Map<String, X509> _certWilds = new HashMap<>();
     private String[] _selectedProtocols;
     private boolean _useCipherSuitesOrder = true;
     private Comparator<String> _cipherComparator;
@@ -1141,15 +1141,7 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
                     }
                 }
 
-                // Is SNI needed to select a certificate?
-                if (!_certWilds.isEmpty() || _certHosts.size() > 1 || (_certHosts.size() == 1 && _aliasX509.size() > 1))
-                {
-                    for (int idx = 0; idx < managers.length; idx++)
-                    {
-                        if (managers[idx] instanceof X509ExtendedKeyManager)
-                            managers[idx] = newSniX509ExtendedKeyManager((X509ExtendedKeyManager)managers[idx]);
-                    }
-                }
+
             }
         }
 
@@ -1157,11 +1149,6 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
             LOG.debug("managers={} for {}", managers, this);
 
         return managers;
-    }
-
-    protected X509ExtendedKeyManager newSniX509ExtendedKeyManager(X509ExtendedKeyManager keyManager)
-    {
-        return new SniX509ExtendedKeyManager(keyManager);
     }
 
     protected TrustManager[] getTrustManagers(KeyStore trustStore, Collection<? extends CRL> crls) throws Exception
@@ -2156,9 +2143,25 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
         protected KeyManager[] getKeyManagers(KeyStore keyStore) throws Exception
         {
             KeyManager[] managers = super.getKeyManagers(keyStore);
+
+            boolean hasSniX509ExtendedKeyManager = false;
+
+            // Is SNI needed to select a certificate?
+            if (!_certWilds.isEmpty() || _certHosts.size() > 1 || (_certHosts.size() == 1 && _aliasX509.size() > 1))
+            {
+                for (int idx = 0; idx < managers.length; idx++)
+                {
+                    if (managers[idx] instanceof X509ExtendedKeyManager)
+                    {
+                        managers[idx] = newSniX509ExtendedKeyManager((X509ExtendedKeyManager)managers[idx]);
+                        hasSniX509ExtendedKeyManager = true;
+                    }
+                }
+            }
+
             if (isSniRequired())
             {
-                if (managers == null || Arrays.stream(managers).noneMatch(SniX509ExtendedKeyManager.class::isInstance))
+                if (managers == null || !hasSniX509ExtendedKeyManager)
                     throw new IllegalStateException("No SNI Key managers when SNI is required");
             }
             return managers;
@@ -2201,7 +2204,6 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
             }
         }
 
-        @Override
         protected X509ExtendedKeyManager newSniX509ExtendedKeyManager(X509ExtendedKeyManager keyManager)
         {
             return new SniX509ExtendedKeyManager(keyManager, this);

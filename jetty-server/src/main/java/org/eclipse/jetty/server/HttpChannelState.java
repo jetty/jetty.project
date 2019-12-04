@@ -969,6 +969,9 @@ public class HttpChannelState
             }
         }
 
+        // release any aggregate buffer from a closing flush
+        _channel.getResponse().getHttpOutput().closed();
+
         if (event != null)
         {
             cancelTimeout(event);

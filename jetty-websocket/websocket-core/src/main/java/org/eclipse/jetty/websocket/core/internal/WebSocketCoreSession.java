@@ -23,16 +23,13 @@ import java.net.SocketAddress;
 import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.time.Duration;
-import java.util.ArrayDeque;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.Utf8Appendable;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
@@ -44,6 +41,7 @@ import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.IncomingFrames;
+import org.eclipse.jetty.websocket.core.MessageTooLargeException;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.OutgoingFrames;
 import org.eclipse.jetty.websocket.core.ProtocolException;
@@ -51,7 +49,6 @@ import org.eclipse.jetty.websocket.core.WebSocketConstants;
 import org.eclipse.jetty.websocket.core.WebSocketTimeoutException;
 import org.eclipse.jetty.websocket.core.WebSocketWriteTimeoutException;
 import org.eclipse.jetty.websocket.core.internal.Parser.ParsedFrame;
-import org.eclipse.jetty.websocket.core.internal.compress.DeflateFrameExtension;
 
 import static org.eclipse.jetty.util.Callback.NOOP;
 
@@ -68,7 +65,7 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
     private final FrameHandler handler;
     private final Negotiated negotiated;
     private final boolean demanding;
-    private final Flusher flusher = new Flusher();
+    private final Flusher flusher = new Flusher(this);
 
     private WebSocketConnection connection;
     private boolean autoFragment = WebSocketConstants.DEFAULT_AUTO_FRAGMENT;
@@ -100,6 +97,10 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
     public void assertValidIncoming(Frame frame)
     {
         assertValidFrame(frame);
+
+        // Validate frame size.
+        if (maxFrameSize > 0 && frame.getPayloadLength() > maxFrameSize)
+            throw new MessageTooLargeException("Cannot handle payload lengths larger than " + maxFrameSize);
 
         // Assert Incoming Frame Behavior Required by RFC-6455 / Section 5.1
         switch (behavior)
@@ -133,6 +134,10 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
     {
         assertValidFrame(frame);
 
+        // Validate frame size (allowed to be over max frame size if autoFragment is true).
+        if (!autoFragment && maxFrameSize > 0 && frame.getPayloadLength() > maxFrameSize)
+            throw new MessageTooLargeException("Cannot handle payload lengths larger than " + maxFrameSize);
+
         /*
          * RFC 6455 Section 5.5.1
          * close frame payload is specially formatted which is checked in CloseStatus
@@ -156,7 +161,7 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
         if (!OpCode.isKnown(frame.getOpCode()))
             throw new ProtocolException("Unknown opcode: " + frame.getOpCode());
 
-        int payloadLength = (frame.getPayload() == null) ? 0 : frame.getPayload().remaining();
+        int payloadLength = frame.getPayloadLength();
         if (frame.isControlFrame())
         {
             if (!frame.isFin())
@@ -311,9 +316,7 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
         if (LOG.isDebugEnabled())
             LOG.debug("closeConnection() {} {} {}", closeStatus, this);
 
-        connection.cancelDemand();
-        if (connection.getEndPoint().isOpen())
-            connection.close();
+        abort();
 
         // Forward Errors to Local WebSocket EndPoint
         if (closeStatus.isAbnormal() && closeStatus.getCause() != null)
@@ -521,26 +524,22 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
 
         try
         {
-            synchronized (flusher)
+            if (LOG.isDebugEnabled())
+                LOG.debug("sendFrame({}, {}, {})", frame, callback, batch);
+
+            boolean closeConnection = sessionState.onOutgoingFrame(frame);
+            if (closeConnection)
             {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("sendFrame({}, {}, {})", frame, callback, batch);
+                Callback closeConnectionCallback = Callback.from(
+                    () -> closeConnection(sessionState.getCloseStatus(), callback),
+                    t -> closeConnection(sessionState.getCloseStatus(), Callback.from(callback, t)));
 
-                boolean closeConnection = sessionState.onOutgoingFrame(frame);
-                if (closeConnection)
-                {
-                    Callback closeConnectionCallback = Callback.from(
-                        () -> closeConnection(sessionState.getCloseStatus(), callback),
-                        t -> closeConnection(sessionState.getCloseStatus(), Callback.from(callback, t)));
-
-                    flusher.queue.offer(new FrameEntry(frame, closeConnectionCallback, false));
-                }
-                else
-                {
-                    flusher.queue.offer(new FrameEntry(frame, callback, batch));
-                }
+                flusher.sendFrame(frame, closeConnectionCallback, false);
             }
-            flusher.iterate();
+            else
+            {
+                flusher.sendFrame(frame, callback, batch);
+            }
         }
         catch (Throwable t)
         {
@@ -563,11 +562,7 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
     @Override
     public void flush(Callback callback)
     {
-        synchronized (flusher)
-        {
-            flusher.queue.offer(new FrameEntry(FrameFlusher.FLUSH_FRAME, callback, false));
-        }
-        flusher.iterate();
+        flusher.sendFrame(FrameFlusher.FLUSH_FRAME, callback, false);
     }
 
     @Override
@@ -589,9 +584,6 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
     @Override
     public void setAutoFragment(boolean autoFragment)
     {
-        // TODO: consider adding extensible/generic mechanism for extensions to validate configuration changes if more examples occur
-        if (autoFragment && getExtensionStack().getRsv1User() instanceof DeflateFrameExtension)
-            LOG.warn("Frame auto-fragmentation must not be used with DeflateFrameExtension");
         this.autoFragment = autoFragment;
     }
 
@@ -795,57 +787,17 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
             handler);
     }
 
-    private class Flusher extends IteratingCallback
+    private class Flusher extends FragmentingFlusher
     {
-        private final Queue<FrameEntry> queue = new ArrayDeque<>();
-        FrameEntry entry;
-
-        @Override
-        protected Action process() throws Throwable
+        public Flusher(FrameHandler.Configuration configuration)
         {
-            synchronized (this)
-            {
-                entry = queue.poll();
-            }
-            if (entry == null)
-                return Action.IDLE;
-
-            negotiated.getExtensions().sendFrame(entry.frame, this, entry.batch);
-            return Action.SCHEDULED;
+            super(configuration);
         }
 
         @Override
-        public void succeeded()
+        void forwardFrame(Frame frame, Callback callback, boolean batch)
         {
-            entry.callback.succeeded();
-            super.succeeded();
-        }
-
-        @Override
-        protected void onCompleteFailure(Throwable cause)
-        {
-            entry.callback.failed(cause);
-            Queue<FrameEntry> entries;
-            synchronized (this)
-            {
-                entries = new ArrayDeque<>(queue);
-                queue.clear();
-            }
-            entries.forEach(e -> failEntry(cause, e));
-        }
-
-        private void failEntry(Throwable cause, FrameEntry e)
-        {
-            try
-            {
-                e.callback.failed(cause);
-            }
-            catch (Throwable x)
-            {
-                if (cause != x)
-                    cause.addSuppressed(x);
-                LOG.warn(cause);
-            }
+            negotiated.getExtensions().sendFrame(frame, callback, batch);
         }
     }
 }

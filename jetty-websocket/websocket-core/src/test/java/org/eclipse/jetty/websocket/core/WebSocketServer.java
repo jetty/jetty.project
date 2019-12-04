@@ -26,15 +26,12 @@ import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.server.Negotiation;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 import org.eclipse.jetty.websocket.core.server.WebSocketUpgradeHandler;
 
 public class WebSocketServer
 {
-    private static Logger LOG = Log.getLogger(WebSocketServer.class);
     private final Server server;
     private URI serverUri;
 
@@ -59,12 +56,12 @@ public class WebSocketServer
         return server;
     }
 
-    public WebSocketServer(FrameHandler frameHandler) throws Exception
+    public WebSocketServer(FrameHandler frameHandler)
     {
         this(new DefaultNegotiator(frameHandler));
     }
 
-    public WebSocketServer(WebSocketNegotiator negotiator) throws Exception
+    public WebSocketServer(WebSocketNegotiator negotiator)
     {
         server = new Server();
         ServerConnector connector = new ServerConnector(server);

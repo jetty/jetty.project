@@ -481,7 +481,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
         boolean timeout = !latch.await(getMaxScanWait(context), TimeUnit.SECONDS);
         long elapsedMs = TimeUnit.MILLISECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS);
 
-        LOG.info("Scanning elapsed time={}ms", elapsedMs);
+        LOG.info("Annotation scanning elapsed time={}ms", elapsedMs);
 
         if (LOG.isDebugEnabled())
         {

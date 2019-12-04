@@ -19,7 +19,6 @@
 package org.eclipse.jetty.http2.server;
 
 import java.io.IOException;
-import java.time.Duration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -61,7 +60,8 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
     private int maxHeaderBlockFragment = 0;
     private int maxFrameLength = Frame.DEFAULT_MAX_LENGTH;
     private int maxSettingsKeys = SettingsFrame.DEFAULT_MAX_KEYS;
-    private RateControl rateControl = new WindowRateControl(20, Duration.ofSeconds(1));
+    private boolean connectProtocolEnabled = true;
+    private RateControl.Factory rateControlFactory = new WindowRateControl.Factory(20);
     private FlowControlStrategy.Factory flowControlStrategyFactory = () -> new BufferingFlowControlStrategy(0.5F);
     private long streamIdleTimeout;
     private boolean _useInputDirectByteBuffers;
@@ -186,14 +186,33 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         this.maxSettingsKeys = maxSettingsKeys;
     }
 
-    public RateControl getRateControl()
+    @ManagedAttribute("Whether CONNECT requests supports a protocol")
+    public boolean isConnectProtocolEnabled()
     {
-        return rateControl;
+        return connectProtocolEnabled;
     }
 
-    public void setRateControl(RateControl rateControl)
+    public void setConnectProtocolEnabled(boolean connectProtocolEnabled)
     {
-        this.rateControl = rateControl;
+        this.connectProtocolEnabled = connectProtocolEnabled;
+    }
+
+    /**
+     * @return the factory that creates RateControl objects
+     */
+    public RateControl.Factory getRateControlFactory()
+    {
+        return rateControlFactory;
+    }
+
+    /**
+     * <p>Sets the factory that creates a per-connection RateControl object.</p>
+     *
+     * @param rateControlFactory the factory that creates RateControl objects
+     */
+    public void setRateControlFactory(RateControl.Factory rateControlFactory)
+    {
+        this.rateControlFactory = Objects.requireNonNull(rateControlFactory);
     }
 
     public boolean isUseInputDirectByteBuffers()
@@ -230,6 +249,7 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         if (maxConcurrentStreams >= 0)
             settings.put(SettingsFrame.MAX_CONCURRENT_STREAMS, maxConcurrentStreams);
         settings.put(SettingsFrame.MAX_HEADER_LIST_SIZE, getHttpConfiguration().getRequestHeaderSize());
+        settings.put(SettingsFrame.ENABLE_CONNECT_PROTOCOL, isConnectProtocolEnabled() ? 1 : 0);
         return settings;
     }
 
@@ -252,8 +272,9 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
             session.setStreamIdleTimeout(streamIdleTimeout);
         session.setInitialSessionRecvWindow(getInitialSessionRecvWindow());
         session.setWriteThreshold(getHttpConfiguration().getOutputBufferSize());
+        session.setConnectProtocolEnabled(isConnectProtocolEnabled());
 
-        ServerParser parser = newServerParser(connector, session, getRateControl());
+        ServerParser parser = newServerParser(connector, session, getRateControlFactory().newRateControl(endPoint));
         parser.setMaxFrameLength(getMaxFrameLength());
         parser.setMaxSettingsKeys(getMaxSettingsKeys());
 

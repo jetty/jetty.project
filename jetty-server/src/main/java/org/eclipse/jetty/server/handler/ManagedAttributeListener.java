@@ -100,7 +100,6 @@ public class ManagedAttributeListener implements ServletContextListener, Servlet
 
     protected void updateBean(String name, Object oldBean, Object newBean)
     {
-        LOG.info("update {} {}->{} on {}", name, oldBean, newBean, _context);
         if (LOG.isDebugEnabled())
             LOG.debug("update {} {}->{} on {}", name, oldBean, newBean, _context);
         _context.updateBean(oldBean, newBean, false);

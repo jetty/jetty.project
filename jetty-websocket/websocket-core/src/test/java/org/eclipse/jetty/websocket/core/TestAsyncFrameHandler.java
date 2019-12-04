@@ -33,6 +33,7 @@ public class TestAsyncFrameHandler implements FrameHandler
 
     public CoreSession coreSession;
     public BlockingQueue<Frame> receivedFrames = new BlockingArrayQueue<>();
+    public CloseStatus closeStatus;
     public volatile Throwable error;
     public CountDownLatch openLatch = new CountDownLatch(1);
     public CountDownLatch errorLatch = new CountDownLatch(1);
@@ -51,7 +52,8 @@ public class TestAsyncFrameHandler implements FrameHandler
     @Override
     public void onOpen(CoreSession coreSession, Callback callback)
     {
-        LOG.info("[{}] onOpen {}", name, coreSession);
+        if (LOG.isDebugEnabled())
+            LOG.debug("[{}] onOpen {}", name, coreSession);
         this.coreSession = coreSession;
         callback.succeeded();
         openLatch.countDown();
@@ -60,7 +62,8 @@ public class TestAsyncFrameHandler implements FrameHandler
     @Override
     public void onFrame(Frame frame, Callback callback)
     {
-        LOG.info("[{}] onFrame {}", name, frame);
+        if (LOG.isDebugEnabled())
+            LOG.debug("[{}] onFrame {}", name, frame);
         receivedFrames.offer(Frame.copy(frame));
         callback.succeeded();
     }
@@ -68,7 +71,9 @@ public class TestAsyncFrameHandler implements FrameHandler
     @Override
     public void onClosed(CloseStatus closeStatus, Callback callback)
     {
-        LOG.info("[{}] onClosed {}", name, closeStatus);
+        if (LOG.isDebugEnabled())
+            LOG.debug("[{}] onClosed {}", name, closeStatus);
+        this.closeStatus = closeStatus;
         closeLatch.countDown();
         callback.succeeded();
     }
@@ -76,7 +81,8 @@ public class TestAsyncFrameHandler implements FrameHandler
     @Override
     public void onError(Throwable cause, Callback callback)
     {
-        LOG.info("[{}] onError {} ", name, cause == null ? null : cause.toString());
+        if (LOG.isDebugEnabled())
+            LOG.debug("[{}] onError {} ", name, cause == null ? null : cause.toString());
         error = cause;
         errorLatch.countDown();
         callback.succeeded();
@@ -84,14 +90,16 @@ public class TestAsyncFrameHandler implements FrameHandler
 
     public void sendText(String text)
     {
-        LOG.info("[{}] sendText {} ", name, text);
+        if (LOG.isDebugEnabled())
+            LOG.debug("[{}] sendText {} ", name, text);
         Frame frame = new Frame(OpCode.TEXT, text);
         coreSession.sendFrame(frame, Callback.NOOP, false);
     }
 
     public void sendFrame(Frame frame)
     {
-        LOG.info("[{}] sendFrame {} ", name, frame);
+        if (LOG.isDebugEnabled())
+            LOG.debug("[{}] sendFrame {} ", name, frame);
         coreSession.sendFrame(frame, Callback.NOOP, false);
     }
 

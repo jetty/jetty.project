@@ -27,7 +27,6 @@ import java.nio.file.Path;
 import java.util.Calendar;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
@@ -112,14 +111,12 @@ public class FrameCaptureExtension extends AbstractExtension
         }
 
         ByteBuffer buf = getBufferPool().acquire(BUFSIZE, false);
-        BufferUtil.flipToFill(buf);
 
         try
         {
             Frame f = Frame.copy(frame);
             f.setMask(null); // TODO is this needed?
-            generator.generateHeaderBytes(f, buf);
-            BufferUtil.flipToFlush(buf, 0);
+            generator.generateHeader(f, buf);
             channel.write(buf);
             if (frame.hasPayload())
             {
@@ -178,7 +175,7 @@ public class FrameCaptureExtension extends AbstractExtension
                 incomingChannel = Files.newByteChannel(incomingFramesPath, CREATE, WRITE);
                 outgoingChannel = Files.newByteChannel(outgoingFramesPath, CREATE, WRITE);
 
-                this.generator = new Generator(getBufferPool(), true);
+                this.generator = new Generator();
             }
             catch (IOException e)
             {

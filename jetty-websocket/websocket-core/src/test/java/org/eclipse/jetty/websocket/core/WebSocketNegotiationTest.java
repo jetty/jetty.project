@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.HttpResponse;
@@ -34,16 +35,21 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.websocket.core.FrameHandler.CoreSession;
 import org.eclipse.jetty.websocket.core.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.core.client.UpgradeListener;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
+import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
 import org.eclipse.jetty.websocket.core.server.Negotiation;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -69,11 +75,12 @@ public class WebSocketNegotiationTest extends WebSocketTester
 
     private WebSocketServer server;
     private WebSocketCoreClient client;
+    private WebSocketComponents components = new WebSocketComponents();
 
     @BeforeEach
     public void startup() throws Exception
     {
-        WebSocketNegotiator negotiator = new WebSocketNegotiator.AbstractNegotiator()
+        WebSocketNegotiator negotiator = new WebSocketNegotiator.AbstractNegotiator(components, null)
         {
             @Override
             public FrameHandler negotiate(Negotiation negotiation) throws IOException
@@ -97,7 +104,7 @@ public class WebSocketNegotiationTest extends WebSocketTester
                         break;
 
                     case "testNotAcceptingExtensions":
-                        negotiation.setNegotiatedExtensions(Collections.EMPTY_LIST);
+                        negotiation.setNegotiatedExtensions(Collections.emptyList());
                         break;
 
                     case "testNoSubProtocolSelected":
@@ -120,7 +127,7 @@ public class WebSocketNegotiationTest extends WebSocketTester
         };
 
         server = new WebSocketServer(negotiator);
-        client = new WebSocketCoreClient();
+        client = new WebSocketCoreClient(null, components);
 
         server.start();
         client.start();
@@ -352,5 +359,74 @@ public class WebSocketNegotiationTest extends WebSocketTester
         String response = getUpgradeResponse(client.getInputStream());
 
         assertThat(response, containsString("400 Bad Request"));
+    }
+
+    public static Stream<Arguments> internalExtensionScenarios() throws Exception
+    {
+        return Stream.of(
+            Arguments.of("", ""),
+            Arguments.of("ext1", "ext1"),
+            Arguments.of("@int1", "@int1"),
+            Arguments.of("ext1, ext1", "ext1"),
+            Arguments.of("ext1, @int1", "ext1, @int1"),
+            Arguments.of("@int1, ext1", "@int1, ext1"),
+            Arguments.of("@int1, @int1", "@int1, @int1"),
+            Arguments.of("@int1, ext1, ext2", "@int1, ext1, ext2"),
+            Arguments.of("ext1, @int1, ext2", "ext1, @int1, ext2"),
+            Arguments.of("ext1, ext2, @int1", "ext1, ext2, @int1"),
+            Arguments.of("@int1, ext1, @int2, ext2, @int3", "@int1, ext1, @int2, ext2, @int3"),
+            Arguments.of("ext1, ext1, ext1, @int1, ext2", "ext1, @int1, ext2"),
+            Arguments.of("ext1, @int1, ext1, ext1, ext2", "@int1, ext1, ext2"),
+            Arguments.of("ext1, ext2, ext3, @int1", "ext1, ext2, ext3, @int1")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("internalExtensionScenarios")
+    public void testClientRequestedInternalExtensions(String reqExts, String negExts) throws Exception
+    {
+        // Add some simple Extensions for to make test examples clearer.
+        WebSocketExtensionRegistry extRegistry = components.getExtensionRegistry();
+        extRegistry.register("ext1", AbstractExtension.class);
+        extRegistry.register("ext2", AbstractExtension.class);
+        extRegistry.register("ext3", AbstractExtension.class);
+        extRegistry.register("@int1", AbstractExtension.class);
+        extRegistry.register("@int2", AbstractExtension.class);
+        extRegistry.register("@int3", AbstractExtension.class);
+
+        TestFrameHandler clientHandler = new TestFrameHandler();
+        CompletableFuture<String> extensionHeader = new CompletableFuture<>();
+        ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(client, server.getUri(), clientHandler);
+        upgradeRequest.setSubProtocols("test");
+        if (!StringUtil.isEmpty(reqExts))
+            upgradeRequest.addExtensions(reqExts.split(","));
+        upgradeRequest.addListener(new UpgradeListener()
+        {
+            @Override
+            public void onHandshakeResponse(HttpRequest request, HttpResponse response)
+            {
+                extensionHeader.complete(response.getHeaders().get(HttpHeader.SEC_WEBSOCKET_EXTENSIONS));
+            }
+        });
+
+        // Connect to the client then close the Session.
+        client.connect(upgradeRequest).get(5, TimeUnit.SECONDS);
+        clientHandler.sendClose();
+        assertTrue(clientHandler.closed.await(5, TimeUnit.SECONDS));
+        assertNull(clientHandler.getError());
+
+        // We had no internal Extensions in the response headers.
+        assertThat(extensionHeader.get(5, TimeUnit.SECONDS), not(containsString("@")));
+
+        // The list of Extensions on the client contains the internal Extensions.
+        StringBuilder negotiatedExtensions = new StringBuilder();
+        List<Extension> extensions = ((WebSocketCoreSession)clientHandler.coreSession).getExtensionStack().getExtensions();
+        for (int i = 0; i < extensions.size(); i++)
+        {
+            negotiatedExtensions.append(extensions.get(i).getConfig().getParameterizedName());
+            if (i != extensions.size() - 1)
+                negotiatedExtensions.append(", ");
+        }
+        assertThat(negotiatedExtensions.toString(), is(negExts));
     }
 }

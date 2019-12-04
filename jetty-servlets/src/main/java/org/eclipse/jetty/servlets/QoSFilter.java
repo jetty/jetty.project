@@ -216,6 +216,8 @@ public class QoSFilter implements Filter
         {
             if (accepted)
             {
+                _passes.release();
+
                 for (int p = _queues.length - 1; p >= 0; --p)
                 {
                     AsyncContext asyncContext = _queues[p].poll();
@@ -225,13 +227,20 @@ public class QoSFilter implements Filter
                         Boolean suspended = (Boolean)candidate.getAttribute(_suspended);
                         if (Boolean.TRUE.equals(suspended))
                         {
-                            candidate.setAttribute(_resumed, Boolean.TRUE);
-                            asyncContext.dispatch();
-                            break;
+                            try
+                            {  
+                                candidate.setAttribute(_resumed, Boolean.TRUE);
+                                asyncContext.dispatch();
+                                break;
+                            }
+                            catch (IllegalStateException x)
+                            {
+                                LOG.warn(x);
+                                continue;
+                            }
                         }
                     }
                 }
-                _passes.release();
             }
         }
     }
@@ -368,7 +377,8 @@ public class QoSFilter implements Filter
             // redispatched again at the end of the filtering.
             AsyncContext asyncContext = event.getAsyncContext();
             _queues[priority].remove(asyncContext);
-            asyncContext.dispatch();
+            ((HttpServletResponse)event.getSuppliedResponse()).sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
+            asyncContext.complete();
         }
 
         @Override

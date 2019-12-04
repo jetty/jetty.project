@@ -20,6 +20,7 @@ package org.eclipse.jetty.memcached.session;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -31,12 +32,9 @@ import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.session.AbstractSessionCache;
 import org.eclipse.jetty.server.session.CachingSessionDataStore;
+import org.eclipse.jetty.server.session.NullSessionCache;
 import org.eclipse.jetty.server.session.NullSessionDataStore;
-import org.eclipse.jetty.server.session.Session;
-import org.eclipse.jetty.server.session.SessionData;
-import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.jupiter.api.Test;
@@ -85,56 +83,6 @@ public class TestMemcachedSessions
                 w.write("No session");
             else
                 w.write((String)s.getAttribute("val"));
-        }
-    }
-
-    public static class NullSessionCache extends AbstractSessionCache
-    {
-
-        public NullSessionCache(SessionHandler handler)
-        {
-            super(handler);
-        }
-
-        @Override
-        public void shutdown()
-        {
-        }
-
-        @Override
-        public Session newSession(SessionData data)
-        {
-            return new Session(_handler, data);
-        }
-
-        @Override
-        public Session newSession(HttpServletRequest request, SessionData data)
-        {
-            return new Session(_handler, request, data);
-        }
-
-        @Override
-        public Session doGet(String id)
-        {
-            return null;
-        }
-
-        @Override
-        public Session doPutIfAbsent(String id, Session session)
-        {
-            return null;
-        }
-
-        @Override
-        public boolean doReplace(String id, Session oldValue, Session newValue)
-        {
-            return true;
-        }
-
-        @Override
-        public Session doDelete(String id)
-        {
-            return null;
         }
     }
 

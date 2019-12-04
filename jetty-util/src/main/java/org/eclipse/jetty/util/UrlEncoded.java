@@ -945,7 +945,8 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
             }
             else if (b >= 'a' && b <= 'z' ||
                 b >= 'A' && b <= 'Z' ||
-                b >= '0' && b <= '9')
+                b >= '0' && b <= '9' ||
+                b == '-' || b == '.' || b == '_' || b == '~')
             {
                 encoded[n++] = b;
             }

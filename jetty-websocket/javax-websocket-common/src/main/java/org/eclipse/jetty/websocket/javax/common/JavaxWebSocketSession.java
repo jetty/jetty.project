@@ -38,12 +38,9 @@ import javax.websocket.RemoteEndpoint.Basic;
 import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
 
-import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.SharedBlockingCallback;
-import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.javax.common.decoders.AvailableDecoders;
@@ -53,7 +50,7 @@ import org.eclipse.jetty.websocket.javax.common.util.ReflectUtils;
 /**
  * Client Session for the JSR.
  */
-public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.websocket.Session
+public class JavaxWebSocketSession implements javax.websocket.Session
 {
     private static final Logger LOG = Log.getLogger(JavaxWebSocketSession.class);
 
@@ -549,25 +546,6 @@ public class JavaxWebSocketSession extends AbstractLifeCycle implements javax.we
     public boolean isSecure()
     {
         return coreSession.isSecure();
-    }
-
-    @Override
-    protected void doStop()
-    {
-        coreSession.close(CloseStatus.SHUTDOWN, "Container being shut down", new Callback()
-        {
-            @Override
-            public void succeeded()
-            {
-                coreSession.abort();
-            }
-
-            @Override
-            public void failed(Throwable x)
-            {
-                coreSession.abort();
-            }
-        });
     }
 
     @Override

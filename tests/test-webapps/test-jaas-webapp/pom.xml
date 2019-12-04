@@ -27,20 +27,14 @@
         <artifactId>jetty-maven-plugin</artifactId>
         <version>${project.version}</version>
         <configuration>
-          <scanIntervalSeconds>10</scanIntervalSeconds>
+          <scan>10</scan>
           <systemProperties>
             <!-- This is for convenience so that the src/etc/login.conf file can stay unmodified when copied to $jetty.home/etc directory -->
-            <systemProperty>
-              <name>jetty.base</name>
-              <value>${basedir}/src/main/config/demo-base</value>
-            </systemProperty>
+              <jetty.base>${basedir}/src/main/config/demo-base</jetty.base>
             <!-- Mandatory. This system property tells JAAS where to find the login module configuration file -->
-            <systemProperty>
-              <name>java.security.auth.login.config</name>
-              <value>${basedir}/src/main/config/demo-base/etc/login.conf</value>
-            </systemProperty>
+              <java.security.auth.login.config>${basedir}/src/main/config/demo-base/etc/login.conf</java.security.auth.login.config>
           </systemProperties>
-          <webAppConfig>
+          <webApp>
             <contextPath>/test-jaas</contextPath>
             <securityHandler implementation="org.eclipse.jetty.security.ConstraintSecurityHandler">
               <loginService implementation="org.eclipse.jetty.jaas.JAASLoginService">
@@ -48,7 +42,7 @@
                 <loginModuleName>xyz</loginModuleName>
               </loginService>
             </securityHandler>
-          </webAppConfig>
+          </webApp>
         </configuration>
         <dependencies>
           <dependency>
