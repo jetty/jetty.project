@@ -27,6 +27,7 @@ import javax.servlet.ServletResponse;
 
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.RuntimeIOException;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -169,6 +170,15 @@ public class ResponseWriter extends PrintWriter
         {
             setError(ex);
         }
+    }
+
+    public void close(Callback callback)
+    {
+        synchronized (lock)
+        {
+            _isClosed = true;
+        }
+        _httpWriter.close(callback);
     }
 
     @Override

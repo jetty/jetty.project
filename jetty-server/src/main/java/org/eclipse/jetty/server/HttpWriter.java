@@ -22,13 +22,14 @@ import java.io.IOException;
 import java.io.Writer;
 
 import org.eclipse.jetty.util.ByteArrayOutputStream2;
+import org.eclipse.jetty.util.Callback;
 
 /**
  *
  */
 public abstract class HttpWriter extends Writer
 {
-    public static final int MAX_OUTPUT_CHARS = 512;
+    public static final int MAX_OUTPUT_CHARS = 512; // TODO should this be configurable? super size is 1024
 
     final HttpOutput _out;
     final ByteArrayOutputStream2 _bytes;
@@ -38,13 +39,18 @@ public abstract class HttpWriter extends Writer
     {
         _out = out;
         _chars = new char[MAX_OUTPUT_CHARS];
-        _bytes = new ByteArrayOutputStream2(MAX_OUTPUT_CHARS);
+        _bytes = new ByteArrayOutputStream2(MAX_OUTPUT_CHARS);  // TODO should this be pooled - or do we just recycle the writer?
     }
 
     @Override
     public void close() throws IOException
     {
         _out.close();
+    }
+
+    public void close(Callback callback)
+    {
+        _out.close(callback);
     }
 
     @Override

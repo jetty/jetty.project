@@ -47,7 +47,7 @@ public class EncodingHttpWriter extends HttpWriter
     public void write(char[] s, int offset, int length) throws IOException
     {
         HttpOutput out = _out;
-        if (length == 0 && out.isAllContentWritten())
+        if (length == 0 && out.isAllContentWritten()) // TODO why is this needed?
         {
             out.close();
             return;

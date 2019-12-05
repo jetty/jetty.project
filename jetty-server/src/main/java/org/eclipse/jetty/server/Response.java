@@ -830,13 +830,16 @@ public class Response implements HttpServletResponse
     {
         if (_outputType == OutputType.WRITER)
             _writer.close();
-        if (!_out.isClosed())
+        else
             _out.close();
     }
 
     public void closeOutput(Callback callback)
     {
-        _out.complete((_outputType == OutputType.WRITER) ? _writer : _out, callback);
+        if (_outputType == OutputType.WRITER)
+            _writer.close(callback);
+        else
+            _out.close(callback);
     }
 
     public long getLongContentLength()

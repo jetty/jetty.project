@@ -203,7 +203,7 @@ public class AsyncCompletionTest extends HttpServerTestFixture
             assertThat(content, containsString(message));
 
             // Check that a thread is held busy in write
-            assertThat(_threadPool.getBusyThreads(), Matchers.greaterThan(base));
+            assertThat(_threadPool.getBusyThreads(), Matchers.greaterThan(base));  // TODO why is this the case for async?
 
             // Getting the Delayed callback will free the thread
             PendingCallback delay = X.exchange(null, 10, TimeUnit.SECONDS);

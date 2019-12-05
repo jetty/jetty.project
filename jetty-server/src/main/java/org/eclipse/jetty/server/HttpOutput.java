@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.server;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
@@ -288,42 +287,6 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         }
     }
 
-    public void complete(Closeable wrapper, Callback callback)
-    {
-        if (wrapper == this || wrapper == null)
-        {
-            // If there is no wrapper, then complete is just an normal async close
-            close(callback);
-            return;
-        }
-
-        // otherwise we must close the wrapper, but all calls to close() will now
-        // be treated as async anyway.
-        synchronized (_channelState)
-        {
-            _completing = true;
-            _closeCallback = Callback.combine(_closeCallback, callback);
-        }
-
-        try
-        {
-            wrapper.close();
-        }
-        catch (Throwable th)
-        {
-            LOG.ignore(th);
-        }
-
-        // If the wrapper intercepted the close, then initiate directly
-        boolean closed;
-        synchronized (_channelState)
-        {
-            closed = _state == State.CLOSED || _state == State.CLOSING;
-        }
-        if (!closed)
-            close(null);
-    }
-
     public void close(Callback callback)
     {
         synchronized (_channelState)
@@ -393,36 +356,17 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     @Override
     public void close() throws IOException
     {
-        Callback callback = null;
-        synchronized (_channelState)
+        try (Blocker blocker = _writeBlocker.acquire())
         {
-            if (_completing)
-                // Completion has started so all closes are async
-                close(null);
-            // Else handle with blocking unless already closed.
-            else if (_state == State.CLOSED)
-                return;
+            close(blocker);
+            blocker.block();
         }
-
-        // This is a completion close, so we will handle without blocking.
-        if (callback != null)
+        catch (Throwable failure)
         {
-            close(callback);
-        }
-        else
-        {
-            try (Blocker blocker = _writeBlocker.acquire())
-            {
-                close(blocker);
-                blocker.block();
-            }
-            catch (Throwable failure)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug(failure);
-                abort(failure);
-                throw failure;
-            }
+            if (LOG.isDebugEnabled())
+                LOG.debug(failure);
+            abort(failure);
+            throw failure;
         }
     }
 
@@ -1211,6 +1155,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         {
             if (_state != State.OPEN)
                 throw new IllegalStateException("!OPEN");
+            _state = State.READY;
             _writeListener = writeListener;
             wake = _channel.getState().onWritePossible();
         }
@@ -1296,7 +1241,6 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                 closed();
             }
         }
-
     }
 
     @Override
@@ -1337,7 +1281,6 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 
                     case UNREADY:
                         _state = _last ? State.CLOSED : State.READY;
-                        // TODO should we close first and then call OWP?
                         close = true;
                         wake = _channel.getState().onWritePossible();
                         break;
@@ -1351,9 +1294,13 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             }
 
             if (close)
-                HttpOutput.this.close(null);
-
-            if (wake)
+            {
+                if (wake)
+                    HttpOutput.this.close(Callback.from(() -> _channel.execute(_channel))); // TODO can we call directly? Why execute?
+                else
+                    HttpOutput.this.close(null);
+            }
+            else if (wake)
                 _channel.execute(_channel); // TODO can we call directly? Why execute?
         }
 
