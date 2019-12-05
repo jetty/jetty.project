@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import javax.servlet.DispatcherType;
 
@@ -42,7 +41,11 @@ import org.eclipse.jetty.websocket.server.WebSocketUpgradeFilter;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -53,6 +56,7 @@ public class ErrorCloseTest
     private ThrowingSocket serverSocket = new ThrowingSocket();
     private CountDownLatch serverCloseListener = new CountDownLatch(1);
     private ServerConnector connector;
+    private URI serverUri;
 
     @BeforeEach
     public void start() throws Exception
@@ -78,6 +82,7 @@ public class ErrorCloseTest
 
         server.start();
         client.start();
+        serverUri = new URI("ws://localhost:" + connector.getLocalPort() + "/");
     }
 
     @AfterEach
@@ -126,15 +131,91 @@ public class ErrorCloseTest
     }
 
     @Test
-    public void testWebSocketThrowsOnTimeout() throws Exception
+    public void testOnOpenThrows() throws Exception
     {
-        serverSocket.methodsToThrow.add("onClose");
-        serverSocket.methodsToThrow.add("onError");
-
-        URI uri = new URI("ws://localhost:" + connector.getLocalPort() + "/");
+        serverSocket.methodsToThrow.add("onOpen");
         EventSocket clientSocket = new EventSocket();
-        Future<Session> connect = client.connect(clientSocket, uri);
-        connect.get(5, TimeUnit.SECONDS);
+        client.connect(clientSocket, serverUri).get(5, TimeUnit.SECONDS);
+
+        assertTrue(serverSocket.closed.await(5, TimeUnit.SECONDS));
+        assertTrue(clientSocket.closed.await(5, TimeUnit.SECONDS));
+        assertThat(serverSocket.failure.getMessage(), is("throwing from onOpen"));
+
+        // Check we have stopped the WebSocketSession properly.
+        assertFalse(serverSocket.session.isOpen());
+        serverCloseListener.await(5, TimeUnit.SECONDS);
+        assertTrue(((WebSocketSession)serverSocket.session).isStopped());
+    }
+
+    @Test
+    public void testOnMessageThrows() throws Exception
+    {
+        serverSocket.methodsToThrow.add("onMessage");
+        EventSocket clientSocket = new EventSocket();
+        client.connect(clientSocket, serverUri).get(5, TimeUnit.SECONDS);
+        clientSocket.session.getRemote().sendString("trigger onMessage error");
+
+        assertTrue(serverSocket.closed.await(5, TimeUnit.SECONDS));
+        assertTrue(clientSocket.closed.await(5, TimeUnit.SECONDS));
+        assertThat(serverSocket.failure.getMessage(), is("throwing from onMessage"));
+
+        // Check we have stopped the WebSocketSession properly.
+        assertFalse(serverSocket.session.isOpen());
+        serverCloseListener.await(5, TimeUnit.SECONDS);
+        assertTrue(((WebSocketSession)serverSocket.session).isStopped());
+    }
+
+
+    @ParameterizedTest
+    @ValueSource(strings={"onError","onClose"})
+    public void testWebSocketThrowsAfterOnOpenError(String methodToThrow) throws Exception
+    {
+        serverSocket.methodsToThrow.add("onOpen");
+        serverSocket.methodsToThrow.add(methodToThrow);
+        EventSocket clientSocket = new EventSocket();
+
+        try (StacklessLogging stacklessLogging = new StacklessLogging(WebSocketSession.class))
+        {
+            client.connect(clientSocket, serverUri).get(5, TimeUnit.SECONDS);
+            assertTrue(serverSocket.closed.await(5, TimeUnit.SECONDS));
+            assertTrue(clientSocket.closed.await(5, TimeUnit.SECONDS));
+        }
+
+        // Check we have stopped the WebSocketSession properly.
+        assertFalse(serverSocket.session.isOpen());
+        serverCloseListener.await(5, TimeUnit.SECONDS);
+        assertTrue(((WebSocketSession)serverSocket.session).isStopped());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings={"onError","onClose"})
+    public void testWebSocketThrowsAfterOnMessageError(String methodToThrow) throws Exception
+    {
+        serverSocket.methodsToThrow.add("onMessage");
+        serverSocket.methodsToThrow.add(methodToThrow);
+        EventSocket clientSocket = new EventSocket();
+        client.connect(clientSocket, serverUri).get(5, TimeUnit.SECONDS);
+
+        try (StacklessLogging stacklessLogging = new StacklessLogging(WebSocketSession.class))
+        {
+            clientSocket.session.getRemote().sendString("trigger onMessage error");
+            assertTrue(serverSocket.closed.await(5, TimeUnit.SECONDS));
+            assertTrue(clientSocket.closed.await(5, TimeUnit.SECONDS));
+        }
+
+        // Check we have stopped the WebSocketSession properly.
+        assertFalse(serverSocket.session.isOpen());
+        serverCloseListener.await(5, TimeUnit.SECONDS);
+        assertTrue(((WebSocketSession)serverSocket.session).isStopped());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings={"onError","onClose"})
+    public void testWebSocketThrowsOnTimeout(String methodToThrow) throws Exception
+    {
+        serverSocket.methodsToThrow.add(methodToThrow);
+        EventSocket clientSocket = new EventSocket();
+        client.connect(clientSocket, serverUri).get(5, TimeUnit.SECONDS);
 
         // Set a short idleTimeout on the server.
         assertTrue(serverSocket.open.await(5, TimeUnit.SECONDS));
@@ -144,6 +225,49 @@ public class ErrorCloseTest
         try (StacklessLogging stacklessLogging = new StacklessLogging(WebSocketSession.class))
         {
             assertTrue(serverSocket.closed.await(5, TimeUnit.SECONDS));
+            assertTrue(clientSocket.closed.await(5, TimeUnit.SECONDS));
+        }
+
+        // Check we have stopped the WebSocketSession properly.
+        assertFalse(serverSocket.session.isOpen());
+        serverCloseListener.await(5, TimeUnit.SECONDS);
+        assertTrue(((WebSocketSession)serverSocket.session).isStopped());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings={"onError","onClose"})
+    public void testWebSocketThrowsOnRemoteDisconnect(String methodToThrow) throws Exception
+    {
+        serverSocket.methodsToThrow.add(methodToThrow);
+        EventSocket clientSocket = new EventSocket();
+        client.connect(clientSocket, serverUri).get(5, TimeUnit.SECONDS);
+
+        try (StacklessLogging stacklessLogging = new StacklessLogging(WebSocketSession.class))
+        {
+            clientSocket.session.disconnect();
+            assertTrue(serverSocket.closed.await(5, TimeUnit.SECONDS));
+            assertTrue(clientSocket.closed.await(5, TimeUnit.SECONDS));
+        }
+
+        // Check we have stopped the WebSocketSession properly.
+        assertFalse(serverSocket.session.isOpen());
+        serverCloseListener.await(5, TimeUnit.SECONDS);
+        assertTrue(((WebSocketSession)serverSocket.session).isStopped());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings={"onError","onClose"})
+    public void testWebSocketThrowsOnLocalDisconnect(String methodToThrow) throws Exception
+    {
+        serverSocket.methodsToThrow.add(methodToThrow);
+        EventSocket clientSocket = new EventSocket();
+        client.connect(clientSocket, serverUri).get(5, TimeUnit.SECONDS);
+
+        try (StacklessLogging stacklessLogging = new StacklessLogging(WebSocketSession.class))
+        {
+            serverSocket.session.disconnect();
+            assertTrue(serverSocket.closed.await(5, TimeUnit.SECONDS));
+            assertTrue(clientSocket.closed.await(5, TimeUnit.SECONDS));
         }
 
         // Check we have stopped the WebSocketSession properly.
