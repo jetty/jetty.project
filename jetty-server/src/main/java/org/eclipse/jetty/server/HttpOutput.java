@@ -1301,7 +1301,11 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         @Override
         public void onCompleteFailure(Throwable e)
         {
-            _onError = e == null ? new IOException() : e;
+            synchronized (_channelState)
+            {
+                _onError = e == null ? new IOException() : e;
+                _state = State.ERROR;
+            }
             if (_channel.getState().onWritePossible())
                 _channel.execute(_channel);
         }
