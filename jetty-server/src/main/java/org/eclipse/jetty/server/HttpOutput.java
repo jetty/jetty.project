@@ -297,12 +297,6 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                     callback.succeeded();
                     return;
 
-                case CLOSING:
-                    // Close already initiated, so just add the callback to those
-                    // executed when it is complete.
-                    _closeCallback = Callback.combine(_closeCallback, callback);
-                    return;
-
                 case ERROR:
                     // TODO is this right?
                     Callback cb = Callback.combine(_closeCallback, callback);
@@ -311,16 +305,16 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                     _state = State.CLOSED;
                     return;
 
-                case PENDING:
-                case UNREADY:
+                case CLOSING: // Close already initiated, so just add callback
+                case PENDING: // Add the callback and close when write is complete.
+                case UNREADY: // Add the callback and close when write is complete.
                     // Let's just add the callback so it get's noticed once write is possible.
                     _closeCallback = Callback.combine(_closeCallback, callback);
-                    break;
+                    return;
 
                 default:
                     _state = State.CLOSING;
                     _closeCallback = Callback.combine(_closeCallback, callback);
-                    break;
             }
         }
 

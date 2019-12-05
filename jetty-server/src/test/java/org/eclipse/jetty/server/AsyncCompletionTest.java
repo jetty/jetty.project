@@ -28,6 +28,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Exchanger;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -170,19 +171,19 @@ public class AsyncCompletionTest extends HttpServerTestFixture
     public static Stream<Arguments> tests()
     {
         List<Object[]> tests = new ArrayList<>();
-        tests.add(new Object[]{new HelloWorldHandler(), 200, "Hello world"});
-        tests.add(new Object[]{new SendErrorHandler(499, "Test async sendError"), 499, "Test async sendError"});
-        tests.add(new Object[]{new AsyncReadyCompleteHandler(), 200, __data});
-        tests.add(new Object[]{new AsyncWriteCompleteHandler(false, false), 200, __data});
-        tests.add(new Object[]{new AsyncWriteCompleteHandler(false, true), 200, __data});
-        tests.add(new Object[]{new AsyncWriteCompleteHandler(true, false), 200, __data});
-        tests.add(new Object[]{new AsyncWriteCompleteHandler(true, true), 200, __data});
+        tests.add(new Object[]{new HelloWorldHandler(), false, 200, "Hello world"});
+        tests.add(new Object[]{new SendErrorHandler(499, "Test async sendError"), false, 499, "Test async sendError"});
+        tests.add(new Object[]{new AsyncReadyCompleteHandler(), false, 200, __data});
+        tests.add(new Object[]{new AsyncWriteCompleteHandler(false, false), false, 200, __data});
+        tests.add(new Object[]{new AsyncWriteCompleteHandler(false, true), true, 200, __data});
+        tests.add(new Object[]{new AsyncWriteCompleteHandler(true, false), false, 200, __data});
+        tests.add(new Object[]{new AsyncWriteCompleteHandler(true, true), true, 200, __data});
         return tests.stream().map(Arguments::of);
     }
 
     @ParameterizedTest
     @MethodSource("tests")
-    public void testAsyncCompletion(Handler handler, int status, String message) throws Exception
+    public void testAsyncCompletion(Handler handler, boolean blocked, int status, String message) throws Exception
     {
         configureServer(handler);
 
@@ -210,7 +211,7 @@ public class AsyncCompletionTest extends HttpServerTestFixture
 
             // wait for threads to return to base level
             long end = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
-            while (_threadPool.getBusyThreads() != base)
+            while (_threadPool.getBusyThreads() != base + (blocked ? 1 : 0))
             {
                 if (System.nanoTime() > end)
                     throw new TimeoutException();
@@ -219,6 +220,14 @@ public class AsyncCompletionTest extends HttpServerTestFixture
 
             // We are now asynchronously waiting!
             assertThat(__complete.get(), is(false));
+
+            // Do we need to wait for an unready state?
+            if (handler instanceof AsyncWriteCompleteHandler)
+            {
+                AsyncWriteCompleteHandler awch = (AsyncWriteCompleteHandler)handler;
+                if (awch._unReady)
+                    assertThat(awch._unReadySeen.await(5, TimeUnit.SECONDS),is(true));
+            }
 
             // proceed with the completion
             delay.proceed();
@@ -276,6 +285,8 @@ public class AsyncCompletionTest extends HttpServerTestFixture
     {
         final boolean _unReady;
         final boolean _close;
+        final CountDownLatch _unReadySeen = new CountDownLatch(1);
+        boolean _written;
 
         AsyncWriteCompleteHandler(boolean unReady, boolean close)
         {
@@ -295,13 +306,23 @@ public class AsyncCompletionTest extends HttpServerTestFixture
                 {
                     if (out.isReady())
                     {
-                        response.setContentType("text/plain");
-                        response.setContentLength(bytes.length);
-                        out.write(bytes);
-                        if (_unReady)
-                            assertThat(out.isReady(),Matchers.is(false));
+                        if (!_written)
+                        {
+                            _written = true;
+                            response.setContentType("text/plain");
+                            response.setContentLength(bytes.length);
+                            out.write(bytes);
+                        }
+                        if (_unReady && _unReadySeen.getCount() == 1)
+                        {
+                            assertThat(out.isReady(), Matchers.is(false));
+                            _unReadySeen.countDown();
+                            return;
+                        }
                         if (_close)
+                        {
                             out.close();
+                        }
                         context.complete();
                     }
                 }
@@ -312,6 +333,12 @@ public class AsyncCompletionTest extends HttpServerTestFixture
                     t.printStackTrace();
                 }
             });
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format("%s@%x{ur=%b,c=%b}", this.getClass().getSimpleName(), hashCode(), _unReady, _close);
         }
     }
 }
