@@ -53,6 +53,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.startsWith;
@@ -359,6 +360,66 @@ public class WebSocketNegotiationTest extends WebSocketTester
         String response = getUpgradeResponse(client.getInputStream());
 
         assertThat(response, containsString("400 Bad Request"));
+    }
+
+    @Test
+    public void testListenerExtensionSelection() throws Exception
+    {
+        TestFrameHandler clientHandler = new TestFrameHandler();
+
+        ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(client, server.getUri(), clientHandler);
+        upgradeRequest.setSubProtocols("test");
+
+        CompletableFuture<String> extensionHeader = new CompletableFuture<>();
+        upgradeRequest.addListener(new UpgradeListener()
+        {
+            @Override
+            public void onHandshakeRequest(HttpRequest request)
+            {
+                request.header(HttpHeader.SEC_WEBSOCKET_EXTENSIONS, "permessage-deflate");
+            }
+
+            @Override
+            public void onHandshakeResponse(HttpRequest request, HttpResponse response)
+            {
+                extensionHeader.complete(response.getHeaders().get(HttpHeader.SEC_WEBSOCKET_EXTENSIONS));
+            }
+        });
+
+        client.connect(upgradeRequest).get(5, TimeUnit.SECONDS);
+        clientHandler.sendClose();
+        assertTrue(clientHandler.closed.await(5, TimeUnit.SECONDS));
+        assertNull(clientHandler.getError());
+
+        assertThat(extensionHeader.get(5, TimeUnit.SECONDS), is("permessage-deflate"));
+    }
+
+    @Test
+    public void testListenerExtensionSelectionError() throws Exception
+    {
+        TestFrameHandler clientHandler = new TestFrameHandler();
+        ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(client, server.getUri(), clientHandler);
+        upgradeRequest.setSubProtocols("test");
+        upgradeRequest.addExtensions("permessage-deflate;server_no_context_takeover");
+
+        CompletableFuture<String> extensionHeader = new CompletableFuture<>();
+        upgradeRequest.addListener(new UpgradeListener()
+        {
+            @Override
+            public void onHandshakeRequest(HttpRequest request)
+            {
+                request.getHeaders().put(HttpHeader.SEC_WEBSOCKET_EXTENSIONS, "permessage-deflate");
+            }
+        });
+
+        ExecutionException error = assertThrows(ExecutionException.class,
+            () -> client.connect(upgradeRequest).get(5, TimeUnit.SECONDS));
+
+        Throwable upgradeException = error.getCause();
+        assertThat(upgradeException, instanceOf(UpgradeException.class));
+        Throwable cause = upgradeException.getCause();
+        assertThat(cause, instanceOf(IllegalStateException.class));
+        assertThat(cause.getMessage(), is("Extensions set in both the ClientUpgradeRequest and UpgradeListener"));
     }
 
     public static Stream<Arguments> internalExtensionScenarios() throws Exception

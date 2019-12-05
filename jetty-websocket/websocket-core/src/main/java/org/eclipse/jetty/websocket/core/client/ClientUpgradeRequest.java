@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpConversation;
@@ -286,15 +287,28 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
     void requestComplete()
     {
         // Add extensions header filtering out internal extensions and internal parameters.
-        HttpFields headers = getHeaders();
-        for (ExtensionConfig config : requestedExtensions)
-        {
-            if (config.getName().startsWith("@"))
-                continue;
-            headers.add(HttpHeader.SEC_WEBSOCKET_EXTENSIONS, config.getParameterizedNameWithoutInternalParams());
-        }
+        String extensionString = requestedExtensions.stream()
+            .filter(ec -> !ec.getName().startsWith("@"))
+            .map(ExtensionConfig::getParameterizedNameWithoutInternalParams)
+            .collect(Collectors.joining(","));
 
+        if (!StringUtil.isEmpty(extensionString))
+            getHeaders().add(HttpHeader.SEC_WEBSOCKET_EXTENSIONS, extensionString);
+
+        // Notify the listener which may change the headers directly.
         notifyUpgradeListeners((listener) -> listener.onHandshakeRequest(this));
+
+        // Check if extensions were set in the headers from the upgrade listener.
+        String extsAfterListener = String.join(",", getHeaders().getCSV(HttpHeader.SEC_WEBSOCKET_EXTENSIONS, true));
+        if (!extensionString.equals(extsAfterListener))
+        {
+            // If extensions were set in both the ClientUpgradeRequest and UpgradeListener throw ISE.
+            if (!requestedExtensions.isEmpty())
+                abort(new IllegalStateException("Extensions set in both the ClientUpgradeRequest and UpgradeListener"));
+
+            // Otherwise reparse the new set of requested extensions.
+            requestedExtensions = ExtensionConfig.parseList(extsAfterListener);
+        }
     }
 
     private void notifyUpgradeListeners(Consumer<UpgradeListener> action)
