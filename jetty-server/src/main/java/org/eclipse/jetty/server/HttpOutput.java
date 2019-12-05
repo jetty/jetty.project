@@ -1232,7 +1232,8 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             }
             finally
             {
-                closed();
+                // Initiate an async close
+                close(null);
             }
         }
     }
