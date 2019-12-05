@@ -243,8 +243,8 @@ public class AsyncIOTest extends AbstractTest
                         // The write is too large and will stall.
                         output.write(ByteBuffer.wrap(new byte[2 * clientWindow]));
 
-                        // We cannot call complete() now before checking for isReady().
-                        // This will abort the response and the client will receive a reset.
+                        // We can now call complete() now before checking for isReady().
+                        // This will asynchronously complete when the write is finished.
                         asyncContext.complete();
                     }
 
@@ -275,9 +275,14 @@ public class AsyncIOTest extends AbstractTest
         session.newStream(frame, promise, new Stream.Listener.Adapter()
         {
             @Override
-            public void onReset(Stream stream, ResetFrame frame)
+            public void onClosed(Stream stream)
             {
                 latch.countDown();
+            }
+
+            @Override
+            public void onReset(Stream stream, ResetFrame frame)
+            {
             }
         });
         assertTrue(latch.await(5, TimeUnit.SECONDS));
