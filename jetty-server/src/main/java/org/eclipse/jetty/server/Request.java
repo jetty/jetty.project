@@ -2306,7 +2306,7 @@ public class Request implements HttpServletRequest
     {
         String contentType = getContentType();
         if (contentType == null || !MimeTypes.Type.MULTIPART_FORM_DATA.is(HttpFields.valueParameters(contentType, null)))
-            throw new ServletException("Content-Type != multipart/form-data");
+            throw new ServletException("Unsupported Content-Type [" + contentType + "], expected [multipart/form-data]");
         return getParts(null);
     }
 
