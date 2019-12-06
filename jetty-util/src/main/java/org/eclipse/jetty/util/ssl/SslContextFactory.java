@@ -1249,17 +1249,12 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
                 // Is SNI needed to select a certificate?
                 if (!_certWilds.isEmpty() || _certHosts.size() > 1 || (_certHosts.size() == 1 && _aliasX509.size() > 1))
                 {
-                    if (this instanceof SslContextFactory.Server)
+                    for (int idx = 0; idx < managers.length; idx++)
                     {
-                        for (int idx = 0; idx < managers.length; idx++)
+                        if (managers[idx] instanceof X509ExtendedKeyManager)
                         {
-                            if (managers[idx] instanceof X509ExtendedKeyManager)
-                                managers[idx] = newSniX509ExtendedKeyManager((X509ExtendedKeyManager)managers[idx]);
+                            managers[idx] = newSniX509ExtendedKeyManager((X509ExtendedKeyManager)managers[idx]);
                         }
-                    }
-                    else
-                    {
-                        LOG.warn("Unable to support SNI on {} (expecting {})", this.getClass().getName(), SslContextFactory.Server.class.getName());
                     }
                 }
             }
@@ -1277,7 +1272,11 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     @Deprecated
     protected X509ExtendedKeyManager newSniX509ExtendedKeyManager(X509ExtendedKeyManager keyManager)
     {
-        throw new UnsupportedOperationException("X509ExtendedKeyManager only supported on " + SslContextFactory.Server.class.getName());
+        throw new IllegalStateException(String.format(
+            "KeyStores with multiple certificates are not supported on the base class %s. (Use %s or %s instead)",
+            SslContextFactory.class.getName(),
+            Server.class.getName(),
+            Client.class.getName()));
     }
 
     protected TrustManager[] getTrustManagers(KeyStore trustStore, Collection<? extends CRL> crls) throws Exception
@@ -2184,6 +2183,13 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
             checkTrustAll();
             checkEndPointIdentificationAlgorithm();
             super.checkConfiguration();
+        }
+
+        @Override
+        protected X509ExtendedKeyManager newSniX509ExtendedKeyManager(X509ExtendedKeyManager keyManager)
+        {
+            // Client has no SNI functionality.
+            return keyManager;
         }
     }
 
