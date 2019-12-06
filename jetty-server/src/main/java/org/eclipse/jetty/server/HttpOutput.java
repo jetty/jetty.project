@@ -154,7 +154,6 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     private final HttpChannelState _channelState;
     private final SharedBlockingCallback _writeBlocker;
     private State _state = State.OPEN;
-    private boolean _completing = false;
     private Interceptor _interceptor;
     private long _written;
     private long _flushed;
@@ -1114,7 +1113,6 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         synchronized (_channelState)
         {
             _state = State.OPEN;
-            _completing = false;
             _interceptor = _channel;
             HttpConfiguration config = _channel.getHttpConfiguration();
             _bufferSize = config.getOutputBufferSize();

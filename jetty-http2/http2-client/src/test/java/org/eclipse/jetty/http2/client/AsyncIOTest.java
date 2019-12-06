@@ -41,7 +41,6 @@ import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
-import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.server.HttpOutput;
 import org.eclipse.jetty.util.Callback;
@@ -278,11 +277,6 @@ public class AsyncIOTest extends AbstractTest
             public void onClosed(Stream stream)
             {
                 latch.countDown();
-            }
-
-            @Override
-            public void onReset(Stream stream, ResetFrame frame)
-            {
             }
         });
         assertTrue(latch.await(5, TimeUnit.SECONDS));

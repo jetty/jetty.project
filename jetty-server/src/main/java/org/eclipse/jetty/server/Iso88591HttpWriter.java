@@ -51,7 +51,7 @@ public class Iso88591HttpWriter extends HttpWriter
         while (length > 0)
         {
             _bytes.reset();
-            int chars = length > MAX_OUTPUT_CHARS ? MAX_OUTPUT_CHARS : length;
+            int chars = Math.min(length, MAX_OUTPUT_CHARS);
 
             byte[] buffer = _bytes.getBuf();
             int bytes = _bytes.getCount();
