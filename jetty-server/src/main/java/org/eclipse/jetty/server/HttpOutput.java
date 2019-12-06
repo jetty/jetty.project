@@ -1273,8 +1273,15 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                         break;
 
                     case UNREADY:
-                        _state = _last ? State.CLOSED : State.READY;
-                        close = true;
+                        if (_last)
+                        {
+                            _state = State.CLOSED;
+                            close = true;
+                        }
+                        else
+                        {
+                            _state = State.READY;
+                        }
                         wake = _channel.getState().onWritePossible();
                         break;
 
