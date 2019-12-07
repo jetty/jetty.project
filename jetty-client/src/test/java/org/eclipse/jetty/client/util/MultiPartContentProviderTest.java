@@ -20,6 +20,7 @@ package org.eclipse.jetty.client.util;
 
 import java.io.BufferedWriter;
 import java.io.ByteArrayInputStream;
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -31,10 +32,12 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.servlet.MultipartConfigElement;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -435,6 +438,46 @@ public class MultiPartContentProviderTest extends AbstractHttpClientServerTest
         assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
     }
 
+    @ParameterizedTest
+    @ArgumentsSource(ScenarioProvider.class)
+    public void testEachPartIsClosed(Scenario scenario) throws Exception
+    {
+        String name1 = "field1";
+        String value1 = "value1";
+        String name2 = "field2";
+        String value2 = "value2";
+        start(scenario, new AbstractMultiPartHandler()
+        {
+            @Override
+            protected void handle(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            {
+                Collection<Part> parts = request.getParts();
+                assertEquals(2, parts.size());
+                Iterator<Part> iterator = parts.iterator();
+                Part part1 = iterator.next();
+                assertEquals(name1, part1.getName());
+                assertEquals(value1, IO.toString(part1.getInputStream()));
+                Part part2 = iterator.next();
+                assertEquals(name2, part2.getName());
+                assertEquals(value2, IO.toString(part2.getInputStream()));
+            }
+        });
+
+        AtomicInteger closeCount = new AtomicInteger();
+        MultiPartContentProvider multiPart = new MultiPartContentProvider();
+        multiPart.addFieldPart(name1, new CloseableStringContentProvider(value1, closeCount::incrementAndGet), null);
+        multiPart.addFieldPart(name2, new CloseableStringContentProvider(value2, closeCount::incrementAndGet), null);
+        multiPart.close();
+        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+            .scheme(scenario.getScheme())
+            .method(HttpMethod.POST)
+            .content(multiPart)
+            .send();
+
+        assertEquals(200, response.getStatus());
+        assertEquals(2, closeCount.get());
+    }
+
     private abstract static class AbstractMultiPartHandler extends AbstractHandler
     {
         @Override
@@ -447,5 +490,50 @@ public class MultiPartContentProviderTest extends AbstractHttpClientServerTest
         }
 
         protected abstract void handle(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException;
+    }
+
+    private static class CloseableStringContentProvider extends StringContentProvider
+    {
+        private final Runnable closeFn;
+
+        private CloseableStringContentProvider(String content, Runnable closeFn)
+        {
+            super(content);
+            this.closeFn = closeFn;
+        }
+
+        @Override
+        public Iterator<ByteBuffer> iterator()
+        {
+            return new CloseableIterator<>(super.iterator());
+        }
+
+        private class CloseableIterator<T> implements Iterator<T>, Closeable
+        {
+            private final Iterator<T> iterator;
+
+            public CloseableIterator(Iterator<T> iterator)
+            {
+                this.iterator = iterator;
+            }
+
+            @Override
+            public boolean hasNext()
+            {
+                return iterator.hasNext();
+            }
+
+            @Override
+            public T next()
+            {
+                return iterator.next();
+            }
+
+            @Override
+            public void close()
+            {
+                closeFn.run();
+            }
+        }
     }
 }
