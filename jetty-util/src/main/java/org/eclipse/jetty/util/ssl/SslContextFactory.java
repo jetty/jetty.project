@@ -1140,8 +1140,6 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
                             managers[idx] = new AliasedX509ExtendedKeyManager((X509ExtendedKeyManager)managers[idx], alias);
                     }
                 }
-
-
             }
         }
 
