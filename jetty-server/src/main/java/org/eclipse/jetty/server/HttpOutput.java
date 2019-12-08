@@ -579,9 +579,11 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             while (len > getBufferSize())
             {
                 int p = view.position();
-                view.limit(p + getBufferSize());
+                int l = p + getBufferSize();
+                view.limit(l);
                 channelWrite(view, false);
                 view.limit(p + len);
+                view.position(l);
                 len -= getBufferSize();
             }
             channelWrite(view, last);
