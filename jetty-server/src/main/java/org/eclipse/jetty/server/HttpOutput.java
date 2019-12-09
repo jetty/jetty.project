@@ -63,7 +63,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     private static final String LSTRING_FILE = "javax.servlet.LocalStrings";
     private static ResourceBundle lStrings = ResourceBundle.getBundle(LSTRING_FILE);
 
-    /* TODO UPDATE!!!
+    /*
     ACTION             OPEN       ASYNC      READY      PENDING       UNREADY       CLOSING     CLOSED
     --------------------------------------------------------------------------------------------------
     setWriteListener() READY->owp ise        ise        ise           ise           ise         ise
@@ -80,7 +80,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         READY,    // isReady() has returned true
         PENDING,  // write operating in progress
         UNREADY,  // write operating in progress, isReady has returned false
-        ERROR,    // An error has occured
+        ERROR,    // onError needs to be called
         CLOSING,  // Asynchronous close in progress
         CLOSED    // Closed
     }
@@ -297,7 +297,8 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                     return;
 
                 case ERROR:
-                    // TODO is this right?
+                    // TODO is this right? Perhaps the close should wait
+                    // TODO until after onError callback?
                     Callback cb = Callback.combine(_closeCallback, callback);
                     _closeCallback = null;
                     cb.failed(_onError);
@@ -1195,6 +1196,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 
         synchronized (_channelState)
         {
+            // TODO does this need to be a state or just non null _onError
             if (_state == State.ERROR)
             {
                 error = _onError;

@@ -42,16 +42,11 @@ public class Utf8HttpWriter extends HttpWriter
     public void write(char[] s, int offset, int length) throws IOException
     {
         HttpOutput out = _out;
-        if (length == 0 && out.isAllContentWritten())  // TODO why is this needed?
-        {
-            close();
-            return;
-        }
 
         while (length > 0)
         {
             _bytes.reset();
-            int chars = length > MAX_OUTPUT_CHARS ? MAX_OUTPUT_CHARS : length;
+            int chars = Math.min(length, MAX_OUTPUT_CHARS);
 
             byte[] buffer = _bytes.getBuf();
             int bytes = _bytes.getCount();
