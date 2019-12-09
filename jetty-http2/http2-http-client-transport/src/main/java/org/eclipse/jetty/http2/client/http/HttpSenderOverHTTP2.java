@@ -37,9 +37,13 @@ import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 public class HttpSenderOverHTTP2 extends HttpSender
 {
+    private static final Logger LOG = Log.getLogger(HttpSenderOverHTTP2.class);
+
     public HttpSenderOverHTTP2(HttpChannelOverHTTP2 channel)
     {
         super(channel);

@@ -18,15 +18,10 @@
 
 package org.eclipse.jetty.client.http;
 
-import java.util.Locale;
 import java.util.concurrent.atomic.LongAdder;
 
 import org.eclipse.jetty.client.HttpChannel;
 import org.eclipse.jetty.client.HttpExchange;
-import org.eclipse.jetty.client.HttpRequest;
-import org.eclipse.jetty.client.HttpResponse;
-import org.eclipse.jetty.client.HttpResponseException;
-import org.eclipse.jetty.client.HttpUpgrader;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.http.HttpFields;
@@ -90,37 +85,6 @@ public class HttpChannelOverHTTP extends HttpChannel
     public void release()
     {
         connection.release();
-    }
-
-    @Override
-    public Result exchangeTerminating(HttpExchange exchange, Result result)
-    {
-        if (result.isFailed())
-            return result;
-
-        HttpResponse response = exchange.getResponse();
-        if (response.getVersion() == HttpVersion.HTTP_1_1 && response.getStatus() == HttpStatus.SWITCHING_PROTOCOLS_101)
-        {
-            String header = response.getHeaders().get(HttpHeader.CONNECTION);
-            if (header == null || !header.toLowerCase(Locale.US).contains("upgrade"))
-                return new Result(result, new HttpResponseException("101 response without 'Connection: Upgrade'", response));
-
-            HttpRequest request = exchange.getRequest();
-            HttpUpgrader upgrader = (HttpUpgrader)request.getConversation().getAttribute(HttpUpgrader.class.getName());
-            if (upgrader == null)
-                return new Result(result, new HttpResponseException("101 response without " + HttpUpgrader.class.getSimpleName(), response));
-
-            try
-            {
-                upgrader.upgrade(response, getHttpConnection().getEndPoint());
-            }
-            catch (Throwable x)
-            {
-                return new Result(result, new HttpResponseException("Could not upgrade to WebSocket", response, x));
-            }
-        }
-
-        return result;
     }
 
     public void receive()

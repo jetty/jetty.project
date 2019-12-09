@@ -19,6 +19,8 @@
 package org.eclipse.jetty.http2.client.http;
 
 import java.nio.channels.AsynchronousCloseException;
+import java.util.List;
+import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -32,13 +34,19 @@ import org.eclipse.jetty.client.HttpConnection;
 import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.client.HttpRequest;
+import org.eclipse.jetty.client.HttpResponse;
 import org.eclipse.jetty.client.HttpUpgrader;
 import org.eclipse.jetty.client.SendFailure;
 import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http2.CloseState;
 import org.eclipse.jetty.http2.ErrorCode;
+import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.IStream;
 import org.eclipse.jetty.http2.api.Session;
+import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -88,6 +96,29 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
         activeChannels.add(channel);
 
         return send(channel, exchange);
+    }
+
+    public void upgrade(Map<String, Object> context)
+    {
+        HttpResponse response = (HttpResponse)context.get(HttpResponse.class.getName());
+        HttpRequest request = (HttpRequest)response.getRequest();
+        // In case of HTTP/1.1 upgrade to HTTP/2, the request is HTTP/1.1
+        // (with upgrade) for a resource, and the response is HTTP/2.
+        // Create the implicit stream#1 so that it can receive the HTTP/2 response.
+        MetaData.Request metaData = new MetaData.Request(request.getMethod(), new HttpURI(request.getURI()), HttpVersion.HTTP_2, request.getHeaders());
+        HeadersFrame frame = new HeadersFrame(metaData, null, true);
+        IStream stream = ((HTTP2Session)session).newStream(frame, null);
+        stream.updateClose(frame.isEndStream(), CloseState.Event.AFTER_SEND);
+
+        HttpExchange exchange = request.getConversation().getExchanges().peekLast();
+        HttpChannelOverHTTP2 http2Channel = acquireHttpChannel();
+        activeChannels.add(http2Channel);
+        HttpExchange newExchange = new HttpExchange(exchange.getHttpDestination(), exchange.getRequest(), List.of());
+        http2Channel.associate(newExchange);
+        stream.setListener(http2Channel.getStreamListener());
+        http2Channel.setStream(stream);
+        newExchange.requestComplete(null);
+        newExchange.terminateRequest();
     }
 
     @Override

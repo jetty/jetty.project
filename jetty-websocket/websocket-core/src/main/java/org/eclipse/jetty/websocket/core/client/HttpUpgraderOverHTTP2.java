@@ -24,6 +24,7 @@ import org.eclipse.jetty.client.HttpUpgrader;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.WebSocketConstants;
 
 public class HttpUpgraderOverHTTP2 implements HttpUpgrader
@@ -47,8 +48,16 @@ public class HttpUpgraderOverHTTP2 implements HttpUpgrader
     }
 
     @Override
-    public void upgrade(HttpResponse response, EndPoint endPoint)
+    public void upgrade(HttpResponse response, EndPoint endPoint, Callback callback)
     {
-        clientUpgradeRequest.upgrade(response, endPoint);
+        try
+        {
+            clientUpgradeRequest.upgrade(response, endPoint);
+            callback.succeeded();
+        }
+        catch (Throwable x)
+        {
+            callback.failed(x);
+        }
     }
 }

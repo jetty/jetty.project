@@ -86,6 +86,23 @@ public class MultiplexConnectionPool extends AbstractConnectionPool implements C
     }
 
     @Override
+    public boolean accept(Connection connection)
+    {
+        boolean accepted = super.accept(connection);
+        if (accepted)
+        {
+            synchronized (this)
+            {
+                Holder holder = new Holder(connection);
+                activeConnections.put(connection, holder);
+                ++holder.count;
+            }
+            active(connection);
+        }
+        return accepted;
+    }
+
+    @Override
     public boolean isActive(Connection connection)
     {
         synchronized (this)

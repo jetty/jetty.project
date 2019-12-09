@@ -109,10 +109,7 @@ public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTrans
                 .distinct()
                 .map(p -> p.toLowerCase(Locale.ENGLISH))
                 .collect(Collectors.toList());
-        for (ClientConnectionFactory.Info factoryInfo : factoryInfos)
-        {
-            addBean(factoryInfo);
-        }
+        Arrays.stream(factoryInfos).forEach(this::addBean);
         setConnectionPoolFactory(destination ->
                 new MultiplexConnectionPool(destination, destination.getHttpClient().getMaxConnectionsPerDestination(), destination, 1));
     }
@@ -133,13 +130,22 @@ public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTrans
         }
         else
         {
-            // Preserve the order of protocols chosen by the application.
-            // We need to keep multiple protocols in case the protocol
-            // is negotiated: e.g. [http/1.1, h2] negotiates [h2], but
-            // here we don't know yet what will be negotiated.
-            protocols = this.protocols.stream()
-                .filter(p -> p.equals(http1) || p.equals(http2))
-                .collect(Collectors.toList());
+            if (ssl)
+            {
+                // There may be protocol negotiation, so preserve the order
+                // of protocols chosen by the application.
+                // We need to keep multiple protocols in case the protocol
+                // is negotiated: e.g. [http/1.1, h2] negotiates [h2], but
+                // here we don't know yet what will be negotiated.
+                protocols = this.protocols.stream()
+                    .filter(p -> p.equals(http1) || p.equals(http2))
+                    .collect(Collectors.toList());
+            }
+            else
+            {
+                // Pick the first.
+                protocols = List.of(this.protocols.get(0));
+            }
         }
         Origin.Protocol protocol = null;
         if (!protocols.isEmpty())
@@ -177,6 +183,15 @@ public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTrans
             }
         }
         return factoryInfo.getClientConnectionFactory().newConnection(endPoint, context);
+    }
+
+    public void upgrade(EndPoint endPoint, Map<String, Object> context)
+    {
+        HttpDestination destination = (HttpDestination)context.get(HTTP_DESTINATION_CONTEXT_KEY);
+        Origin.Protocol protocol = destination.getOrigin().getProtocol();
+        Info info = findClientConnectionFactoryInfo(protocol.getProtocols())
+            .orElseThrow(() -> new IllegalStateException("Cannot find " + ClientConnectionFactory.class.getSimpleName() + " to upgrade to " + protocol));
+        info.upgrade(endPoint, context);
     }
 
     protected Connection newNegotiatedConnection(EndPoint endPoint, Map<String, Object> context) throws IOException

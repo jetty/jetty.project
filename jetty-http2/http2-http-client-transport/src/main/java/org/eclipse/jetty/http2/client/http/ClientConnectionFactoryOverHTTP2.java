@@ -19,16 +19,21 @@
 package org.eclipse.jetty.http2.client.http;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.List;
 import java.util.Map;
 
+import org.eclipse.jetty.client.HttpClientTransport;
+import org.eclipse.jetty.client.HttpDestination;
+import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.HTTP2ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnectionFactory;
-import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
 
-public class ClientConnectionFactoryOverHTTP2 implements ClientConnectionFactory
+public class ClientConnectionFactoryOverHTTP2 extends ContainerLifeCycle implements ClientConnectionFactory
 {
     private final ClientConnectionFactory factory = new HTTP2ClientConnectionFactory();
     private final HTTP2Client client;
@@ -36,10 +41,11 @@ public class ClientConnectionFactoryOverHTTP2 implements ClientConnectionFactory
     public ClientConnectionFactoryOverHTTP2(HTTP2Client client)
     {
         this.client = client;
+        addBean(client);
     }
 
     @Override
-    public Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
+    public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
     {
         HTTPSessionListenerPromise listenerPromise = new HTTPSessionListenerPromise(context);
         context.put(HTTP2ClientConnectionFactory.CLIENT_CONTEXT_KEY, client);
@@ -61,6 +67,43 @@ public class ClientConnectionFactoryOverHTTP2 implements ClientConnectionFactory
         public H2C(HTTP2Client client)
         {
             super(List.of("h2c"), new ClientConnectionFactoryOverHTTP2(client));
+        }
+
+        @Override
+        public void upgrade(EndPoint endPoint, Map<String, Object> context)
+        {
+            HttpDestination destination = (HttpDestination)context.get(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY);
+            @SuppressWarnings("unchecked")
+            Promise<Connection> promise = (Promise<Connection>)context.get(HttpClientTransport.HTTP_CONNECTION_PROMISE_CONTEXT_KEY);
+            context.put(HttpClientTransport.HTTP_CONNECTION_PROMISE_CONTEXT_KEY, new Promise<HttpConnectionOverHTTP2>()
+            {
+                @Override
+                public void succeeded(HttpConnectionOverHTTP2 connection)
+                {
+                    promise.succeeded(connection);
+                    destination.accept(connection);
+                    connection.upgrade(context);
+                }
+
+                @Override
+                public void failed(Throwable x)
+                {
+                    promise.failed(x);
+                }
+            });
+            upgrade(destination.getClientConnectionFactory(), endPoint, context);
+        }
+
+        private void upgrade(ClientConnectionFactory factory, EndPoint endPoint, Map<String, Object> context)
+        {
+            try
+            {
+                endPoint.upgrade(factory.newConnection(endPoint, context));
+            }
+            catch (IOException x)
+            {
+                throw new UncheckedIOException(x);
+            }
         }
     }
 }

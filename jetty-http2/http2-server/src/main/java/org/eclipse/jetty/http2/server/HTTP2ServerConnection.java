@@ -20,7 +20,6 @@ package org.eclipse.jetty.http2.server;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Base64;
@@ -33,6 +32,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
@@ -54,7 +54,6 @@ import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.parser.ServerParser;
 import org.eclipse.jetty.http2.parser.SettingsBodyParser;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -63,7 +62,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.CountingCallback;
 import org.eclipse.jetty.util.TypeUtil;
 
-public class HTTP2ServerConnection extends HTTP2Connection implements Connection.UpgradeTo
+public class HTTP2ServerConnection extends HTTP2Connection
 {
     /**
      * @param protocol An HTTP2 protocol variant
@@ -133,20 +132,13 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
     }
 
     @Override
-    public void onUpgradeTo(ByteBuffer buffer)
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("HTTP2 onUpgradeTo {} {}", this, BufferUtil.toDetailString(buffer));
-        setInputBuffer(buffer);
-    }
-
-    @Override
     public void onOpen()
     {
-        notifyAccept(getSession());
+        ISession session = getSession();
+        notifyAccept(session);
         for (Frame frame : upgradeFrames)
         {
-            getSession().onFrame(frame);
+            session.onFrame(frame);
         }
         super.onOpen();
         produce();
@@ -328,7 +320,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
         }
     }
 
-    public boolean upgrade(Request request)
+    public boolean upgrade(Request request, HttpFields responseFields)
     {
         if (HttpMethod.PRI.is(request.getMethod()))
         {
@@ -343,7 +335,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
             final byte[] settings = Base64.getUrlDecoder().decode(value == null ? "" : value);
 
             if (LOG.isDebugEnabled())
-                LOG.debug("{} settings {}", this, TypeUtil.toHexString(settings));
+                LOG.debug("{} {}: {}", this, HttpHeader.HTTP2_SETTINGS, TypeUtil.toHexString(settings));
 
             SettingsFrame settingsFrame = SettingsBodyParser.parseBody(BufferUtil.toBuffer(settings));
             if (settingsFrame == null)
@@ -352,11 +344,18 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
                 throw new BadMessageException();
             }
 
+            responseFields.put(HttpHeader.UPGRADE, "h2c");
+            responseFields.put(HttpHeader.CONNECTION, "Upgrade");
+
             getParser().standardUpgrade();
 
+            // We fake that we received a client preface, so that we can send the
+            // server preface as the first HTTP/2 frame as required by the spec.
+            // When the client sends the real preface, the parser won't notify it.
             upgradeFrames.add(new PrefaceFrame());
+            // This is the settings from the HTTP2-Settings header.
             upgradeFrames.add(settingsFrame);
-            // Remember the request to send a response from onOpen().
+            // Remember the request to send a response.
             upgradeFrames.add(new HeadersFrame(1, new Request(request), null, true));
         }
         return true;

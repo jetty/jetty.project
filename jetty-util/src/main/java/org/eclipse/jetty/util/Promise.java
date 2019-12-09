@@ -20,6 +20,7 @@ package org.eclipse.jetty.util;
 
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 
 import org.eclipse.jetty.util.log.Log;
 
@@ -61,6 +62,32 @@ public interface Promise<C>
         {
             Log.getLogger(this.getClass()).warn(x);
         }
+    }
+
+    /**
+     * <p>Creates a Promise from the given success and failure consumers.</p>
+     *
+     * @param success the consumer invoked when the promise is succeeded
+     * @param failure the consumer invoked when the promise is failed
+     * @param <T> the type of the result
+     * @return a new Promise wrapping the success and failure consumers.
+     */
+    static <T> Promise<T> from(Consumer<T> success, Consumer<Throwable> failure)
+    {
+        return new Promise<>()
+        {
+            @Override
+            public void succeeded(T result)
+            {
+                success.accept(result);
+            }
+
+            @Override
+            public void failed(Throwable x)
+            {
+                failure.accept(x);
+            }
+        };
     }
 
     /**

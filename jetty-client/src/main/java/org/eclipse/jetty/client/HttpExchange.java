@@ -50,6 +50,11 @@ public class HttpExchange
         conversation.updateResponseListeners(null);
     }
 
+    public HttpDestination getHttpDestination()
+    {
+        return destination;
+    }
+
     public HttpConversation getConversation()
     {
         return request.getConversation();

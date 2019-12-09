@@ -80,6 +80,11 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
 
         this.timeout = new TimeoutTask(client.getScheduler());
 
+        String host = HostPort.normalizeHost(getHost());
+        if (!client.isDefaultPort(getScheme(), getPort()))
+            host += ":" + getPort();
+        hostField = new HttpField(HttpHeader.HOST, host);
+
         ProxyConfiguration proxyConfig = client.getProxyConfiguration();
         proxy = proxyConfig.match(origin);
         ClientConnectionFactory connectionFactory = client.getTransport();
@@ -98,11 +103,11 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
         if (tag instanceof ClientConnectionFactory.Decorator)
             connectionFactory = ((ClientConnectionFactory.Decorator)tag).apply(connectionFactory);
         this.connectionFactory = connectionFactory;
+    }
 
-        String host = HostPort.normalizeHost(getHost());
-        if (!client.isDefaultPort(getScheme(), getPort()))
-            host += ":" + getPort();
-        hostField = new HttpField(HttpHeader.HOST, host);
+    public void accept(Connection connection)
+    {
+        connectionPool.accept(connection);
     }
 
     @Override
@@ -497,7 +502,7 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
     {
         return String.format("%s[%s]@%x%s,queue=%d,pool=%s",
             HttpDestination.class.getSimpleName(),
-            asString(),
+            getOrigin(),
             hashCode(),
             proxy == null ? "" : "(via " + proxy + ")",
             exchanges.size(),

@@ -540,19 +540,10 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
             boolean queued;
             synchronized (this)
             {
-                int streamId = frame.getStreamId();
-                if (streamId <= 0)
-                {
-                    streamId = localStreamIds.getAndAdd(2);
-                    PriorityFrame priority = frame.getPriority();
-                    priority = priority == null ? null : new PriorityFrame(streamId, priority.getParentStreamId(),
-                        priority.getWeight(), priority.isExclusive());
-                    frame = new HeadersFrame(streamId, frame.getMetaData(), priority, frame.isEndStream());
-                }
-                stream = createLocalStream(streamId, (MetaData.Request)frame.getMetaData());
+                HeadersFrame[] frameOut = new HeadersFrame[1];
+                stream = newStream(frame, frameOut);
                 stream.setListener(listener);
-
-                ControlEntry entry = new ControlEntry(frame, stream, new StreamPromiseCallback(promise, stream));
+                ControlEntry entry = new ControlEntry(frameOut[0], stream, new StreamPromiseCallback(promise, stream));
                 queued = flusher.append(entry);
             }
             stream.process(new PrefaceFrame(), Callback.NOOP);
@@ -564,6 +555,23 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         {
             promise.failed(x);
         }
+    }
+
+    public IStream newStream(HeadersFrame frameIn, HeadersFrame[] frameOut)
+    {
+        HeadersFrame frame = frameIn;
+        int streamId = frameIn.getStreamId();
+        if (streamId <= 0)
+        {
+            streamId = localStreamIds.getAndAdd(2);
+            PriorityFrame priority = frameIn.getPriority();
+            priority = priority == null ? null : new PriorityFrame(streamId, priority.getParentStreamId(),
+                priority.getWeight(), priority.isExclusive());
+            frame = new HeadersFrame(streamId, frameIn.getMetaData(), priority, frameIn.isEndStream());
+        }
+        if (frameOut != null)
+            frameOut[0] = frame;
+        return createLocalStream(streamId, (MetaData.Request)frame.getMetaData());
     }
 
     protected IStream newStream(int streamId, MetaData.Request request, boolean local)

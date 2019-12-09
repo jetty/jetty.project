@@ -20,13 +20,16 @@ package org.eclipse.jetty.http.client;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
+import org.eclipse.jetty.client.AbstractConnectionPool;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.HttpRequest;
@@ -35,6 +38,7 @@ import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.client.dynamic.HttpClientTransportDynamic;
 import org.eclipse.jetty.client.http.HttpClientConnectionFactory;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
@@ -61,6 +65,7 @@ import org.junit.jupiter.api.Test;
 import static org.eclipse.jetty.client.ProxyProtocolClientConnectionFactory.V1;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpClientTransportDynamicTest
 {
@@ -82,6 +87,23 @@ public class HttpClientTransportDynamicTest
         server = new Server(serverThreads);
         connector = connectorFn.apply(server);
         server.setHandler(handler);
+    }
+
+    private void startClient(HttpClientConnectionFactory.Info... infos) throws Exception
+    {
+        ClientConnector clientConnector = new ClientConnector();
+        startClient(clientConnector, infos);
+    }
+
+    private void startClient(ClientConnector clientConnector, HttpClientConnectionFactory.Info... infos) throws Exception
+    {
+        clientConnector.setSelectors(1);
+        clientConnector.setSslContextFactory(newClientSslContextFactory());
+        QueuedThreadPool clientThreads = new QueuedThreadPool();
+        clientThreads.setName("client");
+        clientConnector.setExecutor(clientThreads);
+        client = new HttpClient(new HttpClientTransportDynamic(clientConnector, infos));
+        client.start();
     }
 
     private ServerConnector h1(Server server)
@@ -200,11 +222,10 @@ public class HttpClientTransportDynamicTest
     public void testClearTextHTTP1() throws Exception
     {
         startServer(this::h1H2C, new EmptyServerHandler());
+        startClient(HttpClientConnectionFactory.HTTP11);
 
-        HttpClientConnectionFactory.Info h1c = HttpClientConnectionFactory.HTTP11;
-        client = new HttpClient(new HttpClientTransportDynamic(new ClientConnector(), h1c));
-        client.start();
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+            .timeout(5, TimeUnit.SECONDS)
             .send();
         assertEquals(HttpStatus.OK_200, response.getStatus());
     }
@@ -213,17 +234,13 @@ public class HttpClientTransportDynamicTest
     public void testClearTextHTTP2() throws Exception
     {
         startServer(this::h1H2C, new EmptyServerHandler());
-
-        // TODO: why do we need HTTP2Client? we only use it for configuration,
-        //  so the configuration can instead be moved to the CCF?
         ClientConnector clientConnector = new ClientConnector();
         HTTP2Client http2Client = new HTTP2Client(clientConnector);
         ClientConnectionFactory.Info h2c = new ClientConnectionFactoryOverHTTP2.H2C(http2Client);
-        client = new HttpClient(new HttpClientTransportDynamic(clientConnector, h2c));
-        client.addBean(http2Client);
-        client.start();
+        startClient(clientConnector, h2c);
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
 //                .version(HttpVersion.HTTP_2)
+            .timeout(5, TimeUnit.SECONDS)
             .send();
         assertEquals(HttpStatus.OK_200, response.getStatus());
     }
@@ -260,13 +277,13 @@ public class HttpClientTransportDynamicTest
             }
         };
         client = new HttpClient(transport);
-        client.addBean(http2Client);
         client.start();
 
         // Make a HTTP/1.1 request.
         ContentResponse h1cResponse = client.newRequest("localhost", connector.getLocalPort())
             .scheme(scheme.asString())
             .version(HttpVersion.HTTP_1_1)
+            .timeout(5, TimeUnit.SECONDS)
             .send();
         assertEquals(HttpStatus.OK_200, h1cResponse.getStatus());
 
@@ -274,6 +291,7 @@ public class HttpClientTransportDynamicTest
         ContentResponse h2cResponse = client.newRequest("localhost", connector.getLocalPort())
             .scheme(scheme.asString())
             .version(HttpVersion.HTTP_2)
+            .timeout(5, TimeUnit.SECONDS)
             .send();
         assertEquals(HttpStatus.OK_200, h2cResponse.getStatus());
 
@@ -292,19 +310,15 @@ public class HttpClientTransportDynamicTest
     public void testEncryptedProtocolSelectionWithNegotiation() throws Exception
     {
         startServer(this::sslAlpnH1H2, new EmptyServerHandler());
-
         ClientConnector clientConnector = new ClientConnector();
-        clientConnector.setSslContextFactory(newClientSslContextFactory());
-        HttpClientConnectionFactory.Info h1 = HttpClientConnectionFactory.HTTP11;
         HTTP2Client http2Client = new HTTP2Client(clientConnector);
         ClientConnectionFactory.Info h2 = new ClientConnectionFactoryOverHTTP2.H2(http2Client);
-        client = new HttpClient(new HttpClientTransportDynamic(clientConnector, h1, h2));
-        client.addBean(http2Client);
-        client.start();
+        startClient(clientConnector, HttpClientConnectionFactory.HTTP11, h2);
 
         // Make a request, should be HTTP/1.1 because of the order of protocols on server.
         ContentResponse h1cResponse = client.newRequest("localhost", connector.getLocalPort())
             .scheme("https")
+            .timeout(5, TimeUnit.SECONDS)
             .send();
         assertEquals(HttpStatus.OK_200, h1cResponse.getStatus());
 
@@ -312,6 +326,7 @@ public class HttpClientTransportDynamicTest
         ContentResponse h2cResponse = client.newRequest("localhost", connector.getLocalPort())
             .scheme("https")
             .version(HttpVersion.HTTP_2)
+            .timeout(5, TimeUnit.SECONDS)
             .send();
         assertEquals(HttpStatus.OK_200, h2cResponse.getStatus());
 
@@ -330,19 +345,15 @@ public class HttpClientTransportDynamicTest
     public void testServerOnlySpeaksEncryptedHTTP11ClientFallsBackToHTTP11() throws Exception
     {
         startServer(this::sslAlpnH1, new EmptyServerHandler());
-
         ClientConnector clientConnector = new ClientConnector();
-        clientConnector.setSslContextFactory(newClientSslContextFactory());
-        HttpClientConnectionFactory.Info h1 = HttpClientConnectionFactory.HTTP11;
         HTTP2Client http2Client = new HTTP2Client(clientConnector);
         ClientConnectionFactory.Info h2 = new ClientConnectionFactoryOverHTTP2.H2(http2Client);
-        client = new HttpClient(new HttpClientTransportDynamic(clientConnector, h2, h1));
-        client.addBean(http2Client);
-        client.start();
+        startClient(clientConnector, h2, HttpClientConnectionFactory.HTTP11);
 
         // The client prefers h2 over h1, and use of TLS and ALPN will allow the fallback to h1.
         ContentResponse h1cResponse = client.newRequest("localhost", connector.getLocalPort())
             .scheme("https")
+            .timeout(5, TimeUnit.SECONDS)
             .send();
         assertEquals(HttpStatus.OK_200, h1cResponse.getStatus());
     }
@@ -351,19 +362,16 @@ public class HttpClientTransportDynamicTest
     public void testServerOnlySpeaksClearTextHTTP11ClientFailsHTTP2() throws Exception
     {
         startServer(this::h1, new EmptyServerHandler());
-
         ClientConnector clientConnector = new ClientConnector();
-        HttpClientConnectionFactory.Info h1 = HttpClientConnectionFactory.HTTP11;
         HTTP2Client http2Client = new HTTP2Client(clientConnector);
         ClientConnectionFactory.Info h2c = new ClientConnectionFactoryOverHTTP2.H2C(http2Client);
-        client = new HttpClient(new HttpClientTransportDynamic(clientConnector, h1, h2c));
-        client.addBean(http2Client);
-        client.start();
+        startClient(clientConnector, HttpClientConnectionFactory.HTTP11, h2c);
 
         // The client forces HTTP/2, but the server cannot speak it, so the request fails.
         // There is no fallback to HTTP/1 because the protocol version is set explicitly.
         assertThrows(ExecutionException.class, () -> client.newRequest("localhost", connector.getLocalPort())
             .version(HttpVersion.HTTP_2)
+            .timeout(5, TimeUnit.SECONDS)
             .send());
     }
 
@@ -394,27 +402,25 @@ public class HttpClientTransportDynamicTest
                 response.getOutputStream().print(request.getRemotePort());
             }
         });
-
-        ClientConnector clientConnector = new ClientConnector();
-        clientConnector.setSslContextFactory(newClientSslContextFactory());
-        ClientConnectionFactory.Info h1 = HttpClientConnectionFactory.HTTP11;
-
-        client = new HttpClient(new HttpClientTransportDynamic(clientConnector, h1));
-        client.start();
+        startClient(HttpClientConnectionFactory.HTTP11);
 
         // Simulate a proxy request to the server.
         HttpRequest proxyRequest1 = (HttpRequest)client.newRequest("localhost", connector.getLocalPort());
         // Map the proxy request to client IP:port.
         int clientPort1 = ThreadLocalRandom.current().nextInt(1024, 65536);
         proxyRequest1.tag(new V1.Tag("localhost", clientPort1));
-        ContentResponse proxyResponse1 = proxyRequest1.send();
+        ContentResponse proxyResponse1 = proxyRequest1
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
         assertEquals(String.valueOf(clientPort1), proxyResponse1.getContentAsString());
 
         // Simulate another request to the server, from a different client port.
         HttpRequest proxyRequest2 = (HttpRequest)client.newRequest("localhost", connector.getLocalPort());
         int clientPort2 = ThreadLocalRandom.current().nextInt(1024, 65536);
         proxyRequest2.tag(new V1.Tag("localhost", clientPort2));
-        ContentResponse proxyResponse2 = proxyRequest2.send();
+        ContentResponse proxyResponse2 = proxyRequest2
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
         assertEquals(String.valueOf(clientPort2), proxyResponse2.getContentAsString());
 
         // We must have 2 different destinations with the same origin.
@@ -434,25 +440,22 @@ public class HttpClientTransportDynamicTest
         prepareServer(this::sslAlpnH2H1, new EmptyServerHandler());
         ServerConnector clearConnector = h1H2C(server);
         server.start();
-
         ClientConnector clientConnector = new ClientConnector();
-        clientConnector.setSslContextFactory(newClientSslContextFactory());
-        HttpClientConnectionFactory.Info h1 = HttpClientConnectionFactory.HTTP11;
         HTTP2Client http2Client = new HTTP2Client(clientConnector);
         ClientConnectionFactory.Info h2c = new ClientConnectionFactoryOverHTTP2.H2C(http2Client);
         ClientConnectionFactory.Info h2 = new ClientConnectionFactoryOverHTTP2.H2(http2Client);
-        client = new HttpClient(new HttpClientTransportDynamic(clientConnector, h2, h1, h2c));
-        client.addBean(http2Client);
-        client.start();
+        startClient(clientConnector, h2, HttpClientConnectionFactory.HTTP11, h2c);
 
         // Make a clear-text request using HTTP/1.1.
         ContentResponse h1cResponse = client.newRequest("localhost", clearConnector.getLocalPort())
+            .timeout(5, TimeUnit.SECONDS)
             .send();
         assertEquals(HttpStatus.OK_200, h1cResponse.getStatus());
 
         // Make a clear-text request using HTTP/2.
         ContentResponse h2cResponse = client.newRequest("localhost", clearConnector.getLocalPort())
             .version(HttpVersion.HTTP_2)
+            .timeout(5, TimeUnit.SECONDS)
             .send();
         assertEquals(HttpStatus.OK_200, h2cResponse.getStatus());
 
@@ -461,6 +464,7 @@ public class HttpClientTransportDynamicTest
         // generate a different destination than an explicit HTTP/2 request (like below).
         ContentResponse h1Response = client.newRequest("localhost", connector.getLocalPort())
             .scheme("https")
+            .timeout(5, TimeUnit.SECONDS)
             .send();
         assertEquals(HttpStatus.OK_200, h1Response.getStatus());
 
@@ -468,6 +472,7 @@ public class HttpClientTransportDynamicTest
         ContentResponse h2Response = client.newRequest("localhost", connector.getLocalPort())
             .scheme("https")
             .version(HttpVersion.HTTP_2)
+            .timeout(5, TimeUnit.SECONDS)
             .send();
         assertEquals(HttpStatus.OK_200, h2Response.getStatus());
 
@@ -480,5 +485,134 @@ public class HttpClientTransportDynamicTest
             .map(Origin::asString)
             .distinct()
             .count());
+    }
+
+    @Test
+    public void testHTTP11UpgradeToH2C() throws Exception
+    {
+        String content = "upgrade";
+        startServer(this::h1H2C, new EmptyServerHandler()
+        {
+            @Override
+            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            {
+                response.setContentType("text/plain; charset=UTF-8");
+                response.getOutputStream().print(content);
+            }
+        });
+        ClientConnector clientConnector = new ClientConnector();
+        HTTP2Client http2Client = new HTTP2Client(clientConnector);
+        ClientConnectionFactory.Info h2c = new ClientConnectionFactoryOverHTTP2.H2C(http2Client);
+        startClient(clientConnector, HttpClientConnectionFactory.HTTP11, h2c);
+
+        // Make an upgrade request from HTTP/1.1 to H2C.
+        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+            .header(HttpHeader.UPGRADE, "h2c")
+            .header(HttpHeader.HTTP2_SETTINGS, "")
+            .header(HttpHeader.CONNECTION, "Upgrade, HTTP2-Settings")
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
+
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+        assertEquals(content, response.getContentAsString());
+        // We must have 2 different destinations with the same origin.
+        List<Destination> destinations = client.getDestinations();
+        assertEquals(2, destinations.size());
+        HttpDestination h1Destination = (HttpDestination)destinations.get(0);
+        HttpDestination h2Destination = (HttpDestination)destinations.get(1);
+        if (h2Destination.getOrigin().getProtocol().getProtocols().contains("http/1.1"))
+        {
+            HttpDestination swap = h1Destination;
+            h1Destination = h2Destination;
+            h2Destination = swap;
+        }
+        List<String> protocols1 = h1Destination.getOrigin().getProtocol().getProtocols();
+        assertEquals(1, protocols1.size());
+        assertTrue(protocols1.contains("http/1.1"));
+        AbstractConnectionPool h1ConnectionPool = (AbstractConnectionPool)h1Destination.getConnectionPool();
+        assertTrue(h1ConnectionPool.isEmpty());
+        List<String> protocols2 = h2Destination.getOrigin().getProtocol().getProtocols();
+        assertEquals(1, protocols2.size());
+        assertTrue(protocols2.contains("h2c"));
+        AbstractConnectionPool h2ConnectionPool = (AbstractConnectionPool)h2Destination.getConnectionPool();
+        assertEquals(1, h2ConnectionPool.getConnectionCount());
+
+        // Make a normal HTTP/2 request.
+        response = client.newRequest("localhost", connector.getLocalPort())
+            .version(HttpVersion.HTTP_2)
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
+
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+        assertEquals(content, response.getContentAsString());
+        // We still have 2 destinations.
+        assertEquals(2, client.getDestinations().size());
+        // We still have 1 HTTP/2 connection.
+        assertEquals(1, h2ConnectionPool.getConnectionCount());
+
+        // Make a normal HTTP/1.1 request.
+        response = client.newRequest("localhost", connector.getLocalPort())
+            .version(HttpVersion.HTTP_1_1)
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+        assertEquals(content, response.getContentAsString());
+        // We still have 2 destinations.
+        assertEquals(2, client.getDestinations().size());
+
+        // TODO: make also a test over TLS!
+
+        // TODO: add a test with a forward proxy!
+
+    }
+
+    @Test
+    public void testHTTP11UpgradeToH2CFailedNoHTTP2Settings() throws Exception
+    {
+        startServer(this::h1H2C, new EmptyServerHandler());
+        ClientConnector clientConnector = new ClientConnector();
+        HTTP2Client http2Client = new HTTP2Client(clientConnector);
+        ClientConnectionFactory.Info h2c = new ClientConnectionFactoryOverHTTP2.H2C(http2Client);
+        startClient(clientConnector, HttpClientConnectionFactory.HTTP11, h2c);
+
+        // The upgrade request is missing the required HTTP2-Settings header.
+        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+            .header(HttpHeader.UPGRADE, "h2c")
+            .header(HttpHeader.CONNECTION, "Upgrade")
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
+
+        assertEquals(HttpStatus.BAD_REQUEST_400, response.getStatus());
+    }
+
+    @Test
+    public void testHTTP11UpgradeToH2CFailedServerClose() throws Exception
+    {
+        startServer(this::h1H2C, new EmptyServerHandler()
+        {
+            @Override
+            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            {
+                jettyRequest.getHttpChannel().getEndPoint().getConnection().close();
+            }
+        });
+        ClientConnector clientConnector = new ClientConnector();
+        HTTP2Client http2Client = new HTTP2Client(clientConnector);
+        ClientConnectionFactory.Info h2c = new ClientConnectionFactoryOverHTTP2.H2C(http2Client);
+        startClient(clientConnector, HttpClientConnectionFactory.HTTP11, h2c);
+
+        // Make an upgrade request from HTTP/1.1 to H2C.
+        CountDownLatch latch = new CountDownLatch(1);
+        client.newRequest("localhost", connector.getLocalPort())
+            .header(HttpHeader.UPGRADE, "h2c")
+            .header(HttpHeader.HTTP2_SETTINGS, "")
+            .header(HttpHeader.CONNECTION, "Upgrade, HTTP2-Settings")
+            .send(result ->
+            {
+                if (result.isFailed())
+                    latch.countDown();
+            });
+
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 }

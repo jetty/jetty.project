@@ -35,9 +35,13 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 public class HttpSenderOverHTTP extends HttpSender
 {
+    private static final Logger LOG = Log.getLogger(HttpSenderOverHTTP.class);
+
     private final HttpGenerator generator = new HttpGenerator();
     private boolean shutdown;
 

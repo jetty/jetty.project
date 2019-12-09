@@ -59,7 +59,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public abstract class HttpSender implements AsyncContentProvider.Listener
 {
-    protected static final Logger LOG = Log.getLogger(HttpSender.class);
+    private static final Logger LOG = Log.getLogger(HttpSender.class);
 
     private final AtomicReference<RequestState> requestState = new AtomicReference<>(RequestState.QUEUED);
     private final AtomicReference<SenderState> senderState = new AtomicReference<>(SenderState.IDLE);
