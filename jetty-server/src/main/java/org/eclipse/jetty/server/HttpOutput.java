@@ -270,7 +270,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         boolean release = false;
         synchronized (_channelState)
         {
-            if (_state == State.CLOSING || last)
+            if (_state == State.CLOSING || last || failure != null)
             {
                 _state = State.CLOSED;
                 callback = _closedCallback;
