@@ -497,7 +497,6 @@ public class MultiPartFormInputStream
         _parsed = true;
 
         MultiPartParser parser = null;
-        Handler handler = new Handler();
         try
         {
             // if its not a multipart request, don't parse it
@@ -530,7 +529,7 @@ public class MultiPartFormInputStream
                 contentTypeBoundary = QuotedStringTokenizer.unquote(value(_contentType.substring(bstart, bend)).trim());
             }
 
-            parser = new MultiPartParser(handler, contentTypeBoundary);
+            parser = new MultiPartParser(new Handler(), contentTypeBoundary);
             byte[] data = new byte[_bufferSize];
             int len;
             long total = 0;
