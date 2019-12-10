@@ -46,6 +46,7 @@ public interface MultiParts extends Closeable
 
     Part getPart(String name) throws IOException;
 
+    @Deprecated
     boolean isEmpty();
 
     ContextHandler.Context getContext();

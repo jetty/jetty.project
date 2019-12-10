@@ -351,16 +351,23 @@ public class RequestTest
             @Override
             public void requestDestroyed(ServletRequestEvent sre)
             {
-                MultiParts m = (MultiParts)sre.getServletRequest().getAttribute(Request.MULTIPARTS);
-                assertNotNull(m);
-                ContextHandler.Context c = m.getContext();
-                assertNotNull(c);
-                assertTrue(c == sre.getServletContext());
-                assertTrue(!m.isEmpty());
-                assertTrue(testTmpDir.list().length == 2);
-                super.requestDestroyed(sre);
-                String[] files = testTmpDir.list();
-                assertTrue(files.length == 0);
+                try
+                {
+                    MultiParts m = (MultiParts)sre.getServletRequest().getAttribute(Request.MULTIPARTS);
+                    assertNotNull(m);
+                    ContextHandler.Context c = m.getContext();
+                    assertNotNull(c);
+                    assertTrue(c == sre.getServletContext());
+                    assertTrue(!m.getParts().isEmpty());
+                    assertTrue(testTmpDir.list().length == 2);
+                    super.requestDestroyed(sre);
+                    String[] files = testTmpDir.list();
+                    assertTrue(files.length == 0);
+                }
+                catch (IOException e)
+                {
+                    throw new RuntimeException(e);
+                }
             }
         });
         _server.stop();
@@ -411,16 +418,23 @@ public class RequestTest
             @Override
             public void requestDestroyed(ServletRequestEvent sre)
             {
-                MultiParts m = (MultiParts)sre.getServletRequest().getAttribute(Request.MULTIPARTS);
-                assertNotNull(m);
-                ContextHandler.Context c = m.getContext();
-                assertNotNull(c);
-                assertTrue(c == sre.getServletContext());
-                assertTrue(!m.isEmpty());
-                assertTrue(testTmpDir.list().length == 2);
-                super.requestDestroyed(sre);
-                String[] files = testTmpDir.list();
-                assertTrue(files.length == 0);
+                try
+                {
+                    MultiParts m = (MultiParts)sre.getServletRequest().getAttribute(Request.MULTIPARTS);
+                    assertNotNull(m);
+                    ContextHandler.Context c = m.getContext();
+                    assertNotNull(c);
+                    assertTrue(c == sre.getServletContext());
+                    assertTrue(!m.getParts().isEmpty());
+                    assertTrue(testTmpDir.list().length == 2);
+                    super.requestDestroyed(sre);
+                    String[] files = testTmpDir.list();
+                    assertTrue(files.length == 0);
+                }
+                catch (IOException t)
+                {
+                    throw new RuntimeException(t);
+                }
             }
         });
         _server.stop();

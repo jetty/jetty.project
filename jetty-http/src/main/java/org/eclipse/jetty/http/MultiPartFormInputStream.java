@@ -35,6 +35,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 import javax.servlet.MultipartConfigElement;
 import javax.servlet.ServletInputStream;
 import javax.servlet.http.Part;
@@ -339,29 +340,33 @@ public class MultiPartFormInputStream
         if (in instanceof ServletInputStream)
         {
             if (((ServletInputStream)in).isFinished())
-            {
                 _parsed = true;
-                return;
-            }
         }
     }
 
     /**
      * @return whether the list of parsed parts is empty
+     * @deprecated use getParts().isEmpty()
      */
+    @Deprecated
     public boolean isEmpty()
     {
-        if (_parts.isEmpty())
-            return true;
-
-        Collection<List<Part>> values = _parts.values();
-        for (List<Part> partList : values)
+        synchronized (this)
         {
-            if (!partList.isEmpty())
-                return false;
-        }
+            if (!_parsed)
+                throw new IllegalStateException();
 
-        return true;
+            if (_parts.isEmpty())
+                return true;
+
+            for (List<Part> partList : _parts.values())
+            {
+                if (!partList.isEmpty())
+                    return false;
+            }
+
+            return true;
+        }
     }
 
     /**
@@ -390,27 +395,31 @@ public class MultiPartFormInputStream
      */
     public void deleteParts()
     {
-        MultiException err = null;
-        for (List<Part> parts : _parts.values())
+        // TODO: Can we cancel parsing somehow instead of blocking.
+        synchronized (this)
         {
-            for (Part p : parts)
+            MultiException err = null;
+            for (List<Part> parts : _parts.values())
             {
-                try
+                for (Part p : parts)
                 {
-                    ((MultiPart)p).cleanUp();
-                }
-                catch (Exception e)
-                {
-                    if (err == null)
-                        err = new MultiException();
-                    err.add(e);
+                    try
+                    {
+                        ((MultiPart)p).cleanUp();
+                    }
+                    catch (Exception e)
+                    {
+                        if (err == null)
+                            err = new MultiException();
+                        err.add(e);
+                    }
                 }
             }
-        }
-        _parts.clear();
+            _parts.clear();
 
-        if (err != null)
-            err.ifExceptionThrowRuntime();
+            if (err != null)
+                err.ifExceptionThrowRuntime();
+        }
     }
 
     /**
@@ -421,18 +430,13 @@ public class MultiPartFormInputStream
      */
     public Collection<Part> getParts() throws IOException
     {
-        if (!_parsed)
-            parse();
-        throwIfError();
-
-        Collection<List<Part>> values = _parts.values();
-        List<Part> parts = new ArrayList<>();
-        for (List<Part> o : values)
+        synchronized (this)
         {
-            List<Part> asList = LazyList.getList(o, false);
-            parts.addAll(asList);
+            if (!_parsed)
+                parse();
+            throwIfError();
+            return _parts.values().stream().flatMap(List::stream).collect(Collectors.toList());
         }
-        return parts;
     }
 
     /**
@@ -444,10 +448,13 @@ public class MultiPartFormInputStream
      */
     public Part getPart(String name) throws IOException
     {
-        if (!_parsed)
-            parse();
-        throwIfError();
-        return _parts.getValue(name, 0);
+        synchronized (this)
+        {
+            if (!_parsed)
+                parse();
+            throwIfError();
+            return _parts.getValue(name, 0);
+        }
     }
 
     /**
@@ -522,7 +529,6 @@ public class MultiPartFormInputStream
 
             while (true)
             {
-
                 len = _in.read(data);
 
                 if (len > 0)
