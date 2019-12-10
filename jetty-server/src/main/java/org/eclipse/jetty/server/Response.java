@@ -145,7 +145,7 @@ public class Response implements HttpServletResponse
         _out.reopen();
     }
 
-    public void closedBySendError()
+    public void softClose()
     {
         setErrorSent(true);
         _out.closedBySendError();

@@ -267,6 +267,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 
         boolean wake = false;
         Callback callback = null;
+        boolean release = false;
         synchronized (_channelState)
         {
             if (_state == State.CLOSING || last)
@@ -274,6 +275,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                 _state = State.CLOSED;
                 callback = _closedCallback;
                 _closedCallback = null;
+                release = true;
             }
 
             switch (_apiState)
@@ -316,6 +318,8 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         }
         finally
         {
+            if (release)
+                releaseBuffer();
             if (wake)
                 _channel.execute(_channel); // TODO can we call directly? Why execute?
         }
@@ -461,6 +465,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                 _state = State.CLOSED;
             }
         }
+        releaseBuffer();
         if (callback != null)
             callback.succeeded();
     }
