@@ -286,10 +286,17 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 
                 case PENDING:
                     _apiState = ApiState.ASYNC;
+                    if (failure != null)
+                    {
+                        _onError = failure;
+                        wake = _channel.getState().onWritePossible();
+                    }
                     break;
 
                 case UNREADY:
                     _apiState = ApiState.READY;
+                    if (failure != null)
+                        _onError = failure;
                     wake = _channel.getState().onWritePossible();
                     break;
 
@@ -1345,7 +1352,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             finally
             {
                 // Initiate an async close
-                close(null);
+                close(Callback.NOOP);
             }
         }
     }
