@@ -19,11 +19,13 @@
 package org.eclipse.jetty.websocket.javax.tests.server;
 
 import java.net.URI;
+import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 import javax.websocket.ContainerProvider;
 import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
 import javax.websocket.server.ServerEndpoint;
+import javax.websocket.server.ServerEndpointConfig;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -51,7 +53,7 @@ public class ServerDecoderTest
     private Server server;
     private URI serverURI;
 
-    public static class MyStringDecoder extends StringDecoder
+    public static class EqualsAppendDecoder extends StringDecoder
     {
         @Override
         public String decode(String s)
@@ -60,7 +62,16 @@ public class ServerDecoderTest
         }
     }
 
-    @ServerEndpoint(value = "/", decoders = {MyStringDecoder.class})
+    public static class PlusAppendDecoder extends StringDecoder
+    {
+        @Override
+        public String decode(String s)
+        {
+            return s + "+";
+        }
+    }
+
+    @ServerEndpoint(value = "/annotated", decoders = {EqualsAppendDecoder.class})
     public static class ConfiguredEchoSocket extends EventSocket
     {
         @Override
@@ -79,8 +90,16 @@ public class ServerDecoderTest
         server.addConnector(serverConnector);
         ServletContextHandler servletContextHandler = new ServletContextHandler(null, "/");
         server.setHandler(servletContextHandler);
+
+        ServerEndpointConfig config = ServerEndpointConfig.Builder.create(ConfiguredEchoSocket.class, "/configured")
+            .decoders(Collections.singletonList(PlusAppendDecoder.class))
+            .build();
+
         JavaxWebSocketServletContainerInitializer.configure(servletContextHandler, ((servletContext, serverContainer) ->
-            serverContainer.addEndpoint(ConfiguredEchoSocket.class)));
+        {
+            serverContainer.addEndpoint(ConfiguredEchoSocket.class);
+            serverContainer.addEndpoint(config);
+        }));
 
         server.start();
         serverURI = new URI("ws://localhost:" + serverConnector.getLocalPort());
@@ -94,11 +113,11 @@ public class ServerDecoderTest
     }
 
     @Test
-    public void testDecoders() throws Exception
+    public void testAnnotatedDecoder() throws Exception
     {
         WebSocketContainer client = ContainerProvider.getWebSocketContainer();
         EventSocket clientSocket = new EventSocket();
-        Session session = client.connectToServer(clientSocket, serverURI);
+        Session session = client.connectToServer(clientSocket, serverURI.resolve("/annotated"));
         session.getBasicRemote().sendText("hello world");
 
         EventSocket serverSocket = serverSockets.poll(5, TimeUnit.SECONDS);
@@ -106,6 +125,25 @@ public class ServerDecoderTest
         assertTrue(serverSocket.openLatch.await(5, TimeUnit.SECONDS));
         String msg = serverSocket.messageQueue.poll(5, TimeUnit.SECONDS);
         assertThat(msg, is("hello world="));
+
+        clientSocket.session.close();
+        clientSocket.closeLatch.await(5, TimeUnit.SECONDS);
+        serverSocket.closeLatch.await(5, TimeUnit.SECONDS);
+    }
+
+    @Test
+    public void testConfiguredDecoder() throws Exception
+    {
+        WebSocketContainer client = ContainerProvider.getWebSocketContainer();
+        EventSocket clientSocket = new EventSocket();
+        Session session = client.connectToServer(clientSocket, serverURI.resolve("/configured"));
+        session.getBasicRemote().sendText("hello world");
+
+        EventSocket serverSocket = serverSockets.poll(5, TimeUnit.SECONDS);
+        assertNotNull(serverSocket);
+        assertTrue(serverSocket.openLatch.await(5, TimeUnit.SECONDS));
+        String msg = serverSocket.messageQueue.poll(5, TimeUnit.SECONDS);
+        assertThat(msg, is("hello world+"));
 
         clientSocket.session.close();
         clientSocket.closeLatch.await(5, TimeUnit.SECONDS);
