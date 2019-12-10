@@ -336,12 +336,17 @@ public class MultiPartFormInputStream
         _contextTmpDir =  (contextTmpDir != null) ? contextTmpDir : new File(System.getProperty("java.io.tmpdir"));
         _config = (config != null) ? config : new MultipartConfigElement(_contextTmpDir.getAbsolutePath());
 
-        _in = new BufferedInputStream(in);
         if (in instanceof ServletInputStream)
         {
             if (((ServletInputStream)in).isFinished())
+            {
+                _in = null;
                 _parsed = true;
+                return;
+            }
         }
+        
+        _in = new BufferedInputStream(in);
     }
 
     /**
