@@ -125,6 +125,14 @@ public class HttpChannelOverFCGI extends HttpChannel
         dispatcher.dispatch();
     }
 
+    public boolean onIdleTimeout(Throwable timeout)
+    {
+        boolean handle = getRequest().getHttpInput().onIdleTimeout(timeout);
+        if (handle)
+            execute(this);
+        return !handle;
+    }
+
     private static class Dispatcher implements Runnable
     {
         private final AtomicReference<State> state = new AtomicReference<>(State.IDLE);

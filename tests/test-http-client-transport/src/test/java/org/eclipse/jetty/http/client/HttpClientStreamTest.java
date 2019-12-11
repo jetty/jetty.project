@@ -66,7 +66,6 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
-import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
@@ -1273,9 +1272,6 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
     @ArgumentsSource(TransportProvider.class)
     public void testClientDefersContentServerIdleTimeout(Transport transport) throws Exception
     {
-        // TODO: fix FCGI that is failing this test.
-        Assumptions.assumeTrue(transport != Transport.FCGI);
-
         init(transport);
         CountDownLatch dataLatch = new CountDownLatch(1);
         CountDownLatch errorLatch = new CountDownLatch(1);
