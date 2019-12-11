@@ -20,8 +20,11 @@ package org.eclipse.jetty.websocket.javax.tests.server;
 
 import java.net.URI;
 import java.util.Collections;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import javax.websocket.ContainerProvider;
+import javax.websocket.EndpointConfig;
+import javax.websocket.MessageHandler;
 import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
 import javax.websocket.server.ServerEndpoint;
@@ -30,17 +33,16 @@ import javax.websocket.server.ServerEndpointConfig;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.websocket.javax.common.decoders.StringDecoder;
 import org.eclipse.jetty.websocket.javax.server.config.JavaxWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.javax.tests.EventSocket;
+import org.eclipse.jetty.websocket.javax.tests.WSEndpointTracker;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -48,7 +50,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 public class ServerDecoderTest
 {
-    static BlockingArrayQueue<EventSocket> serverSockets = new BlockingArrayQueue<>();
+    static CompletableFuture<EventSocket> annotatedServerSocket = new CompletableFuture<>();
+    static CompletableFuture<WSEndpointTracker> configuredServerSocket = new CompletableFuture<>();
 
     private Server server;
     private URI serverURI;
@@ -72,13 +75,30 @@ public class ServerDecoderTest
     }
 
     @ServerEndpoint(value = "/annotated", decoders = {EqualsAppendDecoder.class})
-    public static class ConfiguredEchoSocket extends EventSocket
+    public static class AnnotatedEndpoint extends EventSocket
     {
         @Override
         public void onOpen(Session session)
         {
-            serverSockets.add(this);
             super.onOpen(session);
+            annotatedServerSocket.complete(this);
+        }
+    }
+
+    public static class ConfiguredEndpoint extends WSEndpointTracker implements MessageHandler.Whole<String>
+    {
+        @Override
+        public void onOpen(Session session, EndpointConfig config)
+        {
+            super.onOpen(session, config);
+            session.addMessageHandler(this);
+            configuredServerSocket.complete(this);
+        }
+
+        @Override
+        public void onMessage(String message)
+        {
+            super.onWsText(message);
         }
     }
 
@@ -91,13 +111,13 @@ public class ServerDecoderTest
         ServletContextHandler servletContextHandler = new ServletContextHandler(null, "/");
         server.setHandler(servletContextHandler);
 
-        ServerEndpointConfig config = ServerEndpointConfig.Builder.create(ConfiguredEchoSocket.class, "/configured")
-            .decoders(Collections.singletonList(PlusAppendDecoder.class))
-            .build();
-
         JavaxWebSocketServletContainerInitializer.configure(servletContextHandler, ((servletContext, serverContainer) ->
         {
-            serverContainer.addEndpoint(ConfiguredEchoSocket.class);
+            serverContainer.addEndpoint(AnnotatedEndpoint.class);
+
+            ServerEndpointConfig config = ServerEndpointConfig.Builder.create(ConfiguredEndpoint.class, "/configured")
+                .decoders(Collections.singletonList(PlusAppendDecoder.class))
+                .build();
             serverContainer.addEndpoint(config);
         }));
 
@@ -120,8 +140,7 @@ public class ServerDecoderTest
         Session session = client.connectToServer(clientSocket, serverURI.resolve("/annotated"));
         session.getBasicRemote().sendText("hello world");
 
-        EventSocket serverSocket = serverSockets.poll(5, TimeUnit.SECONDS);
-        assertNotNull(serverSocket);
+        EventSocket serverSocket = annotatedServerSocket.get(5, TimeUnit.SECONDS);
         assertTrue(serverSocket.openLatch.await(5, TimeUnit.SECONDS));
         String msg = serverSocket.messageQueue.poll(5, TimeUnit.SECONDS);
         assertThat(msg, is("hello world="));
@@ -139,8 +158,7 @@ public class ServerDecoderTest
         Session session = client.connectToServer(clientSocket, serverURI.resolve("/configured"));
         session.getBasicRemote().sendText("hello world");
 
-        EventSocket serverSocket = serverSockets.poll(5, TimeUnit.SECONDS);
-        assertNotNull(serverSocket);
+        WSEndpointTracker serverSocket = configuredServerSocket.get(5, TimeUnit.SECONDS);
         assertTrue(serverSocket.openLatch.await(5, TimeUnit.SECONDS));
         String msg = serverSocket.messageQueue.poll(5, TimeUnit.SECONDS);
         assertThat(msg, is("hello world+"));
