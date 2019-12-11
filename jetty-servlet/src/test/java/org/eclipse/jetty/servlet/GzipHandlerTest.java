@@ -64,6 +64,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 @SuppressWarnings("serial")
 public class GzipHandlerTest
@@ -105,6 +106,9 @@ public class GzipHandlerTest
         gzipHandler.setMinGzipSize(16);
         gzipHandler.setInflateBufferSize(4096);
 
+        gzipHandler.addIncludedMethods("POST");
+        gzipHandler.addExcludedInflatePaths("/ctx/noinflation");
+
         ServletContextHandler context = new ServletContextHandler(gzipHandler, "/ctx");
         ServletHandler servlets = context.getServletHandler();
 
@@ -119,9 +123,26 @@ public class GzipHandlerTest
         servlets.addServletWithMapping(DumpServlet.class, "/dump/*");
         servlets.addServletWithMapping(AsyncServlet.class, "/async/*");
         servlets.addServletWithMapping(BufferServlet.class, "/buffer/*");
+        servlets.addServletWithMapping(NoInflationServlet.class, "/noinflation");
         servlets.addFilterWithMapping(CheckFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
 
         _server.start();
+    }
+
+    public static class NoInflationServlet extends HttpServlet
+    {
+        @Override
+        protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        {
+            try(InputStream ignored = new GZIPInputStream(request.getInputStream()))
+            {
+                response.setStatus(200);
+                IO.copy(ignored, response.getOutputStream());
+                response.flushBuffer();
+            } catch (IOException ignore) {
+                fail("The inputstream was already inflated. addExcludedInflatePaths does not seem to be effective.");
+            }
+        }
     }
 
     public static class MicroServlet extends HttpServlet
@@ -676,6 +697,13 @@ public class GzipHandlerTest
         String[] includedPaths = gzip.getIncludedPaths();
         assertThat("Included Paths.size", includedPaths.length, is(2));
         assertThat("Included Paths", Arrays.asList(includedPaths), contains("/foo", "^/bar.*$"));
+
+        gzip.addIncludedInflationPaths("/fiz");
+        gzip.addIncludedInflationPaths("^/buz.*$");
+
+        String[] includedInflationPaths = gzip.getIncludedInflationPaths();
+        assertThat("Included Paths.size", includedInflationPaths.length, is(2));
+        assertThat("Included Paths", Arrays.asList(includedInflationPaths), contains("/fiz", "^/buz.*$"));
     }
 
     @Test
@@ -799,6 +827,32 @@ public class GzipHandlerTest
 
         assertThat(response.getStatus(), is(200));
         assertThat(response.getContentBytes().length, is(512 * 1024));
+    }
+
+    @Test
+    public void testExcludeInflationButShouldBeZipped() throws Exception
+    {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        GZIPOutputStream output = new GZIPOutputStream(baos);
+        output.write(__content.getBytes(StandardCharsets.UTF_8));
+        output.close();
+        byte[] bytes = baos.toByteArray();
+
+        // generated and parsed test
+        HttpTester.Request request = HttpTester.newRequest();
+        HttpTester.Response response;
+
+        request.setMethod("POST");
+        request.setURI("/ctx/noinflation");
+        request.setVersion("HTTP/1.0");
+        request.setHeader("Host", "tester");
+        request.setHeader("Content-Type", "text/plain");
+        request.setHeader("Content-Encoding", "gzip");
+        request.setContent(bytes);
+
+        response = HttpTester.parseResponse(_connector.getResponse(request.generate()));
+        assertThat(response.getStatus(), is(200));
+        assertThat(response.getContent(), is(__content));
     }
 
     public static class CheckFilter implements Filter

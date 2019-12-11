@@ -178,6 +178,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     private final IncludeExclude<String> _agentPatterns = new IncludeExclude<>(RegexSet.class);
     private final IncludeExclude<String> _methods = new IncludeExclude<>();
     private final IncludeExclude<String> _paths = new IncludeExclude<>(PathSpecSet.class);
+    private final IncludeExclude<String> _inflationPaths = new IncludeExclude<>(PathSpecSet.class);
     private final IncludeExclude<String> _mimeTypes = new IncludeExclude<>();
     private HttpField _vary;
 
@@ -321,6 +322,41 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     }
 
     /**
+     * Adds excluded Path Specs for request inflation filtering.
+     *
+     * <p>
+     * There are 2 syntaxes supported, Servlet <code>url-pattern</code> based, and
+     * Regex based.  This means that the initial characters on the path spec
+     * line are very strict, and determine the behavior of the path matching.
+     * <ul>
+     * <li>If the spec starts with <code>'^'</code> the spec is assumed to be
+     * a regex based path spec and will match with normal Java regex rules.</li>
+     * <li>If the spec starts with <code>'/'</code> then spec is assumed to be
+     * a Servlet url-pattern rules path spec for either an exact match
+     * or prefix based match.</li>
+     * <li>If the spec starts with <code>'*.'</code> then spec is assumed to be
+     * a Servlet url-pattern rules path spec for a suffix based match.</li>
+     * <li>All other syntaxes are unsupported</li>
+     * </ul>
+     * <p>
+     * Note: inclusion takes precedence over exclude.
+     *
+     * @param pathspecs Path specs (as per servlet spec) to exclude. If a
+     * ServletContext is available, the paths are relative to the context path,
+     * otherwise they are absolute.<br>
+     * For backward compatibility the pathspecs may be comma separated strings, but this
+     * will not be supported in future versions.
+     * @see #addIncludedInflationPaths(String...)
+     */
+    public void addExcludedInflatePaths(String... pathspecs)
+    {
+        for (String p: pathspecs)
+        {
+            _inflationPaths.exclude(StringUtil.csvSplit(p));
+        }
+    }
+
+    /**
      * Adds included User-Agents for filtering.
      *
      * @param patterns Regular expressions matching user agents to include
@@ -414,6 +450,38 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         for (String p : pathspecs)
         {
             _paths.include(StringUtil.csvSplit(p));
+        }
+    }
+
+    /**
+     * Add included Path Specs for inflation filtering.
+     *
+     * <p>
+     * There are 2 syntaxes supported, Servlet <code>url-pattern</code> based, and
+     * Regex based.  This means that the initial characters on the path spec
+     * line are very strict, and determine the behavior of the path matching.
+     * <ul>
+     * <li>If the spec starts with <code>'^'</code> the spec is assumed to be
+     * a regex based path spec and will match with normal Java regex rules.</li>
+     * <li>If the spec starts with <code>'/'</code> then spec is assumed to be
+     * a Servlet url-pattern rules path spec for either an exact match
+     * or prefix based match.</li>
+     * <li>If the spec starts with <code>'*.'</code> then spec is assumed to be
+     * a Servlet url-pattern rules path spec for a suffix based match.</li>
+     * <li>All other syntaxes are unsupported</li>
+     * </ul>
+     * <p>
+     * Note: inclusion takes precedence over exclusion.
+     *
+     * @param pathspecs Path specs (as per servlet spec) to include. If a
+     * ServletContext is available, the paths are relative to the context path,
+     * otherwise they are absolute
+     */
+    public void addIncludedInflationPaths(String... pathspecs)
+    {
+        for (String p : pathspecs)
+        {
+            _inflationPaths.include(StringUtil.csvSplit(p));
         }
     }
 
@@ -515,6 +583,18 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     }
 
     /**
+     * Get the current filter list of excluded Path Specs
+     *
+     * @return the filter list of excluded Path Specs
+     * @see #getIncludedInflationPaths()
+     */
+    public String[] getExcludedInflationPaths()
+    {
+        Set<String> excluded = _inflationPaths.getExcluded();
+        return excluded.toArray(new String[excluded.size()]);
+    }
+
+    /**
      * Get the current filter list of included User-Agent patterns
      *
      * @return the filter list of included User-Agent patterns
@@ -559,6 +639,18 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     public String[] getIncludedPaths()
     {
         Set<String> includes = _paths.getIncluded();
+        return includes.toArray(new String[includes.size()]);
+    }
+
+    /**
+     * Get the current filter list of included inflation Path Specs
+     *
+     * @return the filter list of included inflation Path Specs
+     * @see #getExcludedInflationPaths()
+     */
+    public String[] getIncludedInflationPaths()
+    {
+        Set<String> includes = _inflationPaths.getIncluded();
         return includes.toArray(new String[includes.size()]);
     }
 
@@ -627,7 +719,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         }
 
         // Handle request inflation
-        if (_inflateBufferSize > 0)
+        if (_inflateBufferSize > 0 && isPathInflatable(path))
         {
             boolean inflate = false;
             for (ListIterator<HttpField> i = baseRequest.getHttpFields().listIterator(); i.hasNext(); )
@@ -812,6 +904,23 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
             return true;
 
         return _paths.test(requestURI);
+    }
+
+    /**
+     * Test if the provided Request URI is allowed based on the Path Specs inflation filters.
+     *
+     * @param requestURI the request uri
+     * @return whether inflation is allowed for the given the path
+     */
+    protected boolean isPathInflatable(String requestURI)
+    {
+        if (_inflationPaths.isEmpty())
+            return true;
+
+        if (requestURI == null)
+            return true;
+
+        return _inflationPaths.test(requestURI);
     }
 
     @Override
