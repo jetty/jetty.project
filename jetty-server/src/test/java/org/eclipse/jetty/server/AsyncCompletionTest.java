@@ -178,6 +178,7 @@ public class AsyncCompletionTest extends HttpServerTestFixture
         tests.add(new Object[]{new AsyncWriteCompleteHandler(false, true), true, 200, __data});
         tests.add(new Object[]{new AsyncWriteCompleteHandler(true, false), false, 200, __data});
         tests.add(new Object[]{new AsyncWriteCompleteHandler(true, true), true, 200, __data});
+        tests.add(new Object[]{new BlockingWriteCompleteHandler(), true, 200, __data});
         return tests.stream().map(Arguments::of);
     }
 
@@ -246,6 +247,10 @@ public class AsyncCompletionTest extends HttpServerTestFixture
         @Override
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
+            // start async
+            // register WriteListener
+            // if ready write bytes
+            // if ready complete
             AsyncContext context = request.startAsync();
             ServletOutputStream out = response.getOutputStream();
             out.setWriteListener(new WriteListener()
@@ -297,6 +302,14 @@ public class AsyncCompletionTest extends HttpServerTestFixture
         @Override
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
+            // start async
+            // register WriteListener
+            // if ready
+            //   if not written write bytes
+            //   if _unReady check that isReady() returns false and return
+            //   if _close then call close without checking isReady()
+            //   context.complete() without checking is ready
+
             AsyncContext context = request.startAsync();
             ServletOutputStream out = response.getOutputStream();
             out.setWriteListener(new WriteListener() {
@@ -339,6 +352,59 @@ public class AsyncCompletionTest extends HttpServerTestFixture
         public String toString()
         {
             return String.format("%s@%x{ur=%b,c=%b}", this.getClass().getSimpleName(), hashCode(), _unReady, _close);
+        }
+    }
+
+    private static class BlockingWriteCompleteHandler extends AbstractHandler
+    {
+        final CountDownLatch _unReadySeen = new CountDownLatch(1);
+        boolean _written;
+
+        BlockingWriteCompleteHandler()
+        {
+        }
+
+        @Override
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        {
+            // Start async
+            // Do a blocking write in another thread
+            // call complete while the write is still blocking
+            AsyncContext context = request.startAsync();
+            ServletOutputStream out = response.getOutputStream();
+            CountDownLatch writing = new CountDownLatch(1);
+            context.start(() ->
+            {
+                try
+                {
+                    byte[] bytes = __data.getBytes(StandardCharsets.ISO_8859_1);
+                    response.setContentType("text/plain");
+                    response.setContentLength(bytes.length);
+                    writing.countDown();
+                    out.write(bytes);
+                }
+                catch(Exception e)
+                {
+                    e.printStackTrace();
+                }
+            });
+
+            try
+            {
+                writing.await(5, TimeUnit.SECONDS);
+                Thread.sleep(200);
+                context.complete();
+            }
+            catch(Exception e)
+            {
+                throw new ServletException(e);
+            }
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format("%s@%x{}", this.getClass().getSimpleName(), hashCode());
         }
     }
 }
