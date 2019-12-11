@@ -37,13 +37,16 @@ import org.eclipse.jetty.util.component.Destroyable;
  */
 public class GZIPContentDecoder implements Destroyable
 {
+    // Unsigned Integer Max == 2^32
+    private static final long UINT_MAX = 0xffffffffL;
+
     private final List<ByteBuffer> _inflateds = new ArrayList<>();
     private final Inflater _inflater = new Inflater(true);
     private final ByteBufferPool _pool;
     private final int _bufferSize;
     private State _state;
     private int _size;
-    private int _value;
+    private long _value;
     private byte _flags;
     private ByteBuffer _inflated;
 
@@ -375,11 +378,12 @@ public class GZIPContentDecoder implements Destroyable
                     }
                     case ISIZE:
                     {
-                        _value += (currByte & 0xFF) << 8 * _size;
+                        _value = _value | ((currByte & 0xFFL) << (8 * _size));
                         ++_size;
                         if (_size == 4)
                         {
-                            if (_value != _inflater.getBytesWritten())
+                            // RFC 1952: Section 2.3.1; ISIZE is the input size modulo 2^32
+                            if (_value != (_inflater.getBytesWritten() & UINT_MAX))
                                 throw new ZipException("Invalid input size");
 
                             // TODO ByteBuffer result = output == null ? BufferUtil.EMPTY_BUFFER : ByteBuffer.wrap(output);
