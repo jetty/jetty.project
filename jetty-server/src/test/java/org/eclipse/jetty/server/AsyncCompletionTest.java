@@ -175,9 +175,9 @@ public class AsyncCompletionTest extends HttpServerTestFixture
         tests.add(new Object[]{new SendErrorHandler(499, "Test async sendError"), false, 499, "Test async sendError"});
         tests.add(new Object[]{new AsyncReadyCompleteHandler(), false, 200, __data});
         tests.add(new Object[]{new AsyncWriteCompleteHandler(false, false), false, 200, __data});
-        tests.add(new Object[]{new AsyncWriteCompleteHandler(false, true), true, 200, __data});
+        tests.add(new Object[]{new AsyncWriteCompleteHandler(false, true), false, 200, __data});
         tests.add(new Object[]{new AsyncWriteCompleteHandler(true, false), false, 200, __data});
-        tests.add(new Object[]{new AsyncWriteCompleteHandler(true, true), true, 200, __data});
+        tests.add(new Object[]{new AsyncWriteCompleteHandler(true, true), false, 200, __data});
         tests.add(new Object[]{new BlockingWriteCompleteHandler(), true, 200, __data});
         return tests.stream().map(Arguments::of);
     }
@@ -351,7 +351,7 @@ public class AsyncCompletionTest extends HttpServerTestFixture
         @Override
         public String toString()
         {
-            return String.format("%s@%x{ur=%b,c=%b}", this.getClass().getSimpleName(), hashCode(), _unReady, _close);
+            return String.format("AWCH@%x{ur=%b,c=%b}", hashCode(), _unReady, _close);
         }
     }
 
