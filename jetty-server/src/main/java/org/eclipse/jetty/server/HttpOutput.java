@@ -72,63 +72,48 @@ public class HttpOutput extends ServletOutputStream implements Runnable
       |
       v
      READY ------ write/flush/close ------> PENDING
-      ^ ^ |                                  |  |
-      | | |                                  |  |
+      ^ ^                                    |  |
+      | |                                    |  |
       | +----------isReady==true----------+  |  |
-      |   +----------------------------+  |  |  |
-      |onWriteComplete                 |  |  |  |onWriteComplete
-      |                                |  |  |  |
+      |                                   |  |  |
+      |onWriteComplete                    |  |  |onWriteComplete
+      |                                   |  |  |
       | +----------isReady==false------------+  |
-      | |                              |  |     |
-      | v                              |  |     v
-     UNREADY                           |  +---ASYNC
-                                         
-    */
-
-    /*
-        OPEN/BLOCKING ---- close ----> CLOSING/BLOCKED
-        OPEN/BLOCKED ----- close ----> assign _closedCallback ---onWriteComplete---> CLOSING/BLOCKED
-        OPEN/ASYNC ------- close ----> CLOSING/PENDING
-        OPEN/READY ------- close ----> CLOSING/PENDING
-        OPEN/PENDING ----- close ----> assign _closedCallback --- onWriteComplete --> CLOSING/PENDING
-        OPEN/UNREADY ----- close ----> assign _closedCallback --- onWriteComplete --> CLOSING/UNREADY
-        CLOSING/* ---------close ----> combine _closedCallback
-        CLOSING/BLOCKING ---- onWriteComplete ----> CLOSED/BLOCKING
-        CLOSING/BLOCKED ----- onWriteComplete ----> CLOSED/BLOCKING
-        CLOSING/ASYNC ------- onWriteComplete ----> CLOSED/ASYNC
-        CLOSING/READY ------- onWriteComplete ----> CLOSED/READY
-        CLOSING/PENDING ----- onWriteComplete ----> CLOSED/ASYNC
-        CLOSING/UNREADY ----- onWriteComplete ----> CLOSED/UNREADY
+      | |                                 |     |
+      | v                                 |     v
+     UNREADY                              +---ASYNC
 
 
+            OPEN/BLOCKING----close---------+                             CLOSED/BLOCKING
+            /  |   ^                        \                                    ^
+        swl/   |w  |owc                      \                                   |
+          /    v   |                          \                                  |
+         |  OPEN/BLOCKED --<>close             +---->CLOSING/BLOCKED--owc--------+
+          \            \                      /
+           \            +----owcC------------+
+            v
+          > OPEN/READY -----close-----+
+         /  ^    |    \                \
+        /  /irt  |w    \                \
+       /  /      v      \                \
+      /  |  OPEN/PENDING-|-<>close        +--+--+--->CLOSING/PENDING--owc--------+
+     |    \ /    |     \/                /  /  /     /                           |
+     |owc  /     |owc  /\               /  /  /     /                            |
+     |    / \    v    v  +--owcC-------+  /  /     /                             v
+      \  |  OPEN/ASYNC------close--------+  /  +--|->CLOSING/ASYNC----owc-->CLOSED/ASYNC
+       \  \         \    +--owcC-----------+  /    \                             ^
+        \  \irf      +--/---owcC-------------+      \irf                         |
+         \  v          /                             v                           |
+          - OPEN/UNREADY --<>close                   CLOSING/UNREADY--owc--------+
 
 
-
-        OPEN/BLOCKING -- close -----------+         CLOSING/BLOCKING
-        /  |   ^                           \        /  |   ^
-       /   |   |                            \      /   |   |
-      /    v   |                             \    /    v   |
-     |  OPEN/BLOCKED ----close ---+           +--|->CLOSING/BLOCKED
-      \          ^                |               \
-       \         +----------------+                \
-        v                                           v
-        OPEN/READY -----close-----------+           CLOSING/READY           CLOSED/READY
-       ^^    |    \                      \          ^    |                        |
-      //     |     \                      \        /     |                        |
-     //      v      \                      \      /      v                        |
-    /|  OPEN/PENDING-|---close ---+         +----|->CLOSING/PENDING               |
-   |  \ /    |   ^   /            |        /      \ /    |                        |
-   |   /     |   +--/-------------+       /        /     +--------------------+   |
-   |  / \    v     v                     /        / \                         v   v
-    \|  OPEN/ASYNC -----close ----------+        |  CLOSING/ASYNC           CLOSED/ASYNC
-     \\                                           \
-      \\                                           \
-       \v                                           v
-        OPEN/UNREADY ----close --+                  CLOSING/UNREADY
-                 ^               |
-                 +---------------+
-
-
+      swl = setWriteListener
+      w = write
+      <>close = close sets _closeCallback only.
+      owc = onWriteComplete(false,null),_closeCallback==null
+      owcC = onWriteComplete(false,null),_closeCallback!=null
+      isf = isReady()==false
+      ist = osReady()==true
      */
     enum ApiState
     {
