@@ -38,7 +38,7 @@ import org.eclipse.jetty.util.component.Destroyable;
 public class GZIPContentDecoder implements Destroyable
 {
     // Unsigned Integer Max == 2^32
-    private static final long UINT_MAX = 0xffffffffL;
+    private static final long UINT_MAX = 0xFFFFFFFFL;
 
     private final List<ByteBuffer> _inflateds = new ArrayList<>();
     private final Inflater _inflater = new Inflater(true);

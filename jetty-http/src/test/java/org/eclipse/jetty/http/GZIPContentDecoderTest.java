@@ -29,7 +29,6 @@ import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
 import org.eclipse.jetty.io.ArrayByteBufferPool;
-import org.eclipse.jetty.util.BufferUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -363,7 +362,7 @@ public class GZIPContentDecoderTest
     final long INT_MAX = Integer.MAX_VALUE;
 
     // Unsigned Integer Max == 2^32
-    final long UINT_MAX = 0xffffffffL;
+    final long UINT_MAX = 0xFFFFFFFFL;
 
     @ParameterizedTest
     @ValueSource(longs = {INT_MAX, INT_MAX + 1, UINT_MAX, UINT_MAX + 1})
@@ -383,26 +382,26 @@ public class GZIPContentDecoderTest
 
         GZIPContentDecoder decoder = new GZIPContentDecoder(BUFSIZE);
 
-        try (GZIPDecoderOutputStream out = new GZIPDecoderOutputStream(decoder);
-             GZIPOutputStream outputStream = new GZIPOutputStream(out, BUFSIZE))
-        {
-            long writtenBytes = 0L;
-            for (long bytesLeft = origSize; bytesLeft > 0; )
-            {
-                int len = buf.length;
-                if (bytesLeft < buf.length)
-                {
-                    len = (int)bytesLeft;
-                }
-                outputStream.write(buf, 0, len);
-                bytesLeft -= len;
-                writtenBytes += len;
-            }
-            outputStream.close();
+        GZIPDecoderOutputStream out = new GZIPDecoderOutputStream(decoder);
+        GZIPOutputStream outputStream = new GZIPOutputStream(out, BUFSIZE);
 
-            assertThat("Written byte count", writtenBytes, is(origSize));
-            assertThat("Decoded byte count", out.decodedByteCount, is(origSize));
+        for (long bytesLeft = origSize; bytesLeft > 0; )
+        {
+            int len = buf.length;
+            if (bytesLeft < buf.length)
+            {
+                len = (int)bytesLeft;
+            }
+            outputStream.write(buf, 0, len);
+            bytesLeft -= len;
         }
+
+        // Close GZIPOutputStream to have it generate gzip trailer.
+        // This can cause more writes of unflushed gzip buffers
+        outputStream.close();
+
+        // out.decodedByteCount is only valid after close
+        assertThat("Decoded byte count", out.decodedByteCount, is(origSize));
     }
 
     public static class GZIPDecoderOutputStream extends OutputStream
@@ -419,36 +418,21 @@ public class GZIPContentDecoderTest
         public void write(byte[] b, int off, int len) throws IOException
         {
             ByteBuffer buf = ByteBuffer.wrap(b, off, len);
-            decode(buf);
-        }
-
-        @Override
-        public void write(byte[] b) throws IOException
-        {
-            ByteBuffer buf = ByteBuffer.wrap(b);
-            decode(buf);
-        }
-
-        @Override
-        public void write(int b) throws IOException
-        {
-            ByteBuffer buf = BufferUtil.allocate(32);
-            buf.put((byte)(b & 0xFF));
-            buf.flip();
-            decode(buf);
-        }
-
-        private void decode(ByteBuffer buffer)
-        {
-            while (buffer.hasRemaining())
+            while (buf.hasRemaining())
             {
-                ByteBuffer decoded = decoder.decode(buffer);
+                ByteBuffer decoded = decoder.decode(buf);
                 if (decoded.hasRemaining())
                 {
                     decodedByteCount += decoded.remaining();
                 }
                 decoder.release(decoded);
             }
+        }
+
+        @Override
+        public void write(int b) throws IOException
+        {
+            write(new byte[]{(byte)(b & 0xFF)}, 0, 1);
         }
     }
 }
