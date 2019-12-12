@@ -127,11 +127,11 @@ public class AnnotatedServerEndpointTest
         this.path = "/override";
         this.subprotocol = "override";
 
-        //assertResponse("configurator", EchoSocketConfigurator.class.getName());
+        assertResponse("configurator", EchoSocketConfigurator.class.getName());
         assertResponse("text-max", "111,222");
         assertResponse("binary-max", "333,444");
-        //assertResponse("decoders", DateDecoder.class.getName());
-        //assertResponse("encoders", TimeEncoder.class.getName());
+        assertResponse("decoders", DateDecoder.class.getName());
+        assertResponse("encoders", TimeEncoder.class.getName());
         assertResponse("subprotocols", "override");
     }
 }

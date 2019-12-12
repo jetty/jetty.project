@@ -280,7 +280,7 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
         return new EmptyClientEndpointConfig();
     }
 
-    protected EndpointConfig readAnnotatedConfig(Object endpoint, EndpointConfig config) throws DeploymentException
+    private EndpointConfig readAnnotatedConfig(Object endpoint, EndpointConfig config) throws DeploymentException
     {
         ClientEndpoint anno = endpoint.getClass().getAnnotation(ClientEndpoint.class);
         if (anno != null)
