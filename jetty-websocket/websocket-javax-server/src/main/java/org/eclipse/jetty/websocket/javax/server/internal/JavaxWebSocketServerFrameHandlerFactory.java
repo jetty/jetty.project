@@ -49,7 +49,7 @@ public class JavaxWebSocketServerFrameHandlerFactory extends JavaxWebSocketClien
         ServerEndpoint anno = endpointClass.getAnnotation(ServerEndpoint.class);
         if (anno == null)
         {
-            return super.createMetadata(endpointClass, endpointConfig);
+            return super.getMetadata(endpointClass, endpointConfig);
         }
 
         UriTemplatePathSpec templatePathSpec = new UriTemplatePathSpec(anno.value());

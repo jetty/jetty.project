@@ -50,8 +50,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 public class ServerDecoderTest
 {
-    static CompletableFuture<EventSocket> annotatedServerSocket = new CompletableFuture<>();
-    static CompletableFuture<WSEndpointTracker> configuredServerSocket = new CompletableFuture<>();
+    private static CompletableFuture<EventSocket> annotatedServerSocket = new CompletableFuture<>();
+    private static CompletableFuture<WSEndpointTracker> configuredServerSocket = new CompletableFuture<>();
 
     private Server server;
     private URI serverURI;
@@ -78,9 +78,9 @@ public class ServerDecoderTest
     public static class AnnotatedEndpoint extends EventSocket
     {
         @Override
-        public void onOpen(Session session)
+        public void onOpen(Session session, EndpointConfig config)
         {
-            super.onOpen(session);
+            super.onOpen(session, config);
             annotatedServerSocket.complete(this);
         }
     }

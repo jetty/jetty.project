@@ -468,7 +468,6 @@ public abstract class JavaxWebSocketFrameHandlerFactory
                     InvokerUtils.optionalMutatedInvoker(endpointClass, onMsg, paramIdentifier, metadata.getNamedTemplateVariables(), signature);
 
                 // Try to match from available decoders.
-                // TODO: how do decoders work if not annotated?
                 if (matchDecoders(onMsg, metadata, msgMetadata, getMethodHandle))
                     continue;
 
