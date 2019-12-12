@@ -368,7 +368,8 @@ public class GZIPContentDecoderTest
     @ValueSource(longs = {INT_MAX, INT_MAX + 1, UINT_MAX, UINT_MAX + 1})
     public void testLargeGzipStream(long origSize) throws IOException
     {
-        final int BUFSIZE = (1 * 1024 * 1024); // 1MB
+        // Size chosen for trade off between speed of I/O vs speed of Gzip
+        final int BUFSIZE = 1024 * 1024;
 
         // Create a buffer to use over and over again to produce the uncompressed input
         byte[] cbuf = "0123456789ABCDEFGHIJKLMOPQRSTUVWXYZ".getBytes(StandardCharsets.UTF_8);
@@ -380,9 +381,7 @@ public class GZIPContentDecoderTest
             off += len;
         }
 
-        GZIPContentDecoder decoder = new GZIPContentDecoder(BUFSIZE);
-
-        GZIPDecoderOutputStream out = new GZIPDecoderOutputStream(decoder);
+        GZIPDecoderOutputStream out = new GZIPDecoderOutputStream(new GZIPContentDecoder(BUFSIZE));
         GZIPOutputStream outputStream = new GZIPOutputStream(out, BUFSIZE);
 
         for (long bytesLeft = origSize; bytesLeft > 0; )
@@ -432,7 +431,7 @@ public class GZIPContentDecoderTest
         @Override
         public void write(int b) throws IOException
         {
-            write(new byte[]{(byte)(b & 0xFF)}, 0, 1);
+            write(new byte[]{(byte)b}, 0, 1);
         }
     }
 }
