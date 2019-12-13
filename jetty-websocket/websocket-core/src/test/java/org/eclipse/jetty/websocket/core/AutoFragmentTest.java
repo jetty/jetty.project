@@ -71,7 +71,55 @@ public class AutoFragmentTest
     }
 
     @Test
-    public void testAutoFragmentToMaxFrameSize() throws Exception
+    public void testOutgoingAutoFragmentToMaxFrameSize() throws Exception
+    {
+        TestFrameHandler clientHandler = new TestFrameHandler();
+        CompletableFuture<FrameHandler.CoreSession> connect = client.connect(clientHandler, serverUri);
+        connect.get(5, TimeUnit.SECONDS);
+
+        // Turn off fragmentation on the server.
+        assertTrue(serverHandler.open.await(5, TimeUnit.SECONDS));
+        serverHandler.coreSession.setMaxFrameSize(0);
+        serverHandler.coreSession.setAutoFragment(false);
+
+        // Set the client to fragment to the maxFrameSize.
+        int maxFrameSize = 30;
+        clientHandler.coreSession.setMaxFrameSize(maxFrameSize);
+        clientHandler.coreSession.setAutoFragment(true);
+
+        // Send a message which is too large.
+        int size = maxFrameSize * 2;
+        byte[] array = new byte[size];
+        Arrays.fill(array, 0, size, (byte)'X');
+        ByteBuffer message = BufferUtil.toBuffer(array);
+        Frame sentFrame = new Frame(OpCode.BINARY, BufferUtil.copy(message));
+        clientHandler.coreSession.sendFrame(sentFrame, Callback.NOOP, false);
+
+        // We should not receive any frames larger than the max frame size.
+        // So our message should be split into two frames.
+        Frame frame = serverHandler.receivedFrames.poll(5, TimeUnit.SECONDS);
+        assertNotNull(frame);
+        assertThat(frame.getOpCode(), is(OpCode.BINARY));
+        assertThat(frame.getPayloadLength(), is(maxFrameSize));
+        assertThat(frame.isFin(), is(false));
+
+        // Second frame should be final and contain rest of the data.
+        frame = serverHandler.receivedFrames.poll(5, TimeUnit.SECONDS);
+        assertNotNull(frame);
+        assertThat(frame.getOpCode(), is(OpCode.CONTINUATION));
+        assertThat(frame.getPayloadLength(), is(maxFrameSize));
+        assertThat(frame.isFin(), is(true));
+
+        // Original frame payload should not have been changed.
+        assertThat(sentFrame.getPayload(), is(message));
+
+        clientHandler.sendClose();
+        assertTrue(serverHandler.closed.await(5, TimeUnit.SECONDS));
+        assertTrue(clientHandler.closed.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testIncomingAutoFragmentToMaxFrameSize() throws Exception
     {
         TestFrameHandler clientHandler = new TestFrameHandler();
         CompletableFuture<FrameHandler.CoreSession> connect = client.connect(clientHandler, serverUri);
@@ -247,7 +295,8 @@ public class AutoFragmentTest
         serverHandler.coreSession.setAutoFragment(true);
 
         // Send the payload which should be fragmented by the server permessage-deflate.
-        serverHandler.sendFrame(new Frame(OpCode.BINARY, BufferUtil.copy(payload)), Callback.NOOP, false);
+        ByteBuffer sendPayload = BufferUtil.copy(payload);
+        serverHandler.sendFrame(new Frame(OpCode.BINARY, sendPayload), Callback.NOOP, false);
 
         // Assemble the message from the fragmented frames.
         ByteBuffer message = BufferUtil.allocate(payload.remaining()*2);
@@ -266,6 +315,7 @@ public class AutoFragmentTest
 
         // We received correct payload in 2 frames.
         assertThat(message, is(payload));
+        assertThat(message, is(sendPayload));
         assertThat(numFrames, is(2));
 
         clientHandler.sendClose();

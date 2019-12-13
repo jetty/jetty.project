@@ -27,11 +27,12 @@ A demo Jetty base that supports HTTP/1, HTTPS/1 and deployment from a webapps di
 $ JETTY_BASE=http2-demo
 $ mkdir $JETTY_BASE
 $ cd $JETTY_BASE
-$ java -jar $JETTY_HOME/start.jar --add-to-start=http,https,deploy
+$ java -jar $JETTY_HOME/start.jar --add-to-start=http,https,deploy,test-keystore
 ....
 
 The commands above create a `$JETTY_BASE` directory called `http2-demo`, and initializes the `http,` `https` and `deploy` modules (and their dependencies) to run a typical Jetty Server on port 8080 (for HTTP/1) and 8443 (for HTTPS/1).
-Note that the HTTPS module downloads a demo keystore file with a self signed certificate, which needs to be replaced by a Certificate Authority issued certificate for real deployment.
+Note that the `test-keystore` module downloads a demo keystore file with a self signed certificate, which needs to be replaced by a Certificate Authority issued certificate for real deployment.
+A keystore can also be added by enabling and configuring the `ssl` module.
 
 To add HTTP/2 to this demo base, it is just a matter of enabling the `http2` module with the following command:
 

@@ -103,6 +103,15 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
         }
 
         @Override
+        public void onBeforeData(Stream stream)
+        {
+            // Do not notify DATA frame listeners until demanded.
+            // This allows CONNECT requests with pseudo header :protocol
+            // (e.g. WebSocket over HTTP/2) to buffer DATA frames
+            // until they upgrade and are ready to process them.
+        }
+
+        @Override
         public boolean onIdleTimeout(Session session)
         {
             boolean close = super.onIdleTimeout(session);

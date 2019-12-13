@@ -19,6 +19,7 @@
 package org.eclipse.jetty.client;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
@@ -29,6 +30,7 @@ import java.util.regex.Pattern;
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ClientConnectionFactory;
+import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -195,6 +197,9 @@ public class Socks4Proxy extends ProxyConfiguration.Proxy
             try
             {
                 HttpDestination destination = (HttpDestination)context.get(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY);
+                // Don't want to do DNS resolution here.
+                InetSocketAddress address = InetSocketAddress.createUnresolved(destination.getHost(), destination.getPort());
+                context.put(ClientConnector.REMOTE_SOCKET_ADDRESS_CONTEXT_KEY, address);
                 ClientConnectionFactory connectionFactory = this.connectionFactory;
                 if (destination.isSecure())
                     connectionFactory = destination.newSslClientConnectionFactory(null, connectionFactory);

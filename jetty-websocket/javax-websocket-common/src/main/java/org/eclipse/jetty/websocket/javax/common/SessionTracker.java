@@ -21,10 +21,10 @@ package org.eclipse.jetty.websocket.javax.common;
 import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
+import javax.websocket.CloseReason;
 import javax.websocket.Session;
 
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.eclipse.jetty.util.component.LifeCycle;
 
 public class SessionTracker extends AbstractLifeCycle implements JavaxWebSocketSessionListener
 {
@@ -50,10 +50,12 @@ public class SessionTracker extends AbstractLifeCycle implements JavaxWebSocketS
     @Override
     protected void doStop() throws Exception
     {
-        for (JavaxWebSocketSession session : sessions)
+        for (Session session : sessions)
         {
-            LifeCycle.stop(session);
+            // GOING_AWAY is abnormal close status so it will hard close connection after sent.
+            session.close(new CloseReason(CloseReason.CloseCodes.GOING_AWAY, "Container being shut down"));
         }
+
         super.doStop();
     }
 }

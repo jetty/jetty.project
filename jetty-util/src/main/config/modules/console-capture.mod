@@ -18,7 +18,7 @@ resources/
 
 [ini-template]
 ## Logging directory (relative to $jetty.base)
-# jetty.console-capture.dir=logs
+# jetty.console-capture.dir=./logs
 
 ## Whether to append to existing file
 # jetty.console-capture.append=true

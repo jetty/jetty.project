@@ -24,10 +24,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.ConnectionStatistics;
-import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -112,12 +110,10 @@ public class WebSocketStatsTest
 
     long getFrameByteSize(Frame frame)
     {
-        ByteBufferPool bufferPool = new MappedByteBufferPool();
-        Generator generator = new Generator(bufferPool);
-        ByteBuffer buffer = bufferPool.acquire(frame.getPayloadLength() + 10, true);
-        int pos = BufferUtil.flipToFill(buffer);
-        generator.generateWholeFrame(frame, buffer);
-        return buffer.position() - pos;
+        Generator generator = new Generator();
+        ByteBuffer headerBuffer = BufferUtil.allocate(Generator.MAX_HEADER_LENGTH);
+        generator.generateHeader(frame, headerBuffer);
+        return headerBuffer.remaining() + frame.getPayloadLength();
     }
 
     @Test

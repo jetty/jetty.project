@@ -20,6 +20,7 @@ package org.eclipse.jetty.websocket.javax.tests.server;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import javax.websocket.server.ServerEndpointConfig;
@@ -30,7 +31,6 @@ import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.javax.tests.Fuzzer;
 import org.eclipse.jetty.websocket.javax.tests.LocalServer;
-import org.eclipse.jetty.websocket.javax.tests.UpgradeUtils;
 import org.eclipse.jetty.websocket.javax.tests.coders.DateDecoder;
 import org.eclipse.jetty.websocket.javax.tests.coders.TimeEncoder;
 import org.eclipse.jetty.websocket.javax.tests.server.configs.EchoSocketConfigurator;
@@ -67,8 +67,8 @@ public class AnnotatedServerEndpointTest
 
     private void assertResponse(String message, String expectedText) throws Exception
     {
-        Map<String, String> upgradeRequest = UpgradeUtils.newDefaultUpgradeRequestHeaders();
-        upgradeRequest.put(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL.asString(), subprotocol);
+        Map<String, String> headers = new HashMap<>();
+        headers.put(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL.asString(), subprotocol);
 
         List<Frame> send = new ArrayList<>();
         send.add(new Frame(OpCode.TEXT).setPayload(message));
@@ -78,7 +78,7 @@ public class AnnotatedServerEndpointTest
         expect.add(new Frame(OpCode.TEXT).setPayload(expectedText));
         expect.add(CloseStatus.toFrame(CloseStatus.NORMAL));
 
-        try (Fuzzer session = server.newNetworkFuzzer(path, upgradeRequest))
+        try (Fuzzer session = server.newNetworkFuzzer(path, headers))
         {
             session.sendFrames(send);
             session.expect(expect);

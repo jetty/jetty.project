@@ -105,6 +105,14 @@ public class ServerFCGIConnection extends AbstractConnection
         }
     }
 
+    @Override
+    protected boolean onReadTimeout(Throwable timeout)
+    {
+        return channels.values().stream()
+            .mapToInt(channel -> channel.onIdleTimeout(timeout) ? 0 : 1)
+            .sum() == 0;
+    }
+
     private void parse(ByteBuffer buffer)
     {
         while (buffer.hasRemaining())

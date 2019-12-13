@@ -23,7 +23,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.core.Behavior;
 import org.eclipse.jetty.websocket.core.Frame;
@@ -40,7 +39,6 @@ public class UnitGenerator extends Generator
 
     public UnitGenerator(Behavior behavior)
     {
-        super(new MappedByteBufferPool());
         applyMask = (behavior == Behavior.CLIENT);
     }
 

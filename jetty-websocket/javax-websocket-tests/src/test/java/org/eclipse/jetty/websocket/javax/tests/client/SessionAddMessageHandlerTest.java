@@ -82,13 +82,11 @@ public class SessionAddMessageHandlerTest
 
         // Session
         session = frameHandler.getSession();
-        session.start();
     }
 
     @AfterEach
     public void stopSession() throws Exception
     {
-        session.stop();
         container.stop();
     }
 

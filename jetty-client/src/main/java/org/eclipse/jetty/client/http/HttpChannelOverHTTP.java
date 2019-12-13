@@ -26,6 +26,7 @@ import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.HttpResponse;
 import org.eclipse.jetty.client.HttpResponseException;
+import org.eclipse.jetty.client.HttpUpgrader;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.http.HttpFields;
@@ -98,29 +99,24 @@ public class HttpChannelOverHTTP extends HttpChannel
             return result;
 
         HttpResponse response = exchange.getResponse();
-
-        if ((response.getVersion() == HttpVersion.HTTP_1_1) &&
-            (response.getStatus() == HttpStatus.SWITCHING_PROTOCOLS_101))
+        if (response.getVersion() == HttpVersion.HTTP_1_1 && response.getStatus() == HttpStatus.SWITCHING_PROTOCOLS_101)
         {
-            String nextConnection = response.getHeaders().get(HttpHeader.CONNECTION);
-            if ((nextConnection == null) || !nextConnection.toLowerCase(Locale.US).contains("upgrade"))
-            {
-                return new Result(result, new HttpResponseException("101 Switching Protocols without Connection: Upgrade not supported", response));
-            }
+            String header = response.getHeaders().get(HttpHeader.CONNECTION);
+            if (header == null || !header.toLowerCase(Locale.US).contains("upgrade"))
+                return new Result(result, new HttpResponseException("101 response without 'Connection: Upgrade'", response));
 
-            // Upgrade Response
             HttpRequest request = exchange.getRequest();
-            HttpConnectionUpgrader upgrader = (HttpConnectionUpgrader)request.getConversation().getAttribute(HttpConnectionUpgrader.class.getName());
-            if (upgrader != null)
+            HttpUpgrader upgrader = (HttpUpgrader)request.getConversation().getAttribute(HttpUpgrader.class.getName());
+            if (upgrader == null)
+                return new Result(result, new HttpResponseException("101 response without " + HttpUpgrader.class.getSimpleName(), response));
+
+            try
             {
-                try
-                {
-                    upgrader.upgrade(response, getHttpConnection());
-                }
-                catch (Throwable x)
-                {
-                    return new Result(result, x);
-                }
+                upgrader.upgrade(response, getHttpConnection().getEndPoint());
+            }
+            catch (Throwable x)
+            {
+                return new Result(result, new HttpResponseException("Could not upgrade to WebSocket", response, x));
             }
         }
 

@@ -97,6 +97,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     private int initialSessionRecvWindow;
     private int writeThreshold;
     private boolean pushEnabled;
+    private boolean connectProtocolEnabled;
     private long idleTime;
     private GoAwayFrame closeFrame;
 
@@ -368,6 +369,14 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                     if (LOG.isDebugEnabled())
                         LOG.debug("Updating max header list size to {} for {}", value, this);
                     generator.setMaxHeaderListSize(value);
+                    break;
+                }
+                case SettingsFrame.ENABLE_CONNECT_PROTOCOL:
+                {
+                    boolean enabled = value == 1;
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("{} CONNECT protocol for {}", enabled ? "Enabling" : "Disabling", this);
+                    connectProtocolEnabled = enabled;
                     break;
                 }
                 default:
@@ -904,6 +913,17 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     public boolean isPushEnabled()
     {
         return pushEnabled;
+    }
+
+    @ManagedAttribute(value = "Whether CONNECT requests supports a protocol", readonly = true)
+    public boolean isConnectProtocolEnabled()
+    {
+        return connectProtocolEnabled;
+    }
+
+    public void setConnectProtocolEnabled(boolean connectProtocolEnabled)
+    {
+        this.connectProtocolEnabled = connectProtocolEnabled;
     }
 
     /**

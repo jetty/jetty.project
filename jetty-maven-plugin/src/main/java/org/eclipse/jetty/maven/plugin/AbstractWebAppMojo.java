@@ -50,7 +50,7 @@ import org.apache.maven.plugin.descriptor.PluginDescriptor;
 import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
-import org.apache.maven.shared.artifact.resolve.ArtifactResolver;
+import org.apache.maven.shared.transfer.artifact.resolve.ArtifactResolver;
 import org.codehaus.plexus.util.StringUtils;
 import org.eclipse.jetty.maven.plugin.utils.MavenProjectHelper;
 import org.eclipse.jetty.security.LoginService;

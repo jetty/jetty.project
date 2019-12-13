@@ -29,7 +29,6 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
-import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.PreEncodedHttpField;
@@ -140,8 +139,13 @@ public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable, Writ
                 onRequestComplete();
             }
 
+            boolean connect = request instanceof MetaData.ConnectRequest;
             _delayedUntilContent = getHttpConfiguration().isDelayDispatchUntilContent() &&
-                    !endStream && !_expect100Continue && !HttpMethod.CONNECT.is(request.getMethod());
+                    !endStream && !_expect100Continue && !connect;
+
+            // Delay the demand of DATA frames for CONNECT with :protocol.
+            if (!connect || request.getProtocol() == null)
+                getStream().demand(1);
 
             if (LOG.isDebugEnabled())
             {
