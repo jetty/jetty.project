@@ -63,58 +63,63 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     private static ResourceBundle lStrings = ResourceBundle.getBundle(LSTRING_FILE);
 
     /*
-    BLOCKING-------write/flush/close------->BLOCKED
-      |   ^                                   |
-      |   |                                   |
-      |   +-------- onWriteComplete ----------+
-      |
-      |setWriteListener
-      |
-      v
-     READY ------ write/flush/close ------> PENDING
-      ^ ^                                    |  |
-      | |                                    |  |
-      | +----------isReady==true----------+  |  |
-      |                                   |  |  |
-      |onWriteComplete                    |  |  |onWriteComplete
-      |                                   |  |  |
-      | +----------isReady==false------------+  |
-      | |                                 |     |
-      | v                                 |     v
-     UNREADY                              +---ASYNC
+     BLOCKING-------write/flush/close------->BLOCKED
+       |   ^                                   |
+       |   |                                   |
+       |   +-------- onWriteComplete ----------+
+       |
+       |setWriteListener
+       |
+       v
+      READY ------ write/flush/close ------> PENDING
+       ^ ^                                    |  |
+       | |                                    |  |
+       | +----------isReady==true----------+  |  |
+       |                                   |  |  |
+       |onWriteComplete                    |  |  |onWriteComplete
+       |                                   |  |  |
+       | +----------isReady==false------------+  |
+       | |                                 |     |
+       | v                                 |     v
+      UNREADY                              +---ASYNC
 
-TODO rework this for the CLOSE state:
 
-            OPEN/BLOCKING----close---------+                             CLOSED/BLOCKING
-            /  |   ^                        \                                    ^
-        swl/   |w  |owc                      \                                   |
-          /    v   |                          \                                  |
-         |  OPEN/BLOCKED --<>close             +---->CLOSING/BLOCKED--owc--------+
-          \            \                      /
-           \            +----owcC------------+
-            v
-          > OPEN/READY -----close-----+
-         /  ^    |    \                \
-        /  /irt  |w    \                \
-       /  /      v      \                \
-      /  |  OPEN/PENDING-|-<>close        +--+--+--->CLOSING/PENDING--owc--------+
-     |    \ /    |     \/                /  /  /     /                           |
-     |owc  /     |owc  /\               /  /  /     /                            |
-     |    / \    v    v  +--owcC-------+  /  /     /                             v
-      \  |  OPEN/ASYNC------close--------+  /  +--|->CLOSING/ASYNC----owc-->CLOSED/ASYNC
-       \  \         \    +--owcC-----------+  /    \                             ^
-        \  \irf      +--/---owcC-------------+      \irf                         |
-         \  v          /                             v                           |
-          - OPEN/UNREADY --<>close                   CLOSING/UNREADY--owc--------+
-
+          OPEN/BLOCKING---close---------------------------+                      CLOSED/BLOCKING
+         /   |    ^                                        \                         ^  ^
+        /    w    |                                         \                       /   |
+       /     |   owc   +------------------------->--owcL-----\---------------------+    |
+      |      v    |   /                         /             V                         |
+     swl  OPEN/BLOCKED----close--->CLOSE/BLOCKED----owc----->CLOSING/BLOCKED--owcL------+
+       \
+        \
+         \
+          V
+       +->OPEN/READY------close--------------------------+
+      /   ^    |                                          \
+     /   /     w                                           \
+    /   /      |       +------------------------->--owcL----\---------------------------+
+   |   /       v      /                         /            V                          |
+   | irt  OPEN/PENDING----close--->CLOSE/PENDING----owc---->CLOSING/PENDING--owcL----+  |
+   |   \  /    |                        |                    ^     |                 |  |
+  owc   \/    owc                      irf                  /     irf                |  |
+   |    /\     |                        |                  /       |                 |  |
+   |   /  V    V                        |                 /        |                 V  V
+   | irf  OPEN/ASYNC------close---------|----------------+         |             CLOSED/ASYNC
+    \  \                                |                          |                 ^  ^
+     \  \                               |                          |                 |  |
+      \  \                              |                          |                 |  |
+       \  v                             v                          v                 |  |
+        +-OPEN/UNREADY----close--->CLOSE/UNREADY----owc----->CLOSING/UNREADY--owcL---+  |
+                      \                         \                                       |
+                       +------------------------->--owcL--------------------------------+
 
       swl = setWriteListener
       w = write
-      <>close = close sets _completeCallback only.
-      owc = onWriteComplete(false,null),_completeCallback==null
-      owcC = onWriteComplete(false,null),_completeCallback!=null
+      owc = onWriteComplete(false,null)
+      owcL = onWriteComplete(true,null)
       isf = isReady()==false
       ist = osReady()==true
+      close = close or complete(Callback)`
      */
     enum ApiState
     {
@@ -380,7 +385,7 @@ TODO rework this for the CLOSE state:
             if (release)
                 releaseBuffer();
             if (wake)
-                _channel.execute(_channel); // TODO can we call directly? Why execute?
+                _channel.run();
         }
     }
 
@@ -444,8 +449,9 @@ TODO rework this for the CLOSE state:
                         case BLOCKED:
                         case UNREADY:
                         case PENDING:
-                            // Output is currently doing an operation, so we just move to state to trigger close when
-                            // that operation completes
+                            // An operation is in progress, so we soft close now
+                            _softClose = true;
+                            // then trigger a close from onWriteComplete
                             _state = State.CLOSE;
                             break;
                     }
@@ -454,7 +460,7 @@ TODO rework this for the CLOSE state:
         }
 
         if (LOG.isDebugEnabled())
-            LOG.debug("close({}) {} s={} e={}, c={}", callback, stateString(), succeeded, error, BufferUtil.toDetailString(content));
+            LOG.debug("complete({}) {} s={} e={}, c={}", callback, stateString(), succeeded, error, BufferUtil.toDetailString(content));
 
         if (succeeded)
         {
@@ -487,89 +493,86 @@ TODO rework this for the CLOSE state:
     @Override
     public void close() throws IOException
     {
-        // This close is not implemented as a call to close(Callback) with
-        // a blocking callback because in some cases we need to make this
-        // call async - ie it returns immediately and the close happens in
-        // the background
-
-        if (_channel.getResponse().isIncluding())
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("close() include softclose");
-            _softClose = true;
-            flush();
-            return;
-        }
-
         ByteBuffer content = null;
-        Throwable error = null;
         Blocker blocker = null;
         synchronized (_channelState)
         {
             if (_onError != null)
             {
-                error = _onError;
+                if (_onError instanceof IOException)
+                    throw (IOException)_onError;
+                if (_onError instanceof RuntimeException)
+                    throw (RuntimeException)_onError;
+                if (_onError instanceof Error)
+                    throw (Error)_onError;
+                throw new IOException(_onError);
             }
-            else if (_state != State.CLOSED)
-            {
-                switch (_apiState)
-                {
-                    case UNREADY:
-                    case PENDING:
-                        // An async operation is in progress, so we soft close now
-                        _softClose = true;
 
-                        // If we are OPEN,
-                        if (_state == State.OPEN)
+            switch (_state)
+            {
+                case CLOSED:
+                    break;
+
+                case CLOSE:
+                case CLOSING:
+                    switch (_apiState)
+                    {
+                        case BLOCKING:
+                        case BLOCKED:
+                            // block until CLOSED state reached.
+                            blocker = _writeBlocker.acquire();
+                            _closedCallback = Callback.combine(_closedCallback, blocker);
+                            break;
+
+                        default:
+                            // async close with no callbacl, so nothing to do
+                            break;
+                    }
+                    break;
+
+                case OPEN:
+                    switch (_apiState)
+                    {
+                        case BLOCKING:
+                            // Output is idle blocking state, but we still do an async close
+                            _apiState = ApiState.BLOCKED;
+                            _state = State.CLOSING;
+                            blocker = _writeBlocker.acquire();
+                            content = BufferUtil.hasContent(_aggregate) ? _aggregate : BufferUtil.EMPTY_BUFFER;
+                            break;
+
+                        case BLOCKED:
+                            // An blocking operation is in progress, so we soft close now
+                            _softClose = true;
                             // then trigger a close from onWriteComplete
                             _state = State.CLOSE;
-                        break;
+                            // and block until it is complete
+                            blocker = _writeBlocker.acquire();
+                            _closedCallback = Callback.combine(_closedCallback, blocker);
+                            break;
 
-                    case ASYNC:
-                    case READY:
-                        // We are async, but with no outstanding operation, so we close asynchronously
-                        _apiState = ApiState.PENDING;
-                        _state = State.CLOSING;
-                        content = BufferUtil.hasContent(_aggregate) ? _aggregate : BufferUtil.EMPTY_BUFFER;
-                        break;
+                        case ASYNC:
+                        case READY:
+                            // Output is idle in async state, so we can do an async close
+                            _apiState = ApiState.PENDING;
+                            _state = State.CLOSING;
+                            content = BufferUtil.hasContent(_aggregate) ? _aggregate : BufferUtil.EMPTY_BUFFER;
+                            break;
 
-                    case BLOCKED:
-                        // A blocking operation is in progress.
-                        // If we are still OPEN
-                        if (_state == State.OPEN)
-                            // we will close from onWriteComplete
+                        case UNREADY:
+                        case PENDING:
+                            // An async operation is in progress, so we soft close now
+                            _softClose = true;
+                            // then trigger a close from onWriteComplete
                             _state = State.CLOSE;
-                        // and block until CLOSED
-                        blocker = _writeBlocker.acquire();
-                        _closedCallback = Callback.combine(_closedCallback, blocker);
-                        break;
-
-                    case BLOCKING:
-                        // Do a blocking close
-                        blocker = _writeBlocker.acquire();
-                        content = BufferUtil.hasContent(_aggregate) ? _aggregate : BufferUtil.EMPTY_BUFFER;
-                        break;
-
-                    default:
-                        throw new IllegalStateException(stateString());
-                }
+                            break;
+                    }
+                    break;
             }
         }
 
         if (LOG.isDebugEnabled())
-            LOG.debug("close() {} e={}, c={}, b={}", stateString(),  error, BufferUtil.toDetailString(content), blocker);
-
-        // Throw any error
-        if (error != null)
-        {
-            if (error instanceof IOException)
-                throw (IOException)error;
-            if (error instanceof RuntimeException)
-                throw (RuntimeException)error;
-            if (error instanceof Error)
-                throw (Error)error;
-            throw new IOException(error);
-        }
+            LOG.debug("close({}) {} e={}, c={}", blocker, stateString(), BufferUtil.toDetailString(content));
 
         if (content == null)
         {
@@ -577,7 +580,7 @@ TODO rework this for the CLOSE state:
                 // nothing to do or block for.
                 return;
 
-            // Just wait for another close to finish.
+            // Just wait for some other close to finish.
             try (Blocker b = blocker)
             {
                 b.block();
