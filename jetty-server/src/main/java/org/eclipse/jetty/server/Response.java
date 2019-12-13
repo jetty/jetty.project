@@ -148,7 +148,7 @@ public class Response implements HttpServletResponse
     public void softClose()
     {
         setErrorSent(true);
-        _out.closedBySendError();
+        _out.softClose();
     }
 
     /**
@@ -496,7 +496,7 @@ public class Response implements HttpServletResponse
         resetBuffer();
         setHeader(HttpHeader.LOCATION, location);
         setStatus(code);
-        closeOutput();
+        completeOutput();
     }
 
     @Override
@@ -788,7 +788,7 @@ public class Response implements HttpServletResponse
             {
                 try
                 {
-                    closeOutput();
+                    completeOutput();
                 }
                 catch (IOException e)
                 {
@@ -826,7 +826,7 @@ public class Response implements HttpServletResponse
         return (_contentLength < 0 || written >= _contentLength);
     }
 
-    public void closeOutput() throws IOException
+    public void completeOutput() throws IOException
     {
         if (_outputType == OutputType.WRITER)
             _writer.close();
@@ -834,12 +834,12 @@ public class Response implements HttpServletResponse
             _out.close();
     }
 
-    public void closeOutput(Callback callback)
+    public void completeOutput(Callback callback)
     {
         if (_outputType == OutputType.WRITER)
-            _writer.close(callback);
+            _writer.complete(callback);
         else
-            _out.close(callback);
+            _out.complete(callback);
     }
 
     public long getLongContentLength()

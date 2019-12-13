@@ -48,9 +48,9 @@ public abstract class HttpWriter extends Writer
         _out.close();
     }
 
-    public void close(Callback callback)
+    public void complete(Callback callback)
     {
-        _out.close(callback);
+        _out.complete(callback);
     }
 
     @Override

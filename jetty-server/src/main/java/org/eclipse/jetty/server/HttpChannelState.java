@@ -888,6 +888,9 @@ public class HttpChannelState
             if (LOG.isDebugEnabled())
                 LOG.debug("sendError {}", toStringLocked());
 
+            if (_outputState != OutputState.OPEN)
+                throw new IllegalStateException(_outputState.toString());
+
             switch (_state)
             {
                 case HANDLING:
@@ -969,7 +972,7 @@ public class HttpChannelState
         }
 
         // release any aggregate buffer from a closing flush
-        _channel.getResponse().getHttpOutput().closed();
+        _channel.getResponse().getHttpOutput().completed();
 
         if (event != null)
         {

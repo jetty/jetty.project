@@ -172,13 +172,13 @@ public class ResponseWriter extends PrintWriter
         }
     }
 
-    public void close(Callback callback)
+    public void complete(Callback callback)
     {
         synchronized (lock)
         {
             _isClosed = true;
         }
-        _httpWriter.close(callback);
+        _httpWriter.complete(callback);
     }
 
     @Override
