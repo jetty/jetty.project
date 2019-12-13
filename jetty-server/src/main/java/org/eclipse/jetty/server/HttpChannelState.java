@@ -406,8 +406,6 @@ public class HttpChannelState
      */
     protected Action unhandle()
     {
-        boolean readInterested = false;
-
         synchronized (this)
         {
             if (LOG.isDebugEnabled())

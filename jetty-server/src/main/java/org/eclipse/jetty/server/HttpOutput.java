@@ -300,9 +300,6 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 
     void onWriteComplete(boolean last, Throwable failure)
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("onWriteComplete", failure);
-
         boolean wake = false;
         Callback closedCallback = null;
         boolean release = false;
@@ -360,6 +357,10 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                 }
             }
         }
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("onWriteComplete({},{}) {} c={} cb={} r={} w={}",
+                last, failure, stateString(), BufferUtil.toDetailString(closeContent), closedCallback, release, wake);
 
         if (failure != null)
             _channel.abort(failure);
@@ -572,7 +573,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         }
 
         if (LOG.isDebugEnabled())
-            LOG.debug("close({}) {} e={}, c={}", blocker, stateString(), BufferUtil.toDetailString(content));
+            LOG.debug("close() {} c={} b={}", stateString(), BufferUtil.toDetailString(content), blocker);
 
         if (content == null)
         {

@@ -178,7 +178,14 @@ public class AsyncCompletionTest extends HttpServerTestFixture
         tests.add(new Object[]{new AsyncWriteCompleteHandler(false, true), false, 200, __data});
         tests.add(new Object[]{new AsyncWriteCompleteHandler(true, false), false, 200, __data});
         tests.add(new Object[]{new AsyncWriteCompleteHandler(true, true), false, 200, __data});
-        tests.add(new Object[]{new BlockingWriteCompleteHandler(), true, 200, __data});
+        tests.add(new Object[]{new BlockingWriteCompleteHandler(false, false, false), true, 200, __data});
+        tests.add(new Object[]{new BlockingWriteCompleteHandler(false, false, true), true, 200, __data});
+        tests.add(new Object[]{new BlockingWriteCompleteHandler(false, true, false), true, 200, __data});
+        tests.add(new Object[]{new BlockingWriteCompleteHandler(false, true, true), true, 200, __data});
+        tests.add(new Object[]{new BlockingWriteCompleteHandler(true, false, false), true, 200, __data});
+        tests.add(new Object[]{new BlockingWriteCompleteHandler(true, false, true), true, 200, __data});
+        tests.add(new Object[]{new BlockingWriteCompleteHandler(true, true, false), true, 200, __data});
+        tests.add(new Object[]{new BlockingWriteCompleteHandler(true, true, true), true, 200, __data});
         return tests.stream().map(Arguments::of);
     }
 
@@ -237,7 +244,12 @@ public class AsyncCompletionTest extends HttpServerTestFixture
             {
                 if (System.nanoTime() > end)
                     throw new TimeoutException();
-                Thread.sleep(10);
+                try
+                {
+                    X.exchange(null, 10, TimeUnit.MILLISECONDS).proceed();
+                }
+                catch (TimeoutException e)
+                {}
             }
         }
     }
@@ -251,6 +263,7 @@ public class AsyncCompletionTest extends HttpServerTestFixture
             // register WriteListener
             // if ready write bytes
             // if ready complete
+            baseRequest.setHandled(true);
             AsyncContext context = request.startAsync();
             ServletOutputStream out = response.getOutputStream();
             out.setWriteListener(new WriteListener()
@@ -309,7 +322,7 @@ public class AsyncCompletionTest extends HttpServerTestFixture
             //   if _unReady check that isReady() returns false and return
             //   if _close then call close without checking isReady()
             //   context.complete() without checking is ready
-
+            baseRequest.setHandled(true);
             AsyncContext context = request.startAsync();
             ServletOutputStream out = response.getOutputStream();
             out.setWriteListener(new WriteListener() {
@@ -357,11 +370,15 @@ public class AsyncCompletionTest extends HttpServerTestFixture
 
     private static class BlockingWriteCompleteHandler extends AbstractHandler
     {
-        final CountDownLatch _unReadySeen = new CountDownLatch(1);
-        boolean _written;
+        final boolean _contentLength;
+        final boolean _close;
+        final boolean _dispatchComplete;
 
-        BlockingWriteCompleteHandler()
+        BlockingWriteCompleteHandler(boolean contentLength, boolean close, boolean dispatchComplete)
         {
+            _contentLength = contentLength;
+            _close = close;
+            _dispatchComplete = dispatchComplete;
         }
 
         @Override
@@ -370,41 +387,62 @@ public class AsyncCompletionTest extends HttpServerTestFixture
             // Start async
             // Do a blocking write in another thread
             // call complete while the write is still blocking
+            baseRequest.setHandled(true);
             AsyncContext context = request.startAsync();
             ServletOutputStream out = response.getOutputStream();
             CountDownLatch writing = new CountDownLatch(1);
-            context.start(() ->
+
+            Runnable write = () ->
             {
                 try
                 {
                     byte[] bytes = __data.getBytes(StandardCharsets.ISO_8859_1);
                     response.setContentType("text/plain");
-                    response.setContentLength(bytes.length);
+                    if (_contentLength)
+                        response.setContentLength(bytes.length);
                     writing.countDown();
+
                     out.write(bytes);
+
+                    if (_close)
+                        out.close();
                 }
                 catch(Exception e)
                 {
                     e.printStackTrace();
                 }
-            });
+            };
 
-            try
+            Runnable complete = () ->
             {
-                writing.await(5, TimeUnit.SECONDS);
-                Thread.sleep(200);
-                context.complete();
+                try
+                {
+                    writing.await(5, TimeUnit.SECONDS);
+                    Thread.sleep(200);
+                    context.complete();
+                }
+                catch(Exception e)
+                {
+                    e.printStackTrace();
+                }
+            };
+
+            if (_dispatchComplete)
+            {
+                context.start(complete);
+                write.run();
             }
-            catch(Exception e)
+            else
             {
-                throw new ServletException(e);
+                context.start(write);
+                complete.run();
             }
         }
 
         @Override
         public String toString()
         {
-            return String.format("%s@%x{}", this.getClass().getSimpleName(), hashCode());
+            return String.format("BWCH@%x{cl=%b,c=%b,dc=%b}", hashCode(), _contentLength, _close, _dispatchComplete);
         }
     }
 }
