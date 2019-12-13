@@ -386,7 +386,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             if (release)
                 releaseBuffer();
             if (wake)
-                _channel.run();
+                _channel.execute(_channel); // TODO review in jetty-10 if execute is needed
         }
     }
 
