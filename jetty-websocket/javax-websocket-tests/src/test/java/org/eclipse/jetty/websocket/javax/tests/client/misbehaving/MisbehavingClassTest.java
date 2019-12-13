@@ -60,7 +60,7 @@ public class MisbehavingClassTest
         try (StacklessLogging ignored = new StacklessLogging(WebSocketCoreSession.class))
         {
             // expecting RuntimeException during onOpen
-            container.connectToServer(socket, server.getWsUri());
+            container.connectToServer(socket, null, server.getWsUri());
             assertThat("Close should have occurred", socket.closeLatch.await(1, TimeUnit.SECONDS), is(true));
             Throwable cause = socket.errors.pop();
             assertThat("Error", cause, instanceOf(RuntimeException.class));

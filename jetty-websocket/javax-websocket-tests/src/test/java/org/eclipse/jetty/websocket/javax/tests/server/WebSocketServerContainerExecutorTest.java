@@ -30,11 +30,12 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.websocket.ClientEndpoint;
 import javax.websocket.ContainerProvider;
-import javax.websocket.Endpoint;
 import javax.websocket.EndpointConfig;
 import javax.websocket.OnError;
 import javax.websocket.OnMessage;
+import javax.websocket.OnOpen;
 import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
 import javax.websocket.server.ServerEndpoint;
@@ -73,9 +74,10 @@ public class WebSocketServerContainerExecutorTest
         }
     }
 
-    public static class EndpointAdapter extends Endpoint
+    @ClientEndpoint
+    public static class EndpointAdapter
     {
-        @Override
+        @OnOpen
         public void onOpen(Session session, EndpointConfig config)
         {
             /* do nothing */

@@ -24,7 +24,6 @@ import java.util.concurrent.Executor;
 import java.util.function.Function;
 import javax.servlet.ServletContext;
 import javax.websocket.DeploymentException;
-import javax.websocket.EndpointConfig;
 import javax.websocket.server.ServerEndpoint;
 import javax.websocket.server.ServerEndpointConfig;
 
@@ -158,12 +157,6 @@ public class JavaxWebSocketServerContainer extends JavaxWebSocketClientContainer
     public JavaxWebSocketServerFrameHandlerFactory getFrameHandlerFactory()
     {
         return frameHandlerFactory;
-    }
-
-    @Override
-    protected EndpointConfig newEmptyConfig(Object endpoint)
-    {
-        return new UndefinedServerEndpointConfig(endpoint.getClass());
     }
 
     @Override

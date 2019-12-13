@@ -214,7 +214,7 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
     public Session connectToServer(final Endpoint endpoint, final ClientEndpointConfig providedConfig, final URI path) throws DeploymentException, IOException
     {
         ClientEndpointConfig config = providedConfig;
-        if (config != null)
+        if (config == null)
             config = new EmptyClientEndpointConfig();
 
         ConfiguredEndpoint instance = new ConfiguredEndpoint(endpoint, config);
