@@ -44,4 +44,9 @@ public interface ClientConnectionFactory
         connector.getBeans(Connection.Listener.class).forEach(connection::addListener);
         return connection;
     }
+
+    interface Decorator
+    {
+        ClientConnectionFactory apply(ClientConnectionFactory factory);
+    }
 }
