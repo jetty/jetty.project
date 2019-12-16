@@ -45,8 +45,20 @@ public interface ClientConnectionFactory
         return connection;
     }
 
+    /**
+     * <p>Wraps another ClientConnectionFactory.</p>
+     * <p>This is typically done by protocols that send "preface" bytes with some metadata
+     * before other protocols. The metadata could be, for example, proxying information
+     * or authentication information.</p>
+     */
     interface Decorator
     {
+        /**
+         * <p>Wraps the given {@code factory}.</p>
+         *
+         * @param factory the ClientConnectionFactory to wrap
+         * @return the wrapping ClientConnectionFactory
+         */
         ClientConnectionFactory apply(ClientConnectionFactory factory);
     }
 }

@@ -102,13 +102,25 @@ public class HttpClientProxyProtocolTest
         int serverPort = connector.getLocalPort();
 
         int clientPort = ThreadLocalRandom.current().nextInt(1024, 65536);
-        V1.Info info = new V1.Info("TCP4", "127.0.0.1", clientPort, "127.0.0.1", serverPort);
+        V1.Tag tag = new V1.Tag("127.0.0.1", clientPort);
 
         ContentResponse response = client.newRequest("localhost", serverPort)
-            .tag(info)
+            .tag(tag)
             .send();
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertEquals(String.valueOf(clientPort), response.getContentAsString());
+    }
+
+    @Test
+    public void testClientProxyProtocolV1Unknown() throws Exception
+    {
+        startServer(new EmptyServerHandler());
+        startClient();
+
+        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+            .tag(V1.Tag.UNKNOWN)
+            .send();
+        assertEquals(HttpStatus.OK_200, response.getStatus());
     }
 
     @Test
@@ -128,13 +140,25 @@ public class HttpClientProxyProtocolTest
         int serverPort = connector.getLocalPort();
 
         int clientPort = ThreadLocalRandom.current().nextInt(1024, 65536);
-        V2.Info info = new V2.Info(V2.Info.Command.PROXY, V2.Info.Family.INET4, V2.Info.Protocol.STREAM, "127.0.0.1", clientPort, "127.0.0.1", serverPort);
+        V2.Tag tag = new V2.Tag("127.0.0.1", clientPort);
 
         ContentResponse response = client.newRequest("localhost", serverPort)
-            .tag(info)
+            .tag(tag)
             .send();
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertEquals(String.valueOf(clientPort), response.getContentAsString());
+    }
+
+    @Test
+    public void testClientProxyProtocolV2Local() throws Exception
+    {
+        startServer(new EmptyServerHandler());
+        startClient();
+
+        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+            .tag(V2.Tag.LOCAL)
+            .send();
+        assertEquals(HttpStatus.OK_200, response.getStatus());
     }
 
     @Test
@@ -160,7 +184,7 @@ public class HttpClientProxyProtocolTest
         int serverPort = connector.getLocalPort();
 
         int clientPort = ThreadLocalRandom.current().nextInt(1024, 65536);
-        V2.Info info = new V2.Info(V2.Info.Command.PROXY, V2.Info.Family.INET4, V2.Info.Protocol.STREAM, "127.0.0.1", clientPort, "127.0.0.1", serverPort);
+        V2.Tag tag = new V2.Tag("127.0.0.1", clientPort);
         int typeTLS = 0x20;
         byte[] dataTLS = new byte[1 + 4 + (1 + 2 + tlsVersionBytes.length)];
         dataTLS[0] = 0x01; // CLIENT_SSL
@@ -168,10 +192,10 @@ public class HttpClientProxyProtocolTest
         dataTLS[6] = 0x00; // Length, hi byte
         dataTLS[7] = (byte)tlsVersionBytes.length; // Length, lo byte
         System.arraycopy(tlsVersionBytes, 0, dataTLS, 8, tlsVersionBytes.length);
-        info.put(typeTLS, dataTLS);
+        tag.put(typeTLS, dataTLS);
 
         ContentResponse response = client.newRequest("localhost", serverPort)
-            .tag(info)
+            .tag(tag)
             .send();
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertEquals(String.valueOf(clientPort), response.getContentAsString());
@@ -200,11 +224,11 @@ public class HttpClientProxyProtocolTest
 
         // The proxy receives a request from the client, and it extracts the client address.
         int clientPort = ThreadLocalRandom.current().nextInt(1024, 65536);
-        V1.Info info = new V1.Info("TCP4", "127.0.0.1", clientPort, "127.0.0.1", serverPort);
+        V1.Tag tag = new V1.Tag("127.0.0.1", clientPort);
 
         // The proxy maps the client address, then sends the request.
         ContentResponse response = client.newRequest("localhost", serverPort)
-            .tag(info)
+            .tag(tag)
             .header(HttpHeader.CONNECTION, "close")
             .send();
 
@@ -218,7 +242,7 @@ public class HttpClientProxyProtocolTest
         // The previous connection has been closed.
         // Make another request from the same client address.
         response = client.newRequest("localhost", serverPort)
-            .tag(info)
+            .tag(tag)
             .send();
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertEquals(String.valueOf(clientPort), response.getContentAsString());
@@ -228,9 +252,9 @@ public class HttpClientProxyProtocolTest
 
         // Make another request from a different client address.
         int clientPort2 = clientPort + 1;
-        V1.Info info2 = new V1.Info("TCP4", "127.0.0.1", clientPort2, "127.0.0.1", serverPort);
+        V1.Tag tag2 = new V1.Tag("127.0.0.1", clientPort2);
         response = client.newRequest("localhost", serverPort)
-            .tag(info2)
+            .tag(tag2)
             .send();
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertEquals(String.valueOf(clientPort2), response.getContentAsString());
