@@ -762,21 +762,21 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             }
 
             _written = written;
-        }
 
-        // Should we aggregate?
-        if (aggregate)
-        {
-            acquireBuffer();
-            int filled = BufferUtil.fill(_aggregate, b, off, len);
+            // Should we aggregate?
+            if (aggregate)
+            {
+                acquireBuffer();
+                int filled = BufferUtil.fill(_aggregate, b, off, len);
 
-            // return if we are not complete, not full and filled all the content
-            if (!flush)
-                return;
+                // return if we are not complete, not full and filled all the content
+                if (!flush)
+                    return;
 
-            // adjust offset/length
-            off += filled;
-            len -= filled;
+                // adjust offset/length
+                off += filled;
+                len -= filled;
+            }
         }
 
         if (async)
@@ -952,9 +952,10 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                     throw new IllegalStateException(stateString());
             }
             _written = written;
+
+            acquireBuffer();
+            BufferUtil.append(_aggregate, (byte)b);
         }
-        acquireBuffer();
-        BufferUtil.append(_aggregate, (byte)b);
 
         // Check if all written or full
         if (!flush)
