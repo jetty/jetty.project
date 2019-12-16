@@ -518,7 +518,15 @@ public abstract class WriteFlusher
 
     public void onClose()
     {
-        onFail(new ClosedChannelException());
+        switch (_state.get().getType())
+        {
+            case IDLE:
+            case FAILED:
+                return;
+
+            default:
+                onFail(new ClosedChannelException());
+        }
     }
 
     boolean isFailed()
