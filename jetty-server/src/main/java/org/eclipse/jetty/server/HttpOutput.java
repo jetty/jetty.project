@@ -287,7 +287,6 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     {
         boolean wake = false;
         Callback closedCallback = null;
-        boolean release = false;
         ByteBuffer closeContent = null;
         synchronized (_channelState)
         {
@@ -297,7 +296,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                 _state = State.CLOSED;
                 closedCallback = _closedCallback;
                 _closedCallback = null;
-                release = true;
+                releaseBuffer();
             }
 
             // Did somebody require a close while we were writing?
@@ -341,8 +340,8 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         }
 
         if (LOG.isDebugEnabled())
-            LOG.debug("onWriteComplete({},{}) {} c={} cb={} r={} w={}",
-                last, failure, stateString(), BufferUtil.toDetailString(closeContent), closedCallback, release, wake);
+            LOG.debug("onWriteComplete({},{}) {} c={} cb={} w={}",
+                last, failure, stateString(), BufferUtil.toDetailString(closeContent), closedCallback, wake);
 
         if (failure != null)
             _channel.abort(failure);
@@ -365,8 +364,6 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         }
         finally
         {
-            if (release)
-                releaseBuffer();
             if (wake)
                 _channel.execute(_channel); // TODO review in jetty-10 if execute is needed
         }
