@@ -159,7 +159,7 @@ public class CustomRequestLogTest
 
         _connector.getResponse("GET / HTTP/1.0\n" + authHeader + "\n\n\n");
         log = _entries.poll(5, TimeUnit.SECONDS);
-        assertThat(log, is("- ?username"));
+        assertThat(log, is("- username"));
 
         _connector.getResponse("GET /secure HTTP/1.0\n" + authHeader + "\n\n\n");
         log = _entries.poll(5, TimeUnit.SECONDS);

@@ -356,20 +356,14 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
     protected static String getAuthentication(Request request, boolean checkDeferred)
     {
         Authentication authentication = request.getAuthentication();
+        if (checkDeferred && authentication instanceof Authentication.Deferred)
+            authentication = ((Authentication.Deferred)authentication).authenticate(request);
 
         String name = null;
-
-        boolean deferred = false;
-        if (checkDeferred && authentication instanceof Authentication.Deferred)
-        {
-            authentication = ((Authentication.Deferred)authentication).authenticate(request);
-            deferred = true;
-        }
-
         if (authentication instanceof Authentication.User)
             name = ((Authentication.User)authentication).getUserIdentity().getUserPrincipal().getName();
 
-        return (name == null) ? null : (deferred ? ("?" + name) : name);
+        return name;
     }
 
     /**
