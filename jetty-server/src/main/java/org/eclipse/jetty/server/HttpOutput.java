@@ -62,64 +62,57 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     private static final String LSTRING_FILE = "javax.servlet.LocalStrings";
     private static ResourceBundle lStrings = ResourceBundle.getBundle(LSTRING_FILE);
 
-    /*
-     BLOCKING-------write/flush/close------->BLOCKED
-       |   ^                                   |
-       |   |                                   |
-       |   +-------- onWriteComplete ----------+
-       |
-       |setWriteListener
-       |
-       v
-      READY ------ write/flush/close ------> PENDING
-       ^ ^                                    |  |
-       | |                                    |  |
-       | +----------isReady==true----------+  |  |
-       |                                   |  |  |
-       |onWriteComplete                    |  |  |onWriteComplete
-       |                                   |  |  |
-       | +----------isReady==false------------+  |
-       | |                                 |     |
-       | v                                 |     v
-      UNREADY                              +---ASYNC
+    /**
+     * The output state
+     */
+    enum State
+    {
+        OPEN,     // Open
+        CLOSE,    // Close needed from onWriteCompletion
+        CLOSING,  // Close in progress after close API called
+        CLOSED    // Closed
+    }
 
-
-          OPEN/BLOCKING---close---------------------------+                      CLOSED/BLOCKING
-         /   |    ^                                        \                         ^  ^
-        /    w    |                                         \                       /   |
-       /     |   owc   +------------------------->--owcL-----\---------------------+    |
-      |      v    |   /                         /             V                         |
-     swl  OPEN/BLOCKED----close--->CLOSE/BLOCKED----owc----->CLOSING/BLOCKED--owcL------+
-       \
-        \
-         \
-          V
-       +->OPEN/READY------close--------------------------+
-      /   ^    |                                          \
-     /   /     w                                           \
-    /   /      |       +------------------------->--owcL----\---------------------------+
-   |   /       v      /                         /            V                          |
-   | irt  OPEN/PENDING----close--->CLOSE/PENDING----owc---->CLOSING/PENDING--owcL----+  |
-   |   \  /    |                        |                    ^     |                 |  |
-  owc   \/    owc                      irf                  /     irf                |  |
-   |    /\     |                        |                  /       |                 |  |
-   |   /  V    V                        |                 /        |                 V  V
-   | irf  OPEN/ASYNC------close---------|----------------+         |             CLOSED/ASYNC
-    \  \                                |                          |                 ^  ^
-     \  \                               |                          |                 |  |
-      \  \                              |                          |                 |  |
-       \  v                             v                          v                 |  |
-        +-OPEN/UNREADY----close--->CLOSE/UNREADY----owc----->CLOSING/UNREADY--owcL---+  |
-                      \                         \                                       |
-                       +------------------------->--owcL--------------------------------+
+    /**
+     * The API State which combines with the output State:
+     * <pre>
+              OPEN/BLOCKING---close---------------------------+                      CLOSED/BLOCKING
+             /   |    ^                                        \                         ^  ^
+            /    w    |                                         \                       /   |
+           /     |   owc   +--owcL------------------->--owcL-----\---------------------+    |
+          |      v    |   /                         /             V                         |
+         swl  OPEN/BLOCKED----close--->CLOSE/BLOCKED----owc----->CLOSING/BLOCKED--owcL------+
+           \
+            \
+             \
+              V
+          +-->OPEN/READY------close--------------------------+
+         /    ^    |                                          \
+        /    /     w                                           \
+       |    /      |       +--owcL------------------->--owcL----\---------------------------+
+       |   /       v      /                         /            V                          |
+       | irt  OPEN/PENDING----close--->CLOSE/PENDING----owc---->CLOSING/PENDING--owcL----+  |
+       |   \  /    |                        |                    ^     |                 |  |
+      owc   \/    owc                      irf                  /     irf                |  |
+       |    /\     |                        |                  /       |                 |  |
+       |   /  \    V                        |                 /        |                 V  V
+       | irf  OPEN/ASYNC------close---------|----------------+         |             CLOSED/ASYNC
+       |   \                                |                          |                 ^  ^
+        \   \                               |                          |                 |  |
+         \   \                              |                          |                 |  |
+          \   v                             v                          v                 |  |
+           +--OPEN/UNREADY----close--->CLOSE/UNREADY----owc----->CLOSING/UNREADY--owcL---+  |
+                          \                         \                                       |
+                           +--owcL------------------->--owcL--------------------------------+
 
       swl = setWriteListener
       w = write
       owc = onWriteComplete(false,null)
       owcL = onWriteComplete(true,null)
-      isf = isReady()==false
-      ist = osReady()==true
-      close = close or complete(Callback)`
+      irf = isReady()==false
+      irt = osReady()==true
+      close = close or complete(Callback)
+     </pre>
      */
     enum ApiState
     {
@@ -129,14 +122,6 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         READY,    // isReady() has returned true
         PENDING,  // write operating in progress
         UNREADY,  // write operating in progress, isReady has returned false
-    }
-
-    enum State
-    {
-        OPEN,     // Open
-        CLOSE,    // Close needed from onWriteCompletion
-        CLOSING,  // Close in progress after close API called
-        CLOSED    // Closed
     }
 
     /**
@@ -298,7 +283,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         _interceptor.write(content, last, callback);
     }
 
-    void onWriteComplete(boolean last, Throwable failure)
+    private void onWriteComplete(boolean last, Throwable failure)
     {
         boolean wake = false;
         Callback closedCallback = null;
@@ -1848,12 +1833,12 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     {
         final Callback _callback;
 
-        public WriteCompleteCB()
+        WriteCompleteCB()
         {
             this(null);
         }
 
-        public WriteCompleteCB(Callback callback)
+        WriteCompleteCB(Callback callback)
         {
             _callback = callback;
         }
