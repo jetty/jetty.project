@@ -23,6 +23,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import javax.websocket.ClientEndpoint;
 import javax.websocket.CloseReason;
+import javax.websocket.EndpointConfig;
 import javax.websocket.OnClose;
 import javax.websocket.OnError;
 import javax.websocket.OnMessage;
@@ -35,23 +36,26 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 @ServerEndpoint("/")
-@ClientEndpoint
+@ClientEndpoint()
 public class EventSocket
 {
     private static final Logger LOG = Log.getLogger(EventSocket.class);
 
     public Session session;
+    public EndpointConfig endpointConfig;
 
     public BlockingQueue<String> messageQueue = new BlockingArrayQueue<>();
     public volatile Throwable error = null;
+    public volatile CloseReason closeReason = null;
 
     public CountDownLatch openLatch = new CountDownLatch(1);
     public CountDownLatch closeLatch = new CountDownLatch(1);
 
     @OnOpen
-    public void onOpen(Session session)
+    public void onOpen(Session session, EndpointConfig endpointConfig)
     {
         this.session = session;
+        this.endpointConfig = endpointConfig;
         if (LOG.isDebugEnabled())
             LOG.debug("{}  onOpen(): {}", toString(), session);
         openLatch.countDown();
@@ -70,6 +74,8 @@ public class EventSocket
     {
         if (LOG.isDebugEnabled())
             LOG.debug("{}  onClose(): {}", toString(), reason);
+
+        closeReason = reason;
         closeLatch.countDown();
     }
 

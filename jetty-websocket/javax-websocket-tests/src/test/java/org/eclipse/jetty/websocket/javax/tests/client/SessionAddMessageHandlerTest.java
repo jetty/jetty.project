@@ -30,7 +30,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.OpCode;
-import org.eclipse.jetty.websocket.javax.client.EmptyClientEndpointConfig;
+import org.eclipse.jetty.websocket.javax.client.BasicClientEndpointConfig;
 import org.eclipse.jetty.websocket.javax.client.JavaxWebSocketClientContainer;
 import org.eclipse.jetty.websocket.javax.client.JavaxWebSocketClientFrameHandlerFactory;
 import org.eclipse.jetty.websocket.javax.common.ConfiguredEndpoint;
@@ -71,7 +71,7 @@ public class SessionAddMessageHandlerTest
         // Container
         container = new JavaxWebSocketClientContainer();
         container.start();
-        ClientEndpointConfig endpointConfig = new EmptyClientEndpointConfig();
+        ClientEndpointConfig endpointConfig = new BasicClientEndpointConfig();
         ConfiguredEndpoint ei = new ConfiguredEndpoint(new DummyEndpoint(), endpointConfig);
 
         UpgradeRequest handshakeRequest = new UpgradeRequestAdapter();

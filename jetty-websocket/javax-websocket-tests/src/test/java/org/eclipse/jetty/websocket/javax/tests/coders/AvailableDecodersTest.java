@@ -28,7 +28,7 @@ import javax.websocket.Decoder;
 import javax.websocket.EndpointConfig;
 
 import org.eclipse.jetty.toolchain.test.Hex;
-import org.eclipse.jetty.websocket.javax.common.BasicEndpointConfig;
+import org.eclipse.jetty.websocket.javax.client.BasicClientEndpointConfig;
 import org.eclipse.jetty.websocket.javax.common.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.javax.common.decoders.AvailableDecoders;
 import org.eclipse.jetty.websocket.javax.common.decoders.IntegerDecoder;
@@ -49,7 +49,7 @@ public class AvailableDecodersTest
     @BeforeAll
     public static void initConfig()
     {
-        testConfig = new BasicEndpointConfig();
+        testConfig = new BasicClientEndpointConfig();
     }
 
     private AvailableDecoders decoders = new AvailableDecoders(testConfig);

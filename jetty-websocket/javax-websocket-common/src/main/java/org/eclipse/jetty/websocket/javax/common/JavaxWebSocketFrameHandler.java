@@ -28,11 +28,13 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import javax.websocket.ClientEndpointConfig;
 import javax.websocket.CloseReason;
 import javax.websocket.Decoder;
 import javax.websocket.EndpointConfig;
 import javax.websocket.MessageHandler;
 import javax.websocket.PongMessage;
+import javax.websocket.server.ServerEndpointConfig;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -97,7 +99,7 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
     private UpgradeRequest upgradeRequest;
     private UpgradeResponse upgradeResponse;
 
-    private final EndpointConfig endpointConfig;
+    private EndpointConfig endpointConfig;
     private MessageSink textSink;
     private MessageSink binarySink;
     private MessageSink activeMessageSink;
@@ -155,9 +157,12 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
     @Override
     public void onOpen(CoreSession coreSession, Callback callback)
     {
+        this.coreSession = coreSession;
+
         try
         {
-            this.coreSession = coreSession;
+            // Rewire EndpointConfig to call CoreSession setters if Jetty specific properties are set.
+            endpointConfig = getWrappedEndpointConfig();
             session = new JavaxWebSocketSession(container, coreSession, this, endpointConfig);
 
             openHandle = InvokerUtils.bindTo(openHandle, session, endpointConfig);
@@ -204,6 +209,48 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
             Exception wse = new WebSocketException(endpointInstance.getClass().getSimpleName() + " OPEN method error: " + cause.getMessage(), cause);
             callback.failed(wse);
         }
+    }
+
+    private EndpointConfig getWrappedEndpointConfig()
+    {
+        final Map<String, Object> listenerMap = new PutListenerMap(this.endpointConfig.getUserProperties(), this::configListener);
+
+        EndpointConfig wrappedConfig;
+        if (endpointConfig instanceof ServerEndpointConfig)
+        {
+            wrappedConfig = new ServerEndpointConfigWrapper((ServerEndpointConfig)endpointConfig)
+            {
+                @Override
+                public Map<String, Object> getUserProperties()
+                {
+                    return listenerMap;
+                }
+            };
+        }
+        else if (endpointConfig instanceof ClientEndpointConfig)
+        {
+            wrappedConfig = new ClientEndpointConfigWrapper((ClientEndpointConfig)endpointConfig)
+            {
+                @Override
+                public Map<String, Object> getUserProperties()
+                {
+                    return listenerMap;
+                }
+            };
+        }
+        else
+        {
+            wrappedConfig = new EndpointConfigWrapper(endpointConfig)
+            {
+                @Override
+                public Map<String, Object> getUserProperties()
+                {
+                    return listenerMap;
+                }
+            };
+        }
+
+        return wrappedConfig;
     }
 
     @Override
@@ -622,5 +669,30 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
     public UpgradeResponse getUpgradeResponse()
     {
         return upgradeResponse;
+    }
+
+    private void configListener(String key, Object value)
+    {
+        if (!key.startsWith("org.eclipse.jetty.websocket."))
+            return;
+
+        switch (key)
+        {
+            case "org.eclipse.jetty.websocket.autoFragment":
+                coreSession.setAutoFragment((Boolean)value);
+                break;
+
+            case "org.eclipse.jetty.websocket.maxFrameSize":
+                coreSession.setMaxFrameSize((Long)value);
+                break;
+
+            case "org.eclipse.jetty.websocket.outputBufferSize":
+                coreSession.setOutputBufferSize((Integer)value);
+                break;
+
+            case "org.eclipse.jetty.websocket.inputBufferSize":
+                coreSession.setInputBufferSize((Integer)value);
+                break;
+        }
     }
 }

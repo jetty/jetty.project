@@ -202,38 +202,28 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
     @Override
     public Session connectToServer(final Class<? extends Endpoint> endpointClass, final ClientEndpointConfig config, URI path) throws IOException
     {
-        ClientEndpointConfig clientEndpointConfig = config;
-        if (clientEndpointConfig == null)
-        {
-            clientEndpointConfig = new EmptyClientEndpointConfig();
-        }
-        ConfiguredEndpoint instance = newConfiguredEndpoint(endpointClass, clientEndpointConfig);
+        ConfiguredEndpoint instance = newConfiguredEndpoint(endpointClass, config);
         return connect(instance, path);
     }
 
     @Override
     public Session connectToServer(final Class<?> annotatedEndpointClass, final URI path) throws IOException
     {
-        ConfiguredEndpoint instance = newConfiguredEndpoint(annotatedEndpointClass, new EmptyClientEndpointConfig());
+        ConfiguredEndpoint instance = newConfiguredEndpoint(annotatedEndpointClass, new BasicClientEndpointConfig());
         return connect(instance, path);
     }
 
     @Override
     public Session connectToServer(final Endpoint endpoint, final ClientEndpointConfig config, final URI path) throws DeploymentException, IOException
     {
-        ClientEndpointConfig clientEndpointConfig = config;
-        if (clientEndpointConfig == null)
-        {
-            clientEndpointConfig = new EmptyClientEndpointConfig();
-        }
-        ConfiguredEndpoint instance = newConfiguredEndpoint(endpoint, clientEndpointConfig);
+        ConfiguredEndpoint instance = newConfiguredEndpoint(endpoint, config);
         return connect(instance, path);
     }
 
     @Override
     public Session connectToServer(Object endpoint, URI path) throws DeploymentException, IOException
     {
-        ConfiguredEndpoint instance = newConfiguredEndpoint(endpoint, new EmptyClientEndpointConfig());
+        ConfiguredEndpoint instance = newConfiguredEndpoint(endpoint, new BasicClientEndpointConfig());
         return connect(instance, path);
     }
 
@@ -261,23 +251,11 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
         }
     }
 
-    public ConfiguredEndpoint newConfiguredEndpoint(Object endpoint, EndpointConfig providedConfig) throws DeploymentException
+    private ConfiguredEndpoint newConfiguredEndpoint(Object endpoint, EndpointConfig providedConfig) throws DeploymentException
     {
-        EndpointConfig config = providedConfig;
-
-        if (config == null)
-        {
-            config = newEmptyConfig(endpoint);
-        }
-
-        config = readAnnotatedConfig(endpoint, config);
-
+        EndpointConfig config = readAnnotatedConfig(endpoint, providedConfig != null
+            ? providedConfig : new BasicClientEndpointConfig());
         return new ConfiguredEndpoint(endpoint, config);
-    }
-
-    protected EndpointConfig newEmptyConfig(Object endpoint)
-    {
-        return new EmptyClientEndpointConfig();
     }
 
     protected EndpointConfig readAnnotatedConfig(Object endpoint, EndpointConfig config) throws DeploymentException

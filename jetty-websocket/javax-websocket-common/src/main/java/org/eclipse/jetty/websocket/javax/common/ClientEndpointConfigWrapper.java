@@ -18,45 +18,44 @@
 
 package org.eclipse.jetty.websocket.javax.common;
 
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import javax.websocket.Decoder;
-import javax.websocket.Encoder;
-import javax.websocket.EndpointConfig;
+import javax.websocket.ClientEndpointConfig;
+import javax.websocket.Extension;
 
-/**
- * Basic EndpointConfig (used when no EndpointConfig is provided or discovered)
- */
-public class BasicEndpointConfig implements EndpointConfig
+public class ClientEndpointConfigWrapper extends EndpointConfigWrapper implements ClientEndpointConfig
 {
-    private List<Class<? extends Decoder>> decoders;
-    private List<Class<? extends Encoder>> encoders;
-    private Map<String, Object> userProperties;
+    private ClientEndpointConfig _endpointConfig;
 
-    public BasicEndpointConfig()
+    public ClientEndpointConfigWrapper()
     {
-        decoders = Collections.emptyList();
-        encoders = Collections.emptyList();
-        userProperties = new HashMap<>();
+    }
+
+    public ClientEndpointConfigWrapper(ClientEndpointConfig endpointConfig)
+    {
+        init(endpointConfig);
+    }
+
+    public void init(ClientEndpointConfig endpointConfig)
+    {
+        _endpointConfig = endpointConfig;
+        super.init(endpointConfig);
     }
 
     @Override
-    public List<Class<? extends Decoder>> getDecoders()
+    public List<String> getPreferredSubprotocols()
     {
-        return decoders;
+        return _endpointConfig.getPreferredSubprotocols();
     }
 
     @Override
-    public List<Class<? extends Encoder>> getEncoders()
+    public List<Extension> getExtensions()
     {
-        return encoders;
+        return _endpointConfig.getExtensions();
     }
 
     @Override
-    public Map<String, Object> getUserProperties()
+    public Configurator getConfigurator()
     {
-        return userProperties;
+        return _endpointConfig.getConfigurator();
     }
 }
