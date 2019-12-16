@@ -502,21 +502,12 @@ public class HttpRequest implements Request
     @Override
     public Request onResponseContent(final Response.ContentListener listener)
     {
-        this.responseListeners.add(new Response.DemandedContentListener()
+        this.responseListeners.add(new Response.ContentListener()
         {
             @Override
-            public void onContent(Response response, LongConsumer demand, ByteBuffer content, Callback callback)
+            public void onContent(Response response, ByteBuffer content)
             {
-                try
-                {
-                    listener.onContent(response, content);
-                    callback.succeeded();
-                    demand.accept(1);
-                }
-                catch (Throwable x)
-                {
-                    callback.failed(x);
-                }
+                listener.onContent(response, content);
             }
         });
         return this;
@@ -525,16 +516,12 @@ public class HttpRequest implements Request
     @Override
     public Request onResponseContentAsync(final Response.AsyncContentListener listener)
     {
-        this.responseListeners.add(new Response.DemandedContentListener()
+        this.responseListeners.add(new Response.AsyncContentListener()
         {
             @Override
-            public void onContent(Response response, LongConsumer demand, ByteBuffer content, Callback callback)
+            public void onContent(Response response, ByteBuffer content, Callback callback)
             {
-                listener.onContent(response, content, Callback.from(() ->
-                {
-                    callback.succeeded();
-                    demand.accept(1);
-                }, callback::failed));
+                listener.onContent(response, content, callback);
             }
         });
         return this;

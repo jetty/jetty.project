@@ -138,7 +138,7 @@ public interface Response
      *
      * @see AsyncContentListener
      */
-    interface ContentListener extends ResponseListener
+    interface ContentListener extends AsyncContentListener
     {
         /**
          * Callback method invoked when the response content has been received, parsed and there is demand.
@@ -149,6 +149,20 @@ public interface Response
          * @param content the content bytes received
          */
         void onContent(Response response, ByteBuffer content);
+
+        @Override
+        default void onContent(Response response, ByteBuffer content, Callback callback)
+        {
+            try
+            {
+                onContent(response, content);
+                callback.succeeded();
+            }
+            catch (Throwable x)
+            {
+                callback.failed(x);
+            }
+        }
     }
 
     /**
@@ -156,7 +170,7 @@ public interface Response
      *
      * @see DemandedContentListener
      */
-    interface AsyncContentListener extends ResponseListener
+    interface AsyncContentListener extends DemandedContentListener
     {
         /**
          * Callback method invoked when the response content has been received, parsed and there is demand.
@@ -168,6 +182,16 @@ public interface Response
          * @param callback the callback to call when the content is consumed and to demand more content
          */
         void onContent(Response response, ByteBuffer content, Callback callback);
+
+        @Override
+        default void onContent(Response response, LongConsumer demand, ByteBuffer content, Callback callback)
+        {
+            onContent(response, content, Callback.from(() ->
+            {
+                callback.succeeded();
+                demand.accept(1);
+            }, callback::failed));
+        }
     }
 
     /**
@@ -257,7 +281,7 @@ public interface Response
     /**
      * Listener for all response events.
      */
-    interface Listener extends BeginListener, HeaderListener, HeadersListener, ContentListener, AsyncContentListener, DemandedContentListener, SuccessListener, FailureListener, CompleteListener
+    interface Listener extends BeginListener, HeaderListener, HeadersListener, ContentListener, SuccessListener, FailureListener, CompleteListener
     {
         @Override
         public default void onBegin(Response response)
@@ -276,38 +300,8 @@ public interface Response
         }
 
         @Override
-        default void onBeforeContent(Response response, LongConsumer demand)
-        {
-            demand.accept(1);
-        }
-
-        @Override
         public default void onContent(Response response, ByteBuffer content)
         {
-        }
-
-        @Override
-        public default void onContent(Response response, ByteBuffer content, Callback callback)
-        {
-            try
-            {
-                onContent(response, content);
-                callback.succeeded();
-            }
-            catch (Throwable x)
-            {
-                callback.failed(x);
-            }
-        }
-
-        @Override
-        public default void onContent(Response response, LongConsumer demand, ByteBuffer content, Callback callback)
-        {
-            onContent(response, content, Callback.from(() ->
-            {
-                callback.succeeded();
-                demand.accept(1);
-            }, callback::failed));
         }
 
         @Override
