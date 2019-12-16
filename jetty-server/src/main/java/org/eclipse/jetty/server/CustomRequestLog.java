@@ -235,7 +235,7 @@ import static java.lang.invoke.MethodType.methodType;
  * <tr>
  * <td valign="top">%{d}u</td>
  * <td>
- * Remote user if the request was authenticated. May be bogus if return status (%s) is 401 (unauthorized).
+ * Remote user if the request was authenticated with servlet authentication. May be bogus if return status (%s) is 401 (unauthorized).
  * Optional parameter d, with this parameter deferred authentication will also be checked,
  * this is equivalent to {@link HttpServletRequest#getRemoteUser()}.
  * </td>
