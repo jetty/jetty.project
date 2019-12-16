@@ -159,7 +159,6 @@ public class JavaxWebSocketServerContainer extends JavaxWebSocketClientContainer
         return frameHandlerFactory;
     }
 
-    @Override
     public void addEndpoint(Class<?> endpointClass) throws DeploymentException
     {
         if (endpointClass == null)

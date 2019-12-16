@@ -27,7 +27,7 @@ import javax.websocket.ClientEndpointConfig;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.javax.client.EmptyClientEndpointConfig;
+import org.eclipse.jetty.websocket.javax.client.BasicClientEndpointConfig;
 import org.eclipse.jetty.websocket.javax.client.JavaxWebSocketClientContainer;
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketFrameHandler;
 import org.eclipse.jetty.websocket.javax.common.UpgradeRequest;
@@ -96,7 +96,7 @@ public class OnCloseTest
     {
         WSEventTracker endpoint = (WSEventTracker)testcase.closeClass.getConstructor().newInstance();
 
-        ClientEndpointConfig config = new EmptyClientEndpointConfig();
+        ClientEndpointConfig config = new BasicClientEndpointConfig();
         // TODO: use ConfiguredEndpoint here?
 
         JavaxWebSocketClientContainer container = new JavaxWebSocketClientContainer();

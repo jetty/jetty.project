@@ -76,8 +76,7 @@ public class JavaxWebSocketSession implements javax.websocket.Session
         this.container = container;
         this.coreSession = coreSession;
         this.frameHandler = frameHandler;
-
-        this.config = endpointConfig == null ? new BasicEndpointConfig() : endpointConfig;
+        this.config = Objects.requireNonNull(endpointConfig);
 
         this.availableDecoders = new AvailableDecoders(this.config);
         this.availableEncoders = new AvailableEncoders(this.config);
@@ -92,7 +91,12 @@ public class JavaxWebSocketSession implements javax.websocket.Session
             this.pathParameters = Collections.emptyMap();
         }
 
-        this.userProperties = new HashMap<>(this.config.getUserProperties());
+        this.userProperties = this.config.getUserProperties();
+    }
+
+    public FrameHandler.CoreSession getCoreSession()
+    {
+        return coreSession;
     }
 
     /**

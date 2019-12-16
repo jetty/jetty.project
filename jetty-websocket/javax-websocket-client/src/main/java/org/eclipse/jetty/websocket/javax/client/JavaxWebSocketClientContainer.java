@@ -215,7 +215,7 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
     {
         ClientEndpointConfig config = providedConfig;
         if (config == null)
-            config = new EmptyClientEndpointConfig();
+            config = new BasicClientEndpointConfig();
 
         ConfiguredEndpoint instance = new ConfiguredEndpoint(endpoint, config);
         return connect(instance, path);

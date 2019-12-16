@@ -19,6 +19,7 @@
 package org.eclipse.jetty.websocket.javax.common;
 
 import javax.websocket.ClientEndpoint;
+import javax.websocket.ClientEndpointConfig;
 import javax.websocket.Endpoint;
 import javax.websocket.EndpointConfig;
 
@@ -29,6 +30,12 @@ public class DummyFrameHandlerFactory extends JavaxWebSocketFrameHandlerFactory
     public DummyFrameHandlerFactory(JavaxWebSocketContainer container)
     {
         super(container, InvokerUtils.PARAM_IDENTITY);
+    }
+
+    @Override
+    public EndpointConfig newDefaultEndpointConfig(Class<?> endpointClass, String path)
+    {
+        return ClientEndpointConfig.Builder.create().build();
     }
 
     @Override

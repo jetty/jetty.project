@@ -30,7 +30,7 @@ import javax.websocket.Encoder;
 import javax.websocket.EndpointConfig;
 
 import org.eclipse.jetty.toolchain.test.Hex;
-import org.eclipse.jetty.websocket.javax.client.EmptyClientEndpointConfig;
+import org.eclipse.jetty.websocket.javax.client.BasicClientEndpointConfig;
 import org.eclipse.jetty.websocket.javax.common.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.javax.common.encoders.AvailableEncoders;
 import org.eclipse.jetty.websocket.javax.common.encoders.IntegerEncoder;
@@ -50,7 +50,7 @@ public class AvailableEncodersTest
     @BeforeAll
     public static void initConfig()
     {
-        testConfig = new EmptyClientEndpointConfig();
+        testConfig = new BasicClientEndpointConfig();
     }
 
     private AvailableEncoders encoders = new AvailableEncoders(testConfig);

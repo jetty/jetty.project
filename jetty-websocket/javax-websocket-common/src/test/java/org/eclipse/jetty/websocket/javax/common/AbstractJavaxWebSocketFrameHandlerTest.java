@@ -20,6 +20,7 @@ package org.eclipse.jetty.websocket.javax.common;
 
 import java.util.HashMap;
 import java.util.Map;
+import javax.websocket.ClientEndpointConfig;
 import javax.websocket.EndpointConfig;
 
 import org.eclipse.jetty.websocket.core.FrameHandler;
@@ -53,7 +54,7 @@ public abstract class AbstractJavaxWebSocketFrameHandlerTest
 
     public AbstractJavaxWebSocketFrameHandlerTest()
     {
-        endpointConfig = new BasicEndpointConfig();
+        endpointConfig = ClientEndpointConfig.Builder.create().build();
         encoders = new AvailableEncoders(endpointConfig);
         decoders = new AvailableDecoders(endpointConfig);
         uriParams = new HashMap<>();
@@ -62,12 +63,8 @@ public abstract class AbstractJavaxWebSocketFrameHandlerTest
     protected JavaxWebSocketFrameHandler newJavaxFrameHandler(Object websocket)
     {
         JavaxWebSocketFrameHandlerFactory factory = container.getFrameHandlerFactory();
-        BasicEndpointConfig config = new BasicEndpointConfig();
-        ConfiguredEndpoint endpoint = new ConfiguredEndpoint(websocket, config);
+        ConfiguredEndpoint endpoint = new ConfiguredEndpoint(websocket, endpointConfig);
         UpgradeRequest upgradeRequest = new UpgradeRequestAdapter();
-
-        JavaxWebSocketFrameHandler localEndpoint = factory.newJavaxWebSocketFrameHandler(endpoint, upgradeRequest);
-
-        return localEndpoint;
+        return factory.newJavaxWebSocketFrameHandler(endpoint, upgradeRequest);
     }
 }
