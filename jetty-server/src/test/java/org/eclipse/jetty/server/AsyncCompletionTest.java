@@ -49,6 +49,7 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ManagedSelector;
 import org.eclipse.jetty.io.SocketChannelEndPoint;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.hamcrest.Matchers;
@@ -186,6 +187,8 @@ public class AsyncCompletionTest extends HttpServerTestFixture
         tests.add(new Object[]{new BlockingWriteCompleteHandler(true, false, true), true, 200, __data});
         tests.add(new Object[]{new BlockingWriteCompleteHandler(true, true, false), true, 200, __data});
         tests.add(new Object[]{new BlockingWriteCompleteHandler(true, true, true), true, 200, __data});
+        tests.add(new Object[]{new SendContentHandler(false), false, 200, __data});
+        tests.add(new Object[]{new SendContentHandler(true), true, 200, __data});
         return tests.stream().map(Arguments::of);
     }
 
@@ -443,6 +446,44 @@ public class AsyncCompletionTest extends HttpServerTestFixture
         public String toString()
         {
             return String.format("BWCH@%x{cl=%b,c=%b,dc=%b}", hashCode(), _contentLength, _close, _dispatchComplete);
+        }
+    }
+
+    private static class SendContentHandler extends AbstractHandler
+    {
+        final boolean _blocking;
+
+        private SendContentHandler(boolean blocking)
+        {
+            _blocking = blocking;
+        }
+
+        @Override
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        {
+            // Start async
+            // Do a blocking write in another thread
+            // call complete while the write is still blocking
+            baseRequest.setHandled(true);
+            AsyncContext context = request.startAsync();
+            ServletOutputStream out = response.getOutputStream();
+            response.setContentType("text/plain");
+
+            if (_blocking)
+            {
+                ((HttpOutput)out).sendContent(BufferUtil.toBuffer(__data));
+                context.complete();
+            }
+            else
+            {
+                ((HttpOutput)out).sendContent(BufferUtil.toBuffer(__data), Callback.from(context::complete));
+            }
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format("SCH@%x{b=%b}", hashCode(), _blocking);
         }
     }
 }

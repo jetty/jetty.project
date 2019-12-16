@@ -76,32 +76,32 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     /**
      * The API State which combines with the output State:
      * <pre>
-              OPEN/BLOCKING---close---------------------------+                      CLOSED/BLOCKING
+              OPEN/BLOCKING---last----------------------------+                      CLOSED/BLOCKING
              /   |    ^                                        \                         ^  ^
             /    w    |                                         \                       /   |
            /     |   owc   +--owcL------------------->--owcL-----\---------------------+    |
           |      v    |   /                         /             V                         |
-         swl  OPEN/BLOCKED----close--->CLOSE/BLOCKED----owc----->CLOSING/BLOCKED--owcL------+
+         swl  OPEN/BLOCKED----last---->CLOSE/BLOCKED----owc----->CLOSING/BLOCKED--owcL------+
+          |
            \
             \
-             \
-              V
-          +-->OPEN/READY------close--------------------------+
+             V
+          +-->OPEN/READY------last---------------------------+
          /    ^    |                                          \
         /    /     w                                           \
        |    /      |       +--owcL------------------->--owcL----\---------------------------+
        |   /       v      /                         /            V                          |
-       | irt  OPEN/PENDING----close--->CLOSE/PENDING----owc---->CLOSING/PENDING--owcL----+  |
+       | irt  OPEN/PENDING----last---->CLOSE/PENDING----owc---->CLOSING/PENDING--owcL----+  |
        |   \  /    |                        |                    ^     |                 |  |
       owc   \/    owc                      irf                  /     irf                |  |
        |    /\     |                        |                  /       |                 |  |
        |   /  \    V                        |                 /        |                 V  V
-       | irf  OPEN/ASYNC------close---------|----------------+         |             CLOSED/ASYNC
+       | irf  OPEN/ASYNC------last----------|----------------+         |             CLOSED/ASYNC
        |   \                                |                          |                 ^  ^
         \   \                               |                          |                 |  |
          \   \                              |                          |                 |  |
           \   v                             v                          v                 |  |
-           +--OPEN/UNREADY----close--->CLOSE/UNREADY----owc----->CLOSING/UNREADY--owcL---+  |
+           +--OPEN/UNREADY----last---->CLOSE/UNREADY----owc----->CLOSING/UNREADY--owcL---+  |
                           \                         \                                       |
                            +--owcL------------------->--owcL--------------------------------+
 
@@ -111,7 +111,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
       owcL = onWriteComplete(true,null)
       irf = isReady()==false
       irt = osReady()==true
-      close = close or complete(Callback)
+      last = close() or complete(Callback) or write of known last content
      </pre>
      */
     enum ApiState
@@ -291,11 +291,8 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         ByteBuffer closeContent = null;
         synchronized (_channelState)
         {
-            // Transition to CLOSED state if
-            //  + we are in state CLOSING because the closed API was called
-            //  + we were the last write
-            //  + we have failed
-            if (_state == State.CLOSING || last || failure != null)
+            // Transition to CLOSED state if we were the last write or we have failed
+            if (last || failure != null)
             {
                 _state = State.CLOSED;
                 closedCallback = _closedCallback;
@@ -511,7 +508,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                             break;
 
                         default:
-                            // async close with no callbacl, so nothing to do
+                            // async close with no callback, so nothing to do
                             break;
                     }
                     break;
@@ -738,6 +735,9 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             aggregate = len <= _commitSize && (!last || BufferUtil.hasContent(_aggregate) && len <= space);
             flush = last || !aggregate || len >= space;
 
+            if (last && _state == State.OPEN)
+                _state = State.CLOSING;
+
             switch (_apiState)
             {
                 case BLOCKING:
@@ -850,6 +850,10 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             long written = _written + len;
             last = _channel.getResponse().isAllContentWritten(_written);
             flush = last || len > 0 || BufferUtil.hasContent(_aggregate);
+
+            if (last && _state == State.OPEN)
+                _state = State.CLOSING;
+
             switch (_apiState)
             {
                 case BLOCKING:
@@ -922,6 +926,9 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             int space = _aggregate == null ? getBufferSize() : BufferUtil.space(_aggregate);
             last = _channel.getResponse().isAllContentWritten(written);
             flush = last || space == 1;
+
+            if (last && _state == State.OPEN)
+                _state = State.CLOSING;
 
             switch (_apiState)
             {
@@ -1231,6 +1238,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                     return false;
 
                 default:
+                    _state = State.CLOSING;
                     break;
             }
 
