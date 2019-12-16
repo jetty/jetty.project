@@ -1032,7 +1032,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             }
         });
 
-        for (int pipeline = 1; pipeline < 64; pipeline++)
+        int pipeline = 64;
         {
             try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
             {
