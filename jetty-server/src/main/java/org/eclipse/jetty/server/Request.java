@@ -2310,7 +2310,7 @@ public class Request implements HttpServletRequest
         return getParts(null);
     }
 
-    private synchronized Collection<Part> getParts(MultiMap<String> params) throws IOException
+    private Collection<Part> getParts(MultiMap<String> params) throws IOException
     {
         if (_multiParts == null)
             _multiParts = (MultiParts)getAttribute(MULTIPARTS);

@@ -25,6 +25,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Base64;
 import java.util.Collection;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import javax.servlet.MultipartConfigElement;
 import javax.servlet.ReadListener;
@@ -507,6 +509,79 @@ public class MultiPartFormInputStreamTest
         assertThat(stuff.exists(), is(true));
         part.cleanUp();
         assertThat(stuff.exists(), is(false));  //tmp file was removed after cleanup
+    }
+
+    @Test
+    public void testAsyncCleanUp() throws Exception
+    {
+        final CountDownLatch reading = new CountDownLatch(1);
+        final InputStream wrappedStream = new ByteArrayInputStream(createMultipartRequestString("myFile").getBytes());
+
+        // This stream won't allow the parser to exit because it will never return anything less than 0.
+        InputStream slowStream = new InputStream() {
+            @Override
+            public int read(byte[] b, int off, int len) throws IOException
+            {
+                return Math.max(0, super.read(b, off, len));
+            }
+
+            @Override
+            public int read() throws IOException
+            {
+                reading.countDown();
+                return wrappedStream.read();
+            }
+        };
+
+        MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 1024, 50);
+        MultiPartFormInputStream mpis = new MultiPartFormInputStream(slowStream, _contentType, config, _tmpDir);
+
+        // In another thread delete the parts when we detect that we have started parsing.
+        CompletableFuture<Throwable> cleanupError = new CompletableFuture<>();
+        new Thread(() ->
+        {
+            try
+            {
+                assertTrue(reading.await(5, TimeUnit.SECONDS));
+                mpis.deleteParts();
+                cleanupError.complete(null);
+            }
+            catch (Throwable t)
+            {
+                cleanupError.complete(t);
+            }
+        }).start();
+
+        // The call to getParts should throw an error.
+        Throwable error = assertThrows(IllegalStateException.class, mpis::getParts);
+        assertThat(error.getMessage(), is("Unexpected state ERROR"));
+
+        // There was no error with the cleanup.
+        assertNull(cleanupError.get());
+
+        // No tmp files are remaining.
+        String[] fileList = _tmpDir.list();
+        assertNotNull(fileList);
+        assertThat(fileList.length, is(0));
+    }
+
+    @Test
+    public void testParseAfterCleanUp() throws Exception
+    {
+        final InputStream input = new ByteArrayInputStream(createMultipartRequestString("myFile").getBytes());
+        MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 1024, 50);
+        MultiPartFormInputStream mpis = new MultiPartFormInputStream(input, _contentType, config, _tmpDir);
+
+        mpis.deleteParts();
+
+        // The call to getParts should throw because we have already cleaned up the parts.
+        Throwable error = assertThrows(IllegalStateException.class, mpis::getParts);
+        assertThat(error.getMessage(), is("Could not start parsing COMPLETED"));
+
+        // No tmp files are remaining.
+        String[] fileList = _tmpDir.list();
+        assertNotNull(fileList);
+        assertThat(fileList.length, is(0));
     }
 
     @Test

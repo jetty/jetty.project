@@ -35,6 +35,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import javax.servlet.MultipartConfigElement;
 import javax.servlet.ServletInputStream;
@@ -59,7 +60,16 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class MultiPartFormInputStream
 {
+    private enum State
+    {
+        UNPARSED,
+        PARSING,
+        ERROR,
+        COMPLETED
+    }
+
     private static final Logger LOG = Log.getLogger(MultiPartFormInputStream.class);
+    private final AtomicReference<State> state = new AtomicReference<>(State.UNPARSED);
     private final MultiMap<Part> _parts = new MultiMap<>();
     private final InputStream _in;
     private final MultipartConfigElement _config;
@@ -356,22 +366,19 @@ public class MultiPartFormInputStream
     @Deprecated
     public boolean isEmpty()
     {
-        synchronized (this)
-        {
-            if (!_parsed)
-                throw new IllegalStateException();
+        if (!_parsed)
+            throw new IllegalStateException();
 
-            if (_parts.isEmpty())
-                return true;
-
-            for (List<Part> partList : _parts.values())
-            {
-                if (!partList.isEmpty())
-                    return false;
-            }
-
+        if (_parts.isEmpty())
             return true;
+
+        for (List<Part> partList : _parts.values())
+        {
+            if (!partList.isEmpty())
+                return false;
         }
+
+        return true;
     }
 
     /**
@@ -382,20 +389,17 @@ public class MultiPartFormInputStream
     @Deprecated
     public Collection<Part> getParsedParts()
     {
-        synchronized (this)
-        {
-            if (_parts.isEmpty())
-                return Collections.emptyList();
+        if (_parts.isEmpty())
+            return Collections.emptyList();
 
-            Collection<List<Part>> values = _parts.values();
-            List<Part> parts = new ArrayList<>();
-            for (List<Part> o : values)
-            {
-                List<Part> asList = LazyList.getList(o, false);
-                parts.addAll(asList);
-            }
-            return parts;
+        Collection<List<Part>> values = _parts.values();
+        List<Part> parts = new ArrayList<>();
+        for (List<Part> o : values)
+        {
+            List<Part> asList = LazyList.getList(o, false);
+            parts.addAll(asList);
         }
+        return parts;
     }
 
     /**
@@ -403,31 +407,52 @@ public class MultiPartFormInputStream
      */
     public void deleteParts()
     {
-        // TODO: Can we cancel parsing somehow instead of blocking.
-        synchronized (this)
+        while (true)
         {
-            MultiException err = null;
-            for (List<Part> parts : _parts.values())
+            switch (state.get())
             {
-                for (Part p : parts)
+                case PARSING:
+                    state.compareAndSet(State.PARSING, State.ERROR);
+                    Thread.yield();
+                    continue;
+
+                case UNPARSED:
+                    if (!state.compareAndSet(State.UNPARSED, State.COMPLETED))
+                        continue;
+                    break;
+
+                case ERROR:
+                    Thread.yield();
+                    continue;
+
+                case COMPLETED:
+                    break;
+            }
+
+            break;
+        }
+
+        MultiException err = null;
+        for (List<Part> parts : _parts.values())
+        {
+            for (Part p : parts)
+            {
+                try
                 {
-                    try
-                    {
-                        ((MultiPart)p).cleanUp();
-                    }
-                    catch (Exception e)
-                    {
-                        if (err == null)
-                            err = new MultiException();
-                        err.add(e);
-                    }
+                    ((MultiPart)p).cleanUp();
+                }
+                catch (Exception e)
+                {
+                    if (err == null)
+                        err = new MultiException();
+                    err.add(e);
                 }
             }
-            _parts.clear();
-
-            if (err != null)
-                err.ifExceptionThrowRuntime();
         }
+        _parts.clear();
+
+        if (err != null)
+            err.ifExceptionThrowRuntime();
     }
 
     /**
@@ -438,13 +463,10 @@ public class MultiPartFormInputStream
      */
     public Collection<Part> getParts() throws IOException
     {
-        synchronized (this)
-        {
-            if (!_parsed)
-                parse();
-            throwIfError();
-            return _parts.values().stream().flatMap(List::stream).collect(Collectors.toList());
-        }
+        if (!_parsed)
+            parse();
+        throwIfError();
+        return _parts.values().stream().flatMap(List::stream).collect(Collectors.toList());
     }
 
     /**
@@ -456,13 +478,10 @@ public class MultiPartFormInputStream
      */
     public Part getPart(String name) throws IOException
     {
-        synchronized (this)
-        {
-            if (!_parsed)
-                parse();
-            throwIfError();
-            return _parts.getValue(name, 0);
-        }
+        if (!_parsed)
+            parse();
+        throwIfError();
+        return _parts.getValue(name, 0);
     }
 
     /**
@@ -534,8 +553,15 @@ public class MultiPartFormInputStream
             int len;
             long total = 0;
 
+            if (!state.compareAndSet(State.UNPARSED, State.PARSING))
+                throw new IllegalStateException("Could not start parsing " + state.get());
+
             while (true)
             {
+                State currentState = state.get();
+                if (currentState != State.PARSING)
+                    throw new IllegalStateException("Unexpected state " + currentState);
+
                 len = _in.read(data);
 
                 if (len > 0)
@@ -590,6 +616,27 @@ public class MultiPartFormInputStream
             // Notify parser if failure occurs
             if (parser != null)
                 parser.parse(BufferUtil.EMPTY_BUFFER, true);
+        }
+        finally
+        {
+            while (true)
+            {
+                switch (state.get())
+                {
+                    case PARSING:
+                        if (!state.compareAndSet(State.PARSING, State.COMPLETED))
+                            continue;
+                        break;
+
+                    case ERROR:
+                        state.compareAndSet(State.ERROR, State.COMPLETED);
+                        break;
+
+                    default:
+                        break;
+                }
+                break;
+            }
         }
     }
 
