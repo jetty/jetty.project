@@ -39,7 +39,7 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 @ManagedObject("The HTTP/1.1 client transport")
 public class HttpClientTransportOverHTTP extends AbstractConnectorHttpClientTransport
 {
-    public static final HttpDestination.Protocol HTTP11 = new HttpDestination.Protocol(List.of("http/1.1"), false);
+    public static final Origin.Protocol HTTP11 = new Origin.Protocol(List.of("http/1.1"), false);
 
     private int headerCacheSize = 1024;
     private boolean headerCacheCaseSensitive;
@@ -62,15 +62,15 @@ public class HttpClientTransportOverHTTP extends AbstractConnectorHttpClientTran
     }
 
     @Override
-    public HttpDestination.Key newDestinationKey(HttpRequest request, Origin origin)
+    public Origin newOrigin(HttpRequest request)
     {
-        return new HttpDestination.Key(origin, HTTP11);
+        return getHttpClient().createOrigin(request, HTTP11);
     }
 
     @Override
-    public HttpDestination newHttpDestination(HttpDestination.Key key)
+    public HttpDestination newHttpDestination(Origin origin)
     {
-        return new DuplexHttpDestination(getHttpClient(), key);
+        return new DuplexHttpDestination(getHttpClient(), origin);
     }
 
     @Override

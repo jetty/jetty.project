@@ -54,9 +54,9 @@ import org.eclipse.jetty.io.EndPoint;
  * // Configure the clientConnector.
  *
  * // Prepare the application protocols.
- * HttpClientConnectionFactory.Key h1 = HttpClientConnectionFactory.HTTP;
+ * ClientConnectionFactory.Info h1 = HttpClientConnectionFactory.HTTP;
  * HTTP2Client http2Client = new HTTP2Client(clientConnector);
- * ClientConnectionFactory.Key h2 = new ClientConnectionFactoryOverHTTP2.H2(http2Client);
+ * ClientConnectionFactory.Info h2 = new ClientConnectionFactoryOverHTTP2.H2(http2Client);
  *
  * // Create the HttpClientTransportDynamic, preferring h2 over h1.
  * HttpClientTransport transport = new HttpClientTransportDynamic(clientConnector, h2, h1);
@@ -67,17 +67,16 @@ import org.eclipse.jetty.io.EndPoint;
  * <p>Note how in the code above the HttpClientTransportDynamic has been created with the <em>application
  * protocols</em> {@code h2} and {@code h1}, without the need to specify TLS (which is implied by the request
  * scheme) or ALPN (which is implied by HTTP/2 over TLS).</p>
- * <p>When a request is first sent, a destination needs to be created, and the {@link org.eclipse.jetty.client.Origin}
- * {@code (scheme, host, port)} is not enough to identify the destination because the same origin may speak
- * different protocols.
+ * <p>When a request is first sent, {@code (scheme, host, port)} are not enough to identify the destination
+ * because the same origin may speak different protocols.
  * For example, the Jetty server supports speaking clear-text {@code http/1.1} and {@code h2c} on the same port.
  * Imagine a client sending a {@code h2c} request to that port; this will create a destination and connections
  * that speak {@code h2c}; it won't be possible to use the connections from that destination to send
  * {@code http/1.1} requests.
- * Therefore a destination is identified by a {@link org.eclipse.jetty.client.HttpDestination.Key} and
- * applications can customize the creation of the destination key (for example depending on request protocol
+ * Therefore a destination is identified by a {@link org.eclipse.jetty.client.Origin} and
+ * applications can customize the creation of the origin (for example depending on request protocol
  * version, or request headers, or request attributes, or even request path) by overriding
- * {@link #newDestinationKey(HttpRequest, Origin)}.</p>
+ * {@link HttpClientTransport#newOrigin(HttpRequest)}.</p>
  */
 public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTransport
 {
@@ -119,7 +118,7 @@ public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTrans
     }
 
     @Override
-    public HttpDestination.Key newDestinationKey(HttpRequest request, Origin origin)
+    public Origin newOrigin(HttpRequest request)
     {
         boolean ssl = HttpClient.isSchemeSecure(request.getScheme());
         String http1 = "http/1.1";
@@ -142,22 +141,23 @@ public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTrans
                 .filter(p -> p.equals(http1) || p.equals(http2))
                 .collect(Collectors.toList());
         }
-        if (protocols.isEmpty())
-            return new HttpDestination.Key(origin, null);
-        return new HttpDestination.Key(origin, new HttpDestination.Protocol(protocols, ssl && protocols.contains(http2)));
+        Origin.Protocol protocol = null;
+        if (!protocols.isEmpty())
+            protocol = new Origin.Protocol(protocols, ssl && protocols.contains(http2));
+        return getHttpClient().createOrigin(request, protocol);
     }
 
     @Override
-    public HttpDestination newHttpDestination(HttpDestination.Key key)
+    public HttpDestination newHttpDestination(Origin origin)
     {
-        return new MultiplexHttpDestination(getHttpClient(), key);
+        return new MultiplexHttpDestination(getHttpClient(), origin);
     }
 
     @Override
     public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
     {
         HttpDestination destination = (HttpDestination)context.get(HTTP_DESTINATION_CONTEXT_KEY);
-        HttpDestination.Protocol protocol = destination.getKey().getProtocol();
+        Origin.Protocol protocol = destination.getOrigin().getProtocol();
         ClientConnectionFactory.Info factoryInfo;
         if (protocol == null)
         {

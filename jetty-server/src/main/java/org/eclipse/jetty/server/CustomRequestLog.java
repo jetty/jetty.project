@@ -31,12 +31,14 @@ import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.servlet.http.Cookie;
+import javax.servlet.http.HttpServletRequest;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.http.pathmap.PathMappings;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.DateCache;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -233,8 +235,9 @@ import static java.lang.invoke.MethodType.methodType;
  * <tr>
  * <td valign="top">%{d}u</td>
  * <td>
- * Remote user if the request was authenticated. May be bogus if return status (%s) is 401 (unauthorized).
- * Optional parameter d, with this parameter deferred authentication will also be checked.
+ * Remote user if the request was authenticated with servlet authentication. May be bogus if return status (%s) is 401 (unauthorized).
+ * Optional parameter d, with this parameter deferred authentication will also be checked,
+ * this is equivalent to {@link HttpServletRequest#getRemoteUser()}.
  * </td>
  * </tr>
  *
@@ -294,11 +297,7 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
         {
             _logHandle = getLogHandle(formatString);
         }
-        catch (NoSuchMethodException e)
-        {
-            throw new IllegalStateException(e);
-        }
-        catch (IllegalAccessException e)
+        catch (NoSuchMethodException | IllegalAccessException e)
         {
             throw new IllegalStateException(e);
         }
@@ -357,20 +356,14 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
     protected static String getAuthentication(Request request, boolean checkDeferred)
     {
         Authentication authentication = request.getAuthentication();
+        if (checkDeferred && authentication instanceof Authentication.Deferred)
+            authentication = ((Authentication.Deferred)authentication).authenticate(request);
 
         String name = null;
-
-        boolean deferred = false;
-        if (checkDeferred && authentication instanceof Authentication.Deferred)
-        {
-            authentication = ((Authentication.Deferred)authentication).authenticate(request);
-            deferred = true;
-        }
-
         if (authentication instanceof Authentication.User)
             name = ((Authentication.User)authentication).getUserIdentity().getUserPrincipal().getName();
 
-        return (name == null) ? null : (deferred ? ("?" + name) : name);
+        return name;
     }
 
     /**
@@ -415,9 +408,9 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
         if (_ignorePaths != null && _ignorePaths.length > 0)
         {
             _ignorePathMap = new PathMappings<>();
-            for (int i = 0; i < _ignorePaths.length; i++)
+            for (String ignorePath : _ignorePaths)
             {
-                _ignorePathMap.put(_ignorePaths[i], _ignorePaths[i]);
+                _ignorePathMap.put(ignorePath, ignorePath);
             }
         }
         else
@@ -442,8 +435,8 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
     private MethodHandle getLogHandle(String formatString) throws NoSuchMethodException, IllegalAccessException
     {
         MethodHandles.Lookup lookup = MethodHandles.lookup();
-        MethodHandle append = lookup.findStatic(CustomRequestLog.class, "append", methodType(Void.TYPE, String.class, StringBuilder.class));
-        MethodHandle logHandle = lookup.findStatic(CustomRequestLog.class, "logNothing", methodType(Void.TYPE, StringBuilder.class, Request.class, Response.class));
+        MethodHandle append = lookup.findStatic(CustomRequestLog.class, "append", methodType(void.class, String.class, StringBuilder.class));
+        MethodHandle logHandle = lookup.findStatic(CustomRequestLog.class, "logNothing", methodType(void.class, StringBuilder.class, Request.class, Response.class));
 
         List<Token> tokens = getTokens(formatString);
         Collections.reverse(tokens);
@@ -486,7 +479,7 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
                     String arg = m.group("ARG");
                     String modifierString = m.group("MOD");
 
-                    Boolean negated = false;
+                    boolean negated = false;
                     if (modifierString != null)
                     {
                         if (modifierString.startsWith("!"))
@@ -581,8 +574,8 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
 
     private MethodHandle updateLogHandle(MethodHandle logHandle, MethodHandle append, MethodHandles.Lookup lookup, String code, String arg, List<String> modifiers, boolean negated) throws NoSuchMethodException, IllegalAccessException
     {
-        MethodType logType = methodType(Void.TYPE, StringBuilder.class, Request.class, Response.class);
-        MethodType logTypeArg = methodType(Void.TYPE, String.class, StringBuilder.class, Request.class, Response.class);
+        MethodType logType = methodType(void.class, StringBuilder.class, Request.class, Response.class);
+        MethodType logTypeArg = methodType(void.class, String.class, StringBuilder.class, Request.class, Response.class);
 
         //TODO should we throw IllegalArgumentExceptions when given arguments for codes which do not take them 
         MethodHandle specificHandle;
@@ -596,7 +589,7 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
 
             case "a":
             {
-                if (arg == null || arg.isEmpty())
+                if (StringUtil.isEmpty(arg))
                     arg = "server";
 
                 String method;
@@ -628,7 +621,7 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
 
             case "p":
             {
-                if (arg == null || arg.isEmpty())
+                if (StringUtil.isEmpty(arg))
                     arg = "server";
 
                 String method;
@@ -662,7 +655,7 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
             case "I":
             {
                 String method;
-                if (arg == null || arg.isEmpty())
+                if (StringUtil.isEmpty(arg))
                     method = "logBytesReceived";
                 else if (arg.equalsIgnoreCase("clf"))
                     method = "logBytesReceivedCLF";
@@ -676,7 +669,7 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
             case "O":
             {
                 String method;
-                if (arg == null || arg.isEmpty())
+                if (StringUtil.isEmpty(arg))
                     method = "logBytesSent";
                 else if (arg.equalsIgnoreCase("clf"))
                     method = "logBytesSentCLF";
@@ -690,7 +683,7 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
             case "S":
             {
                 String method;
-                if (arg == null || arg.isEmpty())
+                if (StringUtil.isEmpty(arg))
                     method = "logBytesTransferred";
                 else if (arg.equalsIgnoreCase("clf"))
                     method = "logBytesTransferredCLF";
@@ -703,7 +696,7 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
 
             case "C":
             {
-                if (arg == null || arg.isEmpty())
+                if (StringUtil.isEmpty(arg))
                 {
                     specificHandle = lookup.findStatic(CustomRequestLog.class, "logRequestCookies", logType);
                 }
@@ -723,7 +716,7 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
 
             case "e":
             {
-                if (arg == null || arg.isEmpty())
+                if (StringUtil.isEmpty(arg))
                     throw new IllegalArgumentException("No arg for %e");
 
                 specificHandle = lookup.findStatic(CustomRequestLog.class, "logEnvironmentVar", logTypeArg);
@@ -745,7 +738,7 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
 
             case "i":
             {
-                if (arg == null || arg.isEmpty())
+                if (StringUtil.isEmpty(arg))
                     throw new IllegalArgumentException("No arg for %i");
 
                 specificHandle = lookup.findStatic(CustomRequestLog.class, "logRequestHeader", logTypeArg);
@@ -767,7 +760,7 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
 
             case "o":
             {
-                if (arg == null || arg.isEmpty())
+                if (StringUtil.isEmpty(arg))
                     throw new IllegalArgumentException("No arg for %o");
 
                 specificHandle = lookup.findStatic(CustomRequestLog.class, "logResponseHeader", logTypeArg);
@@ -832,7 +825,7 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
 
                 DateCache logDateCache = new DateCache(format, locale, timeZone);
 
-                MethodType logTypeDateCache = methodType(Void.TYPE, DateCache.class, StringBuilder.class, Request.class, Response.class);
+                MethodType logTypeDateCache = methodType(void.class, DateCache.class, StringBuilder.class, Request.class, Response.class);
                 specificHandle = lookup.findStatic(CustomRequestLog.class, "logRequestTime", logTypeDateCache);
                 specificHandle = specificHandle.bindTo(logDateCache);
                 break;
@@ -866,10 +859,12 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
             case "u":
             {
                 String method;
-                if (arg == null || arg.isEmpty())
+                if (StringUtil.isEmpty(arg))
+                    method = "logRequestAuthentication";
+                else if ("d".equals(arg))
                     method = "logRequestAuthenticationWithDeferred";
                 else
-                    method = "logRequestAuthentication";
+                    throw new IllegalArgumentException("Invalid arg for %u: " + arg);
 
                 specificHandle = lookup.findStatic(CustomRequestLog.class, method, logType);
                 break;
@@ -889,7 +884,7 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
 
             case "ti":
             {
-                if (arg == null || arg.isEmpty())
+                if (StringUtil.isEmpty(arg))
                     throw new IllegalArgumentException("No arg for %ti");
 
                 specificHandle = lookup.findStatic(CustomRequestLog.class, "logRequestTrailer", logTypeArg);
@@ -899,7 +894,7 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
 
             case "to":
             {
-                if (arg == null || arg.isEmpty())
+                if (StringUtil.isEmpty(arg))
                     throw new IllegalArgumentException("No arg for %to");
 
                 specificHandle = lookup.findStatic(CustomRequestLog.class, "logResponseTrailer", logTypeArg);

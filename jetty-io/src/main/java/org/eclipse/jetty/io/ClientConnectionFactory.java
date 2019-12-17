@@ -49,6 +49,23 @@ public interface ClientConnectionFactory
     }
 
     /**
+     * <p>Wraps another ClientConnectionFactory.</p>
+     * <p>This is typically done by protocols that send "preface" bytes with some metadata
+     * before other protocols. The metadata could be, for example, proxying information
+     * or authentication information.</p>
+     */
+    interface Decorator
+    {
+        /**
+         * <p>Wraps the given {@code factory}.</p>
+         *
+         * @param factory the ClientConnectionFactory to wrap
+         * @return the wrapping ClientConnectionFactory
+         */
+        ClientConnectionFactory apply(ClientConnectionFactory factory);
+    }
+
+    /**
      * <p>A holder for a list of protocol strings identifying a network protocol
      * (for example {@code ["h2", "h2-17", "h2-16"]}) and a {@link ClientConnectionFactory}
      * that creates connections that speak that network protocol.</p>

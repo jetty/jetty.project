@@ -657,7 +657,7 @@ public class HttpClientTLSTest
 
         // Create a connection but don't use it.
         Origin origin = new Origin(HttpScheme.HTTPS.asString(), "localhost", connector.getLocalPort());
-        HttpDestination destination = client.resolveDestination(new HttpDestination.Key(origin, null));
+        HttpDestination destination = client.resolveDestination(origin);
         DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
         // Trigger the creation of a new connection, but don't use it.
         connectionPool.tryCreate(-1);
@@ -755,7 +755,7 @@ public class HttpClientTLSTest
 
         // Create a connection but don't use it.
         Origin origin = new Origin(HttpScheme.HTTPS.asString(), "localhost", connector.getLocalPort());
-        HttpDestination destination = client.resolveDestination(new HttpDestination.Key(origin, null));
+        HttpDestination destination = client.resolveDestination(origin);
         DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
         // Trigger the creation of a new connection, but don't use it.
         connectionPool.tryCreate(-1);

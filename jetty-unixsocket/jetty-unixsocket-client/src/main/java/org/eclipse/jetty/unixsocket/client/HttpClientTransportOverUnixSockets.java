@@ -74,15 +74,15 @@ public class HttpClientTransportOverUnixSockets extends AbstractConnectorHttpCli
     }
 
     @Override
-    public HttpDestination.Key newDestinationKey(HttpRequest request, Origin origin)
+    public Origin newOrigin(HttpRequest request)
     {
-        return new HttpDestination.Key(origin, null);
+        return getHttpClient().createOrigin(request, null);
     }
 
     @Override
-    public HttpDestination newHttpDestination(HttpDestination.Key key)
+    public HttpDestination newHttpDestination(Origin origin)
     {
-        return new DuplexHttpDestination(getHttpClient(), key);
+        return new DuplexHttpDestination(getHttpClient(), origin);
     }
 
     @Override

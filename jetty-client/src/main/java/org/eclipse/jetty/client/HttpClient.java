@@ -124,7 +124,7 @@ public class HttpClient extends ContainerLifeCycle
     public static final String USER_AGENT = "Jetty/" + Jetty.VERSION;
     private static final Logger LOG = Log.getLogger(HttpClient.class);
 
-    private final ConcurrentMap<HttpDestination.Key, HttpDestination> destinations = new ConcurrentHashMap<>();
+    private final ConcurrentMap<Origin, HttpDestination> destinations = new ConcurrentHashMap<>();
     private final ProtocolHandlers handlers = new ProtocolHandlers();
     private final List<Request.Listener> requestListeners = new ArrayList<>();
     private final Set<ContentDecoder.Factory> decoderFactories = new ContentDecoderFactorySet();
@@ -499,33 +499,33 @@ public class HttpClient extends ContainerLifeCycle
 
     public Destination resolveDestination(Request request)
     {
-        Origin origin = createOrigin(request.getScheme(), request.getHost(), request.getPort());
         HttpClientTransport transport = getTransport();
-        HttpDestination.Key destinationKey = transport.newDestinationKey((HttpRequest)request, origin);
-        HttpDestination destination = resolveDestination(destinationKey);
+        Origin origin = transport.newOrigin((HttpRequest)request);
+        HttpDestination destination = resolveDestination(origin);
         if (LOG.isDebugEnabled())
             LOG.debug("Resolved {} for {}", destination, request);
         return destination;
     }
 
-    private Origin createOrigin(String scheme, String host, int port)
+    public Origin createOrigin(HttpRequest request, Origin.Protocol protocol)
     {
+        String scheme = request.getScheme();
         if (!HttpScheme.HTTP.is(scheme) && !HttpScheme.HTTPS.is(scheme) &&
             !HttpScheme.WS.is(scheme) && !HttpScheme.WSS.is(scheme))
             throw new IllegalArgumentException("Invalid protocol " + scheme);
-
         scheme = scheme.toLowerCase(Locale.ENGLISH);
+        String host = request.getHost();
         host = host.toLowerCase(Locale.ENGLISH);
+        int port = request.getPort();
         port = normalizePort(scheme, port);
-
-        return new Origin(scheme, host, port);
+        return new Origin(scheme, host, port, request.getTag(), protocol);
     }
 
-    HttpDestination resolveDestination(HttpDestination.Key key)
+    HttpDestination resolveDestination(Origin origin)
     {
-        return destinations.computeIfAbsent(key, k ->
+        return destinations.computeIfAbsent(origin, o ->
         {
-            HttpDestination destination = getTransport().newHttpDestination(k);
+            HttpDestination destination = getTransport().newHttpDestination(o);
             // Start the destination before it's published to other threads.
             addManaged(destination);
             if (LOG.isDebugEnabled())
@@ -537,7 +537,7 @@ public class HttpClient extends ContainerLifeCycle
     protected boolean removeDestination(HttpDestination destination)
     {
         removeBean(destination);
-        return destinations.remove(destination.getKey(), destination);
+        return destinations.remove(destination.getOrigin(), destination);
     }
 
     /**

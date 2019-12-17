@@ -27,11 +27,6 @@ public class DuplexHttpDestination extends HttpDestination
 {
     public DuplexHttpDestination(HttpClient client, Origin origin)
     {
-        this(client, new Key(origin, null));
-    }
-
-    public DuplexHttpDestination(HttpClient client, Key key)
-    {
-        super(client, key);
+        super(client, origin);
     }
 }

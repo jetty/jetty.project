@@ -24,6 +24,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -60,20 +61,26 @@ public class ProxyConfiguration
 
     public abstract static class Proxy
     {
-        // TO use IPAddress Map
+        // TODO use InetAddressSet? Or IncludeExcludeSet?
         private final Set<String> included = new HashSet<>();
         private final Set<String> excluded = new HashSet<>();
-        private final Origin.Address address;
-        private final boolean secure;
+        private final Origin origin;
         private final SslContextFactory.Client sslContextFactory;
-        private final HttpDestination.Protocol protocol;
 
-        protected Proxy(Origin.Address address, boolean secure, SslContextFactory.Client sslContextFactory, HttpDestination.Protocol protocol)
+        protected Proxy(Origin.Address address, boolean secure, SslContextFactory.Client sslContextFactory, Origin.Protocol protocol)
         {
-            this.address = address;
-            this.secure = secure;
+            this(new Origin(secure ? HttpScheme.HTTPS.asString() : HttpScheme.HTTP.asString(), address, null, protocol), sslContextFactory);
+        }
+
+        protected Proxy(Origin origin, SslContextFactory.Client sslContextFactory)
+        {
+            this.origin = origin;
             this.sslContextFactory = sslContextFactory;
-            this.protocol = protocol;
+        }
+
+        public Origin getOrigin()
+        {
+            return origin;
         }
 
         /**
@@ -81,7 +88,7 @@ public class ProxyConfiguration
          */
         public Origin.Address getAddress()
         {
-            return address;
+            return origin.getAddress();
         }
 
         /**
@@ -89,7 +96,7 @@ public class ProxyConfiguration
          */
         public boolean isSecure()
         {
-            return secure;
+            return HttpScheme.HTTPS.is(origin.getScheme());
         }
 
         /**
@@ -103,9 +110,9 @@ public class ProxyConfiguration
         /**
          * @return the protocol spoken by this proxy
          */
-        public HttpDestination.Protocol getProtocol()
+        public Origin.Protocol getProtocol()
         {
-            return protocol;
+            return origin.getProtocol();
         }
 
         /**
@@ -180,14 +187,14 @@ public class ProxyConfiguration
 
         /**
          * @param connectionFactory the nested {@link ClientConnectionFactory}
-         * @return a new {@link ClientConnectionFactory} for this {@link Proxy}
+         * @return a new {@link ClientConnectionFactory} for this Proxy
          */
         public abstract ClientConnectionFactory newClientConnectionFactory(ClientConnectionFactory connectionFactory);
 
         @Override
         public String toString()
         {
-            return address.toString();
+            return origin.toString();
         }
     }
 }

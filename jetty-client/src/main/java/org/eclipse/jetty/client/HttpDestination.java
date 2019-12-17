@@ -23,25 +23,20 @@ import java.io.IOException;
 import java.nio.channels.AsynchronousCloseException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Function;
 
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.client.dynamic.HttpClientTransportDynamic;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.CyclicTimeout;
-import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.HostPort;
@@ -58,12 +53,12 @@ import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.Sweeper;
 
 @ManagedObject
-public class HttpDestination extends ContainerLifeCycle implements Destination, Closeable, Callback, Dumpable
+public abstract class HttpDestination extends ContainerLifeCycle implements Destination, Closeable, Callback, Dumpable
 {
     protected static final Logger LOG = Log.getLogger(HttpDestination.class);
 
     private final HttpClient client;
-    private final Key key;
+    private final Origin origin;
     private final Queue<HttpExchange> exchanges;
     private final RequestNotifier requestNotifier;
     private final ResponseNotifier responseNotifier;
@@ -73,15 +68,10 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
     private final TimeoutTask timeout;
     private ConnectionPool connectionPool;
 
-    public HttpDestination(HttpClient client, Key key)
-    {
-        this(client, key, Function.identity());
-    }
-
-    public HttpDestination(HttpClient client, Key key, Function<ClientConnectionFactory, ClientConnectionFactory> factoryFn)
+    public HttpDestination(HttpClient client, Origin origin)
     {
         this.client = client;
-        this.key = key;
+        this.origin = origin;
 
         this.exchanges = newExchangeQueue(client);
 
@@ -90,21 +80,9 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
 
         this.timeout = new TimeoutTask(client.getScheduler());
 
-        String host = HostPort.normalizeHost(getHost());
-        if (!client.isDefaultPort(getScheme(), getPort()))
-            host += ":" + getPort();
-        hostField = new HttpField(HttpHeader.HOST, host);
-
         ProxyConfiguration proxyConfig = client.getProxyConfiguration();
-        this.proxy = proxyConfig.match(getOrigin());
-
-        this.connectionFactory = factoryFn.apply(createClientConnectionFactory());
-    }
-
-    private ClientConnectionFactory createClientConnectionFactory()
-    {
-        ProxyConfiguration.Proxy proxy = getProxy();
-        ClientConnectionFactory connectionFactory = getHttpClient().getTransport();
+        proxy = proxyConfig.match(origin);
+        ClientConnectionFactory connectionFactory = client.getTransport();
         if (proxy != null)
         {
             connectionFactory = proxy.newClientConnectionFactory(connectionFactory);
@@ -116,7 +94,15 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
             if (isSecure())
                 connectionFactory = newSslClientConnectionFactory(null, connectionFactory);
         }
-        return connectionFactory;
+        Object tag = origin.getTag();
+        if (tag instanceof ClientConnectionFactory.Decorator)
+            connectionFactory = ((ClientConnectionFactory.Decorator)tag).apply(connectionFactory);
+        this.connectionFactory = connectionFactory;
+
+        String host = HostPort.normalizeHost(getHost());
+        if (!client.isDefaultPort(getScheme(), getPort()))
+            host += ":" + getPort();
+        hostField = new HttpField(HttpHeader.HOST, host);
     }
 
     @Override
@@ -165,14 +151,9 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
         return client;
     }
 
-    public Key getKey()
-    {
-        return key;
-    }
-
     public Origin getOrigin()
     {
-        return key.origin;
+        return origin;
     }
 
     public Queue<HttpExchange> getHttpExchanges()
@@ -499,7 +480,7 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
 
     public String asString()
     {
-        return getKey().asString();
+        return getOrigin().asString();
     }
 
     @Override
@@ -518,166 +499,6 @@ public class HttpDestination extends ContainerLifeCycle implements Destination, 
     public interface Multiplexed
     {
         void setMaxRequestsPerConnection(int maxRequestsPerConnection);
-    }
-
-    /**
-     * <p>Class that groups the elements that uniquely identify a destination.</p>
-     * <p>The elements are an {@link Origin}, a {@link Protocol} and an opaque
-     * string that further distinguishes destinations that have the same origin
-     * and protocol.</p>
-     * <p>In general it is possible that, for the same origin, the server can
-     * speak different protocols (for example, clear-text HTTP/1.1 and clear-text
-     * HTTP/2), so the {@link Protocol} makes that distinction.</p>
-     * <p>Furthermore, it may be desirable to have different destinations for
-     * the same origin and protocol (for example, when using the PROXY protocol
-     * in a reverse proxy server, you want to be able to map the client ip:port
-     * to the destination {@code kind}, so that all the connections to the server
-     * associated to that destination can specify the PROXY protocol bytes for
-     * that particular client connection.</p>
-     */
-    public static class Key
-    {
-        private final Origin origin;
-        private final Protocol protocol;
-        private final String kind;
-
-        /**
-         * Creates a Key with the given origin and protocol and a {@code null} kind.
-         *
-         * @param origin the origin
-         * @param protocol the protocol
-         */
-        public Key(Origin origin, Protocol protocol)
-        {
-            this(origin, protocol, null);
-        }
-
-        /**
-         * Creates a Key with the given origin and protocol and kind.
-         *
-         * @param origin the origin
-         * @param protocol the protocol
-         * @param kind the opaque kind
-         */
-        public Key(Origin origin, Protocol protocol, String kind)
-        {
-            this.origin = origin;
-            this.protocol = protocol;
-            this.kind = kind;
-        }
-
-        public Origin getOrigin()
-        {
-            return origin;
-        }
-
-        public Protocol getProtocol()
-        {
-            return protocol;
-        }
-
-        public String getKind()
-        {
-            return kind;
-        }
-
-        @Override
-        public boolean equals(Object obj)
-        {
-            if (this == obj)
-                return true;
-            if (obj == null || getClass() != obj.getClass())
-                return false;
-            Key that = (Key)obj;
-            return origin.equals(that.origin) &&
-                Objects.equals(protocol, that.protocol) &&
-                Objects.equals(kind, that.kind);
-        }
-
-        @Override
-        public int hashCode()
-        {
-            return Objects.hash(origin, protocol, kind);
-        }
-
-        public String asString()
-        {
-            return String.format("%s|%s,kind=%s",
-                origin.asString(),
-                protocol == null ? "null" : protocol.asString(),
-                kind);
-        }
-
-        @Override
-        public String toString()
-        {
-            return String.format("%s@%x[%s]", getClass().getSimpleName(), hashCode(), asString());
-        }
-    }
-
-    /**
-     * <p>The representation of a network protocol.</p>
-     * <p>A network protocol may have multiple protocol <em>names</em>
-     * associated to it, for example {@code ["h2", "h2-17", "h2-16"]}.</p>
-     * <p>A Protocol is then rendered into a {@link ClientConnectionFactory}
-     * chain, for example in
-     * {@link HttpClientTransportDynamic#newConnection(EndPoint, Map)}.</p>
-     */
-    public static class Protocol
-    {
-        private final List<String> protocols;
-        private final boolean negotiate;
-
-        /**
-         * Creates a Protocol with the given list of protocol names
-         * and whether it should negotiate the protocol.
-         *
-         * @param protocols the protocol names
-         * @param negotiate whether the protocol should be negotiated
-         */
-        public Protocol(List<String> protocols, boolean negotiate)
-        {
-            this.protocols = protocols;
-            this.negotiate = negotiate;
-        }
-
-        public List<String> getProtocols()
-        {
-            return protocols;
-        }
-
-        public boolean isNegotiate()
-        {
-            return negotiate;
-        }
-
-        @Override
-        public boolean equals(Object obj)
-        {
-            if (this == obj)
-                return true;
-            if (obj == null || getClass() != obj.getClass())
-                return false;
-            Protocol that = (Protocol)obj;
-            return protocols.equals(that.protocols) && negotiate == that.negotiate;
-        }
-
-        @Override
-        public int hashCode()
-        {
-            return Objects.hash(protocols, negotiate);
-        }
-
-        public String asString()
-        {
-            return String.format("proto=%s,nego=%b", protocols, negotiate);
-        }
-
-        @Override
-        public String toString()
-        {
-            return String.format("%s@%x[%s]", getClass().getSimpleName(), hashCode(), asString());
-        }
     }
 
     /**

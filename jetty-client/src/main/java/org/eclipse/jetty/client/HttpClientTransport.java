@@ -51,13 +51,12 @@ public interface HttpClientTransport extends ClientConnectionFactory
     public void setHttpClient(HttpClient client);
 
     /**
-     * Creates a new Key with the given request and origin.
+     * Creates a new Origin with the given request.
      *
-     * @param request the request that triggers the creation of the Key
-     * @param origin the origin of the server for the request
-     * @return a Key that identifies a destination
+     * @param request the request that triggers the creation of the Origin
+     * @return an Origin that identifies a destination
      */
-    public HttpDestination.Key newDestinationKey(HttpRequest request, Origin origin);
+    public Origin newOrigin(HttpRequest request);
 
     /**
      * Creates a new, transport-specific, {@link HttpDestination} object.
@@ -65,10 +64,10 @@ public interface HttpClientTransport extends ClientConnectionFactory
      * {@link HttpDestination} controls the destination-connection cardinality: protocols like
      * HTTP have 1-N cardinality, while multiplexed protocols like HTTP/2 have a 1-1 cardinality.
      *
-     * @param key the destination key
+     * @param origin the destination origin
      * @return a new, transport-specific, {@link HttpDestination} object
      */
-    public HttpDestination newHttpDestination(HttpDestination.Key key);
+    public HttpDestination newHttpDestination(Origin origin);
 
     /**
      * Establishes a physical connection to the given {@code address}.

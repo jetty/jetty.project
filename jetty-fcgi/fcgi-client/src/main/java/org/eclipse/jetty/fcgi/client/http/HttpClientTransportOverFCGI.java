@@ -75,15 +75,15 @@ public class HttpClientTransportOverFCGI extends AbstractConnectorHttpClientTran
     }
 
     @Override
-    public HttpDestination.Key newDestinationKey(HttpRequest request, Origin origin)
+    public Origin newOrigin(HttpRequest request)
     {
-        return new HttpDestination.Key(origin, new HttpDestination.Protocol(List.of("fastcgi/1.1"), false));
+        return getHttpClient().createOrigin(request, new Origin.Protocol(List.of("fastcgi/1.1"), false));
     }
 
     @Override
-    public HttpDestination newHttpDestination(HttpDestination.Key key)
+    public HttpDestination newHttpDestination(Origin origin)
     {
-        return new DuplexHttpDestination(getHttpClient(), key);
+        return new DuplexHttpDestination(getHttpClient(), origin);
     }
 
     @Override

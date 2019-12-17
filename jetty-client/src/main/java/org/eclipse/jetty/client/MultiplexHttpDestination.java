@@ -34,14 +34,9 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
  */
 public class MultiplexHttpDestination extends HttpDestination implements HttpDestination.Multiplexed
 {
-    public MultiplexHttpDestination(HttpClient client, Key key)
+    public MultiplexHttpDestination(HttpClient client, Origin origin)
     {
-        this(client, key, Function.identity());
-    }
-
-    public MultiplexHttpDestination(HttpClient client, Key key, Function<ClientConnectionFactory, ClientConnectionFactory> factoryFn)
-    {
-        super(client, key, factoryFn);
+        super(client, origin);
     }
 
     @ManagedAttribute(value = "The maximum number of concurrent requests per connection")

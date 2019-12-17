@@ -108,16 +108,16 @@ public class HttpClientTransportOverHTTP2 extends AbstractHttpClientTransport
     }
 
     @Override
-    public HttpDestination.Key newDestinationKey(HttpRequest request, Origin origin)
+    public Origin newOrigin(HttpRequest request)
     {
-        String protocol = HttpScheme.HTTPS.is(origin.getScheme()) ? "h2" : "h2c";
-        return new HttpDestination.Key(origin, new HttpDestination.Protocol(List.of(protocol), false));
+        String protocol = HttpScheme.HTTPS.is(request.getScheme()) ? "h2" : "h2c";
+        return getHttpClient().createOrigin(request, new Origin.Protocol(List.of(protocol), false));
     }
 
     @Override
-    public HttpDestination newHttpDestination(HttpDestination.Key key)
+    public HttpDestination newHttpDestination(Origin origin)
     {
-        return new MultiplexHttpDestination(getHttpClient(), key);
+        return new MultiplexHttpDestination(getHttpClient(), origin);
     }
 
     @Override

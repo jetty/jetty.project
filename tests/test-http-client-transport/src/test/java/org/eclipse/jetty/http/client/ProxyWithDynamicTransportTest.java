@@ -224,35 +224,35 @@ public class ProxyWithDynamicTransportTest
         var h2 = List.of("h2");
         return java.util.stream.Stream.of(
             // HTTP/1.1 Proxy with HTTP/1.1 Server.
-            Arguments.of(new HttpDestination.Protocol(h1, false), false, HttpVersion.HTTP_1_1, false),
-            Arguments.of(new HttpDestination.Protocol(h1, false), false, HttpVersion.HTTP_1_1, true),
-            Arguments.of(new HttpDestination.Protocol(h1, false), true, HttpVersion.HTTP_1_1, false),
-            Arguments.of(new HttpDestination.Protocol(h1, false), true, HttpVersion.HTTP_1_1, true),
+            Arguments.of(new Origin.Protocol(h1, false), false, HttpVersion.HTTP_1_1, false),
+            Arguments.of(new Origin.Protocol(h1, false), false, HttpVersion.HTTP_1_1, true),
+            Arguments.of(new Origin.Protocol(h1, false), true, HttpVersion.HTTP_1_1, false),
+            Arguments.of(new Origin.Protocol(h1, false), true, HttpVersion.HTTP_1_1, true),
             // HTTP/1.1 Proxy with HTTP/2 Server.
-            Arguments.of(new HttpDestination.Protocol(h1, false), false, HttpVersion.HTTP_2, false),
-            Arguments.of(new HttpDestination.Protocol(h1, false), false, HttpVersion.HTTP_2, true),
-            Arguments.of(new HttpDestination.Protocol(h1, false), true, HttpVersion.HTTP_2, false),
-            Arguments.of(new HttpDestination.Protocol(h1, false), true, HttpVersion.HTTP_2, true),
+            Arguments.of(new Origin.Protocol(h1, false), false, HttpVersion.HTTP_2, false),
+            Arguments.of(new Origin.Protocol(h1, false), false, HttpVersion.HTTP_2, true),
+            Arguments.of(new Origin.Protocol(h1, false), true, HttpVersion.HTTP_2, false),
+            Arguments.of(new Origin.Protocol(h1, false), true, HttpVersion.HTTP_2, true),
             // HTTP/2 Proxy with HTTP/1.1 Server.
-            Arguments.of(new HttpDestination.Protocol(h2c, false), false, HttpVersion.HTTP_1_1, false),
-            Arguments.of(new HttpDestination.Protocol(h2c, false), false, HttpVersion.HTTP_1_1, true),
-            Arguments.of(new HttpDestination.Protocol(h2, false), true, HttpVersion.HTTP_1_1, false),
-            Arguments.of(new HttpDestination.Protocol(h2, false), true, HttpVersion.HTTP_1_1, true),
-            Arguments.of(new HttpDestination.Protocol(h2, true), true, HttpVersion.HTTP_1_1, false),
-            Arguments.of(new HttpDestination.Protocol(h2, true), true, HttpVersion.HTTP_1_1, true),
+            Arguments.of(new Origin.Protocol(h2c, false), false, HttpVersion.HTTP_1_1, false),
+            Arguments.of(new Origin.Protocol(h2c, false), false, HttpVersion.HTTP_1_1, true),
+            Arguments.of(new Origin.Protocol(h2, false), true, HttpVersion.HTTP_1_1, false),
+            Arguments.of(new Origin.Protocol(h2, false), true, HttpVersion.HTTP_1_1, true),
+            Arguments.of(new Origin.Protocol(h2, true), true, HttpVersion.HTTP_1_1, false),
+            Arguments.of(new Origin.Protocol(h2, true), true, HttpVersion.HTTP_1_1, true),
             // HTTP/2 Proxy with HTTP/2 Server.
-            Arguments.of(new HttpDestination.Protocol(h2c, false), false, HttpVersion.HTTP_2, false),
-            Arguments.of(new HttpDestination.Protocol(h2c, false), false, HttpVersion.HTTP_2, true),
-            Arguments.of(new HttpDestination.Protocol(h2, false), true, HttpVersion.HTTP_2, false),
-            Arguments.of(new HttpDestination.Protocol(h2, false), true, HttpVersion.HTTP_2, true),
-            Arguments.of(new HttpDestination.Protocol(h2, true), true, HttpVersion.HTTP_2, false),
-            Arguments.of(new HttpDestination.Protocol(h2, true), true, HttpVersion.HTTP_2, true)
+            Arguments.of(new Origin.Protocol(h2c, false), false, HttpVersion.HTTP_2, false),
+            Arguments.of(new Origin.Protocol(h2c, false), false, HttpVersion.HTTP_2, true),
+            Arguments.of(new Origin.Protocol(h2, false), true, HttpVersion.HTTP_2, false),
+            Arguments.of(new Origin.Protocol(h2, false), true, HttpVersion.HTTP_2, true),
+            Arguments.of(new Origin.Protocol(h2, true), true, HttpVersion.HTTP_2, false),
+            Arguments.of(new Origin.Protocol(h2, true), true, HttpVersion.HTTP_2, true)
         );
     }
 
     @ParameterizedTest(name = "proxyProtocol={0}, proxySecure={1}, serverProtocol={2}, serverSecure={3}")
     @MethodSource("testParams")
-    public void testProxy(HttpDestination.Protocol proxyProtocol, boolean proxySecure, HttpVersion serverProtocol, boolean serverSecure) throws Exception
+    public void testProxy(Origin.Protocol proxyProtocol, boolean proxySecure, HttpVersion serverProtocol, boolean serverSecure) throws Exception
     {
         int status = HttpStatus.NO_CONTENT_204;
         start(new EmptyServerHandler()
@@ -302,7 +302,7 @@ public class ProxyWithDynamicTransportTest
 
         int proxyPort = proxyConnector.getLocalPort();
         Origin.Address proxyAddress = new Origin.Address("localhost", proxyPort);
-        HttpProxy proxy = new HttpProxy(proxyAddress, false, new HttpDestination.Protocol(List.of("h2c"), false));
+        HttpProxy proxy = new HttpProxy(proxyAddress, false, new Origin.Protocol(List.of("h2c"), false));
         client.getProxyConfiguration().getProxies().add(proxy);
 
         long idleTimeout = 1000;
@@ -343,7 +343,7 @@ public class ProxyWithDynamicTransportTest
 
         int proxyPort = proxyConnector.getLocalPort();
         Origin.Address proxyAddress = new Origin.Address("localhost", proxyPort);
-        HttpProxy httpProxy = new HttpProxy(proxyAddress, false, new HttpDestination.Protocol(List.of("h2c"), false));
+        HttpProxy httpProxy = new HttpProxy(proxyAddress, false, new Origin.Protocol(List.of("h2c"), false));
         client.getProxyConfiguration().getProxies().add(httpProxy);
         proxy.stop();
 
@@ -378,7 +378,7 @@ public class ProxyWithDynamicTransportTest
 
         int proxyPort = proxyConnector.getLocalPort();
         Origin.Address proxyAddress = new Origin.Address("localhost", proxyPort);
-        HttpProxy httpProxy = new HttpProxy(proxyAddress, false, new HttpDestination.Protocol(List.of("h2c"), false));
+        HttpProxy httpProxy = new HttpProxy(proxyAddress, false, new Origin.Protocol(List.of("h2c"), false));
         client.getProxyConfiguration().getProxies().add(httpProxy);
 
         CountDownLatch latch = new CountDownLatch(1);

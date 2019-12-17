@@ -102,9 +102,10 @@ public class ProxyConnectionFactory extends AbstractConnectionFactory
 
     public class ProxyProtocolV1orV2Connection extends AbstractConnection
     {
+        // Only do a tiny read to figure out what PROXY version it is.
+        private final ByteBuffer _buffer = BufferUtil.allocate(16);
         private final Connector _connector;
         private final String _next;
-        private ByteBuffer _buffer = BufferUtil.allocate(16);
 
         protected ProxyProtocolV1orV2Connection(EndPoint endp, Connector connector, String next)
         {
@@ -157,8 +158,11 @@ public class ProxyConnectionFactory extends AbstractConnectionFactory
                         return;
                     }
                     default:
+                    {
                         LOG.warn("Not PROXY protocol for {}", getEndPoint());
                         close();
+                        break;
+                    }
                 }
             }
             catch (Throwable x)
@@ -179,8 +183,8 @@ public class ProxyConnectionFactory extends AbstractConnectionFactory
         private final Connector _connector;
         private final String _next;
         private final StringBuilder _builder = new StringBuilder();
-        private final String[] _field = new String[6];
-        private int _fields;
+        private final String[] _fields = new String[6];
+        private int _index;
         private int _length;
 
         protected ProxyProtocolV1Connection(EndPoint endp, Connector connector, String next, ByteBuffer buffer)
@@ -201,16 +205,18 @@ public class ProxyConnectionFactory extends AbstractConnectionFactory
 
         private boolean parse(ByteBuffer buffer)
         {
-            // parse fields
+            // Parse fields
             while (buffer.hasRemaining())
             {
                 byte b = buffer.get();
-                if (_fields < 6)
+                if (_index < 6)
                 {
-                    if (b == ' ' || b == '\r' && _fields == 5)
+                    if (b == ' ' || b == '\r')
                     {
-                        _field[_fields++] = _builder.toString();
+                        _fields[_index++] = _builder.toString();
                         _builder.setLength(0);
+                        if (b == '\r')
+                            _index = 6;
                     }
                     else if (b < ' ')
                     {
@@ -227,7 +233,7 @@ public class ProxyConnectionFactory extends AbstractConnectionFactory
                 {
                     if (b == '\n')
                     {
-                        _fields = 7;
+                        _index = 7;
                         return true;
                     }
 
@@ -245,12 +251,12 @@ public class ProxyConnectionFactory extends AbstractConnectionFactory
             try
             {
                 ByteBuffer buffer = null;
-                while (_fields < 7)
+                while (_index < 7)
                 {
                     // Create a buffer that will not read too much data
                     // since once read it is impossible to push back for the 
                     // real connection to read it.
-                    int size = Math.max(1, SIZE[_fields] - _builder.length());
+                    int size = Math.max(1, SIZE[_index] - _builder.length());
                     if (buffer == null || buffer.capacity() != size)
                         buffer = BufferUtil.allocate(size);
                     else
@@ -282,22 +288,34 @@ public class ProxyConnectionFactory extends AbstractConnectionFactory
                 }
 
                 // Check proxy
-                if (!"PROXY".equals(_field[0]))
+                if (!"PROXY".equals(_fields[0]))
                 {
                     LOG.warn("Not PROXY protocol for {}", getEndPoint());
                     close();
                     return;
                 }
 
-                // Extract Addresses
-                InetSocketAddress remote = new InetSocketAddress(_field[2], Integer.parseInt(_field[4]));
-                InetSocketAddress local = new InetSocketAddress(_field[3], Integer.parseInt(_field[5]));
+                String srcIP = _fields[2];
+                String srcPort = _fields[4];
+                String dstIP = _fields[3];
+                String dstPort = _fields[5];
+                // If UNKNOWN, we must ignore the information sent, so use the EndPoint's.
+                boolean unknown = "UNKNOWN".equalsIgnoreCase(_fields[1]);
+                if (unknown)
+                {
+                    srcIP = getEndPoint().getRemoteAddress().getAddress().getHostAddress();
+                    srcPort = String.valueOf(getEndPoint().getRemoteAddress().getPort());
+                    dstIP = getEndPoint().getLocalAddress().getAddress().getHostAddress();
+                    dstPort = String.valueOf(getEndPoint().getLocalAddress().getPort());
+                }
+                InetSocketAddress remote = new InetSocketAddress(srcIP, Integer.parseInt(srcPort));
+                InetSocketAddress local = new InetSocketAddress(dstIP, Integer.parseInt(dstPort));
 
                 // Create the next protocol
                 ConnectionFactory connectionFactory = _connector.getConnectionFactory(_next);
                 if (connectionFactory == null)
                 {
-                    LOG.warn("No Next protocol '{}' for {}", _next, getEndPoint());
+                    LOG.warn("No next protocol '{}' for {}", _next, getEndPoint());
                     close();
                     return;
                 }
