@@ -29,6 +29,11 @@ import org.eclipse.jetty.websocket.javax.common.util.InvokerUtils;
 
 public class JavaxWebSocketClientFrameHandlerFactory extends JavaxWebSocketFrameHandlerFactory
 {
+    public JavaxWebSocketClientFrameHandlerFactory(JavaxWebSocketContainer container, InvokerUtils.ParamIdentifier paramIdentifier)
+    {
+        super(container, paramIdentifier);
+    }
+
     public JavaxWebSocketClientFrameHandlerFactory(JavaxWebSocketContainer container)
     {
         super(container, InvokerUtils.PARAM_IDENTITY);

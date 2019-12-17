@@ -77,7 +77,7 @@ public class EndpointEchoTest
         ClientEndpoint clientEndpoint = new ClientEndpoint();
         assertThat(clientEndpoint, Matchers.instanceOf(javax.websocket.Endpoint.class));
         // Issue connect using instance of class that extends Endpoint
-        Session session = container.connectToServer(clientEndpoint, server.getWsUri().resolve("/echo/text"));
+        Session session = container.connectToServer(clientEndpoint, null, server.getWsUri().resolve("/echo/text"));
         session.getBasicRemote().sendText("Echo");
 
         String resp = clientEndpoint.messageQueue.poll(1, TimeUnit.SECONDS);
@@ -91,7 +91,7 @@ public class EndpointEchoTest
     {
         WebSocketContainer container = ContainerProvider.getWebSocketContainer();
         // Issue connect using class reference (class extends Endpoint)
-        Session session = container.connectToServer(ClientEndpoint.class, server.getWsUri().resolve("/echo/text"));
+        Session session = container.connectToServer(ClientEndpoint.class, null, server.getWsUri().resolve("/echo/text"));
         session.getBasicRemote().sendText("Echo");
 
         JavaxWebSocketSession jsrSession = (JavaxWebSocketSession)session;

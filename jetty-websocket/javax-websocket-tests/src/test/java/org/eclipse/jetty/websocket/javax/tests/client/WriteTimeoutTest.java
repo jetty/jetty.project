@@ -82,7 +82,7 @@ public class WriteTimeoutTest
         WebSocketContainer container = ContainerProvider.getWebSocketContainer();
         ClientEndpoint clientEndpoint = new ClientEndpoint();
         assertThat(clientEndpoint, Matchers.instanceOf(javax.websocket.Endpoint.class));
-        Session session = container.connectToServer(clientEndpoint, server.getWsUri().resolve("/logSocket"));
+        Session session = container.connectToServer(clientEndpoint, null, server.getWsUri().resolve("/logSocket"));
 
         session.getAsyncRemote().setSendTimeout(5);
 

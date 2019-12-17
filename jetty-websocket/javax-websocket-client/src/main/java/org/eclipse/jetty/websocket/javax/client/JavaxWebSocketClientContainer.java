@@ -41,7 +41,6 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.javax.common.ConfiguredEndpoint;
-import org.eclipse.jetty.websocket.javax.common.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketContainer;
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketExtensionConfig;
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketFrameHandler;
@@ -200,30 +199,33 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
     }
 
     @Override
-    public Session connectToServer(final Class<? extends Endpoint> endpointClass, final ClientEndpointConfig config, URI path) throws IOException
+    public Session connectToServer(final Class<? extends Endpoint> endpointClass, final ClientEndpointConfig providedConfig, URI path) throws DeploymentException, IOException
     {
-        ConfiguredEndpoint instance = newConfiguredEndpoint(endpointClass, config);
-        return connect(instance, path);
+        return connectToServer(newEndpoint(endpointClass), providedConfig, path);
     }
 
     @Override
-    public Session connectToServer(final Class<?> annotatedEndpointClass, final URI path) throws IOException
+    public Session connectToServer(final Class<?> annotatedEndpointClass, final URI path) throws DeploymentException, IOException
     {
-        ConfiguredEndpoint instance = newConfiguredEndpoint(annotatedEndpointClass, new BasicClientEndpointConfig());
-        return connect(instance, path);
+        return connectToServer(newEndpoint(annotatedEndpointClass), path);
     }
 
     @Override
-    public Session connectToServer(final Endpoint endpoint, final ClientEndpointConfig config, final URI path) throws DeploymentException, IOException
+    public Session connectToServer(final Endpoint endpoint, final ClientEndpointConfig providedConfig, final URI path) throws DeploymentException, IOException
     {
-        ConfiguredEndpoint instance = newConfiguredEndpoint(endpoint, config);
+        ClientEndpointConfig config = providedConfig;
+        if (config == null)
+            config = new BasicClientEndpointConfig();
+
+        ConfiguredEndpoint instance = new ConfiguredEndpoint(endpoint, config);
         return connect(instance, path);
     }
 
     @Override
     public Session connectToServer(Object endpoint, URI path) throws DeploymentException, IOException
     {
-        ConfiguredEndpoint instance = newConfiguredEndpoint(endpoint, new BasicClientEndpointConfig());
+        ClientEndpointConfig config = getAnnotatedConfig(endpoint);
+        ConfiguredEndpoint instance = new ConfiguredEndpoint(endpoint, config);
         return connect(instance, path);
     }
 
@@ -239,34 +241,24 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
         return getHttpClient().getExecutor();
     }
 
-    private ConfiguredEndpoint newConfiguredEndpoint(Class<?> endpointClass, EndpointConfig config)
+    private <T> T newEndpoint(Class<T> endpointClass) throws DeploymentException
     {
         try
         {
-            return newConfiguredEndpoint(endpointClass.getConstructor().newInstance(), config);
+            return endpointClass.getConstructor().newInstance();
         }
         catch (Throwable e)
         {
-            throw new InvalidWebSocketException("Unable to instantiate websocket: " + endpointClass.getName());
+            throw new DeploymentException("Unable to instantiate websocket: " + endpointClass.getName());
         }
     }
 
-    private ConfiguredEndpoint newConfiguredEndpoint(Object endpoint, EndpointConfig providedConfig) throws DeploymentException
-    {
-        EndpointConfig config = readAnnotatedConfig(endpoint, providedConfig != null
-            ? providedConfig : new BasicClientEndpointConfig());
-        return new ConfiguredEndpoint(endpoint, config);
-    }
-
-    protected EndpointConfig readAnnotatedConfig(Object endpoint, EndpointConfig config) throws DeploymentException
+    private ClientEndpointConfig getAnnotatedConfig(Object endpoint) throws DeploymentException
     {
         ClientEndpoint anno = endpoint.getClass().getAnnotation(ClientEndpoint.class);
-        if (anno != null)
-        {
-            // Overwrite Config from Annotation
-            // TODO: should we merge with provided config?
-            return new AnnotatedClientEndpointConfig(anno);
-        }
-        return config;
+        if (anno == null)
+            throw new DeploymentException("Could not get ClientEndpoint annotation for " + endpoint.getClass().getName());
+
+        return new AnnotatedClientEndpointConfig(anno);
     }
 }

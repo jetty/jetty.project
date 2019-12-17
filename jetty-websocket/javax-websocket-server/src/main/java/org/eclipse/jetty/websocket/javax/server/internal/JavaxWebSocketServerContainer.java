@@ -24,7 +24,6 @@ import java.util.concurrent.Executor;
 import java.util.function.Function;
 import javax.servlet.ServletContext;
 import javax.websocket.DeploymentException;
-import javax.websocket.EndpointConfig;
 import javax.websocket.server.ServerEndpoint;
 import javax.websocket.server.ServerEndpointConfig;
 
@@ -160,18 +159,6 @@ public class JavaxWebSocketServerContainer extends JavaxWebSocketClientContainer
         return frameHandlerFactory;
     }
 
-    protected EndpointConfig readAnnotatedConfig(Object endpoint, EndpointConfig config) throws DeploymentException
-    {
-        ServerEndpoint anno = endpoint.getClass().getAnnotation(ServerEndpoint.class);
-        if (anno != null)
-        {
-            // Overwrite with Config from Annotation.
-            return new AnnotatedServerEndpointConfig(this, endpoint.getClass(), anno, config);
-        }
-        return config;
-    }
-
-    @Override
     public void addEndpoint(Class<?> endpointClass) throws DeploymentException
     {
         if (endpointClass == null)
@@ -185,10 +172,7 @@ public class JavaxWebSocketServerContainer extends JavaxWebSocketClientContainer
             {
                 ServerEndpoint anno = endpointClass.getAnnotation(ServerEndpoint.class);
                 if (anno == null)
-                {
-                    throw new DeploymentException(String.format("Class must be @%s annotated: %s",
-                        ServerEndpoint.class.getName(), endpointClass.getName()));
-                }
+                    throw new DeploymentException(String.format("Class must be @%s annotated: %s", ServerEndpoint.class.getName(), endpointClass.getName()));
 
                 ServerEndpointConfig config = new AnnotatedServerEndpointConfig(this, endpointClass, anno);
                 addEndpointMapping(config);
@@ -207,36 +191,36 @@ public class JavaxWebSocketServerContainer extends JavaxWebSocketClientContainer
     }
 
     @Override
-    public void addEndpoint(ServerEndpointConfig config) throws DeploymentException
+    public void addEndpoint(ServerEndpointConfig providedConfig) throws DeploymentException
     {
-        if (config == null)
-        {
+        if (providedConfig == null)
             throw new DeploymentException("ServerEndpointConfig is null");
-        }
 
         if (isStarted() || isStarting())
         {
-            if (LOG.isDebugEnabled())
-            {
-                LOG.debug("addEndpoint({}) path={} endpoint={}", config, config.getPath(), config.getEndpointClass());
-            }
-
+            Class<?> endpointClass = providedConfig.getEndpointClass();
             try
             {
+                // If we have annotations merge the annotated ServerEndpointConfig with the provided one.
+                ServerEndpoint anno = endpointClass.getAnnotation(ServerEndpoint.class);
+                ServerEndpointConfig config = (anno == null) ? providedConfig
+                    : new AnnotatedServerEndpointConfig(this, endpointClass, anno, providedConfig);
+
+                if (LOG.isDebugEnabled())
+                    LOG.debug("addEndpoint({}) path={} endpoint={}", config, config.getPath(), endpointClass);
+
                 addEndpointMapping(config);
             }
             catch (WebSocketException e)
             {
-                throw new DeploymentException("Unable to deploy: " + config.getEndpointClass().getName(), e);
+                throw new DeploymentException("Unable to deploy: " + endpointClass.getName(), e);
             }
         }
         else
         {
             if (deferredEndpointConfigs == null)
-            {
                 deferredEndpointConfigs = new ArrayList<>();
-            }
-            deferredEndpointConfigs.add(config);
+            deferredEndpointConfigs.add(providedConfig);
         }
     }
 

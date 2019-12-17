@@ -24,14 +24,14 @@ import javax.websocket.server.ServerEndpoint;
 
 import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
 import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.javax.client.JavaxWebSocketClientFrameHandlerFactory;
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketContainer;
-import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketFrameHandlerFactory;
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketFrameHandlerMetadata;
 import org.eclipse.jetty.websocket.servlet.FrameHandlerFactory;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
 
-public class JavaxWebSocketServerFrameHandlerFactory extends JavaxWebSocketFrameHandlerFactory implements FrameHandlerFactory
+public class JavaxWebSocketServerFrameHandlerFactory extends JavaxWebSocketClientFrameHandlerFactory implements FrameHandlerFactory
 {
     public JavaxWebSocketServerFrameHandlerFactory(JavaxWebSocketContainer container)
     {
@@ -53,10 +53,9 @@ public class JavaxWebSocketServerFrameHandlerFactory extends JavaxWebSocketFrame
         }
 
         ServerEndpoint anno = endpointClass.getAnnotation(ServerEndpoint.class);
-
         if (anno == null)
         {
-            return null;
+            return super.createMetadata(endpointClass, endpointConfig);
         }
 
         UriTemplatePathSpec templatePathSpec = new UriTemplatePathSpec(anno.value());

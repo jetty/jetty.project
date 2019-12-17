@@ -18,54 +18,49 @@
 
 package org.eclipse.jetty.websocket.javax.tests.server;
 
-import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import javax.websocket.server.ServerEndpointConfig;
 
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.javax.tests.Fuzzer;
-import org.eclipse.jetty.websocket.javax.tests.WSServer;
+import org.eclipse.jetty.websocket.javax.tests.LocalServer;
 import org.eclipse.jetty.websocket.javax.tests.coders.DateDecoder;
 import org.eclipse.jetty.websocket.javax.tests.coders.TimeEncoder;
 import org.eclipse.jetty.websocket.javax.tests.server.configs.EchoSocketConfigurator;
 import org.eclipse.jetty.websocket.javax.tests.server.sockets.ConfiguredEchoSocket;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-/**
- * Example of an annotated echo server discovered via annotation scanning.
- */
 public class AnnotatedServerEndpointTest
 {
-    private static WSServer server;
+    private LocalServer server;
+    private String path = "/echo";
+    private String subprotocol = "echo";
 
-    @BeforeAll
-    public static void startServer() throws Exception
+    @BeforeEach
+    public void startServer() throws Exception
     {
-        Path testdir = MavenTestingUtils.getTargetTestingPath(AnnotatedServerEndpointTest.class.getName());
-        server = new WSServer(testdir, "app");
-        server.createWebInf();
-        server.copyEndpoint(ConfiguredEchoSocket.class);
-        server.copyClass(EchoSocketConfigurator.class);
-        server.copyClass(DateDecoder.class);
-        server.copyClass(TimeEncoder.class);
-
+        server = new LocalServer();
         server.start();
+        server.getServerContainer().addEndpoint(ConfiguredEchoSocket.class);
 
-        WebAppContext webapp = server.createWebAppContext();
-        server.deployWebapp(webapp);
+        ServerEndpointConfig endpointConfig = ServerEndpointConfig.Builder
+            .create(ConfiguredEchoSocket.class, "/override")
+            .subprotocols(Collections.singletonList("override"))
+            .build();
+        server.getServerContainer().addEndpoint(endpointConfig);
     }
 
-    @AfterAll
-    public static void stopServer() throws Exception
+    @AfterEach
+    public void stopServer() throws Exception
     {
         server.stop();
     }
@@ -73,7 +68,7 @@ public class AnnotatedServerEndpointTest
     private void assertResponse(String message, String expectedText) throws Exception
     {
         Map<String, String> headers = new HashMap<>();
-        headers.put(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL.asString(), "echo");
+        headers.put(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL.asString(), subprotocol);
 
         List<Frame> send = new ArrayList<>();
         send.add(new Frame(OpCode.TEXT).setPayload(message));
@@ -83,7 +78,7 @@ public class AnnotatedServerEndpointTest
         expect.add(new Frame(OpCode.TEXT).setPayload(expectedText));
         expect.add(CloseStatus.toFrame(CloseStatus.NORMAL));
 
-        try (Fuzzer session = server.newNetworkFuzzer("/app/echo", headers))
+        try (Fuzzer session = server.newNetworkFuzzer(path, headers))
         {
             session.sendFrames(send);
             session.expect(expect);
@@ -124,5 +119,19 @@ public class AnnotatedServerEndpointTest
     public void testSubProtocols() throws Exception
     {
         assertResponse("subprotocols", "chat, echo, test");
+    }
+
+    @Test
+    public void testOverrideEndpointConfig() throws Exception
+    {
+        this.path = "/override";
+        this.subprotocol = "override";
+
+        assertResponse("configurator", EchoSocketConfigurator.class.getName());
+        assertResponse("text-max", "111,222");
+        assertResponse("binary-max", "333,444");
+        assertResponse("decoders", DateDecoder.class.getName());
+        assertResponse("encoders", TimeEncoder.class.getName());
+        assertResponse("subprotocols", "override");
     }
 }

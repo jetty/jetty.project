@@ -18,15 +18,13 @@
 
 package org.eclipse.jetty.websocket.javax.tests.client;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.Date;
-import java.util.List;
 import javax.websocket.ClientEndpoint;
 import javax.websocket.ClientEndpointConfig;
 import javax.websocket.ContainerProvider;
-import javax.websocket.Decoder;
-import javax.websocket.Encoder;
 import javax.websocket.EndpointConfig;
 import javax.websocket.HandshakeResponse;
 import javax.websocket.OnMessage;
@@ -41,14 +39,13 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import static java.util.stream.Collectors.joining;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-public class AnnotatedEndpointConfigTest
+public class AnnotatedClientEndpointTest
 {
     @ClientEndpoint(
         subprotocols = {"chat", "echo-whole"},
@@ -92,9 +89,7 @@ public class AnnotatedEndpointConfigTest
     }
 
     private static CoreServer server;
-    private static ClientEndpointConfig ceconfig;
-    private static EndpointConfig config;
-    private static Session session;
+    private static ClientEndpointConfig config;
     private static AnnotatedEndpointClient clientEndpoint;
 
     @BeforeAll
@@ -106,36 +101,33 @@ public class AnnotatedEndpointConfigTest
         // Start Server
         server.start();
 
-        // Connect client
+        // Create Client
         WebSocketContainer container = ContainerProvider.getWebSocketContainer();
         server.addBean(container); // allow to shutdown with server
+
+        // Connect to Server
         clientEndpoint = new AnnotatedEndpointClient();
-
-        session = container.connectToServer(clientEndpoint, server.getWsUri());
-        assertThat("Session", session, notNullValue());
-
-        config = clientEndpoint.config;
-        assertThat("EndpointConfig", config, notNullValue());
-        assertThat("EndpointConfig", config, instanceOf(ClientEndpointConfig.class));
-
-        ceconfig = (ClientEndpointConfig)config;
-        assertThat("EndpointConfig", ceconfig, notNullValue());
+        assertNotNull(container.connectToServer(clientEndpoint, server.getWsUri()));
+        assertNotNull(clientEndpoint.config);
+        assertThat(clientEndpoint.config, instanceOf(ClientEndpointConfig.class));
+        config = (ClientEndpointConfig)clientEndpoint.config;
     }
 
     @AfterAll
     public static void stopEnv()
     {
-        // Disconnect client
+        // Close Session
         try
         {
-            session.close();
+            if (clientEndpoint.session != null)
+                clientEndpoint.session.close();
         }
-        catch (Exception e)
+        catch (IOException e)
         {
-            e.printStackTrace(System.err);
+            e.printStackTrace();
         }
 
-        // Stop server
+        // Stop Server
         try
         {
             server.stop();
@@ -149,69 +141,39 @@ public class AnnotatedEndpointConfigTest
     @Test
     public void testTextMax() throws Exception
     {
-        assertThat("Client Text Max",
-            clientEndpoint.session.getMaxTextMessageBufferSize(),
-            is(111222));
+        assertThat(clientEndpoint.session.getMaxTextMessageBufferSize(), is(111222));
     }
 
     @Test
     public void testBinaryMax() throws Exception
     {
-        assertThat("Client Binary Max",
-            clientEndpoint.session.getMaxBinaryMessageBufferSize(),
-            is(333444));
+        assertThat(clientEndpoint.session.getMaxBinaryMessageBufferSize(), is(333444));
     }
 
     @Test
     public void testSubProtocols() throws Exception
     {
-        List<String> subprotocols = ceconfig.getPreferredSubprotocols();
-        assertThat("Client Preferred SubProtocols", subprotocols, contains("chat", "echo-whole"));
+        String subprotocols = String.join(", ", config.getPreferredSubprotocols());
+        assertThat(subprotocols, is("chat, echo-whole"));
     }
 
     @Test
     public void testDecoders() throws Exception
     {
-        List<Class<? extends Decoder>> decoders = config.getDecoders();
-        assertThat("Decoders", decoders, notNullValue());
-
-        Class<?> expectedClass = DateDecoder.class;
-        boolean hasExpectedDecoder = false;
-        for (Class<? extends Decoder> decoder : decoders)
-        {
-            if (expectedClass.isAssignableFrom(decoder))
-            {
-                hasExpectedDecoder = true;
-            }
-        }
-
-        assertTrue(hasExpectedDecoder, "Client Decoders has " + expectedClass.getName());
+        String decoders = config.getDecoders().stream().map(Class::getName).collect(joining(", "));
+        assertThat(decoders, is(DateDecoder.class.getName()));
     }
 
     @Test
     public void testEncoders() throws Exception
     {
-        List<Class<? extends Encoder>> encoders = config.getEncoders();
-        assertThat("AvailableEncoders", encoders, notNullValue());
-
-        Class<?> expectedClass = TimeEncoder.class;
-        boolean hasExpectedEncoder = false;
-        for (Class<? extends Encoder> encoder : encoders)
-        {
-            if (expectedClass.isAssignableFrom(encoder))
-            {
-                hasExpectedEncoder = true;
-            }
-        }
-
-        assertTrue(hasExpectedEncoder, "Client AvailableEncoders has " + expectedClass.getName());
+        String encoders = config.getEncoders().stream().map(Class::getName).collect(joining(", "));
+        assertThat(encoders, is(TimeEncoder.class.getName()));
     }
 
     @Test
     public void testConfigurator() throws Exception
     {
-        ClientEndpointConfig ceconfig = (ClientEndpointConfig)config;
-
-        assertThat("Client Configurator", ceconfig.getConfigurator(), instanceOf(AnnotatedEndpointConfigurator.class));
+        assertThat(config.getConfigurator(), instanceOf(AnnotatedEndpointConfigurator.class));
     }
 }

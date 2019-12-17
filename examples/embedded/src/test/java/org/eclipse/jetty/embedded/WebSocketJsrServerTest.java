@@ -67,7 +67,7 @@ public class WebSocketJsrServerTest
 
             TrackingClientEndpoint clientEndpoint = new TrackingClientEndpoint();
 
-            Session session = javaxWebSocketClient.connectToServer(clientEndpoint, wsUri);
+            Session session = javaxWebSocketClient.connectToServer(clientEndpoint, null, wsUri);
             session.getBasicRemote().sendText("Hello World");
 
             String response = clientEndpoint.messages.poll(2, SECONDS);
