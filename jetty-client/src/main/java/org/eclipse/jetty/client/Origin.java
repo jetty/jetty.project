@@ -26,16 +26,28 @@ public class Origin
 {
     private final String scheme;
     private final Address address;
+    private final Object tag;
 
     public Origin(String scheme, String host, int port)
     {
-        this(scheme, new Address(host, port));
+        this(scheme, host, port, null);
+    }
+
+    public Origin(String scheme, String host, int port, Object tag)
+    {
+        this(scheme, new Address(host, port), tag);
     }
 
     public Origin(String scheme, Address address)
     {
+        this(scheme, address, null);
+    }
+
+    public Origin(String scheme, Address address, Object tag)
+    {
         this.scheme = Objects.requireNonNull(scheme);
         this.address = address;
+        this.tag = tag;
     }
 
     public String getScheme()
@@ -46,6 +58,11 @@ public class Origin
     public Address getAddress()
     {
         return address;
+    }
+
+    public Object getTag()
+    {
+        return tag;
     }
 
     public String asString()
@@ -63,14 +80,23 @@ public class Origin
         if (obj == null || getClass() != obj.getClass())
             return false;
         Origin that = (Origin)obj;
-        return scheme.equals(that.scheme) && address.equals(that.address);
+        return scheme.equals(that.scheme) &&
+            address.equals(that.address) &&
+            Objects.equals(tag, that.tag);
     }
 
     @Override
     public int hashCode()
     {
-        int result = scheme.hashCode();
-        result = 31 * result + address.hashCode();
+        return Objects.hash(scheme, address, tag);
+    }
+
+    @Override
+    public String toString()
+    {
+        String result = asString();
+        if (tag != null)
+            result += "[tag=" + tag + "]";
         return result;
     }
 

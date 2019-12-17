@@ -94,6 +94,9 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
             if (isSecure())
                 connectionFactory = newSslClientConnectionFactory(null, connectionFactory);
         }
+        Object tag = origin.getTag();
+        if (tag instanceof ClientConnectionFactory.Decorator)
+            connectionFactory = ((ClientConnectionFactory.Decorator)tag).apply(connectionFactory);
         this.connectionFactory = connectionFactory;
 
         String host = HostPort.normalizeHost(getHost());

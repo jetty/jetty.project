@@ -87,6 +87,7 @@ public class HttpRequest implements Request
     private List<RequestListener> requestListeners;
     private BiFunction<Request, Request, Response.CompleteListener> pushListener;
     private Supplier<HttpFields> trailers;
+    private Object tag;
 
     protected HttpRequest(HttpClient client, HttpConversation conversation, URI uri)
     {
@@ -311,6 +312,19 @@ public class HttpRequest implements Request
             cookies = new ArrayList<>();
         cookies.add(cookie);
         return this;
+    }
+
+    @Override
+    public Request tag(Object tag)
+    {
+        this.tag = tag;
+        return this;
+    }
+
+    @Override
+    public Object getTag()
+    {
+        return tag;
     }
 
     @Override
