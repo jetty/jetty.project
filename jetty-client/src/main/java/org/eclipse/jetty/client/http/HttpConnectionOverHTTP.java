@@ -139,10 +139,15 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
     public boolean onIdleExpired()
     {
         long idleTimeout = getEndPoint().getIdleTimeout();
-        boolean close = delegate.onIdleTimeout(idleTimeout);
+        boolean close = onIdleTimeout(idleTimeout);
         if (close)
             close(new TimeoutException("Idle timeout " + idleTimeout + " ms"));
         return false;
+    }
+
+    protected boolean onIdleTimeout(long idleTimeout)
+    {
+        return delegate.onIdleTimeout(idleTimeout);
     }
 
     @Override

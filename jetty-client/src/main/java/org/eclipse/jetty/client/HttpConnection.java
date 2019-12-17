@@ -84,6 +84,12 @@ public abstract class HttpConnection implements Connection
 
     protected void normalizeRequest(Request request)
     {
+        boolean normalized = ((HttpRequest)request).normalized();
+        if (LOG.isDebugEnabled())
+            LOG.debug("Normalizing {} {}", !normalized, request);
+        if (normalized)
+            return;
+
         HttpVersion version = request.getVersion();
         HttpFields headers = request.getHeaders();
         ContentProvider content = request.getContent();
