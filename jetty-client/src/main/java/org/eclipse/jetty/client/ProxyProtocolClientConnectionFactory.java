@@ -23,8 +23,8 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
-import java.util.HashMap;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
@@ -206,7 +206,7 @@ public abstract class ProxyProtocolClientConnectionFactory implements ClientConn
                 InetSocketAddress local = endPoint.getLocalAddress();
                 InetSocketAddress remote = endPoint.getRemoteAddress();
                 boolean ipv4 = local.getAddress() instanceof Inet4Address;
-                tag = new Tag(Tag.Command.PROXY, ipv4 ? Tag.Family.INET4 : Tag.Family.INET6, Tag.Protocol.STREAM, local.getAddress().getHostAddress(), local.getPort(), remote.getAddress().getHostAddress(), remote.getPort());
+                tag = new Tag(Tag.Command.PROXY, ipv4 ? Tag.Family.INET4 : Tag.Family.INET6, Tag.Protocol.STREAM, local.getAddress().getHostAddress(), local.getPort(), remote.getAddress().getHostAddress(), remote.getPort(), null);
             }
             return new ProxyProtocolConnectionV2(endPoint, executor, getClientConnectionFactory(), context, tag);
         }
@@ -223,7 +223,7 @@ public abstract class ProxyProtocolClientConnectionFactory implements ClientConn
             /**
              * The PROXY V2 Tag typically used to "ping" the server.
              */
-            public static final Tag LOCAL = new Tag(Command.LOCAL, Family.UNSPEC, Protocol.UNSPEC, null, 0, null, 0);
+            public static final Tag LOCAL = new Tag(Command.LOCAL, Family.UNSPEC, Protocol.UNSPEC, null, 0, null, 0, null);
 
             private Command command;
             private Family family;
@@ -232,7 +232,7 @@ public abstract class ProxyProtocolClientConnectionFactory implements ClientConn
             private int srcPort;
             private String dstIP;
             private int dstPort;
-            private Map<Integer, byte[]> vectors;
+            private List<TLV> tlvs;
 
             /**
              * <p>Creates a Tag whose metadata will be derived from the underlying EndPoint.</p>
@@ -251,7 +251,20 @@ public abstract class ProxyProtocolClientConnectionFactory implements ClientConn
              */
             public Tag(String srcIP, int srcPort)
             {
-                this(Command.PROXY, null, Protocol.STREAM, srcIP, srcPort, null, 0);
+                this(Command.PROXY, null, Protocol.STREAM, srcIP, srcPort, null, 0, null);
+            }
+
+            /**
+             * <p>Creates a Tag with the given source metadata and Type-Length-Value (TLV) objects.</p>
+             * <p>The destination metadata will be derived from the underlying EndPoint.</p>
+             *
+             * @param srcIP the source IP address
+             * @param srcPort the source port
+             * @param tlvs the TLV objects
+             */
+            public Tag(String srcIP, int srcPort, List<TLV> tlvs)
+            {
+                this(Command.PROXY, null, Protocol.STREAM, srcIP, srcPort, null, 0, tlvs);
             }
 
             /**
@@ -264,8 +277,9 @@ public abstract class ProxyProtocolClientConnectionFactory implements ClientConn
              * @param srcPort the source port
              * @param dstIP the destination IP address
              * @param dstPort the destination port
+             * @param tlvs the TLV objects
              */
-            public Tag(Command command, Family family, Protocol protocol, String srcIP, int srcPort, String dstIP, int dstPort)
+            public Tag(Command command, Family family, Protocol protocol, String srcIP, int srcPort, String dstIP, int dstPort, List<TLV> tlvs)
             {
                 this.command = command;
                 this.family = family;
@@ -274,17 +288,7 @@ public abstract class ProxyProtocolClientConnectionFactory implements ClientConn
                 this.srcPort = srcPort;
                 this.dstIP = dstIP;
                 this.dstPort = dstPort;
-            }
-
-            public void put(int type, byte[] data)
-            {
-                if (type < 0 || type > 255)
-                    throw new IllegalArgumentException("Invalid type: " + type);
-                if (data != null && data.length > 65535)
-                    throw new IllegalArgumentException("Invalid data length: " + data.length);
-                if (vectors == null)
-                    vectors = new HashMap<>();
-                vectors.put(type, data);
+                this.tlvs = tlvs;
             }
 
             public Command getCommand()
@@ -322,9 +326,9 @@ public abstract class ProxyProtocolClientConnectionFactory implements ClientConn
                 return dstPort;
             }
 
-            public Map<Integer, byte[]> getVectors()
+            public List<TLV> getTLVs()
             {
-                return vectors != null ? vectors : Collections.emptyMap();
+                return tlvs;
             }
 
             @Override
@@ -347,13 +351,14 @@ public abstract class ProxyProtocolClientConnectionFactory implements ClientConn
                     Objects.equals(srcIP, that.srcIP) &&
                     srcPort == that.srcPort &&
                     Objects.equals(dstIP, that.dstIP) &&
-                    dstPort == that.dstPort;
+                    dstPort == that.dstPort &&
+                    Objects.equals(tlvs, that.tlvs);
             }
 
             @Override
             public int hashCode()
             {
-                return Objects.hash(command, family, protocol, srcIP, srcPort, dstIP, dstPort);
+                return Objects.hash(command, family, protocol, srcIP, srcPort, dstIP, dstPort, tlvs);
             }
 
             public enum Command
@@ -369,6 +374,51 @@ public abstract class ProxyProtocolClientConnectionFactory implements ClientConn
             public enum Protocol
             {
                 UNSPEC, STREAM, DGRAM
+            }
+
+            public static class TLV
+            {
+                private final int type;
+                private final byte[] value;
+
+                public TLV(int type, byte[] value)
+                {
+                    if (type < 0 || type > 255)
+                        throw new IllegalArgumentException("Invalid type: " + type);
+                    if (value != null && value.length > 65535)
+                        throw new IllegalArgumentException("Invalid value length: " + value.length);
+                    this.type = type;
+                    this.value = Objects.requireNonNull(value);
+                }
+
+                public int getType()
+                {
+                    return type;
+                }
+
+                public byte[] getValue()
+                {
+                    return value;
+                }
+
+                @Override
+                public boolean equals(Object obj)
+                {
+                    if (this == obj)
+                        return true;
+                    if (obj == null || getClass() != obj.getClass())
+                        return false;
+                    TLV that = (TLV)obj;
+                    return type == that.type && Arrays.equals(value, that.value);
+                }
+
+                @Override
+                public int hashCode()
+                {
+                    int result = Objects.hash(type);
+                    result = 31 * result + Arrays.hashCode(value);
+                    return result;
+                }
             }
         }
     }
@@ -533,9 +583,9 @@ public abstract class ProxyProtocolClientConnectionFactory implements ClientConn
                 capacity += 1; // family and protocol
                 capacity += 2; // length
                 capacity += 216; // max address length
-                Map<Integer, byte[]> vectors = tag.getVectors();
-                int vectorsLength = vectors.values().stream()
-                    .mapToInt(data -> 1 + 2 + data.length)
+                List<V2.Tag.TLV> tlvs = tag.getTLVs();
+                int vectorsLength = tlvs == null ? 0 : tlvs.stream()
+                    .mapToInt(tlv -> 1 + 2 + tlv.getValue().length)
                     .sum();
                 capacity += vectorsLength;
                 ByteBuffer buffer = ByteBuffer.allocateDirect(capacity);
@@ -602,12 +652,15 @@ public abstract class ProxyProtocolClientConnectionFactory implements ClientConn
                     default:
                         throw new IllegalStateException();
                 }
-                for (Map.Entry<Integer, byte[]> entry : vectors.entrySet())
+                if (tlvs != null)
                 {
-                    buffer.put(entry.getKey().byteValue());
-                    byte[] data = entry.getValue();
-                    buffer.putShort((short)data.length);
-                    buffer.put(data);
+                    for (V2.Tag.TLV tlv : tlvs)
+                    {
+                        buffer.put((byte)tlv.getType());
+                        byte[] data = tlv.getValue();
+                        buffer.putShort((short)data.length);
+                        buffer.put(data);
+                    }
                 }
                 buffer.flip();
                 endPoint.write(callback, buffer);

@@ -20,6 +20,7 @@ package org.eclipse.jetty.client;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import javax.servlet.http.HttpServletRequest;
@@ -174,7 +175,8 @@ public class HttpClientProxyProtocolTest
                 EndPoint endPoint = jettyRequest.getHttpChannel().getEndPoint();
                 assertTrue(endPoint instanceof ProxyConnectionFactory.ProxyEndPoint);
                 ProxyConnectionFactory.ProxyEndPoint proxyEndPoint = (ProxyConnectionFactory.ProxyEndPoint)endPoint;
-                assertEquals(tlsVersion, proxyEndPoint.getAttribute(ProxyConnectionFactory.TLS_VERSION));
+                if (target.equals("/tls_version"))
+                    assertEquals(tlsVersion, proxyEndPoint.getAttribute(ProxyConnectionFactory.TLS_VERSION));
                 response.setContentType(MimeTypes.Type.TEXT_PLAIN.asString());
                 response.getOutputStream().print(request.getRemotePort());
             }
@@ -184,7 +186,6 @@ public class HttpClientProxyProtocolTest
         int serverPort = connector.getLocalPort();
 
         int clientPort = ThreadLocalRandom.current().nextInt(1024, 65536);
-        V2.Tag tag = new V2.Tag("127.0.0.1", clientPort);
         int typeTLS = 0x20;
         byte[] dataTLS = new byte[1 + 4 + (1 + 2 + tlsVersionBytes.length)];
         dataTLS[0] = 0x01; // CLIENT_SSL
@@ -192,13 +193,27 @@ public class HttpClientProxyProtocolTest
         dataTLS[6] = 0x00; // Length, hi byte
         dataTLS[7] = (byte)tlsVersionBytes.length; // Length, lo byte
         System.arraycopy(tlsVersionBytes, 0, dataTLS, 8, tlsVersionBytes.length);
-        tag.put(typeTLS, dataTLS);
+        V2.Tag.TLV tlv = new V2.Tag.TLV(typeTLS, dataTLS);
+        V2.Tag tag = new V2.Tag("127.0.0.1", clientPort, Collections.singletonList(tlv));
 
         ContentResponse response = client.newRequest("localhost", serverPort)
+            .path("/tls_version")
             .tag(tag)
             .send();
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertEquals(String.valueOf(clientPort), response.getContentAsString());
+
+        // Make another request with the same address information, but different TLV.
+        V2.Tag.TLV tlv2 = new V2.Tag.TLV(0x01, "http/1.1".getBytes(StandardCharsets.UTF_8));
+        V2.Tag tag2 = new V2.Tag("127.0.0.1", clientPort, Collections.singletonList(tlv2));
+        response = client.newRequest("localhost", serverPort)
+            .tag(tag2)
+            .send();
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+        assertEquals(String.valueOf(clientPort), response.getContentAsString());
+
+        // Make sure the two TLVs created two destinations.
+        assertEquals(2, client.getDestinations().size());
     }
 
     @Test
