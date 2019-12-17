@@ -47,6 +47,9 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public abstract class ProxyProtocolClientConnectionFactory implements ClientConnectionFactory
 {
+    /**
+     * A ClientConnectionFactory for the PROXY protocol version 1.
+     */
     public static class V1 extends ProxyProtocolClientConnectionFactory
     {
         public V1(ClientConnectionFactory factory)
@@ -70,6 +73,13 @@ public abstract class ProxyProtocolClientConnectionFactory implements ClientConn
             return new ProxyProtocolConnectionV1(endPoint, executor, getClientConnectionFactory(), context, tag);
         }
 
+        /**
+         * <p>PROXY protocol version 1 metadata holder to be used in conjunction
+         * with {@link org.eclipse.jetty.client.api.Request#tag(Object)}.</p>
+         * <p>Instances of this class are associated to a destination so that
+         * all connections of that destination will initiate the communication
+         * with the PROXY protocol version 1 bytes specified by this metadata.</p>
+         */
         public static class Tag implements ClientConnectionFactory.Decorator
         {
             /**
@@ -83,16 +93,35 @@ public abstract class ProxyProtocolClientConnectionFactory implements ClientConn
             private final String dstIP;
             private final int dstPort;
 
+            /**
+             * <p>Creates a Tag whose metadata will be derived from the underlying EndPoint.</p>
+             */
             public Tag()
             {
                 this(null, 0);
             }
 
+            /**
+             * <p>Creates a Tag with the given source metadata.</p>
+             * <p>The destination metadata will be derived from the underlying EndPoint.</p>
+             *
+             * @param srcIP the source IP address
+             * @param srcPort the source port
+             */
             public Tag(String srcIP, int srcPort)
             {
                 this(null, srcIP, srcPort, null, 0);
             }
 
+            /**
+             * <p>Creates a Tag with the given metadata.</p>
+             * 
+             * @param family the protocol family
+             * @param srcIP the source IP address
+             * @param srcPort the source port
+             * @param dstIP the destination IP address
+             * @param dstPort the destination port
+             */
             public Tag(String family, String srcIP, int srcPort, String dstIP, int dstPort)
             {
                 this.family = family;
@@ -156,6 +185,9 @@ public abstract class ProxyProtocolClientConnectionFactory implements ClientConn
         }
     }
 
+    /**
+     * A ClientConnectionFactory for the PROXY protocol version 2.
+     */
     public static class V2 extends ProxyProtocolClientConnectionFactory
     {
         public V2(ClientConnectionFactory factory)
@@ -179,6 +211,13 @@ public abstract class ProxyProtocolClientConnectionFactory implements ClientConn
             return new ProxyProtocolConnectionV2(endPoint, executor, getClientConnectionFactory(), context, tag);
         }
 
+        /**
+         * <p>PROXY protocol version 2 metadata holder to be used in conjunction
+         * with {@link org.eclipse.jetty.client.api.Request#tag(Object)}.</p>
+         * <p>Instances of this class are associated to a destination so that
+         * all connections of that destination will initiate the communication
+         * with the PROXY protocol version 2 bytes specified by this metadata.</p>
+         */
         public static class Tag implements ClientConnectionFactory.Decorator
         {
             /**
@@ -195,16 +234,37 @@ public abstract class ProxyProtocolClientConnectionFactory implements ClientConn
             private int dstPort;
             private Map<Integer, byte[]> vectors;
 
+            /**
+             * <p>Creates a Tag whose metadata will be derived from the underlying EndPoint.</p>
+             */
             public Tag()
             {
                 this(null, 0);
             }
 
+            /**
+             * <p>Creates a Tag with the given source metadata.</p>
+             * <p>The destination metadata will be derived from the underlying EndPoint.</p>
+             *
+             * @param srcIP the source IP address
+             * @param srcPort the source port
+             */
             public Tag(String srcIP, int srcPort)
             {
                 this(Command.PROXY, null, Protocol.STREAM, srcIP, srcPort, null, 0);
             }
 
+            /**
+             * <p>Creates a Tag with the given metadata.</p>
+             *
+             * @param command the LOCAL or PROXY command
+             * @param family the protocol family
+             * @param protocol the protocol type
+             * @param srcIP the source IP address
+             * @param srcPort the source port
+             * @param dstIP the destination IP address
+             * @param dstPort the destination port
+             */
             public Tag(Command command, Family family, Protocol protocol, String srcIP, int srcPort, String dstIP, int dstPort)
             {
                 this.command = command;
@@ -326,7 +386,7 @@ public abstract class ProxyProtocolClientConnectionFactory implements ClientConn
     }
 
     @Override
-    public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context)
+    public Connection newConnection(EndPoint endPoint, Map<String, Object> context)
     {
         ProxyProtocolConnection connection = newProxyProtocolConnection(endPoint, context);
         return customize(connection, context);
