@@ -105,13 +105,13 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                           \                         \                                       |
                            +--owcL------------------->--owcL--------------------------------+
 
-      swl = setWriteListener
-      w = write
-      owc = onWriteComplete(false,null)
-      owcL = onWriteComplete(true,null)
-      irf = isReady()==false
-      irt = osReady()==true
-      last = close() or complete(Callback) or write of known last content
+      swl  : setWriteListener
+      w    : write
+      owc  : onWriteComplete last == false
+      owcL : onWriteComplete last == true
+      irf  : isReady() == false
+      irt  : isReady() == true
+      last : close() or complete(Callback) or write of known last content
      </pre>
      */
     enum ApiState
@@ -285,11 +285,15 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 
     private void onWriteComplete(boolean last, Throwable failure)
     {
+        String state = null;
         boolean wake = false;
         Callback closedCallback = null;
         ByteBuffer closeContent = null;
         synchronized (_channelState)
         {
+            if (LOG.isDebugEnabled())
+                state = stateString();
+
             // Transition to CLOSED state if we were the last write or we have failed
             if (last || failure != null)
             {
@@ -297,11 +301,11 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                 closedCallback = _closedCallback;
                 _closedCallback = null;
                 releaseBuffer();
+                wake = updateApiState(failure);
             }
-
-            // Did somebody require a close while we were writing?
-            if (_state == State.CLOSE)
+            else if (_state == State.CLOSE)
             {
+                // Somebody called close or complete while we were writing.
                 // We can now send a (probably empty) last buffer and then when it completes
                 // onWriteCompletion will be called again to actually execute the _completeCallback
                 _state = State.CLOSING;
@@ -309,39 +313,13 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             }
             else
             {
-                switch (_apiState)
-                {
-                    case BLOCKED:
-                        _apiState = ApiState.BLOCKING;
-                        break;
-
-                    case PENDING:
-                        _apiState = ApiState.ASYNC;
-                        if (failure != null)
-                        {
-                            _onError = failure;
-                            wake = _channelState.onWritePossible();
-                        }
-                        break;
-
-                    case UNREADY:
-                        _apiState = ApiState.READY;
-                        if (failure != null)
-                            _onError = failure;
-                        wake = _channelState.onWritePossible();
-                        break;
-
-                    default:
-                        if (_state == State.CLOSED)
-                            break;
-                        throw new IllegalStateException(stateString());
-                }
+                wake = updateApiState(null);
             }
         }
 
         if (LOG.isDebugEnabled())
-            LOG.debug("onWriteComplete({},{}) {} c={} cb={} w={}",
-                last, failure, stateString(), BufferUtil.toDetailString(closeContent), closedCallback, wake);
+            LOG.debug("onWriteComplete({},{}) {}->{} c={} cb={} w={}",
+                last, failure, state, stateString(), BufferUtil.toDetailString(closeContent), closedCallback, wake);
 
         if (failure != null)
             _channel.abort(failure);
@@ -367,6 +345,39 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             if (wake)
                 _channel.execute(_channel); // TODO review in jetty-10 if execute is needed
         }
+    }
+
+    private boolean updateApiState(Throwable failure)
+    {
+        boolean wake = false;
+        switch (_apiState)
+        {
+            case BLOCKED:
+                _apiState = ApiState.BLOCKING;
+                break;
+
+            case PENDING:
+                _apiState = ApiState.ASYNC;
+                if (failure != null)
+                {
+                    _onError = failure;
+                    wake = _channelState.onWritePossible();
+                }
+                break;
+
+            case UNREADY:
+                _apiState = ApiState.READY;
+                if (failure != null)
+                    _onError = failure;
+                wake = _channelState.onWritePossible();
+                break;
+
+            default:
+                if (_state == State.CLOSED)
+                    break;
+                throw new IllegalStateException(stateString());
+        }
+        return wake;
     }
 
     public void softClose()
@@ -676,7 +687,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         }
 
         if (content == null)
-            new AsyncFlush().iterate();
+            new AsyncFlush(false).iterate();
         else
         {
             try
@@ -960,7 +971,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 
         if (async)
             // Do the asynchronous writing from the callback
-            new AsyncFlush().iterate();
+            new AsyncFlush(last).iterate();
         else
         {
             try
@@ -1562,9 +1573,9 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     {
         volatile boolean _flushed;
 
-        AsyncFlush()
+        AsyncFlush(boolean last)
         {
-            super(false);
+            super(last);
         }
 
         @Override
