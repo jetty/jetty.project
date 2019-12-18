@@ -89,7 +89,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
      */
     public WebSocketClient()
     {
-        this(null, HttpClientProvider.get(null));
+        this(HttpClientProvider.get(null), null);
         // Add as bean, as HttpClient was created in this constructor
         addBean(this.httpClient);
     }
@@ -102,19 +102,33 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
     public WebSocketClient(HttpClient httpClient)
     {
         // Use external HttpClient
-        this(null, Objects.requireNonNull(httpClient));
+        this(Objects.requireNonNull(httpClient), null);
     }
 
     /**
      * Instantiate a WebSocketClient using HttpClient for defaults
      *
-     * @param httpClient the HttpClient to base internal defaults off of
-     * @param objectFactory the DecoratedObjectFactory for all client instantiated classes
+     * @param httpClient the HttpClient that underlying WebSocket client uses
+     * @param decoratedObjectFactory the DecoratedObjectFactory for all client instantiated classes
      */
-    public WebSocketClient(HttpClient httpClient, DecoratedObjectFactory objectFactory)
+    public WebSocketClient(HttpClient httpClient, DecoratedObjectFactory decoratedObjectFactory)
     {
-        // Use external HttpClient
-        this(objectFactory, Objects.requireNonNull(httpClient));
+        this.httpClient = httpClient;
+
+        addBean(sessionTracker);
+        addSessionListener(sessionTracker);
+
+        // Always a pristine Client policy
+        this.policy = WebSocketPolicy.newClientPolicy();
+        // We do not support late binding of DecoratedObjectFactory in this WebSocketClient
+        DecoratedObjectFactory objectFactory = decoratedObjectFactory == null ? new DecoratedObjectFactory() : decoratedObjectFactory;
+        this.objectFactorySupplier = () -> objectFactory;
+
+        this.extensionRegistry = new WebSocketExtensionFactory(this);
+        addBean(extensionRegistry);
+
+        this.eventDriverFactory = new EventDriverFactory(this);
+        this.sessionFactory = new WebSocketSessionFactory(this);
     }
 
     /**
@@ -126,7 +140,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
     @Deprecated
     public WebSocketClient(SslContextFactory sslContextFactory)
     {
-        this(null, newHttpClient(sslContextFactory, null, null));
+        this(newHttpClient(sslContextFactory, null, null), null);
         // Add as bean, as HttpClient was created in this constructor
         addBean(this.httpClient);
     }
@@ -140,7 +154,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
     @Deprecated
     public WebSocketClient(Executor executor)
     {
-        this(null, newHttpClient(null, executor, null));
+        this(newHttpClient(null, executor, null), null);
         // Add as bean, as HttpClient was created in this constructor
         addBean(this.httpClient);
     }
@@ -154,7 +168,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
     @Deprecated
     public WebSocketClient(ByteBufferPool bufferPool)
     {
-        this(null, newHttpClient(null, null, bufferPool));
+        this(newHttpClient(null, null, bufferPool), null);
         // Add as bean, as HttpClient was created in this constructor
         addBean(this.httpClient);
     }
@@ -169,7 +183,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
     @Deprecated
     public WebSocketClient(SslContextFactory sslContextFactory, Executor executor)
     {
-        this(null, newHttpClient(sslContextFactory, executor, null));
+        this(newHttpClient(sslContextFactory, executor, null), null);
         // Add as bean, as HttpClient was created in this constructor
         addBean(this.httpClient);
     }
@@ -182,7 +196,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
      */
     public WebSocketClient(WebSocketContainerScope scope)
     {
-        this(scope.getObjectFactory(), newHttpClient(scope.getSslContextFactory(), scope.getExecutor(), scope.getBufferPool()));
+        this(newHttpClient(scope.getSslContextFactory(), scope.getExecutor(), scope.getBufferPool()), scope.getObjectFactory());
         // Add as bean, as HttpClient was created in this constructor
         addBean(this.httpClient);
     }
@@ -209,7 +223,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
          * this behavior has been changed to be non-scoped so as to be able to use the provided
          * SslContextFactory for the underlying HttpClient instance.
          */
-        this(scope.getObjectFactory(), newHttpClient(sslContextFactory, scope.getExecutor(), scope.getBufferPool()));
+        this(newHttpClient(sslContextFactory, scope.getExecutor(), scope.getBufferPool()), scope.getObjectFactory());
         // Add as bean, as HttpClient was created in this constructor
         addBean(this.httpClient);
     }
@@ -226,7 +240,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
     @Deprecated
     public WebSocketClient(SslContextFactory sslContextFactory, Executor executor, ByteBufferPool bufferPool)
     {
-        this(null, newHttpClient(sslContextFactory, executor, bufferPool));
+        this(newHttpClient(sslContextFactory, executor, bufferPool), null);
         // Add as bean, as HttpClient was created in this class
         addBean(this.httpClient);
     }
@@ -286,32 +300,6 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
 
         this.eventDriverFactory = eventDriverFactory == null ? new EventDriverFactory(this) : eventDriverFactory;
         this.sessionFactory = sessionFactory == null ? new WebSocketSessionFactory(this) : sessionFactory;
-    }
-
-    /**
-     * Internal constructor (not public)
-     *
-     * @param decoratedObjectFactory the decorated Object Factory to use
-     * @param httpClient the HttpClient underpinnings
-     */
-    private WebSocketClient(DecoratedObjectFactory decoratedObjectFactory, HttpClient httpClient)
-    {
-        this.httpClient = httpClient;
-
-        addBean(sessionTracker);
-        addSessionListener(sessionTracker);
-
-        // Always a pristine Client policy
-        this.policy = WebSocketPolicy.newClientPolicy();
-        // We do not support late binding of DecoratedObjectFactory in this WebSocketClient
-        DecoratedObjectFactory objectFactory = decoratedObjectFactory == null ? new DecoratedObjectFactory() : decoratedObjectFactory;
-        this.objectFactorySupplier = () -> objectFactory;
-
-        this.extensionRegistry = new WebSocketExtensionFactory(this);
-        addBean(extensionRegistry);
-
-        this.eventDriverFactory = new EventDriverFactory(this);
-        this.sessionFactory = new WebSocketSessionFactory(this);
     }
 
     public static HttpClient newHttpClient(SslContextFactory sslContextFactory, Executor executor, ByteBufferPool bufferPool)
