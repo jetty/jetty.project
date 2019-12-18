@@ -87,6 +87,7 @@ public class HttpRequest implements Request
     private List<RequestListener> requestListeners;
     private BiFunction<Request, Request, Response.CompleteListener> pushListener;
     private Supplier<HttpFields> trailers;
+    private Object tag;
 
     protected HttpRequest(HttpClient client, HttpConversation conversation, URI uri)
     {
@@ -314,6 +315,19 @@ public class HttpRequest implements Request
     }
 
     @Override
+    public Request tag(Object tag)
+    {
+        this.tag = tag;
+        return this;
+    }
+
+    @Override
+    public Object getTag()
+    {
+        return tag;
+    }
+
+    @Override
     public Request attribute(String name, Object value)
     {
         if (attributes == null)
@@ -502,21 +516,12 @@ public class HttpRequest implements Request
     @Override
     public Request onResponseContent(final Response.ContentListener listener)
     {
-        this.responseListeners.add(new Response.DemandedContentListener()
+        this.responseListeners.add(new Response.ContentListener()
         {
             @Override
-            public void onContent(Response response, LongConsumer demand, ByteBuffer content, Callback callback)
+            public void onContent(Response response, ByteBuffer content)
             {
-                try
-                {
-                    listener.onContent(response, content);
-                    callback.succeeded();
-                    demand.accept(1);
-                }
-                catch (Throwable x)
-                {
-                    callback.failed(x);
-                }
+                listener.onContent(response, content);
             }
         });
         return this;
@@ -525,16 +530,12 @@ public class HttpRequest implements Request
     @Override
     public Request onResponseContentAsync(final Response.AsyncContentListener listener)
     {
-        this.responseListeners.add(new Response.DemandedContentListener()
+        this.responseListeners.add(new Response.AsyncContentListener()
         {
             @Override
-            public void onContent(Response response, LongConsumer demand, ByteBuffer content, Callback callback)
+            public void onContent(Response response, ByteBuffer content, Callback callback)
             {
-                listener.onContent(response, content, Callback.from(() ->
-                {
-                    callback.succeeded();
-                    demand.accept(1);
-                }, callback::failed));
+                listener.onContent(response, content, callback);
             }
         });
         return this;

@@ -343,7 +343,7 @@ public class HttpConfiguration implements Dumpable
     }
 
     /**
-     * @param delay if true, delay the application dispatch until content is available (default false)
+     * @param delay if true, delays the application dispatch until content is available (defaults to true)
      */
     public void setDelayDispatchUntilContent(boolean delay)
     {

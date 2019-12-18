@@ -61,7 +61,7 @@ public class ProxyConfiguration
 
     public abstract static class Proxy
     {
-        // TO use IPAddress Map
+        // TODO use InetAddressSet? Or IncludeExcludeSet?
         private final Set<String> included = new HashSet<>();
         private final Set<String> excluded = new HashSet<>();
         private final Origin.Address address;

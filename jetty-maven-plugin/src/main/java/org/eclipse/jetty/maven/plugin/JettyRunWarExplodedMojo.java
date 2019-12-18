@@ -88,7 +88,7 @@ public class JettyRunWarExplodedMojo extends AbstractJettyMojo
             {
                 try
                 {
-                    scanner.addDirectory(webApp.getClasses().toPath());
+                    scanner.addDirectory(classes.toPath());
                 }
                 catch (IOException e)
                 {

@@ -28,6 +28,7 @@ import javax.servlet.UnavailableException;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
 import org.eclipse.jetty.server.handler.ErrorHandler;
@@ -734,8 +735,10 @@ public class HttpChannelState
             }
             else
             {
-                LOG.warn(failure.toString());
-                LOG.debug(failure);
+                if (!(failure instanceof QuietException))
+                    LOG.warn(failure.toString());
+                if (LOG.isDebugEnabled())
+                    LOG.debug(failure);
             }
         }
 
@@ -1341,7 +1344,7 @@ public class HttpChannelState
      * but that a handling thread may need to produce (fill/parse)
      * it.  Typically called by the async read success callback.
      *
-     * @return <code>true</code> if more content may be available
+     * @return {@code true} if more content may be available
      */
     public boolean onReadPossible()
     {
@@ -1373,7 +1376,7 @@ public class HttpChannelState
      * Called to signal that a read has read -1.
      * Will wake if the read was called while in ASYNC_WAIT state
      *
-     * @return <code>true</code> if woken
+     * @return {@code true} if woken
      */
     public boolean onReadEof()
     {
