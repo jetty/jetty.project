@@ -294,7 +294,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
      * @param decoratedObjectFactory the decorated Object Factory to use
      * @param httpClient the HttpClient underpinnings
      */
-    WebSocketClient(DecoratedObjectFactory decoratedObjectFactory, HttpClient httpClient)
+    private WebSocketClient(DecoratedObjectFactory decoratedObjectFactory, HttpClient httpClient)
     {
         this.httpClient = httpClient;
 
