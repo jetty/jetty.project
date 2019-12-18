@@ -27,6 +27,7 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Enumeration;
@@ -76,6 +77,7 @@ import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -366,20 +368,21 @@ public class RequestTest
             "Host: whatever\r\n" +
             "Content-Type: multipart/form-data; boundary=\"AaB03x\"\r\n" +
             "Content-Length: " + multipart.getBytes().length + "\r\n" +
-            "Connection: close\r\n" +
             "\r\n" +
             multipart;
 
-        String responses = _connector.getResponse(request);
-        assertTrue(responses.startsWith("HTTP/1.1 200"));
+        LocalEndPoint endPoint = _connector.connect();
+        endPoint.addInput(request);
+        assertTrue(endPoint.getResponse().startsWith("HTTP/1.1 200"));
 
-        // We know the previous request has completed if another request can be processed.
+        // We know the previous request has completed if another request can be processed on the same connection.
         String cleanupRequest = "GET /foo/cleanup HTTP/1.1\r\n" +
             "Host: whatever\r\n" +
             "Connection: close\r\n" +
             "\r\n";
-        String cleanupResponse = _connector.getResponse(cleanupRequest);
-        assertTrue(cleanupResponse.startsWith("HTTP/1.1 200"));
+
+        endPoint.addInput(cleanupRequest);
+        assertTrue(endPoint.getResponse().startsWith("HTTP/1.1 200"));
         assertThat(testTmpDir.list().length, is(0));
     }
 
@@ -421,21 +424,19 @@ public class RequestTest
             "\r\n" +
             multipart;
 
+        LocalEndPoint endPoint = _connector.connect();
         try (StacklessLogging stackless = new StacklessLogging(HttpChannel.class))
         {
-            String responses = _connector.getResponse(request);
-            //System.err.println(responses);
-            assertTrue(responses.startsWith("HTTP/1.1 500"));
+            endPoint.addInput(request);
+            assertTrue(endPoint.getResponse().startsWith("HTTP/1.1 500"));
         }
 
-        // We know the previous request has completed if another request can be processed.
-        String cleanupRequest = "GET /foo/cleanup HTTP/1.1\r\n" +
-            "Host: whatever\r\n" +
-            "Connection: close\r\n" +
-            "\r\n";
-        String cleanupResponse = _connector.getResponse(cleanupRequest);
-        assertTrue(cleanupResponse.startsWith("HTTP/1.1 200"));
-        assertThat(testTmpDir.list().length, is(0));
+        // Wait for the cleanup of the multipart files.
+        assertTimeoutPreemptively(Duration.ofSeconds(5), () ->
+        {
+            while (testTmpDir.list().length > 0)
+                Thread.yield();
+        });
     }
 
     @Test
