@@ -321,23 +321,21 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             LOG.debug("onWriteComplete({},{}) {}->{} c={} cb={} w={}",
                 last, failure, state, stateString(), BufferUtil.toDetailString(closeContent), closedCallback, wake);
 
-        if (failure != null)
-            _channel.abort(failure);
-
-        if (closeContent != null)
-        {
-            channelWrite(closeContent, true, new WriteCompleteCB());
-            return;
-        }
-
         try
         {
+            if (failure != null)
+                _channel.abort(failure);
+
             if (closedCallback != null)
             {
                 if (failure == null)
                     closedCallback.succeeded();
                 else
                     closedCallback.failed(failure);
+            }
+            else if (closeContent != null)
+            {
+                channelWrite(closeContent, true, new WriteCompleteCB());
             }
         }
         finally
