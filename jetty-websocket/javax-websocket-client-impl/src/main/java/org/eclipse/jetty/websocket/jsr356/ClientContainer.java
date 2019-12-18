@@ -52,7 +52,6 @@ import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
-import org.eclipse.jetty.websocket.client.HttpContainerScope;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.client.io.UpgradeListener;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
@@ -124,7 +123,7 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
      */
     public ClientContainer(final HttpClient httpClient)
     {
-        this(new HttpContainerScope(httpClient));
+        this(new WebSocketClient(httpClient));
     }
 
     /**
