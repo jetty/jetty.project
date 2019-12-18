@@ -35,7 +35,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import javax.servlet.MultipartConfigElement;
 import javax.servlet.ServletInputStream;
@@ -64,12 +63,12 @@ public class MultiPartFormInputStream
     {
         UNPARSED,
         PARSING,
-        ERROR,
-        COMPLETED
+        PARSED,
+        CLOSING,
+        CLOSED
     }
 
     private static final Logger LOG = Log.getLogger(MultiPartFormInputStream.class);
-    private final AtomicReference<State> state = new AtomicReference<>(State.UNPARSED);
     private final MultiMap<Part> _parts = new MultiMap<>();
     private final InputStream _in;
     private final MultipartConfigElement _config;
@@ -79,8 +78,8 @@ public class MultiPartFormInputStream
     private volatile File _tmpDir;
     private volatile boolean _deleteOnExit;
     private volatile boolean _writeFilesWithFilenames;
-    private volatile boolean _parsed;
     private volatile int _bufferSize = 16 * 1024;
+    private State state = State.UNPARSED;
 
     public class MultiPart implements Part
     {
@@ -351,7 +350,7 @@ public class MultiPartFormInputStream
             if (((ServletInputStream)in).isFinished())
             {
                 _in = null;
-                _parsed = true;
+                state = State.PARSED;
                 return;
             }
         }
@@ -366,9 +365,6 @@ public class MultiPartFormInputStream
     @Deprecated
     public boolean isEmpty()
     {
-        if (!_parsed)
-            throw new IllegalStateException();
-
         if (_parts.isEmpty())
             return true;
 
@@ -407,29 +403,24 @@ public class MultiPartFormInputStream
      */
     public void deleteParts()
     {
-        while (true)
+        synchronized (this)
         {
-            switch (state.get())
+            switch (state)
             {
-                case PARSING:
-                    state.compareAndSet(State.PARSING, State.ERROR);
-                    Thread.yield();
-                    continue;
-
+                case CLOSED:
                 case UNPARSED:
-                    if (!state.compareAndSet(State.UNPARSED, State.COMPLETED))
-                        continue;
-                    break;
+                    state = State.CLOSED;
+                    return;
 
-                case ERROR:
-                    Thread.yield();
-                    continue;
+                case PARSING:
+                    state = State.CLOSING;
+                    return;
 
-                case COMPLETED:
+                case PARSED:
+                case CLOSING:
+                    state = State.CLOSED;
                     break;
             }
-
-            break;
         }
 
         MultiException err = null;
@@ -463,8 +454,7 @@ public class MultiPartFormInputStream
      */
     public Collection<Part> getParts() throws IOException
     {
-        if (!_parsed)
-            parse();
+        parse();
         throwIfError();
         return _parts.values().stream().flatMap(List::stream).collect(Collectors.toList());
     }
@@ -478,8 +468,7 @@ public class MultiPartFormInputStream
      */
     public Part getPart(String name) throws IOException
     {
-        if (!_parsed)
-            parse();
+        parse();
         throwIfError();
         return _parts.getValue(name, 0);
     }
@@ -510,10 +499,22 @@ public class MultiPartFormInputStream
      */
     protected void parse()
     {
-        // have we already parsed the input?
-        if (_parsed)
-            return;
-        _parsed = true;
+        synchronized (this)
+        {
+            switch (state)
+            {
+                case UNPARSED:
+                    state = State.PARSING;
+                    break;
+
+                case PARSED:
+                    return;
+
+                default:
+                    _err = new IllegalStateException(state.name());
+                    return;
+            }
+        }
 
         MultiPartParser parser = null;
         try
@@ -553,17 +554,18 @@ public class MultiPartFormInputStream
             int len;
             long total = 0;
 
-            if (!state.compareAndSet(State.UNPARSED, State.PARSING))
-                throw new IllegalStateException("Could not start parsing " + state.get());
-
             while (true)
             {
-                State currentState = state.get();
-                if (currentState != State.PARSING)
-                    throw new IllegalStateException("Unexpected state " + currentState);
+                synchronized (this)
+                {
+                    if (state != State.PARSING)
+                    {
+                        _err = new IllegalStateException(state.name());
+                        return;
+                    }
+                }
 
                 len = _in.read(data);
-
                 if (len > 0)
                 {
                     // keep running total of size of bytes read from input and throw an exception if exceeds MultipartConfigElement._maxRequestSize
@@ -619,24 +621,26 @@ public class MultiPartFormInputStream
         }
         finally
         {
-            while (true)
+            boolean cleanup = false;
+            synchronized (this)
             {
-                switch (state.get())
+                switch (state)
                 {
                     case PARSING:
-                        if (!state.compareAndSet(State.PARSING, State.COMPLETED))
-                            continue;
+                        state = State.PARSED;
                         break;
 
-                    case ERROR:
-                        state.compareAndSet(State.ERROR, State.COMPLETED);
+                    case CLOSING:
+                        cleanup = true;
                         break;
 
                     default:
-                        break;
+                        _err = new IllegalStateException(state.name());
                 }
-                break;
             }
+
+            if (cleanup)
+                deleteParts();
         }
     }
 

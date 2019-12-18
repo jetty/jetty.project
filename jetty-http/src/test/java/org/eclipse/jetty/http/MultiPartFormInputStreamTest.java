@@ -554,7 +554,7 @@ public class MultiPartFormInputStreamTest
 
         // The call to getParts should throw an error.
         Throwable error = assertThrows(IllegalStateException.class, mpis::getParts);
-        assertThat(error.getMessage(), is("Unexpected state ERROR"));
+        assertThat(error.getMessage(), is("CLOSING"));
 
         // There was no error with the cleanup.
         assertNull(cleanupError.get());
@@ -576,12 +576,10 @@ public class MultiPartFormInputStreamTest
 
         // The call to getParts should throw because we have already cleaned up the parts.
         Throwable error = assertThrows(IllegalStateException.class, mpis::getParts);
-        assertThat(error.getMessage(), is("Could not start parsing COMPLETED"));
+        assertThat(error.getMessage(), is("CLOSED"));
 
-        // No tmp files are remaining.
-        String[] fileList = _tmpDir.list();
-        assertNotNull(fileList);
-        assertThat(fileList.length, is(0));
+        // Even though we called getParts() we never even created the tmp directory as we had already called deleteParts().
+        assertFalse(_tmpDir.exists());
     }
 
     @Test
