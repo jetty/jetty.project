@@ -77,7 +77,7 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
     private long maxTextMessageSize = WebSocketConstants.DEFAULT_MAX_TEXT_MESSAGE_SIZE;
     private Duration idleTimeout = WebSocketConstants.DEFAULT_IDLE_TIMEOUT;
     private Duration writeTimeout = WebSocketConstants.DEFAULT_WRITE_TIMEOUT;
-    private final ContextHandler context;
+    private final ContextHandler contextHandler;
 
     public WebSocketCoreSession(FrameHandler handler, Behavior behavior, Negotiated negotiated)
     {
@@ -85,14 +85,24 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
         this.behavior = behavior;
         this.negotiated = negotiated;
         this.demanding = handler.isDemanding();
-        this.context = (behavior == Behavior.SERVER) ? ContextHandler.getCurrentContext().getContextHandler() : null;
+
+        if (behavior == Behavior.SERVER)
+        {
+            ContextHandler.Context context = ContextHandler.getCurrentContext();
+            this.contextHandler = (context != null) ? context.getContextHandler() : null;
+        }
+        else
+        {
+            this.contextHandler = null;
+        }
+
         negotiated.getExtensions().initialize(new IncomingAdaptor(), new OutgoingAdaptor(), this);
     }
 
     private void handle(Runnable runnable)
     {
-        if (context != null)
-            context.handle(runnable);
+        if (contextHandler != null)
+            contextHandler.handle(runnable);
         else
             runnable.run();
     }
