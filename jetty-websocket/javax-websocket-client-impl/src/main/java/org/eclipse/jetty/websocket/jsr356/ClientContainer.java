@@ -183,8 +183,12 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
      */
     public ClientContainer(WebSocketClient client)
     {
+        Objects.requireNonNull(client, "WebSocketClient");
         this.scopeDelegate = client;
         this.client = client;
+        addBean(this.client);
+        this.client.setEventDriverFactory(new JsrEventDriverFactory(scopeDelegate));
+        this.client.setSessionFactory(new JsrSessionFactory(this));
         this.internalClient = false;
 
         this.endpointClientMetadataCache = new ConcurrentHashMap<>();

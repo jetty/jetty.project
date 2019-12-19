@@ -76,10 +76,10 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
     // WebSocket Specifics
     private final WebSocketPolicy policy;
     private final WebSocketExtensionFactory extensionRegistry;
-    private final EventDriverFactory eventDriverFactory;
-    private final SessionFactory sessionFactory;
     private final SessionTracker sessionTracker = new SessionTracker();
     private final List<WebSocketSessionListener> sessionListeners = new ArrayList<>();
+    private EventDriverFactory eventDriverFactory;
+    private SessionFactory sessionFactory;
 
     // defaults to true for backwards compatibility
     private boolean stopAtShutdown = true;
@@ -377,6 +377,16 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
 
         wsReq.setUpgradeListener(upgradeListener);
         return wsReq.sendAsync();
+    }
+
+    public void setEventDriverFactory(EventDriverFactory eventDriverFactory)
+    {
+        this.eventDriverFactory = eventDriverFactory;
+    }
+
+    public void setSessionFactory(SessionFactory sessionFactory)
+    {
+        this.sessionFactory = sessionFactory;
     }
 
     @Override
