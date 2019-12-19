@@ -979,6 +979,12 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         print(s, false);
     }
 
+    @Override
+    public void println(String s) throws IOException
+    {
+        print(s, true);
+    }
+
     private void print(String s, boolean eoln) throws IOException
     {
         if (isClosed())
@@ -1003,7 +1009,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         ByteBuffer out = getHttpChannel().getByteBufferPool().acquire((int)(1 + (s.length() + 2) * encoder.averageBytesPerChar()), false);
         BufferUtil.flipToFill(out);
 
-        for (; ; )
+        while (true)
         {
             CoderResult result;
             if (in.hasRemaining())
@@ -1043,49 +1049,6 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         BufferUtil.flipToFlush(out, 0);
         write(out.array(), out.arrayOffset(), out.remaining());
         getHttpChannel().getByteBufferPool().release(out);
-    }
-
-    @Override
-    public void println(String s) throws IOException
-    {
-        print(s, true);
-    }
-
-    @Override
-    public void println(boolean b) throws IOException
-    {
-        // Need to call super to access the ResourceBundle.
-        super.println(b);
-    }
-
-    @Override
-    public void println(char c) throws IOException
-    {
-        println(String.valueOf(c));
-    }
-
-    @Override
-    public void println(int i) throws IOException
-    {
-        println(String.valueOf(i));
-    }
-
-    @Override
-    public void println(long l) throws IOException
-    {
-        println(String.valueOf(l));
-    }
-
-    @Override
-    public void println(float f) throws IOException
-    {
-        println(String.valueOf(f));
-    }
-
-    @Override
-    public void println(double d) throws IOException
-    {
-        println(String.valueOf(d));
     }
 
     /**
