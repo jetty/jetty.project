@@ -55,7 +55,6 @@ public class WebSocketClientInitTest
                 assertThat("HttpClient started", http.isStarted(), is(true));
 
                 HttpClient httpBean = ws.getBean(HttpClient.class);
-                assertThat("HttpClient should not be found in WebSocketClient", httpBean, nullValue());
                 assertThat("HttpClient bean is managed", ws.isManaged(httpBean), is(false));
                 assertThat("WebSocketClient should not be found in HttpClient", http.getBean(WebSocketClient.class), nullValue());
             }

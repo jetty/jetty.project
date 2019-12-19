@@ -57,7 +57,6 @@ import org.eclipse.jetty.websocket.client.io.UpgradeListener;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.WebSocketSessionListener;
 import org.eclipse.jetty.websocket.common.scopes.DelegatedContainerScope;
-import org.eclipse.jetty.websocket.common.scopes.SimpleContainerScope;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 import org.eclipse.jetty.websocket.jsr356.annotations.AnnotatedEndpointScanner;
 import org.eclipse.jetty.websocket.jsr356.client.AnnotatedClientEndpointMetadata;
@@ -109,9 +108,7 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
     public ClientContainer()
     {
         // This constructor is used with Standalone JSR Client usage.
-        this(new SimpleContainerScope(WebSocketPolicy.newClientPolicy()));
-        client.setDaemon(true);
-        client.addManaged(client.getHttpClient());
+        this(new WebSocketClient());
     }
 
     /**
@@ -123,7 +120,7 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
      */
     public ClientContainer(final HttpClient httpClient)
     {
-        this(new SimpleContainerScope(WebSocketPolicy.newClientPolicy()), httpClient);
+        this(new WebSocketClient(httpClient));
     }
 
     /**
@@ -134,7 +131,6 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
     public ClientContainer(final WebSocketContainerScope scope)
     {
         this(scope, null);
-        client.addManaged(client.getHttpClient());
     }
 
     /**
@@ -187,8 +183,12 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
      */
     public ClientContainer(WebSocketClient client)
     {
+        Objects.requireNonNull(client, "WebSocketClient");
         this.scopeDelegate = client;
         this.client = client;
+        addBean(this.client);
+        this.client.setEventDriverFactory(new JsrEventDriverFactory(scopeDelegate));
+        this.client.setSessionFactory(new JsrSessionFactory(this));
         this.internalClient = false;
 
         this.endpointClientMetadataCache = new ConcurrentHashMap<>();
