@@ -146,7 +146,11 @@ public class AsyncContextState implements AsyncContext
             @Override
             public void run()
             {
-                state().getAsyncContextEvent().getContext().getContextHandler().handle(channel.getRequest(), task);
+                ContextHandler.Context context = state().getAsyncContextEvent().getContext();
+                if (context == null)
+                    task.run();
+                else
+                    context.getContextHandler().handle(channel.getRequest(), task);
             }
         });
     }
