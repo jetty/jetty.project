@@ -311,10 +311,10 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
         }
     }
 
-    public boolean process(final Connection connection)
+    public boolean process(Connection connection)
     {
         HttpClient client = getHttpClient();
-        final HttpExchange exchange = getHttpExchanges().poll();
+        HttpExchange exchange = getHttpExchanges().poll();
         if (LOG.isDebugEnabled())
             LOG.debug("Processing exchange {} on {} of {}", exchange, connection, this);
         if (exchange == null)
@@ -331,7 +331,7 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
         }
         else
         {
-            final Request request = exchange.getRequest();
+            Request request = exchange.getRequest();
             Throwable cause = request.getAbortCause();
             if (cause != null)
             {
@@ -347,19 +347,28 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
             }
             else
             {
-                SendFailure result = ((IConnection)connection).send(exchange);
+                SendFailure result = send((IConnection)connection, exchange);
                 if (result != null)
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("Send failed {} for {}", result, exchange);
                     if (result.retry)
+                    {
+                        // Resend this exchange, likely on another connection,
+                        // and return false to avoid to re-enter this method.
                         send(exchange);
-                    else
-                        request.abort(result.failure);
+                        return false;
+                    }
+                    request.abort(result.failure);
                 }
             }
             return getHttpExchanges().peek() != null;
         }
+    }
+
+    protected SendFailure send(IConnection connection, HttpExchange exchange)
+    {
+        return connection.send(exchange);
     }
 
     @Override

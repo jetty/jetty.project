@@ -123,10 +123,16 @@ public abstract class HttpConnection implements IConnection
 
     protected void normalizeRequest(Request request)
     {
-        final HttpVersion version = request.getVersion();
-        final HttpFields headers = request.getHeaders();
-        final ContentProvider content = request.getContent();
-        final ProxyConfiguration.Proxy proxy = destination.getProxy();
+        boolean normalized = ((HttpRequest)request).normalized();
+        if (LOG.isDebugEnabled())
+            LOG.debug("Normalizing {} {}", !normalized, request);
+        if (normalized)
+            return;
+
+        HttpVersion version = request.getVersion();
+        HttpFields headers = request.getHeaders();
+        ContentProvider content = request.getContent();
+        ProxyConfiguration.Proxy proxy = destination.getProxy();
 
         // Make sure the path is there
         String path = request.getPath();

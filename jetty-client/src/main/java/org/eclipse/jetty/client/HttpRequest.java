@@ -90,6 +90,7 @@ public class HttpRequest implements Request
     private Supplier<HttpFields> trailers;
     private String upgradeProtocol;
     private Object tag;
+    private boolean normalized;
 
     protected HttpRequest(HttpClient client, HttpConversation conversation, URI uri)
     {
@@ -820,6 +821,23 @@ public class HttpRequest implements Request
     public Throwable getAbortCause()
     {
         return aborted.get();
+    }
+
+    /**
+     * <p>Marks this request as <em>normalized</em>.</p>
+     * <p>A request is normalized by setting things that applications give
+     * for granted such as defaulting the method to {@code GET}, adding the
+     * {@code Host} header, adding the cookies, adding {@code Authorization}
+     * headers, etc.</p>
+     *
+     * @return whether this request was already normalized
+     * @see HttpConnection#normalizeRequest(Request)
+     */
+    boolean normalized()
+    {
+        boolean result = normalized;
+        normalized = true;
+        return result;
     }
 
     private String buildQuery()
