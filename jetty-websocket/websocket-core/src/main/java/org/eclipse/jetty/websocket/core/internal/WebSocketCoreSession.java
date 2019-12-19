@@ -357,7 +357,7 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
             Throwable cause = closeStatus.getCause();
             try
             {
-                handler.onError(cause, errorCallback);
+                handle(() -> handler.onError(cause, errorCallback));
             }
             catch (Throwable e)
             {

@@ -292,6 +292,11 @@ public class JavaxWebSocketSession implements javax.websocket.Session
         return frameHandler;
     }
 
+    public void abort()
+    {
+        coreSession.abort();
+    }
+
     /**
      * {@inheritDoc}
      *

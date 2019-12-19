@@ -72,7 +72,7 @@ public final class ContainerDefaultConfigurator extends Configurator
         }
         catch (Exception e)
         {
-            InstantiationException instantiationException = new InstantiationException(String.format("%s: %s", e.getClass().getName(), e.getMessage()));
+            InstantiationException instantiationException = new InstantiationException();
             instantiationException.initCause(e);
             throw instantiationException;
         }

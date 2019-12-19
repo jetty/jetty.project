@@ -31,8 +31,8 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.websocket.javax.tests.EventSocket;
 import org.eclipse.jetty.websocket.javax.tests.WSServer;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static javax.websocket.CloseReason.CloseCodes.NORMAL_CLOSURE;
@@ -55,10 +55,10 @@ public class ContainerProviderServerTest
         }
     }
 
-    private static WSServer server;
+    private WSServer server;
 
-    @BeforeAll
-    public static void startServer() throws Exception
+    @BeforeEach
+    public void startServer() throws Exception
     {
         Path testdir = MavenTestingUtils.getTargetTestingPath(ContainerProviderServerTest.class.getName());
         server = new WSServer(testdir, "app");
@@ -69,14 +69,14 @@ public class ContainerProviderServerTest
         server.deployWebapp(webapp);
     }
 
-    @AfterAll
-    public static void stopServer() throws Exception
+    @AfterEach
+    public void stopServer() throws Exception
     {
         server.stop();
     }
 
     @Test
-    public void test() throws Exception
+    public void testJavaxWsContainerInServer() throws Exception
     {
         WebSocketContainer client = ContainerProvider.getWebSocketContainer();
         EventSocket clientSocket = new EventSocket();

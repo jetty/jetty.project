@@ -18,9 +18,10 @@
 
 package org.eclipse.jetty.websocket.javax.tests.server;
 
-import java.lang.reflect.Field;
 import java.nio.file.Path;
-import java.util.concurrent.CompletableFuture;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import javax.websocket.CloseReason;
 import javax.websocket.ContainerProvider;
@@ -34,10 +35,11 @@ import javax.websocket.server.ServerEndpoint;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.webapp.WebAppContext;
+import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketSession;
 import org.eclipse.jetty.websocket.javax.tests.EventSocket;
 import org.eclipse.jetty.websocket.javax.tests.WSServer;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -50,47 +52,45 @@ public class WebAppClassLoaderTest
     @ServerEndpoint("/echo")
     public static class MySocket
     {
-        private final static CompletableFuture<ClassLoader> constructorClassLoader = new CompletableFuture<>();
-        private final static CompletableFuture<ClassLoader> onOpenClassLoader = new CompletableFuture<>();
-        private final static CompletableFuture<ClassLoader> onMessageClassLoader = new CompletableFuture<>();
-        private final static CompletableFuture<ClassLoader> onErrorClassLoader = new CompletableFuture<>();
-        private final static CompletableFuture<ClassLoader> onCloseClassLoader = new CompletableFuture<>();
+        public final static CountDownLatch closeLatch = new CountDownLatch(1);
+        public final static Map<String, ClassLoader> classLoaders = new ConcurrentHashMap<>();
 
         public MySocket()
         {
-            constructorClassLoader.complete(Thread.currentThread().getContextClassLoader());
+            classLoaders.put("constructor", Thread.currentThread().getContextClassLoader());
         }
 
         @OnOpen
         public void onOpen(Session session)
         {
-            onOpenClassLoader.complete(Thread.currentThread().getContextClassLoader());
+            classLoaders.put("onOpen", Thread.currentThread().getContextClassLoader());
         }
 
         @OnMessage
         public void onMessage(Session session, String msg)
         {
-            onMessageClassLoader.complete(Thread.currentThread().getContextClassLoader());
+            classLoaders.put("onMessage", Thread.currentThread().getContextClassLoader());
         }
 
         @OnError
         public void onError(Throwable error)
         {
-            onErrorClassLoader.complete(Thread.currentThread().getContextClassLoader());
+            classLoaders.put("onError", Thread.currentThread().getContextClassLoader());
         }
 
         @OnClose
         public void onClose(CloseReason closeReason)
         {
-            onCloseClassLoader.complete(Thread.currentThread().getContextClassLoader());
+            classLoaders.put("onClose", Thread.currentThread().getContextClassLoader());
+            closeLatch.countDown();
         }
     }
 
-    private static WSServer server;
-    private static WebAppContext webapp;
+    private WSServer server;
+    private WebAppContext webapp;
 
-    @BeforeAll
-    public static void startServer() throws Exception
+    @BeforeEach
+    public void startServer() throws Exception
     {
         Path testdir = MavenTestingUtils.getTargetTestingPath(WebAppClassLoaderTest.class.getName());
         server = new WSServer(testdir, "app");
@@ -101,31 +101,39 @@ public class WebAppClassLoaderTest
         server.deployWebapp(webapp);
     }
 
-    @AfterAll
-    public static void stopServer() throws Exception
+    @AfterEach
+    public void stopServer() throws Exception
     {
         server.stop();
+    }
+
+    private void awaitServerClose() throws Exception
+    {
+        ClassLoader webAppClassLoader = webapp.getClassLoader();
+        Class<?> mySocketClass = webAppClassLoader.loadClass(MySocket.class.getName());
+        CountDownLatch closeLatch = (CountDownLatch)mySocketClass.getDeclaredField("closeLatch").get(null);
+        assertTrue(closeLatch.await(5, TimeUnit.SECONDS));
     }
 
     private ClassLoader getClassLoader(String event) throws Exception
     {
         ClassLoader webAppClassLoader = webapp.getClassLoader();
-        Class<?> aClass = webAppClassLoader.loadClass(MySocket.class.getName());
-        Field field = aClass.getDeclaredField(event + "ClassLoader");
-        field.setAccessible(true);
-        return ((CompletableFuture<ClassLoader>)field.get(null)).get(5, TimeUnit.SECONDS);
+        Class<?> mySocketClass = webAppClassLoader.loadClass(MySocket.class.getName());
+        Map<String, ClassLoader> classLoaderMap = (Map)mySocketClass.getDeclaredField("classLoaders").get(null);
+        return classLoaderMap.get(event);
     }
 
     @ParameterizedTest
     @ValueSource(strings = {"constructor", "onOpen", "onMessage", "onError", "onClose"})
-    public void test(String event) throws Exception
+    public void testForWebAppClassLoader(String event) throws Exception
     {
         WebSocketContainer client = ContainerProvider.getWebSocketContainer();
         EventSocket clientSocket = new EventSocket();
         Session session = client.connectToServer(clientSocket, server.getWsUri().resolve("/app/echo"));
         session.getBasicRemote().sendText("trigger onMessage -> onError -> onClose");
-        session.close();
+        ((JavaxWebSocketSession)session).abort();
         assertTrue(clientSocket.closeLatch.await(5, TimeUnit.SECONDS));
+        awaitServerClose();
 
         ClassLoader webAppClassLoader = webapp.getClassLoader();
         assertThat(event, getClassLoader(event), is(webAppClassLoader));
