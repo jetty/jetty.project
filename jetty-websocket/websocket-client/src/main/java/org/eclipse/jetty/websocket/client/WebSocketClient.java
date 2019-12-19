@@ -90,8 +90,6 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
     public WebSocketClient()
     {
         this(HttpClientProvider.get(null), null);
-        // Add as bean, as HttpClient was created in this constructor
-        addBean(this.httpClient);
     }
 
     /**
@@ -101,8 +99,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
      */
     public WebSocketClient(HttpClient httpClient)
     {
-        // Use external HttpClient
-        this(Objects.requireNonNull(httpClient), null);
+        this(httpClient, null);
     }
 
     /**
@@ -113,8 +110,9 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
      */
     public WebSocketClient(HttpClient httpClient, DecoratedObjectFactory decoratedObjectFactory)
     {
-        this.httpClient = httpClient;
+        this.httpClient = Objects.requireNonNull(httpClient, "HttpClient");
 
+        addBean(httpClient);
         addBean(sessionTracker);
         addSessionListener(sessionTracker);
 
@@ -141,8 +139,6 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
     public WebSocketClient(SslContextFactory sslContextFactory)
     {
         this(newHttpClient(sslContextFactory, null, null), null);
-        // Add as bean, as HttpClient was created in this constructor
-        addBean(this.httpClient);
     }
 
     /**
@@ -155,8 +151,6 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
     public WebSocketClient(Executor executor)
     {
         this(newHttpClient(null, executor, null), null);
-        // Add as bean, as HttpClient was created in this constructor
-        addBean(this.httpClient);
     }
 
     /**
@@ -169,8 +163,6 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
     public WebSocketClient(ByteBufferPool bufferPool)
     {
         this(newHttpClient(null, null, bufferPool), null);
-        // Add as bean, as HttpClient was created in this constructor
-        addBean(this.httpClient);
     }
 
     /**
@@ -184,8 +176,6 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
     public WebSocketClient(SslContextFactory sslContextFactory, Executor executor)
     {
         this(newHttpClient(sslContextFactory, executor, null), null);
-        // Add as bean, as HttpClient was created in this constructor
-        addBean(this.httpClient);
     }
 
     /**
@@ -193,12 +183,12 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
      * internal features like Executor, ByteBufferPool, SSLContextFactory, etc.
      *
      * @param scope the Container Scope
+     * @deprecated use {@link #WebSocketClient(HttpClient)} instead
      */
+    @Deprecated
     public WebSocketClient(WebSocketContainerScope scope)
     {
         this(newHttpClient(scope.getSslContextFactory(), scope.getExecutor(), scope.getBufferPool()), scope.getObjectFactory());
-        // Add as bean, as HttpClient was created in this constructor
-        addBean(this.httpClient);
     }
 
     /**
@@ -224,8 +214,6 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
          * SslContextFactory for the underlying HttpClient instance.
          */
         this(newHttpClient(sslContextFactory, scope.getExecutor(), scope.getBufferPool()), scope.getObjectFactory());
-        // Add as bean, as HttpClient was created in this constructor
-        addBean(this.httpClient);
     }
 
     /**
@@ -241,8 +229,6 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
     public WebSocketClient(SslContextFactory sslContextFactory, Executor executor, ByteBufferPool bufferPool)
     {
         this(newHttpClient(sslContextFactory, executor, bufferPool), null);
-        // Add as bean, as HttpClient was created in this class
-        addBean(this.httpClient);
     }
 
     /**
@@ -261,8 +247,6 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
          * It's left in for backwards compat reasons.
          */
         this(scope, eventDriverFactory, sessionFactory, HttpClientProvider.get(scope));
-        // Add as bean, as HttpClient was created in this constructor
-        addBean(this.httpClient);
     }
 
     /**
@@ -276,24 +260,17 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
      */
     public WebSocketClient(final WebSocketContainerScope scope, EventDriverFactory eventDriverFactory, SessionFactory sessionFactory, HttpClient httpClient)
     {
-        if (httpClient == null)
-        {
-            this.httpClient = HttpClientProvider.get(scope);
-            // Add as bean, as HttpClient was created in this constructor
-            addBean(this.httpClient);
-        }
-        else
-        {
-            this.httpClient = httpClient;
-        }
+        this.httpClient = httpClient == null ? HttpClientProvider.get(scope) : httpClient;
+        addBean(this.httpClient);
 
         addBean(sessionTracker);
         addSessionListener(sessionTracker);
 
         // Ensure we get a Client version of the policy.
         this.policy = scope.getPolicy().delegateAs(WebSocketBehavior.CLIENT);
+
         // Support Late Binding of DecoratedObjectFactory (that CDI establishes in its own servlet context listeners)
-        this.objectFactorySupplier = () -> scope.getObjectFactory();
+        this.objectFactorySupplier = scope::getObjectFactory;
 
         this.extensionRegistry = new WebSocketExtensionFactory(this);
         addBean(extensionRegistry);
@@ -302,7 +279,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
         this.sessionFactory = sessionFactory == null ? new WebSocketSessionFactory(this) : sessionFactory;
     }
 
-    public static HttpClient newHttpClient(SslContextFactory sslContextFactory, Executor executor, ByteBufferPool bufferPool)
+    private static HttpClient newHttpClient(SslContextFactory sslContextFactory, Executor executor, ByteBufferPool bufferPool)
     {
         HttpClient httpClient = new HttpClient(sslContextFactory);
         httpClient.setExecutor(executor);
