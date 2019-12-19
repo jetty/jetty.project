@@ -153,7 +153,7 @@ public class Scanner extends AbstractLifeCycle
      * A FileVisitor for walking a subtree of paths. The Scanner uses
      * this to examine the dirs and files it has been asked to scan.
      */
-    public class Visitor implements FileVisitor<Path>
+    class Visitor implements FileVisitor<Path>
     {
         Map<String, TimeNSize> scanInfoMap;
         IncludeExcludeSet<PathMatcher,Path> rootIncludesExcludes;
