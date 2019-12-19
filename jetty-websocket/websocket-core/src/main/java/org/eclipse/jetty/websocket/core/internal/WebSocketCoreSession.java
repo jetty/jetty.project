@@ -29,6 +29,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Utf8Appendable;
 import org.eclipse.jetty.util.component.Dumpable;
@@ -76,6 +77,7 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
     private long maxTextMessageSize = WebSocketConstants.DEFAULT_MAX_TEXT_MESSAGE_SIZE;
     private Duration idleTimeout = WebSocketConstants.DEFAULT_IDLE_TIMEOUT;
     private Duration writeTimeout = WebSocketConstants.DEFAULT_WRITE_TIMEOUT;
+    private final ContextHandler context;
 
     public WebSocketCoreSession(FrameHandler handler, Behavior behavior, Negotiated negotiated)
     {
@@ -83,7 +85,16 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
         this.behavior = behavior;
         this.negotiated = negotiated;
         this.demanding = handler.isDemanding();
+        this.context = (behavior == Behavior.SERVER) ? ContextHandler.getCurrentContext().getContextHandler() : null;
         negotiated.getExtensions().initialize(new IncomingAdaptor(), new OutgoingAdaptor(), this);
+    }
+
+    private void handle(Runnable runnable)
+    {
+        if (context != null)
+            context.handle(runnable);
+        else
+            runnable.run();
     }
 
     /**
@@ -152,7 +163,6 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
                     throw new ProtocolException("Frame has non-transmittable status code");
                 }
             }
-
         }
     }
 
@@ -325,7 +335,7 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
             {
                 try
                 {
-                    handler.onClosed(closeStatus, callback);
+                    handle(() -> handler.onClosed(closeStatus, callback));
                 }
                 catch (Throwable e)
                 {
@@ -351,7 +361,7 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
         {
             try
             {
-                handler.onClosed(closeStatus, callback);
+                handle(() -> handler.onClosed(closeStatus, callback));
             }
             catch (Throwable e)
             {
@@ -454,7 +464,7 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
         try
         {
             // Open connection and handler
-            handler.onOpen(this, openCallback);
+            handle(() -> handler.onOpen(this, openCallback));
         }
         catch (Throwable t)
         {
@@ -664,7 +674,7 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
                 // Handle inbound frame
                 if (frame.getOpCode() != OpCode.CLOSE)
                 {
-                    handler.onFrame(frame, callback);
+                    handle(() -> handler.onFrame(frame, callback));
                     return;
                 }
 
