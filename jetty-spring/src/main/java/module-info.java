@@ -23,8 +23,7 @@ module org.eclipse.jetty.spring
 {
     exports org.eclipse.jetty.spring;
 
-    requires org.eclipse.jetty.util;
-    requires org.eclipse.jetty.xml;
+    requires transitive org.eclipse.jetty.xml;
     requires spring.beans;
     requires spring.core;
 

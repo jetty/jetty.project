@@ -27,18 +27,13 @@ module org.eclipse.jetty.plus
     exports org.eclipse.jetty.plus.security;
     exports org.eclipse.jetty.plus.webapp;
 
-    requires java.naming;
-    requires java.transaction;
-    requires jetty.servlet.api;
     requires org.eclipse.jetty.jndi;
-    requires org.eclipse.jetty.security;
-    requires org.eclipse.jetty.server;
-    requires org.eclipse.jetty.util;
-    requires org.eclipse.jetty.webapp;
-    requires org.eclipse.jetty.xml;
+    requires transitive org.eclipse.jetty.webapp;
 
     // Only required if using DataSourceLoginService.
     requires static java.sql;
+    // Only required if using Transaction.
+    requires static java.transaction;
     // Only required if using RunAs.
     requires static org.eclipse.jetty.servlet;
 

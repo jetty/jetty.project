@@ -28,7 +28,6 @@ import java.nio.charset.Charset;
 import java.nio.charset.CharsetEncoder;
 import java.nio.charset.CoderResult;
 import java.nio.charset.CodingErrorAction;
-import java.util.ResourceBundle;
 import java.util.concurrent.TimeUnit;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletOutputStream;
@@ -59,9 +58,6 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class HttpOutput extends ServletOutputStream implements Runnable
 {
-    private static final String LSTRING_FILE = "javax.servlet.LocalStrings";
-    private static ResourceBundle lStrings = ResourceBundle.getBundle(LSTRING_FILE);
-
     /**
      * The output state
      */
@@ -1058,7 +1054,8 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     @Override
     public void println(boolean b) throws IOException
     {
-        println(lStrings.getString(b ? "value.true" : "value.false"));
+        // Need to call super to access the ResourceBundle.
+        super.println(b);
     }
 
     @Override

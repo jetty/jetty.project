@@ -22,8 +22,6 @@ module org.eclipse.jetty.unixsocket.client
 
     requires jnr.enxio;
     requires jnr.unixsocket;
-    requires org.eclipse.jetty.client;
-    requires org.eclipse.jetty.io;
-    requires org.eclipse.jetty.util;
+    requires transitive org.eclipse.jetty.client;
     requires org.eclipse.jetty.unixsocket.common;
 }

@@ -20,13 +20,12 @@ module org.eclipse.jetty.deploy
 {
     exports org.eclipse.jetty.deploy;
     exports org.eclipse.jetty.deploy.bindings;
+    exports org.eclipse.jetty.deploy.graph;
     exports org.eclipse.jetty.deploy.jmx to org.eclipse.jetty.jmx;
     exports org.eclipse.jetty.deploy.providers;
 
     requires java.xml;
-    requires org.eclipse.jetty.server;
-    requires org.eclipse.jetty.util;
-    requires org.eclipse.jetty.webapp;
+    requires transitive org.eclipse.jetty.webapp;
     requires org.eclipse.jetty.xml;
 
     // Only required if using JMX.

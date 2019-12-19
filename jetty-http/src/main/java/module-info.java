@@ -24,8 +24,7 @@ module org.eclipse.jetty.http
     exports org.eclipse.jetty.http;
     exports org.eclipse.jetty.http.pathmap;
 
-    requires org.eclipse.jetty.io;
-    requires org.eclipse.jetty.util;
+    requires transitive org.eclipse.jetty.io;
 
     // Only required if using the MultiPart classes.
     requires static jetty.servlet.api;

@@ -21,5 +21,5 @@ module org.eclipse.jetty.io
     exports org.eclipse.jetty.io;
     exports org.eclipse.jetty.io.ssl;
 
-    requires org.eclipse.jetty.util;
+    requires transitive org.eclipse.jetty.util;
 }
