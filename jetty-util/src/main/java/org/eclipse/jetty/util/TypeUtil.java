@@ -198,7 +198,7 @@ public class TypeUtil
             }
             catch (UnsupportedOperationException e)
             {
-                LOG.info("JVM Runtime does not support Modules");
+                LOG.debug("JVM Runtime does not support Modules");
             }
             MODULE_LOCATION = moduleLocation;
             locationMethods.add(lookup.findStatic(TypeUtil.class, "getClassLoaderLocation", type));
