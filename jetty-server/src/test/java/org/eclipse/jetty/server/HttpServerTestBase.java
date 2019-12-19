@@ -33,6 +33,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.concurrent.Exchanger;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.servlet.AsyncContext;
 import javax.servlet.ServletException;
 import javax.servlet.ServletInputStream;
@@ -1020,13 +1021,22 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     @Test
     public void testPipeline() throws Exception
     {
-        configureServer(new HelloWorldHandler());
+        AtomicInteger served = new AtomicInteger();
+        configureServer(new HelloWorldHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                served.incrementAndGet();
+                super.handle(target, baseRequest, request, response);
+            }
+        });
 
-        //for (int pipeline=1;pipeline<32;pipeline++)
-        for (int pipeline = 1; pipeline < 32; pipeline++)
+        int pipeline = 64;
         {
             try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
             {
+                served.set(0);
                 client.setSoTimeout(5000);
                 OutputStream os = client.getOutputStream();
 
@@ -1065,6 +1075,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                         count++;
                     line = in.readLine();
                 }
+                assertEquals(pipeline, served.get());
                 assertEquals(pipeline, count);
             }
         }

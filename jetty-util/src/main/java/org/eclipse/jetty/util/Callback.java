@@ -344,6 +344,58 @@ public interface Callback extends Invocable
         }
     }
 
+    interface InvocableCallback extends Invocable, Callback
+    {
+    }
+
+    static Callback combine(Callback cb1, Callback cb2)
+    {
+        if (cb1 == null || cb1 == cb2)
+            return cb2;
+        if (cb2 == null)
+            return cb1;
+
+        return new InvocableCallback()
+        {
+            @Override
+            public void succeeded()
+            {
+                try
+                {
+                    cb1.succeeded();
+                }
+                finally
+                {
+                    cb2.succeeded();
+                }
+            }
+
+            @Override
+            public void failed(Throwable x)
+            {
+                try
+                {
+                    cb1.failed(x);
+                }
+                catch (Throwable t)
+                {
+                    if (x != t)
+                        x.addSuppressed(t);
+                }
+                finally
+                {
+                    cb2.failed(x);
+                }
+            }
+
+            @Override
+            public InvocationType getInvocationType()
+            {
+                return Invocable.combine(Invocable.getInvocationType(cb1), Invocable.getInvocationType(cb2));
+            }
+        };
+    }
+
     /**
      * <p>A CompletableFuture that is also a Callback.</p>
      */

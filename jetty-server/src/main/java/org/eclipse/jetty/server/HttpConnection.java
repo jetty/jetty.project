@@ -430,20 +430,25 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         }
         else if (_parser.inContentState() && _generator.isPersistent())
         {
-            // If we are async, then we have problems to complete neatly
-            if (_input.isAsync())
+            // Try to progress without filling.
+            parseRequestBuffer();
+            if (_parser.inContentState())
             {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("{}unconsumed input {}", _parser.isChunking() ? "Possible " : "", this);
-                _channel.abort(new IOException("unconsumed input"));
-            }
-            else
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("{}unconsumed input {}", _parser.isChunking() ? "Possible " : "", this);
-                // Complete reading the request
-                if (!_input.consumeAll())
+                // If we are async, then we have problems to complete neatly
+                if (_input.isAsync())
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("{}unconsumed input while async {}", _parser.isChunking() ? "Possible " : "", this);
                     _channel.abort(new IOException("unconsumed input"));
+                }
+                else
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("{}unconsumed input {}", _parser.isChunking() ? "Possible " : "", this);
+                    // Complete reading the request
+                    if (!_input.consumeAll())
+                        _channel.abort(new IOException("unconsumed input"));
+                }
             }
         }
 
