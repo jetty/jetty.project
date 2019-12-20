@@ -29,7 +29,6 @@ import javax.websocket.server.ServerEndpointConfig.Configurator;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.ExtensionConfig;
 
 /**
  * The "Container Default Configurator" per the JSR-356 spec.
