@@ -1,3 +1,5 @@
+jetty-9.4.26-SNAPSHOT
+
 jetty-9.4.25.v20191220 - 20 December 2019
  + 995 UrlEncoded.encodeString should skip more characters
  + 2195 Add parameter expansion to start.jar --exec parameters
