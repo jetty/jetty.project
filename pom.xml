@@ -24,6 +24,7 @@
     <spring-version>5.1.1.RELEASE</spring-version>
     <jetty-test-policy.version>1.2</jetty-test-policy.version>
     <servlet.api.version>4.0.3</servlet.api.version>
+    <websocket.api.version>1.1.2</websocket.api.version>
     <jsp.version>9.0.19</jsp.version>
     <infinispan.version>9.4.8.Final</infinispan.version>
     <!-- default values are unsupported, but required to be defined for reactor sanity reasons -->
@@ -956,7 +957,7 @@
       <dependency>
         <groupId>org.eclipse.jetty.toolchain</groupId>
         <artifactId>jetty-javax-websocket-api</artifactId>
-        <version>1.1.1</version>
+        <version>${websocket.api.version}</version>
       </dependency>
       <dependency>
         <groupId>jakarta.annotation</groupId>
