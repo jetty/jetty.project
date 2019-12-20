@@ -11,7 +11,7 @@
   <name>Jetty :: Websocket :: javax.websocket.server :: Server Implementation</name>
 
   <properties>
-    <bundle-symbolic-name>${project.groupId}.javax.websocket.server</bundle-symbolic-name>
+    <bundle-symbolic-name>${project.groupId}.javax.server</bundle-symbolic-name>
   </properties>
 
   <dependencies>

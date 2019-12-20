@@ -11,7 +11,7 @@
   <name>Jetty :: Websocket :: javax.websocket :: Common Impl</name>
 
   <properties>
-    <bundle-symbolic-name>${project.groupId}.javax.websocket.common</bundle-symbolic-name>
+    <bundle-symbolic-name>${project.groupId}.javax.common</bundle-symbolic-name>
   </properties>
 
   <build>

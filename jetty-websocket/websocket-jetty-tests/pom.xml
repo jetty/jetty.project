@@ -11,7 +11,7 @@
   <name>Jetty :: Websocket :: org.eclipse.jetty.websocket :: Tests</name>
 
   <properties>
-    <bundle-symbolic-name>${project.groupId}.jetty.websocket.tests</bundle-symbolic-name>
+    <bundle-symbolic-name>${project.groupId}.tests</bundle-symbolic-name>
   </properties>
 
   <dependencies>
