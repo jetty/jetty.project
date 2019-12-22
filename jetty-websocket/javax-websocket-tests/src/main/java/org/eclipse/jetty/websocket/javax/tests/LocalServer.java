@@ -82,6 +82,15 @@ public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provi
     private boolean ssl = false;
     private SslContextFactory.Server sslContextFactory;
 
+    public LocalServer()
+    {
+        QueuedThreadPool threadPool = new QueuedThreadPool();
+        threadPool.setName("qtp-LocalServer");
+
+        // Configure Server
+        server = new Server(threadPool);
+    }
+
     public void enableSsl(boolean ssl)
     {
         this.ssl = ssl;
@@ -179,11 +188,6 @@ public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provi
     @Override
     protected void doStart() throws Exception
     {
-        QueuedThreadPool threadPool = new QueuedThreadPool();
-        threadPool.setName("qtp-LocalServer");
-
-        // Configure Server
-        server = new Server(threadPool);
         if (ssl)
         {
             // HTTP Configuration

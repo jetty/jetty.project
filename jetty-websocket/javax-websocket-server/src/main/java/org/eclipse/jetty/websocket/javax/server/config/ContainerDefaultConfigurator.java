@@ -29,7 +29,6 @@ import javax.websocket.server.ServerEndpointConfig.Configurator;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.ExtensionConfig;
 
 /**
  * The "Container Default Configurator" per the JSR-356 spec.
@@ -73,7 +72,9 @@ public final class ContainerDefaultConfigurator extends Configurator
         }
         catch (Exception e)
         {
-            throw new InstantiationException(String.format("%s: %s", e.getClass().getName(), e.getMessage()));
+            InstantiationException instantiationException = new InstantiationException();
+            instantiationException.initCause(e);
+            throw instantiationException;
         }
     }
 

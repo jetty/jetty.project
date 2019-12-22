@@ -24,12 +24,9 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Path;
 
-import org.eclipse.jetty.annotations.AnnotationConfiguration;
-import org.eclipse.jetty.plus.webapp.PlusConfiguration;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
-import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.JAR;
@@ -129,11 +126,7 @@ public class WSServer extends LocalServer implements LocalFuzzer.Provider
         context.setContextPath(this.contextPath);
         context.setBaseResource(new PathResource(this.contextDir));
         context.setAttribute("org.eclipse.jetty.websocket.javax", Boolean.TRUE);
-
-        context.addConfiguration(new AnnotationConfiguration());
-        context.addConfiguration(new PlusConfiguration());
         context.addConfiguration(new JavaxWebSocketConfiguration());
-
         return context;
     }
 
@@ -162,7 +155,6 @@ public class WSServer extends LocalServer implements LocalFuzzer.Provider
     @Override
     protected Handler createRootHandler(Server server) throws Exception
     {
-        HandlerCollection handlers = new HandlerCollection();
         contexts = new ContextHandlerCollection();
         return contexts;
     }
