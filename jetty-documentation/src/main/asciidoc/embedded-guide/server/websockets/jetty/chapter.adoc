@@ -21,12 +21,12 @@
 
 These pages are works in progress that have not been moved to their respective sections yet.
 
-include::jetty-websocket-api.adoc[]
-include::jetty-websocket-api-events.adoc[]
-include::jetty-websocket-api-session.adoc[]
-include::jetty-websocket-api-send-message.adoc[]
-include::jetty-websocket-api-annotations.adoc[]
-include::jetty-websocket-api-listener.adoc[]
-include::jetty-websocket-api-adapter.adoc[]
-include::jetty-websocket-server-api.adoc[]
-include::jetty-websocket-client-api.adoc[]
+include::websocket-jetty-api.adoc[]
+include::websocket-jetty-api-events.adoc[]
+include::websocket-jetty-api-session.adoc[]
+include::websocket-jetty-api-send-message.adoc[]
+include::websocket-jetty-api-annotations.adoc[]
+include::websocket-jetty-api-listener.adoc[]
+include::websocket-jetty-api-adapter.adoc[]
+include::websocket-jetty-server-api.adoc[]
+include::websocket-jetty-client-api.adoc[]

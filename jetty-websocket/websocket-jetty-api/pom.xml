@@ -7,7 +7,7 @@
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>jetty-websocket-api</artifactId>
+  <artifactId>websocket-jetty-api</artifactId>
   <name>Jetty :: Websocket :: org.eclipse.jetty.websocket :: API</name>
 
   <properties>

@@ -7,7 +7,7 @@
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>jetty-websocket-server</artifactId>
+  <artifactId>websocket-jetty-server</artifactId>
   <name>Jetty :: Websocket :: org.eclipse.jetty.websocket :: Server</name>
 
   <properties>
@@ -38,12 +38,12 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
-      <artifactId>jetty-websocket-api</artifactId>
+      <artifactId>websocket-jetty-api</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
-      <artifactId>jetty-websocket-common</artifactId>
+      <artifactId>websocket-jetty-common</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>

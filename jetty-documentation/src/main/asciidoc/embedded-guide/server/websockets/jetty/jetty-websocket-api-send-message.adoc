@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-[[jetty-websocket-api-send-message]]
+[[websocket-jetty-api-send-message]]
 === Send Messages to Remote Endpoint
 
 The most important feature of the Session is access to the link:{JDURL}/org/eclipse/jetty/websocket/api/RemoteEndpoint.html[`org.eclipse.jetty.websocket.api.RemoteEndpoint`] needed to send messages.

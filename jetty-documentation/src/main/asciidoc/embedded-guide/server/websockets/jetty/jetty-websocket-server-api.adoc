@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-[[jetty-websocket-server-api]]
+[[websocket-jetty-server-api]]
 === Jetty WebSocket Server API
 
 Jetty provides the ability to wire up WebSocket endpoints to Servlet Path Specs via the use of a `JettyWebSocketServlet` bridge servlet.
@@ -31,7 +31,7 @@ To wire up your WebSocket to a specific path via the `JettyWebSocketServlet`, yo
 
 [source, java, subs="{sub-order}"]
 ----
-include::{SRCDIR}/jetty-websocket/jetty-websocket-tests/src/test/java/org/eclipse/jetty/websocket/tests/examples/MyEchoServlet.java[]
+include::{SRCDIR}/jetty-websocket/websocket-jetty-tests/src/test/java/org/eclipse/jetty/websocket/tests/examples/MyEchoServlet.java[]
 ----
 
 This example will create a Servlet mapped via the http://docs.oracle.com/javaee/6/api/javax/servlet/annotation/WebServlet.html[@WebServlet] annotation to the Servlet path spec of `"/echo"` (or you can do this manually in the `WEB-INF/web.xml` of your web application) which will create MyEchoSocket instances when encountering HTTP Upgrade requests.
@@ -57,7 +57,7 @@ If you have a more complicated creation scenario, you might want to provide your
 
 [source, java, subs="{sub-order}"]
 ----
-include::{SRCDIR}/jetty-websocket/jetty-websocket-tests/src/test/java/org/eclipse/jetty/websocket/tests/examples/MyAdvancedEchoCreator.java[]
+include::{SRCDIR}/jetty-websocket/websocket-jetty-tests/src/test/java/org/eclipse/jetty/websocket/tests/examples/MyAdvancedEchoCreator.java[]
 ----
 
 Here we show a `JettyWebSocketCreator` that will utilize the http://tools.ietf.org/html/rfc6455#section-1.9[WebSocket subprotocol] information from request to determine what WebSocket type should be
@@ -65,7 +65,7 @@ created.
 
 [source, java, subs="{sub-order}"]
 ----
-include::{SRCDIR}/jetty-websocket/jetty-websocket-tests/src/test/java/org/eclipse/jetty/websocket/tests/examples/MyAdvancedEchoServlet.java[]
+include::{SRCDIR}/jetty-websocket/websocket-jetty-tests/src/test/java/org/eclipse/jetty/websocket/tests/examples/MyAdvancedEchoServlet.java[]
 ----
 
 When you want a custom `JettyWebSocketCreator`, use link:{JDURL}/org/eclipse/jetty/websocket/servlet/JettyWebSocketServletFactory.html#setCreator(org.eclipse.jetty.websocket.servlet.JettyWebSocketCreator)[`JettyWebSocketServletFactory.setCreator(JettyWebSocketCreator creator)`] and the `JettyWebSocketServletFactory` will use your creator for all incoming Upgrade requests on this servlet.

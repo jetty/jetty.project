@@ -65,8 +65,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * Running Autobahn Fuzzing Server (which you run this client implementation against):
  * </p>
  * <pre>
- *     # Change to jetty-websocket-tests directory first.
- *     $ cd jetty-websocket/jetty-websocket-tests/
+ *     # Change to websocket-jetty-tests directory first.
+ *     $ cd jetty-websocket/websocket-jetty-tests/
  *     $ wstest --mode=fuzzingserver --spec=fuzzingserver.json
  *
  *     # Report output is configured (in the fuzzingserver.json) at location:
