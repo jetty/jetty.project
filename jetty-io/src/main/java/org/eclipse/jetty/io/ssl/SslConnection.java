@@ -842,6 +842,11 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                             {
                                 interest = true;
                                 _fillState = FillState.INTERESTED;
+                                if (_flushState == FlushState.IDLE && BufferUtil.hasContent(_encryptedOutput))
+                                {
+                                    _flushState = FlushState.WRITING;
+                                    write = _encryptedOutput;
+                                }
                             }
                             break;
 
@@ -1471,19 +1476,23 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
             public void succeeded()
             {
                 boolean fillable;
+                boolean interested;
                 synchronized (_decryptedEndPoint)
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("IncompleteWriteCB succeeded {}", SslConnection.this);
-
                     releaseEncryptedOutputBuffer();
                     _flushState = FlushState.IDLE;
+
+                    interested = _fillState == FillState.INTERESTED;
                     fillable = _fillState == FillState.WAIT_FOR_FLUSH;
                     if (fillable)
                         _fillState = FillState.IDLE;
                 }
 
-                if (fillable)
+                if (interested)
+                    ensureFillInterested();
+                else if (fillable)
                     _decryptedEndPoint.getFillInterest().fillable();
 
                 _decryptedEndPoint.getWriteFlusher().completeWrite();
@@ -1502,7 +1511,8 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                     releaseEncryptedOutputBuffer();
 
                     _flushState = FlushState.IDLE;
-                    failFillInterest = _fillState == FillState.WAIT_FOR_FLUSH;
+                    failFillInterest = _fillState == FillState.WAIT_FOR_FLUSH ||
+                        _fillState == FillState.INTERESTED;
                     if (failFillInterest)
                         _fillState = FillState.IDLE;
                 }
