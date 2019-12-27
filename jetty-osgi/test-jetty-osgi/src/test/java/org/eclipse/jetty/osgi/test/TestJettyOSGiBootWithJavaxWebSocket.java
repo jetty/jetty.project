@@ -107,9 +107,9 @@ public class TestJettyOSGiBootWithJavaxWebSocket
     @Test
     public void testWebsocket() throws Exception
     {
-        startBundle(bundleContext, "org.eclipse.jetty.websocket.javax.websocket.common");
-        startBundle(bundleContext, "org.eclipse.jetty.websocket.javax.websocket.client");
-        startBundle(bundleContext, "org.eclipse.jetty.websocket.javax.websocket.server");
+        startBundle(bundleContext, "org.eclipse.jetty.websocket.javax.common");
+        startBundle(bundleContext, "org.eclipse.jetty.websocket.javax.client");
+        startBundle(bundleContext, "org.eclipse.jetty.websocket.javax.server");
         startBundle(bundleContext, "org.eclipse.jetty.tests.webapp");
 
         if (Boolean.getBoolean(TestOSGiUtil.BUNDLE_DEBUG))

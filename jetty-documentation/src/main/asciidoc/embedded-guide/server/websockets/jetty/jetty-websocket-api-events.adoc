@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-[[jetty-websocket-api-events]]
+[[websocket-jetty-api-events]]
 === WebSocket Events
 
 Every WebSocket can receive various events:
