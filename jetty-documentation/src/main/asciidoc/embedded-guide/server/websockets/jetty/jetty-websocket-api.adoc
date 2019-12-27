@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-[[jetty-websocket-api]]
+[[websocket-jetty-api]]
 === Jetty WebSocket API Usage
 
 Jetty provides its own more powerful WebSocket API, with a common core API for both server and client use of WebSockets.

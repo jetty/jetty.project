@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-[[jetty-websocket-api-session]]
+[[websocket-jetty-api-session]]
 === WebSocket Session
 
 The link:{JDURL}/org/eclipse/jetty/websocket/api/Session.html[Session] object can be used to:
