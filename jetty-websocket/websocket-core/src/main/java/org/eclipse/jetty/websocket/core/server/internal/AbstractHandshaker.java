@@ -62,7 +62,8 @@ public abstract class AbstractHandshaker implements Handshaker
         if (!validateRequest(request))
             return false;
 
-        Negotiation negotiation = newNegotiation(request, response, negotiator.getWebSocketComponents());
+        WebSocketComponents components = negotiator.getWebSocketComponents();
+        Negotiation negotiation = newNegotiation(request, response, components);
         if (LOG.isDebugEnabled())
             LOG.debug("negotiation {}", negotiation);
         negotiation.negotiate();
@@ -123,8 +124,14 @@ public abstract class AbstractHandshaker implements Handshaker
                 throw new WebSocketException("Upgrade failed: multiple negotiated extensions of the same name");
         }
 
-        // Create and Negotiate the ExtensionStack
-        ExtensionStack extensionStack = negotiation.getExtensionStack();
+        // Create and Negotiate the ExtensionStack. (ExtensionStack can drop any extensions or their parameters.)
+        ExtensionStack extensionStack = new ExtensionStack(components, Behavior.SERVER);
+        extensionStack.negotiate(negotiation.getOfferedExtensions(), negotiation.getNegotiatedExtensions());
+        negotiation.setNegotiatedExtensions(extensionStack.getNegotiatedExtensions());
+        if (extensionStack.hasNegotiatedExtensions())
+            baseRequest.getResponse().setHeader(HttpHeader.SEC_WEBSOCKET_EXTENSIONS, ExtensionConfig.toHeaderValue(negotiation.getNegotiatedExtensions()));
+        else
+            baseRequest.getResponse().setHeader(HttpHeader.SEC_WEBSOCKET_EXTENSIONS, null);
 
         Negotiated negotiated = new Negotiated(baseRequest.getHttpURI().toURI(), protocol, baseRequest.isSecure(), extensionStack, WebSocketConstants.SPEC_VERSION_STRING);
 

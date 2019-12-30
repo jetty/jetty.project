@@ -31,7 +31,6 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.websocket.core.Behavior;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.internal.ExtensionStack;
@@ -182,24 +181,6 @@ public abstract class Negotiation
             return;
         negotiatedExtensions = extensions;
         extensionStack = null;
-    }
-
-    public ExtensionStack getExtensionStack()
-    {
-        if (extensionStack == null)
-        {
-            // Extension stack can decide to drop any of these extensions or their parameters
-            extensionStack = new ExtensionStack(components, Behavior.SERVER);
-            extensionStack.negotiate(offeredExtensions, negotiatedExtensions);
-            negotiatedExtensions = extensionStack.getNegotiatedExtensions();
-
-            if (extensionStack.hasNegotiatedExtensions())
-                baseRequest.getResponse().setHeader(HttpHeader.SEC_WEBSOCKET_EXTENSIONS,
-                    ExtensionConfig.toHeaderValue(negotiatedExtensions));
-            else
-                baseRequest.getResponse().setHeader(HttpHeader.SEC_WEBSOCKET_EXTENSIONS, null);
-        }
-        return extensionStack;
     }
 
     @Override
