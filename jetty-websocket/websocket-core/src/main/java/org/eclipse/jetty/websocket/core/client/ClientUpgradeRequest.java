@@ -26,7 +26,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -44,14 +43,12 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.websocket.core.Behavior;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.FrameHandler;
@@ -272,16 +269,6 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
     {
     }
 
-    protected WebSocketConnection newWebSocketConnection(EndPoint endPoint, Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, WebSocketCoreSession coreSession)
-    {
-        return new WebSocketConnection(endPoint, executor, scheduler, byteBufferPool, coreSession);
-    }
-
-    protected WebSocketCoreSession newWebSocketCoreSession(FrameHandler handler, Negotiated negotiated)
-    {
-        return new WebSocketCoreSession(handler, Behavior.CLIENT, negotiated);
-    }
-
     public abstract FrameHandler getFrameHandler();
 
     void requestComplete()
@@ -436,11 +423,11 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
             extensionStack,
             WebSocketConstants.SPEC_VERSION_STRING);
 
-        WebSocketCoreSession coreSession = newWebSocketCoreSession(frameHandler, negotiated);
+        WebSocketCoreSession coreSession = new WebSocketCoreSession(frameHandler, Behavior.CLIENT, negotiated);
         customizer.customize(coreSession);
 
         HttpClient httpClient = wsClient.getHttpClient();
-        WebSocketConnection wsConnection = newWebSocketConnection(endPoint, httpClient.getExecutor(), httpClient.getScheduler(), httpClient.getByteBufferPool(), coreSession);
+        WebSocketConnection wsConnection = new WebSocketConnection(endPoint, httpClient.getExecutor(), httpClient.getScheduler(), httpClient.getByteBufferPool(), coreSession);
         wsClient.getEventListeners().forEach(wsConnection::addEventListener);
         coreSession.setWebSocketConnection(wsConnection);
         notifyUpgradeListeners((listener) -> listener.onHandshakeResponse(this, response));
