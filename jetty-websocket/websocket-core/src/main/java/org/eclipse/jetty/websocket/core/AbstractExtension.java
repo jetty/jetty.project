@@ -26,7 +26,7 @@ import org.eclipse.jetty.util.compression.DeflaterPool;
 import org.eclipse.jetty.util.compression.InflaterPool;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
+import org.eclipse.jetty.websocket.core.FrameHandler.Configuration;
 
 @ManagedObject("Abstract Extension")
 public class AbstractExtension implements Extension
@@ -36,7 +36,7 @@ public class AbstractExtension implements Extension
     private ExtensionConfig config;
     private OutgoingFrames nextOutgoing;
     private IncomingFrames nextIncoming;
-    private WebSocketCoreSession coreSession;
+    private Configuration configuration;
     private DeflaterPool deflaterPool;
     private InflaterPool inflaterPool;
 
@@ -169,14 +169,14 @@ public class AbstractExtension implements Extension
     }
 
     @Override
-    public void setWebSocketCoreSession(WebSocketCoreSession coreSession)
+    public void setConfiguration(Configuration configuration)
     {
-        this.coreSession = coreSession;
+        this.configuration = configuration;
     }
 
-    protected WebSocketCoreSession getWebSocketCoreSession()
+    protected Configuration getConfiguration()
     {
-        return coreSession;
+        return configuration;
     }
 
     @Override

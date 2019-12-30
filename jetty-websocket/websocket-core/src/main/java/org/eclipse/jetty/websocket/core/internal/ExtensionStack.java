@@ -254,7 +254,7 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
 
         for (Extension extension : extensions)
         {
-            extension.setWebSocketCoreSession(coreSession);
+            extension.setConfiguration(coreSession);
         }
     }
 
