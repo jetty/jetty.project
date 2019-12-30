@@ -23,7 +23,7 @@ import java.util.Map;
 import javax.websocket.ClientEndpointConfig;
 import javax.websocket.EndpointConfig;
 
-import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.javax.common.decoders.AvailableDecoders;
 import org.eclipse.jetty.websocket.javax.common.encoders.AvailableEncoders;
 import org.junit.jupiter.api.AfterAll;
@@ -50,7 +50,7 @@ public abstract class AbstractJavaxWebSocketFrameHandlerTest
     protected AvailableDecoders decoders;
     protected Map<String, String> uriParams;
     protected EndpointConfig endpointConfig;
-    protected FrameHandler.CoreSession coreSession = new FrameHandler.CoreSession.Empty();
+    protected CoreSession coreSession = new CoreSession.Empty();
 
     public AbstractJavaxWebSocketFrameHandlerTest()
     {

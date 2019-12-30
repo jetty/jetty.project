@@ -24,7 +24,7 @@ import javax.websocket.OnOpen;
 import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
 
-import org.eclipse.jetty.websocket.core.WebSocketTimeoutException;
+import org.eclipse.jetty.websocket.core.exception.WebSocketTimeoutException;
 
 @ServerEndpoint(value = "/idle-onopen-socket")
 public class IdleTimeoutOnOpenSocket

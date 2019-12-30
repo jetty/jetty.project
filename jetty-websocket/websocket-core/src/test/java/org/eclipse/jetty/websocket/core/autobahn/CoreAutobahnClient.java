@@ -29,7 +29,7 @@ import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.UrlEncoded;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.TestMessageHandler;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 
@@ -154,7 +154,7 @@ public class CoreAutobahnClient
     {
         URI wsUri = baseWebsocketUri.resolve("/getCaseCount");
         TestMessageHandler onCaseCount = new TestMessageHandler();
-        Future<FrameHandler.CoreSession> response = client.connect(onCaseCount, wsUri);
+        Future<CoreSession> response = client.connect(onCaseCount, wsUri);
 
         if (waitForUpgrade(wsUri, response))
         {
@@ -173,7 +173,7 @@ public class CoreAutobahnClient
         LOG.info("test uri: {}", wsUri);
 
         AutobahnFrameHandler echoHandler = new AutobahnFrameHandler();
-        Future<FrameHandler.CoreSession> response = client.connect(echoHandler, wsUri);
+        Future<CoreSession> response = client.connect(echoHandler, wsUri);
         if (waitForUpgrade(wsUri, response))
         {
             // Wait up to 5 min as some of the tests can take a while
@@ -201,14 +201,14 @@ public class CoreAutobahnClient
     {
         URI wsUri = baseWebsocketUri.resolve("/updateReports?agent=" + UrlEncoded.encodeString(userAgent));
         TestMessageHandler onUpdateReports = new TestMessageHandler();
-        Future<FrameHandler.CoreSession> response = client.connect(onUpdateReports, wsUri);
+        Future<CoreSession> response = client.connect(onUpdateReports, wsUri);
         response.get(5, TimeUnit.SECONDS);
         assertTrue(onUpdateReports.closeLatch.await(15, TimeUnit.SECONDS));
         LOG.info("Reports updated.");
         LOG.info("Test suite finished!");
     }
 
-    private boolean waitForUpgrade(URI wsUri, Future<FrameHandler.CoreSession> response) throws InterruptedException
+    private boolean waitForUpgrade(URI wsUri, Future<CoreSession> response) throws InterruptedException
     {
         try
         {

@@ -31,7 +31,7 @@ import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
 
@@ -181,7 +181,7 @@ public abstract class WebSocketServlet extends HttpServlet
         super.service(req, resp);
     }
 
-    private class CustomizedWebSocketServletFactory extends FrameHandler.ConfigurationCustomizer implements WebSocketServletFactory
+    private class CustomizedWebSocketServletFactory extends Configuration.ConfigurationCustomizer implements WebSocketServletFactory
     {
         @Override
         public WebSocketExtensionRegistry getExtensionRegistry()

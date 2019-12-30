@@ -50,11 +50,13 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.Behavior;
+import org.eclipse.jetty.websocket.core.Configuration;
+import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.core.UpgradeException;
+import org.eclipse.jetty.websocket.core.exception.UpgradeException;
 import org.eclipse.jetty.websocket.core.WebSocketConstants;
-import org.eclipse.jetty.websocket.core.WebSocketException;
+import org.eclipse.jetty.websocket.core.exception.WebSocketException;
 import org.eclipse.jetty.websocket.core.internal.ExtensionStack;
 import org.eclipse.jetty.websocket.core.internal.Negotiated;
 import org.eclipse.jetty.websocket.core.internal.WebSocketConnection;
@@ -75,10 +77,10 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
     }
 
     private static final Logger LOG = Log.getLogger(ClientUpgradeRequest.class);
-    protected final CompletableFuture<FrameHandler.CoreSession> futureCoreSession;
+    protected final CompletableFuture<CoreSession> futureCoreSession;
     private final WebSocketCoreClient wsClient;
     private FrameHandler frameHandler;
-    private FrameHandler.ConfigurationCustomizer customizer = new FrameHandler.ConfigurationCustomizer();
+    private Configuration.ConfigurationCustomizer customizer = new Configuration.ConfigurationCustomizer();
     private List<UpgradeListener> upgradeListeners = new ArrayList<>();
     private List<ExtensionConfig> requestedExtensions = new ArrayList<>();
 
@@ -112,7 +114,7 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
         this.futureCoreSession = new CompletableFuture<>();
     }
 
-    public void setConfiguration(FrameHandler.ConfigurationCustomizer config)
+    public void setConfiguration(Configuration.ConfigurationCustomizer config)
     {
         config.customize(customizer);
     }
@@ -187,7 +189,7 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
         super.send(listener);
     }
 
-    public CompletableFuture<FrameHandler.CoreSession> sendAsync()
+    public CompletableFuture<CoreSession> sendAsync()
     {
         send(this);
         return futureCoreSession;

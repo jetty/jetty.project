@@ -16,27 +16,30 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core;
+package org.eclipse.jetty.websocket.core.exception;
+
+import org.eclipse.jetty.websocket.core.CloseStatus;
 
 /**
- * Exception thrown to indicate a connection I/O timeout.
+ * Exception when a message is too large for the internal buffers occurs and should trigger a connection close.
+ *
+ * @see <a href="https://tools.ietf.org/html/rfc6455#section-7.4.1">RFC6455 : Section 7.4.1</a>
  */
-public class WebSocketTimeoutException extends WebSocketException
+@SuppressWarnings("serial")
+public class MessageTooLargeException extends CloseException
 {
-    private static final long serialVersionUID = -6145098200250676673L;
-
-    public WebSocketTimeoutException(String message)
+    public MessageTooLargeException(String message)
     {
-        super(message);
+        super(CloseStatus.MESSAGE_TOO_LARGE, message);
     }
 
-    public WebSocketTimeoutException(String message, Throwable cause)
+    public MessageTooLargeException(String message, Throwable t)
     {
-        super(message, cause);
+        super(CloseStatus.MESSAGE_TOO_LARGE, message, t);
     }
 
-    public WebSocketTimeoutException(Throwable cause)
+    public MessageTooLargeException(Throwable t)
     {
-        super(cause);
+        super(CloseStatus.MESSAGE_TOO_LARGE, t);
     }
 }

@@ -38,9 +38,9 @@ import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.WebSocketSessionListener;
 import org.eclipse.jetty.websocket.common.SessionTracker;
 import org.eclipse.jetty.websocket.common.WebSocketContainer;
-import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
-import org.eclipse.jetty.websocket.core.WebSocketException;
+import org.eclipse.jetty.websocket.core.exception.WebSocketException;
 import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.server.internal.JettyServerFrameHandlerFactory;
 import org.eclipse.jetty.websocket.servlet.FrameHandlerFactory;
@@ -88,7 +88,7 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
     private final WebSocketComponents webSocketComponents;
     private final FrameHandlerFactory frameHandlerFactory;
     private final Executor executor;
-    private final FrameHandler.ConfigurationCustomizer customizer = new FrameHandler.ConfigurationCustomizer();
+    private final Configuration.ConfigurationCustomizer customizer = new Configuration.ConfigurationCustomizer();
 
     private final List<WebSocketSessionListener> sessionListeners = new ArrayList<>();
     private final SessionTracker sessionTracker = new SessionTracker();

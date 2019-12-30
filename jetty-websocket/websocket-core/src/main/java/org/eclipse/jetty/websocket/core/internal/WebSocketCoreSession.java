@@ -36,19 +36,21 @@ import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.Behavior;
-import org.eclipse.jetty.websocket.core.CloseException;
+import org.eclipse.jetty.websocket.core.Configuration;
+import org.eclipse.jetty.websocket.core.CoreSession;
+import org.eclipse.jetty.websocket.core.exception.CloseException;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.IncomingFrames;
-import org.eclipse.jetty.websocket.core.MessageTooLargeException;
+import org.eclipse.jetty.websocket.core.exception.MessageTooLargeException;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.OutgoingFrames;
-import org.eclipse.jetty.websocket.core.ProtocolException;
+import org.eclipse.jetty.websocket.core.exception.ProtocolException;
 import org.eclipse.jetty.websocket.core.WebSocketConstants;
-import org.eclipse.jetty.websocket.core.WebSocketTimeoutException;
-import org.eclipse.jetty.websocket.core.WebSocketWriteTimeoutException;
+import org.eclipse.jetty.websocket.core.exception.WebSocketTimeoutException;
+import org.eclipse.jetty.websocket.core.exception.WebSocketWriteTimeoutException;
 import org.eclipse.jetty.websocket.core.internal.Parser.ParsedFrame;
 
 import static org.eclipse.jetty.util.Callback.NOOP;
@@ -56,7 +58,7 @@ import static org.eclipse.jetty.util.Callback.NOOP;
 /**
  * The Core WebSocket Session.
  */
-public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSession, Dumpable
+public class WebSocketCoreSession implements IncomingFrames, CoreSession, Dumpable
 {
     private static final Logger LOG = Log.getLogger(WebSocketCoreSession.class);
     private static final CloseStatus NO_CODE = new CloseStatus(CloseStatus.NO_CODE);
@@ -809,7 +811,7 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
 
     private class Flusher extends FragmentingFlusher
     {
-        public Flusher(FrameHandler.Configuration configuration)
+        public Flusher(Configuration configuration)
         {
             super(configuration);
         }

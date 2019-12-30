@@ -21,10 +21,10 @@ package org.eclipse.jetty.websocket.servlet;
 import java.time.Duration;
 
 import org.eclipse.jetty.http.pathmap.PathSpec;
-import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
 
-public interface WebSocketServletFactory extends FrameHandler.Configuration
+public interface WebSocketServletFactory extends Configuration
 {
 
     WebSocketExtensionRegistry getExtensionRegistry();

@@ -39,10 +39,10 @@ import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.websocket.core.CloseStatus;
+import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.EchoFrameHandler;
 import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.core.FrameHandler.CoreSession;
+import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.TestAsyncFrameHandler;
 import org.eclipse.jetty.websocket.core.client.ClientUpgradeRequest;
@@ -72,7 +72,7 @@ public class WebSocketProxyTest
     private WebSocketProxy proxy;
     private EchoFrameHandler serverFrameHandler;
     private TestHandler testHandler;
-    FrameHandler.ConfigurationCustomizer defaultCustomizer;
+    Configuration.ConfigurationCustomizer defaultCustomizer;
 
     private class TestHandler extends AbstractHandler
     {
@@ -109,7 +109,7 @@ public class WebSocketProxyTest
         testHandler = new TestHandler();
         handlers.addHandler(testHandler);
 
-        defaultCustomizer = new FrameHandler.ConfigurationCustomizer();
+        defaultCustomizer = new Configuration.ConfigurationCustomizer();
         defaultCustomizer.setIdleTimeout(Duration.ofSeconds(3));
 
         ContextHandler serverContext = new ContextHandler("/server");

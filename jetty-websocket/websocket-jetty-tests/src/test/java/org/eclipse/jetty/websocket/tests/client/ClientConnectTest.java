@@ -427,7 +427,7 @@ public class ClientConnectTest
         assertThat(jettyUpgradeException, instanceOf(UpgradeException.class));
 
         Throwable coreUpgradeException = jettyUpgradeException.getCause();
-        assertThat(coreUpgradeException, instanceOf(org.eclipse.jetty.websocket.core.UpgradeException.class));
+        assertThat(coreUpgradeException, instanceOf(org.eclipse.jetty.websocket.core.exception.UpgradeException.class));
 
         Throwable timeoutException = coreUpgradeException.getCause();
         assertThat(timeoutException, instanceOf(TimeoutException.class));

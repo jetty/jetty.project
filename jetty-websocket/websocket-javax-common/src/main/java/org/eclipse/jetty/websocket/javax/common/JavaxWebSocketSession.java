@@ -41,8 +41,8 @@ import javax.websocket.WebSocketContainer;
 import org.eclipse.jetty.util.SharedBlockingCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
-import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.javax.common.decoders.AvailableDecoders;
 import org.eclipse.jetty.websocket.javax.common.encoders.AvailableEncoders;
 import org.eclipse.jetty.websocket.javax.common.util.ReflectUtils;
@@ -56,7 +56,7 @@ public class JavaxWebSocketSession implements javax.websocket.Session
 
     protected final SharedBlockingCallback blocking = new SharedBlockingCallback();
     private final JavaxWebSocketContainer container;
-    private final FrameHandler.CoreSession coreSession;
+    private final CoreSession coreSession;
     private final JavaxWebSocketFrameHandler frameHandler;
     private final EndpointConfig config;
     private final AvailableDecoders availableDecoders;
@@ -69,7 +69,7 @@ public class JavaxWebSocketSession implements javax.websocket.Session
     private JavaxWebSocketBasicRemote basicRemote;
 
     public JavaxWebSocketSession(JavaxWebSocketContainer container,
-                                 FrameHandler.CoreSession coreSession,
+                                 CoreSession coreSession,
                                  JavaxWebSocketFrameHandler frameHandler,
                                  EndpointConfig endpointConfig)
     {
@@ -94,7 +94,7 @@ public class JavaxWebSocketSession implements javax.websocket.Session
         this.userProperties = this.config.getUserProperties();
     }
 
-    public FrameHandler.CoreSession getCoreSession()
+    public CoreSession getCoreSession()
     {
         return coreSession;
     }

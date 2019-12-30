@@ -26,7 +26,6 @@ import org.eclipse.jetty.util.compression.DeflaterPool;
 import org.eclipse.jetty.util.compression.InflaterPool;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.FrameHandler.Configuration;
 
 @ManagedObject("Abstract Extension")
 public class AbstractExtension implements Extension

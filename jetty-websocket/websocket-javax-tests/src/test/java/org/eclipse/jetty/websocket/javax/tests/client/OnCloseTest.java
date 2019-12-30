@@ -26,7 +26,7 @@ import javax.websocket.ClientEndpointConfig;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.CloseStatus;
-import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.javax.client.BasicClientEndpointConfig;
 import org.eclipse.jetty.websocket.javax.client.JavaxWebSocketClientContainer;
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketFrameHandler;
@@ -104,7 +104,7 @@ public class OnCloseTest
 
         UpgradeRequest request = new UpgradeRequestAdapter();
         JavaxWebSocketFrameHandler frameHandler = container.newFrameHandler(endpoint, request);
-        frameHandler.onOpen(new FrameHandler.CoreSession.Empty(), Callback.NOOP);
+        frameHandler.onOpen(new CoreSession.Empty(), Callback.NOOP);
 
         // Execute onClose call
         frameHandler.onFrame(CloseStatus.toFrame(CloseStatus.NORMAL), Callback.NOOP);

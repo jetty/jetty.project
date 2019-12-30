@@ -16,12 +16,27 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core;
+package org.eclipse.jetty.websocket.core.exception;
 
-public class WebSocketWriteTimeoutException extends WebSocketTimeoutException
+/**
+ * Exception thrown to indicate a connection I/O timeout.
+ */
+public class WebSocketTimeoutException extends WebSocketException
 {
-    public WebSocketWriteTimeoutException(String message)
+    private static final long serialVersionUID = -6145098200250676673L;
+
+    public WebSocketTimeoutException(String message)
     {
         super(message);
+    }
+
+    public WebSocketTimeoutException(String message, Throwable cause)
+    {
+        super(message, cause);
+    }
+
+    public WebSocketTimeoutException(Throwable cause)
+    {
+        super(cause);
     }
 }

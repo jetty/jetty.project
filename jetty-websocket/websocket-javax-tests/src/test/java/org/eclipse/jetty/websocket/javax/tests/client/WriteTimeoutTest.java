@@ -30,7 +30,7 @@ import javax.websocket.server.ServerEndpoint;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.WebSocketWriteTimeoutException;
+import org.eclipse.jetty.websocket.core.exception.WebSocketWriteTimeoutException;
 import org.eclipse.jetty.websocket.javax.tests.LocalServer;
 import org.eclipse.jetty.websocket.javax.tests.WSEndpointTracker;
 import org.hamcrest.Matchers;

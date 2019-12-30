@@ -28,6 +28,7 @@ import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
@@ -68,13 +69,13 @@ public class WebSocketCoreClient extends ContainerLifeCycle
         addBean(httpClient);
     }
 
-    public CompletableFuture<FrameHandler.CoreSession> connect(FrameHandler frameHandler, URI wsUri) throws IOException
+    public CompletableFuture<CoreSession> connect(FrameHandler frameHandler, URI wsUri) throws IOException
     {
         ClientUpgradeRequest request = ClientUpgradeRequest.from(this, wsUri, frameHandler);
         return connect(request);
     }
 
-    public CompletableFuture<FrameHandler.CoreSession> connect(ClientUpgradeRequest request) throws IOException
+    public CompletableFuture<CoreSession> connect(ClientUpgradeRequest request) throws IOException
     {
         if (!isStarted())
             throw new IllegalStateException(WebSocketCoreClient.class.getSimpleName() + "@" + this.hashCode() + " is not started");

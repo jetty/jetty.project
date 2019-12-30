@@ -31,17 +31,19 @@ import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.common.invoke.InvalidSignatureException;
-import org.eclipse.jetty.websocket.core.BadPayloadException;
-import org.eclipse.jetty.websocket.core.CloseException;
+import org.eclipse.jetty.websocket.core.Configuration;
+import org.eclipse.jetty.websocket.core.CoreSession;
+import org.eclipse.jetty.websocket.core.exception.BadPayloadException;
+import org.eclipse.jetty.websocket.core.exception.CloseException;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.core.MessageTooLargeException;
+import org.eclipse.jetty.websocket.core.exception.MessageTooLargeException;
 import org.eclipse.jetty.websocket.core.OpCode;
-import org.eclipse.jetty.websocket.core.ProtocolException;
-import org.eclipse.jetty.websocket.core.UpgradeException;
-import org.eclipse.jetty.websocket.core.WebSocketException;
-import org.eclipse.jetty.websocket.core.WebSocketTimeoutException;
+import org.eclipse.jetty.websocket.core.exception.ProtocolException;
+import org.eclipse.jetty.websocket.core.exception.UpgradeException;
+import org.eclipse.jetty.websocket.core.exception.WebSocketException;
+import org.eclipse.jetty.websocket.core.exception.WebSocketTimeoutException;
 
 public class JettyWebSocketFrameHandler implements FrameHandler
 {
@@ -70,7 +72,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     private UpgradeRequest upgradeRequest;
     private UpgradeResponse upgradeResponse;
 
-    private final Customizer customizer;
+    private final Configuration.Customizer customizer;
     private MessageSink textSink;
     private MessageSink binarySink;
     private MessageSink activeMessageSink;
@@ -87,7 +89,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
                                       MethodHandle frameHandle,
                                       MethodHandle pingHandle, MethodHandle pongHandle,
                                       BatchMode batchMode,
-                                      Customizer customizer)
+                                      Configuration.Customizer customizer)
     {
         this.log = Log.getLogger(endpointInstance.getClass());
 

@@ -29,8 +29,8 @@ import javax.websocket.server.ServerEndpoint;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketFrameHandler;
 import org.eclipse.jetty.websocket.javax.common.UpgradeRequest;
@@ -50,7 +50,7 @@ public class JavaxWebSocketFrameHandler_OnMessage_TextStreamTest extends Abstrac
 
         // Establish endpoint function
         JavaxWebSocketFrameHandler frameHandler = container.newFrameHandler(socket, request);
-        frameHandler.onOpen(new FrameHandler.CoreSession.Empty(), Callback.NOOP);
+        frameHandler.onOpen(new CoreSession.Empty(), Callback.NOOP);
         func.accept(frameHandler);
         return socket;
     }

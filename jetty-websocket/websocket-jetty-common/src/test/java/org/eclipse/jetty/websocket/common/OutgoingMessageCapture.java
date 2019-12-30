@@ -40,11 +40,11 @@ import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.common.message.ByteBufferMessageSink;
 import org.eclipse.jetty.websocket.common.message.StringMessageSink;
 import org.eclipse.jetty.websocket.core.CloseStatus;
+import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.OpCode;
 
-public class OutgoingMessageCapture extends FrameHandler.CoreSession.Empty implements FrameHandler.CoreSession
+public class OutgoingMessageCapture extends CoreSession.Empty implements CoreSession
 {
     private static final Logger LOG = Log.getLogger(OutgoingMessageCapture.class);
 

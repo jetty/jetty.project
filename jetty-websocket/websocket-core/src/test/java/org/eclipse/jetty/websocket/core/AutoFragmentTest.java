@@ -74,7 +74,7 @@ public class AutoFragmentTest
     public void testOutgoingAutoFragmentToMaxFrameSize() throws Exception
     {
         TestFrameHandler clientHandler = new TestFrameHandler();
-        CompletableFuture<FrameHandler.CoreSession> connect = client.connect(clientHandler, serverUri);
+        CompletableFuture<CoreSession> connect = client.connect(clientHandler, serverUri);
         connect.get(5, TimeUnit.SECONDS);
 
         // Turn off fragmentation on the server.
@@ -122,7 +122,7 @@ public class AutoFragmentTest
     public void testIncomingAutoFragmentToMaxFrameSize() throws Exception
     {
         TestFrameHandler clientHandler = new TestFrameHandler();
-        CompletableFuture<FrameHandler.CoreSession> connect = client.connect(clientHandler, serverUri);
+        CompletableFuture<CoreSession> connect = client.connect(clientHandler, serverUri);
         connect.get(5, TimeUnit.SECONDS);
 
         // Turn off fragmentation on the client.
@@ -167,7 +167,7 @@ public class AutoFragmentTest
         TestFrameHandler clientHandler = new TestFrameHandler();
         ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(client, serverUri, clientHandler);
         upgradeRequest.addExtensions("permessage-deflate");
-        CompletableFuture<FrameHandler.CoreSession> connect = client.connect(upgradeRequest);
+        CompletableFuture<CoreSession> connect = client.connect(upgradeRequest);
         connect.get(5, TimeUnit.SECONDS);
 
         // Turn off fragmentation on the client.
@@ -218,7 +218,7 @@ public class AutoFragmentTest
         TestFrameHandler clientHandler = new TestFrameHandler();
         ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(client, serverUri, clientHandler);
         upgradeRequest.addExtensions("permessage-deflate");
-        CompletableFuture<FrameHandler.CoreSession> connect = client.connect(upgradeRequest);
+        CompletableFuture<CoreSession> connect = client.connect(upgradeRequest);
         connect.get(5, TimeUnit.SECONDS);
 
         // Turn off fragmentation on the client.
@@ -282,7 +282,7 @@ public class AutoFragmentTest
         TestFrameHandler clientHandler = new TestFrameHandler();
         ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(client, serverUri, clientHandler);
         upgradeRequest.addExtensions("permessage-deflate");
-        CompletableFuture<FrameHandler.CoreSession> connect = client.connect(upgradeRequest);
+        CompletableFuture<CoreSession> connect = client.connect(upgradeRequest);
         connect.get(5, TimeUnit.SECONDS);
 
         // Turn off fragmentation on the client.

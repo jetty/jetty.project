@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.core;
 
+import org.eclipse.jetty.websocket.core.exception.ProtocolException;
 import org.eclipse.jetty.websocket.core.internal.FrameSequence;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;

@@ -19,7 +19,7 @@
 package org.eclipse.jetty.websocket.core.internal;
 
 import org.eclipse.jetty.websocket.core.OpCode;
-import org.eclipse.jetty.websocket.core.ProtocolException;
+import org.eclipse.jetty.websocket.core.exception.ProtocolException;
 
 public class FrameSequence
 {

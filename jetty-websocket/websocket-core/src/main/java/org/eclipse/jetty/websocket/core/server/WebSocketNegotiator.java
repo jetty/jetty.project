@@ -23,11 +23,12 @@ import java.util.function.Function;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
+import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
 
-public interface WebSocketNegotiator extends FrameHandler.Customizer
+public interface WebSocketNegotiator extends Configuration.Customizer
 {
     FrameHandler negotiate(Negotiation negotiation) throws IOException;
 
@@ -51,7 +52,7 @@ public interface WebSocketNegotiator extends FrameHandler.Customizer
         };
     }
 
-    static WebSocketNegotiator from(Function<Negotiation, FrameHandler> negotiate, FrameHandler.Customizer customizer)
+    static WebSocketNegotiator from(Function<Negotiation, FrameHandler> negotiate, Configuration.Customizer customizer)
     {
         return new AbstractNegotiator(null, customizer)
         {
@@ -66,7 +67,7 @@ public interface WebSocketNegotiator extends FrameHandler.Customizer
     static WebSocketNegotiator from(
         Function<Negotiation, FrameHandler> negotiate,
         WebSocketComponents components,
-        FrameHandler.Customizer customizer)
+        Configuration.Customizer customizer)
     {
         return new AbstractNegotiator(components, customizer)
         {
@@ -81,21 +82,21 @@ public interface WebSocketNegotiator extends FrameHandler.Customizer
     abstract class AbstractNegotiator implements WebSocketNegotiator
     {
         final WebSocketComponents components;
-        final FrameHandler.Customizer customizer;
+        final Configuration.Customizer customizer;
 
         public AbstractNegotiator()
         {
             this(null, null);
         }
 
-        public AbstractNegotiator(WebSocketComponents components, FrameHandler.Customizer customizer)
+        public AbstractNegotiator(WebSocketComponents components, Configuration.Customizer customizer)
         {
             this.components = components == null ? new WebSocketComponents() : components;
             this.customizer = customizer;
         }
 
         @Override
-        public void customize(FrameHandler.Configuration configurable)
+        public void customize(Configuration configurable)
         {
             if (customizer != null)
                 customizer.customize(configurable);
@@ -125,7 +126,7 @@ public interface WebSocketNegotiator extends FrameHandler.Customizer
             return components;
         }
 
-        public FrameHandler.Customizer getCustomizer()
+        public Configuration.Customizer getCustomizer()
         {
             return customizer;
         }

@@ -30,8 +30,8 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.javax.common.messages.MessageOutputStream;
 import org.eclipse.jetty.websocket.javax.common.messages.MessageWriter;
@@ -41,7 +41,7 @@ public class JavaxWebSocketAsyncRemote extends JavaxWebSocketRemoteEndpoint impl
 {
     static final Logger LOG = Log.getLogger(JavaxWebSocketAsyncRemote.class);
 
-    protected JavaxWebSocketAsyncRemote(JavaxWebSocketSession session, FrameHandler.CoreSession coreSession)
+    protected JavaxWebSocketAsyncRemote(JavaxWebSocketSession session, CoreSession coreSession)
     {
         super(session, coreSession);
     }

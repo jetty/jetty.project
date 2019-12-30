@@ -26,8 +26,8 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Utf8StringBuilder;
+import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.junit.jupiter.api.Test;
 
@@ -139,7 +139,7 @@ public class MessageWriterTest
         assertThat("Message[0].length", message.length(), is(testSize));
     }
 
-    public static class FrameCapture extends FrameHandler.CoreSession.Empty
+    public static class FrameCapture extends CoreSession.Empty
     {
         public BlockingQueue<Frame> frames = new LinkedBlockingQueue<>();
 
@@ -151,7 +151,7 @@ public class MessageWriterTest
         }
     }
 
-    public static class WholeMessageCapture extends FrameHandler.CoreSession.Empty
+    public static class WholeMessageCapture extends CoreSession.Empty
     {
         public BlockingQueue<String> messages = new LinkedBlockingQueue<>();
 

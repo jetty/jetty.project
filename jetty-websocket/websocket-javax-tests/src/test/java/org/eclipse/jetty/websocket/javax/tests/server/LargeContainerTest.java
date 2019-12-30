@@ -29,8 +29,8 @@ import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.webapp.WebAppContext;
+import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.javax.tests.WSServer;
@@ -71,10 +71,10 @@ public class LargeContainerTest
                 client.start();
 
                 FrameHandlerTracker clientSocket = new FrameHandlerTracker();
-                Future<FrameHandler.CoreSession> clientConnectFuture = client.connect(clientSocket, uri.resolve("/app/echo/large"));
+                Future<CoreSession> clientConnectFuture = client.connect(clientSocket, uri.resolve("/app/echo/large"));
 
                 // wait for connect
-                FrameHandler.CoreSession coreSession = clientConnectFuture.get(5, TimeUnit.SECONDS);
+                CoreSession coreSession = clientConnectFuture.get(5, TimeUnit.SECONDS);
                 coreSession.setMaxTextMessageSize(128 * 1024);
                 try
                 {

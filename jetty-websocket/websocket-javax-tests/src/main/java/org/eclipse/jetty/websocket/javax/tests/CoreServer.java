@@ -31,6 +31,7 @@ import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
@@ -116,7 +117,7 @@ public class CoreServer extends ContainerLifeCycle
         }
 
         @Override
-        public void customize(FrameHandler.Configuration configurable)
+        public void customize(Configuration configurable)
         {
         }
 
@@ -178,7 +179,7 @@ public class CoreServer extends ContainerLifeCycle
         }
 
         @Override
-        public void customize(FrameHandler.Configuration configurable)
+        public void customize(Configuration configurable)
         {
         }
     }

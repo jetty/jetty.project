@@ -52,7 +52,7 @@ import org.eclipse.jetty.websocket.common.JettyWebSocketFrameHandler;
 import org.eclipse.jetty.websocket.common.JettyWebSocketFrameHandlerFactory;
 import org.eclipse.jetty.websocket.common.SessionTracker;
 import org.eclipse.jetty.websocket.common.WebSocketContainer;
-import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.client.UpgradeListener;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
@@ -65,7 +65,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
     private final JettyWebSocketFrameHandlerFactory frameHandlerFactory;
     private final List<WebSocketSessionListener> sessionListeners = new CopyOnWriteArrayList<>();
     private final SessionTracker sessionTracker = new SessionTracker();
-    private final FrameHandler.ConfigurationCustomizer configurationCustomizer = new FrameHandler.ConfigurationCustomizer();
+    private final Configuration.ConfigurationCustomizer configurationCustomizer = new Configuration.ConfigurationCustomizer();
     private final WebSocketComponents components = new WebSocketComponents();
     private boolean stopAtShutdown = false;
 

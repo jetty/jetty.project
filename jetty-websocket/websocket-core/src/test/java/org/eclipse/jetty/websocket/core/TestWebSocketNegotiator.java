@@ -53,7 +53,7 @@ public class TestWebSocketNegotiator implements WebSocketNegotiator
     }
 
     @Override
-    public void customize(FrameHandler.Configuration configurable)
+    public void customize(Configuration configurable)
     {
     }
 

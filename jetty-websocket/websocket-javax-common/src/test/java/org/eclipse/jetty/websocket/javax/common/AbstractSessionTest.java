@@ -22,7 +22,7 @@ import javax.websocket.Endpoint;
 import javax.websocket.EndpointConfig;
 import javax.websocket.Session;
 
-import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.CoreSession;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 
@@ -39,7 +39,7 @@ public abstract class AbstractSessionTest
         Object websocketPojo = new DummyEndpoint();
         UpgradeRequest upgradeRequest = new UpgradeRequestAdapter();
         JavaxWebSocketFrameHandler frameHandler = container.newFrameHandler(websocketPojo, upgradeRequest);
-        FrameHandler.CoreSession coreSession = new FrameHandler.CoreSession.Empty();
+        CoreSession coreSession = new CoreSession.Empty();
         session = new JavaxWebSocketSession(container, coreSession, frameHandler, container.getFrameHandlerFactory()
             .newDefaultEndpointConfig(websocketPojo.getClass(), null));
     }

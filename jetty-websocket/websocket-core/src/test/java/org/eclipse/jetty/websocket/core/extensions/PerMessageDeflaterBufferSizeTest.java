@@ -28,6 +28,7 @@ import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.HttpResponse;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.FrameHandler;
@@ -115,7 +116,7 @@ public class PerMessageDeflaterBufferSizeTest
         });
 
         // Connect to the server.
-        CompletableFuture<FrameHandler.CoreSession> connect = client.connect(upgradeRequest);
+        CompletableFuture<CoreSession> connect = client.connect(upgradeRequest);
         connect.get(5, TimeUnit.SECONDS);
 
         // Make sure the internal parameter was not sent to the server.
@@ -168,7 +169,7 @@ public class PerMessageDeflaterBufferSizeTest
         });
 
         // Connect to the server.
-        CompletableFuture<FrameHandler.CoreSession> connect = client.connect(upgradeRequest);
+        CompletableFuture<CoreSession> connect = client.connect(upgradeRequest);
         connect.get(5, TimeUnit.SECONDS);
 
         // Make sure the internal parameter was not sent to the server.
@@ -222,7 +223,7 @@ public class PerMessageDeflaterBufferSizeTest
         });
 
         // Connect to the server.
-        CompletableFuture<FrameHandler.CoreSession> connect = client.connect(upgradeRequest);
+        CompletableFuture<CoreSession> connect = client.connect(upgradeRequest);
         connect.get(5, TimeUnit.SECONDS);
 
         // Make sure the internal parameter was not sent from the server.
@@ -276,7 +277,7 @@ public class PerMessageDeflaterBufferSizeTest
         });
 
         // Connect to the server.
-        CompletableFuture<FrameHandler.CoreSession> connect = client.connect(upgradeRequest);
+        CompletableFuture<CoreSession> connect = client.connect(upgradeRequest);
         connect.get(5, TimeUnit.SECONDS);
 
         // Make sure the internal parameter was not sent from the server.

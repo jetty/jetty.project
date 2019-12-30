@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 import java.time.Duration;
 
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.TestMessageHandler;
 
 public class AutobahnFrameHandler extends TestMessageHandler

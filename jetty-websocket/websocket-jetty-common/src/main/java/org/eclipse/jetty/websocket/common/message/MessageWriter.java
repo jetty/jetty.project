@@ -30,8 +30,8 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.SharedBlockingCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.OpCode;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -49,7 +49,7 @@ public class MessageWriter extends Writer
         .onUnmappableCharacter(CodingErrorAction.REPORT)
         .onMalformedInput(CodingErrorAction.REPORT);
 
-    private final FrameHandler.CoreSession coreSession;
+    private final CoreSession coreSession;
     private final SharedBlockingCallback blocker;
     private long frameCount;
     private Frame frame;
@@ -57,7 +57,7 @@ public class MessageWriter extends Writer
     private Callback callback;
     private boolean closed;
 
-    public MessageWriter(FrameHandler.CoreSession coreSession, int bufferSize)
+    public MessageWriter(CoreSession coreSession, int bufferSize)
     {
         this.coreSession = coreSession;
         this.blocker = new SharedBlockingCallback();
