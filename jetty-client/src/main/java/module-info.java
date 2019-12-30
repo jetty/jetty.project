@@ -27,9 +27,7 @@ module org.eclipse.jetty.client
     exports org.eclipse.jetty.client.util;
 
     requires org.eclipse.jetty.alpn.client;
-    requires org.eclipse.jetty.http;
-    requires org.eclipse.jetty.io;
-    requires org.eclipse.jetty.util;
+    requires transitive org.eclipse.jetty.http;
 
     // Only required if using SPNEGO.
     requires static java.security.jgss;

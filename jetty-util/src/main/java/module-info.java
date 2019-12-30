@@ -33,10 +33,11 @@ module org.eclipse.jetty.util
     exports org.eclipse.jetty.util.thread.strategy;
     exports org.eclipse.jetty.util.compression;
 
+    // Required by SSL code (for X509).
+    requires transitive java.naming;
+
     // Only required if using AppContextLeakPreventer/AWTLeakPreventer.
     requires static java.desktop;
-    // Only required if using X509.
-    requires static java.naming;
     // Only required if using JavaUtilLog.
     requires static java.logging;
     // Only required if using DriverManagerLeakPreventer.

@@ -22,12 +22,7 @@ module org.eclipse.jetty.servlet
     exports org.eclipse.jetty.servlet.jmx to org.eclipse.jetty.jmx;
     exports org.eclipse.jetty.servlet.listener;
 
-    requires jetty.servlet.api;
-    requires org.eclipse.jetty.util;
-    requires org.eclipse.jetty.http;
-    requires org.eclipse.jetty.io;
-    requires org.eclipse.jetty.server;
-    requires org.eclipse.jetty.security;
+    requires transitive org.eclipse.jetty.security;
 
     // Only required if using StatisticsServlet.
     requires static java.management;

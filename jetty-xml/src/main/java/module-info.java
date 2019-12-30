@@ -22,8 +22,8 @@ module org.eclipse.jetty.xml
 {
     exports org.eclipse.jetty.xml;
 
-    requires java.xml;
-    requires org.eclipse.jetty.util;
+    requires transitive java.xml;
+    requires transitive org.eclipse.jetty.util;
 
     uses ConfigurationProcessorFactory;
 }

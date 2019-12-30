@@ -23,8 +23,7 @@ module org.eclipse.jetty.http2.hpack
 {
     exports org.eclipse.jetty.http2.hpack;
 
-    requires org.eclipse.jetty.http;
-    requires org.eclipse.jetty.util;
+    requires transitive org.eclipse.jetty.http;
 
     provides HttpFieldPreEncoder with HpackFieldPreEncoder;
 }

@@ -22,11 +22,7 @@ module org.eclipse.jetty.jaas
     exports org.eclipse.jetty.jaas.callback;
     exports org.eclipse.jetty.jaas.spi;
 
-    requires java.naming;
-    requires jetty.servlet.api;
-    requires org.eclipse.jetty.security;
-    requires org.eclipse.jetty.server;
-    requires org.eclipse.jetty.util;
+    requires transitive org.eclipse.jetty.security;
 
     // Only required if using JDBCLoginModule.
     requires static java.sql;

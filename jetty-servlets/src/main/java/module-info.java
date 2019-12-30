@@ -23,7 +23,7 @@ module org.eclipse.jetty.servlets
 {
     exports org.eclipse.jetty.servlets;
 
-    requires jetty.servlet.api;
+    requires transitive jetty.servlet.api;
 
     // Only required if using CloseableDoSFilter.
     requires static org.eclipse.jetty.io;

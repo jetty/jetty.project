@@ -23,9 +23,8 @@ module org.eclipse.jetty.jndi
     exports org.eclipse.jetty.jndi.java;
     exports org.eclipse.jetty.jndi.local;
 
-    requires java.naming;
-    requires org.eclipse.jetty.server;
-    requires org.eclipse.jetty.util;
+    requires transitive java.naming;
+    requires transitive org.eclipse.jetty.server;
 
     // Only required if using DataSourceCloser.
     requires static java.sql;

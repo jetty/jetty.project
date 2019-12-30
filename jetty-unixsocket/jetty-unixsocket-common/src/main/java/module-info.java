@@ -21,6 +21,5 @@ module org.eclipse.jetty.unixsocket.common
     exports org.eclipse.jetty.unixsocket.common;
 
     requires jnr.unixsocket;
-    requires org.eclipse.jetty.io;
-    requires org.eclipse.jetty.util;
+    requires transitive org.eclipse.jetty.io;
 }

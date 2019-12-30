@@ -20,9 +20,6 @@ module org.eclipse.jetty.http2.server
 {
     exports org.eclipse.jetty.http2.server;
 
-    requires org.eclipse.jetty.http;
-    requires org.eclipse.jetty.http2.common;
-    requires org.eclipse.jetty.io;
-    requires org.eclipse.jetty.server;
-    requires org.eclipse.jetty.util;
+    requires transitive org.eclipse.jetty.http2.common;
+    requires transitive org.eclipse.jetty.server;
 }
