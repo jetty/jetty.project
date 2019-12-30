@@ -485,9 +485,6 @@ public class SslConnectionTest
                 server.configureBlocking(false);
                 _manager.accept(server);
 
-                //__startBlocking.set(5);
-                //__blockFor.set(3);
-
                 client.getOutputStream().write("Short".getBytes(StandardCharsets.UTF_8));
                 byte[] buffer = new byte[1024];
                 int len = client.getInputStream().read(buffer);
@@ -515,7 +512,7 @@ public class SslConnectionTest
                 assertTrue(__onIncompleteFlush.get());
                 ((TestEP)_lastEndp).getWriteFlusher().completeWrite();
                 len = client.getInputStream().read(buffer);
-                assertThat(len, is(len));
+                assertThat(len, is(-1));
             }
         }
     }

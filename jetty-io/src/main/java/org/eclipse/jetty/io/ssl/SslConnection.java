@@ -1284,9 +1284,26 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                     {
                         // If we still can't flush, but we are not closing the endpoint,
                         // let's just flush the encrypted output in the background.
-                        ByteBuffer write = _encryptedOutput;
-                        if (BufferUtil.hasContent(write))
-                            endPoint.write(Callback.from(Callback.NOOP::succeeded, t -> endPoint.close()), write);
+                        ByteBuffer write = null;
+                        synchronized (_decryptedEndPoint)
+                        {
+                            if (BufferUtil.hasContent(_encryptedOutput))
+                            {
+                                write = _encryptedOutput;
+                                _flushState = FlushState.WRITING;
+                            }
+                        }
+                        if (write != null)
+                        {
+                            endPoint.write(Callback.from(() ->
+                            {
+                                synchronized (_decryptedEndPoint)
+                                {
+                                    _flushState = FlushState.IDLE;
+                                    releaseEncryptedOutputBuffer();
+                                }
+                            }, t -> endPoint.close()), write);
+                        }
                     }
                 }
 
