@@ -346,7 +346,7 @@
           <aggregate>true</aggregate>
           <strictCheck>true</strictCheck>
           <properties>
-            <copyright-range>${project.inceptionYear}-2019</copyright-range>
+            <copyright-range>${project.inceptionYear}-2020</copyright-range>
           </properties>
         </configuration>
         <executions>
