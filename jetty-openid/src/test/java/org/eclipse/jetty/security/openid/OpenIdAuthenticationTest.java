@@ -132,21 +132,21 @@ public class OpenIdAuthenticationTest
         // Initially not authenticated
         ContentResponse response = client.GET(appUriString + "/");
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
-        String[] content = response.getContentAsString().split("\n");
+        String[] content = response.getContentAsString().split("[\r\n]+");
         assertThat(content.length, is(1));
         assertThat(content[0], is("not authenticated"));
 
         // Request to login is success
         response = client.GET(appUriString + "/login");
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
-        content = response.getContentAsString().split("\n");
+        content = response.getContentAsString().split("[\r\n]+");
         assertThat(content.length, is(1));
         assertThat(content[0], is("success"));
 
         // Now authenticated we can get info
         response = client.GET(appUriString + "/");
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
-        content = response.getContentAsString().split("\n");
+        content = response.getContentAsString().split("[\r\n]+");
         assertThat(content.length, is(3));
         assertThat(content[0], is("userId: 123456789"));
         assertThat(content[1], is("name: Alice"));
@@ -159,7 +159,7 @@ public class OpenIdAuthenticationTest
         // We are no longer authenticated after logging out
         response = client.GET(appUriString + "/logout");
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
-        content = response.getContentAsString().split("\n");
+        content = response.getContentAsString().split("[\r\n]+");
         assertThat(content.length, is(1));
         assertThat(content[0], is("not authenticated"));
     }
