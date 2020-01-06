@@ -177,6 +177,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     private final Map<String, String> _initParams;
     private ClassLoader _classLoader;
     private boolean _contextPathDefault = true;
+    private String _defaultRequestCharacterEncoding;
+    private String _defaultResponseCharacterEncoding;
     private String _contextPath = "/";
     private String _contextPathEncoded = "/";
 
@@ -1482,7 +1484,27 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         setContextPath(contextPath);
         _contextPathDefault = true;
     }
+    
+    public void setDefaultRequestCharacterEncoding(String encoding)
+    {
+        _defaultRequestCharacterEncoding = encoding;
+    }
 
+    public String getDefaultRequestCharacterEncoding()
+    {
+        return _defaultRequestCharacterEncoding;
+    }
+    
+    public void setDefaultResponseCharacterEncoding(String encoding)
+    {
+        _defaultResponseCharacterEncoding = encoding;
+    }
+    
+    public String getDefaultResponseCharacterEncoding()
+    {
+        return _defaultResponseCharacterEncoding;
+    }
+    
     /**
      * @return True if the current contextPath is from default settings
      */

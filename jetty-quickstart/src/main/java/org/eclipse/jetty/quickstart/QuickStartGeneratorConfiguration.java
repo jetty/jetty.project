@@ -182,6 +182,14 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
         String defaultContextPath = (String)context.getAttribute("default-context-path");
         if (defaultContextPath != null)
             out.tag("default-context-path", defaultContextPath);
+        
+        String requestEncoding = (String)context.getAttribute("request-character-encoding");
+        if (!StringUtil.isBlank(requestEncoding))
+            out.tag("request-character-encoding", requestEncoding);
+        
+        String responseEncoding = (String)context.getAttribute("response-character-encoding");
+        if (!StringUtil.isBlank(responseEncoding))
+            out.tag("response-character-encoding", responseEncoding);
 
         //add the name of the origin attribute, if it is being used
         if (StringUtil.isNotBlank(_originAttribute))

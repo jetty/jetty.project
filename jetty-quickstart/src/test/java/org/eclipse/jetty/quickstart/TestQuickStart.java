@@ -28,6 +28,7 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.webapp.WebAppContext;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -43,6 +44,7 @@ public class TestQuickStart
 {
     File testDir;
     File webInf;
+    Server server;
 
     @BeforeEach
     public void setUp()
@@ -51,6 +53,14 @@ public class TestQuickStart
         FS.ensureEmpty(testDir);
         webInf = new File(testDir, "WEB-INF");
         FS.ensureDirExists(webInf);
+        
+        server = new Server();
+    }
+    
+    @AfterEach
+    public void tearDown() throws Exception
+    {
+        server.stop();
     }
 
     @Test
@@ -58,8 +68,6 @@ public class TestQuickStart
     {
         File quickstartXml = new File(webInf, "quickstart-web.xml");
         assertFalse(quickstartXml.exists());
-
-        Server server = new Server();
 
         //generate a quickstart-web.xml
         WebAppContext quickstart = new WebAppContext();
@@ -96,8 +104,6 @@ public class TestQuickStart
         ServletHolder sh = webapp.getServletHandler().getMappedServlet("/").getResource();
         assertNotNull(sh);
         assertEquals("foo", sh.getName());
-
-        server.stop();
     }
 
     @Test
@@ -105,8 +111,6 @@ public class TestQuickStart
     {
         File quickstartXml = new File(webInf, "quickstart-web.xml");
         assertFalse(quickstartXml.exists());
-
-        Server server = new Server();
 
         // generate a quickstart-web.xml
         WebAppContext quickstart = new WebAppContext();
@@ -138,7 +142,40 @@ public class TestQuickStart
         // verify the context path is the default-context-path
         assertEquals("/thisIsTheDefault", webapp.getContextPath());
         assertTrue(webapp.isContextPathDefault());
+    }
+    
+    @Test
+    public void testDefaultRequestAndResponseEncodings() throws Exception
+    {
+        File quickstartXml = new File(webInf, "quickstart-web.xml");
+        assertFalse(quickstartXml.exists());
 
-        server.stop();
+        // generate a quickstart-web.xml
+        WebAppContext quickstart = new WebAppContext();
+        quickstart.setResourceBase(testDir.getAbsolutePath());
+        quickstart.addConfiguration(new QuickStartConfiguration());
+        quickstart.setAttribute(QuickStartConfiguration.MODE, QuickStartConfiguration.Mode.GENERATE);
+        quickstart.setAttribute(QuickStartConfiguration.ORIGIN_ATTRIBUTE, "origin");
+        quickstart.setDescriptor(MavenTestingUtils.getTestResourceFile("web.xml").getAbsolutePath());
+        quickstart.setContextPath("/foo");
+        server.setHandler(quickstart);
+        server.setDryRun(true);
+        server.start();
+        
+        assertTrue(quickstartXml.exists());
+        
+        // quick start
+        WebAppContext webapp = new WebAppContext();
+        webapp.addConfiguration(new QuickStartConfiguration());
+        quickstart.setAttribute(QuickStartConfiguration.MODE, QuickStartConfiguration.Mode.QUICKSTART);
+        webapp.setResourceBase(testDir.getAbsolutePath());
+        webapp.setClassLoader(new URLClassLoader(new URL[0], Thread.currentThread().getContextClassLoader()));
+        server.setHandler(webapp);
+
+        server.setDryRun(false);
+        server.start();
+        
+        assertEquals("ascii", webapp.getDefaultRequestCharacterEncoding());
+        assertEquals("utf-16", webapp.getDefaultResponseCharacterEncoding());
     }
 }

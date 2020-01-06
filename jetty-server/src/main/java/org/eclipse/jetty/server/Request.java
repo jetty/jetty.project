@@ -682,13 +682,19 @@ public class Request implements HttpServletRequest
     {
         if (_characterEncoding == null)
         {
-            String contentType = getContentType();
-            if (contentType != null)
+            if (_context != null)
+                _characterEncoding = _context.getRequestCharacterEncoding();
+            
+            if (_characterEncoding == null)
             {
-                MimeTypes.Type mime = MimeTypes.CACHE.get(contentType);
-                String charset = (mime == null || mime.getCharset() == null) ? MimeTypes.getCharsetFromContentType(contentType) : mime.getCharset().toString();
-                if (charset != null)
-                    _characterEncoding = charset;
+                String contentType = getContentType();
+                if (contentType != null)
+                {
+                    MimeTypes.Type mime = MimeTypes.CACHE.get(contentType);
+                    String charset = (mime == null || mime.getCharset() == null) ? MimeTypes.getCharsetFromContentType(contentType) : mime.getCharset().toString();
+                    if (charset != null)
+                        _characterEncoding = charset;
+                }
             }
         }
         return _characterEncoding;
