@@ -1383,6 +1383,36 @@ public class ServletContextHandler extends ContextHandler
         }
 
         @Override
+        public int getSessionTimeout()
+        {
+            if (!isStarting())
+                throw new IllegalStateException();
+            if (!_enabled)
+                throw new UnsupportedOperationException();
+
+            int timeout = -1;
+            if (_sessionHandler != null)
+            {
+                int maxInactive = _sessionHandler.getMaxInactiveInterval();
+                timeout = (maxInactive < 0 ? 0 : maxInactive / 60);
+            }
+
+            return timeout;
+        }
+
+        @Override
+        public void setSessionTimeout(int sessionTimeout)
+        {
+            if (!isStarting())
+                throw new IllegalStateException();
+            if (!_enabled)
+                throw new UnsupportedOperationException();
+
+            if (_sessionHandler != null)
+                _sessionHandler.setMaxInactiveInterval((sessionTimeout < 0 ? 0 : sessionTimeout * 60));
+        }
+
+        @Override
         public void addListener(String className)
         {
             if (!isStarting())

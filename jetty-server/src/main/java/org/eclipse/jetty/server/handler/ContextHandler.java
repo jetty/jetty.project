@@ -2856,7 +2856,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         @Override
         public int getSessionTimeout()
         {
-            // TODO new in 4.0
             LOG.warn(UNIMPLEMENTED_USE_SERVLET_CONTEXT_HANDLER, "getSessionTimeout()");
             return 0;
         }
@@ -2867,7 +2866,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         @Override
         public void setSessionTimeout(int sessionTimeout)
         {
-            // TODO new in 4.0
             LOG.warn(UNIMPLEMENTED_USE_SERVLET_CONTEXT_HANDLER, "setSessionTimeout(int)");
         }
 

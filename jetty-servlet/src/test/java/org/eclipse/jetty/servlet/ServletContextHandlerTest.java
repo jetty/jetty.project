@@ -108,6 +108,20 @@ public class ServletContextHandlerTest
 
     public static class MySCI implements ServletContainerInitializer
     {
+        boolean callSessionTimeouts;
+        int timeout;
+        
+        public MySCI(boolean callSessionTimeouts, int timeout)
+        {
+            this.callSessionTimeouts = callSessionTimeouts;
+            this.timeout = timeout;
+        }
+        
+        public MySCI()
+        {
+            this(false, -1);
+        }
+        
         @Override
         public void onStartup(Set<Class<?>> c, ServletContext ctx) throws ServletException
         {
@@ -115,7 +129,20 @@ public class ServletContextHandlerTest
             if (ctx.getAttribute("MySCI.startup") != null)
                 throw new IllegalStateException("MySCI already called");
             ctx.setAttribute("MySCI.startup", Boolean.TRUE);
-            ctx.addListener(new MyContextListener());
+            ctx.addListener(new MyContextListener(callSessionTimeouts, timeout));
+            if (callSessionTimeouts)
+            {
+                try
+                {
+                    ctx.setSessionTimeout(timeout);
+                    ctx.setAttribute("MYSCI.setSessionTimeout", Boolean.TRUE);
+                    ctx.setAttribute("MYSCI.getSessionTimeout", Integer.valueOf(ctx.getSessionTimeout()));
+                }
+                catch (Exception e)
+                {
+                    ctx.setAttribute("MYSCI.sessionTimeoutFailure", e);
+                }
+            }
         }
     }
 
@@ -142,12 +169,50 @@ public class ServletContextHandlerTest
 
     public static class MyContextListener implements ServletContextListener
     {
-
+        boolean callSessionTimeouts;
+        int timeout;
+        
+        public MyContextListener(boolean callSessionTimeouts, int timeout)
+        {
+            this.callSessionTimeouts = callSessionTimeouts;
+            this.timeout = timeout;
+        }
+        
+        public MyContextListener()
+        {
+            this(false, -1);
+        }
+        
         @Override
         public void contextInitialized(ServletContextEvent sce)
         {
             assertNull(sce.getServletContext().getAttribute("MyContextListener.contextInitialized"));
             sce.getServletContext().setAttribute("MyContextListener.contextInitialized", Boolean.TRUE);
+            
+            if (callSessionTimeouts)
+            {
+                try
+                {
+                    sce.getServletContext().setSessionTimeout(timeout);
+                    sce.getServletContext().setAttribute("MyContextListener.setSessionTimeout", Boolean.FALSE);
+                }
+                catch (UnsupportedOperationException e)
+                {
+                    //Should NOT be able to call setSessionTimeout from this SCL
+                    sce.getServletContext().setAttribute("MyContextListener.setSessionTimeout", Boolean.TRUE); 
+                }
+                
+                try
+                {
+                    sce.getServletContext().getSessionTimeout();
+                    sce.getServletContext().setAttribute("MyContextListener.getSessionTimeout", Boolean.FALSE);
+                }
+                catch (UnsupportedOperationException e)
+                {
+                    //Should NOT be able to call getSessionTimeout from this SCL
+                    sce.getServletContext().setAttribute("MyContextListener.getSessionTimeout", Boolean.TRUE); 
+                }
+            }
         }
 
         @Override
@@ -402,6 +467,28 @@ public class ServletContextHandlerTest
     {
         _server.stop();
         _server.join();
+    }
+    
+    @Test
+    public void testGetSetSessionTimeout() throws Exception
+    {
+        ContextHandlerCollection contexts = new ContextHandlerCollection();
+        _server.setHandler(contexts);
+
+        Integer timeout = Integer.valueOf(100);
+        ServletContextHandler root = new ServletContextHandler(contexts, "/", ServletContextHandler.SESSIONS);
+        root.addBean(new MySCIStarter(root.getServletContext(), new MySCI(true, timeout.intValue())), true);
+        _server.start();
+        
+        //test can set session timeout from ServletContainerInitializer
+        assertTrue((Boolean)root.getServletContext().getAttribute("MYSCI.setSessionTimeout"));
+        //test can get session timeout from ServletContainerInitializer
+        assertEquals(timeout, (Integer)root.getServletContext().getAttribute("MYSCI.getSessionTimeout"));
+        assertNull(root.getAttribute("MYSCI.sessionTimeoutFailure"));
+        //test can't get session timeout from ContextListener not from annotation or web.xml
+        assertTrue((Boolean)root.getServletContext().getAttribute("MyContextListener.getSessionTimeout"));
+        //test can't set session timeout from ContextListener not from annotation or web.xml
+        assertTrue((Boolean)root.getServletContext().getAttribute("MyContextListener.setSessionTimeout"));
     }
 
     @Test
