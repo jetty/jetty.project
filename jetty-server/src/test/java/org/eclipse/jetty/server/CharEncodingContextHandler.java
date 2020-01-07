@@ -18,13 +18,11 @@
 
 package org.eclipse.jetty.server;
 
-
 import org.eclipse.jetty.server.handler.ContextHandler;
 
 /**
  * ContextHandler for testing that implements some
  * CharEncoding methods from the servlet spec.
- *
  */
 public class CharEncodingContextHandler extends ContextHandler
 {
