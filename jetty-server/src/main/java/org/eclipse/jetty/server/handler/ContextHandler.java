@@ -2899,7 +2899,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         @Override
         public String getRequestCharacterEncoding()
         {
-            // TODO new in 4.0
             LOG.warn(UNIMPLEMENTED_USE_SERVLET_CONTEXT_HANDLER, "getRequestCharacterEncoding()");
             return null;
         }
@@ -2910,7 +2909,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         @Override
         public void setRequestCharacterEncoding(String encoding)
         {
-            // TODO new in 4.0
             LOG.warn(UNIMPLEMENTED_USE_SERVLET_CONTEXT_HANDLER, "setRequestCharacterEncoding(String)");
         }
 
@@ -2920,7 +2918,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         @Override
         public String getResponseCharacterEncoding()
         {
-            // TODO new in 4.0
             LOG.warn(UNIMPLEMENTED_USE_SERVLET_CONTEXT_HANDLER, "getResponseCharacterEncoding()");
             return null;
         }
@@ -2931,7 +2928,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         @Override
         public void setResponseCharacterEncoding(String encoding)
         {
-            // TODO new in 4.0
             LOG.warn(UNIMPLEMENTED_USE_SERVLET_CONTEXT_HANDLER, "setResponseCharacterEncoding(String)");
         }
     }
