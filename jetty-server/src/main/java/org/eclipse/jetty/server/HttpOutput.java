@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -28,7 +28,6 @@ import java.nio.charset.Charset;
 import java.nio.charset.CharsetEncoder;
 import java.nio.charset.CoderResult;
 import java.nio.charset.CodingErrorAction;
-import java.util.ResourceBundle;
 import java.util.concurrent.TimeUnit;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletOutputStream;
@@ -59,9 +58,6 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class HttpOutput extends ServletOutputStream implements Runnable
 {
-    private static final String LSTRING_FILE = "javax.servlet.LocalStrings";
-    private static ResourceBundle lStrings = ResourceBundle.getBundle(LSTRING_FILE);
-
     /**
      * The output state
      */
@@ -983,6 +979,12 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         print(s, false);
     }
 
+    @Override
+    public void println(String s) throws IOException
+    {
+        print(s, true);
+    }
+
     private void print(String s, boolean eoln) throws IOException
     {
         if (isClosed())
@@ -1007,7 +1009,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         ByteBuffer out = getHttpChannel().getByteBufferPool().acquire((int)(1 + (s.length() + 2) * encoder.averageBytesPerChar()), false);
         BufferUtil.flipToFill(out);
 
-        for (; ; )
+        while (true)
         {
             CoderResult result;
             if (in.hasRemaining())
@@ -1047,48 +1049,6 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         BufferUtil.flipToFlush(out, 0);
         write(out.array(), out.arrayOffset(), out.remaining());
         getHttpChannel().getByteBufferPool().release(out);
-    }
-
-    @Override
-    public void println(String s) throws IOException
-    {
-        print(s, true);
-    }
-
-    @Override
-    public void println(boolean b) throws IOException
-    {
-        println(lStrings.getString(b ? "value.true" : "value.false"));
-    }
-
-    @Override
-    public void println(char c) throws IOException
-    {
-        println(String.valueOf(c));
-    }
-
-    @Override
-    public void println(int i) throws IOException
-    {
-        println(String.valueOf(i));
-    }
-
-    @Override
-    public void println(long l) throws IOException
-    {
-        println(String.valueOf(l));
-    }
-
-    @Override
-    public void println(float f) throws IOException
-    {
-        println(String.valueOf(f));
-    }
-
-    @Override
-    public void println(double d) throws IOException
-    {
-        println(String.valueOf(d));
     }
 
     /**

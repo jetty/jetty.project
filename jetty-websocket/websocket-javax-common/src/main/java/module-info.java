@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -24,9 +24,8 @@ module org.eclipse.jetty.websocket.javax.common
     exports org.eclipse.jetty.websocket.javax.common.messages;
     exports org.eclipse.jetty.websocket.javax.common.util;
 
-    requires jetty.websocket.api;
-    requires org.eclipse.jetty.http;
-    requires org.eclipse.jetty.io;
-    requires org.eclipse.jetty.util;
-    requires org.eclipse.jetty.websocket.core;
+    requires transitive jetty.websocket.api;
+    requires transitive org.eclipse.jetty.http;
+    requires transitive org.eclipse.jetty.io;
+    requires transitive org.eclipse.jetty.websocket.core;
 }

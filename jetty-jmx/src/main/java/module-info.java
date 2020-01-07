@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,12 +20,11 @@ module org.eclipse.jetty.jmx
 {
     exports org.eclipse.jetty.jmx;
 
-    requires org.eclipse.jetty.util;
+    // Applications that use ObjectMBean must use JMX classes too.
+    requires transitive java.management;
+    requires transitive org.eclipse.jetty.util;
 
     // Only required if using ConnectorServer.
     requires static java.management.rmi;
     requires static java.rmi;
-
-    // Applications that use ObjectMBean must use JMX classes too.
-    requires transitive java.management;
 }

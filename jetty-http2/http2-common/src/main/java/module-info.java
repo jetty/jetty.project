@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -25,8 +25,5 @@ module org.eclipse.jetty.http2.common
     exports org.eclipse.jetty.http2.generator;
     exports org.eclipse.jetty.http2.parser;
 
-    requires org.eclipse.jetty.http;
-    requires org.eclipse.jetty.http2.hpack;
-    requires org.eclipse.jetty.io;
-    requires org.eclipse.jetty.util;
+    requires transitive org.eclipse.jetty.http2.hpack;
 }
