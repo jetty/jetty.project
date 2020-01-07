@@ -1415,7 +1415,7 @@
         <repository>
           <id>jetty-snapshots</id>
           <name>jetty-snapshots</name>
-          <url>http://oss.sonatype.org/content/repositories/jetty-snapshots</url>
+          <url>https://oss.sonatype.org/content/repositories/jetty-snapshots</url>
           <snapshots>
             <enabled>true</enabled>
           </snapshots>
