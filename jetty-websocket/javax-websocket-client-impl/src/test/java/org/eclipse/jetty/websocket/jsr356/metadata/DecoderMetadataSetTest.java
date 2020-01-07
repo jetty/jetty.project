@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,12 +18,7 @@
 
 package org.eclipse.jetty.websocket.jsr356.metadata;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-
 import java.util.List;
-
 import javax.websocket.Decoder;
 
 import org.eclipse.jetty.websocket.jsr356.MessageType;
@@ -34,6 +29,10 @@ import org.eclipse.jetty.websocket.jsr356.decoders.TimeDecoder;
 import org.eclipse.jetty.websocket.jsr356.decoders.ValidDualDecoder;
 import org.junit.Assert;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 
 public class DecoderMetadataSetTest
 {

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -21,6 +21,12 @@ package org.eclipse.jetty.websocket.common.events;
 import java.io.IOException;
 import java.util.concurrent.TimeoutException;
 
+import examples.AdapterConnectCloseSocket;
+import examples.AnnotatedBinaryArraySocket;
+import examples.AnnotatedBinaryStreamSocket;
+import examples.AnnotatedFramesSocket;
+import examples.AnnotatedTextSocket;
+import examples.ListenerBasicSocket;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
@@ -34,13 +40,6 @@ import org.eclipse.jetty.websocket.common.test.LeakTrackingBufferPoolRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
-
-import examples.AdapterConnectCloseSocket;
-import examples.AnnotatedBinaryArraySocket;
-import examples.AnnotatedBinaryStreamSocket;
-import examples.AnnotatedFramesSocket;
-import examples.AnnotatedTextSocket;
-import examples.ListenerBasicSocket;
 
 public class EventDriverTest
 {

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,10 +18,10 @@
 
 package org.eclipse.jetty.websocket.common.events;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
-
+import examples.AnnotatedBinaryArraySocket;
+import examples.AnnotatedBinaryStreamSocket;
+import examples.AnnotatedTextSocket;
+import examples.AnnotatedTextStreamSocket;
 import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.common.annotations.BadBinarySignatureSocket;
 import org.eclipse.jetty.websocket.common.annotations.BadDuplicateBinarySocket;
@@ -36,10 +36,9 @@ import org.eclipse.jetty.websocket.common.events.annotated.CallableMethod;
 import org.junit.Assert;
 import org.junit.Test;
 
-import examples.AnnotatedBinaryArraySocket;
-import examples.AnnotatedBinaryStreamSocket;
-import examples.AnnotatedTextSocket;
-import examples.AnnotatedTextStreamSocket;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
 
 public class JettyAnnotatedScannerTest
 {

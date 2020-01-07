@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
-import static org.hamcrest.Matchers.is;
-
 import javax.websocket.Encoder;
 
 import org.eclipse.jetty.websocket.jsr356.encoders.IntegerEncoder;
@@ -33,6 +31,8 @@ import org.eclipse.jetty.websocket.jsr356.samples.FruitTextEncoder;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.is;
 
 /**
  * Tests against the Encoders class

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,16 +18,11 @@
 
 package org.eclipse.jetty.nosql.mongodb;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.Serializable;
 import java.lang.management.ManagementFactory;
 import java.net.MalformedURLException;
-import java.util.concurrent.Future;
-
 import javax.management.remote.JMXServiceURL;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -43,6 +38,9 @@ import org.eclipse.jetty.nosql.NoSqlSession;
 import org.eclipse.jetty.server.session.AbstractSessionValueSavingTest;
 import org.eclipse.jetty.server.session.AbstractTestServer;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class SessionSavingValueTest extends AbstractSessionValueSavingTest
 {

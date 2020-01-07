@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -17,8 +17,6 @@
 //
 
 package org.eclipse.jetty.websocket.common.test;
-
-import static org.hamcrest.Matchers.*;
 
 import java.io.EOFException;
 import java.io.IOException;
@@ -69,6 +67,10 @@ import org.eclipse.jetty.websocket.common.io.IOState;
 import org.eclipse.jetty.websocket.common.io.IOState.ConnectionStateListener;
 import org.eclipse.jetty.websocket.common.io.http.HttpResponseHeaderParser;
 import org.junit.Assert;
+
+import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 
 /**
  * A simple websocket client for performing unit tests with.

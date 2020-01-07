@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.start.config;
 
-import static org.eclipse.jetty.start.UsageException.*;
-
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Collections;
@@ -31,9 +29,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.start.FS;
 import org.eclipse.jetty.start.Props;
-import org.eclipse.jetty.start.RawArgs;
 import org.eclipse.jetty.start.Props.Prop;
+import org.eclipse.jetty.start.RawArgs;
 import org.eclipse.jetty.start.UsageException;
+
+import static org.eclipse.jetty.start.UsageException.ERR_BAD_ARG;
 
 /**
  * Weighted List of ConfigSources.

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.monitor;
 
-import static org.junit.Assert.assertTrue;
-
 import java.io.IOException;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -28,6 +26,8 @@ import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.StdErrLog;
 import org.junit.Test;
+
+import static org.junit.Assert.assertTrue;
 
 
 /* ------------------------------------------------------------ */

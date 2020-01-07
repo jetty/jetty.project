@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.server;
 
-import static org.eclipse.jetty.util.QuotedStringTokenizer.isQuoted;
-
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.channels.IllegalSelectorException;
@@ -30,7 +28,6 @@ import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.Cookie;
@@ -59,6 +56,8 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+
+import static org.eclipse.jetty.util.QuotedStringTokenizer.isQuoted;
 
 /**
  * <p>{@link Response} provides the implementation for {@link HttpServletResponse}.</p>

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,10 +18,8 @@
 
 package org.eclipse.jetty.websocket.common.events;
 
-import static org.hamcrest.Matchers.allOf;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.instanceOf;
-
+import examples.AdapterConnectCloseSocket;
+import examples.ListenerBasicSocket;
 import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
@@ -30,8 +28,9 @@ import org.eclipse.jetty.websocket.common.annotations.NotASocket;
 import org.junit.Assert;
 import org.junit.Test;
 
-import examples.AdapterConnectCloseSocket;
-import examples.ListenerBasicSocket;
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.instanceOf;
 
 public class EventDriverFactoryTest
 {

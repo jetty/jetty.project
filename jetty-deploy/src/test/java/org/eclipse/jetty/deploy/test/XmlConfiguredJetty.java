@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -17,8 +17,6 @@
 //
 
 package org.eclipse.jetty.deploy.test;
-
-import static org.hamcrest.Matchers.is;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -52,6 +50,8 @@ import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.junit.Assert;
+
+import static org.hamcrest.Matchers.is;
 
 /**
  * Allows for setting up a Jetty server for testing based on XML configuration files.

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.monitor.integration;
 
-import static java.lang.Integer.parseInt;
-import static java.lang.System.getProperty;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -30,7 +27,6 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
-
 import javax.management.MBeanServerConnection;
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
@@ -49,6 +45,9 @@ import org.eclipse.jetty.monitor.triggers.AggregateEventTrigger;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+
+import static java.lang.Integer.parseInt;
+import static java.lang.System.getProperty;
 
 
 /* ------------------------------------------------------------ */

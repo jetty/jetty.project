@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.server.ssl;
 
-import static org.junit.Assert.assertEquals;
-
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -29,7 +27,6 @@ import java.net.URI;
 import java.security.KeyStore;
 import java.util.Arrays;
 import java.util.concurrent.Executor;
-
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
@@ -50,6 +47,8 @@ import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * HttpServer Tester.

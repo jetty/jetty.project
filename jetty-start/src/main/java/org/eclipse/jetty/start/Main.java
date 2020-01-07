@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -17,8 +17,6 @@
 //
 
 package org.eclipse.jetty.start;
-
-import static org.eclipse.jetty.start.UsageException.*;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -50,6 +48,10 @@ import java.util.Set;
 import java.util.regex.Pattern;
 
 import org.eclipse.jetty.start.config.CommandLineConfigSource;
+
+import static org.eclipse.jetty.start.UsageException.ERR_INVOKE_MAIN;
+import static org.eclipse.jetty.start.UsageException.ERR_NOT_STOPPED;
+import static org.eclipse.jetty.start.UsageException.ERR_UNKNOWN;
 
 /**
  * Main start class.
