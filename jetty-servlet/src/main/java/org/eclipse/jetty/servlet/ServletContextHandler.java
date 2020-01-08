@@ -39,6 +39,7 @@ import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRegistration;
+import javax.servlet.ServletRegistration.Dynamic;
 import javax.servlet.ServletSecurityElement;
 import javax.servlet.SessionCookieConfig;
 import javax.servlet.SessionTrackingMode;
@@ -1251,6 +1252,33 @@ public class ServletContextHandler extends ContextHandler
             if (holder.getClassName() == null && holder.getHeldClass() == null)
             {
                 holder.setServlet(servlet);
+                return holder.getRegistration();
+            }
+            else
+                return null; //existing completed registration for servlet name
+        }
+        
+        @Override
+        public ServletRegistration.Dynamic addJspFile(String servletName, String jspFile)
+        {
+            checkDynamic(servletName);
+            
+            final ServletHandler handler = ServletContextHandler.this.getServletHandler();
+            ServletHolder holder = handler.getServlet(servletName);
+            if (holder == null)
+            {
+                //new servlet
+                holder = handler.newServletHolder(Source.JAVAX_API);
+                holder.setName(servletName);
+                holder.setForcedPath(jspFile);
+                handler.addServlet(holder);
+                return dynamicHolderAdded(holder);
+            }
+            
+            //complete a partial registration
+            if (holder.getClassName() == null && holder.getHeldClass() == null && holder.getForcedPath() == null)
+            {
+                holder.setForcedPath(jspFile);
                 return holder.getRegistration();
             }
             else

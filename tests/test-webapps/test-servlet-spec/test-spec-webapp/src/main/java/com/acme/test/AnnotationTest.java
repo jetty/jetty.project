@@ -251,7 +251,11 @@ public class AnnotationTest extends HttpServlet
             out.println("<h2>ServletContextListener Registration Prevented from ServletContextListener</h2>");
             Boolean webListenerPrevention = (Boolean)config.getServletContext().getAttribute("com.acme.AnnotationTest.sclFromSclRegoTest");
             out.println("<p><b>Result: " + (webListenerPrevention.booleanValue() ? "<span class=\"pass\">PASS" : "<span class=\"fail\">FAIL") + "</span></b></p>");
-
+            
+            out.println("<h2>Add Jsp File Registration</h2>");
+            complete = (Boolean)config.getServletContext().getAttribute("com.acme.jsp.file");
+            out.println("<p><b>Result: " + (complete.booleanValue() ? "<span class=\"pass\">PASS" : "<span class=\"fail\">FAIL") + "</span></b></p>");
+            
             out.println("<h2>ServletContextListener In web.xml Injected</h2>");
             Boolean listenerInject = (Boolean)config.getServletContext().getAttribute("com.acme.AnnotationTest.sclInjectTest");
             out.println("<p><b>Result: " + (listenerInject.booleanValue() ? "<span class=\"pass\">PASS" : "<span class=\"fail\">FAIL") + "</span></b></p>");

@@ -885,6 +885,38 @@ public class ServletContextHandlerTest
     }
 
     @Test
+    public void testAddJspFile() throws Exception
+    {
+        ContextHandlerCollection contexts = new ContextHandlerCollection();
+        _server.setHandler(contexts);
+
+        ServletContextHandler root = new ServletContextHandler(contexts, "/");
+        ServletHolder jspServlet = new ServletHolder();
+        jspServlet.setName("jsp");
+        jspServlet.setHeldClass(FakeJspServlet.class);
+        root.addServlet(jspServlet, "*.jsp");
+        class JSPAddingSCI implements ServletContainerInitializer
+        {
+            @Override
+            public void onStartup(Set<Class<?>> c, ServletContext ctx) throws ServletException
+            {
+                try
+                {
+                    ServletRegistration rego = ctx.addJspFile("some.jsp", "/path/to/some.jsp");
+                    rego.addMapping("/somejsp/*");
+                }
+                catch (Exception e)
+                {
+                    fail(e);
+                }
+            }
+        }
+        
+        root.addBean(new MySCIStarter(root.getServletContext(), new JSPAddingSCI()), true);
+        _server.start();
+    }
+    
+    @Test
     public void testAddServletAfterStart() throws Exception
     {
         ServletContextHandler context = new ServletContextHandler();
@@ -1390,6 +1422,11 @@ public class ServletContextHandlerTest
                 out.printf("Object is NOT a DecoratedObjectFactory%n");
             }
         }
+    }
+    
+    public static class FakeJspServlet extends HttpServlet
+    {
+        
     }
 
     public static class ServletAddingServlet extends HttpServlet

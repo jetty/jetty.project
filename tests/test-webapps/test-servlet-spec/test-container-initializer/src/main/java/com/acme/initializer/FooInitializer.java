@@ -103,5 +103,10 @@ public class FooInitializer implements ServletContainerInitializer
         ServletRegistration.Dynamic reg = context.addServlet("AnnotationTest", "com.acme.AnnotationTest");
         context.setAttribute("com.acme.AnnotationTest.complete", (reg == null));
         context.addListener(new FooListener());
+        
+        //test adding jsp file dynamically
+        ServletRegistration.Dynamic jspFile = context.addJspFile("dynamic.jsp", "/dynamic.jsp");
+        context.setAttribute("com.acme.jsp.file", (jspFile != null));
+        jspFile.addMapping("/dynamicjsp/*");
     }
 }
