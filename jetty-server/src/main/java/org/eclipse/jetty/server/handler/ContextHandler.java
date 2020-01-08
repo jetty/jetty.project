@@ -2695,7 +2695,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         @Override
         public ServletRegistration.Dynamic addJspFile(String servletName, String jspFile)
         {
-            // TODO new in 4.0
             LOG.warn(UNIMPLEMENTED_USE_SERVLET_CONTEXT_HANDLER, "addJspFile(String, String)");
             return null;
         }
