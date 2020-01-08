@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -221,7 +221,7 @@ public class Dispatcher implements RequestDispatcher
                 _contextHandler.handle(_pathInContext, baseRequest, (HttpServletRequest)request, (HttpServletResponse)response);
 
                 if (!baseRequest.getHttpChannelState().isAsync())
-                    commitResponse(response, baseRequest);
+                    baseRequest.getResponse().softClose();
             }
         }
         finally
@@ -241,57 +241,6 @@ public class Dispatcher implements RequestDispatcher
     public String toString()
     {
         return String.format("Dispatcher@0x%x{%s,%s}", hashCode(), _named, _uri);
-    }
-
-    @SuppressWarnings("Duplicates")
-    private void commitResponse(ServletResponse response, Request baseRequest) throws IOException, ServletException
-    {
-        if (baseRequest.getResponse().isWriting())
-        {
-            try
-            {
-                // Try closing Writer first (based on knowledge in Response obj)
-                response.getWriter().close();
-            }
-            catch (IllegalStateException ex1)
-            {
-                try
-                {
-                    // Try closing OutputStream as alternate route
-                    // This path is possible due to badly behaving Response wrappers
-                    response.getOutputStream().close();
-                }
-                catch (IllegalStateException ex2)
-                {
-                    ServletException servletException = new ServletException("Unable to commit the response", ex2);
-                    servletException.addSuppressed(ex1);
-                    throw servletException;
-                }
-            }
-        }
-        else
-        {
-            try
-            {
-                // Try closing OutputStream first (based on knowledge in Response obj)
-                response.getOutputStream().close();
-            }
-            catch (IllegalStateException ex1)
-            {
-                try
-                {
-                    // Try closing Writer as alternate route
-                    // This path is possible due to badly behaving Response wrappers
-                    response.getWriter().close();
-                }
-                catch (IllegalStateException ex2)
-                {
-                    ServletException servletException = new ServletException("Unable to commit the response", ex2);
-                    servletException.addSuppressed(ex1);
-                    throw servletException;
-                }
-            }
-        }
     }
 
     private class ForwardAttributes implements Attributes

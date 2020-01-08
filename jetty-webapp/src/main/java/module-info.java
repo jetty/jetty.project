@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -22,15 +22,9 @@ module org.eclipse.jetty.webapp
 {
     exports org.eclipse.jetty.webapp;
 
-    requires java.instrument;
-    requires java.xml;
-    requires jetty.servlet.api;
-    requires org.eclipse.jetty.http;
-    requires org.eclipse.jetty.security;
-    requires org.eclipse.jetty.server;
-    requires org.eclipse.jetty.servlet;
-    requires org.eclipse.jetty.util;
-    requires org.eclipse.jetty.xml;
+    requires transitive java.instrument;
+    requires transitive org.eclipse.jetty.servlet;
+    requires transitive org.eclipse.jetty.xml;
 
     uses Configuration;
 

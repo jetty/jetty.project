@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -29,6 +29,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Utf8Appendable;
 import org.eclipse.jetty.util.component.Dumpable;
@@ -76,6 +77,7 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
     private long maxTextMessageSize = WebSocketConstants.DEFAULT_MAX_TEXT_MESSAGE_SIZE;
     private Duration idleTimeout = WebSocketConstants.DEFAULT_IDLE_TIMEOUT;
     private Duration writeTimeout = WebSocketConstants.DEFAULT_WRITE_TIMEOUT;
+    private final ContextHandler contextHandler;
 
     public WebSocketCoreSession(FrameHandler handler, Behavior behavior, Negotiated negotiated)
     {
@@ -83,7 +85,26 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
         this.behavior = behavior;
         this.negotiated = negotiated;
         this.demanding = handler.isDemanding();
+
+        if (behavior == Behavior.SERVER)
+        {
+            ContextHandler.Context context = ContextHandler.getCurrentContext();
+            this.contextHandler = (context != null) ? context.getContextHandler() : null;
+        }
+        else
+        {
+            this.contextHandler = null;
+        }
+
         negotiated.getExtensions().initialize(new IncomingAdaptor(), new OutgoingAdaptor(), this);
+    }
+
+    private void handle(Runnable runnable)
+    {
+        if (contextHandler != null)
+            contextHandler.handle(runnable);
+        else
+            runnable.run();
     }
 
     /**
@@ -152,7 +173,6 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
                     throw new ProtocolException("Frame has non-transmittable status code");
                 }
             }
-
         }
     }
 
@@ -325,7 +345,7 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
             {
                 try
                 {
-                    handler.onClosed(closeStatus, callback);
+                    handle(() -> handler.onClosed(closeStatus, callback));
                 }
                 catch (Throwable e)
                 {
@@ -337,7 +357,7 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
             Throwable cause = closeStatus.getCause();
             try
             {
-                handler.onError(cause, errorCallback);
+                handle(() -> handler.onError(cause, errorCallback));
             }
             catch (Throwable e)
             {
@@ -351,7 +371,7 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
         {
             try
             {
-                handler.onClosed(closeStatus, callback);
+                handle(() -> handler.onClosed(closeStatus, callback));
             }
             catch (Throwable e)
             {
@@ -454,7 +474,7 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
         try
         {
             // Open connection and handler
-            handler.onOpen(this, openCallback);
+            handle(() -> handler.onOpen(this, openCallback));
         }
         catch (Throwable t)
         {
@@ -664,7 +684,7 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
                 // Handle inbound frame
                 if (frame.getOpCode() != OpCode.CLOSE)
                 {
-                    handler.onFrame(frame, callback);
+                    handle(() -> handler.onFrame(frame, callback));
                     return;
                 }
 

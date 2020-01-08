@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,6 +19,7 @@
 package org.eclipse.jetty.websocket.servlet;
 
 import java.io.IOException;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
@@ -263,39 +264,30 @@ public class WebSocketMapping implements Dumpable, LifeCycle.Listener
             if (servletContext == null)
                 throw new IllegalStateException("null servletContext from request");
 
-            ClassLoader loader = servletContext.getClassLoader();
-            ClassLoader old = Thread.currentThread().getContextClassLoader();
+            ServletUpgradeRequest upgradeRequest = new ServletUpgradeRequest(negotiation);
+            ServletUpgradeResponse upgradeResponse = new ServletUpgradeResponse(negotiation);
 
-            try
+            AtomicReference<Object> result = new AtomicReference<>();
+            ((ContextHandler.Context)servletContext).getContextHandler().handle(() ->
+                result.set(creator.createWebSocket(upgradeRequest, upgradeResponse)));
+            Object websocketPojo = result.get();
+
+            // Handling for response forbidden (and similar paths)
+            if (upgradeResponse.isCommitted())
+                return null;
+
+            if (websocketPojo == null)
             {
-                Thread.currentThread().setContextClassLoader(loader);
-
-                ServletUpgradeRequest upgradeRequest = new ServletUpgradeRequest(negotiation);
-                ServletUpgradeResponse upgradeResponse = new ServletUpgradeResponse(negotiation);
-
-                Object websocketPojo = creator.createWebSocket(upgradeRequest, upgradeResponse);
-
-                // Handling for response forbidden (and similar paths)
-                if (upgradeResponse.isCommitted())
-                    return null;
-
-                if (websocketPojo == null)
-                {
-                    // no creation, sorry
-                    upgradeResponse.sendError(SC_SERVICE_UNAVAILABLE, "WebSocket Endpoint Creation Refused");
-                    return null;
-                }
-
-                FrameHandler frameHandler = factory.newFrameHandler(websocketPojo, upgradeRequest, upgradeResponse);
-                if (frameHandler != null)
-                    return frameHandler;
-
+                // no creation, sorry
+                upgradeResponse.sendError(SC_SERVICE_UNAVAILABLE, "WebSocket Endpoint Creation Refused");
                 return null;
             }
-            finally
-            {
-                Thread.currentThread().setContextClassLoader(old);
-            }
+
+            FrameHandler frameHandler = factory.newFrameHandler(websocketPojo, upgradeRequest, upgradeResponse);
+            if (frameHandler != null)
+                return frameHandler;
+
+            return null;
         }
 
         @Override

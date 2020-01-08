@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -107,9 +107,9 @@ public class TestJettyOSGiBootWithJavaxWebSocket
     @Test
     public void testWebsocket() throws Exception
     {
-        startBundle(bundleContext, "org.eclipse.jetty.websocket.javax.websocket.common");
-        startBundle(bundleContext, "org.eclipse.jetty.websocket.javax.websocket.client");
-        startBundle(bundleContext, "org.eclipse.jetty.websocket.javax.websocket.server");
+        startBundle(bundleContext, "org.eclipse.jetty.websocket.javax.common");
+        startBundle(bundleContext, "org.eclipse.jetty.websocket.javax.client");
+        startBundle(bundleContext, "org.eclipse.jetty.websocket.javax.server");
         startBundle(bundleContext, "org.eclipse.jetty.tests.webapp");
 
         if (Boolean.getBoolean(TestOSGiUtil.BUNDLE_DEBUG))

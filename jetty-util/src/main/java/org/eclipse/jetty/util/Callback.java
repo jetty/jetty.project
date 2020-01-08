@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -342,6 +342,58 @@ public interface Callback extends Invocable
         {
             return callback.getInvocationType();
         }
+    }
+
+    interface InvocableCallback extends Invocable, Callback
+    {
+    }
+
+    static Callback combine(Callback cb1, Callback cb2)
+    {
+        if (cb1 == null || cb1 == cb2)
+            return cb2;
+        if (cb2 == null)
+            return cb1;
+
+        return new InvocableCallback()
+        {
+            @Override
+            public void succeeded()
+            {
+                try
+                {
+                    cb1.succeeded();
+                }
+                finally
+                {
+                    cb2.succeeded();
+                }
+            }
+
+            @Override
+            public void failed(Throwable x)
+            {
+                try
+                {
+                    cb1.failed(x);
+                }
+                catch (Throwable t)
+                {
+                    if (x != t)
+                        x.addSuppressed(t);
+                }
+                finally
+                {
+                    cb2.failed(x);
+                }
+            }
+
+            @Override
+            public InvocationType getInvocationType()
+            {
+                return Invocable.combine(Invocable.getInvocationType(cb1), Invocable.getInvocationType(cb2));
+            }
+        };
     }
 
     /**

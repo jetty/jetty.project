@@ -1,0 +1,31 @@
+//
+//  ========================================================================
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
+module org.eclipse.jetty.websocket.javax.common
+{
+    exports org.eclipse.jetty.websocket.javax.common;
+    exports org.eclipse.jetty.websocket.javax.common.decoders;
+    exports org.eclipse.jetty.websocket.javax.common.encoders;
+    exports org.eclipse.jetty.websocket.javax.common.messages;
+    exports org.eclipse.jetty.websocket.javax.common.util;
+
+    requires transitive jetty.websocket.api;
+    requires transitive org.eclipse.jetty.http;
+    requires transitive org.eclipse.jetty.io;
+    requires transitive org.eclipse.jetty.websocket.core;
+}

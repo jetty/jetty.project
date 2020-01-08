@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -890,6 +890,9 @@ public class HttpChannelState
             if (LOG.isDebugEnabled())
                 LOG.debug("sendError {}", toStringLocked());
 
+            if (_outputState != OutputState.OPEN)
+                throw new IllegalStateException(_outputState.toString());
+
             switch (_state)
             {
                 case HANDLING:
@@ -903,7 +906,7 @@ public class HttpChannelState
                 throw new IllegalStateException("Response is " + _outputState);
 
             response.setStatus(code);
-            response.closedBySendError();
+            response.softClose();
 
             request.setAttribute(ErrorHandler.ERROR_CONTEXT, request.getErrorContext());
             request.setAttribute(ERROR_REQUEST_URI, request.getRequestURI());
@@ -971,7 +974,7 @@ public class HttpChannelState
         }
 
         // release any aggregate buffer from a closing flush
-        _channel.getResponse().getHttpOutput().closed();
+        _channel.getResponse().getHttpOutput().completed();
 
         if (event != null)
         {

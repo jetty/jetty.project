@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -33,10 +33,11 @@ module org.eclipse.jetty.util
     exports org.eclipse.jetty.util.thread.strategy;
     exports org.eclipse.jetty.util.compression;
 
+    // Required by SSL code (for X509).
+    requires transitive java.naming;
+
     // Only required if using AppContextLeakPreventer/AWTLeakPreventer.
     requires static java.desktop;
-    // Only required if using X509.
-    requires static java.naming;
     // Only required if using JavaUtilLog.
     requires static java.logging;
     // Only required if using DriverManagerLeakPreventer.

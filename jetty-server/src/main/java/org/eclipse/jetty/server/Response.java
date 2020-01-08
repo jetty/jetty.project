@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -147,10 +147,10 @@ public class Response implements HttpServletResponse
         _out.reopen();
     }
 
-    public void closedBySendError()
+    public void softClose()
     {
         setErrorSent(true);
-        _out.closedBySendError();
+        _out.softClose();
     }
 
     /**
@@ -498,7 +498,7 @@ public class Response implements HttpServletResponse
         resetBuffer();
         setHeader(HttpHeader.LOCATION, location);
         setStatus(code);
-        closeOutput();
+        completeOutput();
     }
 
     @Override
@@ -818,7 +818,7 @@ public class Response implements HttpServletResponse
             {
                 try
                 {
-                    closeOutput();
+                    completeOutput();
                 }
                 catch (IOException e)
                 {
@@ -856,17 +856,20 @@ public class Response implements HttpServletResponse
         return (_contentLength < 0 || written >= _contentLength);
     }
 
-    public void closeOutput() throws IOException
+    public void completeOutput() throws IOException
     {
         if (_outputType == OutputType.WRITER)
             _writer.close();
-        if (!_out.isClosed())
+        else
             _out.close();
     }
 
-    public void closeOutput(Callback callback)
+    public void completeOutput(Callback callback)
     {
-        _out.close((_outputType == OutputType.WRITER) ? _writer : _out, callback);
+        if (_outputType == OutputType.WRITER)
+            _writer.complete(callback);
+        else
+            _out.complete(callback);
     }
 
     public long getLongContentLength()
