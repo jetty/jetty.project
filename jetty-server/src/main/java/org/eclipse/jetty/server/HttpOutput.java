@@ -770,18 +770,11 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             _written = written;
 
             // Should we aggregate?
-            if (aggregate)
+            if (aggregate && !flush)
             {
                 acquireBuffer();
-                int filled = BufferUtil.fill(_aggregate, b, off, len);
-
-                // return if we are not complete, not full and filled all the content
-                if (!flush)
-                    return;
-
-                // adjust offset/length
-                off += filled;
-                len -= filled;
+                BufferUtil.append(_aggregate, b, off, len);
+                return;
             }
         }
 
@@ -797,16 +790,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         {
             // flush any content from the aggregate
             if (BufferUtil.hasContent(_aggregate))
-            {
                 channelWrite(_aggregate, last && len == 0);
-
-                // should we fill aggregate again from the buffer?
-                if (len > 0 && !last && len <= _commitSize && len <= BufferUtil.space(_aggregate))
-                {
-                    BufferUtil.append(_aggregate, b, off, len);
-                    return;
-                }
-            }
 
             // write any remaining content in the buffer directly
             if (len > 0)
