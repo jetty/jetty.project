@@ -378,15 +378,14 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         return wake;
     }
 
-    private int getAggregateSpace()
+    private int maximizeAggregateSpace()
     {
         // If no aggregate, we can allocate one of bufferSize
         if (_aggregate == null)
             return getBufferSize();
 
-        // if the position is not zero, compact to avoid empty at capacity
-        if (_aggregate.position() != 0)
-            BufferUtil.compact(_aggregate);
+        // compact to maximize space
+        BufferUtil.compact(_aggregate);
 
         return BufferUtil.space(_aggregate);
     }
@@ -749,7 +748,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         {
             checkWritable();
             long written = _written + len;
-            int space = getAggregateSpace();
+            int space = maximizeAggregateSpace();
             last = _channel.getResponse().isAllContentWritten(written);
             // Write will be aggregated if:
             //  + it is smaller than the commitSize
@@ -826,7 +825,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                 channelWrite(_aggregate, last && len == 0);
 
                 // should we fill aggregate again from the buffer?
-                if (len > 0 && !last && len <= _commitSize && len <= getAggregateSpace())
+                if (len > 0 && !last && len <= _commitSize && len <= maximizeAggregateSpace())
                 {
                     BufferUtil.append(_aggregate, b, off, len);
                     onWriteComplete(false, null);
@@ -955,7 +954,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         {
             checkWritable();
             long written = _written + 1;
-            int space = getAggregateSpace();
+            int space = maximizeAggregateSpace();
             last = _channel.getResponse().isAllContentWritten(written);
             flush = last || space == 1;
 
@@ -1665,7 +1664,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             }
 
             // Can we just aggregate the remainder?
-            if (!_last && _aggregate != null && _len < getAggregateSpace() && _len < _commitSize)
+            if (!_last && _aggregate != null && _len < maximizeAggregateSpace() && _len < _commitSize)
             {
                 int position = BufferUtil.flipToFill(_aggregate);
                 BufferUtil.put(_buffer, _aggregate);
@@ -1693,6 +1692,15 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                 _slice.position(p);
                 _completed = !_buffer.hasRemaining();
                 channelWrite(_slice, _last && _completed, this);
+                return Action.SCHEDULED;
+            }
+
+            // all content written, but if we have not yet signal completion, we
+            // need to do so
+            if (_last && !_completed)
+            {
+                _completed = true;
+                channelWrite(BufferUtil.EMPTY_BUFFER, true, this);
                 return Action.SCHEDULED;
             }
 
@@ -1863,32 +1871,16 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 
     private class WriteCompleteCB implements Callback
     {
-        final Callback _callback;
-
-        WriteCompleteCB()
-        {
-            this(null);
-        }
-
-        WriteCompleteCB(Callback callback)
-        {
-            _callback = callback;
-        }
-
         @Override
         public void succeeded()
         {
             onWriteComplete(true, null);
-            if (_callback != null)
-                _callback.succeeded();
         }
 
         @Override
         public void failed(Throwable x)
         {
             onWriteComplete(true, x);
-            if (_callback != null)
-                _callback.succeeded();
         }
     }
 }

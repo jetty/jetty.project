@@ -989,6 +989,38 @@ public class HttpOutputTest
         assertThat(response, containsString(exp.toString()));
     }
 
+    @Test
+    public void testZeroLengthWrite() throws Exception
+    {
+        _swap.setHandler(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                response.setContentLength(0);
+                AsyncContext async = request.startAsync();
+                response.getOutputStream().setWriteListener(new WriteListener()
+                {
+                    @Override
+                    public void onWritePossible() throws IOException
+                    {
+                        response.getOutputStream().write(new byte[0]);
+                        async.complete();
+                    }
+
+                    @Override
+                    public void onError(Throwable t)
+                    {
+                    }
+                });
+            }
+        });
+        _swap.getHandler().start();
+        String response = _connector.getResponse("GET / HTTP/1.0\nHost: localhost:80\n\n");
+        assertThat(response, containsString("HTTP/1.1 200 OK"));
+    }
+
     private static String toUTF8String(Resource resource)
         throws IOException
     {
