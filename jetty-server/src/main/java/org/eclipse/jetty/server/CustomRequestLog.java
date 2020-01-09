@@ -276,7 +276,7 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
     public static final String DEFAULT_DATE_FORMAT = "dd/MMM/yyyy:HH:mm:ss ZZZ";
 
     public static final String NCSA_FORMAT = "%{client}a - %u %t \"%r\" %s %O";
-    public static final String EXTENDED_NCSA_FORMAT = "%{client}a - %u %t \"%r\" %s %O \"%{Referer}i\" \"%{User-Agent}i\"";
+    public static final String EXTENDED_NCSA_FORMAT = NCSA_FORMAT + " \"%{Referer}i\" \"%{User-Agent}i\"";
 
     private static ThreadLocal<StringBuilder> _buffers = ThreadLocal.withInitial(() -> new StringBuilder(256));
 
@@ -286,6 +286,21 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
     private RequestLog.Writer _requestLogWriter;
     private final MethodHandle _logHandle;
     private final String _formatString;
+
+    public CustomRequestLog()
+    {
+        this(new Slf4jRequestLogWriter(), EXTENDED_NCSA_FORMAT);
+    }
+
+    public CustomRequestLog(String file)
+    {
+        this(file, EXTENDED_NCSA_FORMAT);
+    }
+
+    public CustomRequestLog(String file, String format)
+    {
+        this(new RequestLogWriter(file), format);
+    }
 
     public CustomRequestLog(RequestLog.Writer writer, String formatString)
     {
@@ -301,16 +316,6 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
         {
             throw new IllegalStateException(e);
         }
-    }
-
-    public CustomRequestLog(String file)
-    {
-        this(file, EXTENDED_NCSA_FORMAT);
-    }
-
-    public CustomRequestLog(String file, String format)
-    {
-        this(new RequestLogWriter(file), format);
     }
 
     @ManagedAttribute("The RequestLogWriter")
