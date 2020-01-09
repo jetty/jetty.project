@@ -1696,16 +1696,6 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                 return Action.SCHEDULED;
             }
 
-            // all content written, but if we have not yet signaled completion,
-            // then we need to do so
-            if (_last && !_completed)
-            {
-                // TODO How can this ever happen?
-                _completed = true;
-                channelWrite(BufferUtil.EMPTY_BUFFER, true, this);
-                return Action.SCHEDULED;
-            }
-
             if (LOG.isDebugEnabled() && _completed)
                 LOG.debug("EOF of {}", this);
 
