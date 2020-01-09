@@ -381,7 +381,7 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
                         int len = slice.remaining();
                         _crc.update(array, off, len);
                         _deflater.setInput(array, off, len);  // TODO use ByteBuffer API in Jetty-10
-                        BufferUtil.clear(slice);
+                        slice.position(slice.position() + len);
                         if (_last && BufferUtil.isEmpty(_content))
                             _deflater.finish();
                     }

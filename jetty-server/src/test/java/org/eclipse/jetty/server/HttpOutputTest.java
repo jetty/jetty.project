@@ -826,29 +826,6 @@ public class HttpOutputTest
             baseRequest.setHandled(true);
             HttpOutput out = (HttpOutput) response.getOutputStream();
 
-            // Add clearing interceptor to simulate behaviour of GzipHandler
-            HttpOutput.Interceptor interceptor = out.getInterceptor();
-            out.setInterceptor(new Interceptor()
-            {
-                @Override
-                public void write(ByteBuffer content, boolean last, Callback callback)
-                {
-                    interceptor.write(content, last, Callback.from(()->BufferUtil.clear(content), callback));
-                }
-
-                @Override
-                public Interceptor getNextInterceptor()
-                {
-                    return interceptor;
-                }
-
-                @Override
-                public boolean isOptimizedForDirectBuffers()
-                {
-                    return interceptor.isOptimizedForDirectBuffers();
-                }
-            });
-
             int bufferSize = baseRequest.getHttpChannel().getHttpConfiguration().getOutputBufferSize();
             int commitSize = baseRequest.getHttpChannel().getHttpConfiguration().getOutputAggregationSize();
             char fill = 'A';
