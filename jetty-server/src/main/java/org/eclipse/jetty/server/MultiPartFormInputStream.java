@@ -16,7 +16,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http;
+package org.eclipse.jetty.server;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;

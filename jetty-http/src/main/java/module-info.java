@@ -26,9 +26,6 @@ module org.eclipse.jetty.http
 
     requires transitive org.eclipse.jetty.io;
 
-    // Only required if using the MultiPart classes.
-    requires static jetty.servlet.api;
-
     uses HttpFieldPreEncoder;
 
     provides HttpFieldPreEncoder with Http1FieldPreEncoder;
