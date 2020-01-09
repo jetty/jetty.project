@@ -185,15 +185,17 @@ public class AutoFragmentTest
         Random rand = new Random();
         ByteBuffer payload = BufferUtil.allocate(payloadSize);
         BufferUtil.clearToFill(payload);
-        for (int i=0; i<payloadSize; i++)
+        for (int i = 0; i < payloadSize; i++)
+        {
             payload.put((byte)rand.nextInt(Byte.MAX_VALUE));
+        }
         BufferUtil.flipToFlush(payload, 0);
 
         // Send the large random payload which should be fragmented on the server.
         clientHandler.coreSession.sendFrame(new Frame(OpCode.BINARY, BufferUtil.copy(payload)), Callback.NOOP, false);
 
         // Assemble the message from the fragmented frames.
-        ByteBuffer message = BufferUtil.allocate(payloadSize*2);
+        ByteBuffer message = BufferUtil.allocate(payloadSize * 2);
         Frame frame = serverHandler.receivedFrames.poll(1, TimeUnit.SECONDS);
         while (frame != null)
         {
@@ -240,7 +242,7 @@ public class AutoFragmentTest
         clientHandler.coreSession.sendFrame(new Frame(OpCode.BINARY, BufferUtil.copy(payload)), Callback.NOOP, false);
 
         // Assemble the message from the fragmented frames.
-        ByteBuffer message = BufferUtil.allocate(payload.remaining()*2);
+        ByteBuffer message = BufferUtil.allocate(payload.remaining() * 2);
         Frame frame = serverHandler.receivedFrames.poll(1, TimeUnit.SECONDS);
         while (frame != null)
         {
@@ -258,7 +260,6 @@ public class AutoFragmentTest
         assertTrue(serverHandler.closed.await(5, TimeUnit.SECONDS));
         assertTrue(clientHandler.closed.await(5, TimeUnit.SECONDS));
     }
-
 
     @Test
     public void testOutgoingAutoFragmentWithPermessageDeflate() throws Exception
@@ -299,7 +300,7 @@ public class AutoFragmentTest
         serverHandler.sendFrame(new Frame(OpCode.BINARY, sendPayload), Callback.NOOP, false);
 
         // Assemble the message from the fragmented frames.
-        ByteBuffer message = BufferUtil.allocate(payload.remaining()*2);
+        ByteBuffer message = BufferUtil.allocate(payload.remaining() * 2);
         Frame frame = clientHandler.receivedFrames.poll(1, TimeUnit.SECONDS);
         int numFrames = 0;
         while (frame != null)
@@ -333,7 +334,7 @@ public class AutoFragmentTest
         byte[] buffer = new byte[bufferSize];
         while (true)
         {
-            int compressed = deflater.deflate(buffer, 0 , bufferSize, Deflater.SYNC_FLUSH);
+            int compressed = deflater.deflate(buffer, 0, bufferSize, Deflater.SYNC_FLUSH);
             if (compressed <= 0)
                 break;
             out.write(buffer, 0, compressed);

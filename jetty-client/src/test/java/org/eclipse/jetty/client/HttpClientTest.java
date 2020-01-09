@@ -426,16 +426,16 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
         AtomicInteger progress = new AtomicInteger();
         ContentResponse response = client.POST(scenario.getScheme() + "://localhost:" + connector.getLocalPort())
-        .onRequestContent((request, buffer) ->
-        {
-            byte[] bytes = new byte[buffer.remaining()];
-            assertEquals(1, bytes.length);
-            buffer.get(bytes);
-            assertEquals(bytes[0], progress.getAndIncrement());
-        })
-        .content(new BytesContentProvider(new byte[]{0}, new byte[]{1}, new byte[]{2}, new byte[]{3}, new byte[]{4}))
-        .timeout(5, TimeUnit.SECONDS)
-        .send();
+            .onRequestContent((request, buffer) ->
+            {
+                byte[] bytes = new byte[buffer.remaining()];
+                assertEquals(1, bytes.length);
+                buffer.get(bytes);
+                assertEquals(bytes[0], progress.getAndIncrement());
+            })
+            .content(new BytesContentProvider(new byte[]{0}, new byte[]{1}, new byte[]{2}, new byte[]{3}, new byte[]{4}))
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
 
         assertNotNull(response);
         assertEquals(200, response.getStatus());

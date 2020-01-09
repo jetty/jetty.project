@@ -185,7 +185,6 @@ public class HttpServerTestFixture
         }
     }
 
-
     protected static class SendErrorHandler extends AbstractHandler
     {
         private final int code;

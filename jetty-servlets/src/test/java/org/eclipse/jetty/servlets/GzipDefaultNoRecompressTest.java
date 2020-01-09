@@ -64,8 +64,8 @@ public class GzipDefaultNoRecompressTest
                 {"jetty_logo.jp2", "image/jpeg2000", GzipHandler.GZIP},
                 //qvalue disables compression
                 {"test_quotes.txt", "text/plain", GzipHandler.GZIP + ";q=0"},
-                {"test_quotes.txt", "text/plain", GzipHandler.GZIP + "; q =    0 "},
-                }).stream().map(Arguments::of);
+                {"test_quotes.txt", "text/plain", GzipHandler.GZIP + "; q =    0 "}
+            }).stream().map(Arguments::of);
     }
 
     public WorkDir testingdir;

@@ -274,6 +274,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             assertThat(response, Matchers.containsString("HTTP/1.1 400 "));
         }
     }
+
     @Test
     public void testExceptionThrownInHandlerLoop() throws Exception
     {

@@ -110,7 +110,7 @@ public class OpenIdAuthenticationTest
         context.setSecurityHandler(securityHandler);
 
         server.start();
-        String redirectUri = "http://localhost:"+connector.getLocalPort() + "/j_security_check";
+        String redirectUri = "http://localhost:" + connector.getLocalPort() + "/j_security_check";
         openIdProvider.addRedirectUri(redirectUri);
 
         client = new HttpClient();
@@ -127,7 +127,7 @@ public class OpenIdAuthenticationTest
     @Test
     public void testLoginLogout() throws Exception
     {
-        String appUriString = "http://localhost:"+connector.getLocalPort();
+        String appUriString = "http://localhost:" + connector.getLocalPort();
 
         // Initially not authenticated
         ContentResponse response = client.GET(appUriString + "/");

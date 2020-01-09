@@ -64,7 +64,8 @@ public class ConcurrentConnectTest
         ServletContextHandler context = new ServletContextHandler();
         context.setContextPath("/");
 
-        JettyWebSocketServlet servlet = new JettyWebSocketServlet() {
+        JettyWebSocketServlet servlet = new JettyWebSocketServlet()
+        {
             @Override
             protected void configure(JettyWebSocketServletFactory factory)
             {

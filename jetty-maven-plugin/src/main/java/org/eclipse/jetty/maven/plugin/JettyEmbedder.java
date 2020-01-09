@@ -38,7 +38,6 @@ import org.eclipse.jetty.util.resource.Resource;
  * JettyEmbedded
  * 
  * Starts jetty within the current process. 
- *
  */
 public class JettyEmbedder extends AbstractLifeCycle
 {
@@ -244,8 +243,7 @@ public class JettyEmbedder extends AbstractLifeCycle
     {
         server.join();
     }
-    
-    
+
     /**
      * Configure the server and the webapp
      * @throws Exception

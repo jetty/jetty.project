@@ -31,7 +31,7 @@ import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 public class MyEchoBinarySocket extends MyEchoSocket
 {
     @OnWebSocketMessage
-    public void echoBin(byte buf[], int offset, int length)
+    public void echoBin(byte[] buf, int offset, int length)
     {
         try
         {

@@ -303,20 +303,20 @@ public class ConfiguratorTest
 
     public static class GmtTimeDecoder implements Decoder.Text<Calendar>
     {
-        private TimeZone TZ;
+        private TimeZone tz;
 
         @Override
         public Calendar decode(String s) throws DecodeException
         {
-            if (TZ == null)
+            if (tz == null)
                 throw new DecodeException(s, ".init() not called");
             try
             {
                 SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
-                dateFormat.setTimeZone(TZ);
+                dateFormat.setTimeZone(tz);
                 Date time = dateFormat.parse(s);
                 Calendar cal = Calendar.getInstance();
-                cal.setTimeZone(TZ);
+                cal.setTimeZone(tz);
                 cal.setTime(time);
                 return cal;
             }
@@ -329,7 +329,7 @@ public class ConfiguratorTest
         @Override
         public void init(EndpointConfig config)
         {
-            TZ = TimeZone.getTimeZone("GMT+0");
+            tz = TimeZone.getTimeZone("GMT+0");
         }
 
         @Override
@@ -351,7 +351,7 @@ public class ConfiguratorTest
         decoders = {GmtTimeDecoder.class})
     public static class TimeDecoderSocket
     {
-        private TimeZone TZ = TimeZone.getTimeZone("GMT+0");
+        private final TimeZone tz = TimeZone.getTimeZone("GMT+0");
 
         @OnMessage
         public String onMessage(Calendar cal)
@@ -362,7 +362,7 @@ public class ConfiguratorTest
         private SimpleDateFormat newDateFormat()
         {
             SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy.MM.dd G 'at' HH:mm:ss Z", Locale.ENGLISH);
-            dateFormat.setTimeZone(TZ);
+            dateFormat.setTimeZone(tz);
             return dateFormat;
         }
     }

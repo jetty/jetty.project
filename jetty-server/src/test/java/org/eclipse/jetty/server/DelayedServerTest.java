@@ -73,13 +73,13 @@ public class DelayedServerTest extends HttpServerTestBase
         @Override
         public void succeeded()
         {
-            pool.execute(()->
+            pool.execute(() ->
             {
                 try
                 {
                     Thread.sleep(10);
                 }
-                catch (InterruptedException e)
+                catch (InterruptedException ignored)
                 {
                 }
                 finally
@@ -92,13 +92,13 @@ public class DelayedServerTest extends HttpServerTestBase
         @Override
         public void failed(Throwable x)
         {
-            pool.execute(()->
+            pool.execute(() ->
             {
                 try
                 {
                     Thread.sleep(20);
                 }
-                catch (InterruptedException e)
+                catch (InterruptedException ignored)
                 {
                 }
                 finally

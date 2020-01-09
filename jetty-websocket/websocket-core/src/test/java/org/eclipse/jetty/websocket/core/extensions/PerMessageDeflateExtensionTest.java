@@ -135,7 +135,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
 
         tester.assertNegotiated("permessage-deflate");
 
-        tester.parseIncomingHex( // context takeover (2 messages)
+        tester.parseIncomingHex(// context takeover (2 messages)
             // message 1
             "0xc1 0x07", // (HEADER added for this test)
             "0xf2 0x48 0xcd 0xc9 0xc9 0x07 0x00",
@@ -530,7 +530,8 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
 
         // Captured from Pywebsocket (r790) - 3 messages with similar parts.
 
-        tester.parseIncomingHex(// context takeover (3 messages)
+        tester.parseIncomingHex(
+            // context takeover (3 messages)
             "c1 09 0a c9 2f 4a 0c 01  62 00 00", // ToraTora
             "c1 0b 72 2c c9 2f 4a 74  cb 01 12 00 00", // AtoraFlora
             "c1 0b 0a c8 c8 c9 2f 4a  0c 01 62 00 00" // PhloraTora
@@ -548,7 +549,8 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
 
         // Captured from Pywebsocket (r790) - "tora" sent 3 times.
 
-        tester.parseIncomingHex( // context takeover (3 messages)
+        tester.parseIncomingHex(
+            // context takeover (3 messages)
             "c1 06 2a c9 2f 4a 04 00", // tora 1
             "c1 05 2a 01 62 00 00", // tora 2
             "c1 04 02 61 00 00" // tora 3

@@ -1443,8 +1443,8 @@ public class ParserTest
         String part1 = "Hello ";
         String part2 = "World";
 
-        byte b1[] = part1.getBytes(StandardCharsets.UTF_8);
-        byte b2[] = part2.getBytes(StandardCharsets.UTF_8);
+        byte[] b1 = part1.getBytes(StandardCharsets.UTF_8);
+        byte[] b2 = part2.getBytes(StandardCharsets.UTF_8);
 
         ByteBuffer buf = ByteBuffer.allocate(32);
 

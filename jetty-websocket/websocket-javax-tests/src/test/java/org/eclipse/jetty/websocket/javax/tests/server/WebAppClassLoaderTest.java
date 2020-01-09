@@ -52,8 +52,8 @@ public class WebAppClassLoaderTest
     @ServerEndpoint("/echo")
     public static class MySocket
     {
-        public final static CountDownLatch closeLatch = new CountDownLatch(1);
-        public final static Map<String, ClassLoader> classLoaders = new ConcurrentHashMap<>();
+        public static final CountDownLatch closeLatch = new CountDownLatch(1);
+        public static final Map<String, ClassLoader> classLoaders = new ConcurrentHashMap<>();
 
         public MySocket()
         {

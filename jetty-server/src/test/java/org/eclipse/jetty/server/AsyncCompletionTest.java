@@ -171,9 +171,9 @@ public class AsyncCompletionTest extends HttpServerTestFixture
     }
 
     enum WriteStyle
-    {ARRAY, BUFFER, BYTE, BYTE_THEN_ARRAY, PRINT}
-
-    ;
+    {
+        ARRAY, BUFFER, BYTE, BYTE_THEN_ARRAY, PRINT
+    }
 
     public static Stream<Arguments> asyncIOWriteTests()
     {
@@ -443,9 +443,6 @@ public class AsyncCompletionTest extends HttpServerTestFixture
                     {
                         throw new RuntimeException(e);
                     }
-                    finally
-                    {
-                    }
                 }
 
                 @Override
@@ -702,7 +699,10 @@ public class AsyncCompletionTest extends HttpServerTestFixture
     }
 
     enum ContentStyle
-    {BUFFER, STREAM}  // TODO more types needed here
+    {
+        BUFFER, STREAM
+        // TODO more types needed here
+    }
 
     private static class SendContentHandler extends AbstractHandler
     {

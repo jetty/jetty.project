@@ -32,7 +32,7 @@ public class AnnotatedBinaryArraySocket
     public EventQueue events = new EventQueue();
 
     @OnWebSocketMessage
-    public void onBinary(byte payload[], int offset, int length)
+    public void onBinary(byte[] payload, int offset, int length)
     {
         events.add("onBinary([%d],%d,%d)", payload.length, offset, length);
     }

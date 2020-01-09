@@ -45,8 +45,8 @@ public class JSONPojoConvertorTest
         foo._name = "Foo @ " + TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
         foo._int1 = 1;
         foo._int2 = 2;
-        foo._long1 = 1000001l;
-        foo._long2 = 1000002l;
+        foo._long1 = 1000001L;
+        foo._long2 = 1000002L;
         foo._float1 = 10.11f;
         foo._float2 = 10.22f;
         foo._double1 = 10000.11111d;
@@ -93,8 +93,8 @@ public class JSONPojoConvertorTest
         foo._name = "Foo @ " + TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
         foo._int1 = 1;
         foo._int2 = 2;
-        foo._long1 = 1000001l;
-        foo._long2 = 1000002l;
+        foo._long1 = 1000001L;
+        foo._long2 = 1000002L;
         foo._float1 = 10.11f;
         foo._float2 = 10.22f;
         foo._double1 = 10000.11111d;

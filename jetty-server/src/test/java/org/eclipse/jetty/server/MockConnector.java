@@ -24,7 +24,7 @@ class MockConnector extends AbstractConnector
 {
     public MockConnector()
     {
-        super(new Server() , null, null, null, 0);
+        super(new Server(), null, null, null, 0);
     }
 
     @Override

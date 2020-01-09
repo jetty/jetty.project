@@ -418,6 +418,40 @@
           </execution>
         </executions>
       </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-checkstyle-plugin</artifactId>
+          <version>3.1.0</version>
+          <configuration>
+            <configLocation>jetty-checkstyle.xml</configLocation>
+            <suppressionsLocation>jetty-suppressions.xml</suppressionsLocation>
+            <suppressionsFileExpression>checkstyle.suppressions.file</suppressionsFileExpression>
+            <includeTestSourceDirectory>true</includeTestSourceDirectory>
+            <violationSeverity>warning</violationSeverity>
+            <consoleOutput>true</consoleOutput>
+          </configuration>
+          <dependencies>
+            <dependency>
+              <groupId>org.eclipse.jetty</groupId>
+              <artifactId>build-resources</artifactId>
+              <version>${project.version}</version>
+            </dependency>
+            <dependency>
+              <groupId>com.puppycrawl.tools</groupId>
+              <artifactId>checkstyle</artifactId>
+              <version>8.20</version>
+            </dependency>
+          </dependencies>
+          <executions>
+            <execution>
+              <id>checkcheck</id>
+              <phase>validate</phase>
+              <goals>
+                <goal>check</goal>
+              </goals>
+            </execution>
+          </executions>
+        </plugin>
     </plugins>
 
     <pluginManagement>
@@ -436,29 +470,6 @@
               <groupId>org.eclipse.jetty.toolchain</groupId>
               <artifactId>jetty-assembly-descriptors</artifactId>
               <version>1.0</version>
-            </dependency>
-          </dependencies>
-        </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-checkstyle-plugin</artifactId>
-          <version>3.1.0</version>
-          <configuration>
-            <configLocation>jetty-checkstyle.xml</configLocation>
-            <suppressionsLocation>jetty-suppressions.xml</suppressionsLocation>
-            <suppressionsFileExpression>checkstyle.suppressions.file</suppressionsFileExpression>
-            <includeTestSourceDirectory>true</includeTestSourceDirectory>
-          </configuration>
-          <dependencies>
-            <dependency>
-              <groupId>org.eclipse.jetty</groupId>
-              <artifactId>build-resources</artifactId>
-              <version>${project.version}</version>
-            </dependency>
-            <dependency>
-              <groupId>com.puppycrawl.tools</groupId>
-              <artifactId>checkstyle</artifactId>
-              <version>8.20</version>
             </dependency>
           </dependencies>
         </plugin>

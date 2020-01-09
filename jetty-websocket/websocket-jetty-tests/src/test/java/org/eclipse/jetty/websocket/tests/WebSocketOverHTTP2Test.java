@@ -244,7 +244,7 @@ public class WebSocketOverHTTP2Test
         startClient(clientConnector -> new ClientConnectionFactoryOverHTTP2.H2(new HTTP2Client(clientConnector)));
 
         EventSocket wsEndPoint = new EventSocket();
-        URI uri = URI.create("ws://localhost:" + (connector.getLocalPort()+1) + "/ws/echo");
+        URI uri = URI.create("ws://localhost:" + (connector.getLocalPort() + 1) + "/ws/echo");
 
         ExecutionException failure = Assertions.assertThrows(ExecutionException.class, () ->
             wsClient.connect(wsEndPoint, uri).get(5, TimeUnit.SECONDS));

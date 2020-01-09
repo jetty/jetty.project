@@ -107,7 +107,6 @@ public class PartialRFC2616Test
         }
     }
 
-
     @Test
     public void test3_3_2()
     {
@@ -132,7 +131,6 @@ public class PartialRFC2616Test
             assertTrue(false);
         }
     }
-
 
     @Test
     public void test3_6_a() throws Exception

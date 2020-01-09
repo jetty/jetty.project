@@ -130,7 +130,7 @@ public class JettySpecificConfigTest
         WebSocketContainer container = ContainerProvider.getWebSocketContainer();
         EventSocket clientEndpoint = new ClientConfigSocket();
 
-        URI serverUri = URI.create("ws://localhost:"+ _connector.getLocalPort());
+        URI serverUri = URI.create("ws://localhost:" + _connector.getLocalPort());
         Session session = container.connectToServer(clientEndpoint, serverUri);
 
         // Check correct client config is set.

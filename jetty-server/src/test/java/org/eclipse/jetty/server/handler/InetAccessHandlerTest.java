@@ -131,7 +131,8 @@ public class InetAccessHandlerTest
         testConnector(_connector2.getLocalPort(), include, exclude, includeConnectors, excludeConnectors, codePerConnector.get(1));
     }
 
-    private void testConnector(int port, String include, String exclude, String includeConnectors, String excludeConnectors, String code) throws IOException {
+    private void testConnector(int port, String include, String exclude, String includeConnectors, String excludeConnectors, String code) throws IOException
+    {
         try (Socket socket = new Socket("127.0.0.1", port);)
         {
             socket.setSoTimeout(5000);
@@ -157,6 +158,7 @@ public class InetAccessHandlerTest
 
     /**
      * Data for this test.
+     *
      * @return Format of data: include;exclude;includeConnectors;excludeConnectors;assertionStatusCodePerConnector
      */
     public static Stream<Arguments> data()
@@ -211,12 +213,12 @@ public class InetAccessHandlerTest
                 {"127.0.0.1-127.0.0.254", "", "http_connector1;http_connector2", "", "200;200"},
                 {"192.0.0.1", "", "http_connector1;http_connector2", "", "403;403"},
                 {"192.0.0.1-192.0.0.254", "", "http_connector1;http_connector2", "", "403;403"},
-                
+
                 // exclude takes precedence over include
                 {"127.0.0.1", "", "http_connector1;http_connector2", "http_connector1;http_connector2", "200;200"},
                 {"127.0.0.1-127.0.0.254", "", "http_connector1;http_connector2", "http_connector1;http_connector2", "200;200"},
                 {"192.0.0.1", "", "http_connector1;http_connector2", "http_connector1;http_connector2", "200;200"},
-                {"192.0.0.1-192.0.0.254", "", "http_connector1;http_connector2", "http_connector1;http_connector2", "200;200"},
+                {"192.0.0.1-192.0.0.254", "", "http_connector1;http_connector2", "http_connector1;http_connector2", "200;200"}
             };
         return Arrays.asList(data).stream().map(Arguments::of);
     }

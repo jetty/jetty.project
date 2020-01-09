@@ -85,45 +85,45 @@ public class OutgoingMessageCapture extends FrameHandler.CoreSession.Empty imple
                 String event = String.format("CLOSE:%s:%s", CloseStatus.codeString(closeStatus.getCode()), closeStatus.getReason());
                 LOG.debug(event);
                 events.offer(event);
+                break;
             }
-            break;
             case OpCode.PING:
             {
                 String event = String.format("PING:%s", dataHint(frame.getPayload()));
                 LOG.debug(event);
                 events.offer(event);
+                break;
             }
-            break;
             case OpCode.PONG:
             {
                 String event = String.format("PONG:%s", dataHint(frame.getPayload()));
                 LOG.debug(event);
                 events.offer(event);
+                break;
             }
-            break;
             case OpCode.TEXT:
             {
                 String event = String.format("TEXT:fin=%b:len=%d", frame.isFin(), frame.getPayloadLength());
                 LOG.debug(event);
                 events.offer(event);
                 messageSink = new StringMessageSink(null, wholeTextHandle, getFakeSession());
+                break;
             }
-            break;
             case OpCode.BINARY:
             {
                 String event = String.format("BINARY:fin=%b:len=%d", frame.isFin(), frame.getPayloadLength());
                 LOG.debug(event);
                 events.offer(event);
                 messageSink = new ByteBufferMessageSink(null, wholeBinaryHandle, getFakeSession());
+                break;
             }
-            break;
             case OpCode.CONTINUATION:
             {
                 String event = String.format("CONTINUATION:fin=%b:len=%d", frame.isFin(), frame.getPayloadLength());
                 LOG.debug(event);
                 events.offer(event);
+                break;
             }
-            break;
         }
 
         if (OpCode.isDataFrame(frame.getOpCode()))

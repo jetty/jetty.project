@@ -68,7 +68,6 @@ import org.eclipse.jetty.util.resource.Resource;
  */
 public abstract class AbstractWebAppMojo extends AbstractMojo
 {
-    
     public static final String JETTY_HOME_GROUPID = "org.eclipse.jetty";
     public static final String JETTY_HOME_ARTIFACTID = "jetty-home";
     public static final String FAKE_WEBAPP = "webapp-synth";
@@ -374,7 +373,6 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
      * List of deps that are wars
      */
     protected List<Artifact> warArtifacts;
-    
     
     /**
      * Webapp base before applying overlays etc
@@ -798,8 +796,6 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
         getLog().info("Context path = " + webApp.getContextPath());
         getLog().info("Tmp directory = " + (webApp.getTempDirectory() == null ? " determined at runtime" : webApp.getTempDirectory()));
     }
-    
-
 
     /**
      * Try and find a jetty-web.xml file, using some

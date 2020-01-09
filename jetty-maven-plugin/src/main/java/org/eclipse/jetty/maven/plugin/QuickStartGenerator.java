@@ -43,7 +43,6 @@ public class QuickStartGenerator
     private boolean prepared = false;
     private Server server;
     private QueuedThreadPool tpool;
-   
 
     /**
      * @param quickstartXml the file to generate quickstart into

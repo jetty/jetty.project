@@ -627,6 +627,7 @@ class WebSocketProxy
                         state = State.FAILED;
                         Callback doubleCallback = Callback.from(callback, closeCallback);
                         sendCallback =  Callback.from(doubleCallback, failure);
+                        break;
 
                     default:
                         state = State.FAILED;

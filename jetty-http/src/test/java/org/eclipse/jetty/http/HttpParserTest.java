@@ -760,8 +760,8 @@ public class HttpParserTest
                 "Foo\"Bar: value\r\n",
                 "Foo/Bar: value\r\n",
                 "Foo]Bar: value\r\n",
-                "Foo[Bar: value\r\n",
-                };
+                "Foo[Bar: value\r\n"
+            };
 
         for (String s : bad)
         {

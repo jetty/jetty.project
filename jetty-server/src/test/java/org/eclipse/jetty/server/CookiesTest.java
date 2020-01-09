@@ -163,8 +163,8 @@ public class CookiesTest
                 new Cookie("nameA0", "A0"),
                 new Cookie("nameA1", "A1"),
                 new Cookie("nameB0", "B0"),
-                new Cookie("nameB1", "B1"),
-                });
+                new Cookie("nameB1", "B1")
+            });
 
         Cookie[] cookiesX = cutter.getCookies();
         assertThat(cookiesX.length, is(4));

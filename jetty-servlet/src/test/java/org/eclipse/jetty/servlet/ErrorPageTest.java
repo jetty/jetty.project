@@ -495,7 +495,7 @@ public class ErrorPageTest
             {
                 final CountDownLatch hold = new CountDownLatch(1);
                 final String mode = request.getParameter("mode");
-                switch(mode)
+                switch (mode)
                 {
                     case "DSC":
                     case "SDC":
@@ -511,7 +511,7 @@ public class ErrorPageTest
                 {
                     try
                     {
-                        switch(mode)
+                        switch (mode)
                         {
                             case "SDC":
                                 response.sendError(599);
@@ -554,7 +554,7 @@ public class ErrorPageTest
                                     break;
                             }
                         }
-                        catch(IllegalStateException e)
+                        catch (IllegalStateException e)
                         {
                             Log.getLog().ignore(e);
                         }

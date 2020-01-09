@@ -73,7 +73,7 @@ public class JavaxAutobahnServer
         context.setContextPath("/");
         server.setHandler(context);
 
-        JavaxWebSocketServletContainerInitializer.configure(context, (servletContext, container)->
+        JavaxWebSocketServletContainerInitializer.configure(context, (servletContext, container) ->
             container.addEndpoint(JavaxAutobahnSocket.class));
 
         server.start();

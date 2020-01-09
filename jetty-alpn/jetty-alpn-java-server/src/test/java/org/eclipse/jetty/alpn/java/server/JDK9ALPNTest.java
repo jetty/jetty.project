@@ -181,7 +181,8 @@ public class JDK9ALPNTest
     @Test
     public void testClientSupportingALPNCannotNegotiateProtocol() throws Exception
     {
-        startServer(new AbstractHandler() {
+        startServer(new AbstractHandler()
+        {
             @Override
             public void handle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
             {

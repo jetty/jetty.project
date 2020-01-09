@@ -48,12 +48,12 @@ public class JavaxWebSocketFrameHandler_OnCloseTest extends AbstractJavaxWebSock
         CloseStatus status = new CloseStatus(CloseStatus.NORMAL, "Normal");
         Frame closeFrame = status.toFrame();
         localEndpoint.onFrame(closeFrame, Callback.from(() ->
-        {
-            localEndpoint.onClosed(status, Callback.NOOP);
-        }, t ->
-        {
-            throw new RuntimeException(t);
-        }));
+                localEndpoint.onClosed(status, Callback.NOOP),
+            t ->
+            {
+                throw new RuntimeException(t);
+            }
+        ));
         String event = socket.events.poll(10, TimeUnit.SECONDS);
         assertThat("Event", event, eventMatcher);
     }

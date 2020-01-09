@@ -103,10 +103,11 @@ public class PerMessageDeflaterBufferSizeTest
         int deflateBufferSize = 6;
         TestFrameHandler clientHandler = new TestFrameHandler();
         ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(client, serverUri, clientHandler);
-        upgradeRequest.addExtensions("permessage-deflate; @deflate_buffer_size="+deflateBufferSize);
+        upgradeRequest.addExtensions("permessage-deflate; @deflate_buffer_size=" + deflateBufferSize);
 
         CompletableFuture<HttpFields> futureRequestHeaders = new CompletableFuture<>();
-        upgradeRequest.addListener(new UpgradeListener() {
+        upgradeRequest.addListener(new UpgradeListener()
+        {
             @Override
             public void onHandshakeRequest(HttpRequest request)
             {
@@ -156,10 +157,11 @@ public class PerMessageDeflaterBufferSizeTest
         int inflateBufferSize = 6;
         TestFrameHandler clientHandler = new TestFrameHandler();
         ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(client, serverUri, clientHandler);
-        upgradeRequest.addExtensions("permessage-deflate; @inflate_buffer_size="+inflateBufferSize);
+        upgradeRequest.addExtensions("permessage-deflate; @inflate_buffer_size=" + inflateBufferSize);
 
         CompletableFuture<HttpFields> futureRequestHeaders = new CompletableFuture<>();
-        upgradeRequest.addListener(new UpgradeListener() {
+        upgradeRequest.addListener(new UpgradeListener()
+        {
             @Override
             public void onHandshakeRequest(HttpRequest request)
             {
@@ -213,7 +215,8 @@ public class PerMessageDeflaterBufferSizeTest
         upgradeRequest.addExtensions("permessage-deflate");
 
         CompletableFuture<HttpFields> futureResponseHeaders = new CompletableFuture<>();
-        upgradeRequest.addListener(new UpgradeListener() {
+        upgradeRequest.addListener(new UpgradeListener()
+        {
             @Override
             public void onHandshakeResponse(HttpRequest request, HttpResponse response)
             {
@@ -267,7 +270,8 @@ public class PerMessageDeflaterBufferSizeTest
         upgradeRequest.addExtensions("permessage-deflate");
 
         CompletableFuture<HttpFields> futureResponseHeaders = new CompletableFuture<>();
-        upgradeRequest.addListener(new UpgradeListener() {
+        upgradeRequest.addListener(new UpgradeListener()
+        {
             @Override
             public void onHandshakeResponse(HttpRequest request, HttpResponse response)
             {

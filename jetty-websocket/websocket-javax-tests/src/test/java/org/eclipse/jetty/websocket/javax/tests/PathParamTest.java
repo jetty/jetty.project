@@ -82,7 +82,7 @@ public class PathParamTest
         @OnMessage
         public void onMessage(String message, @PathParam("name") String name)
         {
-            session.getAsyncRemote().sendText(message+"-"+name);
+            session.getAsyncRemote().sendText(message + "-" + name);
         }
     }
 
@@ -92,7 +92,7 @@ public class PathParamTest
         WebSocketContainer container = ContainerProvider.getWebSocketContainer();
         EventSocket clientEndpoint = new EventSocket();
 
-        URI serverUri = URI.create("ws://localhost:"+ _connector.getLocalPort()+"/pathparam/echo/myParam");
+        URI serverUri = URI.create("ws://localhost:" + _connector.getLocalPort() + "/pathparam/echo/myParam");
         Session session = container.connectToServer(clientEndpoint, serverUri);
         session.getBasicRemote().sendText("echo");
 

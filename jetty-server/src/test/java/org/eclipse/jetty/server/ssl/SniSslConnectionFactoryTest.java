@@ -272,8 +272,6 @@ public class SniSslConnectionFactoryTest
         assertThat(response.getStatus(), is(400));
     }
 
-
-
     @Test
     public void testWrongSNIRejectedFunction() throws Exception
     {

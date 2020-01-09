@@ -168,9 +168,9 @@ public class GracefulStopTest
         client.close();
     }
 
-
     /**
      * Test completed writes during shutdown do not close output
+     *
      * @throws Exception on test failure
      */
     @Test
@@ -205,7 +205,7 @@ public class GracefulStopTest
         stopper.start();
 
         final int port = connector.getLocalPort();
-        try(Socket client = new Socket("127.0.0.1", port))
+        try (Socket client = new Socket("127.0.0.1", port))
         {
             client.getOutputStream().write((
                 "GET / HTTP/1.1\r\n" +
@@ -215,7 +215,9 @@ public class GracefulStopTest
             client.getOutputStream().flush();
 
             while (!connector.isShutdown())
+            {
                 Thread.sleep(10);
+            }
 
             handler.latchB.countDown();
 

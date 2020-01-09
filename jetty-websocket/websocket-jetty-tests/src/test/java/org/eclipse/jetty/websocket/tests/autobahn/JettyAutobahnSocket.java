@@ -32,6 +32,6 @@ public class JettyAutobahnSocket extends EchoSocket
         super.onOpen(session);
         session.setMaxTextMessageSize(Long.MAX_VALUE);
         session.setMaxBinaryMessageSize(Long.MAX_VALUE);
-        session.setMaxFrameSize(WebSocketConstants.DEFAULT_MAX_FRAME_SIZE*2);
+        session.setMaxFrameSize(WebSocketConstants.DEFAULT_MAX_FRAME_SIZE * 2);
     }
 }

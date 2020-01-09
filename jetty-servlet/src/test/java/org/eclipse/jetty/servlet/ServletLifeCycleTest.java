@@ -70,9 +70,11 @@ public class ServletLifeCycleTest
         sh.addServletWithMapping(TestServlet.class, "/1/*").setInitOrder(1);
         sh.addServletWithMapping(TestServlet2.class, "/2/*").setInitOrder(-1);
         sh.addServletWithMapping(new ServletHolder(context.getServletContext().createServlet(TestServlet3.class))
-        {{
-            setInitOrder(1);
-        }}, "/3/*");
+        {
+            {
+                setInitOrder(1);
+            }
+        }, "/3/*");
 
         assertThat(events, Matchers.contains(
             "Decorate class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestListener2",
@@ -126,7 +128,8 @@ public class ServletLifeCycleTest
         assertThat(listeners.get(0).getClass(), is(TestListener2.class));
 
         server.start();
-        context.addEventListener(new EventListener() {});listeners = context.getEventListeners();
+        context.addEventListener(new EventListener() {});
+        listeners = context.getEventListeners();
         listeners = context.getEventListeners();
         assertThat(listeners.size(), is(3));
 

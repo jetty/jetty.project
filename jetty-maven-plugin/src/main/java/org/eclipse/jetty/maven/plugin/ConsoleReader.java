@@ -23,17 +23,14 @@ import java.util.EventListener;
 import java.util.HashSet;
 import java.util.Set;
 
-
 /**
  * ConsoleReader
  * 
  * Reads lines from the System console and supplies them
  * to ConsoleReader.Listeners.
- *
  */
 public class ConsoleReader implements Runnable
 {
-    
     public interface Listener extends EventListener
     {
         public void consoleEvent(String line);

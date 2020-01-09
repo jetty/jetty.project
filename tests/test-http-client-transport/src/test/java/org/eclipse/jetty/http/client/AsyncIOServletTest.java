@@ -502,7 +502,7 @@ public class AsyncIOServletTest extends AbstractTest<AsyncIOServletTest.AsyncTra
                                             Thread.sleep(50);
                                             listener.onWritePossible();
                                         }
-                                        catch(Exception ignored)
+                                        catch (Exception ignored)
                                         {
                                             // no op
                                         }

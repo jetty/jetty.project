@@ -31,7 +31,7 @@ import javax.websocket.EndpointConfig;
  */
 public class DateDecoder implements Decoder.Text<Date>
 {
-    private TimeZone GMT = TimeZone.getTimeZone("GMT");
+    private static final TimeZone GMT = TimeZone.getTimeZone("GMT");
 
     @Override
     public Date decode(String s) throws DecodeException

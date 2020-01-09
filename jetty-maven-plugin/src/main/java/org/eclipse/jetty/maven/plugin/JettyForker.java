@@ -49,7 +49,6 @@ public class JettyForker extends AbstractForker
         return scan;
     }
 
-
     /**
      * @param scan if true, the forked child will scan for changes
      */
@@ -228,7 +227,6 @@ public class JettyForker extends AbstractForker
         }
         return command;
     }
-
 
     /**
      * @return the location of the java binary

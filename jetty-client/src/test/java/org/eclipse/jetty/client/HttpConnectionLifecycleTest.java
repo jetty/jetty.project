@@ -142,17 +142,17 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
                 failureLatch.countDown();
             }
         })
-        .send(new Response.Listener.Adapter()
-        {
-            @Override
-            public void onComplete(Result result)
+            .send(new Response.Listener.Adapter()
             {
-                assertTrue(result.isFailed());
-                assertEquals(0, idleConnections.size());
-                assertEquals(0, activeConnections.size());
-                failureLatch.countDown();
-            }
-        });
+                @Override
+                public void onComplete(Result result)
+                {
+                    assertTrue(result.isFailed());
+                    assertEquals(0, idleConnections.size());
+                    assertEquals(0, activeConnections.size());
+                    failureLatch.countDown();
+                }
+            });
 
         assertTrue(beginLatch.await(30, TimeUnit.SECONDS));
         assertTrue(failureLatch.await(30, TimeUnit.SECONDS));
@@ -195,24 +195,24 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
                 successLatch.countDown();
             }
         })
-        .send(new Response.Listener.Adapter()
-        {
-            @Override
-            public void onSuccess(Response response)
+            .send(new Response.Listener.Adapter()
             {
-                assertEquals(400, response.getStatus());
-                // 400 response also come with a Connection: close,
-                // so the connection is closed and removed
-                successLatch.countDown();
-            }
+                @Override
+                public void onSuccess(Response response)
+                {
+                    assertEquals(400, response.getStatus());
+                    // 400 response also come with a Connection: close,
+                    // so the connection is closed and removed
+                    successLatch.countDown();
+                }
 
-            @Override
-            public void onComplete(Result result)
-            {
-                assertFalse(result.isFailed());
-                successLatch.countDown();
-            }
-        });
+                @Override
+                public void onComplete(Result result)
+                {
+                    assertFalse(result.isFailed());
+                    successLatch.countDown();
+                }
+            });
 
         assertTrue(successLatch.await(30, TimeUnit.SECONDS));
 
@@ -270,24 +270,24 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
                 successLatch.countDown();
             }
         })
-        .send(new Response.Listener.Adapter()
-        {
-            @Override
-            public void onSuccess(Response response)
+            .send(new Response.Listener.Adapter()
             {
-                assertEquals(400, response.getStatus());
-                // 400 response also come with a Connection: close,
-                // so the connection is closed and removed
-                successLatch.countDown();
-            }
+                @Override
+                public void onSuccess(Response response)
+                {
+                    assertEquals(400, response.getStatus());
+                    // 400 response also come with a Connection: close,
+                    // so the connection is closed and removed
+                    successLatch.countDown();
+                }
 
-            @Override
-            public void onComplete(Result result)
-            {
-                assertFalse(result.isFailed());
-                successLatch.countDown();
-            }
-        });
+                @Override
+                public void onComplete(Result result)
+                {
+                    assertFalse(result.isFailed());
+                    successLatch.countDown();
+                }
+            });
 
         assertTrue(successLatch.await(delay * 30, TimeUnit.MILLISECONDS));
 
