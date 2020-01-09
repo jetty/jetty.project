@@ -16,13 +16,15 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.http;
+package org.eclipse.jetty.server;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.EnumSet;
 
+import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpParser.RequestHandler;
+import org.eclipse.jetty.http.HttpTokens;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.SearchPattern;
 import org.eclipse.jetty.util.Utf8StringBuilder;
