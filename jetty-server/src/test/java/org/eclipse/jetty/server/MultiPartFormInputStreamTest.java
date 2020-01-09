@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.http;
+package org.eclipse.jetty.server;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -31,7 +31,7 @@ import javax.servlet.ReadListener;
 import javax.servlet.ServletInputStream;
 import javax.servlet.http.Part;
 
-import org.eclipse.jetty.http.MultiPartFormInputStream.MultiPart;
+import org.eclipse.jetty.server.MultiPartFormInputStream.MultiPart;
 import org.eclipse.jetty.util.IO;
 import org.junit.jupiter.api.Test;
 

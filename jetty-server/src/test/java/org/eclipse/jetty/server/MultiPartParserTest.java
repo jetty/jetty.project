@@ -16,14 +16,15 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.http;
+package org.eclipse.jetty.server;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
-import org.eclipse.jetty.http.MultiPartParser.State;
+import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.server.MultiPartParser.State;
 import org.eclipse.jetty.util.BufferUtil;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
