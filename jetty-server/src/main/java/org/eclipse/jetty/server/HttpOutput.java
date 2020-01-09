@@ -1628,7 +1628,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         private final ByteBuffer _buffer;
         private final ByteBuffer _slice;
         private final int _len;
-        volatile boolean _completed;
+        private boolean _completed;
 
         AsyncWrite(byte[] b, int off, int len, boolean last)
         {
@@ -1696,10 +1696,11 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                 return Action.SCHEDULED;
             }
 
-            // all content written, but if we have not yet signal completion, we
-            // need to do so
+            // all content written, but if we have not yet signaled completion,
+            // then we need to do so
             if (_last && !_completed)
             {
+                // TODO How can this ever happen?
                 _completed = true;
                 channelWrite(BufferUtil.EMPTY_BUFFER, true, this);
                 return Action.SCHEDULED;

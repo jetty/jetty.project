@@ -22,8 +22,10 @@ import java.io.ByteArrayOutputStream;
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.PrintWriter;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.servlet.AsyncContext;
@@ -32,6 +34,7 @@ import javax.servlet.WriteListener;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.server.HttpOutput.Interceptor;
 import org.eclipse.jetty.server.LocalConnector.LocalEndPoint;
 import org.eclipse.jetty.server.handler.AbstractHandler;
@@ -66,6 +69,20 @@ public class HttpOutputTest
     public void init() throws Exception
     {
         _server = new Server();
+
+        _server.addBean(new ByteBufferPool()
+        {
+            @Override
+            public ByteBuffer acquire(int size, boolean direct)
+            {
+                return direct ? BufferUtil.allocateDirect(size) : BufferUtil.allocate(size);
+            }
+
+            @Override
+            public void release(ByteBuffer buffer)
+            {
+            }
+        });
 
         HttpConnectionFactory http = new HttpConnectionFactory();
         http.getHttpConfiguration().setRequestHeaderSize(1024);
@@ -694,11 +711,12 @@ public class HttpOutputTest
     static class AggregateHandler extends AbstractHandler
     {
         ByteArrayOutputStream expected = new ByteArrayOutputStream();
+
         @Override
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             baseRequest.setHandled(true);
-            HttpOutput out = (HttpOutput) response.getOutputStream();
+            HttpOutput out = (HttpOutput)response.getOutputStream();
 
             // Add interceptor to check aggregation is done
             HttpOutput.Interceptor interceptor = out.getInterceptor();
@@ -711,7 +729,7 @@ public class HttpOutputTest
             int fill = 0;
             while (expected.size() < len)
             {
-                Arrays.fill(data, (byte)('A' + (fill++%26)));
+                Arrays.fill(data, (byte)('A' + (fill++ % 26)));
                 expected.write(data);
                 out.write(data);
             }
@@ -732,11 +750,12 @@ public class HttpOutputTest
     static class AsyncAggregateHandler extends AbstractHandler
     {
         ByteArrayOutputStream expected = new ByteArrayOutputStream();
+
         @Override
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             baseRequest.setHandled(true);
-            HttpOutput out = (HttpOutput) response.getOutputStream();
+            HttpOutput out = (HttpOutput)response.getOutputStream();
 
             // Add interceptor to check aggregation is done
             HttpOutput.Interceptor interceptor = out.getInterceptor();
@@ -749,11 +768,12 @@ public class HttpOutputTest
             out.setWriteListener(new WriteListener()
             {
                 int fill = 0;
+
                 @Override
                 public void onWritePossible() throws IOException
                 {
                     byte[] data = new byte[AggregationChecker.MAX_SIZE];
-                    while(out.isReady())
+                    while (out.isReady())
                     {
                         if (expected.size() >= len)
                         {
@@ -761,7 +781,7 @@ public class HttpOutputTest
                             return;
                         }
 
-                        Arrays.fill(data, (byte)('A' + (fill++%26)));
+                        Arrays.fill(data, (byte)('A' + (fill++ % 26)));
                         expected.write(data);
                         out.write(data);
                     }
@@ -820,11 +840,12 @@ public class HttpOutputTest
     static class AggregateResidueHandler extends AbstractHandler
     {
         ByteArrayOutputStream expected = new ByteArrayOutputStream();
+
         @Override
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             baseRequest.setHandled(true);
-            HttpOutput out = (HttpOutput) response.getOutputStream();
+            HttpOutput out = (HttpOutput)response.getOutputStream();
 
             int bufferSize = baseRequest.getHttpChannel().getHttpConfiguration().getOutputBufferSize();
             int commitSize = baseRequest.getHttpChannel().getHttpConfiguration().getOutputAggregationSize();
@@ -855,6 +876,118 @@ public class HttpOutputTest
         }
     }
 
+    @Test
+    public void testPrint() throws Exception
+    {
+        ByteArrayOutputStream bout = new ByteArrayOutputStream();
+        PrintWriter exp = new PrintWriter(bout);
+        _swap.setHandler(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                response.setCharacterEncoding("UTF8");
+                HttpOutput out = (HttpOutput)response.getOutputStream();
+
+                exp.print("\u20AC\u0939\uD55C");
+                out.print("\u20AC\u0939\uD55C");
+                exp.print("zero");
+                out.print("zero");
+                exp.print(1);
+                out.print(1);
+                exp.print(2L);
+                out.print(2L);
+                exp.print(3.0F);
+                out.print(3.0F);
+                exp.print('4');
+                out.print('4');
+                exp.print(5.0D);
+                out.print(5.0D);
+                exp.print(true);
+                out.print(true);
+                exp.println("zero");
+                out.println("zero");
+                exp.println(-1);
+                out.println(-1);
+                exp.println(-2L);
+                out.println(-2L);
+                exp.println(-3.0F);
+                out.println(-3.0F);
+                exp.println('4');
+                out.println('4');
+                exp.println(-5.0D);
+                out.println(-5.0D);
+                exp.println(false);
+                out.println(false);
+            }
+        });
+        _swap.getHandler().start();
+        String response = _connector.getResponse("GET / HTTP/1.0\nHost: localhost:80\n\n");
+        assertThat(response, containsString("HTTP/1.1 200 OK"));
+        assertThat(response, containsString(bout.toString()));
+    }
+
+    @Test
+    public void testReset() throws Exception
+    {
+        ByteArrayOutputStream exp = new ByteArrayOutputStream();
+        _swap.setHandler(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                HttpOutput out = (HttpOutput)response.getOutputStream();
+                Interceptor interceptor = out.getInterceptor();
+                out.setInterceptor(new Interceptor()
+                {
+                    @Override
+                    public void write(ByteBuffer content, boolean last, Callback callback)
+                    {
+                        interceptor.write(content, last, callback);
+                    }
+
+                    @Override
+                    public Interceptor getNextInterceptor()
+                    {
+                        return interceptor;
+                    }
+
+                    @Override
+                    public boolean isOptimizedForDirectBuffers()
+                    {
+                        return interceptor.isOptimizedForDirectBuffers();
+                    }
+                });
+
+                out.setBufferSize(128);
+                out.println("NOT TO BE SEEN!");
+                out.resetBuffer();
+
+                byte[] data = "TO BE SEEN\n".getBytes(StandardCharsets.ISO_8859_1);
+                exp.write(data);
+                out.write(data);
+
+                out.flush();
+
+                data = "Not reset after flush\n".getBytes(StandardCharsets.ISO_8859_1);
+                exp.write(data);
+                try
+                {
+                    out.resetBuffer();
+                }
+                catch (IllegalStateException e)
+                {
+                    out.write(data);
+                }
+            }
+        });
+        _swap.getHandler().start();
+        String response = _connector.getResponse("GET / HTTP/1.0\nHost: localhost:80\n\n");
+        assertThat(response, containsString("HTTP/1.1 200 OK"));
+        assertThat(response, containsString(exp.toString()));
+    }
 
     private static String toUTF8String(Resource resource)
         throws IOException
