@@ -812,12 +812,6 @@ public class HttpOutputTest
         {
             return interceptor;
         }
-
-        @Override
-        public boolean isOptimizedForDirectBuffers()
-        {
-            return interceptor.isOptimizedForDirectBuffers();
-        }
     }
 
     @Test
@@ -946,12 +940,6 @@ public class HttpOutputTest
                     public Interceptor getNextInterceptor()
                     {
                         return interceptor;
-                    }
-
-                    @Override
-                    public boolean isOptimizedForDirectBuffers()
-                    {
-                        return interceptor.isOptimizedForDirectBuffers();
                     }
                 });
 
