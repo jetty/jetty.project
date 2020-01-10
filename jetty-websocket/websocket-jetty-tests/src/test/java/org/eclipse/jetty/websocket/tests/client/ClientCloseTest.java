@@ -38,6 +38,7 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.websocket.api.Frame;
 import org.eclipse.jetty.websocket.api.MessageTooLargeException;
 import org.eclipse.jetty.websocket.api.Session;
@@ -47,6 +48,7 @@ import org.eclipse.jetty.websocket.api.WebSocketListener;
 import org.eclipse.jetty.websocket.api.WebSocketTimeoutException;
 import org.eclipse.jetty.websocket.api.util.WSURI;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
+import org.eclipse.jetty.websocket.common.JettyWebSocketRemoteEndpoint;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServlet;
@@ -65,6 +67,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.oneOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -300,12 +303,15 @@ public class ClientCloseTest
         // Client confirms connection via echo.
         confirmConnection(clientSocket, clientConnectFuture);
 
-        // Close twice, first close should succeed and second close is a NOOP.
+        // Close twice, first close should succeed and second close is a NOOP and a warning.
         clientSocket.getSession().close(StatusCode.NORMAL, "close1");
-        clientSocket.getSession().close(StatusCode.SERVER_ERROR, "close2");
+        try (StacklessLogging stacklessLogging = new StacklessLogging(JettyWebSocketRemoteEndpoint.class))
+        {
+            clientSocket.getSession().close(StatusCode.PROTOCOL, "close2");
+        }
 
-        // Received the normal close with no error event.
-        clientSocket.assertReceivedCloseEvent(5000, is(StatusCode.NORMAL), containsString("close1"));
+        // Could be either NORMAL or PROTOCOL close depending if the NORMAL close response was received before PROTOCOL error was sent.
+        clientSocket.assertReceivedCloseEvent(5000, oneOf(StatusCode.NORMAL, StatusCode.PROTOCOL), containsString("close"));
         assertNull(clientSocket.error.get());
     }
 

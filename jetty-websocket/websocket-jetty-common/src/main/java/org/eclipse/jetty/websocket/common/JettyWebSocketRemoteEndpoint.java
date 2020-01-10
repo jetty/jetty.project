@@ -25,10 +25,12 @@ import java.util.Objects;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.SharedBlockingCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.BatchMode;
+import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.FrameHandler;
@@ -59,15 +61,7 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
      */
     public void close()
     {
-        try (SharedBlockingCallback.Blocker b = blocker.acquire())
-        {
-            coreSession.close(b);
-            b.block();
-        }
-        catch (IOException e)
-        {
-            coreSession.close(Callback.NOOP);
-        }
+        close(StatusCode.NO_CODE, null);
     }
 
     /**
@@ -79,14 +73,15 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
      */
     public void close(int statusCode, String reason)
     {
-        try (SharedBlockingCallback.Blocker b = blocker.acquire())
+        try
         {
-            coreSession.close(statusCode, reason, b);
-            b.block();
+            FutureCallback blockingCallback = new FutureCallback();
+            coreSession.close(statusCode, reason, blockingCallback);
+            blockingCallback.get();
         }
-        catch (IOException e)
+        catch (Throwable t)
         {
-            coreSession.close(Callback.NOOP);
+            LOG.warn(t);
         }
     }
 
