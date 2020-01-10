@@ -26,6 +26,8 @@ import java.util.Objects;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.SharedBlockingCallback;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.core.Frame;
@@ -37,6 +39,8 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket.api.RemoteEndpoint
 {
+    private static final Logger LOG = Log.getLogger(JettyWebSocketRemoteEndpoint.class);
+
     private final FrameHandler.CoreSession coreSession;
     private byte messageType = -1;
     private final SharedBlockingCallback blocker = new SharedBlockingCallback();
@@ -58,6 +62,7 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
         try (SharedBlockingCallback.Blocker b = blocker.acquire())
         {
             coreSession.close(b);
+            b.block();
         }
         catch (IOException e)
         {
@@ -77,6 +82,7 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
         try (SharedBlockingCallback.Blocker b = blocker.acquire())
         {
             coreSession.close(statusCode, reason, b);
+            b.block();
         }
         catch (IOException e)
         {
@@ -232,11 +238,6 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
             coreSession.sendFrame(frame, b, false);
             b.block();
         }
-    }
-
-    protected FrameHandler.CoreSession getCoreSession()
-    {
-        return coreSession;
     }
 
     @Override

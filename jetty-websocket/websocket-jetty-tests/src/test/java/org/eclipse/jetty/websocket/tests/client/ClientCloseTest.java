@@ -65,6 +65,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -283,6 +284,29 @@ public class ClientCloseTest
         assertThat("OnError Latch", clientSocket.errorLatch.await(2, SECONDS), is(true));
         assertThat("OnError", clientSocket.error.get(), instanceOf(WebSocketTimeoutException.class));
         clientSessionTracker.assertClosedProperly(client);
+    }
+
+    @Test
+    public void testDoubleClose() throws Exception
+    {
+        ClientOpenSessionTracker clientSessionTracker = new ClientOpenSessionTracker(1);
+        clientSessionTracker.addTo(client);
+
+        // Client connects
+        URI wsUri = WSURI.toWebsocket(server.getURI().resolve("/ws"));
+        CloseTrackingEndpoint clientSocket = new CloseTrackingEndpoint();
+        Future<Session> clientConnectFuture = client.connect(clientSocket, wsUri);
+
+        // Client confirms connection via echo.
+        confirmConnection(clientSocket, clientConnectFuture);
+
+        // Close twice, first close should succeed and second close is a NOOP.
+        clientSocket.getSession().close(StatusCode.NORMAL, "close1");
+        clientSocket.getSession().close(StatusCode.SERVER_ERROR, "close2");
+
+        // Received the normal close with no error event.
+        clientSocket.assertReceivedCloseEvent(5000, is(StatusCode.NORMAL), containsString("close1"));
+        assertNull(clientSocket.error.get());
     }
 
     @Test

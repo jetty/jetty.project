@@ -51,6 +51,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests various close scenarios
@@ -274,5 +275,28 @@ public class ServerCloseTest
         {
             close(session);
         }
+    }
+
+    @Test
+    public void testHardClose() throws Exception
+    {
+        // Testing WebSocketSession.close() in onClosed() does not cause deadlock.
+        ClientUpgradeRequest request = new ClientUpgradeRequest();
+        request.setSubProtocols("closeInOnClose");
+        CloseTrackingEndpoint clientEndpoint = new CloseTrackingEndpoint();
+
+        URI wsUri = WSURI.toWebsocket(server.getURI().resolve("/ws"));
+        client.connect(clientEndpoint, wsUri, request).get(5, SECONDS);
+
+        // Hard close from the server. Server onClosed() will try to close again which should be a NOOP.
+        AbstractCloseEndpoint serverEndpoint = serverEndpointCreator.pollLastCreated();
+        serverEndpoint.getSession().close(StatusCode.SHUTDOWN, "SHUTDOWN hard close");
+
+        // Verify that client got close
+        clientEndpoint.assertReceivedCloseEvent(5000, is(StatusCode.SHUTDOWN), containsString("SHUTDOWN hard close"));
+
+        // Verify that server socket got close event
+        assertTrue(serverEndpoint.closeLatch.await(5, SECONDS));
+        assertThat(serverEndpoint.closeStatusCode, is(StatusCode.SHUTDOWN));
     }
 }
