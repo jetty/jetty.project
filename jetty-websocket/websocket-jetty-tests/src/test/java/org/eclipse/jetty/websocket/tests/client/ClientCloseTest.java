@@ -307,11 +307,11 @@ public class ClientCloseTest
         clientSocket.getSession().close(StatusCode.NORMAL, "close1");
         try (StacklessLogging stacklessLogging = new StacklessLogging(JettyWebSocketRemoteEndpoint.class))
         {
-            clientSocket.getSession().close(StatusCode.PROTOCOL, "close2");
+            clientSocket.getSession().close(StatusCode.NO_CODE, "close2");
         }
 
         // Could be either NORMAL or PROTOCOL close depending if the NORMAL close response was received before PROTOCOL error was sent.
-        clientSocket.assertReceivedCloseEvent(5000, oneOf(StatusCode.NORMAL, StatusCode.PROTOCOL), containsString("close"));
+        clientSocket.assertReceivedCloseEvent(5000, oneOf(StatusCode.NORMAL), containsString("close"));
         assertNull(clientSocket.error.get());
     }
 
