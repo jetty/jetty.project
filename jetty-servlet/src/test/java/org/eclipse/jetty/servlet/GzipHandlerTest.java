@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.servlet;
@@ -196,6 +196,7 @@ public class GzipHandlerTest
             out.setWriteListener(new WriteListener()
             {
                 int count = writes == null ? 1 : Integer.valueOf(writes);
+
                 {
                     response.setContentLength(count * __bytes.length);
                 }
@@ -203,7 +204,7 @@ public class GzipHandlerTest
                 @Override
                 public void onWritePossible() throws IOException
                 {
-                    while(out.isReady())
+                    while (out.isReady())
                     {
                         if (count-- == 0)
                         {
@@ -426,7 +427,9 @@ public class GzipHandlerTest
         byte[] bytes = testOut.toByteArray();
 
         for (int i = 0; i < writes; i++)
-            assertEquals(__content, new String(Arrays.copyOfRange(bytes,i * __bytes.length, (i + 1) * __bytes.length), StandardCharsets.UTF_8), "chunk " + i);
+        {
+            assertEquals(__content, new String(Arrays.copyOfRange(bytes, i * __bytes.length, (i + 1) * __bytes.length), StandardCharsets.UTF_8), "chunk " + i);
+        }
     }
 
     @Test
@@ -450,8 +453,6 @@ public class GzipHandlerTest
         assertThat(response.getStatus(), is(200));
         assertThat(response.get("Content-Encoding"), Matchers.equalToIgnoringCase("gzip"));
         assertThat(response.getCSV("Vary", false), Matchers.contains("Accept-Encoding"));
-
-
     }
 
     @Test

@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.server;
@@ -146,10 +146,10 @@ public class Response implements HttpServletResponse
         _out.reopen();
     }
 
-    public void closedBySendError()
+    public void softClose()
     {
         setErrorSent(true);
-        _out.closedBySendError();
+        _out.softClose();
     }
 
     /**
@@ -497,7 +497,7 @@ public class Response implements HttpServletResponse
         resetBuffer();
         setHeader(HttpHeader.LOCATION, location);
         setStatus(code);
-        closeOutput();
+        completeOutput();
     }
 
     @Override
@@ -789,7 +789,7 @@ public class Response implements HttpServletResponse
             {
                 try
                 {
-                    closeOutput();
+                    completeOutput();
                 }
                 catch (IOException e)
                 {
@@ -827,17 +827,20 @@ public class Response implements HttpServletResponse
         return (_contentLength < 0 || written >= _contentLength);
     }
 
-    public void closeOutput() throws IOException
+    public void completeOutput() throws IOException
     {
         if (_outputType == OutputType.WRITER)
             _writer.close();
-        if (!_out.isClosed())
+        else
             _out.close();
     }
 
-    public void closeOutput(Callback callback)
+    public void completeOutput(Callback callback)
     {
-        _out.close((_outputType == OutputType.WRITER) ? _writer : _out, callback);
+        if (_outputType == OutputType.WRITER)
+            _writer.complete(callback);
+        else
+            _out.complete(callback);
     }
 
     public long getLongContentLength()

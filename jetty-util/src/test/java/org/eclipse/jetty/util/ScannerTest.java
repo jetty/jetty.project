@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.util;
@@ -95,7 +95,7 @@ public class ScannerTest
                 _bulk.add(filenames);
             }
         });
-        
+
         _scanner.start();
         _scanner.scan();
 
@@ -121,11 +121,11 @@ public class ScannerTest
             _notification = notification;
         }
     }
-    
+
     @Test
     public void testDepth() throws Exception
     {
-        File root = new File (_directory, "root");
+        File root = new File(_directory, "root");
         FS.ensureDirExists(root);
         FS.touch(new File(root, "foo.foo"));
         FS.touch(new File(root, "foo2.foo"));
@@ -141,7 +141,7 @@ public class ScannerTest
         FS.touch(y1);
         File y2 = new File(dir2, "yyy2.foo");
         FS.touch(y2);
-        
+
         BlockingQueue<Event> queue = new LinkedBlockingQueue<Event>();
         Scanner scanner = new Scanner();
         scanner.setScanInterval(0);
@@ -160,7 +160,7 @@ public class ScannerTest
             @Override
             public void fileChanged(String filename) throws Exception
             {
-                queue.add(new Event(filename, Notification.CHANGED));  
+                queue.add(new Event(filename, Notification.CHANGED));
             }
 
             @Override
@@ -178,7 +178,7 @@ public class ScannerTest
         queue.clear();
         scanner.stop();
         scanner.reset();
-        
+
         //Depth one should report the dir itself and its file and dir direct children
         scanner.setScanDepth(1);
         scanner.addDirectory(root.toPath());
@@ -187,7 +187,7 @@ public class ScannerTest
         queue.clear();
         scanner.stop();
         scanner.reset();
-        
+
         //Depth 2 should report the dir itself, all file children, xxx and xxx's children
         scanner.setScanDepth(2);
         scanner.addDirectory(root.toPath());
@@ -203,25 +203,25 @@ public class ScannerTest
         //test include and exclude patterns
         File root = new File(_directory, "proot");
         FS.ensureDirExists(root);
-        
+
         File ttt = new File(root, "ttt.txt");
         FS.touch(ttt);
         FS.touch(new File(root, "ttt.foo"));
         File dir = new File(root, "xxx");
         FS.ensureDirExists(dir);
-        
+
         File x1 = new File(dir, "ttt.xxx");
         FS.touch(x1);
         File x2 = new File(dir, "xxx.txt");
         FS.touch(x2);
-        
+
         File dir2 = new File(dir, "yyy");
         FS.ensureDirExists(dir2);
         File y1 = new File(dir2, "ttt.yyy");
         FS.touch(y1);
         File y2 = new File(dir2, "yyy.txt");
         FS.touch(y2);
-        
+
         BlockingQueue<Event> queue = new LinkedBlockingQueue<Event>();
         //only scan the *.txt files for changes
         Scanner scanner = new Scanner();
@@ -252,7 +252,7 @@ public class ScannerTest
                 queue.add(new Event(filename, Notification.ADDED));
             }
         });
-        
+
         scanner.start();
         assertTrue(queue.isEmpty());
 
@@ -281,7 +281,7 @@ public class ScannerTest
         // takes 2 scans to notice a0 and check that it is stable
         _scanner.scan();
         _scanner.scan();
-        
+
         Event event = _queue.poll();
         assertNotNull(event, "Event should not be null");
         assertEquals(_directory + "/a0", event._filename);
