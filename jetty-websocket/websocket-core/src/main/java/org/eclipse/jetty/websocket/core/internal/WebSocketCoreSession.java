@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -67,6 +68,7 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
     private final Negotiated negotiated;
     private final boolean demanding;
     private final Flusher flusher = new Flusher(this);
+    private final AtomicBoolean closeInitiated = new AtomicBoolean(false);
 
     private WebSocketConnection connection;
     private boolean autoFragment = WebSocketConstants.DEFAULT_AUTO_FRAGMENT;
@@ -313,6 +315,9 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
 
     private void close(CloseStatus closeStatus, Callback callback)
     {
+        if (!closeInitiated.compareAndSet(false, true))
+            return;
+
         sendFrame(closeStatus.toFrame(), callback, false);
     }
 

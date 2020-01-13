@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -46,7 +45,6 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
 
     private final FrameHandler.CoreSession coreSession;
     private final SharedBlockingCallback blocker = new SharedBlockingCallback();
-    private final AtomicBoolean closed = new AtomicBoolean(false);
     private byte messageType = -1;
     private BatchMode batchMode;
 
@@ -75,9 +73,6 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
      */
     public void close(int statusCode, String reason)
     {
-        if (!closed.compareAndSet(false, true))
-            return;
-
         try
         {
             FutureCallback blockingCallback = new FutureCallback();
