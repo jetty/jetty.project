@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -38,6 +38,7 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -345,10 +346,16 @@ public class MultiPartContentProvider extends AbstractTypedContentProvider imple
                         if (iterator.hasNext())
                             return iterator.next();
                         ++index;
-                        if (index == parts.size())
-                            state = State.LAST_BOUNDARY;
-                        else
+                        if (index < parts.size())
+                        {
                             state = State.MIDDLE_BOUNDARY;
+                            if (iterator instanceof Closeable)
+                                IO.close((Closeable)iterator);
+                        }
+                        else
+                        {
+                            state = State.LAST_BOUNDARY;
+                        }
                         break;
                     }
                     case MIDDLE_BOUNDARY:
@@ -380,14 +387,14 @@ public class MultiPartContentProvider extends AbstractTypedContentProvider imple
         @Override
         public void succeeded()
         {
-            if (iterator instanceof Callback)
+            if (state == State.CONTENT && iterator instanceof Callback)
                 ((Callback)iterator).succeeded();
         }
 
         @Override
         public void failed(Throwable x)
         {
-            if (iterator instanceof Callback)
+            if (state == State.CONTENT && iterator instanceof Callback)
                 ((Callback)iterator).failed(x);
         }
 

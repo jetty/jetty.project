@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -72,6 +72,20 @@ public interface Invocable
         {
             __nonBlocking.set(wasNonBlocking);
         }
+    }
+
+    static InvocationType combine(InvocationType it1, InvocationType it2)
+    {
+        if (it1 != null && it2 != null)
+        {
+            if (it1 == it2)
+                return it1;
+            if (it1 == InvocationType.EITHER)
+                return it2;
+            if (it2 == InvocationType.EITHER)
+                return it1;
+        }
+        return InvocationType.BLOCKING;
     }
 
     /**

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -198,7 +198,7 @@ public class TypeUtil
             }
             catch (UnsupportedOperationException e)
             {
-                LOG.info("JVM Runtime does not support Modules");
+                LOG.debug("JVM Runtime does not support Modules");
             }
             MODULE_LOCATION = moduleLocation;
             locationMethods.add(lookup.findStatic(TypeUtil.class, "getClassLoaderLocation", type));

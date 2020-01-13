@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,6 +20,8 @@ package org.eclipse.jetty.http;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -30,7 +32,11 @@ import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -350,5 +356,82 @@ public class GZIPContentDecoderTest
         assertEquals(data1, result);
         assertTrue(buffer.hasRemaining());
         assertEquals(data2, StandardCharsets.UTF_8.decode(buffer).toString());
+    }
+
+    // Signed Integer Max
+    final long INT_MAX = Integer.MAX_VALUE;
+
+    // Unsigned Integer Max == 2^32
+    final long UINT_MAX = 0xFFFFFFFFL;
+
+    @ParameterizedTest
+    @ValueSource(longs = {INT_MAX, INT_MAX + 1, UINT_MAX, UINT_MAX + 1})
+    public void testLargeGzipStream(long origSize) throws IOException
+    {
+        // Size chosen for trade off between speed of I/O vs speed of Gzip
+        final int BUFSIZE = 1024 * 1024;
+
+        // Create a buffer to use over and over again to produce the uncompressed input
+        byte[] cbuf = "0123456789ABCDEFGHIJKLMOPQRSTUVWXYZ".getBytes(StandardCharsets.UTF_8);
+        byte[] buf = new byte[BUFSIZE];
+        for (int off = 0; off < buf.length; )
+        {
+            int len = Math.min(cbuf.length, buf.length - off);
+            System.arraycopy(cbuf, 0, buf, off, len);
+            off += len;
+        }
+
+        GZIPDecoderOutputStream out = new GZIPDecoderOutputStream(new GZIPContentDecoder(BUFSIZE));
+        GZIPOutputStream outputStream = new GZIPOutputStream(out, BUFSIZE);
+
+        for (long bytesLeft = origSize; bytesLeft > 0; )
+        {
+            int len = buf.length;
+            if (bytesLeft < buf.length)
+            {
+                len = (int)bytesLeft;
+            }
+            outputStream.write(buf, 0, len);
+            bytesLeft -= len;
+        }
+
+        // Close GZIPOutputStream to have it generate gzip trailer.
+        // This can cause more writes of unflushed gzip buffers
+        outputStream.close();
+
+        // out.decodedByteCount is only valid after close
+        assertThat("Decoded byte count", out.decodedByteCount, is(origSize));
+    }
+
+    public static class GZIPDecoderOutputStream extends OutputStream
+    {
+        private final GZIPContentDecoder decoder;
+        public long decodedByteCount = 0L;
+
+        public GZIPDecoderOutputStream(GZIPContentDecoder decoder)
+        {
+            this.decoder = decoder;
+        }
+
+        @Override
+        public void write(byte[] b, int off, int len) throws IOException
+        {
+            ByteBuffer buf = ByteBuffer.wrap(b, off, len);
+            while (buf.hasRemaining())
+            {
+                ByteBuffer decoded = decoder.decode(buf);
+                if (decoded.hasRemaining())
+                {
+                    decodedByteCount += decoded.remaining();
+                }
+                decoder.release(decoded);
+            }
+        }
+
+        @Override
+        public void write(int b) throws IOException
+        {
+            write(new byte[]{(byte)b}, 0, 1);
+        }
     }
 }

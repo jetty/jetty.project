@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -21,6 +21,7 @@ package org.eclipse.jetty.server.handler;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.io.Writer;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
@@ -481,24 +482,24 @@ public class ErrorHandler extends AbstractHandler
         writer.append(json.entrySet().stream()
                 .map(e -> QuotedStringTokenizer.quote(e.getKey()) +
                         ":" +
-                        QuotedStringTokenizer.quote((e.getValue())))
+                    QuotedStringTokenizer.quote(StringUtil.sanitizeXmlString((e.getValue()))))
                 .collect(Collectors.joining(",\n", "{\n", "\n}")));
-
-
     }
 
     protected void writeErrorPageStacks(HttpServletRequest request, Writer writer)
         throws IOException
     {
         Throwable th = (Throwable)request.getAttribute(RequestDispatcher.ERROR_EXCEPTION);
-        if (_showStacks && th != null)
+        if (th != null)
         {
-            PrintWriter pw = writer instanceof PrintWriter ? (PrintWriter)writer : new PrintWriter(writer);
-            pw.write("<pre>");
-            while (th != null)
+            writer.write("<h3>Caused by:</h3><pre>");
+            // You have to pre-generate and then use #write(writer, String)
+            try (StringWriter sw = new StringWriter();
+                 PrintWriter pw = new PrintWriter(sw))
             {
                 th.printStackTrace(pw);
-                th = th.getCause();
+                pw.flush();
+                write(writer, sw.getBuffer().toString()); // sanitize
             }
             writer.write("</pre>\n");
         }

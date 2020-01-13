@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.client;
 
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.ServerSocketChannel;
@@ -25,7 +27,12 @@ import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocket;
 
+import org.eclipse.jetty.http.HttpScheme;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -44,7 +51,10 @@ public class Socks4ProxyTest
         server = ServerSocketChannel.open();
         server.bind(new InetSocketAddress("localhost", 0));
 
-        client = new HttpClient();
+        QueuedThreadPool clientThreads = new QueuedThreadPool();
+        clientThreads.setName("client");
+        client = new HttpClient(new SslContextFactory.Client());
+        client.setExecutor(clientThreads);
         client.start();
     }
 
@@ -61,7 +71,7 @@ public class Socks4ProxyTest
         int proxyPort = server.socket().getLocalPort();
         client.getProxyConfiguration().getProxies().add(new Socks4Proxy("localhost", proxyPort));
 
-        final CountDownLatch latch = new CountDownLatch(1);
+        CountDownLatch latch = new CountDownLatch(1);
 
         byte ip1 = 127;
         byte ip2 = 0;
@@ -111,7 +121,7 @@ public class Socks4ProxyTest
                     "Content-Length: 0\r\n" +
                     "Connection: close\r\n" +
                     "\r\n";
-            channel.write(ByteBuffer.wrap(response.getBytes("UTF-8")));
+            channel.write(ByteBuffer.wrap(response.getBytes(StandardCharsets.UTF_8)));
 
             assertTrue(latch.await(5, TimeUnit.SECONDS));
         }
@@ -123,7 +133,7 @@ public class Socks4ProxyTest
         int proxyPort = server.socket().getLocalPort();
         client.getProxyConfiguration().getProxies().add(new Socks4Proxy("localhost", proxyPort));
 
-        final CountDownLatch latch = new CountDownLatch(1);
+        CountDownLatch latch = new CountDownLatch(1);
 
         String serverHost = "127.0.0.13"; // Test expects an IP address.
         int serverPort = proxyPort + 1; // Any port will do
@@ -169,7 +179,92 @@ public class Socks4ProxyTest
                     "Content-Length: 0\r\n" +
                     "Connection: close\r\n" +
                     "\r\n";
-            channel.write(ByteBuffer.wrap(response.getBytes("UTF-8")));
+            channel.write(ByteBuffer.wrap(response.getBytes(StandardCharsets.UTF_8)));
+
+            assertTrue(latch.await(5, TimeUnit.SECONDS));
+        }
+    }
+
+    @Test
+    public void testSocks4ProxyWithTLSServer() throws Exception
+    {
+        String proxyHost = "localhost";
+        int proxyPort = server.socket().getLocalPort();
+
+        String serverHost = "127.0.0.13"; // Server host different from proxy host.
+        int serverPort = proxyPort + 1; // Any port will do.
+
+        SslContextFactory clientTLS = client.getSslContextFactory();
+        clientTLS.reload(ssl ->
+        {
+            // The client keystore contains the trustedCertEntry for the
+            // self-signed server certificate, so it acts as a truststore.
+            ssl.setTrustStorePath("src/test/resources/client_keystore.jks");
+            ssl.setTrustStorePassword("storepwd");
+            // Disable TLS hostname verification, but
+            // enable application hostname verification.
+            ssl.setEndpointIdentificationAlgorithm(null);
+            // The hostname must be that of the server, not of the proxy.
+            ssl.setHostnameVerifier((hostname, session) -> serverHost.equals(hostname));
+        });
+        client.getProxyConfiguration().getProxies().add(new Socks4Proxy(proxyHost, proxyPort));
+
+        CountDownLatch latch = new CountDownLatch(1);
+        client.newRequest(serverHost, serverPort)
+            .scheme(HttpScheme.HTTPS.asString())
+            .path("/path")
+            .send(result ->
+            {
+                if (result.isSucceeded())
+                    latch.countDown();
+                else
+                    result.getFailure().printStackTrace();
+            });
+
+        try (SocketChannel channel = server.accept())
+        {
+            int socks4MessageLength = 9;
+            ByteBuffer buffer = ByteBuffer.allocate(socks4MessageLength);
+            int read = channel.read(buffer);
+            assertEquals(socks4MessageLength, read);
+
+            // Socks4 response.
+            channel.write(ByteBuffer.wrap(new byte[]{0, 0x5A, 0, 0, 0, 0, 0, 0}));
+
+            // Wrap the socket with TLS.
+            SslContextFactory.Server serverTLS = new SslContextFactory.Server();
+            serverTLS.setKeyStorePath("src/test/resources/keystore.jks");
+            serverTLS.setKeyStorePassword("storepwd");
+            serverTLS.start();
+            SSLContext sslContext = serverTLS.getSslContext();
+            SSLSocket sslSocket = (SSLSocket)sslContext.getSocketFactory().createSocket(channel.socket(), serverHost, serverPort, false);
+            sslSocket.setUseClientMode(false);
+
+            // Read the request.
+            int crlfs = 0;
+            InputStream input = sslSocket.getInputStream();
+            while (true)
+            {
+                read = input.read();
+                if (read < 0)
+                    break;
+                if (read == '\r' || read == '\n')
+                    ++crlfs;
+                else
+                    crlfs = 0;
+                if (crlfs == 4)
+                    break;
+            }
+
+            // Send the response.
+            String response =
+                "HTTP/1.1 200 OK\r\n" +
+                    "Content-Length: 0\r\n" +
+                    "Connection: close\r\n" +
+                    "\r\n";
+            OutputStream output = sslSocket.getOutputStream();
+            output.write(response.getBytes(StandardCharsets.UTF_8));
+            output.flush();
 
             assertTrue(latch.await(5, TimeUnit.SECONDS));
         }

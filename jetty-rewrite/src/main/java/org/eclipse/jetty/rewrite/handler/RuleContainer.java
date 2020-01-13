@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -22,8 +22,10 @@ import java.io.IOException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.ArrayUtil;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
@@ -185,7 +187,18 @@ public class RuleContainer extends Rule implements Dumpable
                     if (rule instanceof Rule.ApplyURI)
                         ((Rule.ApplyURI)rule).applyURI(baseRequest, baseRequest.getRequestURI(), encoded);
                     else
-                        baseRequest.setURIPathQuery(encoded);
+                    {
+                        String uriPathQuery = encoded;
+                        HttpURI baseUri = baseRequest.getHttpURI();
+                        // Copy path params from original URI if present
+                        if ((baseUri != null) && StringUtil.isNotBlank(baseUri.getParam()))
+                        {
+                            HttpURI uri = new HttpURI(uriPathQuery);
+                            uri.setParam(baseUri.getParam());
+                            uriPathQuery = uri.toString();
+                        }
+                        baseRequest.setURIPathQuery(uriPathQuery);
+                    }
                 }
 
                 if (_rewritePathInfo)

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.client;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -84,6 +85,7 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.Net;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.IO;
@@ -1786,6 +1788,57 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 assertEquals(200, response.getStatus());
             }
         }
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(ScenarioProvider.class)
+    public void testContentListenerAsCompleteListener(Scenario scenario) throws Exception
+    {
+        byte[] bytes = new byte[1024];
+        new Random().nextBytes(bytes);
+        start(scenario, new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                ServletOutputStream output = response.getOutputStream();
+                output.write(bytes);
+            }
+        });
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        CountDownLatch latch = new CountDownLatch(1);
+        class L implements Response.ContentListener, Response.CompleteListener
+        {
+            @Override
+            public void onContent(Response response, ByteBuffer content)
+            {
+                try
+                {
+                    BufferUtil.writeTo(content, baos);
+                }
+                catch (IOException x)
+                {
+                    baos.reset();
+                    x.printStackTrace();
+                }
+            }
+
+            @Override
+            public void onComplete(Result result)
+            {
+                if (result.isSucceeded())
+                    latch.countDown();
+            }
+        }
+
+        client.newRequest("localhost", connector.getLocalPort())
+            .scheme(scenario.getScheme())
+            .send(new L());
+
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
+        assertArrayEquals(bytes, baos.toByteArray());
     }
 
     private void assertCopyRequest(Request original)

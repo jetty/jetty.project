@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -22,7 +22,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Function;
-
 import javax.servlet.http.HttpServletRequest;
 
 import org.eclipse.jetty.util.StringUtil;
@@ -494,9 +493,10 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
     }
 
     /**
-     * @deprecated
+     * @deprecated use {@link #release(String, Session)} instead
      */
     @Override
+    @Deprecated
     public void put(String id, Session session) throws Exception
     {
         release(id, session);

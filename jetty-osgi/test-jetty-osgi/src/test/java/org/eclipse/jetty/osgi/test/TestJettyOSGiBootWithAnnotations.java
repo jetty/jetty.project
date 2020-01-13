@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.osgi.test;
 
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import javax.inject.Inject;
@@ -25,6 +26,8 @@ import javax.inject.Inject;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.client.util.MultiPartContentProvider;
+import org.eclipse.jetty.client.util.StringContentProvider;
 import org.eclipse.jetty.http.HttpStatus;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -126,6 +129,11 @@ public class TestJettyOSGiBootWithAnnotations
             response = client.GET("http://127.0.0.1:" + port + "/frag.html");
             content = response.getContentAsString();
             assertTrue(content.contains("<h1>FRAGMENT</h1>"));
+            MultiPartContentProvider multiPart = new MultiPartContentProvider();
+            multiPart.addFieldPart("field", new StringContentProvider("foo"), null);
+            response = client.newRequest("http://127.0.0.1:" + port + "/multi").method("POST")
+                .content(multiPart).send();
+            assertEquals(HttpStatus.OK_200, response.getStatus());
         }
         finally
         {

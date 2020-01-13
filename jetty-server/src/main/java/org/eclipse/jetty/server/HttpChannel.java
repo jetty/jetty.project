@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -509,7 +509,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                         // TODO that is done.
 
                         // Set a close callback on the HttpOutput to make it an async callback
-                        _response.closeOutput(Callback.from(_state::completed));
+                        _response.completeOutput(Callback.from(_state::completed));
 
                         break;
                     }
@@ -1195,10 +1195,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             if (_length > 0)
                 _combinedListener.onResponseContent(_request, _content);
             if (_complete && _state.completeResponse())
-            {
-                _response.getHttpOutput().closed();
                 _combinedListener.onResponseEnd(_request);
-            }
             super.succeeded();
         }
 
@@ -1215,14 +1212,13 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                     @Override
                     public void succeeded()
                     {
-                        _response.getHttpOutput().closed();
+                        _response.getHttpOutput().completed();
                         super.failed(x);
                     }
 
                     @Override
                     public void failed(Throwable th)
                     {
-                        _response.getHttpOutput().closed();
                         abort(x);
                         super.failed(x);
                     }

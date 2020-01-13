@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -28,6 +28,7 @@ import javax.servlet.UnavailableException;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
 import org.eclipse.jetty.server.handler.ErrorHandler;
@@ -406,8 +407,6 @@ public class HttpChannelState
      */
     protected Action unhandle()
     {
-        boolean readInterested = false;
-
         synchronized (this)
         {
             if (LOG.isDebugEnabled())
@@ -736,8 +735,10 @@ public class HttpChannelState
             }
             else
             {
-                LOG.warn(failure.toString());
-                LOG.debug(failure);
+                if (!(failure instanceof QuietException))
+                    LOG.warn(failure.toString());
+                if (LOG.isDebugEnabled())
+                    LOG.debug(failure);
             }
         }
 
@@ -888,6 +889,9 @@ public class HttpChannelState
             if (LOG.isDebugEnabled())
                 LOG.debug("sendError {}", toStringLocked());
 
+            if (_outputState != OutputState.OPEN)
+                throw new IllegalStateException(_outputState.toString());
+
             switch (_state)
             {
                 case HANDLING:
@@ -901,7 +905,7 @@ public class HttpChannelState
                 throw new IllegalStateException("Response is " + _outputState);
 
             response.setStatus(code);
-            response.closedBySendError();
+            response.softClose();
 
             request.setAttribute(ErrorHandler.ERROR_CONTEXT, request.getErrorContext());
             request.setAttribute(ERROR_REQUEST_URI, request.getRequestURI());
@@ -967,6 +971,9 @@ public class HttpChannelState
                 event = _event;
             }
         }
+
+        // release any aggregate buffer from a closing flush
+        _channel.getResponse().getHttpOutput().completed();
 
         if (event != null)
         {
@@ -1337,7 +1344,7 @@ public class HttpChannelState
      * but that a handling thread may need to produce (fill/parse)
      * it.  Typically called by the async read success callback.
      *
-     * @return <code>true</code> if more content may be available
+     * @return {@code true} if more content may be available
      */
     public boolean onReadPossible()
     {
@@ -1369,7 +1376,7 @@ public class HttpChannelState
      * Called to signal that a read has read -1.
      * Will wake if the read was called while in ASYNC_WAIT state
      *
-     * @return <code>true</code> if woken
+     * @return {@code true} if woken
      */
     public boolean onReadEof()
     {

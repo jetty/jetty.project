@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -43,5 +43,22 @@ public interface ClientConnectionFactory
         ContainerLifeCycle connector = (ContainerLifeCycle)context.get(CONNECTOR_CONTEXT_KEY);
         connector.getBeans(Connection.Listener.class).forEach(connection::addListener);
         return connection;
+    }
+
+    /**
+     * <p>Wraps another ClientConnectionFactory.</p>
+     * <p>This is typically done by protocols that send "preface" bytes with some metadata
+     * before other protocols. The metadata could be, for example, proxying information
+     * or authentication information.</p>
+     */
+    interface Decorator
+    {
+        /**
+         * <p>Wraps the given {@code factory}.</p>
+         *
+         * @param factory the ClientConnectionFactory to wrap
+         * @return the wrapping ClientConnectionFactory
+         */
+        ClientConnectionFactory apply(ClientConnectionFactory factory);
     }
 }

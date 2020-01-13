@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -756,22 +756,29 @@ public class HttpInput extends ServletInputStream implements Runnable
 
                 _listener = Objects.requireNonNull(readListener);
 
-                Content content = produceNextContext();
-                if (content != null)
+                if (isError())
                 {
-                    _state = ASYNC;
                     woken = _channelState.onReadReady();
-                }
-                else if (_state == EOF)
-                {
-                    _state = AEOF;
-                    woken = _channelState.onReadEof();
                 }
                 else
                 {
-                    _state = ASYNC;
-                    _channelState.onReadUnready();
-                    _waitingForContent = true;
+                    Content content = produceNextContext();
+                    if (content != null)
+                    {
+                        _state = ASYNC;
+                        woken = _channelState.onReadReady();
+                    }
+                    else if (_state == EOF)
+                    {
+                        _state = AEOF;
+                        woken = _channelState.onReadEof();
+                    }
+                    else
+                    {
+                        _state = ASYNC;
+                        _channelState.onReadUnready();
+                        _waitingForContent = true;
+                    }
                 }
             }
         }

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -27,6 +27,7 @@ import javax.servlet.ServletResponse;
 
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.RuntimeIOException;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -128,10 +129,13 @@ public class ResponseWriter extends PrintWriter
     private void isOpen() throws IOException
     {
         if (_ioException != null)
-            throw new RuntimeIOException(_ioException);
+            throw _ioException;
 
         if (_isClosed)
-            throw new EofException("Stream closed");
+        {
+            _ioException = new EofException("Stream closed");
+            throw _ioException;
+        }
     }
 
     @Override
@@ -145,7 +149,7 @@ public class ResponseWriter extends PrintWriter
                 out.flush();
             }
         }
-        catch (IOException ex)
+        catch (Throwable ex)
         {
             setError(ex);
         }
@@ -166,6 +170,15 @@ public class ResponseWriter extends PrintWriter
         {
             setError(ex);
         }
+    }
+
+    public void complete(Callback callback)
+    {
+        synchronized (lock)
+        {
+            _isClosed = true;
+        }
+        _httpWriter.complete(callback);
     }
 
     @Override
