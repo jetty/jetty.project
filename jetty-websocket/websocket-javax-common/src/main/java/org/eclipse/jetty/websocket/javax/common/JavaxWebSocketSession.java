@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import javax.websocket.CloseReason;
 import javax.websocket.EndpointConfig;
@@ -61,6 +62,7 @@ public class JavaxWebSocketSession implements javax.websocket.Session
     private final AvailableDecoders availableDecoders;
     private final AvailableEncoders availableEncoders;
     private final Map<String, String> pathParameters;
+    private final AtomicBoolean closeInitiated = new AtomicBoolean(false);
     private Map<String, Object> userProperties;
 
     private List<Extension> negotiatedExtensions;
@@ -178,9 +180,7 @@ public class JavaxWebSocketSession implements javax.websocket.Session
     @Override
     public void close() throws IOException
     {
-        BlockingCallback b = new BlockingCallback();
-        coreSession.close(b);
-        b.block();
+        close(new CloseReason(CloseReason.CloseCodes.NO_STATUS_CODE, null));
     }
 
     /**
@@ -192,6 +192,9 @@ public class JavaxWebSocketSession implements javax.websocket.Session
     @Override
     public void close(CloseReason closeReason) throws IOException
     {
+        if (!closeInitiated.compareAndSet(false, true))
+            return;
+
         BlockingCallback b = new BlockingCallback();
         coreSession.close(closeReason.getCloseCode().getCode(), closeReason.getReasonPhrase(), b);
         b.block();
