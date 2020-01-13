@@ -140,8 +140,8 @@ public abstract class JavaxWebSocketFrameHandlerFactory
     }
 
     public abstract JavaxWebSocketFrameHandlerMetadata getMetadata(Class<?> endpointClass, EndpointConfig endpointConfig);
-    public abstract EndpointConfig newDefaultEndpointConfig(Class<?> endpointClass, String path);
 
+    public abstract EndpointConfig newDefaultEndpointConfig(Class<?> endpointClass, String path);
 
     public JavaxWebSocketFrameHandler newJavaxWebSocketFrameHandler(Object endpointInstance, UpgradeRequest upgradeRequest)
     {
