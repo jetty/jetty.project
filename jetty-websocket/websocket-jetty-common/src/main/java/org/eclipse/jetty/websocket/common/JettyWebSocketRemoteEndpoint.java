@@ -23,10 +23,9 @@ import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 
+import org.eclipse.jetty.util.BlockingCallback;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.FutureCallback;
-import org.eclipse.jetty.util.SharedBlockingCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.BatchMode;
@@ -44,7 +43,6 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
     private static final Logger LOG = Log.getLogger(JettyWebSocketRemoteEndpoint.class);
 
     private final FrameHandler.CoreSession coreSession;
-    private final SharedBlockingCallback blocker = new SharedBlockingCallback();
     private byte messageType = -1;
     private BatchMode batchMode;
 
@@ -75,13 +73,13 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
     {
         try
         {
-            FutureCallback blockingCallback = new FutureCallback();
+            BlockingCallback blockingCallback = new BlockingCallback();
             coreSession.close(statusCode, reason, blockingCallback);
-            blockingCallback.get();
+            blockingCallback.block();
         }
-        catch (Throwable t)
+        catch (IOException e)
         {
-            LOG.warn(t);
+            LOG.warn(e);
         }
     }
 
@@ -115,11 +113,9 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
     @Override
     public void sendPartialBytes(ByteBuffer fragment, boolean isLast) throws IOException
     {
-        try (SharedBlockingCallback.Blocker b = blocker.acquire())
-        {
-            sendPartialBytes(fragment, isLast, b);
-            b.block();
-        }
+        BlockingCallback b = new BlockingCallback();
+        sendPartialBytes(fragment, isLast, b);
+        b.block();
     }
 
     @Override
@@ -159,11 +155,9 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
     @Override
     public void sendPartialString(String fragment, boolean isLast) throws IOException
     {
-        try (SharedBlockingCallback.Blocker b = blocker.acquire())
-        {
-            sendPartialText(fragment, isLast, b);
-            b.block();
-        }
+        BlockingCallback b = new BlockingCallback();
+        sendPartialText(fragment, isLast, b);
+        b.block();
     }
 
     @Override
@@ -228,11 +222,9 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
 
     private void sendBlocking(Frame frame) throws IOException
     {
-        try (SharedBlockingCallback.Blocker b = blocker.acquire())
-        {
-            coreSession.sendFrame(frame, b, false);
-            b.block();
-        }
+        BlockingCallback b = new BlockingCallback();
+        coreSession.sendFrame(frame, b, false);
+        b.block();
     }
 
     @Override
@@ -261,10 +253,8 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
     @Override
     public void flush() throws IOException
     {
-        try (SharedBlockingCallback.Blocker b = blocker.acquire())
-        {
-            coreSession.flush(b);
-            b.block();
-        }
+        BlockingCallback b = new BlockingCallback();
+        coreSession.flush(b);
+        b.block();
     }
 }

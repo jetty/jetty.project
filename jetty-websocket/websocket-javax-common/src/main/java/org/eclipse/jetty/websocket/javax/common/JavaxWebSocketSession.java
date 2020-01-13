@@ -38,7 +38,7 @@ import javax.websocket.RemoteEndpoint.Basic;
 import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
 
-import org.eclipse.jetty.util.SharedBlockingCallback;
+import org.eclipse.jetty.util.BlockingCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
@@ -54,7 +54,6 @@ public class JavaxWebSocketSession implements javax.websocket.Session
 {
     private static final Logger LOG = Log.getLogger(JavaxWebSocketSession.class);
 
-    protected final SharedBlockingCallback blocking = new SharedBlockingCallback();
     private final JavaxWebSocketContainer container;
     private final FrameHandler.CoreSession coreSession;
     private final JavaxWebSocketFrameHandler frameHandler;
@@ -179,10 +178,9 @@ public class JavaxWebSocketSession implements javax.websocket.Session
     @Override
     public void close() throws IOException
     {
-        try (SharedBlockingCallback.Blocker blocker = blocking.acquire())
-        {
-            coreSession.close(blocker);
-        }
+        BlockingCallback b = new BlockingCallback();
+        coreSession.close(b);
+        b.block();
     }
 
     /**
@@ -194,10 +192,9 @@ public class JavaxWebSocketSession implements javax.websocket.Session
     @Override
     public void close(CloseReason closeReason) throws IOException
     {
-        try (SharedBlockingCallback.Blocker blocker = blocking.acquire())
-        {
-            coreSession.close(closeReason.getCloseCode().getCode(), closeReason.getReasonPhrase(), blocker);
-        }
+        BlockingCallback b = new BlockingCallback();
+        coreSession.close(closeReason.getCloseCode().getCode(), closeReason.getReasonPhrase(), b);
+        b.block();
     }
 
     /**
@@ -564,10 +561,5 @@ public class JavaxWebSocketSession implements javax.websocket.Session
     {
         return String.format("%s@%x[%s,%s]", this.getClass().getSimpleName(), this.hashCode(),
             coreSession.getBehavior(), frameHandler);
-    }
-
-    protected SharedBlockingCallback getBlocking()
-    {
-        return blocking;
     }
 }

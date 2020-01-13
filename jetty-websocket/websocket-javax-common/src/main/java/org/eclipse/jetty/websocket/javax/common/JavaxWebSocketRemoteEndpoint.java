@@ -25,9 +25,9 @@ import javax.websocket.EncodeException;
 import javax.websocket.Encoder;
 import javax.websocket.SendHandler;
 
+import org.eclipse.jetty.util.BlockingCallback;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.SharedBlockingCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.Frame;
@@ -66,10 +66,9 @@ public class JavaxWebSocketRemoteEndpoint implements javax.websocket.RemoteEndpo
     @Override
     public void flushBatch() throws IOException
     {
-        try (SharedBlockingCallback.Blocker blocker = session.getBlocking().acquire())
-        {
-            coreSession.flush(blocker);
-        }
+        BlockingCallback b = new BlockingCallback();
+        coreSession.flush(b);
+        b.block();
     }
 
     @Override
