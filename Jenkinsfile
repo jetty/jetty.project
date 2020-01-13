@@ -60,19 +60,6 @@ pipeline {
             }
           }
         }
-
-        stage("Checkstyle ") {
-          agent { node { label 'linux' } }
-          steps {
-            timeout(time: 30, unit: 'MINUTES') {
-              mavenBuild("jdk11", "clean install -f build-resources", "maven3", true)
-              mavenBuild("jdk11", "install checkstyle:check -DskipTests", "maven3", true)
-              recordIssues(
-                enabledForFailure: true, aggregatingResults: true,
-                tools: [java(), checkStyle(pattern: '**/target/checkstyle-result.xml', reportEncoding: 'UTF-8')])
-            }
-          }
-        }
       }
     }
   }
