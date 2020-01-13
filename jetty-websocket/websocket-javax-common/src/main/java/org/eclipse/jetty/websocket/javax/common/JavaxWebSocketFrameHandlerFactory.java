@@ -31,7 +31,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 import javax.websocket.CloseReason;
 import javax.websocket.Decoder;
 import javax.websocket.EndpointConfig;
@@ -68,12 +68,61 @@ public abstract class JavaxWebSocketFrameHandlerFactory
 {
     private static final MethodHandle FILTER_RETURN_TYPE_METHOD;
 
+    // The different kind of @OnMessage method parameter signatures expected.
+    private static final InvokerUtils.Arg[] textCallingArgs = new InvokerUtils.Arg[]{
+        new InvokerUtils.Arg(Session.class),
+        new InvokerUtils.Arg(String.class).required()
+    };
+
+    private static final InvokerUtils.Arg[] textPartialCallingArgs = new InvokerUtils.Arg[]{
+        new InvokerUtils.Arg(Session.class),
+        new InvokerUtils.Arg(String.class).required(),
+        new InvokerUtils.Arg(boolean.class).required()
+    };
+
+    private static final InvokerUtils.Arg[] binaryBufferCallingArgs = new InvokerUtils.Arg[]{
+        new InvokerUtils.Arg(Session.class),
+        new InvokerUtils.Arg(ByteBuffer.class).required()
+    };
+
+    private static final InvokerUtils.Arg[] binaryPartialBufferCallingArgs = new InvokerUtils.Arg[]{
+        new InvokerUtils.Arg(Session.class),
+        new InvokerUtils.Arg(ByteBuffer.class).required(),
+        new InvokerUtils.Arg(boolean.class).required()
+    };
+
+    private static final InvokerUtils.Arg[] binaryArrayCallingArgs = new InvokerUtils.Arg[]{
+        new InvokerUtils.Arg(Session.class),
+        new InvokerUtils.Arg(byte[].class).required()
+    };
+
+    private static final InvokerUtils.Arg[] binaryPartialArrayCallingArgs = new InvokerUtils.Arg[]{
+        new InvokerUtils.Arg(Session.class),
+        new InvokerUtils.Arg(byte[].class).required(),
+        new InvokerUtils.Arg(boolean.class).required()
+    };
+
+    private static final InvokerUtils.Arg[] inputStreamCallingArgs = new InvokerUtils.Arg[]{
+        new InvokerUtils.Arg(Session.class),
+        new InvokerUtils.Arg(InputStream.class).required()
+    };
+
+    private static final InvokerUtils.Arg[] readerCallingArgs = new InvokerUtils.Arg[]{
+        new InvokerUtils.Arg(Session.class),
+        new InvokerUtils.Arg(Reader.class).required()
+    };
+
+    private static final InvokerUtils.Arg[] pongCallingArgs = new InvokerUtils.Arg[]{
+        new InvokerUtils.Arg(Session.class),
+        new InvokerUtils.Arg(PongMessage.class).required()
+    };
+
     static
     {
         try
         {
             FILTER_RETURN_TYPE_METHOD = MethodHandles.lookup()
-                .findVirtual(JavaxWebSocketSession.class, "filterReturnType", MethodType.methodType(Void.TYPE, Object.class));
+                .findVirtual(JavaxWebSocketSession.class, "filterReturnType", MethodType.methodType(void.class, Object.class));
         }
         catch (Throwable e)
         {
@@ -83,7 +132,6 @@ public abstract class JavaxWebSocketFrameHandlerFactory
 
     protected final JavaxWebSocketContainer container;
     protected final InvokerUtils.ParamIdentifier paramIdentifier;
-    private Map<Class<?>, JavaxWebSocketFrameHandlerMetadata> metadataMap = new ConcurrentHashMap<>();
 
     public JavaxWebSocketFrameHandlerFactory(JavaxWebSocketContainer container, InvokerUtils.ParamIdentifier paramIdentifier)
     {
@@ -91,22 +139,9 @@ public abstract class JavaxWebSocketFrameHandlerFactory
         this.paramIdentifier = paramIdentifier == null ? InvokerUtils.PARAM_IDENTITY : paramIdentifier;
     }
 
-    public JavaxWebSocketFrameHandlerMetadata getMetadata(Class<?> endpointClass, EndpointConfig endpointConfig)
-    {
-        JavaxWebSocketFrameHandlerMetadata metadata = metadataMap.get(endpointClass);
-
-        if (metadata == null)
-        {
-            metadata = createMetadata(endpointClass, endpointConfig);
-            metadataMap.put(endpointClass, metadata);
-        }
-
-        return metadata;
-    }
+    public abstract JavaxWebSocketFrameHandlerMetadata getMetadata(Class<?> endpointClass, EndpointConfig endpointConfig);
 
     public abstract EndpointConfig newDefaultEndpointConfig(Class<?> endpointClass, String path);
-
-    public abstract JavaxWebSocketFrameHandlerMetadata createMetadata(Class<?> endpointClass, EndpointConfig endpointConfig);
 
     public JavaxWebSocketFrameHandler newJavaxWebSocketFrameHandler(Object endpointInstance, UpgradeRequest upgradeRequest)
     {
@@ -161,15 +196,13 @@ public abstract class JavaxWebSocketFrameHandlerFactory
         errorHandle = InvokerUtils.bindTo(errorHandle, endpoint);
         pongHandle = InvokerUtils.bindTo(pongHandle, endpoint);
 
-        JavaxWebSocketFrameHandler frameHandler = new JavaxWebSocketFrameHandler(
+        return new JavaxWebSocketFrameHandler(
             container,
             endpoint,
             openHandle, closeHandle, errorHandle,
             textMetadata, binaryMetadata,
             pongHandle,
             config);
-
-        return frameHandler;
     }
 
     /**
@@ -318,7 +351,7 @@ public abstract class JavaxWebSocketFrameHandlerFactory
         }
     }
 
-    public static MethodHandle wrapNonVoidReturnType(MethodHandle handle, JavaxWebSocketSession session) throws NoSuchMethodException, IllegalAccessException
+    public static MethodHandle wrapNonVoidReturnType(MethodHandle handle, JavaxWebSocketSession session)
     {
         if (handle == null)
             return null;
@@ -400,6 +433,7 @@ public abstract class JavaxWebSocketFrameHandlerFactory
                 .mutatedInvoker(endpointClass, onmethod, paramIdentifier, metadata.getNamedTemplateVariables(), SESSION, CLOSE_REASON);
             metadata.setCloseHandler(methodHandle, onmethod);
         }
+
         // OnError [0..1]
         onmethod = ReflectUtils.findAnnotatedMethod(endpointClass, OnError.class);
         if (onmethod != null)
@@ -416,298 +450,215 @@ public abstract class JavaxWebSocketFrameHandlerFactory
         Method[] onMessages = ReflectUtils.findAnnotatedMethods(endpointClass, OnMessage.class);
         if (onMessages != null && onMessages.length > 0)
         {
-            // The different kind of @OnMessage method parameter signatures expected
-            InvokerUtils.Arg[] textCallingArgs = new InvokerUtils.Arg[]{
-                new InvokerUtils.Arg(Session.class),
-                new InvokerUtils.Arg(String.class).required()
-            };
-
-            InvokerUtils.Arg[] textPartialCallingArgs = new InvokerUtils.Arg[]{
-                new InvokerUtils.Arg(Session.class),
-                new InvokerUtils.Arg(String.class).required(),
-                new InvokerUtils.Arg(boolean.class).required()
-            };
-
-            InvokerUtils.Arg[] binaryBufferCallingArgs = new InvokerUtils.Arg[]{
-                new InvokerUtils.Arg(Session.class),
-                new InvokerUtils.Arg(ByteBuffer.class).required()
-            };
-
-            InvokerUtils.Arg[] binaryPartialBufferCallingArgs = new InvokerUtils.Arg[]{
-                new InvokerUtils.Arg(Session.class),
-                new InvokerUtils.Arg(ByteBuffer.class).required(),
-                new InvokerUtils.Arg(boolean.class).required()
-            };
-
-            InvokerUtils.Arg[] binaryArrayCallingArgs = new InvokerUtils.Arg[]{
-                new InvokerUtils.Arg(Session.class),
-                new InvokerUtils.Arg(byte[].class).required()
-            };
-
-            InvokerUtils.Arg[] binaryPartialArrayCallingArgs = new InvokerUtils.Arg[]{
-                new InvokerUtils.Arg(Session.class),
-                new InvokerUtils.Arg(byte[].class).required(),
-                new InvokerUtils.Arg(boolean.class).required()
-            };
-
-            InvokerUtils.Arg[] inputStreamCallingArgs = new InvokerUtils.Arg[]{
-                new InvokerUtils.Arg(Session.class),
-                new InvokerUtils.Arg(InputStream.class).required()
-            };
-
-            InvokerUtils.Arg[] readerCallingArgs = new InvokerUtils.Arg[]{
-                new InvokerUtils.Arg(Session.class),
-                new InvokerUtils.Arg(Reader.class).required()
-            };
-
-            InvokerUtils.Arg[] pongCallingArgs = new InvokerUtils.Arg[]{
-                new InvokerUtils.Arg(Session.class),
-                new InvokerUtils.Arg(PongMessage.class).required()
-            };
-
-            List<DecodedArgs> decodedTextCallingArgs = new ArrayList<>();
-            List<DecodedArgs> decodedTextStreamCallingArgs = new ArrayList<>();
-            List<DecodedArgs> decodedBinaryCallingArgs = new ArrayList<>();
-            List<DecodedArgs> decodedBinaryStreamCallingArgs = new ArrayList<>();
-
-            for (AvailableDecoders.RegisteredDecoder decoder : metadata.getAvailableDecoders())
-            {
-                if (decoder.implementsInterface(Decoder.Text.class))
-                {
-                    decodedTextCallingArgs.add(
-                        new DecodedArgs(decoder,
-                            new InvokerUtils.Arg(Session.class),
-                            new InvokerUtils.Arg(decoder.objectType).required()
-                        ));
-                }
-
-                if (decoder.implementsInterface(Decoder.TextStream.class))
-                {
-                    decodedTextStreamCallingArgs.add(
-                        new DecodedArgs(decoder,
-                            new InvokerUtils.Arg(Session.class),
-                            new InvokerUtils.Arg(decoder.objectType).required()
-                        ));
-                }
-
-                if (decoder.implementsInterface(Decoder.Binary.class))
-                {
-                    decodedBinaryCallingArgs.add(
-                        new DecodedArgs(decoder,
-                            new InvokerUtils.Arg(Session.class),
-                            new InvokerUtils.Arg(decoder.objectType).required()
-                        ));
-                }
-
-                if (decoder.implementsInterface(Decoder.BinaryStream.class))
-                {
-                    decodedBinaryStreamCallingArgs.add(
-                        new DecodedArgs(decoder,
-                            new InvokerUtils.Arg(Session.class),
-                            new InvokerUtils.Arg(decoder.objectType).required()
-                        ));
-                }
-            }
-
-            onmessageloop:
             for (Method onMsg : onMessages)
             {
                 assertSignatureValid(endpointClass, onMsg, OnMessage.class);
-                OnMessage onMessageAnno = onMsg.getAnnotation(OnMessage.class);
 
                 MessageMetadata msgMetadata = new MessageMetadata();
+                OnMessage onMessageAnno = onMsg.getAnnotation(OnMessage.class);
                 if (onMessageAnno.maxMessageSize() > Integer.MAX_VALUE)
                 {
-                    throw new InvalidWebSocketException(
-                        String.format("Value too large: %s#%s - @OnMessage.maxMessageSize=%,d > Integer.MAX_VALUE",
+                    throw new InvalidWebSocketException(String.format("Value too large: %s#%s - @OnMessage.maxMessageSize=%,d > Integer.MAX_VALUE",
                             endpointClass.getName(), onMsg.getName(), onMessageAnno.maxMessageSize()));
                 }
                 msgMetadata.maxMessageSize = (int)onMessageAnno.maxMessageSize();
 
-                MethodHandle methodHandle = InvokerUtils
-                    .optionalMutatedInvoker(endpointClass, onMsg, paramIdentifier, metadata.getNamedTemplateVariables(), textCallingArgs);
-                if (methodHandle != null)
-                {
-                    // Whole Text Message
-                    assertSignatureValid(endpointClass, onMsg, OnMessage.class);
-                    msgMetadata.sinkClass = StringMessageSink.class;
-                    msgMetadata.handle = methodHandle;
-                    metadata.setTextMetadata(msgMetadata, onMsg);
-                    continue onmessageloop;
-                }
+                // Function to search for matching MethodHandle for the endpointClass given a signature.
+                Function<InvokerUtils.Arg[], MethodHandle> getMethodHandle = (signature) ->
+                    InvokerUtils.optionalMutatedInvoker(endpointClass, onMsg, paramIdentifier, metadata.getNamedTemplateVariables(), signature);
 
-                methodHandle = InvokerUtils
-                    .optionalMutatedInvoker(endpointClass, onMsg, paramIdentifier, metadata.getNamedTemplateVariables(), textPartialCallingArgs);
-                if (methodHandle != null)
-                {
-                    // Partial Text Message
-                    assertSignatureValid(endpointClass, onMsg, OnMessage.class);
-                    msgMetadata.sinkClass = PartialStringMessageSink.class;
-                    msgMetadata.handle = methodHandle;
-                    metadata.setTextMetadata(msgMetadata, onMsg);
-                    continue onmessageloop;
-                }
+                // Try to match from available decoders.
+                if (matchDecoders(onMsg, metadata, msgMetadata, getMethodHandle))
+                    continue;
 
-                methodHandle = InvokerUtils
-                    .optionalMutatedInvoker(endpointClass, onMsg, paramIdentifier, metadata.getNamedTemplateVariables(), binaryBufferCallingArgs);
-                if (methodHandle != null)
-                {
-                    // Whole ByteBuffer Binary Message
-                    assertSignatureValid(endpointClass, onMsg, OnMessage.class);
-                    msgMetadata.sinkClass = ByteBufferMessageSink.class;
-                    msgMetadata.handle = methodHandle;
-                    metadata.setBinaryMetadata(msgMetadata, onMsg);
-                    continue onmessageloop;
-                }
+                // No decoders matched try basic signatures to call onMessage directly.
+                if (matchOnMessage(onMsg, metadata, msgMetadata, getMethodHandle))
+                    continue;
 
-                methodHandle = InvokerUtils
-                    .optionalMutatedInvoker(endpointClass, onMsg, paramIdentifier, metadata.getNamedTemplateVariables(), binaryPartialBufferCallingArgs);
-                if (methodHandle != null)
-                {
-                    // Partial ByteBuffer Binary Message
-                    assertSignatureValid(endpointClass, onMsg, OnMessage.class);
-                    msgMetadata.sinkClass = PartialByteBufferMessageSink.class;
-                    msgMetadata.handle = methodHandle;
-                    metadata.setBinaryMetadata(msgMetadata, onMsg);
-                    continue onmessageloop;
-                }
-
-                methodHandle = InvokerUtils
-                    .optionalMutatedInvoker(endpointClass, onMsg, paramIdentifier, metadata.getNamedTemplateVariables(), binaryArrayCallingArgs);
-                if (methodHandle != null)
-                {
-                    // Whole byte[] Binary Message
-                    assertSignatureValid(endpointClass, onMsg, OnMessage.class);
-                    msgMetadata.sinkClass = ByteArrayMessageSink.class;
-                    msgMetadata.handle = methodHandle;
-                    metadata.setBinaryMetadata(msgMetadata, onMsg);
-                    continue onmessageloop;
-                }
-
-                methodHandle = InvokerUtils
-                    .optionalMutatedInvoker(endpointClass, onMsg, paramIdentifier, metadata.getNamedTemplateVariables(), binaryPartialArrayCallingArgs);
-                if (methodHandle != null)
-                {
-                    // Partial byte[] Binary Message
-                    assertSignatureValid(endpointClass, onMsg, OnMessage.class);
-                    msgMetadata.sinkClass = PartialByteArrayMessageSink.class;
-                    msgMetadata.handle = methodHandle;
-                    metadata.setBinaryMetadata(msgMetadata, onMsg);
-                    continue onmessageloop;
-                }
-
-                methodHandle = InvokerUtils
-                    .optionalMutatedInvoker(endpointClass, onMsg, paramIdentifier, metadata.getNamedTemplateVariables(), inputStreamCallingArgs);
-                if (methodHandle != null)
-                {
-                    // InputStream Binary Message
-                    assertSignatureValid(endpointClass, onMsg, OnMessage.class);
-                    msgMetadata.sinkClass = InputStreamMessageSink.class;
-                    msgMetadata.handle = methodHandle;
-                    metadata.setBinaryMetadata(msgMetadata, onMsg);
-                    continue onmessageloop;
-                }
-
-                methodHandle = InvokerUtils
-                    .optionalMutatedInvoker(endpointClass, onMsg, paramIdentifier, metadata.getNamedTemplateVariables(), readerCallingArgs);
-                if (methodHandle != null)
-                {
-                    // Reader Text Message
-                    assertSignatureValid(endpointClass, onMsg, OnMessage.class);
-                    msgMetadata.sinkClass = ReaderMessageSink.class;
-                    msgMetadata.handle = methodHandle;
-                    metadata.setTextMetadata(msgMetadata, onMsg);
-                    continue onmessageloop;
-                }
-
-                // == Decoders ==
-
-                // Decoder.Text
-                for (DecodedArgs decodedArgs : decodedTextCallingArgs)
-                {
-                    methodHandle = InvokerUtils
-                        .optionalMutatedInvoker(endpointClass, onMsg, paramIdentifier, metadata.getNamedTemplateVariables(), decodedArgs.args);
-                    if (methodHandle != null)
-                    {
-                        // Decoded Text Message
-                        assertSignatureValid(endpointClass, onMsg, OnMessage.class);
-                        msgMetadata.sinkClass = DecodedTextMessageSink.class;
-                        msgMetadata.handle = methodHandle;
-                        msgMetadata.registeredDecoder = decodedArgs.registeredDecoder;
-                        metadata.setTextMetadata(msgMetadata, onMsg);
-                        continue onmessageloop;
-                    }
-                }
-
-                // Decoder.Binary
-                for (DecodedArgs decodedArgs : decodedBinaryCallingArgs)
-                {
-                    methodHandle = InvokerUtils
-                        .optionalMutatedInvoker(endpointClass, onMsg, paramIdentifier, metadata.getNamedTemplateVariables(), decodedArgs.args);
-                    if (methodHandle != null)
-                    {
-                        // Decoded Binary Message
-                        assertSignatureValid(endpointClass, onMsg, OnMessage.class);
-                        msgMetadata.sinkClass = DecodedBinaryMessageSink.class;
-                        msgMetadata.handle = methodHandle;
-                        msgMetadata.registeredDecoder = decodedArgs.registeredDecoder;
-                        metadata.setBinaryMetadata(msgMetadata, onMsg);
-                        continue onmessageloop;
-                    }
-                }
-
-                // Decoder.TextStream
-                for (DecodedArgs decodedArgs : decodedTextStreamCallingArgs)
-                {
-                    methodHandle = InvokerUtils
-                        .optionalMutatedInvoker(endpointClass, onMsg, paramIdentifier, metadata.getNamedTemplateVariables(), decodedArgs.args);
-                    if (methodHandle != null)
-                    {
-                        // Decoded Text Stream
-                        assertSignatureValid(endpointClass, onMsg, OnMessage.class);
-                        msgMetadata.sinkClass = DecodedTextStreamMessageSink.class;
-                        msgMetadata.handle = methodHandle;
-                        msgMetadata.registeredDecoder = decodedArgs.registeredDecoder;
-                        metadata.setTextMetadata(msgMetadata, onMsg);
-                        continue onmessageloop;
-                    }
-                }
-
-                // Decoder.BinaryStream
-                for (DecodedArgs decodedArgs : decodedBinaryStreamCallingArgs)
-                {
-                    methodHandle = InvokerUtils
-                        .optionalMutatedInvoker(endpointClass, onMsg, paramIdentifier, metadata.getNamedTemplateVariables(), decodedArgs.args);
-                    if (methodHandle != null)
-                    {
-                        // Decoded Binary Stream
-                        assertSignatureValid(endpointClass, onMsg, OnMessage.class);
-                        msgMetadata.sinkClass = DecodedBinaryStreamMessageSink.class;
-                        msgMetadata.handle = methodHandle;
-                        msgMetadata.registeredDecoder = decodedArgs.registeredDecoder;
-                        metadata.setBinaryMetadata(msgMetadata, onMsg);
-                        continue onmessageloop;
-                    }
-                }
-
-                // == Pong ==
-
-                methodHandle = InvokerUtils
-                    .optionalMutatedInvoker(endpointClass, onMsg, paramIdentifier, metadata.getNamedTemplateVariables(), pongCallingArgs);
-                if (methodHandle != null)
-                {
-                    // Pong Message
-                    assertSignatureValid(endpointClass, onMsg, OnMessage.class);
-                    metadata.setPongHandle(methodHandle, onMsg);
-                    continue onmessageloop;
-                }
-
-                // Not a valid @OnMessage declaration signature
+                // Not a valid @OnMessage declaration signature.
                 throw InvalidSignatureException.build(endpointClass, OnMessage.class, onMsg);
             }
         }
 
         return metadata;
+    }
+
+    private boolean matchOnMessage(Method onMsg, JavaxWebSocketFrameHandlerMetadata metadata, MessageMetadata msgMetadata,
+                                   Function<InvokerUtils.Arg[], MethodHandle> getMethodHandle)
+    {
+        // Whole Text Message.
+        MethodHandle methodHandle = getMethodHandle.apply(textCallingArgs);
+        if (methodHandle != null)
+        {
+            msgMetadata.sinkClass = StringMessageSink.class;
+            msgMetadata.handle = methodHandle;
+            metadata.setTextMetadata(msgMetadata, onMsg);
+            return true;
+        }
+
+        // Partial Text Message.
+        methodHandle = getMethodHandle.apply(textPartialCallingArgs);
+        if (methodHandle != null)
+        {
+            msgMetadata.sinkClass = PartialStringMessageSink.class;
+            msgMetadata.handle = methodHandle;
+            metadata.setTextMetadata(msgMetadata, onMsg);
+            return true;
+        }
+
+        // Whole ByteBuffer Binary Message.
+        methodHandle = getMethodHandle.apply(binaryBufferCallingArgs);
+        if (methodHandle != null)
+        {
+            msgMetadata.sinkClass = ByteBufferMessageSink.class;
+            msgMetadata.handle = methodHandle;
+            metadata.setBinaryMetadata(msgMetadata, onMsg);
+            return true;
+        }
+
+        // Partial ByteBuffer Binary Message.
+        methodHandle = getMethodHandle.apply(binaryPartialBufferCallingArgs);
+        if (methodHandle != null)
+        {
+            msgMetadata.sinkClass = PartialByteBufferMessageSink.class;
+            msgMetadata.handle = methodHandle;
+            metadata.setBinaryMetadata(msgMetadata, onMsg);
+            return true;
+        }
+
+        // Whole byte[] Binary Message.
+        methodHandle = getMethodHandle.apply(binaryArrayCallingArgs);
+        if (methodHandle != null)
+        {
+            msgMetadata.sinkClass = ByteArrayMessageSink.class;
+            msgMetadata.handle = methodHandle;
+            metadata.setBinaryMetadata(msgMetadata, onMsg);
+            return true;
+        }
+
+        // Partial byte[] Binary Message.
+        methodHandle = getMethodHandle.apply(binaryPartialArrayCallingArgs);
+        if (methodHandle != null)
+        {
+            msgMetadata.sinkClass = PartialByteArrayMessageSink.class;
+            msgMetadata.handle = methodHandle;
+            metadata.setBinaryMetadata(msgMetadata, onMsg);
+            return true;
+        }
+
+        // InputStream Binary Message.
+        methodHandle = getMethodHandle.apply(inputStreamCallingArgs);
+        if (methodHandle != null)
+        {
+            msgMetadata.sinkClass = InputStreamMessageSink.class;
+            msgMetadata.handle = methodHandle;
+            metadata.setBinaryMetadata(msgMetadata, onMsg);
+            return true;
+        }
+
+        // Reader Text Message.
+        methodHandle = getMethodHandle.apply(readerCallingArgs);
+        if (methodHandle != null)
+        {
+            msgMetadata.sinkClass = ReaderMessageSink.class;
+            msgMetadata.handle = methodHandle;
+            metadata.setTextMetadata(msgMetadata, onMsg);
+            return true;
+        }
+
+        // Pong Message.
+        MethodHandle pongHandle = getMethodHandle.apply(pongCallingArgs);
+        if (pongHandle != null)
+        {
+            metadata.setPongHandle(pongHandle, onMsg);
+            return true;
+        }
+
+        return false;
+    }
+
+    private boolean matchDecoders(Method onMsg, JavaxWebSocketFrameHandlerMetadata metadata, MessageMetadata msgMetadata,
+                                  Function<InvokerUtils.Arg[], MethodHandle> getMethodHandle)
+    {
+        // TODO: we should be able to get this information directly from the AvailableDecoders in the metadata.
+        List<DecodedArgs> decodedTextCallingArgs = new ArrayList<>();
+        List<DecodedArgs> decodedTextStreamCallingArgs = new ArrayList<>();
+        List<DecodedArgs> decodedBinaryCallingArgs = new ArrayList<>();
+        List<DecodedArgs> decodedBinaryStreamCallingArgs = new ArrayList<>();
+        for (AvailableDecoders.RegisteredDecoder decoder : metadata.getAvailableDecoders())
+        {
+            InvokerUtils.Arg[] args = {new InvokerUtils.Arg(Session.class), new InvokerUtils.Arg(decoder.objectType).required()};
+            DecodedArgs decodedArgs = new DecodedArgs(decoder, args);
+
+            if (decoder.implementsInterface(Decoder.Text.class))
+                decodedTextCallingArgs.add(decodedArgs);
+            if (decoder.implementsInterface(Decoder.TextStream.class))
+                decodedTextStreamCallingArgs.add(decodedArgs);
+            if (decoder.implementsInterface(Decoder.Binary.class))
+                decodedBinaryCallingArgs.add(decodedArgs);
+            if (decoder.implementsInterface(Decoder.BinaryStream.class))
+                decodedBinaryStreamCallingArgs.add(decodedArgs);
+        }
+
+        MethodHandle methodHandle;
+
+        // Decoder.Text
+        for (DecodedArgs decodedArgs : decodedTextCallingArgs)
+        {
+            methodHandle = getMethodHandle.apply(decodedArgs.args);
+            if (methodHandle != null)
+            {
+                msgMetadata.sinkClass = DecodedTextMessageSink.class;
+                msgMetadata.handle = methodHandle;
+                msgMetadata.registeredDecoder = decodedArgs.registeredDecoder;
+                metadata.setTextMetadata(msgMetadata, onMsg);
+                return true;
+            }
+        }
+
+        // Decoder.Binary
+        for (DecodedArgs decodedArgs : decodedBinaryCallingArgs)
+        {
+            methodHandle = getMethodHandle.apply(decodedArgs.args);
+            if (methodHandle != null)
+            {
+                msgMetadata.sinkClass = DecodedBinaryMessageSink.class;
+                msgMetadata.handle = methodHandle;
+                msgMetadata.registeredDecoder = decodedArgs.registeredDecoder;
+                metadata.setBinaryMetadata(msgMetadata, onMsg);
+                return true;
+            }
+        }
+
+        // Try to match Text Stream decoders.
+        for (DecodedArgs decodedArgs : decodedTextStreamCallingArgs)
+        {
+            methodHandle = getMethodHandle.apply(decodedArgs.args);
+            if (methodHandle != null)
+            {
+                msgMetadata.sinkClass = DecodedTextStreamMessageSink.class;
+                msgMetadata.handle = methodHandle;
+                msgMetadata.registeredDecoder = decodedArgs.registeredDecoder;
+                metadata.setTextMetadata(msgMetadata, onMsg);
+                return true;
+            }
+        }
+
+        // Decoder.BinaryStream
+        for (DecodedArgs decodedArgs : decodedBinaryStreamCallingArgs)
+        {
+            methodHandle = getMethodHandle.apply(decodedArgs.args);
+            if (methodHandle != null)
+            {
+                msgMetadata.sinkClass = DecodedBinaryStreamMessageSink.class;
+                msgMetadata.handle = methodHandle;
+                msgMetadata.registeredDecoder = decodedArgs.registeredDecoder;
+                metadata.setBinaryMetadata(msgMetadata, onMsg);
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private void assertSignatureValid(Class<?> endpointClass, Method method, Class<? extends Annotation> annotationClass)
