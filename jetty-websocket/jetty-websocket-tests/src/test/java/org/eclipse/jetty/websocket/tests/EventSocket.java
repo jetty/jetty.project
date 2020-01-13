@@ -59,21 +59,24 @@ public class EventSocket
     {
         this.session = session;
         behavior = session.getPolicy().getBehavior().name();
-        LOG.info("{}  onOpen(): {}", toString(), session);
+        if (LOG.isDebugEnabled())
+            LOG.debug("{}  onOpen(): {}", toString(), session);
         open.countDown();
     }
 
     @OnWebSocketMessage
     public void onMessage(String message) throws IOException
     {
-        LOG.info("{}  onMessage(): {}", toString(), message);
+        if (LOG.isDebugEnabled())
+            LOG.debug("{}  onMessage(): {}", toString(), message);
         receivedMessages.offer(message);
     }
 
     @OnWebSocketClose
     public void onClose(int statusCode, String reason)
     {
-        LOG.debug("{}  onClose(): {}:{}", toString(), statusCode, reason);
+        if (LOG.isDebugEnabled())
+            LOG.debug("{}  onClose(): {}:{}", toString(), statusCode, reason);
         closeCode = statusCode;
         closeReason = reason;
         closed.countDown();
@@ -82,7 +85,8 @@ public class EventSocket
     @OnWebSocketError
     public void onError(Throwable cause)
     {
-        LOG.info("{}  onError(): {}", toString(), cause);
+        if (LOG.isDebugEnabled())
+            LOG.debug("{}  onError(): {}", toString(), cause);
         failure = cause;
         error.countDown();
     }
