@@ -17,14 +17,14 @@ Declared Project Licenses
 -------------------------
 This artifacts of this project are made available under the terms of:
 
-  * the Eclipse Public License v. 1.0
-    http://www.eclipse.org/legal/epl-v10.html
-    SPDX-License-Identifier: EPL-1.0
+  * the Eclipse Public License v2.0
+    https://www.eclipse.org/legal/epl-2.0
+    SPDX-License-Identifier: EPL-2.0
 
   or
 
   * the Apache License, Version 2.0
-    https://www.apache.org/licenses/LICENSE-2.0.
+    https://www.apache.org/licenses/LICENSE-2.0
     SPDX-License-Identifier: Apache-2.0
 
 The following dependencies are EPL.
@@ -43,15 +43,6 @@ https://glassfish.dev.java.net/nonav/public/CDDL+GPL.html
  * javax.annotation:javax.annotation-api
  * javax.transaction:javax.transaction-api
  * javax.websocket:javax.websocket-api
-
-If ALPN is used to negotiate HTTP/2 connections, then the following
-distribution may be included in the distribution or downloaded when ALPN
-module is selected. These artifacts replace/modify OpenJDK classes.
-The modifications are hosted at github and both modified and original
-are under GPL v2 with classpath exceptions.
-http://openjdk.java.net/legal/gplv2+ce.html
-
- * java.sun.security.ssl
 
 The following dependencies are licensed by the OW2 Foundation according to the
 terms of http://asm.ow2.org/license.html
