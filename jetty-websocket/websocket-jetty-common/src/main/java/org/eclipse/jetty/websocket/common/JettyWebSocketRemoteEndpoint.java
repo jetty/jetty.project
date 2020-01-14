@@ -82,9 +82,9 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
             coreSession.close(statusCode, reason, blockingCallback);
             blockingCallback.block();
         }
-        catch (IOException e)
+        catch (Throwable t)
         {
-            LOG.warn(e);
+            LOG.warn(t);
         }
     }
 

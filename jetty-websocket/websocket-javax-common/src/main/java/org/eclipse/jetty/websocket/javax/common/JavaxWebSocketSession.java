@@ -195,9 +195,16 @@ public class JavaxWebSocketSession implements javax.websocket.Session
         if (!closeInitiated.compareAndSet(false, true))
             return;
 
-        BlockingCallback b = new BlockingCallback();
-        coreSession.close(closeReason.getCloseCode().getCode(), closeReason.getReasonPhrase(), b);
-        b.block();
+        try
+        {
+            BlockingCallback b = new BlockingCallback();
+            coreSession.close(closeReason.getCloseCode().getCode(), closeReason.getReasonPhrase(), b);
+            b.block();
+        }
+        catch (RuntimeException e)
+        {
+            LOG.warn(e);
+        }
     }
 
     /**
