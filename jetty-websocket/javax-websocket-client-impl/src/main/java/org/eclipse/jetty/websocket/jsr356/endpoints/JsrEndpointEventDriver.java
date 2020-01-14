@@ -23,6 +23,7 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.nio.ByteBuffer;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 import javax.websocket.CloseReason;
 import javax.websocket.Endpoint;
 import javax.websocket.MessageHandler;
@@ -190,7 +191,23 @@ public class JsrEndpointEventDriver extends AbstractJsrEventDriver
             }
             else if (wrapper.wantsStreams())
             {
-                final MessageReader stream = new MessageReader(new MessageInputStream());
+                final CountDownLatch completed = new CountDownLatch(1);
+                final MessageReader stream = new MessageReader(new MessageInputStream())
+                {
+                    @Override
+                    public void messageComplete()
+                    {
+                        super.messageComplete();
+                        try
+                        {
+                            completed.await();
+                        }
+                        catch (Exception e)
+                        {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                };
                 activeMessage = stream;
 
                 dispatch(new Runnable()
@@ -201,6 +218,7 @@ public class JsrEndpointEventDriver extends AbstractJsrEventDriver
                     {
                         MessageHandler.Whole<Reader> handler = (Whole<Reader>)wrapper.getHandler();
                         handler.onMessage(stream);
+                        completed.countDown();
                     }
                 });
             }
