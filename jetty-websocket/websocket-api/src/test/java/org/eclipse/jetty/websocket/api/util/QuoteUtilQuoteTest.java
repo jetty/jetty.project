@@ -32,7 +32,7 @@ import static org.hamcrest.Matchers.is;
 /**
  * Test QuoteUtil.quote(), and QuoteUtil.dequote()
  */
-public class QuoteUtil_QuoteTest
+public class QuoteUtilQuoteTest
 {
     public static Stream<Arguments> data()
     {

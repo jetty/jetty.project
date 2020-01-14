@@ -78,7 +78,7 @@ public class LargeMessageTest
 
     @SuppressWarnings("Duplicates")
     @Test
-    public void testLargeEcho_AsEndpointInstance() throws Exception
+    public void testLargeEchoAsEndpointInstance() throws Exception
     {
         WebSocketContainer container = ContainerProvider.getWebSocketContainer();
         server.addBean(container); // allow to shutdown with server

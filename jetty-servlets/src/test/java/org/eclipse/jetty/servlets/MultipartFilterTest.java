@@ -60,6 +60,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+// @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
 public class MultipartFilterTest
 {
     private File _dir;

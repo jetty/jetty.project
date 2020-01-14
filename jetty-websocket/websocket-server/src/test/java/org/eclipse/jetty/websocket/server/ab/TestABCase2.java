@@ -43,7 +43,7 @@ public class TestABCase2 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase2_1() throws Exception
+    public void testCase21() throws Exception
     {
         WebSocketFrame send = new PingFrame();
 
@@ -64,7 +64,7 @@ public class TestABCase2 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase2_10() throws Exception
+    public void testCase210() throws Exception
     {
         // send 10 pings each with unique payload
         // send close
@@ -100,7 +100,7 @@ public class TestABCase2 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase2_11() throws Exception
+    public void testCase211() throws Exception
     {
         // send 10 pings (slowly) each with unique payload
         // send close
@@ -137,7 +137,7 @@ public class TestABCase2 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase2_2() throws Exception
+    public void testCase22() throws Exception
     {
         byte[] payload = StringUtil.getUtf8Bytes("Hello world");
 
@@ -164,7 +164,7 @@ public class TestABCase2 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase2_3() throws Exception
+    public void testCase23() throws Exception
     {
         byte[] payload = new byte[]{0x00, (byte)0xFF, (byte)0xFE, (byte)0xFD, (byte)0xFC, (byte)0xFB, 0x00, (byte)0xFF};
 
@@ -191,7 +191,7 @@ public class TestABCase2 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase2_4() throws Exception
+    public void testCase24() throws Exception
     {
         byte[] payload = new byte[125];
         Arrays.fill(payload, (byte)0xFE);
@@ -219,7 +219,7 @@ public class TestABCase2 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase2_5() throws Exception
+    public void testCase25() throws Exception
     {
         try (StacklessLogging scope = new StacklessLogging(Parser.class))
         {
@@ -251,7 +251,7 @@ public class TestABCase2 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase2_6() throws Exception
+    public void testCase26() throws Exception
     {
         byte[] payload = new byte[125];
         Arrays.fill(payload, (byte)'6');
@@ -280,7 +280,7 @@ public class TestABCase2 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase2_7() throws Exception
+    public void testCase27() throws Exception
     {
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new PongFrame()); // unsolicited pong
@@ -304,7 +304,7 @@ public class TestABCase2 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase2_8() throws Exception
+    public void testCase28() throws Exception
     {
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new PongFrame().setPayload("unsolicited")); // unsolicited pong
@@ -328,7 +328,7 @@ public class TestABCase2 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase2_9() throws Exception
+    public void testCase29() throws Exception
     {
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new PongFrame().setPayload("unsolicited")); // unsolicited pong

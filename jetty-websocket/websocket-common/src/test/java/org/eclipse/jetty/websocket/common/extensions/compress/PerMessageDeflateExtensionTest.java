@@ -88,7 +88,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
      * Section 8.2.3.1: A message compressed using 1 compressed DEFLATE block
      */
     @Test
-    public void testDraft21_Hello_UnCompressedBlock()
+    public void testDraft21HelloUnCompressedBlock()
     {
         Tester tester = clientExtensions.newTester("permessage-deflate");
 
@@ -109,7 +109,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
      * Section 8.2.3.1: A message compressed using 1 compressed DEFLATE block (with fragmentation)
      */
     @Test
-    public void testDraft21_Hello_UnCompressedBlock_Fragmented()
+    public void testDraft21HelloUnCompressedBlockFragmented()
     {
         Tester tester = clientExtensions.newTester("permessage-deflate");
 
@@ -132,7 +132,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
      * Section 8.2.3.2: Sharing LZ77 Sliding Window
      */
     @Test
-    public void testDraft21_SharingL77SlidingWindow_ContextTakeover()
+    public void testDraft21SharingL77SlidingWindowContextTakeover()
     {
         Tester tester = clientExtensions.newTester("permessage-deflate");
 
@@ -155,7 +155,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
      * Section 8.2.3.2: Sharing LZ77 Sliding Window
      */
     @Test
-    public void testDraft21_SharingL77SlidingWindow_NoContextTakeover()
+    public void testDraft21SharingL77SlidingWindowNoContextTakeover()
     {
         Tester tester = clientExtensions.newTester("permessage-deflate");
 
@@ -179,7 +179,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
      * Section 8.2.3.3: Using a DEFLATE Block with No Compression
      */
     @Test
-    public void testDraft21_DeflateBlockWithNoCompression()
+    public void testDraft21DeflateBlockWithNoCompression()
     {
         Tester tester = clientExtensions.newTester("permessage-deflate");
 
@@ -198,7 +198,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
      * Section 8.2.3.4: Using a DEFLATE Block with BFINAL Set to 1
      */
     @Test
-    public void testDraft21_DeflateBlockWithBFinal1()
+    public void testDraft21DeflateBlockWithBFinal1()
     {
         Tester tester = clientExtensions.newTester("permessage-deflate");
 
@@ -218,7 +218,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
      * Section 8.2.3.5: Two DEFLATE Blocks in 1 Message
      */
     @Test
-    public void testDraft21_TwoDeflateBlocksOneMessage()
+    public void testDraft21TwoDeflateBlocksOneMessage()
     {
         Tester tester = clientExtensions.newTester("permessage-deflate");
 
@@ -236,7 +236,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
      * Decode fragmented message (3 parts: TEXT, CONTINUATION, CONTINUATION)
      */
     @Test
-    public void testParseFragmentedMessage_Good()
+    public void testParseFragmentedMessageGood()
     {
         Tester tester = clientExtensions.newTester("permessage-deflate");
 
@@ -265,7 +265,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
      * </p>
      */
     @Test
-    public void testParseFragmentedMessage_BadRsv1()
+    public void testParseFragmentedMessageBadRsv1()
     {
         Tester tester = clientExtensions.newTester("permessage-deflate");
 
@@ -516,7 +516,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
     }
 
     @Test
-    public void testPyWebSocket_Client_NoContextTakeover_ThreeOra()
+    public void testPyWebSocketClientNoContextTakeoverThreeOra()
     {
         Tester tester = clientExtensions.newTester("permessage-deflate; client_max_window_bits; client_no_context_takeover");
 
@@ -534,7 +534,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
     }
 
     @Test
-    public void testPyWebSocket_Client_ToraToraTora()
+    public void testPyWebSocketClientToraToraTora()
     {
         Tester tester = clientExtensions.newTester("permessage-deflate; client_max_window_bits");
 
@@ -552,7 +552,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
     }
 
     @Test
-    public void testPyWebSocket_Server_NoContextTakeover_ThreeOra()
+    public void testPyWebSocketServerNoContextTakeoverThreeOra()
     {
         Tester tester = serverExtensions.newTester("permessage-deflate; client_max_window_bits; client_no_context_takeover");
 
@@ -570,7 +570,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
     }
 
     @Test
-    public void testPyWebSocket_Server_ToraToraTora()
+    public void testPyWebSocketServerToraToraTora()
     {
         Tester tester = serverExtensions.newTester("permessage-deflate; client_max_window_bits");
 

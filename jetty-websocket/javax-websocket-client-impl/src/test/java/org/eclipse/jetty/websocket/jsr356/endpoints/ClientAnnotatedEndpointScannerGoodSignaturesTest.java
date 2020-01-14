@@ -62,7 +62,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * Test {@link AnnotatedEndpointScanner} against various valid, simple, 1 method {@link ClientEndpoint} annotated classes with valid signatures.
  */
-public class ClientAnnotatedEndpointScanner_GoodSignaturesTest
+public class ClientAnnotatedEndpointScannerGoodSignaturesTest
 {
 
     private static ClientContainer container = new ClientContainer();
@@ -115,7 +115,7 @@ public class ClientAnnotatedEndpointScanner_GoodSignaturesTest
 
     @ParameterizedTest
     @MethodSource("scenarios")
-    public void testScan_Basic(Scenario scenario) throws Exception
+    public void testScanBasic(Scenario scenario) throws Exception
     {
         AnnotatedClientEndpointMetadata metadata = new AnnotatedClientEndpointMetadata(container, scenario.pojo);
         AnnotatedEndpointScanner<ClientEndpoint, ClientEndpointConfig> scanner = new AnnotatedEndpointScanner<>(metadata);

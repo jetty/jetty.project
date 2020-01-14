@@ -168,7 +168,7 @@ public class StdErrLogTest
      * @throws Exception failed test
      */
     @Test
-    public void testParameterizedMessage_NullValues() throws Exception
+    public void testParameterizedMessageNullValues() throws Exception
     {
         StdErrLog log = new StdErrLog(StdErrLogTest.class.getName(), new Properties());
         log.setLevel(StdErrLog.LEVEL_DEBUG);
@@ -204,7 +204,7 @@ public class StdErrLogTest
     }
 
     @Test
-    public void testGetLoggingLevel_Default()
+    public void testGetLoggingLevelDefault()
     {
         Properties props = new Properties();
 
@@ -216,7 +216,7 @@ public class StdErrLogTest
     }
 
     @Test
-    public void testGetLoggingLevel_Bad()
+    public void testGetLoggingLevelBad()
     {
         Properties props = new Properties();
         props.setProperty("log.LEVEL", "WARN");
@@ -227,7 +227,7 @@ public class StdErrLogTest
     }
 
     @Test
-    public void testGetLoggingLevel_Lowercase()
+    public void testGetLoggingLevelLowercase()
     {
         Properties props = new Properties();
         props.setProperty("log.LEVEL", "warn");
@@ -240,7 +240,7 @@ public class StdErrLogTest
     }
 
     @Test
-    public void testGetLoggingLevel_Root()
+    public void testGetLoggingLevelRoot()
     {
         Properties props = new Properties();
         props.setProperty("log.LEVEL", "DEBUG");
@@ -253,7 +253,7 @@ public class StdErrLogTest
     }
 
     @Test
-    public void testGetLoggingLevel_FQCN()
+    public void testGetLoggingLevelFQCN()
     {
         String name = StdErrLogTest.class.getName();
         Properties props = new Properties();
@@ -269,7 +269,7 @@ public class StdErrLogTest
     }
 
     @Test
-    public void testGetLoggingLevel_UtilLevel()
+    public void testGetLoggingLevelUtilLevel()
     {
         Properties props = new Properties();
         props.setProperty("org.eclipse.jetty.util.LEVEL", "DEBUG");
@@ -288,7 +288,7 @@ public class StdErrLogTest
     }
 
     @Test
-    public void testGetLoggingLevel_MixedLevels()
+    public void testGetLoggingLevelMixedLevels()
     {
         Properties props = new Properties();
         props.setProperty("log.LEVEL", "DEBUG");
@@ -562,7 +562,7 @@ public class StdErrLogTest
     }
 
     @Test
-    public void testGetChildLogger_Simple()
+    public void testGetChildLoggerSimple()
     {
         String baseName = "jetty";
         StdErrLog log = new StdErrLog(baseName, new Properties());
@@ -576,7 +576,7 @@ public class StdErrLogTest
     }
 
     @Test
-    public void testGetChildLogger_Deep()
+    public void testGetChildLoggerDeep()
     {
         String baseName = "jetty";
         StdErrLog log = new StdErrLog(baseName, new Properties());
@@ -590,7 +590,7 @@ public class StdErrLogTest
     }
 
     @Test
-    public void testGetChildLogger_Null()
+    public void testGetChildLoggerNull()
     {
         String baseName = "jetty";
         StdErrLog log = new StdErrLog(baseName, new Properties());
@@ -606,7 +606,7 @@ public class StdErrLogTest
     }
 
     @Test
-    public void testGetChildLogger_EmptyName()
+    public void testGetChildLoggerEmptyName()
     {
         String baseName = "jetty";
         StdErrLog log = new StdErrLog(baseName, new Properties());
@@ -622,7 +622,7 @@ public class StdErrLogTest
     }
 
     @Test
-    public void testGetChildLogger_EmptyNameSpaces()
+    public void testGetChildLoggerEmptyNameSpaces()
     {
         String baseName = "jetty";
         StdErrLog log = new StdErrLog(baseName, new Properties());
@@ -638,7 +638,7 @@ public class StdErrLogTest
     }
 
     @Test
-    public void testGetChildLogger_NullParent()
+    public void testGetChildLoggerNullParent()
     {
         AbstractLogger log = new StdErrLog(null, new Properties());
 

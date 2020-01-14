@@ -89,7 +89,7 @@ public class TomcatServerQuirksTest
      * @throws Exception on test failure
      */
     @Test
-    public void testTomcat7_0_32_WithTransferEncoding() throws Exception
+    public void testTomcat7032WithTransferEncoding() throws Exception
     {
         WebSocketClient client = new WebSocketClient();
 

@@ -162,7 +162,7 @@ public class TypeUtilTest
     }
 
     @Test
-    public void testGetLocationOfClass_FromMavenRepo() throws Exception
+    public void testGetLocationOfClassFromMavenRepo() throws Exception
     {
         String mavenRepoPathProperty = System.getProperty("mavenRepoPath");
         assumeTrue(mavenRepoPathProperty != null);
@@ -174,7 +174,7 @@ public class TypeUtilTest
     }
 
     @Test
-    public void getLocationOfClass_ClassDirectory()
+    public void getLocationOfClassClassDirectory()
     {
         // Class from project dependencies
         assertThat(TypeUtil.getLocationOfClass(TypeUtil.class).toASCIIString(), containsString("/classes/"));
@@ -182,7 +182,7 @@ public class TypeUtilTest
 
     @Test
     @DisabledOnJre(JRE.JAVA_8)
-    public void testGetLocation_JvmCore_JPMS()
+    public void testGetLocationJvmCoreJPMS()
     {
         // Class from JVM core
         String expectedJavaBase = "/java.base";
@@ -191,7 +191,7 @@ public class TypeUtilTest
 
     @Test
     @DisabledOnJre(JRE.JAVA_8)
-    public void testGetLocation_JavaLangThreadDeath_JPMS()
+    public void testGetLocationJavaLangThreadDeathJPMS()
     {
         // Class from JVM core
         String expectedJavaBase = "/java.base";
@@ -200,7 +200,7 @@ public class TypeUtilTest
 
     @Test
     @EnabledOnJre(JRE.JAVA_8)
-    public void testGetLocation_JvmCore_Java8RT()
+    public void testGetLocationJvmCoreJava8RT()
     {
         // Class from JVM core
         String expectedJavaBase = "/rt.jar";
@@ -209,7 +209,7 @@ public class TypeUtilTest
 
     @Test
     @EnabledOnJre(JRE.JAVA_8)
-    public void testGetLocation_JavaLangThreadDeath_Java8RT()
+    public void testGetLocationJavaLangThreadDeathJava8RT()
     {
         // Class from JVM core
         String expectedJavaBase = "/rt.jar";

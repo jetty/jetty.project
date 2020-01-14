@@ -42,12 +42,12 @@ import static org.hamcrest.Matchers.is;
 /**
  * Text Message Spec testing the {@link Generator} and {@link Parser}
  */
-public class TestABCase1_1
+public class TestABCase11
 {
     private WebSocketPolicy policy = WebSocketPolicy.newClientPolicy();
 
     @Test
-    public void testGenerate125ByteTextCase1_1_2()
+    public void testGenerate125ByteTextCase112()
     {
         int length = 125;
         byte[] buf = new byte[length];
@@ -78,7 +78,7 @@ public class TestABCase1_1
     }
 
     @Test
-    public void testGenerate126ByteTextCase1_1_3()
+    public void testGenerate126ByteTextCase113()
     {
         int length = 126;
 
@@ -117,7 +117,7 @@ public class TestABCase1_1
     }
 
     @Test
-    public void testGenerate127ByteTextCase1_1_4()
+    public void testGenerate127ByteTextCase114()
     {
         int length = 127;
 
@@ -156,7 +156,7 @@ public class TestABCase1_1
     }
 
     @Test
-    public void testGenerate128ByteTextCase1_1_5()
+    public void testGenerate128ByteTextCase115()
     {
         int length = 128;
 
@@ -195,7 +195,7 @@ public class TestABCase1_1
     }
 
     @Test
-    public void testGenerate65535ByteTextCase1_1_6()
+    public void testGenerate65535ByteTextCase116()
     {
         int length = 65535;
 
@@ -232,7 +232,7 @@ public class TestABCase1_1
     }
 
     @Test
-    public void testGenerate65536ByteTextCase1_1_7()
+    public void testGenerate65536ByteTextCase117()
     {
         int length = 65536;
 
@@ -269,7 +269,7 @@ public class TestABCase1_1
     }
 
     @Test
-    public void testGenerateEmptyTextCase1_1_1()
+    public void testGenerateEmptyTextCase111()
     {
         WebSocketFrame textFrame = new TextFrame().setPayload("");
 
@@ -286,7 +286,7 @@ public class TestABCase1_1
     }
 
     @Test
-    public void testParse125ByteTextCase1_1_2()
+    public void testParse125ByteTextCase112()
     {
         int length = 125;
 
@@ -318,7 +318,7 @@ public class TestABCase1_1
     }
 
     @Test
-    public void testParse126ByteTextCase1_1_3()
+    public void testParse126ByteTextCase113()
     {
         int length = 126;
 
@@ -351,7 +351,7 @@ public class TestABCase1_1
     }
 
     @Test
-    public void testParse127ByteTextCase1_1_4()
+    public void testParse127ByteTextCase114()
     {
         int length = 127;
 
@@ -384,7 +384,7 @@ public class TestABCase1_1
     }
 
     @Test
-    public void testParse128ByteTextCase1_1_5()
+    public void testParse128ByteTextCase115()
     {
         int length = 128;
 
@@ -417,7 +417,7 @@ public class TestABCase1_1
     }
 
     @Test
-    public void testParse65535ByteTextCase1_1_6()
+    public void testParse65535ByteTextCase116()
     {
         int length = 65535;
 
@@ -452,7 +452,7 @@ public class TestABCase1_1
     }
 
     @Test
-    public void testParse65536ByteTextCase1_1_7()
+    public void testParse65536ByteTextCase117()
     {
         int length = 65536;
 
@@ -488,7 +488,7 @@ public class TestABCase1_1
     }
 
     @Test
-    public void testParseEmptyTextCase1_1_1()
+    public void testParseEmptyTextCase111()
     {
         ByteBuffer expected = ByteBuffer.allocate(5);
 

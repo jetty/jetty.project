@@ -47,7 +47,7 @@ public abstract class AbstractThreadPoolTest
     protected abstract SizedThreadPool newPool(int max);
 
     @Test
-    public void testBudget_constructMaxThenLease()
+    public void testBudgetConstructMaxThenLease()
     {
         SizedThreadPool pool = newPool(4);
 
@@ -67,7 +67,7 @@ public abstract class AbstractThreadPoolTest
     }
 
     @Test
-    public void testBudget_LeaseThenSetMax()
+    public void testBudgetLeaseThenSetMax()
     {
         SizedThreadPool pool = newPool(4);
 

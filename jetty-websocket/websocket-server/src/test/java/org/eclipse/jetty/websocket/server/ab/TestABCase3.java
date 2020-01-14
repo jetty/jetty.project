@@ -44,7 +44,7 @@ public class TestABCase3 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase3_1() throws Exception
+    public void testCase31() throws Exception
     {
         WebSocketFrame send = new TextFrame().setPayload("small").setRsv1(true); // intentionally bad
 
@@ -66,7 +66,7 @@ public class TestABCase3 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase3_2() throws Exception
+    public void testCase32() throws Exception
     {
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new TextFrame().setPayload("small"));
@@ -93,7 +93,7 @@ public class TestABCase3 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase3_3() throws Exception
+    public void testCase33() throws Exception
     {
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new TextFrame().setPayload("small"));
@@ -120,7 +120,7 @@ public class TestABCase3 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase3_4() throws Exception
+    public void testCase34() throws Exception
     {
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new TextFrame().setPayload("small"));
@@ -148,7 +148,7 @@ public class TestABCase3 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase3_5() throws Exception
+    public void testCase35() throws Exception
     {
         byte[] payload = new byte[8];
         Arrays.fill(payload, (byte)0xFF);
@@ -175,7 +175,7 @@ public class TestABCase3 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase3_6() throws Exception
+    public void testCase36() throws Exception
     {
         byte[] payload = new byte[8];
         Arrays.fill(payload, (byte)0xFF);
@@ -202,7 +202,7 @@ public class TestABCase3 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase3_7() throws Exception
+    public void testCase37() throws Exception
     {
         byte[] payload = new byte[8];
         Arrays.fill(payload, (byte)0xFF);

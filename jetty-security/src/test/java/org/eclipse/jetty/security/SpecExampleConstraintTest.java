@@ -67,21 +67,21 @@ public class SpecExampleConstraintTest
         _connector = new LocalConnector(_server);
         _server.setConnectors(new Connector[]{_connector});
 
-        ContextHandler _context = new ContextHandler();
+        ContextHandler context = new ContextHandler();
         _session = new SessionHandler();
 
-        TestLoginService _loginService = new TestLoginService(TEST_REALM);
+        TestLoginService loginService = new TestLoginService(TEST_REALM);
 
-        _loginService.putUser("fred", new Password("password"), IdentityService.NO_ROLES);
-        _loginService.putUser("harry", new Password("password"), new String[]{"HOMEOWNER"});
-        _loginService.putUser("chris", new Password("password"), new String[]{"CONTRACTOR"});
-        _loginService.putUser("steven", new Password("password"), new String[]{"SALESCLERK"});
+        loginService.putUser("fred", new Password("password"), IdentityService.NO_ROLES);
+        loginService.putUser("harry", new Password("password"), new String[]{"HOMEOWNER"});
+        loginService.putUser("chris", new Password("password"), new String[]{"CONTRACTOR"});
+        loginService.putUser("steven", new Password("password"), new String[]{"SALESCLERK"});
 
-        _context.setContextPath("/ctx");
-        _server.setHandler(_context);
-        _context.setHandler(_session);
+        context.setContextPath("/ctx");
+        _server.setHandler(context);
+        context.setHandler(_session);
 
-        _server.addBean(_loginService);
+        _server.addBean(loginService);
     }
 
     @BeforeEach
@@ -89,8 +89,8 @@ public class SpecExampleConstraintTest
     {
         _security = new ConstraintSecurityHandler();
         _session.setHandler(_security);
-        RequestHandler _handler = new RequestHandler();
-        _security.setHandler(_handler);
+        RequestHandler handler = new RequestHandler();
+        _security.setHandler(handler);
 
         
         /*

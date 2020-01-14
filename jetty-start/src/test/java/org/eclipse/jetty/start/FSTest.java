@@ -37,7 +37,7 @@ public class FSTest
     }
 
     @Test
-    public void testCanReadDirectory_NotDir()
+    public void testCanReadDirectoryNotDir()
     {
         File bogusFile = MavenTestingUtils.getTestResourceFile("bogus.xml");
         assertFalse(FS.canReadDirectory(bogusFile.toPath()), "Can read dir: " + bogusFile);

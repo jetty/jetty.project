@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -191,10 +190,10 @@ public class TestOSGiUtil
 
     protected static Bundle getBundle(BundleContext bundleContext, String symbolicName)
     {
-        Map<String, Bundle> _bundles = new HashMap<>();
+        Map<String, Bundle> bundles = new HashMap<>();
         for (Bundle b : bundleContext.getBundles())
         {
-            Bundle prevBundle = _bundles.put(b.getSymbolicName(), b);
+            Bundle prevBundle = bundles.put(b.getSymbolicName(), b);
             String err = prevBundle != null ? "2 versions of the bundle " + b.getSymbolicName() +
                     " " +
                     b.getHeaders().get("Bundle-Version") +
@@ -202,7 +201,7 @@ public class TestOSGiUtil
                     prevBundle.getHeaders().get("Bundle-Version") : "";
             assertNull(err, prevBundle);
         }
-        return _bundles.get(symbolicName);
+        return bundles.get(symbolicName);
     }
 
     protected static void assertActiveBundle(BundleContext bundleContext, String symbolicName) throws Exception

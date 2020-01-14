@@ -60,7 +60,7 @@ public class HpackDecoderTest
      */
 
     @Test
-    public void testDecodeD_3() throws Exception
+    public void testDecodeD3() throws Exception
     {
         HpackDecoder decoder = new HpackDecoder(4096, 8192);
 
@@ -108,7 +108,7 @@ public class HpackDecoderTest
     }
 
     @Test
-    public void testDecodeD_4() throws Exception
+    public void testDecodeD4() throws Exception
     {
         HpackDecoder decoder = new HpackDecoder(4096, 8192);
 
@@ -277,7 +277,7 @@ public class HpackDecoderTest
 
     /* 8.1.2.1. Pseudo-Header Fields */
     @Test
-    public void test8_1_2_1_PsuedoHeaderFields() throws Exception
+    public void test8121PseudoHeaderFields() throws Exception
     {
         // 1:Sends a HEADERS frame that contains a unknown pseudo-header field
         MetaDataBuilder mdb = new MetaDataBuilder(4096);
@@ -329,7 +329,7 @@ public class HpackDecoderTest
     }
 
     @Test
-    public void test8_1_2_2_ConnectionSpecificHeaderFields() throws Exception
+    public void test8122ConnectionSpecificHeaderFields() throws Exception
     {
         MetaDataBuilder mdb;
 
@@ -366,7 +366,7 @@ public class HpackDecoderTest
     }
 
     @Test
-    public void test8_1_2_3_RequestPseudoHeaderFields() throws Exception
+    public void test8123RequestPseudoHeaderFields() throws Exception
     {
         {
             MetaDataBuilder mdb = new MetaDataBuilder(4096);

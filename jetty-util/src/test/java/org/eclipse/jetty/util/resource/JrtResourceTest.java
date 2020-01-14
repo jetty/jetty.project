@@ -41,8 +41,8 @@ public class JrtResourceTest
     public void testResourceFromUriForString()
         throws Exception
     {
-        URI string_loc = TypeUtil.getLocationOfClass(String.class);
-        Resource resource = Resource.newResource(string_loc);
+        URI stringLoc = TypeUtil.getLocationOfClass(String.class);
+        Resource resource = Resource.newResource(stringLoc);
 
         assertThat(resource.exists(), is(true));
         assertThat(resource.isDirectory(), is(false));
@@ -58,8 +58,8 @@ public class JrtResourceTest
     public void testResourceFromStringForString()
         throws Exception
     {
-        URI string_loc = TypeUtil.getLocationOfClass(String.class);
-        Resource resource = Resource.newResource(string_loc.toASCIIString());
+        URI stringLoc = TypeUtil.getLocationOfClass(String.class);
+        Resource resource = Resource.newResource(stringLoc.toASCIIString());
 
         assertThat(resource.exists(), is(true));
         assertThat(resource.isDirectory(), is(false));
@@ -75,8 +75,8 @@ public class JrtResourceTest
     public void testResourceFromURLForString()
         throws Exception
     {
-        URI string_loc = TypeUtil.getLocationOfClass(String.class);
-        Resource resource = Resource.newResource(string_loc.toURL());
+        URI stringLoc = TypeUtil.getLocationOfClass(String.class);
+        Resource resource = Resource.newResource(stringLoc.toURL());
 
         assertThat(resource.exists(), is(true));
         assertThat(resource.isDirectory(), is(false));

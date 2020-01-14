@@ -127,7 +127,7 @@ public class RangeWriterTest
 
     @ParameterizedTest(name = "[{index}] {0}")
     @MethodSource("impls")
-    public void testSameRange_MultipleTimes(String description, RangeWriter rangeWriter) throws IOException
+    public void testSameRangeMultipleTimes(String description, RangeWriter rangeWriter) throws IOException
     {
         ByteArrayOutputStream outputStream;
 
@@ -142,7 +142,7 @@ public class RangeWriterTest
 
     @ParameterizedTest(name = "[{index}] {0}")
     @MethodSource("impls")
-    public void testMultipleRanges_Ordered(String description, RangeWriter rangeWriter) throws IOException
+    public void testMultipleRangesOrdered(String description, RangeWriter rangeWriter) throws IOException
     {
         ByteArrayOutputStream outputStream;
 
@@ -161,7 +161,7 @@ public class RangeWriterTest
 
     @ParameterizedTest(name = "[{index}] {0}")
     @MethodSource("impls")
-    public void testMultipleRanges_Overlapping(String description, RangeWriter rangeWriter) throws IOException
+    public void testMultipleRangesOverlapping(String description, RangeWriter rangeWriter) throws IOException
     {
         ByteArrayOutputStream outputStream;
 
@@ -180,7 +180,7 @@ public class RangeWriterTest
 
     @ParameterizedTest(name = "[{index}] {0}")
     @MethodSource("impls")
-    public void testMultipleRanges_ReverseOrder(String description, RangeWriter rangeWriter) throws IOException
+    public void testMultipleRangesReverseOrder(String description, RangeWriter rangeWriter) throws IOException
     {
         ByteArrayOutputStream outputStream;
 

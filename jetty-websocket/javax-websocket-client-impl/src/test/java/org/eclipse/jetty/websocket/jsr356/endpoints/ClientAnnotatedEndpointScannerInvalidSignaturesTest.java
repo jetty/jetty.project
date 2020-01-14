@@ -16,31 +16,29 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jsr356.server;
+package org.eclipse.jetty.websocket.jsr356.endpoints;
 
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
-import javax.websocket.DeploymentException;
+import javax.websocket.ClientEndpoint;
+import javax.websocket.ClientEndpointConfig;
 import javax.websocket.OnClose;
 import javax.websocket.OnError;
 import javax.websocket.OnOpen;
-import javax.websocket.server.ServerEndpoint;
-import javax.websocket.server.ServerEndpointConfig;
 
-import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.common.events.annotated.InvalidSignatureException;
-import org.eclipse.jetty.websocket.common.scopes.SimpleContainerScope;
-import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
+import org.eclipse.jetty.websocket.jsr356.ClientContainer;
 import org.eclipse.jetty.websocket.jsr356.annotations.AnnotatedEndpointScanner;
-import org.eclipse.jetty.websocket.jsr356.server.samples.InvalidCloseIntSocket;
-import org.eclipse.jetty.websocket.jsr356.server.samples.InvalidErrorErrorSocket;
-import org.eclipse.jetty.websocket.jsr356.server.samples.InvalidErrorExceptionSocket;
-import org.eclipse.jetty.websocket.jsr356.server.samples.InvalidErrorIntSocket;
-import org.eclipse.jetty.websocket.jsr356.server.samples.InvalidOpenCloseReasonSocket;
-import org.eclipse.jetty.websocket.jsr356.server.samples.InvalidOpenIntSocket;
-import org.eclipse.jetty.websocket.jsr356.server.samples.InvalidOpenSessionIntSocket;
+import org.eclipse.jetty.websocket.jsr356.client.AnnotatedClientEndpointMetadata;
+import org.eclipse.jetty.websocket.jsr356.endpoints.samples.InvalidCloseIntSocket;
+import org.eclipse.jetty.websocket.jsr356.endpoints.samples.InvalidErrorErrorSocket;
+import org.eclipse.jetty.websocket.jsr356.endpoints.samples.InvalidErrorExceptionSocket;
+import org.eclipse.jetty.websocket.jsr356.endpoints.samples.InvalidErrorIntSocket;
+import org.eclipse.jetty.websocket.jsr356.endpoints.samples.InvalidOpenCloseReasonSocket;
+import org.eclipse.jetty.websocket.jsr356.endpoints.samples.InvalidOpenIntSocket;
+import org.eclipse.jetty.websocket.jsr356.endpoints.samples.InvalidOpenSessionIntSocket;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -50,10 +48,12 @@ import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
- * Test {@link AnnotatedEndpointScanner} against various simple, 1 method {@link ServerEndpoint} annotated classes with invalid signatures.
+ * Test {@link AnnotatedEndpointScanner} against various simple, 1 method, {@link ClientEndpoint} annotated classes with invalid signatures.
  */
-public class ServerAnnotatedEndpointScanner_InvalidSignaturesTest
+public class ClientAnnotatedEndpointScannerInvalidSignaturesTest
 {
+    private static ClientContainer container = new ClientContainer();
+
     public static Stream<Arguments> scenarios()
     {
         List<Class<?>[]> data = new ArrayList<>();
@@ -76,11 +76,10 @@ public class ServerAnnotatedEndpointScanner_InvalidSignaturesTest
 
     @ParameterizedTest
     @MethodSource("scenarios")
-    public void testScan_InvalidSignature(Class<?> pojo, Class<? extends Annotation> expectedAnnoClass) throws DeploymentException
+    public void testScanInvalidSignature(Class<?> pojo, Class<? extends Annotation> expectedAnnoClass)
     {
-        WebSocketContainerScope container = new SimpleContainerScope(WebSocketPolicy.newClientPolicy());
-        AnnotatedServerEndpointMetadata metadata = new AnnotatedServerEndpointMetadata(container, pojo, null);
-        AnnotatedEndpointScanner<ServerEndpoint, ServerEndpointConfig> scanner = new AnnotatedEndpointScanner<>(metadata);
+        AnnotatedClientEndpointMetadata metadata = new AnnotatedClientEndpointMetadata(container, pojo);
+        AnnotatedEndpointScanner<ClientEndpoint, ClientEndpointConfig> scanner = new AnnotatedEndpointScanner<>(metadata);
 
         InvalidSignatureException e = assertThrows(InvalidSignatureException.class, () ->
         {

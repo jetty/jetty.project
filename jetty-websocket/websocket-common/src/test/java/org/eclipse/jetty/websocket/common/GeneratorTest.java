@@ -130,14 +130,14 @@ public class GeneratorTest
     }
 
     @Test
-    public void testClose_Empty()
+    public void testCloseEmpty()
     {
         // 0 byte payload (no status code)
         assertGeneratedBytes("8800", new CloseFrame());
     }
 
     @Test
-    public void testClose_CodeNoReason()
+    public void testCloseCodeNoReason()
     {
         CloseInfo close = new CloseInfo(StatusCode.NORMAL);
         // 2 byte payload (2 bytes for status code)
@@ -145,7 +145,7 @@ public class GeneratorTest
     }
 
     @Test
-    public void testClose_CodeOkReason()
+    public void testCloseCodeOkReason()
     {
         CloseInfo close = new CloseInfo(StatusCode.NORMAL, "OK");
         // 4 byte payload (2 bytes for status code, 2 more for "OK")
@@ -153,7 +153,7 @@ public class GeneratorTest
     }
 
     @Test
-    public void testText_Hello()
+    public void testTextHello()
     {
         WebSocketFrame frame = new TextFrame().setPayload("Hello");
         byte[] utf = StringUtil.getUtf8Bytes("Hello");
@@ -161,7 +161,7 @@ public class GeneratorTest
     }
 
     @Test
-    public void testText_Masked()
+    public void testTextMasked()
     {
         WebSocketFrame frame = new TextFrame().setPayload("Hello");
         byte[] maskingKey = Hex.asByteArray("11223344");
@@ -177,7 +177,7 @@ public class GeneratorTest
     }
 
     @Test
-    public void testText_Masked_OffsetSourceByteBuffer()
+    public void testTextMaskedOffsetSourceByteBuffer()
     {
         ByteBuffer payload = ByteBuffer.allocate(100);
         payload.position(5);

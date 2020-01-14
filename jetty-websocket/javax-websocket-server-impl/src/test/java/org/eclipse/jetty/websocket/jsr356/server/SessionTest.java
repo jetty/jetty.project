@@ -116,7 +116,7 @@ public class SessionTest
 
     @ParameterizedTest
     @MethodSource("scenarios")
-    public void testPathParams_Annotated_Empty(Scenario scenario) throws Exception
+    public void testPathParamsAnnotatedEmpty(Scenario scenario) throws Exception
     {
         startServer(scenario);
         assertResponse("info/", "pathParams", "pathParams[0]");
@@ -124,7 +124,7 @@ public class SessionTest
 
     @ParameterizedTest
     @MethodSource("scenarios")
-    public void testPathParams_Annotated_Single(Scenario scenario) throws Exception
+    public void testPathParamsAnnotatedSingle(Scenario scenario) throws Exception
     {
         startServer(scenario);
         assertResponse("info/apple/", "pathParams", "pathParams[1]: 'a'=apple");
@@ -132,7 +132,7 @@ public class SessionTest
 
     @ParameterizedTest
     @MethodSource("scenarios")
-    public void testPathParams_Annotated_Double(Scenario scenario) throws Exception
+    public void testPathParamsAnnotatedDouble(Scenario scenario) throws Exception
     {
         startServer(scenario);
         assertResponse("info/apple/pear/", "pathParams", "pathParams[2]: 'a'=apple: 'b'=pear");
@@ -140,7 +140,7 @@ public class SessionTest
 
     @ParameterizedTest
     @MethodSource("scenarios")
-    public void testPathParams_Annotated_Triple(Scenario scenario) throws Exception
+    public void testPathParamsAnnotatedTriple(Scenario scenario) throws Exception
     {
         startServer(scenario);
         assertResponse("info/apple/pear/cherry/", "pathParams", "pathParams[3]: 'a'=apple: 'b'=pear: 'c'=cherry");
@@ -148,7 +148,7 @@ public class SessionTest
 
     @ParameterizedTest
     @MethodSource("scenarios")
-    public void testPathParams_Endpoint_Empty(Scenario scenario) throws Exception
+    public void testPathParamsEndpointEmpty(Scenario scenario) throws Exception
     {
         startServer(scenario);
         assertResponse("einfo/", "pathParams", "pathParams[0]");
@@ -156,7 +156,7 @@ public class SessionTest
 
     @ParameterizedTest
     @MethodSource("scenarios")
-    public void testPathParams_Endpoint_Single(Scenario scenario) throws Exception
+    public void testPathParamsEndpointSingle(Scenario scenario) throws Exception
     {
         startServer(scenario);
         assertResponse("einfo/apple/", "pathParams", "pathParams[1]: 'a'=apple");
@@ -164,7 +164,7 @@ public class SessionTest
 
     @ParameterizedTest
     @MethodSource("scenarios")
-    public void testPathParams_Endpoint_Double(Scenario scenario) throws Exception
+    public void testPathParamsEndpointDouble(Scenario scenario) throws Exception
     {
         startServer(scenario);
         assertResponse("einfo/apple/pear/", "pathParams", "pathParams[2]: 'a'=apple: 'b'=pear");
@@ -172,7 +172,7 @@ public class SessionTest
 
     @ParameterizedTest
     @MethodSource("scenarios")
-    public void testPathParams_Endpoint_Triple(Scenario scenario) throws Exception
+    public void testPathParamsEndpointTriple(Scenario scenario) throws Exception
     {
         startServer(scenario);
         assertResponse("einfo/apple/pear/cherry/", "pathParams", "pathParams[3]: 'a'=apple: 'b'=pear: 'c'=cherry");
@@ -180,7 +180,7 @@ public class SessionTest
 
     @ParameterizedTest
     @MethodSource("scenarios")
-    public void testRequestUri_Annotated_Basic(Scenario scenario) throws Exception
+    public void testRequestUriAnnotatedBasic(Scenario scenario) throws Exception
     {
         startServer(scenario);
         URI expectedUri = serverUri.resolve("info/");
@@ -189,7 +189,7 @@ public class SessionTest
 
     @ParameterizedTest
     @MethodSource("scenarios")
-    public void testRequestUri_Annotated_WithPathParam(Scenario scenario) throws Exception
+    public void testRequestUriAnnotatedWithPathParam(Scenario scenario) throws Exception
     {
         startServer(scenario);
         URI expectedUri = serverUri.resolve("info/apple/banana/");
@@ -198,7 +198,7 @@ public class SessionTest
 
     @ParameterizedTest
     @MethodSource("scenarios")
-    public void testRequestUri_Annotated_WithPathParam_WithQuery(Scenario scenario) throws Exception
+    public void testRequestUriAnnotatedWithPathParamWithQuery(Scenario scenario) throws Exception
     {
         startServer(scenario);
         URI expectedUri = serverUri.resolve("info/apple/banana/?fruit=fresh&store=grandmasfarm");
@@ -207,7 +207,7 @@ public class SessionTest
 
     @ParameterizedTest
     @MethodSource("scenarios")
-    public void testRequestUri_Endpoint_Basic(Scenario scenario) throws Exception
+    public void testRequestUriEndpointBasic(Scenario scenario) throws Exception
     {
         startServer(scenario);
         URI expectedUri = serverUri.resolve("einfo/");
@@ -216,7 +216,7 @@ public class SessionTest
 
     @ParameterizedTest
     @MethodSource("scenarios")
-    public void testRequestUri_Endpoint_WithPathParam(Scenario scenario) throws Exception
+    public void testRequestUriEndpointWithPathParam(Scenario scenario) throws Exception
     {
         startServer(scenario);
         URI expectedUri = serverUri.resolve("einfo/apple/banana/");
@@ -225,7 +225,7 @@ public class SessionTest
 
     @ParameterizedTest
     @MethodSource("scenarios")
-    public void testRequestUri_Endpoint_WithPathParam_WithQuery(Scenario scenario) throws Exception
+    public void testRequestUriEndpointWithPathParamWithQuery(Scenario scenario) throws Exception
     {
         startServer(scenario);
         URI expectedUri = serverUri.resolve("einfo/apple/banana/?fruit=fresh&store=grandmasfarm");

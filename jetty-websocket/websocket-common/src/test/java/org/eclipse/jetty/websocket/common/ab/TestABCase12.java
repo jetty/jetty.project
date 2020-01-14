@@ -41,12 +41,12 @@ import static org.hamcrest.Matchers.is;
 /**
  * Binary Message Spec testing the {@link Generator} and {@link Parser}
  */
-public class TestABCase1_2
+public class TestABCase12
 {
     private WebSocketPolicy policy = WebSocketPolicy.newClientPolicy();
 
     @Test
-    public void testGenerate125ByteBinaryCase1_2_2()
+    public void testGenerate125ByteBinaryCase122()
     {
         int length = 125;
 
@@ -83,7 +83,7 @@ public class TestABCase1_2
     }
 
     @Test
-    public void testGenerate126ByteBinaryCase1_2_3()
+    public void testGenerate126ByteBinaryCase123()
     {
         int length = 126;
 
@@ -124,7 +124,7 @@ public class TestABCase1_2
     }
 
     @Test
-    public void testGenerate127ByteBinaryCase1_2_4()
+    public void testGenerate127ByteBinaryCase124()
     {
         int length = 127;
 
@@ -165,7 +165,7 @@ public class TestABCase1_2
     }
 
     @Test
-    public void testGenerate128ByteBinaryCase1_2_5()
+    public void testGenerate128ByteBinaryCase125()
     {
         int length = 128;
 
@@ -205,7 +205,7 @@ public class TestABCase1_2
     }
 
     @Test
-    public void testGenerate65535ByteBinaryCase1_2_6()
+    public void testGenerate65535ByteBinaryCase126()
     {
         int length = 65535;
 
@@ -243,7 +243,7 @@ public class TestABCase1_2
     }
 
     @Test
-    public void testGenerate65536ByteBinaryCase1_2_7()
+    public void testGenerate65536ByteBinaryCase127()
     {
         int length = 65536;
 
@@ -281,7 +281,7 @@ public class TestABCase1_2
     }
 
     @Test
-    public void testGenerateEmptyBinaryCase1_2_1()
+    public void testGenerateEmptyBinaryCase121()
     {
         WebSocketFrame binaryFrame = new BinaryFrame().setPayload(new byte[]{});
 
@@ -298,7 +298,7 @@ public class TestABCase1_2
     }
 
     @Test
-    public void testParse125ByteBinaryCase1_2_2()
+    public void testParse125ByteBinaryCase122()
     {
         int length = 125;
 
@@ -330,7 +330,7 @@ public class TestABCase1_2
     }
 
     @Test
-    public void testParse126ByteBinaryCase1_2_3()
+    public void testParse126ByteBinaryCase123()
     {
         int length = 126;
 
@@ -363,7 +363,7 @@ public class TestABCase1_2
     }
 
     @Test
-    public void testParse127ByteBinaryCase1_2_4()
+    public void testParse127ByteBinaryCase124()
     {
         int length = 127;
 
@@ -396,7 +396,7 @@ public class TestABCase1_2
     }
 
     @Test
-    public void testParse128ByteBinaryCase1_2_5()
+    public void testParse128ByteBinaryCase125()
     {
         int length = 128;
 
@@ -429,7 +429,7 @@ public class TestABCase1_2
     }
 
     @Test
-    public void testParse65535ByteBinaryCase1_2_6()
+    public void testParse65535ByteBinaryCase126()
     {
         int length = 65535;
 
@@ -463,7 +463,7 @@ public class TestABCase1_2
     }
 
     @Test
-    public void testParse65536ByteBinaryCase1_2_7()
+    public void testParse65536ByteBinaryCase127()
     {
         int length = 65536;
 
@@ -498,7 +498,7 @@ public class TestABCase1_2
     }
 
     @Test
-    public void testParseEmptyBinaryCase1_2_1()
+    public void testParseEmptyBinaryCase121()
     {
 
         ByteBuffer expected = ByteBuffer.allocate(5);

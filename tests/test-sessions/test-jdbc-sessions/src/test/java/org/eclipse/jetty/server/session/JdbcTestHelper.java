@@ -173,17 +173,17 @@ public class JdbcTestHelper
         ResultSet result = null;
         try (Connection con = DriverManager.getConnection(DEFAULT_CONNECTION_URL);)
         {
-            statement = con.prepareStatement(
-                "select * from " + TABLE +
+            statement = con.prepareStatement("select * from " + TABLE +
                     " where " + ID_COL + " = ? and " + CONTEXT_COL +
-                    " = ? and virtualHost = ?" );
+                " = ? and virtualHost = ?");
             statement.setString(1, data.getId());
             statement.setString(2, data.getContextPath());
             statement.setString(3, data.getVhost());
 
             result = statement.executeQuery();
 
-            if (!result.next()) return false;
+            if (!result.next())
+                return false;
 
             assertEquals(data.getCreated(), result.getLong(CREATE_COL));
             assertEquals(data.getAccessed(), result.getLong(ACCESS_COL));
@@ -200,9 +200,9 @@ public class JdbcTestHelper
             Blob blob = result.getBlob(MAP_COL);
 
             SessionData tmp =
-                new SessionData( data.getId(), data.getContextPath(), data.getVhost(), result.getLong(CREATE_COL),
-                                 result.getLong(ACCESS_COL), result.getLong(LAST_ACCESS_COL),
-                                 result.getLong(MAX_IDLE_COL));
+                new SessionData(data.getId(), data.getContextPath(), data.getVhost(), result.getLong(CREATE_COL),
+                    result.getLong(ACCESS_COL), result.getLong(LAST_ACCESS_COL),
+                    result.getLong(MAX_IDLE_COL));
 
             if (blob.length() > 0)
             {

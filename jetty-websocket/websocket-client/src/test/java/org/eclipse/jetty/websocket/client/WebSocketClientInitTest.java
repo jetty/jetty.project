@@ -38,7 +38,7 @@ public class WebSocketClientInitTest
      * @throws Exception on test failure
      */
     @Test
-    public void testInit_HttpClient_StartedOutside() throws Exception
+    public void testInitHttpClientStartedOutside() throws Exception
     {
         HttpClient http = new HttpClient();
         http.start();
@@ -80,7 +80,7 @@ public class WebSocketClientInitTest
      * @throws Exception on test failure
      */
     @Test
-    public void testInit_HttpClient_SyntheticStart() throws Exception
+    public void testInitHttpClientSyntheticStart() throws Exception
     {
         HttpClient http = null;
         WebSocketClient ws = new WebSocketClient();

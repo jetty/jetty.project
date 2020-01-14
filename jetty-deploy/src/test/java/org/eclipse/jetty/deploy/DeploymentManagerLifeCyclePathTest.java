@@ -31,7 +31,7 @@ import org.junit.jupiter.api.Test;
 public class DeploymentManagerLifeCyclePathTest
 {
     @Test
-    public void testStateTransition_NewToDeployed() throws Exception
+    public void testStateTransitionNewToDeployed() throws Exception
     {
         DeploymentManager depman = new DeploymentManager();
         depman.setContexts(new ContextHandlerCollection());
@@ -64,7 +64,7 @@ public class DeploymentManagerLifeCyclePathTest
     }
 
     @Test
-    public void testStateTransition_Receive() throws Exception
+    public void testStateTransitionReceive() throws Exception
     {
         DeploymentManager depman = new DeploymentManager();
         depman.setContexts(new ContextHandlerCollection());
@@ -90,7 +90,7 @@ public class DeploymentManagerLifeCyclePathTest
     }
 
     @Test
-    public void testStateTransition_DeployedToUndeployed() throws Exception
+    public void testStateTransitionDeployedToUndeployed() throws Exception
     {
         DeploymentManager depman = new DeploymentManager();
         depman.setDefaultLifeCycleGoal(null); // no default

@@ -70,7 +70,8 @@ public class ErrorCloseTest
         NativeWebSocketServletContainerInitializer.configure(contextHandler, (context, container) ->
         {
             container.addMapping("/", (req, resp) -> serverSocket);
-            container.getFactory().addSessionListener(new WebSocketSessionListener() {
+            container.getFactory().addSessionListener(new WebSocketSessionListener()
+            {
                 @Override
                 public void onSessionClosed(WebSocketSession session)
                 {
@@ -165,9 +166,8 @@ public class ErrorCloseTest
         assertTrue(((WebSocketSession)serverSocket.session).isStopped());
     }
 
-
     @ParameterizedTest
-    @ValueSource(strings={"onError","onClose"})
+    @ValueSource(strings = {"onError", "onClose"})
     public void testWebSocketThrowsAfterOnOpenError(String methodToThrow) throws Exception
     {
         serverSocket.methodsToThrow.add("onOpen");
@@ -188,7 +188,7 @@ public class ErrorCloseTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings={"onError","onClose"})
+    @ValueSource(strings = {"onError", "onClose"})
     public void testWebSocketThrowsAfterOnMessageError(String methodToThrow) throws Exception
     {
         serverSocket.methodsToThrow.add("onMessage");
@@ -210,7 +210,7 @@ public class ErrorCloseTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings={"onError","onClose"})
+    @ValueSource(strings = {"onError", "onClose"})
     public void testWebSocketThrowsOnTimeout(String methodToThrow) throws Exception
     {
         serverSocket.methodsToThrow.add(methodToThrow);
@@ -235,7 +235,7 @@ public class ErrorCloseTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings={"onError","onClose"})
+    @ValueSource(strings = {"onError", "onClose"})
     public void testWebSocketThrowsOnRemoteDisconnect(String methodToThrow) throws Exception
     {
         serverSocket.methodsToThrow.add(methodToThrow);
@@ -256,7 +256,7 @@ public class ErrorCloseTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings={"onError","onClose"})
+    @ValueSource(strings = {"onError", "onClose"})
     public void testWebSocketThrowsOnLocalDisconnect(String methodToThrow) throws Exception
     {
         serverSocket.methodsToThrow.add(methodToThrow);

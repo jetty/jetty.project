@@ -70,14 +70,14 @@ public class ServerConnectorTimeoutTest extends ConnectorTimeoutTest
     public void testIdleTimeoutAfterSuspend() throws Exception
     {
         _server.stop();
-        SuspendHandler _handler = new SuspendHandler();
+        SuspendHandler handler = new SuspendHandler();
         SessionHandler session = new SessionHandler();
-        session.setHandler(_handler);
+        session.setHandler(handler);
         _server.setHandler(session);
         _server.start();
 
-        _handler.setSuspendFor(100);
-        _handler.setResumeAfter(25);
+        handler.setSuspendFor(100);
+        handler.setResumeAfter(25);
         assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             String process = process(null).toUpperCase(Locale.ENGLISH);
@@ -88,14 +88,14 @@ public class ServerConnectorTimeoutTest extends ConnectorTimeoutTest
     @Test
     public void testIdleTimeoutAfterTimeout() throws Exception
     {
-        SuspendHandler _handler = new SuspendHandler();
+        SuspendHandler handler = new SuspendHandler();
         _server.stop();
         SessionHandler session = new SessionHandler();
-        session.setHandler(_handler);
+        session.setHandler(handler);
         _server.setHandler(session);
         _server.start();
 
-        _handler.setSuspendFor(50);
+        handler.setSuspendFor(50);
         assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             String process = process(null).toUpperCase(Locale.ENGLISH);
@@ -106,15 +106,15 @@ public class ServerConnectorTimeoutTest extends ConnectorTimeoutTest
     @Test
     public void testIdleTimeoutAfterComplete() throws Exception
     {
-        SuspendHandler _handler = new SuspendHandler();
+        SuspendHandler handler = new SuspendHandler();
         _server.stop();
         SessionHandler session = new SessionHandler();
-        session.setHandler(_handler);
+        session.setHandler(handler);
         _server.setHandler(session);
         _server.start();
 
-        _handler.setSuspendFor(100);
-        _handler.setCompleteAfter(25);
+        handler.setSuspendFor(100);
+        handler.setCompleteAfter(25);
         assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             String process = process(null).toUpperCase(Locale.ENGLISH);

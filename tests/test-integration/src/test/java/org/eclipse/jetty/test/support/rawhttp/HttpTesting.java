@@ -163,6 +163,7 @@ public class HttpTesting
         }
     }
 
+    // @checkstyle-disable-check : MethodName
     private void DEBUG(String msg)
     {
         if (debug)
@@ -170,6 +171,7 @@ public class HttpTesting
             System.out.println(msg);
         }
     }
+    // @checkstyle-enable-check : MethodName
 
     public void enableDebug()
     {

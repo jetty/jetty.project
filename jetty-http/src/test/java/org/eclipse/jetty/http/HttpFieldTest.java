@@ -32,9 +32,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpFieldTest
 {
-
     @Test
-    public void testContainsSimple() throws Exception
+    public void testContainsSimple()
     {
         HttpField field = new HttpField("name", "SomeValue");
         assertTrue(field.contains("somevalue"));
@@ -50,7 +49,7 @@ public class HttpFieldTest
     }
 
     @Test
-    public void testCaseInsensitiveHashcode_KnownField() throws Exception
+    public void testCaseInsensitiveHashcodeKnownField()
     {
         HttpField fieldFoo1 = new HttpField("Cookie", "foo");
         HttpField fieldFoo2 = new HttpField("cookie", "foo");
@@ -59,7 +58,7 @@ public class HttpFieldTest
     }
 
     @Test
-    public void testCaseInsensitiveHashcode_UnknownField() throws Exception
+    public void testCaseInsensitiveHashcodeUnknownField()
     {
         HttpField fieldFoo1 = new HttpField("X-Foo", "bar");
         HttpField fieldFoo2 = new HttpField("x-foo", "bar");
@@ -68,7 +67,7 @@ public class HttpFieldTest
     }
 
     @Test
-    public void testContainsList() throws Exception
+    public void testContainsList()
     {
         HttpField field = new HttpField("name", ",aaa,Bbb,CCC, ddd , e e, \"\\\"f,f\\\"\", ");
         assertTrue(field.contains("aaa"));
@@ -91,7 +90,7 @@ public class HttpFieldTest
     }
 
     @Test
-    public void testQualityContainsList() throws Exception
+    public void testQualityContainsList()
     {
         HttpField field;
 

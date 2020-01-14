@@ -55,9 +55,6 @@ public abstract class AbstractHandler extends ContainerLifeCycle implements Hand
 
     private Server _server;
 
-    /**
-     *
-     */
     public AbstractHandler()
     {
     }

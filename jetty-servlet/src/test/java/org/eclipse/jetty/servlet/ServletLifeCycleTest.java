@@ -63,40 +63,48 @@ public class ServletLifeCycleTest
         sh.addListener(new ListenerHolder(TestListener.class));
         context.addEventListener(context.getServletContext().createListener(TestListener2.class));
 
-        sh.addFilterWithMapping(TestFilter.class,"/*", EnumSet.of(DispatcherType.REQUEST));
-        sh.addFilterWithMapping(new FilterHolder(context.getServletContext().createFilter(TestFilter2.class)),"/*", EnumSet.of(DispatcherType.REQUEST));
+        sh.addFilterWithMapping(TestFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
+        sh.addFilterWithMapping(new FilterHolder(context.getServletContext().createFilter(TestFilter2.class)), "/*", EnumSet.of(DispatcherType.REQUEST));
 
         sh.addServletWithMapping(TestServlet.class, "/1/*").setInitOrder(1);
         sh.addServletWithMapping(TestServlet2.class, "/2/*").setInitOrder(-1);
-        sh.addServletWithMapping(new ServletHolder(context.getServletContext().createServlet(TestServlet3.class)) {{setInitOrder(1);}}, "/3/*");
+        sh.addServletWithMapping(new ServletHolder(context.getServletContext().createServlet(TestServlet3.class))
+        {
+            {
+                setInitOrder(1);
+            }
+        }, "/3/*");
 
         assertThat(events, Matchers.contains(
             "Decorate class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestListener2",
             "Decorate class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestFilter2",
-            "Decorate class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestServlet3"));
+            "Decorate class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestServlet3"
+        ));
 
         events.clear();
         server.start();
         assertThat(events, Matchers.contains(
-          "Decorate class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestListener",
-          "ContextInitialized class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestListener2",
-          "ContextInitialized class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestListener",
-          "Decorate class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestFilter",
-          "init class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestFilter",
-          "init class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestFilter2",
-          "Decorate class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestServlet",
-          "init class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestServlet",
-          "init class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestServlet3"));
+            "Decorate class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestListener",
+            "ContextInitialized class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestListener2",
+            "ContextInitialized class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestListener",
+            "Decorate class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestFilter",
+            "init class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestFilter",
+            "init class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestFilter2",
+            "Decorate class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestServlet",
+            "init class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestServlet",
+            "init class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestServlet3"
+        ));
 
         events.clear();
         connector.getResponse("GET /2/info HTTP/1.0\r\n\r\n");
 
         assertThat(events, Matchers.contains(
-          "Decorate class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestServlet2",
-          "init class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestServlet2",
-          "doFilter class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestFilter",
-          "doFilter class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestFilter2",
-          "service class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestServlet2"));
+            "Decorate class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestServlet2",
+            "init class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestServlet2",
+            "doFilter class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestFilter",
+            "doFilter class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestFilter2",
+            "service class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestServlet2"
+        ));
 
         events.clear();
         server.stop();
@@ -114,7 +122,8 @@ public class ServletLifeCycleTest
             "destroy class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestServlet2",
             "Destroy class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestServlet",
             "destroy class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestServlet",
-            "Destroy class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestListener"));
+            "Destroy class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestListener"
+        ));
 
         // Listener added before start is not destroyed
         EventListener[] listeners = context.getEventListeners();
@@ -152,6 +161,7 @@ public class ServletLifeCycleTest
             events.add("contextDestroyed " + this.getClass());
         }
     }
+
     public static class TestListener2 extends TestListener
     {
     }

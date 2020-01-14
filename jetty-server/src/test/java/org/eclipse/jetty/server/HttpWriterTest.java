@@ -35,6 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class HttpWriterTest
 {
+    // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
     private HttpOutput _httpOut;
     private ByteBuffer _bytes;
 
@@ -67,33 +68,33 @@ public class HttpWriterTest
     @Test
     public void testSimpleUTF8() throws Exception
     {
-        HttpWriter _writer = new Utf8HttpWriter(_httpOut);
-        _writer.write("Now is the time");
+        HttpWriter writer = new Utf8HttpWriter(_httpOut);
+        writer.write("Now is the time");
         assertArrayEquals("Now is the time".getBytes(StandardCharsets.UTF_8), BufferUtil.toArray(_bytes));
     }
 
     @Test
     public void testUTF8() throws Exception
     {
-        HttpWriter _writer = new Utf8HttpWriter(_httpOut);
-        _writer.write("How now \uFF22rown cow");
+        HttpWriter writer = new Utf8HttpWriter(_httpOut);
+        writer.write("How now \uFF22rown cow");
         assertArrayEquals("How now \uFF22rown cow".getBytes(StandardCharsets.UTF_8), BufferUtil.toArray(_bytes));
     }
 
     @Test
     public void testUTF16() throws Exception
     {
-        HttpWriter _writer = new EncodingHttpWriter(_httpOut, StringUtil.__UTF16);
-        _writer.write("How now \uFF22rown cow");
+        HttpWriter writer = new EncodingHttpWriter(_httpOut, StringUtil.__UTF16);
+        writer.write("How now \uFF22rown cow");
         assertArrayEquals("How now \uFF22rown cow".getBytes(StandardCharsets.UTF_16), BufferUtil.toArray(_bytes));
     }
 
     @Test
     public void testNotCESU8() throws Exception
     {
-        HttpWriter _writer = new Utf8HttpWriter(_httpOut);
+        HttpWriter writer = new Utf8HttpWriter(_httpOut);
         String data = "xxx\uD801\uDC00xxx";
-        _writer.write(data);
+        writer.write(data);
         assertEquals("787878F0909080787878", TypeUtil.toHexString(BufferUtil.toArray(_bytes)));
         assertArrayEquals(data.getBytes(StandardCharsets.UTF_8), BufferUtil.toArray(_bytes));
         assertEquals(3 + 4 + 3, _bytes.remaining());
@@ -106,7 +107,7 @@ public class HttpWriterTest
     @Test
     public void testMultiByteOverflowUTF8() throws Exception
     {
-        HttpWriter _writer = new Utf8HttpWriter(_httpOut);
+        HttpWriter writer = new Utf8HttpWriter(_httpOut);
         final String singleByteStr = "a";
         final String multiByteDuplicateStr = "\uFF22";
         int remainSize = 1;
@@ -127,7 +128,7 @@ public class HttpWriterTest
         int length = HttpWriter.MAX_OUTPUT_CHARS - multiByteStrByteLength + remainSize + 1;
         sb.toString().getChars(0, length, buf, 0);
 
-        _writer.write(buf, 0, length);
+        writer.write(buf, 0, length);
 
         assertEquals(sb.toString(), new String(BufferUtil.toArray(_bytes), StandardCharsets.UTF_8));
     }
@@ -135,20 +136,20 @@ public class HttpWriterTest
     @Test
     public void testISO8859() throws Exception
     {
-        HttpWriter _writer = new Iso88591HttpWriter(_httpOut);
-        _writer.write("How now \uFF22rown cow");
+        HttpWriter writer = new Iso88591HttpWriter(_httpOut);
+        writer.write("How now \uFF22rown cow");
         assertEquals(new String(BufferUtil.toArray(_bytes), StandardCharsets.ISO_8859_1), "How now ?rown cow");
     }
 
     @Test
     public void testUTF16x2() throws Exception
     {
-        HttpWriter _writer = new Utf8HttpWriter(_httpOut);
+        HttpWriter writer = new Utf8HttpWriter(_httpOut);
 
         String source = "\uD842\uDF9F";
 
         byte[] bytes = source.getBytes(StandardCharsets.UTF_8);
-        _writer.write(source.toCharArray(), 0, source.toCharArray().length);
+        writer.write(source.toCharArray(), 0, source.toCharArray().length);
 
         java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
         java.io.OutputStreamWriter osw = new java.io.OutputStreamWriter(baos, StandardCharsets.UTF_8);
@@ -166,7 +167,7 @@ public class HttpWriterTest
     @Test
     public void testMultiByteOverflowUTF16x2() throws Exception
     {
-        HttpWriter _writer = new Utf8HttpWriter(_httpOut);
+        HttpWriter writer = new Utf8HttpWriter(_httpOut);
 
         final String singleByteStr = "a";
         int remainSize = 1;
@@ -186,7 +187,7 @@ public class HttpWriterTest
         String source = sb.toString();
 
         byte[] bytes = source.getBytes(StandardCharsets.UTF_8);
-        _writer.write(source.toCharArray(), 0, source.toCharArray().length);
+        writer.write(source.toCharArray(), 0, source.toCharArray().length);
 
         java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
         java.io.OutputStreamWriter osw = new java.io.OutputStreamWriter(baos, StandardCharsets.UTF_8);
@@ -202,9 +203,9 @@ public class HttpWriterTest
     }
 
     @Test
-    public void testMultiByteOverflowUTF16x2_2() throws Exception
+    public void testMultiByteOverflowUTF16X22() throws Exception
     {
-        HttpWriter _writer = new Utf8HttpWriter(_httpOut);
+        HttpWriter writer = new Utf8HttpWriter(_httpOut);
 
         final String singleByteStr = "a";
         int remainSize = 1;
@@ -224,7 +225,7 @@ public class HttpWriterTest
         String source = sb.toString();
 
         byte[] bytes = source.getBytes(StandardCharsets.UTF_8);
-        _writer.write(source.toCharArray(), 0, source.toCharArray().length);
+        writer.write(source.toCharArray(), 0, source.toCharArray().length);
 
         java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
         java.io.OutputStreamWriter osw = new java.io.OutputStreamWriter(baos, StandardCharsets.UTF_8);

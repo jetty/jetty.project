@@ -71,37 +71,37 @@ public class StringReplaceBenchmark
     }
 
     @Benchmark
-    public void testJavaStringReplace_Growth(Blackhole blackhole)
+    public void testJavaStringReplaceGrowth(Blackhole blackhole)
     {
         blackhole.consume(input.replace("'", "FOOBAR"));
     }
 
     @Benchmark
-    public void testJavaStringReplace_Same(Blackhole blackhole)
+    public void testJavaStringReplaceSame(Blackhole blackhole)
     {
         blackhole.consume(input.replace("'", "X"));
     }
 
     @Benchmark
-    public void testJavaStringReplace_Reduce(Blackhole blackhole)
+    public void testJavaStringReplaceReduce(Blackhole blackhole)
     {
         blackhole.consume(input.replace("'", ""));
     }
 
     @Benchmark
-    public void testJettyStringUtilReplace_Growth(Blackhole blackhole)
+    public void testJettyStringUtilReplaceGrowth(Blackhole blackhole)
     {
         blackhole.consume(StringUtil.replace(input, "'", "FOOBAR"));
     }
 
     @Benchmark
-    public void testJettyStringUtilReplace_Same(Blackhole blackhole)
+    public void testJettyStringUtilReplaceSame(Blackhole blackhole)
     {
         blackhole.consume(StringUtil.replace(input, "'", "X"));
     }
 
     @Benchmark
-    public void testJettyStringUtilReplace_Reduce(Blackhole blackhole)
+    public void testJettyStringUtilReplaceReduce(Blackhole blackhole)
     {
         blackhole.consume(StringUtil.replace(input, "'", ""));
     }

@@ -36,7 +36,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 public class HttpGeneratorServerTest
 {
     @Test
-    public void test_0_9() throws Exception
+    public void test09() throws Exception
     {
         ByteBuffer header = BufferUtil.allocate(8096);
         ByteBuffer content = BufferUtil.toBuffer("0123456789");

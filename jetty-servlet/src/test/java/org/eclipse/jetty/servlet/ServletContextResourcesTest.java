@@ -102,7 +102,7 @@ public class ServletContextResourcesTest
     }
 
     @Test
-    public void testGetResourceAsStream_Root() throws Exception
+    public void testGetResourceAsStreamRoot() throws Exception
     {
         context.addServlet(ResourceAsStreamServlet.class, "/*");
 
@@ -117,7 +117,7 @@ public class ServletContextResourcesTest
     }
 
     @Test
-    public void testGetResourceAsStream_Content() throws Exception
+    public void testGetResourceAsStreamContent() throws Exception
     {
         context.addServlet(ResourceAsStreamServlet.class, "/*");
 

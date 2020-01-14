@@ -34,7 +34,7 @@ public class B64CodeTest
         "of any carnal pleasure.";
 
     @Test
-    public void testEncode_RFC1421()
+    public void testEncodeRFC1421()
     {
         String expected = "TWFuIGlzIGRpc3Rpbmd1aXNoZWQsIG5vdCBvbmx5IGJ5IGhpcyByZWFzb24sIGJ1dCBieSB0aGlz" +
             "IHNpbmd1bGFyIHBhc3Npb24gZnJvbSBvdGhlciBhbmltYWxzLCB3aGljaCBpcyBhIGx1c3Qgb2Yg" +
@@ -58,7 +58,7 @@ public class B64CodeTest
     }
 
     @Test
-    public void testEncode_RFC2045()
+    public void testEncodeRFC2045()
     {
         byte[] rawInputBytes = text.getBytes(ISO_8859_1);
 

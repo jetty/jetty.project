@@ -93,9 +93,9 @@ public class AsyncServletIOTest
         _wQTP = new WrappingQTP();
         _server = new Server(_wQTP);
 
-        HttpConfiguration http_config = new HttpConfiguration();
-        http_config.setOutputBufferSize(4096);
-        _connector = new ServerConnector(_server, new HttpConnectionFactory(http_config));
+        HttpConfiguration httpConfig = new HttpConfiguration();
+        httpConfig.setOutputBufferSize(4096);
+        _connector = new ServerConnector(_server, new HttpConnectionFactory(httpConfig));
 
         _server.setConnectors(new Connector[]{_connector});
         ServletContextHandler context = new ServletContextHandler();

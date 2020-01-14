@@ -65,6 +65,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpClientTest extends AbstractHttpClientServerTest
 {
+    // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
+
     @Test
     public void testGETResponseWithoutContent() throws Exception
     {

@@ -504,12 +504,12 @@ public class PathWatcherTest
         // Files we don't care about
         Files.createFile(dir.resolve("foo.war.backup"));
 
-        String hidden_war = ".hidden.war";
+        String hiddenWar = ".hidden.war";
         if (org.junit.jupiter.api.condition.OS.WINDOWS.isCurrentOs())
-            hidden_war = "hidden.war";
-        Files.createFile(dir.resolve(hidden_war));
+            hiddenWar = "hidden.war";
+        Files.createFile(dir.resolve(hiddenWar));
         if (org.junit.jupiter.api.condition.OS.WINDOWS.isCurrentOs())
-            Files.setAttribute(dir.resolve(hidden_war), "dos:hidden", Boolean.TRUE);
+            Files.setAttribute(dir.resolve(hiddenWar), "dos:hidden", Boolean.TRUE);
         Files.createDirectories(dir.resolve(".wat/WEB-INF"));
         Files.createFile(dir.resolve(".wat/huh.war"));
         Files.createFile(dir.resolve(".wat/WEB-INF/web.xml"));
@@ -603,7 +603,7 @@ public class PathWatcherTest
     }
 
     @Test
-    public void testDeployFiles_Update_Delete() throws Exception
+    public void testDeployFilesUpdateDelete() throws Exception
     {
         Path dir = testdir.getEmptyPathDir();
 
@@ -667,7 +667,7 @@ public class PathWatcherTest
     }
 
     @Test
-    public void testDeployFiles_NewWar() throws Exception
+    public void testDeployFilesNewWar() throws Exception
     {
         Path dir = testdir.getEmptyPathDir();
 
@@ -730,7 +730,7 @@ public class PathWatcherTest
     }
 
     @Test
-    public void testDeployFiles_NewDir() throws Exception
+    public void testDeployFilesNewDir() throws Exception
     {
         Path dir = testdir.getEmptyPathDir();
 
@@ -922,7 +922,7 @@ public class PathWatcherTest
      * @throws Exception on test failure
      */
     @Test
-    public void testDeployFiles_ModifyWar_LargeSlowCopy() throws Exception
+    public void testDeployFilesModifyWarLargeSlowCopy() throws Exception
     {
         Path dir = testdir.getEmptyPathDir();
 

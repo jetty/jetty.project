@@ -38,7 +38,7 @@ public class TestConfiguration
     @Test
     public void testIt() throws Exception
     {
-        ClassLoader old_loader = Thread.currentThread().getContextClassLoader();
+        ClassLoader oldLoader = Thread.currentThread().getContextClassLoader();
 
         try
         {
@@ -130,7 +130,7 @@ public class TestConfiguration
         }
         finally
         {
-            Thread.currentThread().setContextClassLoader(old_loader);
+            Thread.currentThread().setContextClassLoader(oldLoader);
         }
     }
 }

@@ -20,6 +20,7 @@ package org.eclipse.jetty.websocket.common.message;
 
 import java.nio.ByteBuffer;
 
+// @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
 public class MessageDebug
 {
     public static String toDetailHint(byte[] data, int offset, int len)

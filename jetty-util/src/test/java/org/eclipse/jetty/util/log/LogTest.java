@@ -35,6 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class LogTest
 {
+    // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
     private static Logger originalLogger;
     private static Map<String, Logger> originalLoggers;
 
@@ -62,7 +63,7 @@ public class LogTest
     }
 
     @Test
-    public void testNamedLogNamed_StdErrLog()
+    public void testNamedLogNamedStdErrLog()
     {
         Log.setLog(new StdErrLog());
 
@@ -72,7 +73,7 @@ public class LogTest
     }
 
     @Test
-    public void testNamedLogNamed_JUL()
+    public void testNamedLogNamedJUL()
     {
         Log.setLog(new JavaUtilLog());
 
@@ -82,7 +83,7 @@ public class LogTest
     }
 
     @Test
-    public void testNamedLogNamed_Slf4J() throws Exception
+    public void testNamedLogNamedSlf4J() throws Exception
     {
         Log.setLog(new Slf4jLog());
 

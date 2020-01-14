@@ -274,6 +274,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             assertThat(response, Matchers.containsString("HTTP/1.1 400 "));
         }
     }
+
     @Test
     public void testExceptionThrownInHandlerLoop() throws Exception
     {
@@ -512,7 +513,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                 "\r\n" +
                 "ABCDE\r\n" +
                 "\r\n"
-            //@checkstyle-enable-check : IllegalTokenText
+                //@checkstyle-enable-check : IllegalTokenText
             ).getBytes());
             os.flush();
 
@@ -1199,7 +1200,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                     "Connection: close\r\n" +
                     "\r\n" +
                     "abcdefghi\n"
-            //@checkstyle-enable-check : IllegalTokenText
+                //@checkstyle-enable-check : IllegalTokenText
             ).getBytes(StandardCharsets.ISO_8859_1));
 
             String in = IO.toString(is);
@@ -1864,7 +1865,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         public SendAsyncContentHandler(int size)
         {
             content = BufferUtil.allocate(size);
-            Arrays.fill(content.array(),0,size,(byte)'X');
+            Arrays.fill(content.array(), 0, size, (byte)'X');
             content.position(0);
             content.limit(size);
         }

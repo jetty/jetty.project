@@ -383,15 +383,15 @@ public class HTTP2ServerTest extends AbstractServerTest
     @Test
     public void testNonISOHeader() throws Exception
     {
-        try (StacklessLogging stackless = new StacklessLogging(HttpChannel.class))
+        try (StacklessLogging ignored = new StacklessLogging(HttpChannel.class))
         {
             startServer(new HttpServlet()
             {
                 @Override
-                protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+                protected void service(HttpServletRequest request, HttpServletResponse response)
                 {
                     // Invalid header name, the connection must be closed.
-                    response.setHeader("Euro_(\u20AC)", "42");
+                    response.setHeader("Euro_(%E2%82%AC)", "42");
                 }
             });
 

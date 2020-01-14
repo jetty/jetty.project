@@ -90,7 +90,7 @@ public class SslContextFactoryTest
     }
 
     @Test
-    public void testDump_IncludeTlsRsa() throws Exception
+    public void testDumpIncludeTlsRsa() throws Exception
     {
         cf.setKeyStorePassword("storepwd");
         cf.setKeyManagerPassword("keypwd");

@@ -142,8 +142,8 @@ public class OpenIdProvider extends ContainerLifeCycle
             final Request baseRequest = Request.getBaseRequest(req);
             final Response baseResponse = baseRequest.getResponse();
             redirectUri += "?code=" + authCode + "&state=" + state;
-            int redirectCode = (baseRequest.getHttpVersion().getVersion() < HttpVersion.HTTP_1_1.getVersion() ?
-                HttpServletResponse.SC_MOVED_TEMPORARILY : HttpServletResponse.SC_SEE_OTHER);
+            int redirectCode = (baseRequest.getHttpVersion().getVersion() < HttpVersion.HTTP_1_1.getVersion()
+                ? HttpServletResponse.SC_MOVED_TEMPORARILY : HttpServletResponse.SC_SEE_OTHER);
             baseResponse.sendRedirect(redirectCode, resp.encodeRedirectURL(redirectUri));
         }
     }

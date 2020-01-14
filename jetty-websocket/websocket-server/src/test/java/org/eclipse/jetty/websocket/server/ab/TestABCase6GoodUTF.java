@@ -40,9 +40,9 @@ import org.junit.jupiter.params.provider.MethodSource;
  * <p>
  * Should be preserved / echoed back, with normal close code.
  */
-public class TestABCase6_GoodUTF extends AbstractABCase
+public class TestABCase6GoodUTF extends AbstractABCase
 {
-    private static final Logger LOG = Log.getLogger(TestABCase6_GoodUTF.class);
+    private static final Logger LOG = Log.getLogger(TestABCase6GoodUTF.class);
 
     public static Stream<Arguments> utfSequences()
     {

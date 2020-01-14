@@ -95,7 +95,7 @@ public class JettyAnnotatedScannerTest
      * Test Case for bad declaration a method with a non-void return type
      */
     @Test
-    public void testAnnotatedBadSignature_NonVoidReturn()
+    public void testAnnotatedBadSignatureNonVoidReturn()
     {
         JettyAnnotatedScanner impl = new JettyAnnotatedScanner();
         InvalidWebSocketException e = assertThrows(InvalidWebSocketException.class, () ->
@@ -111,7 +111,7 @@ public class JettyAnnotatedScannerTest
      * Test Case for bad declaration a method with a public static method
      */
     @Test
-    public void testAnnotatedBadSignature_Static()
+    public void testAnnotatedBadSignatureStatic()
     {
         JettyAnnotatedScanner impl = new JettyAnnotatedScanner();
         InvalidWebSocketException e = assertThrows(InvalidWebSocketException.class, () ->

@@ -86,13 +86,13 @@ public class AppLifeCycleTest
     }
 
     @Test
-    public void testFindPath_Deployed_Deployed()
+    public void testFindPathDeployedDeployed()
     {
         assertNoPath("deployed", "deployed");
     }
 
     @Test
-    public void testFindPath_Deployed_Started()
+    public void testFindPathDeployedStarted()
     {
         List<String> expected = new ArrayList<String>();
         expected.add("deployed");
@@ -102,7 +102,7 @@ public class AppLifeCycleTest
     }
 
     @Test
-    public void testFindPath_Deployed_Undeployed()
+    public void testFindPathDeployedUndeployed()
     {
         List<String> expected = new ArrayList<String>();
         expected.add("deployed");
@@ -112,7 +112,7 @@ public class AppLifeCycleTest
     }
 
     @Test
-    public void testFindPath_Started_Deployed()
+    public void testFindPathStartedDeployed()
     {
         List<String> expected = new ArrayList<String>();
         expected.add("started");
@@ -122,13 +122,13 @@ public class AppLifeCycleTest
     }
 
     @Test
-    public void testFindPath_Started_Started()
+    public void testFindPathStartedStarted()
     {
         assertNoPath("started", "started");
     }
 
     @Test
-    public void testFindPath_Started_Undeployed()
+    public void testFindPathStartedUndeployed()
     {
         List<String> expected = new ArrayList<String>();
         expected.add("started");
@@ -140,7 +140,7 @@ public class AppLifeCycleTest
     }
 
     @Test
-    public void testFindPath_Undeployed_Deployed()
+    public void testFindPathUndeployedDeployed()
     {
         List<String> expected = new ArrayList<String>();
         expected.add("undeployed");
@@ -150,7 +150,7 @@ public class AppLifeCycleTest
     }
 
     @Test
-    public void testFindPath_Undeployed_Started()
+    public void testFindPathUndeployedStarted()
     {
         List<String> expected = new ArrayList<String>();
         expected.add("undeployed");
@@ -162,7 +162,7 @@ public class AppLifeCycleTest
     }
 
     @Test
-    public void testFindPath_Undeployed_Uavailable()
+    public void testFindPathUndeployedUnavailable()
     {
         assertNoPath("undeployed", "undeployed");
     }

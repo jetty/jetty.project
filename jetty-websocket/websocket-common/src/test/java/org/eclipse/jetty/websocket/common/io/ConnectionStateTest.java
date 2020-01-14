@@ -45,7 +45,7 @@ public class ConnectionStateTest
     }
 
     @Test
-    public void testOpened_Closing()
+    public void testOpenedClosing()
     {
         ConnectionState state = new ConnectionState();
         assertTrue(state.opening(), "Opening");
@@ -62,7 +62,7 @@ public class ConnectionStateTest
     }
 
     @Test
-    public void testOpened_Closing_Disconnected()
+    public void testOpenedClosingDisconnected()
     {
         ConnectionState state = new ConnectionState();
         assertTrue(state.opening(), "Opening");
@@ -75,7 +75,7 @@ public class ConnectionStateTest
     }
 
     @Test
-    public void testOpened_Harsh_Disconnected()
+    public void testOpenedHarshDisconnected()
     {
         ConnectionState state = new ConnectionState();
         assertTrue(state.opening(), "Opening");

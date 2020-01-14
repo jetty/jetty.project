@@ -40,37 +40,37 @@ public class ConnectionManagerTest
     }
 
     @Test
-    public void testToSocketAddress_AltWsPort() throws Exception
+    public void testToSocketAddressAltWsPort() throws Exception
     {
         assertToSocketAddress("ws://localhost:8099", "localhost", 8099);
     }
 
     @Test
-    public void testToSocketAddress_AltWssPort() throws Exception
+    public void testToSocketAddressAltWssPort() throws Exception
     {
         assertToSocketAddress("wss://localhost", "localhost", 443);
     }
 
     @Test
-    public void testToSocketAddress_DefaultWsPort() throws Exception
+    public void testToSocketAddressDefaultWsPort() throws Exception
     {
         assertToSocketAddress("ws://localhost", "localhost", 80);
     }
 
     @Test
-    public void testToSocketAddress_DefaultWsPort_Path() throws Exception
+    public void testToSocketAddressDefaultWsPortPath() throws Exception
     {
         assertToSocketAddress("ws://localhost/sockets/chat", "localhost", 80);
     }
 
     @Test
-    public void testToSocketAddress_DefaultWssPort() throws Exception
+    public void testToSocketAddressDefaultWssPort() throws Exception
     {
         assertToSocketAddress("wss://localhost:9443", "localhost", 9443);
     }
 
     @Test
-    public void testToSocketAddress_DefaultWssPort_Path() throws Exception
+    public void testToSocketAddressDefaultWssPortPath() throws Exception
     {
         assertToSocketAddress("wss://localhost/sockets/chat", "localhost", 443);
     }

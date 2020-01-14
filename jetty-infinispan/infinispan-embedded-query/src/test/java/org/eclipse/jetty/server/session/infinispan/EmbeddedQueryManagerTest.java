@@ -47,13 +47,10 @@ public class EmbeddedQueryManagerTest
     public static final String DEFAULT_CACHE_NAME = "session_test_cache";
 
     @Test
-    public void test() throws Exception
+    public void test()
     {
-
-        String _name = DEFAULT_CACHE_NAME + System.currentTimeMillis();
-        EmbeddedCacheManager _manager;
-
-        _manager = new DefaultCacheManager(new GlobalConfigurationBuilder().globalJmxStatistics().allowDuplicateDomains(true).build());
+        String name = DEFAULT_CACHE_NAME + System.currentTimeMillis();
+        EmbeddedCacheManager cacheManager = new DefaultCacheManager(new GlobalConfigurationBuilder().globalJmxStatistics().allowDuplicateDomains(true).build());
 
         //TODO verify that this is being indexed properly, if you change expiry to something that is not a valid field it still passes the tests
         SearchMapping mapping = new SearchMapping();
@@ -62,7 +59,7 @@ public class EmbeddedQueryManagerTest
         properties.put(Environment.MODEL_MAPPING, mapping);
         properties.put("hibernate.search.default.indexBase", MavenTestingUtils.getTargetTestingDir().getAbsolutePath());
 
-        Configuration dcc = _manager.getDefaultCacheConfiguration();
+        Configuration dcc = cacheManager.getDefaultCacheConfiguration();
         ConfigurationBuilder b = new ConfigurationBuilder();
         if (dcc != null)
             b = b.read(dcc);
@@ -70,8 +67,8 @@ public class EmbeddedQueryManagerTest
         b.indexing().index(Index.ALL).addIndexedEntity(SessionData.class).withProperties(properties);
         Configuration c = b.build();
 
-        _manager.defineConfiguration(_name, c);
-        Cache<String, SessionData> _cache = _manager.getCache(_name);
+        cacheManager.defineConfiguration(name, c);
+        Cache<String, SessionData> cache = cacheManager.getCache(name);
 
         //put some sessions into the cache
         int numSessions = 10;
@@ -92,11 +89,11 @@ public class EmbeddedQueryManagerTest
                 expiredSessions.add("sd" + i);
 
             //add to cache
-            _cache.put("sd" + i, sd);
+            cache.put("sd" + i, sd);
         }
 
         //run the query
-        QueryManager qm = new EmbeddedQueryManager(_cache);
+        QueryManager qm = new EmbeddedQueryManager(cache);
         Set<String> queryResult = qm.queryExpiredSessions(currentTime);
 
         // Check that the result is correct

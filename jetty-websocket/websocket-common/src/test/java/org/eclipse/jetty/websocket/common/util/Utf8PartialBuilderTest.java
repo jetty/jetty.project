@@ -32,13 +32,14 @@ import static org.hamcrest.Matchers.is;
  */
 public class Utf8PartialBuilderTest
 {
+    // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
     private ByteBuffer toByteBuffer(String hexStr)
     {
         return ByteBuffer.wrap(Hex.asByteArray(hexStr));
     }
 
     @Test
-    public void testPartial_UnsplitCodepoint()
+    public void testPartialUnsplitCodepoint()
     {
         Utf8PartialBuilder utf8 = new Utf8PartialBuilder();
 
@@ -53,7 +54,7 @@ public class Utf8PartialBuilderTest
     }
 
     @Test
-    public void testPartial_SplitCodepoint()
+    public void testPartialSplitCodepoint()
     {
         Utf8PartialBuilder utf8 = new Utf8PartialBuilder();
 
@@ -68,7 +69,7 @@ public class Utf8PartialBuilderTest
     }
 
     @Test
-    public void testPartial_SplitCodepoint_WithNoBuf()
+    public void testPartialSplitCodepointWithNoBuf()
     {
         Utf8PartialBuilder utf8 = new Utf8PartialBuilder();
 

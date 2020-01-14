@@ -38,7 +38,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 /**
  * Tests of Known Bad UTF8 sequences that should trigger a {@link StatusCode#BAD_PAYLOAD} close and early connection termination
  */
-public class TestABCase6_BadUTF extends AbstractABCase
+public class TestABCase6BadUTF extends AbstractABCase
 {
     public static Stream<Arguments> utfSequences()
     {

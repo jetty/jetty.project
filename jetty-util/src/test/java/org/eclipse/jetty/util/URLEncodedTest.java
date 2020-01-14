@@ -39,6 +39,7 @@ import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 /**
  * URL Encoding / Decoding Tests
  */
+// @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
 public class URLEncodedTest
 {
     @TestFactory
@@ -48,111 +49,111 @@ public class URLEncodedTest
 
         tests.add(dynamicTest("Initially not empty", () ->
         {
-            UrlEncoded url_encoded = new UrlEncoded();
-            assertEquals(0, url_encoded.size());
+            UrlEncoded urlEncoded = new UrlEncoded();
+            assertEquals(0, urlEncoded.size());
         }));
 
         tests.add(dynamicTest("Not empty after decode(\"\")", () ->
         {
-            UrlEncoded url_encoded = new UrlEncoded();
-            url_encoded.clear();
-            url_encoded.decode("");
-            assertEquals(0, url_encoded.size());
+            UrlEncoded urlEncoded = new UrlEncoded();
+            urlEncoded.clear();
+            urlEncoded.decode("");
+            assertEquals(0, urlEncoded.size());
         }));
 
         tests.add(dynamicTest("Simple encode", () ->
         {
-            UrlEncoded url_encoded = new UrlEncoded();
-            url_encoded.clear();
-            url_encoded.decode("Name1=Value1");
-            assertEquals(1, url_encoded.size(), "simple param size");
-            assertEquals("Name1=Value1", url_encoded.encode(), "simple encode");
-            assertEquals("Value1", url_encoded.getString("Name1"), "simple get");
+            UrlEncoded urlEncoded = new UrlEncoded();
+            urlEncoded.clear();
+            urlEncoded.decode("Name1=Value1");
+            assertEquals(1, urlEncoded.size(), "simple param size");
+            assertEquals("Name1=Value1", urlEncoded.encode(), "simple encode");
+            assertEquals("Value1", urlEncoded.getString("Name1"), "simple get");
         }));
 
         tests.add(dynamicTest("Dangling param", () ->
         {
-            UrlEncoded url_encoded = new UrlEncoded();
-            url_encoded.clear();
-            url_encoded.decode("Name2=");
-            assertEquals(1, url_encoded.size(), "dangling param size");
-            assertEquals("Name2", url_encoded.encode(), "dangling encode");
-            assertEquals("", url_encoded.getString("Name2"), "dangling get");
+            UrlEncoded urlEncoded = new UrlEncoded();
+            urlEncoded.clear();
+            urlEncoded.decode("Name2=");
+            assertEquals(1, urlEncoded.size(), "dangling param size");
+            assertEquals("Name2", urlEncoded.encode(), "dangling encode");
+            assertEquals("", urlEncoded.getString("Name2"), "dangling get");
         }));
 
         tests.add(dynamicTest("noValue param", () ->
         {
-            UrlEncoded url_encoded = new UrlEncoded();
-            url_encoded.clear();
-            url_encoded.decode("Name3");
-            assertEquals(1, url_encoded.size(), "noValue param size");
-            assertEquals("Name3", url_encoded.encode(), "noValue encode");
-            assertEquals("", url_encoded.getString("Name3"), "noValue get");
+            UrlEncoded urlEncoded = new UrlEncoded();
+            urlEncoded.clear();
+            urlEncoded.decode("Name3");
+            assertEquals(1, urlEncoded.size(), "noValue param size");
+            assertEquals("Name3", urlEncoded.encode(), "noValue encode");
+            assertEquals("", urlEncoded.getString("Name3"), "noValue get");
         }));
 
         tests.add(dynamicTest("badly encoded param", () ->
         {
-            UrlEncoded url_encoded = new UrlEncoded();
-            url_encoded.clear();
-            url_encoded.decode("Name4=V\u0629lue+4%21");
-            assertEquals(1, url_encoded.size(), "encoded param size");
-            assertEquals("Name4=V%D8%A9lue+4%21", url_encoded.encode(), "encoded encode");
-            assertEquals("V\u0629lue 4!", url_encoded.getString("Name4"), "encoded get");
+            UrlEncoded urlEncoded = new UrlEncoded();
+            urlEncoded.clear();
+            urlEncoded.decode("Name4=V\u0629lue+4%21");
+            assertEquals(1, urlEncoded.size(), "encoded param size");
+            assertEquals("Name4=V%D8%A9lue+4%21", urlEncoded.encode(), "encoded encode");
+            assertEquals("V\u0629lue 4!", urlEncoded.getString("Name4"), "encoded get");
         }));
 
         tests.add(dynamicTest("encoded param 1", () ->
         {
-            UrlEncoded url_encoded = new UrlEncoded();
-            url_encoded.clear();
-            url_encoded.decode("Name4=Value%2B4%21");
-            assertEquals(1, url_encoded.size(), "encoded param size");
-            assertEquals("Name4=Value%2B4%21", url_encoded.encode(), "encoded encode");
-            assertEquals("Value+4!", url_encoded.getString("Name4"), "encoded get");
+            UrlEncoded urlEncoded = new UrlEncoded();
+            urlEncoded.clear();
+            urlEncoded.decode("Name4=Value%2B4%21");
+            assertEquals(1, urlEncoded.size(), "encoded param size");
+            assertEquals("Name4=Value%2B4%21", urlEncoded.encode(), "encoded encode");
+            assertEquals("Value+4!", urlEncoded.getString("Name4"), "encoded get");
         }));
 
         tests.add(dynamicTest("encoded param 2", () ->
         {
-            UrlEncoded url_encoded = new UrlEncoded();
-            url_encoded.clear();
-            url_encoded.decode("Name4=Value+4%21%20%214");
-            assertEquals(1, url_encoded.size(), "encoded param size");
-            assertEquals("Name4=Value+4%21+%214", url_encoded.encode(), "encoded encode");
-            assertEquals("Value 4! !4", url_encoded.getString("Name4"), "encoded get");
+            UrlEncoded urlEncoded = new UrlEncoded();
+            urlEncoded.clear();
+            urlEncoded.decode("Name4=Value+4%21%20%214");
+            assertEquals(1, urlEncoded.size(), "encoded param size");
+            assertEquals("Name4=Value+4%21+%214", urlEncoded.encode(), "encoded encode");
+            assertEquals("Value 4! !4", urlEncoded.getString("Name4"), "encoded get");
         }));
 
         tests.add(dynamicTest("multi param", () ->
         {
-            UrlEncoded url_encoded = new UrlEncoded();
-            url_encoded.clear();
-            url_encoded.decode("Name5=aaa&Name6=bbb");
-            assertEquals(2, url_encoded.size(), "multi param size");
-            assertTrue(url_encoded.encode().equals("Name5=aaa&Name6=bbb") ||
-                    url_encoded.encode().equals("Name6=bbb&Name5=aaa"),
-                "multi encode " + url_encoded.encode());
-            assertEquals("aaa", url_encoded.getString("Name5"), "multi get");
-            assertEquals("bbb", url_encoded.getString("Name6"), "multi get");
+            UrlEncoded urlEncoded = new UrlEncoded();
+            urlEncoded.clear();
+            urlEncoded.decode("Name5=aaa&Name6=bbb");
+            assertEquals(2, urlEncoded.size(), "multi param size");
+            assertTrue(urlEncoded.encode().equals("Name5=aaa&Name6=bbb") ||
+                    urlEncoded.encode().equals("Name6=bbb&Name5=aaa"),
+                "multi encode " + urlEncoded.encode());
+            assertEquals("aaa", urlEncoded.getString("Name5"), "multi get");
+            assertEquals("bbb", urlEncoded.getString("Name6"), "multi get");
         }));
 
         tests.add(dynamicTest("multiple value encoded", () ->
         {
-            UrlEncoded url_encoded = new UrlEncoded();
-            url_encoded.clear();
-            url_encoded.decode("Name7=aaa&Name7=b%2Cb&Name7=ccc");
-            assertEquals("Name7=aaa&Name7=b%2Cb&Name7=ccc", url_encoded.encode(), "multi encode");
-            assertEquals("aaa,b,b,ccc", url_encoded.getString("Name7"), "list get all");
-            assertEquals("aaa", url_encoded.getValues("Name7").get(0), "list get");
-            assertEquals("b,b", url_encoded.getValues("Name7").get(1), "list get");
-            assertEquals("ccc", url_encoded.getValues("Name7").get(2), "list get");
+            UrlEncoded urlEncoded = new UrlEncoded();
+            urlEncoded.clear();
+            urlEncoded.decode("Name7=aaa&Name7=b%2Cb&Name7=ccc");
+            assertEquals("Name7=aaa&Name7=b%2Cb&Name7=ccc", urlEncoded.encode(), "multi encode");
+            assertEquals("aaa,b,b,ccc", urlEncoded.getString("Name7"), "list get all");
+            assertEquals("aaa", urlEncoded.getValues("Name7").get(0), "list get");
+            assertEquals("b,b", urlEncoded.getValues("Name7").get(1), "list get");
+            assertEquals("ccc", urlEncoded.getValues("Name7").get(2), "list get");
         }));
 
         tests.add(dynamicTest("encoded param", () ->
         {
-            UrlEncoded url_encoded = new UrlEncoded();
-            url_encoded.clear();
-            url_encoded.decode("Name8=xx%2C++yy++%2Czz");
-            assertEquals(1, url_encoded.size(), "encoded param size");
-            assertEquals("Name8=xx%2C++yy++%2Czz", url_encoded.encode(), "encoded encode");
-            assertEquals("xx,  yy  ,zz", url_encoded.getString("Name8"), "encoded get");
+            UrlEncoded urlEncoded = new UrlEncoded();
+            urlEncoded.clear();
+            urlEncoded.decode("Name8=xx%2C++yy++%2Czz");
+            assertEquals(1, urlEncoded.size(), "encoded param size");
+            assertEquals("Name8=xx%2C++yy++%2Czz", urlEncoded.encode(), "encoded encode");
+            assertEquals("xx,  yy  ,zz", urlEncoded.getString("Name8"), "encoded get");
         }));
 
         return tests.iterator();
@@ -229,29 +230,29 @@ public class URLEncodedTest
     public void testUtf8()
         throws Exception
     {
-        UrlEncoded url_encoded = new UrlEncoded();
-        assertEquals(0, url_encoded.size(), "Empty");
+        UrlEncoded urlEncoded = new UrlEncoded();
+        assertEquals(0, urlEncoded.size(), "Empty");
 
-        url_encoded.clear();
-        url_encoded.decode("text=%E0%B8%9F%E0%B8%AB%E0%B8%81%E0%B8%A7%E0%B8%94%E0%B8%B2%E0%B9%88%E0%B8%81%E0%B8%9F%E0%B8%A7%E0%B8%AB%E0%B8%AA%E0%B8%94%E0%B8%B2%E0%B9%88%E0%B8%AB%E0%B8%9F%E0%B8%81%E0%B8%A7%E0%B8%94%E0%B8%AA%E0%B8%B2%E0%B8%9F%E0%B8%81%E0%B8%AB%E0%B8%A3%E0%B8%94%E0%B9%89%E0%B8%9F%E0%B8%AB%E0%B8%99%E0%B8%81%E0%B8%A3%E0%B8%94%E0%B8%B5&Action=Submit");
+        urlEncoded.clear();
+        urlEncoded.decode("text=%E0%B8%9F%E0%B8%AB%E0%B8%81%E0%B8%A7%E0%B8%94%E0%B8%B2%E0%B9%88%E0%B8%81%E0%B8%9F%E0%B8%A7%E0%B8%AB%E0%B8%AA%E0%B8%94%E0%B8%B2%E0%B9%88%E0%B8%AB%E0%B8%9F%E0%B8%81%E0%B8%A7%E0%B8%94%E0%B8%AA%E0%B8%B2%E0%B8%9F%E0%B8%81%E0%B8%AB%E0%B8%A3%E0%B8%94%E0%B9%89%E0%B8%9F%E0%B8%AB%E0%B8%99%E0%B8%81%E0%B8%A3%E0%B8%94%E0%B8%B5&Action=Submit");
 
         String hex = "E0B89FE0B8ABE0B881E0B8A7E0B894E0B8B2E0B988E0B881E0B89FE0B8A7E0B8ABE0B8AAE0B894E0B8B2E0B988E0B8ABE0B89FE0B881E0B8A7E0B894E0B8AAE0B8B2E0B89FE0B881E0B8ABE0B8A3E0B894E0B989E0B89FE0B8ABE0B899E0B881E0B8A3E0B894E0B8B5";
         String expected = new String(TypeUtil.fromHexString(hex), "utf-8");
-        assertEquals(expected, url_encoded.getString("text"));
+        assertEquals(expected, urlEncoded.getString("text"));
     }
 
     @Test
-    public void testUtf8_MultiByteCodePoint()
+    public void testUtf8MultiByteCodePoint()
     {
         String input = "text=test%C3%A4";
-        UrlEncoded url_encoded = new UrlEncoded();
-        url_encoded.decode(input);
+        UrlEncoded urlEncoded = new UrlEncoded();
+        urlEncoded.decode(input);
 
         // http://www.ltg.ed.ac.uk/~richard/utf-8.cgi?input=00e4&mode=hex
         // Should be "testä"
         // "test" followed by a LATIN SMALL LETTER A WITH DIAERESIS
 
         String expected = "test\u00e4";
-        assertThat(url_encoded.getString("text"), is(expected));
+        assertThat(urlEncoded.getString("text"), is(expected));
     }
 }

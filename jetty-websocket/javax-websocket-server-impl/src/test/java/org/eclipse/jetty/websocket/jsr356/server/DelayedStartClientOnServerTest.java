@@ -232,7 +232,7 @@ public class DelayedStartClientOnServerTest
     }
 
     @Test
-    public void testHttpClientThreads_AfterClientConnectTo() throws Exception
+    public void testHttpClientThreadsAfterClientConnectTo() throws Exception
     {
         Server server = new Server(0);
         ServletContextHandler contextHandler = new ServletContextHandler();
@@ -244,7 +244,7 @@ public class DelayedStartClientOnServerTest
         try
         {
             server.start();
-            String response = GET(server.getURI().resolve("/connect"));
+            String response = doHttpGET(server.getURI().resolve("/connect"));
             assertThat("Response", response, startsWith("Connected to ws://"));
             List<String> threadNames = getThreadNames(server);
             assertNoHttpClientPoolThreads(threadNames);
@@ -257,7 +257,7 @@ public class DelayedStartClientOnServerTest
     }
 
     @Test
-    public void testHttpClientThreads_AfterServerConnectTo() throws Exception
+    public void testHttpClientThreadsAfterServerConnectTo() throws Exception
     {
         assertTimeoutPreemptively(ofSeconds(5), () ->
         {
@@ -271,7 +271,7 @@ public class DelayedStartClientOnServerTest
             try
             {
                 server.start();
-                String response = GET(server.getURI().resolve("/connect"));
+                String response = doHttpGET(server.getURI().resolve("/connect"));
                 assertThat("Response", response, startsWith("Connected to ws://"));
                 List<String> threadNames = getThreadNames((ContainerLifeCycle)container, server);
                 assertNoHttpClientPoolThreads(threadNames);
@@ -285,7 +285,7 @@ public class DelayedStartClientOnServerTest
     }
 
     @Test
-    public void testHttpClientThreads_AfterClientConfigure() throws Exception
+    public void testHttpClientThreadsAfterClientConfigure() throws Exception
     {
         Server server = new Server(0);
         ServletContextHandler contextHandler = new ServletContextHandler();
@@ -297,7 +297,7 @@ public class DelayedStartClientOnServerTest
         try
         {
             server.start();
-            String response = GET(server.getURI().resolve("/configure"));
+            String response = doHttpGET(server.getURI().resolve("/configure"));
             assertThat("Response", response, startsWith("Configured " + ClientContainer.class.getName()));
             List<String> threadNames = getThreadNames((ContainerLifeCycle)container, server);
             assertNoHttpClientPoolThreads(threadNames);
@@ -311,7 +311,7 @@ public class DelayedStartClientOnServerTest
     }
 
     @Test
-    public void testHttpClientThreads_AfterServerConfigure() throws Exception
+    public void testHttpClientThreadsAfterServerConfigure() throws Exception
     {
         Server server = new Server(0);
         ServletContextHandler contextHandler = new ServletContextHandler();
@@ -323,7 +323,7 @@ public class DelayedStartClientOnServerTest
         try
         {
             server.start();
-            String response = GET(server.getURI().resolve("/configure"));
+            String response = doHttpGET(server.getURI().resolve("/configure"));
             assertThat("Response", response, startsWith("Configured " + ServerContainer.class.getName()));
             List<String> threadNames = getThreadNames((ContainerLifeCycle)container, server);
             assertNoHttpClientPoolThreads(threadNames);
@@ -335,7 +335,7 @@ public class DelayedStartClientOnServerTest
         }
     }
 
-    private String GET(URI destURI) throws IOException
+    private String doHttpGET(URI destURI) throws IOException
     {
         HttpURLConnection http = (HttpURLConnection)destURI.toURL().openConnection();
         assertThat("HTTP GET (" + destURI + ") Response Code", http.getResponseCode(), is(200));

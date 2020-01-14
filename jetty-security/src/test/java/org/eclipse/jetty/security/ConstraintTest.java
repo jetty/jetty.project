@@ -99,27 +99,27 @@ public class ConstraintTest
         _config = _connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration();
         _server.setConnectors(new Connector[]{_connector});
 
-        ContextHandler _context = new ContextHandler();
-        SessionHandler _session = new SessionHandler();
+        ContextHandler contextHandler = new ContextHandler();
+        SessionHandler sessionHandler = new SessionHandler();
 
-        TestLoginService _loginService = new TestLoginService(TEST_REALM);
+        TestLoginService loginService = new TestLoginService(TEST_REALM);
 
-        _loginService.putUser("user0", new Password("password"), new String[]{});
-        _loginService.putUser("user", new Password("password"), new String[]{"user"});
-        _loginService.putUser("user2", new Password("password"), new String[]{"user"});
-        _loginService.putUser("admin", new Password("password"), new String[]{"user", "administrator"});
-        _loginService.putUser("user3", new Password("password"), new String[]{"foo"});
+        loginService.putUser("user0", new Password("password"), new String[]{});
+        loginService.putUser("user", new Password("password"), new String[]{"user"});
+        loginService.putUser("user2", new Password("password"), new String[]{"user"});
+        loginService.putUser("admin", new Password("password"), new String[]{"user", "administrator"});
+        loginService.putUser("user3", new Password("password"), new String[]{"foo"});
 
-        _context.setContextPath("/ctx");
-        _server.setHandler(_context);
-        _context.setHandler(_session);
+        contextHandler.setContextPath("/ctx");
+        _server.setHandler(contextHandler);
+        contextHandler.setHandler(sessionHandler);
 
-        _server.addBean(_loginService);
+        _server.addBean(loginService);
 
         _security = new ConstraintSecurityHandler();
-        _session.setHandler(_security);
-        RequestHandler _handler = new RequestHandler();
-        _security.setHandler(_handler);
+        sessionHandler.setHandler(_security);
+        RequestHandler requestHandler = new RequestHandler();
+        _security.setHandler(requestHandler);
 
         _security.setConstraintMappings(getConstraintMappings(), getKnownRoles());
     }
@@ -242,7 +242,7 @@ public class ConstraintTest
      * @throws Exception if test fails
      */
     @Test
-    public void testSecurityElementExample13_1() throws Exception
+    public void testSecurityElementExample131() throws Exception
     {
         ServletSecurityElement element = new ServletSecurityElement();
         List<ConstraintMapping> mappings = ConstraintSecurityHandler.createConstraintsWithMappingsForPath("foo", "/foo/*", element);
@@ -256,7 +256,7 @@ public class ConstraintTest
      * @throws Exception if test fails
      */
     @Test
-    public void testSecurityElementExample13_2() throws Exception
+    public void testSecurityElementExample132() throws Exception
     {
         HttpConstraintElement httpConstraintElement = new HttpConstraintElement(TransportGuarantee.CONFIDENTIAL);
         ServletSecurityElement element = new ServletSecurityElement(httpConstraintElement);
@@ -274,7 +274,7 @@ public class ConstraintTest
      * @ServletSecurity(@HttpConstraint(EmptyRoleSemantic.DENY))
      */
     @Test
-    public void testSecurityElementExample13_3() throws Exception
+    public void testSecurityElementExample133() throws Exception
     {
         HttpConstraintElement httpConstraintElement = new HttpConstraintElement(EmptyRoleSemantic.DENY);
         ServletSecurityElement element = new ServletSecurityElement(httpConstraintElement);
@@ -292,7 +292,7 @@ public class ConstraintTest
      * @ServletSecurity(@HttpConstraint(rolesAllowed = "R1"))
      */
     @Test
-    public void testSecurityElementExample13_4() throws Exception
+    public void testSecurityElementExample134() throws Exception
     {
         HttpConstraintElement httpConstraintElement = new HttpConstraintElement(TransportGuarantee.NONE, "R1");
         ServletSecurityElement element = new ServletSecurityElement(httpConstraintElement);
@@ -317,7 +317,7 @@ public class ConstraintTest
      * transportGuarantee = TransportGuarantee.CONFIDENTIAL)})
      */
     @Test
-    public void testSecurityElementExample13_5() throws Exception
+    public void testSecurityElementExample135() throws Exception
     {
         List<HttpMethodConstraintElement> methodElements = new ArrayList<HttpMethodConstraintElement>();
         methodElements.add(new HttpMethodConstraintElement("GET", new HttpConstraintElement(TransportGuarantee.NONE, "R1")));
@@ -343,7 +343,7 @@ public class ConstraintTest
      * @ServletSecurity(value = @HttpConstraint(rolesAllowed = "R1"), httpMethodConstraints = @HttpMethodConstraint("GET"))
      */
     @Test
-    public void testSecurityElementExample13_6() throws Exception
+    public void testSecurityElementExample136() throws Exception
     {
         List<HttpMethodConstraintElement> methodElements = new ArrayList<HttpMethodConstraintElement>();
         methodElements.add(new HttpMethodConstraintElement("GET"));
@@ -370,7 +370,7 @@ public class ConstraintTest
      * emptyRoleSemantic = EmptyRoleSemantic.DENY))
      */
     @Test
-    public void testSecurityElementExample13_7() throws Exception
+    public void testSecurityElementExample137() throws Exception
     {
         List<HttpMethodConstraintElement> methodElements = new ArrayList<HttpMethodConstraintElement>();
         methodElements.add(new HttpMethodConstraintElement("TRACE", new HttpConstraintElement(EmptyRoleSemantic.DENY)));

@@ -59,6 +59,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpClientURITest extends AbstractHttpClientServerTest
 {
+    // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
     public void testIPv6Host(Scenario scenario) throws Exception

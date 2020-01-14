@@ -131,7 +131,7 @@ public class NBitIntegerTest
     }
 
     @Test
-    public void testEncodeExampleD_1_1()
+    public void testEncodeExampleD11()
     {
         ByteBuffer buf = BufferUtil.allocate(16);
         int p = BufferUtil.flipToFill(buf);
@@ -146,7 +146,7 @@ public class NBitIntegerTest
     }
 
     @Test
-    public void testDecodeExampleD_1_1()
+    public void testDecodeExampleD11()
     {
         ByteBuffer buf = ByteBuffer.wrap(TypeUtil.fromHexString("77EaFF"));
         buf.position(2);
@@ -155,7 +155,7 @@ public class NBitIntegerTest
     }
 
     @Test
-    public void testEncodeExampleD_1_2()
+    public void testEncodeExampleD12()
     {
         ByteBuffer buf = BufferUtil.allocate(16);
         int p = BufferUtil.flipToFill(buf);
@@ -170,7 +170,7 @@ public class NBitIntegerTest
     }
 
     @Test
-    public void testDecodeExampleD_1_2()
+    public void testDecodeExampleD12()
     {
         ByteBuffer buf = ByteBuffer.wrap(TypeUtil.fromHexString("881f9a0aff"));
         buf.position(2);
@@ -179,7 +179,7 @@ public class NBitIntegerTest
     }
 
     @Test
-    public void testEncodeExampleD_1_3()
+    public void testEncodeExampleD13()
     {
         ByteBuffer buf = BufferUtil.allocate(16);
         int p = BufferUtil.flipToFill(buf);
@@ -194,7 +194,7 @@ public class NBitIntegerTest
     }
 
     @Test
-    public void testDecodeExampleD_1_3()
+    public void testDecodeExampleD13()
     {
         ByteBuffer buf = ByteBuffer.wrap(TypeUtil.fromHexString("882aFf"));
         buf.position(1);

@@ -516,7 +516,7 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
             {
                 latch.await();
             }
-            catch(InterruptedException e)
+            catch (InterruptedException e)
             {
                 e.printStackTrace();
             }
@@ -534,7 +534,9 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         waitForThreads(tp, 2);
 
         for (int i = 0; i < 10; i++)
+        {
             tp.execute(job);
+        }
 
         waitForThreads(tp, 10);
         int threads = tp.getThreads();

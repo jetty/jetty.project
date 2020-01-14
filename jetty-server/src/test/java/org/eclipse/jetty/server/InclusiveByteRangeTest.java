@@ -252,7 +252,7 @@ public class InclusiveByteRangeTest
     }
 
     @Test
-    public void testRange_OpenEnded()
+    public void testRangeOpenEnded()
     {
         assertSimpleRange(50, 499, "bytes=50-", 500);
     }
@@ -281,75 +281,75 @@ public class InclusiveByteRangeTest
 
     @Test
     @Disabled
-    public void testBadRange_SetPartiallyBad()
+    public void testBadRangeSetPartiallyBad()
     {
         assertBadRangeList(500, "bytes=1-50,1-b,a-50");
     }
 
     @Test
-    public void testBadRange_NoNumbers()
+    public void testBadRangeNoNumbers()
     {
         assertBadRangeList(500, "bytes=a-b");
     }
 
     @Test
-    public void testBadRange_Empty()
+    public void testBadRangeEmpty()
     {
         assertBadRangeList(500, "bytes=");
     }
 
     @Test
     @Disabled
-    public void testBadRange_ZeroPrefixed()
+    public void testBadRangeZeroPrefixed()
     {
         assertBadRangeList(500, "bytes=01-050");
     }
 
     @Test
-    public void testBadRange_Hex()
+    public void testBadRangeHex()
     {
         assertBadRangeList(500, "bytes=0F-FF");
     }
 
     @Test
     @Disabled
-    public void testBadRange_TabWhitespace()
+    public void testBadRangeTabWhitespace()
     {
         assertBadRangeList(500, "bytes=\t1\t-\t50");
     }
 
     @Test
-    public void testBadRange_TabDelim()
+    public void testBadRangeTabDelim()
     {
         assertBadRangeList(500, "bytes=1-50\t90-101\t200-250");
     }
 
     @Test
-    public void testBadRange_SemiColonDelim()
+    public void testBadRangeSemiColonDelim()
     {
         assertBadRangeList(500, "bytes=1-50;90-101;200-250");
     }
 
     @Test
-    public void testBadRange_NegativeSize()
+    public void testBadRangeNegativeSize()
     {
         assertBadRangeList(500, "bytes=50-1");
     }
 
     @Test
-    public void testBadRange_DoubleDash()
+    public void testBadRangeDoubleDash()
     {
         assertBadRangeList(500, "bytes=1--20");
     }
 
     @Test
-    public void testBadRange_TrippleDash()
+    public void testBadRangeTrippleDash()
     {
         assertBadRangeList(500, "bytes=1---");
     }
 
     @Test
-    public void testBadRange_ZeroedNegativeSize()
+    public void testBadRangeZeroedNegativeSize()
     {
         assertBadRangeList(500, "bytes=050-001");
     }

@@ -40,6 +40,8 @@ import org.junit.jupiter.api.BeforeEach;
 
 public class HttpServerTestFixture
 {
+    // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
+    
     // Useful constants
     protected static final long PAUSE = 10L;
     protected static final int LOOPS = 50;
@@ -185,7 +187,6 @@ public class HttpServerTestFixture
             response.getOutputStream().print("Hello world\r\n");
         }
     }
-
 
     protected static class SendErrorHandler extends AbstractHandler
     {

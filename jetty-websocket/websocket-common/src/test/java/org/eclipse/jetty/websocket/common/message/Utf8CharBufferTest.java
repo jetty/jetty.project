@@ -93,6 +93,7 @@ public class Utf8CharBufferTest
         ByteBuffer buf = ByteBuffer.allocate(64);
         Utf8CharBuffer utf = Utf8CharBuffer.wrap(buf);
 
+        // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
         byte[] bb = asUTF("Hello A\u00ea\u00f1\u00fcC");
         utf.append(bb, 0, bb.length);
 

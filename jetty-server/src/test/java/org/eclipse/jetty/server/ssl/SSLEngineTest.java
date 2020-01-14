@@ -369,8 +369,8 @@ public class SSLEngineTest
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             // System.err.println("HANDLE "+request.getRequestURI());
-            String ssl_id = (String)request.getAttribute("javax.servlet.request.ssl_session_id");
-            assertNotNull(ssl_id);
+            String sslId = (String)request.getAttribute("javax.servlet.request.ssl_session_id");
+            assertNotNull(sslId);
 
             if (request.getParameter("dump") != null)
             {

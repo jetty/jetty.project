@@ -131,7 +131,7 @@ public class TestABCase9 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase9_1_1() throws Exception
+    public void testCase911() throws Exception
     {
         byte[] utf = new byte[64 * KBYTE];
         Arrays.fill(utf, (byte)'y');
@@ -160,7 +160,7 @@ public class TestABCase9 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase9_1_2() throws Exception
+    public void testCase912() throws Exception
     {
         byte[] utf = new byte[256 * KBYTE];
         Arrays.fill(utf, (byte)'y');
@@ -189,7 +189,7 @@ public class TestABCase9 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase9_1_3() throws Exception
+    public void testCase913() throws Exception
     {
         byte[] utf = new byte[1 * MBYTE];
         Arrays.fill(utf, (byte)'y');
@@ -218,7 +218,7 @@ public class TestABCase9 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase9_1_4() throws Exception
+    public void testCase914() throws Exception
     {
         byte[] utf = new byte[4 * MBYTE];
         Arrays.fill(utf, (byte)'y');
@@ -247,7 +247,7 @@ public class TestABCase9 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase9_1_5() throws Exception
+    public void testCase915() throws Exception
     {
         byte[] utf = new byte[8 * MBYTE];
         Arrays.fill(utf, (byte)'y');
@@ -276,7 +276,7 @@ public class TestABCase9 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase9_1_6() throws Exception
+    public void testCase916() throws Exception
     {
         byte[] utf = new byte[16 * MBYTE];
         Arrays.fill(utf, (byte)'y');
@@ -305,7 +305,7 @@ public class TestABCase9 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase9_2_1() throws Exception
+    public void testCase921() throws Exception
     {
         byte[] data = new byte[64 * KBYTE];
         Arrays.fill(data, (byte)0x21);
@@ -333,7 +333,7 @@ public class TestABCase9 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase9_2_2() throws Exception
+    public void testCase922() throws Exception
     {
         byte[] data = new byte[256 * KBYTE];
         Arrays.fill(data, (byte)0x22);
@@ -362,7 +362,7 @@ public class TestABCase9 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase9_2_3() throws Exception
+    public void testCase923() throws Exception
     {
         byte[] data = new byte[1 * MBYTE];
         Arrays.fill(data, (byte)0x23);
@@ -391,7 +391,7 @@ public class TestABCase9 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase9_2_4() throws Exception
+    public void testCase924() throws Exception
     {
         byte[] data = new byte[4 * MBYTE];
         Arrays.fill(data, (byte)0x24);
@@ -420,7 +420,7 @@ public class TestABCase9 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase9_2_5() throws Exception
+    public void testCase925() throws Exception
     {
         byte[] data = new byte[8 * MBYTE];
         Arrays.fill(data, (byte)0x25);
@@ -449,7 +449,7 @@ public class TestABCase9 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase9_2_6() throws Exception
+    public void testCase926() throws Exception
     {
         byte[] data = new byte[16 * MBYTE];
         Arrays.fill(data, (byte)0x26);
@@ -478,7 +478,7 @@ public class TestABCase9 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase9_3_1() throws Exception
+    public void testCase931() throws Exception
     {
         assertMultiFrameEcho(OpCode.TEXT, 4 * MBYTE, 64);
     }
@@ -489,7 +489,7 @@ public class TestABCase9 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase9_3_2() throws Exception
+    public void testCase932() throws Exception
     {
         assertMultiFrameEcho(OpCode.TEXT, 4 * MBYTE, 256);
     }
@@ -500,7 +500,7 @@ public class TestABCase9 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase9_3_3() throws Exception
+    public void testCase933() throws Exception
     {
         assertMultiFrameEcho(OpCode.TEXT, 4 * MBYTE, 1 * KBYTE);
     }
@@ -511,7 +511,7 @@ public class TestABCase9 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase9_3_4() throws Exception
+    public void testCase934() throws Exception
     {
         assertMultiFrameEcho(OpCode.TEXT, 4 * MBYTE, 4 * KBYTE);
     }
@@ -522,7 +522,7 @@ public class TestABCase9 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase9_3_5() throws Exception
+    public void testCase935() throws Exception
     {
         assertMultiFrameEcho(OpCode.TEXT, 4 * MBYTE, 16 * KBYTE);
     }
@@ -533,7 +533,7 @@ public class TestABCase9 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase9_3_6() throws Exception
+    public void testCase936() throws Exception
     {
         assertMultiFrameEcho(OpCode.TEXT, 4 * MBYTE, 64 * KBYTE);
     }
@@ -544,7 +544,7 @@ public class TestABCase9 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase9_3_7() throws Exception
+    public void testCase937() throws Exception
     {
         assertMultiFrameEcho(OpCode.TEXT, 4 * MBYTE, 256 * KBYTE);
     }
@@ -555,7 +555,7 @@ public class TestABCase9 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase9_3_8() throws Exception
+    public void testCase938() throws Exception
     {
         assertMultiFrameEcho(OpCode.TEXT, 4 * MBYTE, 1 * MBYTE);
     }
@@ -566,7 +566,7 @@ public class TestABCase9 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase9_3_9() throws Exception
+    public void testCase939() throws Exception
     {
         assertMultiFrameEcho(OpCode.TEXT, 4 * MBYTE, 4 * MBYTE);
     }
@@ -577,7 +577,7 @@ public class TestABCase9 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase9_4_1() throws Exception
+    public void testCase941() throws Exception
     {
         assertMultiFrameEcho(OpCode.BINARY, 4 * MBYTE, 64);
     }
@@ -588,7 +588,7 @@ public class TestABCase9 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase9_4_2() throws Exception
+    public void testCase942() throws Exception
     {
         assertMultiFrameEcho(OpCode.BINARY, 4 * MBYTE, 256);
     }
@@ -599,7 +599,7 @@ public class TestABCase9 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase9_4_3() throws Exception
+    public void testCase943() throws Exception
     {
         assertMultiFrameEcho(OpCode.BINARY, 4 * MBYTE, 1 * KBYTE);
     }
@@ -610,7 +610,7 @@ public class TestABCase9 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase9_4_4() throws Exception
+    public void testCase944() throws Exception
     {
         assertMultiFrameEcho(OpCode.BINARY, 4 * MBYTE, 4 * KBYTE);
     }
@@ -621,7 +621,7 @@ public class TestABCase9 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase9_4_5() throws Exception
+    public void testCase945() throws Exception
     {
         assertMultiFrameEcho(OpCode.BINARY, 4 * MBYTE, 16 * KBYTE);
     }
@@ -632,7 +632,7 @@ public class TestABCase9 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase9_4_6() throws Exception
+    public void testCase946() throws Exception
     {
         assertMultiFrameEcho(OpCode.BINARY, 4 * MBYTE, 64 * KBYTE);
     }
@@ -643,7 +643,7 @@ public class TestABCase9 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase9_4_7() throws Exception
+    public void testCase947() throws Exception
     {
         assertMultiFrameEcho(OpCode.BINARY, 4 * MBYTE, 256 * KBYTE);
     }
@@ -654,7 +654,7 @@ public class TestABCase9 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase9_4_8() throws Exception
+    public void testCase948() throws Exception
     {
         assertMultiFrameEcho(OpCode.BINARY, 4 * MBYTE, 1 * MBYTE);
     }
@@ -665,7 +665,7 @@ public class TestABCase9 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase9_4_9() throws Exception
+    public void testCase949() throws Exception
     {
         assertMultiFrameEcho(OpCode.BINARY, 4 * MBYTE, 4 * MBYTE);
     }
@@ -676,7 +676,7 @@ public class TestABCase9 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase9_5_1() throws Exception
+    public void testCase951() throws Exception
     {
         assertSlowFrameEcho(OpCode.TEXT, 1 * MBYTE, 64);
     }
@@ -687,7 +687,7 @@ public class TestABCase9 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase9_5_2() throws Exception
+    public void testCase952() throws Exception
     {
         assertSlowFrameEcho(OpCode.TEXT, 1 * MBYTE, 128);
     }
@@ -698,7 +698,7 @@ public class TestABCase9 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase9_5_3() throws Exception
+    public void testCase953() throws Exception
     {
         assertSlowFrameEcho(OpCode.TEXT, 1 * MBYTE, 256);
     }
@@ -709,7 +709,7 @@ public class TestABCase9 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase9_5_4() throws Exception
+    public void testCase954() throws Exception
     {
         assertSlowFrameEcho(OpCode.TEXT, 1 * MBYTE, 512);
     }
@@ -720,7 +720,7 @@ public class TestABCase9 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase9_5_5() throws Exception
+    public void testCase955() throws Exception
     {
         assertSlowFrameEcho(OpCode.TEXT, 1 * MBYTE, 1024);
     }
@@ -731,7 +731,7 @@ public class TestABCase9 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase9_5_6() throws Exception
+    public void testCase956() throws Exception
     {
         assertSlowFrameEcho(OpCode.TEXT, 1 * MBYTE, 2048);
     }
@@ -742,7 +742,7 @@ public class TestABCase9 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase9_6_1() throws Exception
+    public void testCase961() throws Exception
     {
         assertSlowFrameEcho(OpCode.BINARY, 1 * MBYTE, 64);
     }
@@ -753,7 +753,7 @@ public class TestABCase9 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase9_6_2() throws Exception
+    public void testCase962() throws Exception
     {
         assertSlowFrameEcho(OpCode.BINARY, 1 * MBYTE, 128);
     }
@@ -764,7 +764,7 @@ public class TestABCase9 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase9_6_3() throws Exception
+    public void testCase963() throws Exception
     {
         assertSlowFrameEcho(OpCode.BINARY, 1 * MBYTE, 256);
     }
@@ -775,7 +775,7 @@ public class TestABCase9 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase9_6_4() throws Exception
+    public void testCase964() throws Exception
     {
         assertSlowFrameEcho(OpCode.BINARY, 1 * MBYTE, 512);
     }
@@ -786,7 +786,7 @@ public class TestABCase9 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase9_6_5() throws Exception
+    public void testCase965() throws Exception
     {
         assertSlowFrameEcho(OpCode.BINARY, 1 * MBYTE, 1024);
     }
@@ -797,7 +797,7 @@ public class TestABCase9 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase9_6_6() throws Exception
+    public void testCase966() throws Exception
     {
         assertSlowFrameEcho(OpCode.BINARY, 1 * MBYTE, 2048);
     }

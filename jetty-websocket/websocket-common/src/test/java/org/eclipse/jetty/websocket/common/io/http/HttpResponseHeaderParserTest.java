@@ -106,7 +106,7 @@ public class HttpResponseHeaderParserTest
     }
 
     @Test
-    public void testParseRealWorldResponse_SmallBuffers()
+    public void testParseRealWorldResponseSmallBuffers()
     {
         // Arbitrary Http Response Headers seen in the wild.
         // Request URI -> https://ssl.google-analytics.com/__utm.gif

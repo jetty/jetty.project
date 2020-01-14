@@ -213,8 +213,8 @@ public class SmallThreadPoolLoadTest extends AbstractTest
                 }
                 case "POST":
                 {
-                    int content_length = request.getContentLength();
-                    ByteArrayOutputStream2 bout = new ByteArrayOutputStream2(content_length > 0 ? content_length : 16 * 1024);
+                    int contentLength = request.getContentLength();
+                    ByteArrayOutputStream2 bout = new ByteArrayOutputStream2(contentLength > 0 ? contentLength : 16 * 1024);
                     IO.copy(request.getInputStream(), bout);
                     response.getOutputStream().write(bout.getBuf(), 0, bout.getCount());
                     break;

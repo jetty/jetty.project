@@ -146,10 +146,10 @@ public class CyclicTimeoutTest
         QueuedThreadPool pool = new QueuedThreadPool(200);
         pool.start();
 
-        long test_until = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(1500);
+        long testUntil = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(1500);
 
         assertTrue(_timeout.schedule(100, TimeUnit.MILLISECONDS));
-        while (System.nanoTime() < test_until)
+        while (System.nanoTime() < testUntil)
         {
             CountDownLatch latch = new CountDownLatch(1);
             pool.execute(() ->

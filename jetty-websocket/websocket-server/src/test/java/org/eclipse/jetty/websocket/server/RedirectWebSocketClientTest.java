@@ -59,23 +59,23 @@ public class RedirectWebSocketClientTest
     {
         server = new Server();
 
-        HttpConfiguration http_config = new HttpConfiguration();
-        http_config.setSecureScheme("https");
-        http_config.setSecurePort(0);
-        http_config.setOutputBufferSize(32768);
-        http_config.setRequestHeaderSize(8192);
-        http_config.setResponseHeaderSize(8192);
-        http_config.setSendServerVersion(true);
-        http_config.setSendDateHeader(false);
+        HttpConfiguration httpConfig = new HttpConfiguration();
+        httpConfig.setSecureScheme("https");
+        httpConfig.setSecurePort(0);
+        httpConfig.setOutputBufferSize(32768);
+        httpConfig.setRequestHeaderSize(8192);
+        httpConfig.setResponseHeaderSize(8192);
+        httpConfig.setSendServerVersion(true);
+        httpConfig.setSendDateHeader(false);
 
         SslContextFactory sslContextFactory = newSslContextFactory();
 
         // SSL HTTP Configuration
-        HttpConfiguration https_config = new HttpConfiguration(http_config);
-        https_config.addCustomizer(new SecureRequestCustomizer());
+        HttpConfiguration httpsConfig = new HttpConfiguration(httpConfig);
+        httpsConfig.addCustomizer(new SecureRequestCustomizer());
 
         // SSL Connector
-        ServerConnector sslConnector = new ServerConnector(server, new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString()), new HttpConnectionFactory(https_config));
+        ServerConnector sslConnector = new ServerConnector(server, new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString()), new HttpConnectionFactory(httpsConfig));
         sslConnector.setPort(0);
         server.addConnector(sslConnector);
 

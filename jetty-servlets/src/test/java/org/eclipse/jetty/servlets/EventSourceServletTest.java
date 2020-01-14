@@ -194,7 +194,7 @@ public class EventSourceServletTest
     public void testEncoding() throws Exception
     {
         // The EURO symbol
-        final String data = "\u20AC";
+        final String data = "%E2%82%AC";
         class S extends EventSourceServlet
         {
             @Override

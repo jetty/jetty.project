@@ -115,9 +115,9 @@ public class EncoderMetadataSetTest
 
         coders.add(ValidDualEncoder.class);
 
-        List<Class<? extends Encoder>> EncodersList = coders.getList();
-        assertThat("Encoder List", EncodersList, notNullValue());
-        assertThat("Encoder List count", EncodersList.size(), is(2));
+        List<Class<? extends Encoder>> encodersList = coders.getList();
+        assertThat("Encoder List", encodersList, notNullValue());
+        assertThat("Encoder List count", encodersList.size(), is(2));
 
         EncoderMetadata metadata;
         metadata = coders.getMetadataByType(Integer.class);

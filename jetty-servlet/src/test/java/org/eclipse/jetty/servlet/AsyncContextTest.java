@@ -93,10 +93,10 @@ public class AsyncContextTest
         _contextHandler.addServlet(new ServletHolder(new BadExpireServlet()), "/badexpire/*");
         _contextHandler.addServlet(new ServletHolder(new ErrorServlet()), "/error/*");
 
-        ErrorPageErrorHandler error_handler = new ErrorPageErrorHandler();
-        _contextHandler.setErrorHandler(error_handler);
-        error_handler.addErrorPage(500, "/error/500");
-        error_handler.addErrorPage(IOException.class.getName(), "/error/IOE");
+        ErrorPageErrorHandler errorHandler = new ErrorPageErrorHandler();
+        _contextHandler.setErrorHandler(errorHandler);
+        errorHandler.addErrorPage(500, "/error/500");
+        errorHandler.addErrorPage(IOException.class.getName(), "/error/IOE");
 
         HandlerList handlers = new HandlerList();
         handlers.setHandlers(new Handler[]
@@ -227,7 +227,7 @@ public class AsyncContextTest
     }
 
     @Test
-    public void testDispatchAsyncContext_EncodedUrl() throws Exception
+    public void testDispatchAsyncContextEncodedUrl() throws Exception
     {
         String request = "GET /ctx/test/hello%2fthere?dispatch=true HTTP/1.1\r\n" +
             "Host: localhost\r\n" +
@@ -260,7 +260,7 @@ public class AsyncContextTest
     }
 
     @Test
-    public void testDispatchAsyncContext_SelfEncodedUrl() throws Exception
+    public void testDispatchAsyncContextSelfEncodedUrl() throws Exception
     {
         String request = "GET /ctx/self/hello%2fthere?dispatch=true HTTP/1.1\r\n" +
             "Host: localhost\r\n" +

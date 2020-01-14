@@ -82,7 +82,7 @@ public class HTTP2CServerTest extends AbstractServerTest
     }
 
     @Test
-    public void testHTTP_1_0_Simple() throws Exception
+    public void testHTTP10Simple() throws Exception
     {
         try (Socket client = new Socket("localhost", connector.getLocalPort()))
         {
@@ -97,7 +97,7 @@ public class HTTP2CServerTest extends AbstractServerTest
     }
 
     @Test
-    public void testHTTP_1_1_Simple() throws Exception
+    public void testHTTP11Simple() throws Exception
     {
         try (Socket client = new Socket("localhost", connector.getLocalPort()))
         {
@@ -115,7 +115,7 @@ public class HTTP2CServerTest extends AbstractServerTest
     }
 
     @Test
-    public void testHTTP_1_1_Upgrade() throws Exception
+    public void testHTTP11Upgrade() throws Exception
     {
         try (Socket client = new Socket("localhost", connector.getLocalPort()))
         {
@@ -223,7 +223,7 @@ public class HTTP2CServerTest extends AbstractServerTest
     }
 
     @Test
-    public void testHTTP_2_0_Direct() throws Exception
+    public void testHTTP20Direct() throws Exception
     {
         final CountDownLatch latch = new CountDownLatch(3);
 
@@ -290,7 +290,7 @@ public class HTTP2CServerTest extends AbstractServerTest
     }
 
     @Test
-    public void testHTTP_2_0_DirectWithoutH2C() throws Exception
+    public void testHTTP20DirectWithoutH2C() throws Exception
     {
         AtomicLong fills = new AtomicLong();
         // Remove "h2c", leaving only "http/1.1".

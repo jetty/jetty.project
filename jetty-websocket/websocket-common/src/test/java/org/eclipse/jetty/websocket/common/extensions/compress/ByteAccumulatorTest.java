@@ -54,7 +54,7 @@ public class ByteAccumulatorTest
     }
 
     @Test
-    public void testTransferTo_NotEnoughSpace()
+    public void testTransferToNotEnoughSpace()
     {
         ByteAccumulator accumulator = new ByteAccumulator(10_000);
 
@@ -75,7 +75,7 @@ public class ByteAccumulatorTest
     }
 
     @Test
-    public void testCopyChunk_NotEnoughSpace()
+    public void testCopyChunkNotEnoughSpace()
     {
 
         byte[] hello = "Hello".getBytes(UTF_8);

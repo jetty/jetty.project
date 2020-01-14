@@ -49,7 +49,7 @@ public class TestABCase2
     private WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
 
     @Test
-    public void testGenerate125OctetPingCase2_4()
+    public void testGenerate125OctetPingCase24()
     {
         byte[] bytes = new byte[125];
 
@@ -78,7 +78,7 @@ public class TestABCase2
     }
 
     @Test
-    public void testGenerateBinaryPingCase2_3()
+    public void testGenerateBinaryPingCase23()
     {
         byte[] bytes = new byte[]{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08};
 
@@ -102,7 +102,7 @@ public class TestABCase2
     }
 
     @Test
-    public void testGenerateEmptyPingCase2_1()
+    public void testGenerateEmptyPingCase21()
     {
         WebSocketFrame pingFrame = new PingFrame();
 
@@ -119,7 +119,7 @@ public class TestABCase2
     }
 
     @Test
-    public void testGenerateHelloPingCase2_2()
+    public void testGenerateHelloPingCase22()
     {
         String message = "Hello, world!";
         byte[] messageBytes = StringUtil.getUtf8Bytes(message);
@@ -144,7 +144,7 @@ public class TestABCase2
     }
 
     @Test
-    public void testGenerateOversizedBinaryPingCase2_5_A()
+    public void testGenerateOversizedBinaryPingCase25A()
     {
         byte[] bytes = new byte[126];
         Arrays.fill(bytes, (byte)0x00);
@@ -154,7 +154,7 @@ public class TestABCase2
     }
 
     @Test
-    public void testGenerateOversizedBinaryPingCase2_5_B()
+    public void testGenerateOversizedBinaryPingCase25B()
     {
         byte[] bytes = new byte[126];
         Arrays.fill(bytes, (byte)0x00);
@@ -165,7 +165,7 @@ public class TestABCase2
     }
 
     @Test
-    public void testParse125OctetPingCase2_4()
+    public void testParse125OctetPingCase24()
     {
         byte[] bytes = new byte[125];
 
@@ -199,7 +199,7 @@ public class TestABCase2
     }
 
     @Test
-    public void testParseBinaryPingCase2_3()
+    public void testParseBinaryPingCase23()
     {
         byte[] bytes = new byte[]{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08};
 
@@ -228,7 +228,7 @@ public class TestABCase2
     }
 
     @Test
-    public void testParseEmptyPingCase2_1()
+    public void testParseEmptyPingCase21()
     {
         ByteBuffer expected = ByteBuffer.allocate(5);
 
@@ -250,7 +250,7 @@ public class TestABCase2
     }
 
     @Test
-    public void testParseHelloPingCase2_2()
+    public void testParseHelloPingCase22()
     {
         String message = "Hello, world!";
         byte[] messageBytes = message.getBytes();
@@ -280,7 +280,7 @@ public class TestABCase2
     }
 
     @Test
-    public void testParseOversizedBinaryPingCase2_5()
+    public void testParseOversizedBinaryPingCase25()
     {
         byte[] bytes = new byte[126];
         Arrays.fill(bytes, (byte)0x00);

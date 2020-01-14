@@ -361,8 +361,8 @@ public class HttpTester
                 return null;
             byte[] bytes = _content.toByteArray();
 
-            String content_type = get(HttpHeader.CONTENT_TYPE);
-            String encoding = MimeTypes.getCharsetFromContentType(content_type);
+            String contentType = get(HttpHeader.CONTENT_TYPE);
+            String encoding = MimeTypes.getCharsetFromContentType(contentType);
             Charset charset = encoding == null ? StandardCharsets.UTF_8 : Charset.forName(encoding);
 
             return new String(bytes, charset);
