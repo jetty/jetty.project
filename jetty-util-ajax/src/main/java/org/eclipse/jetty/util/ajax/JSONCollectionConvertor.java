@@ -30,16 +30,18 @@ public class JSONCollectionConvertor implements JSON.Convertor
     public void toJSON(Object obj, JSON.Output out)
     {
         out.addClass(obj.getClass());
-        out.add("list", ((Collection)obj).toArray());
+        Collection<?> collection = (Collection<?>)obj;
+        out.add("list", collection.toArray());
     }
 
     @Override
-    public Object fromJSON(Map object)
+    public Object fromJSON(Map<String, Object> object)
     {
         try
         {
-            Collection result = (Collection)Loader.loadClass((String)object.get("class"))
-                .getDeclaredConstructor().newInstance();
+            Class<?> cls = Loader.loadClass((String)object.get("class"));
+            @SuppressWarnings("unchecked")
+            Collection<Object> result = (Collection<Object>)cls.getConstructor().newInstance();
             Collections.addAll(result, (Object[])object.get("list"));
             return result;
         }

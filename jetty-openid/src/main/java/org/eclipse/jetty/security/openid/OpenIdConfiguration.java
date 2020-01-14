@@ -128,11 +128,11 @@ public class OpenIdConfiguration extends ContainerLifeCycle
             Map<String, Object> result;
             String responseBody = httpClient.GET(provider + CONFIG_PATH)
                     .getContentAsString();
-            Object parsedResult = JSON.parse(responseBody);
+            Object parsedResult = new JSON().fromJSON(responseBody);
 
             if (parsedResult instanceof Map)
             {
-                Map<?, ?> rawResult = (Map)parsedResult;
+                Map<?, ?> rawResult = (Map<?, ?>)parsedResult;
                 result = rawResult.entrySet().stream()
                         .collect(Collectors.toMap(it -> it.getKey().toString(), Map.Entry::getValue));
             }

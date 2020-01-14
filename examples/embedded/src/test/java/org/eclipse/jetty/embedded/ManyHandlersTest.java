@@ -72,8 +72,9 @@ public class ManyHandlersTest extends AbstractEmbeddedTest
 
         // test response content
         String responseBody = response.getContentAsString();
-        Object jsonObj = JSON.parse(responseBody);
-        Map jsonMap = (Map)jsonObj;
+        Object jsonObj = new JSON().fromJSON(responseBody);
+        @SuppressWarnings("unchecked")
+        Map<String, Object> jsonMap = (Map<String, Object>)jsonObj;
         assertThat("Response JSON keys.size", jsonMap.keySet().size(), is(2));
     }
 
