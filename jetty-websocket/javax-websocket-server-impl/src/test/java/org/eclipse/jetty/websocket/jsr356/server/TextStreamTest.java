@@ -155,6 +155,31 @@ public class TextStreamTest
         }
     }
 
+    @Test
+    public void testFragmented() throws Exception
+    {
+        URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/test");
+        ClientTextStreamer client = new ClientTextStreamer();
+        Session session = wsClient.connectToServer(client, uri);
+
+        final int numLoops = 20;
+        for (int i = 0; i < numLoops; i++)
+        {
+            session.getBasicRemote().sendText("firstFrame" + i, false);
+            session.getBasicRemote().sendText("|secondFrame"  + i, false);
+            session.getBasicRemote().sendText("|finalFrame" + i, true);
+        }
+        session.close();
+
+        QueuedTextStreamer queuedTextStreamer = queuedTextStreamerFuture.get(5, TimeUnit.SECONDS);
+        for (int i = 0; i < numLoops; i++)
+        {
+            String msg = queuedTextStreamer.messages.poll(5, TimeUnit.SECONDS);
+            String expected = "firstFrame" + i + "|secondFrame"  + i + "|finalFrame" + i;
+            assertThat(msg, Matchers.is(expected));
+        }
+    }
+
     private char[] randomChars(int size)
     {
         char[] data = new char[size];
