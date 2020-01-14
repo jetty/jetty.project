@@ -14,12 +14,6 @@
 
   <property name="fileExtensions" value="java"/>
 
-  <!-- reference to suppressions filter for both eclipse and intellij checkstyle plugins -->
-  <module name="SuppressionFilter">
-    <property name="file" value="${checkstyle.suppressions.file}"/>
-    <property name="optional" value="true"/>
-  </module>
-
   <!-- Excludes all 'module-info.java' files              -->
   <!-- See https://checkstyle.org/config_filefilters.html -->
   <module name="BeforeExecutionExclusionFileFilter">
