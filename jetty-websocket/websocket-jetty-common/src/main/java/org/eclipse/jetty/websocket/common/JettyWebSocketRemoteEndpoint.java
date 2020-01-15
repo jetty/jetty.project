@@ -78,7 +78,7 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
 
         try
         {
-            BlockingCallback blockingCallback = new BlockingCallback();
+            BlockingCallback blockingCallback = newBlockingCallback();
             coreSession.close(statusCode, reason, blockingCallback);
             blockingCallback.block();
         }
@@ -118,7 +118,7 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
     @Override
     public void sendPartialBytes(ByteBuffer fragment, boolean isLast) throws IOException
     {
-        BlockingCallback b = new BlockingCallback();
+        BlockingCallback b = newBlockingCallback();
         sendPartialBytes(fragment, isLast, b);
         b.block();
     }
@@ -160,7 +160,7 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
     @Override
     public void sendPartialString(String fragment, boolean isLast) throws IOException
     {
-        BlockingCallback b = new BlockingCallback();
+        BlockingCallback b = newBlockingCallback();
         sendPartialText(fragment, isLast, b);
         b.block();
     }
@@ -227,7 +227,7 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
 
     private void sendBlocking(Frame frame) throws IOException
     {
-        BlockingCallback b = new BlockingCallback();
+        BlockingCallback b = newBlockingCallback();
         coreSession.sendFrame(frame, b, false);
         b.block();
     }
@@ -258,8 +258,13 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
     @Override
     public void flush() throws IOException
     {
-        BlockingCallback b = new BlockingCallback();
+        BlockingCallback b = newBlockingCallback();
         coreSession.flush(b);
         b.block();
+    }
+
+    private BlockingCallback newBlockingCallback()
+    {
+        return new BlockingCallback(coreSession.getIdleTimeout().toMillis() + 1000);
     }
 }

@@ -66,7 +66,7 @@ public class JavaxWebSocketBasicRemote extends JavaxWebSocketRemoteEndpoint impl
             LOG.debug("sendBinary({})", BufferUtil.toDetailString(data));
         }
 
-        BlockingCallback b = new BlockingCallback();
+        BlockingCallback b = newBlockingCallback();
         sendFrame(new Frame(OpCode.BINARY).setPayload(data), b, false);
         b.block();
     }
@@ -98,7 +98,7 @@ public class JavaxWebSocketBasicRemote extends JavaxWebSocketRemoteEndpoint impl
 
         frame.setPayload(partialByte);
         frame.setFin(isLast);
-        BlockingCallback b = new BlockingCallback();
+        BlockingCallback b = newBlockingCallback();
         sendFrame(frame, b, false);
         b.block();
     }
@@ -106,7 +106,7 @@ public class JavaxWebSocketBasicRemote extends JavaxWebSocketRemoteEndpoint impl
     @Override
     public void sendObject(Object data) throws IOException, EncodeException
     {
-        BlockingCallback b = new BlockingCallback();
+        BlockingCallback b = newBlockingCallback();
         super.sendObject(data, b);
         b.block();
     }
@@ -121,7 +121,7 @@ public class JavaxWebSocketBasicRemote extends JavaxWebSocketRemoteEndpoint impl
         }
 
 
-        BlockingCallback b = new BlockingCallback();
+        BlockingCallback b = newBlockingCallback();
         sendFrame(new Frame(OpCode.TEXT).setPayload(text), b, false);
         b.block();
     }
@@ -153,8 +153,13 @@ public class JavaxWebSocketBasicRemote extends JavaxWebSocketRemoteEndpoint impl
 
         frame.setPayload(BufferUtil.toBuffer(partialMessage, UTF_8));
         frame.setFin(isLast);
-        BlockingCallback b = new BlockingCallback();
+        BlockingCallback b = newBlockingCallback();
         sendFrame(frame, b, false);
         b.block();
+    }
+
+    private BlockingCallback newBlockingCallback()
+    {
+        return new BlockingCallback(getIdleTimeout() + 1000);
     }
 }

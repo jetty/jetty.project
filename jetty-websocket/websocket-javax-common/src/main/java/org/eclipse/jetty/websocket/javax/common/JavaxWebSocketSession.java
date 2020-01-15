@@ -197,7 +197,7 @@ public class JavaxWebSocketSession implements javax.websocket.Session
 
         try
         {
-            BlockingCallback b = new BlockingCallback();
+            BlockingCallback b = new BlockingCallback(getMaxIdleTimeout() + 1000);
             coreSession.close(closeReason.getCloseCode().getCode(), closeReason.getReasonPhrase(), b);
             b.block();
         }

@@ -21,10 +21,23 @@ package org.eclipse.jetty.util;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 public class BlockingCallback implements Callback
 {
     private FutureCallback callback = new FutureCallback();
+    private final long timeout;
+
+    public BlockingCallback()
+    {
+        this(-1);
+    }
+
+    public BlockingCallback(long timeout)
+    {
+        this.timeout = timeout;
+    }
 
     @Override
     public void succeeded()
@@ -42,7 +55,10 @@ public class BlockingCallback implements Callback
     {
         try
         {
-            callback.get();
+            if (timeout > 0)
+                callback.get(timeout, TimeUnit.MILLISECONDS);
+            else
+                callback.get();
         }
         catch (InterruptedException e)
         {
@@ -57,6 +73,10 @@ public class BlockingCallback implements Callback
                 throw (RuntimeException)cause;
             else
                 throw new IOException(cause);
+        }
+        catch (TimeoutException e)
+        {
+            throw new IOException(e);
         }
     }
 }

@@ -66,7 +66,7 @@ public class JavaxWebSocketRemoteEndpoint implements javax.websocket.RemoteEndpo
     @Override
     public void flushBatch() throws IOException
     {
-        BlockingCallback b = new BlockingCallback();
+        BlockingCallback b = newBlockingCallback();
         coreSession.flush(b);
         b.block();
     }
@@ -226,24 +226,22 @@ public class JavaxWebSocketRemoteEndpoint implements javax.websocket.RemoteEndpo
     public void sendPing(ByteBuffer data) throws IOException, IllegalArgumentException
     {
         if (LOG.isDebugEnabled())
-        {
             LOG.debug("sendPing({})", BufferUtil.toDetailString(data));
-        }
-        // TODO: is this supposed to be a blocking call?
-        // TODO: what to do on excessively large payloads (error and close connection per RFC6455, or truncate?)
-        sendFrame(new Frame(OpCode.PING).setPayload(data), Callback.NOOP, batch);
+
+        BlockingCallback b = newBlockingCallback();
+        sendFrame(new Frame(OpCode.PING).setPayload(data), b, batch);
+        b.block();
     }
 
     @Override
     public void sendPong(ByteBuffer data) throws IOException, IllegalArgumentException
     {
         if (LOG.isDebugEnabled())
-        {
             LOG.debug("sendPong({})", BufferUtil.toDetailString(data));
-        }
-        // TODO: is this supposed to be a blocking call?
-        // TODO: what to do on excessively large payloads (error and close connection per RFC6455, or truncate?)
-        sendFrame(new Frame(OpCode.PONG).setPayload(data), Callback.NOOP, batch);
+
+        BlockingCallback b = newBlockingCallback();
+        sendFrame(new Frame(OpCode.PONG).setPayload(data), b, batch);
+        b.block();
     }
 
     protected void assertMessageNotNull(Object data)
@@ -260,5 +258,10 @@ public class JavaxWebSocketRemoteEndpoint implements javax.websocket.RemoteEndpo
         {
             throw new IllegalArgumentException("SendHandler cannot be null");
         }
+    }
+
+    private BlockingCallback newBlockingCallback()
+    {
+        return new BlockingCallback(getIdleTimeout() + 1000);
     }
 }
