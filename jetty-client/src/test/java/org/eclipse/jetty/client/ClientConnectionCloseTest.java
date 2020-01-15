@@ -48,7 +48,7 @@ public class ClientConnectionCloseTest extends AbstractHttpClientServerTest
 {
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_ClientConnectionClose_ServerConnectionClose_ClientClosesAfterExchange(Scenario scenario) throws Exception
+    public void testClientConnectionCloseServerConnectionCloseClientClosesAfterExchange(Scenario scenario) throws Exception
     {
         byte[] data = new byte[128 * 1024];
         start(scenario, new AbstractHandler()
@@ -106,7 +106,7 @@ public class ClientConnectionCloseTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_ClientConnectionClose_ServerDoesNotRespond_ClientIdleTimeout(Scenario scenario) throws Exception
+    public void testClientConnectionCloseServerDoesNotRespondClientIdleTimeout(Scenario scenario) throws Exception
     {
         start(scenario, new AbstractHandler()
         {
@@ -149,7 +149,7 @@ public class ClientConnectionCloseTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_ClientConnectionClose_ServerPartialResponse_ClientIdleTimeout(Scenario scenario) throws Exception
+    public void testClientConnectionCloseServerPartialResponseClientIdleTimeout(Scenario scenario) throws Exception
     {
         long idleTimeout = 1000;
         start(scenario, new AbstractHandler()
@@ -214,7 +214,7 @@ public class ClientConnectionCloseTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_ClientConnectionClose_ServerNoConnectionClose_ClientCloses(Scenario scenario) throws Exception
+    public void testClientConnectionCloseServerNoConnectionCloseClientCloses(Scenario scenario) throws Exception
     {
         start(scenario, new AbstractHandler()
         {

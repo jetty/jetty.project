@@ -40,7 +40,7 @@ public class ModuleGraphWriterTest
     public WorkDir testdir;
 
     @Test
-    public void testGenerate_NothingEnabled() throws IOException
+    public void testGenerateNothingEnabled() throws IOException
     {
         // Test Env
         Path homeDir = MavenTestingUtils.getTestResourcePathDir("dist-home");

@@ -102,7 +102,7 @@ public class LocalEndpointMetadataTest
      * Test Case for bad declaration a method with a non-void return type
      */
     @Test
-    public void testAnnotatedBadSignature_NonVoidReturn() throws Exception
+    public void testAnnotatedBadSignatureNonVoidReturn() throws Exception
     {
         // Should toss exception
         Exception e = assertThrows(InvalidWebSocketException.class, () -> createMetadata(BadBinarySignatureSocket.class));
@@ -113,7 +113,7 @@ public class LocalEndpointMetadataTest
      * Test Case for bad declaration a method with a public static method
      */
     @Test
-    public void testAnnotatedBadSignature_Static() throws Exception
+    public void testAnnotatedBadSignatureStatic() throws Exception
     {
         // Should toss exception
         Exception e = assertThrows(InvalidWebSocketException.class, () -> createMetadata(BadTextSignatureSocket.class));

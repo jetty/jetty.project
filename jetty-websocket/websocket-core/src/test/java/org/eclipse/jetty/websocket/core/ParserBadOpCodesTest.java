@@ -82,7 +82,7 @@ public class ParserBadOpCodesTest
 
     @ParameterizedTest(name = "opcode={0} {1}")
     @MethodSource("data")
-    public void testText_BadOpCode_Ping(byte opcode, String description)
+    public void testTextBadOpCodePing(byte opcode, String description)
     {
         ParserCapture capture = new ParserCapture();
 

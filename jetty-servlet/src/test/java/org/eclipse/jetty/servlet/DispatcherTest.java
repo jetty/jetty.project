@@ -657,8 +657,8 @@ public class DispatcherTest
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
-            byte[] cp1251_bytes = TypeUtil.fromHexString("d2e5ecefe5f0e0f2f3f0e0");
-            String expectedCP1251String = new String(cp1251_bytes, "cp1251");
+            byte[] cp1251Bytes = TypeUtil.fromHexString("d2e5ecefe5f0e0f2f3f0e0");
+            String expectedCP1251String = new String(cp1251Bytes, "cp1251");
 
             assertEquals("/context/ForwardServlet", request.getAttribute(Dispatcher.FORWARD_REQUEST_URI));
             assertEquals("/context", request.getAttribute(Dispatcher.FORWARD_CONTEXT_PATH));

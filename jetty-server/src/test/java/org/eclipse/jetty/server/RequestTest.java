@@ -81,6 +81,7 @@ import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
+// @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
 public class RequestTest
 {
     private static final Logger LOG = Log.getLogger(RequestTest.class);
@@ -154,7 +155,7 @@ public class RequestTest
     }
 
     @Test
-    public void testParamExtraction_BadSequence() throws Exception
+    public void testParamExtractionBadSequence() throws Exception
     {
         _handler._checker = new RequestTester()
         {
@@ -180,7 +181,7 @@ public class RequestTest
     }
 
     @Test
-    public void testParamExtraction_Timeout() throws Exception
+    public void testParamExtractionTimeout() throws Exception
     {
         _handler._checker = new RequestTester()
         {
@@ -516,17 +517,17 @@ public class RequestTest
         final long HUGE_LENGTH = (long)Integer.MAX_VALUE * 10L;
 
         _handler._checker = (request, response) ->
-                request.getContentLength() == (-1) && // per HttpServletRequest javadoc this must return (-1);
+            request.getContentLength() == (-1) && // per HttpServletRequest javadoc this must return (-1);
                 request.getContentLengthLong() == HUGE_LENGTH;
 
         //Send a request with encoded form content
         String request = "POST / HTTP/1.1\r\n" +
-                "Host: whatever\r\n" +
-                "Content-Type: application/octet-stream\n" +
-                "Content-Length: " + HUGE_LENGTH + "\n" +
-                "Connection: close\n" +
-                "\n" +
-                "<insert huge amount of content here>\n";
+            "Host: whatever\r\n" +
+            "Content-Type: application/octet-stream\n" +
+            "Content-Length: " + HUGE_LENGTH + "\n" +
+            "Connection: close\n" +
+            "\n" +
+            "<insert huge amount of content here>\n";
 
         System.out.println(request);
 
@@ -544,8 +545,8 @@ public class RequestTest
 
         _handler._checker = (request, response) ->
             request.getHeader("Content-Length").equals(hugeLength) &&
-                    request.getContentLength() == (-1) && // per HttpServletRequest javadoc this must return (-1);
-                    request.getContentLengthLong() == (-1); // exact behavior here not specified in Servlet javadoc
+                request.getContentLength() == (-1) && // per HttpServletRequest javadoc this must return (-1);
+                request.getContentLengthLong() == (-1); // exact behavior here not specified in Servlet javadoc
 
         //Send a request with encoded form content
         String request = "POST / HTTP/1.1\r\n" +
@@ -1748,8 +1749,8 @@ public class RequestTest
             ((Request)request).setHandled(true);
 
             if (request.getContentLength() > 0 &&
-                    !request.getContentType().startsWith(MimeTypes.Type.FORM_ENCODED.asString()) &&
-                    !request.getContentType().startsWith("multipart/form-data"))
+                !request.getContentType().startsWith(MimeTypes.Type.FORM_ENCODED.asString()) &&
+                !request.getContentType().startsWith("multipart/form-data"))
                 _content = IO.toString(request.getInputStream());
 
             if (_checker != null && _checker.check(request, response))

@@ -70,7 +70,7 @@ public class RemoteQueryManagerTest
         serCtx.registerProtoFiles(fds);
         serCtx.registerMarshaller(new SessionDataMarshaller());
 
-        RemoteCache<String, SessionData> _cache = remoteCacheManager.getCache(DEFAULT_CACHE_NAME);
+        RemoteCache<String, SessionData> cache = remoteCacheManager.getCache(DEFAULT_CACHE_NAME);
 
         ByteArrayOutputStream baos;
         try (InputStream is = RemoteQueryManagerTest.class.getClassLoader().getResourceAsStream("session.proto"))
@@ -106,12 +106,12 @@ public class RemoteQueryManagerTest
                 expiredSessions.add(id);
 
             //add to cache
-            _cache.put(id, sd);
-            assertNotNull(_cache.get(id));
+            cache.put(id, sd);
+            assertNotNull(cache.get(id));
         }
 
         //run the query
-        QueryManager qm = new RemoteQueryManager(_cache);
+        QueryManager qm = new RemoteQueryManager(cache);
         Set<String> queryResult = qm.queryExpiredSessions(currentTime);
 
         // Check that the result is correct

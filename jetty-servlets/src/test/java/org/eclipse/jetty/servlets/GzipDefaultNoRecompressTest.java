@@ -72,7 +72,7 @@ public class GzipDefaultNoRecompressTest
 
     @ParameterizedTest
     @MethodSource("data")
-    public void testNotGzipHandlered_Default_AlreadyCompressed(String alreadyCompressedFilename, String expectedContentType, String compressionType) throws Exception
+    public void testNotGzipHandleredDefaultAlreadyCompressed(String alreadyCompressedFilename, String expectedContentType, String compressionType) throws Exception
     {
         GzipTester tester = new GzipTester(testingdir.getEmptyPathDir(), compressionType);
 

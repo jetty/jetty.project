@@ -19,8 +19,7 @@
 package org.eclipse.jetty.websocket.javax.common;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
+import java.io.Reader;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import javax.websocket.ClientEndpoint;
@@ -36,7 +35,7 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
-public class JavaxWebSocketFrameHandler_OnMessage_BinaryStreamTest extends AbstractJavaxWebSocketFrameHandlerTest
+public class JavaxWebSocketFrameHandlerOnMessageTextStreamTest extends AbstractJavaxWebSocketFrameHandlerTest
 {
     @SuppressWarnings("Duplicates")
     private TrackingSocket performOnMessageInvocation(TrackingSocket socket, Function<JavaxWebSocketFrameHandler, Void> func) throws Exception
@@ -55,11 +54,11 @@ public class JavaxWebSocketFrameHandler_OnMessage_BinaryStreamTest extends Abstr
     public static class MessageStreamSocket extends TrackingSocket
     {
         @OnMessage
-        public void onMessage(InputStream stream)
+        public void onMessage(Reader stream)
         {
             try
             {
-                String msg = IO.toString(stream, StandardCharsets.UTF_8);
+                String msg = IO.toString(stream);
                 addEvent("onMessage(%s) = \"%s\"", stream.getClass().getSimpleName(), msg);
             }
             catch (IOException e)
@@ -76,7 +75,7 @@ public class JavaxWebSocketFrameHandler_OnMessage_BinaryStreamTest extends Abstr
         {
             try
             {
-                endpoint.onFrame(new Frame(OpCode.BINARY).setPayload("Hello World").setFin(true), Callback.NOOP);
+                endpoint.onFrame(new Frame(OpCode.TEXT).setPayload("Hello World").setFin(true), Callback.NOOP);
             }
             catch (Exception e)
             {
@@ -84,8 +83,7 @@ public class JavaxWebSocketFrameHandler_OnMessage_BinaryStreamTest extends Abstr
             }
             return null;
         });
-
         String event = socket.events.poll(1, TimeUnit.SECONDS);
-        assertThat("event", event, is("onMessage(MessageInputStream) = \"Hello World\""));
+        assertThat("Event", event, is("onMessage(MessageReader) = \"Hello World\""));
     }
 }

@@ -220,7 +220,7 @@ public class TestAnnotationParser
     }
 
     @Test
-    public void testJep238MultiReleaseInJar_JDK10() throws Exception
+    public void testJep238MultiReleaseInJarJDK10() throws Exception
     {
         File jdk10Jar = MavenTestingUtils.getTestResourceFile("jdk10/multirelease-10.jar");
         AnnotationParser parser = new AnnotationParser();

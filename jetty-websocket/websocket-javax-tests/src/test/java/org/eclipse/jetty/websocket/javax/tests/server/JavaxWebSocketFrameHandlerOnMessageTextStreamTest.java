@@ -41,7 +41,7 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
-public class JavaxWebSocketFrameHandler_OnMessage_TextStreamTest extends AbstractJavaxWebSocketServerFrameHandlerTest
+public class JavaxWebSocketFrameHandlerOnMessageTextStreamTest extends AbstractJavaxWebSocketServerFrameHandlerTest
 {
     @SuppressWarnings("Duplicates")
     private <T extends WSEventTracker> T performOnMessageInvocation(T socket, Consumer<JavaxWebSocketFrameHandler> func) throws Exception

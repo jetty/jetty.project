@@ -66,6 +66,7 @@ public class URIUtilTest
 
     public static Stream<Arguments> encodePathSource()
     {
+        // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
         return Stream.of(
             Arguments.of("/foo%23+;,:=/b a r/?info ", "/foo%2523+%3B,:=/b%20a%20r/%3Finfo%20"),
             Arguments.of("/context/'list'/\"me\"/;<script>window.alert('xss');</script>",
@@ -100,6 +101,7 @@ public class URIUtilTest
         List<Arguments> arguments = new ArrayList<>();
         arguments.add(Arguments.of("/foo/bar", "/foo/bar"));
 
+        // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
         arguments.add(Arguments.of("/f%20o/b%20r", "/f o/b r"));
         arguments.add(Arguments.of("fää%2523%3b%2c:%3db%20a%20r%3D", "f\u00e4\u00e4%23;,:=b a r="));
         arguments.add(Arguments.of("f%d8%a9%d8%a9%2523%3b%2c:%3db%20a%20r", "f\u0629\u0629%23;,:=b a r"));
@@ -616,6 +618,7 @@ public class URIUtilTest
 
     public static Stream<Arguments> resourceUriLastSegmentSource()
     {
+        // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
         return Stream.of(
             Arguments.of("test.war", "test.war"),
             Arguments.of("a/b/c/test.war", "test.war"),

@@ -127,7 +127,7 @@ public class GzipContentLengthTest
      */
     @ParameterizedTest
     @MethodSource("scenarios")
-    public void testAsyncTimeoutCompleteWrite_Default(Scenario scenario) throws Exception
+    public void testAsyncTimeoutCompleteWriteDefault(Scenario scenario) throws Exception
     {
         testWithGzip(scenario, AsyncTimeoutCompleteWrite.Default.class);
     }
@@ -140,7 +140,7 @@ public class GzipContentLengthTest
      */
     @ParameterizedTest
     @MethodSource("scenarios")
-    public void testAsyncTimeoutCompleteWrite_Passed(Scenario scenario) throws Exception
+    public void testAsyncTimeoutCompleteWritePassed(Scenario scenario) throws Exception
     {
         testWithGzip(scenario, AsyncTimeoutCompleteWrite.Passed.class);
     }
@@ -153,7 +153,7 @@ public class GzipContentLengthTest
      */
     @ParameterizedTest
     @MethodSource("scenarios")
-    public void testAsyncTimeoutDispatchWrite_Default(Scenario scenario) throws Exception
+    public void testAsyncTimeoutDispatchWriteDefault(Scenario scenario) throws Exception
     {
         testWithGzip(scenario, AsyncTimeoutDispatchWrite.Default.class);
     }
@@ -166,7 +166,7 @@ public class GzipContentLengthTest
      */
     @ParameterizedTest
     @MethodSource("scenarios")
-    public void testAsyncTimeoutDispatchWrite_Passed(Scenario scenario) throws Exception
+    public void testAsyncTimeoutDispatchWritePassed(Scenario scenario) throws Exception
     {
         testWithGzip(scenario, AsyncTimeoutDispatchWrite.Passed.class);
     }
@@ -179,7 +179,7 @@ public class GzipContentLengthTest
      */
     @ParameterizedTest
     @MethodSource("scenarios")
-    public void testAsyncScheduledDispatchWrite_Default(Scenario scenario) throws Exception
+    public void testAsyncScheduledDispatchWriteDefault(Scenario scenario) throws Exception
     {
         testWithGzip(scenario, AsyncScheduledDispatchWrite.Default.class);
     }
@@ -192,7 +192,7 @@ public class GzipContentLengthTest
      */
     @ParameterizedTest
     @MethodSource("scenarios")
-    public void testAsyncScheduledDispatchWrite_Passed(Scenario scenario) throws Exception
+    public void testAsyncScheduledDispatchWritePassed(Scenario scenario) throws Exception
     {
         testWithGzip(scenario, AsyncScheduledDispatchWrite.Passed.class);
     }

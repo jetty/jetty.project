@@ -170,6 +170,7 @@ public class CloseStatusTest
         String reason = "___The WebSocket Connection Close Reason_ is defined as" +
             "   the UTF-8-encoded data following the status code (Section 7.4)";
 
+        // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
         String utf4Bytes = "\uD801\uDC00";
 
         assertThat(reason.getBytes().length, lessThan(CloseStatus.MAX_REASON_PHRASE));

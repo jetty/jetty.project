@@ -113,10 +113,10 @@ public class SpnegoAuthenticatorTest
         };
         Request req = channel.getRequest();
         Response res = channel.getResponse();
-        HttpFields http_fields = new HttpFields();
+        HttpFields httpFields = new HttpFields();
         // Create a bogus Authorization header. We don't care about the actual credentials.
-        http_fields.add(HttpHeader.AUTHORIZATION, "Basic asdf");
-        MetaData.Request metadata = new MetaData.Request(http_fields);
+        httpFields.add(HttpHeader.AUTHORIZATION, "Basic asdf");
+        MetaData.Request metadata = new MetaData.Request(httpFields);
         metadata.setURI(new HttpURI("http://localhost"));
         req.setMetaData(metadata);
 

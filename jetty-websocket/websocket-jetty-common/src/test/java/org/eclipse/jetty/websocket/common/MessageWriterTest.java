@@ -80,7 +80,7 @@ public class MessageWriterTest
     }
 
     @Test
-    public void testWriteLarge_RequiringMultipleBuffers() throws Exception
+    public void testWriteLargeRequiringMultipleBuffers() throws Exception
     {
         int size = (int)(OUTPUT_BUFFER_SIZE * 2.5);
         char[] buf = new char[size];

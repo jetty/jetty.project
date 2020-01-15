@@ -27,7 +27,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -545,7 +544,7 @@ public class ContextHandlerTest
     }
 
     @Test
-    public void testVirtualHostManagement() throws Exception
+    public void testVirtualHostManagement()
     {
         ContextHandler context = new ContextHandler("/");
 
@@ -659,7 +658,7 @@ public class ContextHandlerTest
     }
 
     @Test
-    public void testLogNameFromContextPath_Deep() throws Exception
+    public void testLogNameFromContextPathDeep() throws Exception
     {
         ContextHandler handler = new ContextHandler();
         handler.setServer(new Server());
@@ -676,7 +675,7 @@ public class ContextHandlerTest
     }
 
     @Test
-    public void testLogNameFromContextPath_Root() throws Exception
+    public void testLogNameFromContextPathRoot() throws Exception
     {
         ContextHandler handler = new ContextHandler();
         handler.setServer(new Server());
@@ -693,7 +692,7 @@ public class ContextHandlerTest
     }
 
     @Test
-    public void testLogNameFromContextPath_Undefined() throws Exception
+    public void testLogNameFromContextPathUndefined() throws Exception
     {
         ContextHandler handler = new ContextHandler();
         handler.setServer(new Server());
@@ -709,7 +708,7 @@ public class ContextHandlerTest
     }
 
     @Test
-    public void testLogNameFromContextPath_Empty() throws Exception
+    public void testLogNameFromContextPathEmpty() throws Exception
     {
         ContextHandler handler = new ContextHandler();
         handler.setServer(new Server());
@@ -726,7 +725,7 @@ public class ContextHandlerTest
     }
 
     @Test
-    public void testClassPath_WithSpaces() throws IOException
+    public void testClassPathWithSpaces() throws IOException
     {
         ContextHandler handler = new ContextHandler();
         handler.setServer(new Server());
@@ -815,7 +814,7 @@ public class ContextHandlerTest
         }
 
         @Override
-        public void handle(String s, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void handle(String s, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
         {
             baseRequest.setHandled(true);
             this.handled = true;
@@ -830,7 +829,7 @@ public class ContextHandlerTest
     private static final class ContextPathHandler extends AbstractHandler
     {
         @Override
-        public void handle(String s, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void handle(String s, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
         {
             baseRequest.setHandled(true);
 

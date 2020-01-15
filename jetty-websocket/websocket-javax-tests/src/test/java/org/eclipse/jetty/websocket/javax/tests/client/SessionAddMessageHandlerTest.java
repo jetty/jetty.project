@@ -219,7 +219,7 @@ public class SessionAddMessageHandlerTest
      * Test Java 8 Lamba of {@link javax.websocket.MessageHandler.Whole}
      */
     @Test
-    public void testMessageHandler_11_WholeLambda() throws Exception
+    public void testMessageHandler11WholeLambda() throws Exception
     {
         final List<String> received = new ArrayList<>();
 
@@ -244,7 +244,7 @@ public class SessionAddMessageHandlerTest
      * Test Java 8 Lamba of {@link javax.websocket.MessageHandler.Partial}
      */
     @Test
-    public void testMessageHandler_11_PartialLambda() throws Exception
+    public void testMessageHandler11PartialLambda() throws Exception
     {
         final List<Object[]> received = new ArrayList<>();
 

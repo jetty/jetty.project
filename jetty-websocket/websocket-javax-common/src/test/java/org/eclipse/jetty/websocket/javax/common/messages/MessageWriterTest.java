@@ -37,7 +37,7 @@ import static org.hamcrest.Matchers.is;
 public class MessageWriterTest
 {
     @Test
-    public void testSingleByteArray_512b() throws IOException, InterruptedException
+    public void testSingleByteArray512b() throws IOException, InterruptedException
     {
         FrameCapture capture = new FrameCapture();
         try (MessageWriter writer = new MessageWriter(capture, 1024))
@@ -54,7 +54,7 @@ public class MessageWriterTest
     }
 
     @Test
-    public void testSingleByteArray_2k() throws IOException, InterruptedException
+    public void testSingleByteArray2k() throws IOException, InterruptedException
     {
         FrameCapture capture = new FrameCapture();
         try (MessageWriter writer = new MessageWriter(capture, 1024))
@@ -76,7 +76,7 @@ public class MessageWriterTest
     }
 
     @Test
-    public void testMultipleByteArrays_2k() throws IOException, InterruptedException
+    public void testMultipleByteArrays2k() throws IOException, InterruptedException
     {
         final int testSize = 1024 * 2;
         final int outputSize = 80;

@@ -141,7 +141,7 @@ public class ModulesTest
     }
 
     @Test
-    public void testResolve_ServerHttp() throws IOException
+    public void testResolveServerHttp() throws IOException
     {
         // Test Env
         File homeDir = MavenTestingUtils.getTestResourceDir("dist-home");

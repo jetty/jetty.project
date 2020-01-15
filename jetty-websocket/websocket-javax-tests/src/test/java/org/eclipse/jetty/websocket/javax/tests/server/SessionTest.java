@@ -262,7 +262,7 @@ public class SessionTest
 
     @ParameterizedTest(name = "{0}")
     @MethodSource("data")
-    public void testPathParams_Annotated_Empty(Case testCase) throws Exception
+    public void testPathParamsAnnotatedEmpty(Case testCase) throws Exception
     {
         setup(testCase);
         assertResponse("/info/", "pathParams",
@@ -271,7 +271,7 @@ public class SessionTest
 
     @ParameterizedTest(name = "{0}")
     @MethodSource("data")
-    public void testPathParams_Annotated_Single(Case testCase) throws Exception
+    public void testPathParamsAnnotatedSingle(Case testCase) throws Exception
     {
         setup(testCase);
         assertResponse("/info/apple/", "pathParams",
@@ -280,7 +280,7 @@ public class SessionTest
 
     @ParameterizedTest(name = "{0}")
     @MethodSource("data")
-    public void testPathParams_Annotated_Double(Case testCase) throws Exception
+    public void testPathParamsAnnotatedDouble(Case testCase) throws Exception
     {
         setup(testCase);
         assertResponse("/info/apple/pear/", "pathParams",
@@ -289,7 +289,7 @@ public class SessionTest
 
     @ParameterizedTest(name = "{0}")
     @MethodSource("data")
-    public void testPathParams_Annotated_Triple(Case testCase) throws Exception
+    public void testPathParamsAnnotatedTriple(Case testCase) throws Exception
     {
         setup(testCase);
         assertResponse("/info/apple/pear/cherry/", "pathParams",
@@ -299,7 +299,7 @@ public class SessionTest
     @ParameterizedTest(name = "{0}")
     @MethodSource("data")
     @Disabled
-    public void testPathParams_Endpoint_Empty(Case testCase) throws Exception
+    public void testPathParamsEndpointEmpty(Case testCase) throws Exception
     {
         setup(testCase);
         assertResponse("/einfo/", "pathParams",
@@ -309,7 +309,7 @@ public class SessionTest
     @ParameterizedTest(name = "{0}")
     @MethodSource("data")
     @Disabled
-    public void testPathParams_Endpoint_Single(Case testCase) throws Exception
+    public void testPathParamsEndpointSingle(Case testCase) throws Exception
     {
         setup(testCase);
         assertResponse("/einfo/apple/", "pathParams",
@@ -319,7 +319,7 @@ public class SessionTest
     @ParameterizedTest(name = "{0}")
     @MethodSource("data")
     @Disabled
-    public void testPathParams_Endpoint_Double(Case testCase) throws Exception
+    public void testPathParamsEndpointDouble(Case testCase) throws Exception
     {
         setup(testCase);
         assertResponse("/einfo/apple/pear/", "pathParams",
@@ -329,7 +329,7 @@ public class SessionTest
     @ParameterizedTest(name = "{0}")
     @MethodSource("data")
     @Disabled
-    public void testPathParams_Endpoint_Triple(Case testCase) throws Exception
+    public void testPathParamsEndpointTriple(Case testCase) throws Exception
     {
         setup(testCase);
         assertResponse("/einfo/apple/pear/cherry/", "pathParams",
@@ -338,7 +338,7 @@ public class SessionTest
 
     @ParameterizedTest(name = "{0}")
     @MethodSource("data")
-    public void testRequestUri_Annotated_Basic(Case testCase) throws Exception
+    public void testRequestUriAnnotatedBasic(Case testCase) throws Exception
     {
         setup(testCase);
         assertResponse("/info/", "requestUri",
@@ -347,7 +347,7 @@ public class SessionTest
 
     @ParameterizedTest(name = "{0}")
     @MethodSource("data")
-    public void testRequestUri_Annotated_WithPathParam(Case testCase) throws Exception
+    public void testRequestUriAnnotatedWithPathParam(Case testCase) throws Exception
     {
         setup(testCase);
         assertResponse("/info/apple/banana/", "requestUri",
@@ -357,7 +357,7 @@ public class SessionTest
 
     @ParameterizedTest(name = "{0}")
     @MethodSource("data")
-    public void testRequestUri_Annotated_WithPathParam_WithQuery(Case testCase) throws Exception
+    public void testRequestUriAnnotatedWithPathParamWithQuery(Case testCase) throws Exception
     {
         setup(testCase);
         assertResponse("/info/apple/banana/?fruit=fresh&store=grandmasfarm",
@@ -369,7 +369,7 @@ public class SessionTest
     @ParameterizedTest(name = "{0}")
     @MethodSource("data")
     @Disabled
-    public void testRequestUri_Endpoint_Basic(Case testCase) throws Exception
+    public void testRequestUriEndpointBasic(Case testCase) throws Exception
     {
         setup(testCase);
         assertResponse("/einfo/", "requestUri",
@@ -379,7 +379,7 @@ public class SessionTest
     @ParameterizedTest(name = "{0}")
     @MethodSource("data")
     @Disabled
-    public void testRequestUri_Endpoint_WithPathParam(Case testCase) throws Exception
+    public void testRequestUriEndpointWithPathParam(Case testCase) throws Exception
     {
         setup(testCase);
         assertResponse("/einfo/apple/banana/", "requestUri",
@@ -389,7 +389,7 @@ public class SessionTest
     @ParameterizedTest(name = "{0}")
     @MethodSource("data")
     @Disabled
-    public void testRequestUri_Endpoint_WithPathParam_WithQuery(Case testCase) throws Exception
+    public void testRequestUriEndpointWithPathParamWithQuery(Case testCase) throws Exception
     {
         setup(testCase);
         assertResponse("/einfo/apple/banana/?fruit=fresh&store=grandmasfarm",

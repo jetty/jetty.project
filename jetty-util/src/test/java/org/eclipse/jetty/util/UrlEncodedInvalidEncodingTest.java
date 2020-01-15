@@ -51,8 +51,8 @@ public class UrlEncodedInvalidEncodingTest
     {
         assertThrows(expectedThrowable, () ->
         {
-            UrlEncoded url_encoded = new UrlEncoded();
-            url_encoded.decode(inputString, charset);
+            UrlEncoded urlEncoded = new UrlEncoded();
+            urlEncoded.decode(inputString, charset);
         });
     }
 

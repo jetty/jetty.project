@@ -47,11 +47,11 @@ public class DrupalHTTP2FastCGIProxyServer
 
         // HTTP(S) Configuration
         HttpConfiguration config = new HttpConfiguration();
-        HttpConfiguration https_config = new HttpConfiguration(config);
-        https_config.addCustomizer(new SecureRequestCustomizer());
+        HttpConfiguration httpsConfig = new HttpConfiguration(config);
+        httpsConfig.addCustomizer(new SecureRequestCustomizer());
 
         // HTTP2 factory
-        HTTP2ServerConnectionFactory h2 = new HTTP2ServerConnectionFactory(https_config);
+        HTTP2ServerConnectionFactory h2 = new HTTP2ServerConnectionFactory(httpsConfig);
         ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory();
         alpn.setDefaultProtocol(h2.getProtocol());
 
@@ -60,7 +60,7 @@ public class DrupalHTTP2FastCGIProxyServer
 
         // HTTP2 Connector
         ServerConnector http2Connector =
-            new ServerConnector(server, ssl, alpn, h2, new HttpConnectionFactory(https_config));
+            new ServerConnector(server, ssl, alpn, h2, new HttpConnectionFactory(httpsConfig));
         http2Connector.setPort(8443);
         http2Connector.setIdleTimeout(15000);
         server.addConnector(http2Connector);

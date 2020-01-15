@@ -62,7 +62,7 @@ public class MavenLocalRepoFileInitializerTest
     }
 
     @Test
-    public void testGetCoordinate_NotMaven()
+    public void testGetCoordinateNotMaven()
     {
         MavenLocalRepoFileInitializer repo = new MavenLocalRepoFileInitializer(baseHome);
         String ref = "http://www.eclipse.org/jetty";
@@ -71,7 +71,7 @@ public class MavenLocalRepoFileInitializerTest
     }
 
     @Test
-    public void testGetCoordinate_InvalidMaven()
+    public void testGetCoordinateInvalidMaven()
     {
         MavenLocalRepoFileInitializer repo = new MavenLocalRepoFileInitializer(baseHome);
         String ref = "maven://www.eclipse.org/jetty";
@@ -80,7 +80,7 @@ public class MavenLocalRepoFileInitializerTest
     }
 
     @Test
-    public void testGetCoordinate_Normal()
+    public void testGetCoordinateNormal()
     {
         MavenLocalRepoFileInitializer repo = new MavenLocalRepoFileInitializer(baseHome);
         String ref = "maven://org.eclipse.jetty/jetty-start/9.3.x";
@@ -98,7 +98,7 @@ public class MavenLocalRepoFileInitializerTest
     }
 
     @Test
-    public void testGetCoordinate_Zip()
+    public void testGetCoordinateZip()
     {
         MavenLocalRepoFileInitializer repo = new MavenLocalRepoFileInitializer(baseHome);
         String ref = "maven://org.eclipse.jetty/jetty-distribution/9.3.x/zip";
@@ -116,7 +116,7 @@ public class MavenLocalRepoFileInitializerTest
     }
 
     @Test
-    public void testGetCoordinate_TestJar()
+    public void testGetCoordinateTestJar()
     {
         MavenLocalRepoFileInitializer repo = new MavenLocalRepoFileInitializer(baseHome);
         String ref = "maven://org.eclipse.jetty/jetty-http/9.3.x/jar/tests";
@@ -134,7 +134,7 @@ public class MavenLocalRepoFileInitializerTest
     }
 
     @Test
-    public void testGetCoordinate_Test_UnspecifiedType()
+    public void testGetCoordinateTestUnspecifiedType()
     {
         MavenLocalRepoFileInitializer repo = new MavenLocalRepoFileInitializer(baseHome);
         String ref = "maven://org.eclipse.jetty/jetty-http/9.3.x//tests";
@@ -152,7 +152,7 @@ public class MavenLocalRepoFileInitializerTest
     }
 
     @Test
-    public void testGetCoordinate_TestMavenBaseUri()
+    public void testGetCoordinateTestMavenBaseUri()
     {
         MavenLocalRepoFileInitializer repo =
             new MavenLocalRepoFileInitializer(baseHome, null, false,
@@ -172,7 +172,7 @@ public class MavenLocalRepoFileInitializerTest
     }
 
     @Test
-    public void testDownload_default_repo()
+    public void testDownloaddefaultrepo()
         throws Exception
     {
         MavenLocalRepoFileInitializer repo =

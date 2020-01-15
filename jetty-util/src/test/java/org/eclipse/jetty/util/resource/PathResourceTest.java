@@ -43,7 +43,7 @@ import static org.hamcrest.Matchers.nullValue;
 public class PathResourceTest
 {
     @Test
-    public void testNonDefaultFileSystem_GetInputStream() throws URISyntaxException, IOException
+    public void testNonDefaultFileSystemGetInputStream() throws URISyntaxException, IOException
     {
         Path exampleJar = MavenTestingUtils.getTestResourcePathFile("example.jar");
 
@@ -67,7 +67,7 @@ public class PathResourceTest
     }
 
     @Test
-    public void testNonDefaultFileSystem_GetReadableByteChannel() throws URISyntaxException, IOException
+    public void testNonDefaultFileSystemGetReadableByteChannel() throws URISyntaxException, IOException
     {
         Path exampleJar = MavenTestingUtils.getTestResourcePathFile("example.jar");
 
@@ -91,7 +91,7 @@ public class PathResourceTest
     }
 
     @Test
-    public void testNonDefaultFileSystem_GetFile() throws URISyntaxException, IOException
+    public void testNonDefaultFileSystemGetFile() throws URISyntaxException, IOException
     {
         Path exampleJar = MavenTestingUtils.getTestResourcePathFile("example.jar");
 
@@ -112,7 +112,7 @@ public class PathResourceTest
     }
 
     @Test
-    public void testNonDefaultFileSystem_WriteTo() throws URISyntaxException, IOException
+    public void testNonDefaultFileSystemWriteTo() throws URISyntaxException, IOException
     {
         Path exampleJar = MavenTestingUtils.getTestResourcePathFile("example.jar");
 
@@ -138,7 +138,7 @@ public class PathResourceTest
     }
 
     @Test
-    public void testDefaultFileSystem_GetFile() throws Exception
+    public void testDefaultFileSystemGetFile() throws Exception
     {
         Path exampleJar = MavenTestingUtils.getTestResourcePathFile("example.jar");
         PathResource resource = new PathResource(exampleJar);

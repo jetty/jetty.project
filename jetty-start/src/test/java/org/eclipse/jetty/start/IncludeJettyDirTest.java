@@ -114,7 +114,7 @@ public class IncludeJettyDirTest
     }
 
     @Test
-    public void testCommandLine_1Extra() throws Exception
+    public void testCommandLine1Extra() throws Exception
     {
         // Create home
         Path home = testdir.getPathFile("home");
@@ -148,7 +148,7 @@ public class IncludeJettyDirTest
     }
 
     @Test
-    public void testCommandLine_1Extra_FromSimpleProp() throws Exception
+    public void testCommandLine1ExtraFromSimpleProp() throws Exception
     {
         // Create home
         Path home = testdir.getPathFile("home");
@@ -184,7 +184,7 @@ public class IncludeJettyDirTest
     }
 
     @Test
-    public void testCommandLine_1Extra_FromPropPrefix() throws Exception
+    public void testCommandLine1ExtraFromPropPrefix() throws Exception
     {
         // Create home
         Path home = testdir.getPathFile("home");
@@ -226,7 +226,7 @@ public class IncludeJettyDirTest
     }
 
     @Test
-    public void testCommandLine_1Extra_FromCompoundProp() throws Exception
+    public void testCommandLine1ExtraFromCompoundProp() throws Exception
     {
         // Create home
         Path home = testdir.getPathFile("home");
@@ -380,7 +380,7 @@ public class IncludeJettyDirTest
     }
 
     @Test
-    public void testRefCommonRefCorp_FromSimpleProps() throws Exception
+    public void testRefCommonRefCorpFromSimpleProps() throws Exception
     {
         // Create home
         Path home = testdir.getPathFile("home");
@@ -423,7 +423,7 @@ public class IncludeJettyDirTest
     }
 
     @Test
-    public void testRefCommonRefCorp_CmdLineRef() throws Exception
+    public void testRefCommonRefCorpCmdLineRef() throws Exception
     {
         // Create home
         Path home = testdir.getPathFile("home");
@@ -474,7 +474,7 @@ public class IncludeJettyDirTest
     }
 
     @Test
-    public void testRefCommonRefCorp_CmdLineProp() throws Exception
+    public void testRefCommonRefCorpCmdLineProp() throws Exception
     {
         // Create home
         Path home = testdir.getPathFile("home");
