@@ -510,6 +510,16 @@ public class MultiPartFormInputStreamTest
     }
 
     @Test
+    public void testDeleteNPE()
+    {
+        final InputStream input = new ByteArrayInputStream(createMultipartRequestString("myFile").getBytes());
+        MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 1024, 50);
+        MultiPartFormInputStream mpis = new MultiPartFormInputStream(input, _contentType, config, _tmpDir);
+
+        mpis.deleteParts(); // this should not be an NPE
+    }
+
+    @Test
     public void testLFOnlyRequest()
         throws Exception
     {
