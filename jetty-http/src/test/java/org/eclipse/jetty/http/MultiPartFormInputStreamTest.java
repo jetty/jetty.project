@@ -510,17 +510,13 @@ public class MultiPartFormInputStreamTest
     }
 
     @Test
-    public void testParseAfterCleanUp() throws Exception
+    public void testDeleteNPE()
     {
         final InputStream input = new ByteArrayInputStream(createMultipartRequestString("myFile").getBytes());
         MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 1024, 50);
         MultiPartFormInputStream mpis = new MultiPartFormInputStream(input, _contentType, config, _tmpDir);
 
-        mpis.deleteParts();
-
-        // The call to getParts should throw because we have already cleaned up the parts.
-        Throwable error = assertThrows(IllegalStateException.class, mpis::getParts);
-        assertThat(error.getMessage(), containsString("CLOSED"));
+        mpis.deleteParts(); // this should not be an NPE
     }
 
     @Test

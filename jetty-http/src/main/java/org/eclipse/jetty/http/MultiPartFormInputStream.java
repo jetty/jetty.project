@@ -60,10 +60,10 @@ public class MultiPartFormInputStream
 {
     private static final Logger LOG = Log.getLogger(MultiPartFormInputStream.class);
     private static final MultiMap<Part> EMPTY_MAP = new MultiMap<>(Collections.emptyMap());
+    private final MultiMap<Part> _parts;
     private InputStream _in;
     private MultipartConfigElement _config;
     private String _contentType;
-    private MultiMap<Part> _parts;
     private Throwable _err;
     private File _tmpDir;
     private File _contextTmpDir;
@@ -341,16 +341,19 @@ public class MultiPartFormInputStream
         if (_config == null)
             _config = new MultipartConfigElement(_contextTmpDir.getAbsolutePath());
 
+        MultiMap parts = new MultiMap();
+
         if (in instanceof ServletInputStream)
         {
             if (((ServletInputStream)in).isFinished())
             {
-                _parts = EMPTY_MAP;
+                parts = EMPTY_MAP;
                 _parsed = true;
-                return;
             }
         }
-        _in = new BufferedInputStream(in);
+        if (!_parsed)
+            _in = new BufferedInputStream(in);
+        _parts = parts;
     }
 
     /**
@@ -397,13 +400,6 @@ public class MultiPartFormInputStream
      */
     public void deleteParts()
     {
-        if (_parts == null)
-        {
-            // If we call deleteParts at this point, we are considered CLOSED
-            _err = new IllegalStateException("CLOSED via call to deleteParts()");
-            return;
-        }
-
         MultiException err = null;
         for (List<Part> parts : _parts.values())
         {
@@ -438,6 +434,9 @@ public class MultiPartFormInputStream
         if (!_parsed)
             parse();
         throwIfError();
+
+        if (_parts.isEmpty())
+            return Collections.emptyList();
 
         Collection<List<Part>> values = _parts.values();
         List<Part> parts = new ArrayList<>();
@@ -499,9 +498,6 @@ public class MultiPartFormInputStream
         Handler handler = new Handler();
         try
         {
-            // initialize
-            _parts = new MultiMap<>();
-
             // if its not a multipart request, don't parse it
             if (_contentType == null || !_contentType.startsWith("multipart/form-data"))
                 return;
