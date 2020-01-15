@@ -17,6 +17,7 @@
     <jetty.url>http://www.eclipse.org/jetty</jetty.url>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <build-support.version>1.4</build-support.version>
+    <checkstyle.version>8.20</checkstyle.version>
     <slf4j.version>1.7.25</slf4j.version>
     <log4j2.version>2.11.2</log4j2.version>
     <disruptor.version>3.4.2</disruptor.version>
@@ -455,12 +456,12 @@
           <dependency>
             <groupId>com.puppycrawl.tools</groupId>
             <artifactId>checkstyle</artifactId>
-            <version>8.20</version>
+            <version>${checkstyle.version}</version>
           </dependency>
         </dependencies>
         <executions>
           <execution>
-            <id>checkcheck</id>
+            <id>checkstyle-check</id>
             <phase>validate</phase>
             <goals>
               <goal>check</goal>
@@ -488,6 +489,11 @@
               <version>1.0</version>
             </dependency>
           </dependencies>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-checkstyle-plugin</artifactId>
+          <version>3.1.0</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
