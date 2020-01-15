@@ -67,7 +67,7 @@ pipeline {
           agent { node { label 'linux' } }
           steps {
             timeout(time: 40, unit: 'MINUTES') {
-              mavenBuild("jdk11", "install javadoc:javadoc javadoc:aggregate-jar -DskipTests", "maven3", true)
+              mavenBuild("jdk11", "install javadoc:javadoc javadoc:aggregate-jar -DskipTests -Dpmd.skip=true -Dcheckstyle.skip=true", "maven3", true)
               warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'JavaDoc'], [parserName: 'Java']]
             }
           }
