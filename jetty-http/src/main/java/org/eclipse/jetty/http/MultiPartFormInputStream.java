@@ -397,6 +397,13 @@ public class MultiPartFormInputStream
      */
     public void deleteParts()
     {
+        if (_parts == null)
+        {
+            // If we call deleteParts at this point, we are considered CLOSED
+            _err = new IllegalStateException("CLOSED via call to deleteParts()");
+            return;
+        }
+
         MultiException err = null;
         for (List<Part> parts : _parts.values())
         {
