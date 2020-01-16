@@ -1450,5 +1450,35 @@ public class ServletContextHandler extends ContextHandler
                 throw new UnsupportedOperationException();
             addRoles(roleNames);
         }
+
+        @Override
+        public String getRequestCharacterEncoding()
+        {
+            return getDefaultRequestCharacterEncoding();
+        }
+
+        @Override
+        public void setRequestCharacterEncoding(String encoding)
+        {
+            if (!isStarting())
+                throw new IllegalStateException();
+            
+            setDefaultRequestCharacterEncoding(encoding);
+        }
+
+        @Override
+        public String getResponseCharacterEncoding()
+        {
+            return getDefaultResponseCharacterEncoding();
+        }
+
+        @Override
+        public void setResponseCharacterEncoding(String encoding)
+        {
+            if (!isStarting())
+                throw new IllegalStateException();
+            
+            setDefaultResponseCharacterEncoding(encoding);
+        }
     }
 }

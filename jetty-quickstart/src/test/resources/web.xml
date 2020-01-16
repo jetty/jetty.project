@@ -10,6 +10,8 @@
   
   
   <default-context-path>/thisIsTheDefault</default-context-path>
+  <request-character-encoding>ascii</request-character-encoding>
+  <response-character-encoding>utf-16</response-character-encoding>
 
 </web-app>
 

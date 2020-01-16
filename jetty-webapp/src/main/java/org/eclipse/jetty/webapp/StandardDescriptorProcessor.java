@@ -98,8 +98,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             registerVisitor("distributable", this.getClass().getMethod("visitDistributable", __signature));
             registerVisitor("deny-uncovered-http-methods", this.getClass().getMethod("visitDenyUncoveredHttpMethods", __signature));
             registerVisitor("default-context-path", this.getClass().getMethod("visitDefaultContextPath", __signature));
-            registerVisitor("request-encoding", this.getClass().getMethod("visitRequestEncoding", __signature));
-            registerVisitor("response-encoding", this.getClass().getMethod("visitResponseEncoding", __signature));
+            registerVisitor("request-character-encoding", this.getClass().getMethod("visitRequestCharacterEncoding", __signature));
+            registerVisitor("response-character-encoding", this.getClass().getMethod("visitResponseCharacterEncoding", __signature));
         }
         catch (Exception e)
         {
@@ -1983,11 +1983,17 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
      * @param node the xml node
      * @since Servlet 4.0
      */
-    public void visitRequestEncoding(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
+    public void visitRequestCharacterEncoding(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
     {
-        // TODO
-        LOG.warn("Not implemented {}", node);
-        // TODO
+        //As per spec, this element can only appear in web.xml, never in a fragment. Jetty will
+        //allow it to be specified in webdefault.xml, web.xml, and web-override.xml.
+        if (!(descriptor instanceof FragmentDescriptor))
+        {
+            String encoding = node.toString(false, true);
+            context.setAttribute("request-character-encoding", encoding);
+            context.setDefaultRequestCharacterEncoding(encoding);
+            context.getMetaData().setOrigin("request-character-encoding", descriptor);
+        }
     }
 
     /**
@@ -1999,9 +2005,16 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
      * @param node the xml node
      * @since Servlet 4.0
      */
-    public void visitResponseEncoding(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
+    public void visitResponseCharacterEncoding(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
     {
-        // TODO
-        LOG.warn("Not implemented {}", node);
+        //As per spec, this element can only appear in web.xml, never in a fragment. Jetty will
+        //allow it to be specified in webdefault.xml, web.xml, and web-override.xml.
+        if (!(descriptor instanceof FragmentDescriptor))
+        {
+            String encoding = node.toString(false, true);
+            context.setAttribute("response-character-encoding", encoding);
+            context.setDefaultResponseCharacterEncoding(encoding);
+            context.getMetaData().setOrigin("response-character-encoding", descriptor);
+        }
     }
 }
