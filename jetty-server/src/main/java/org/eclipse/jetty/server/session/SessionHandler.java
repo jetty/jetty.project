@@ -167,9 +167,10 @@ public class SessionHandler extends ScopedHandler
      * as an integer, but treated as seconds by the HttpSession
      * also as an integer. Thus, there is a floor and ceiling to
      * the session timeout values. This method enforces that
-     * floor and ceiling. Note that all values <= 0
+     * floor and ceiling. Note that all values &lt;&eq; 0
      * are effectively equivalent, meaning that the session will
      * never expire.
+     *
      * @param minutes the number of minutes before an idle session expires
      * @return the number of minutes, limited by the max and min value
      */
