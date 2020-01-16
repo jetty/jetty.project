@@ -121,7 +121,8 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
     protected HttpInput newHttpInput(HttpChannelState state)
     {
-        return new HttpInput(state);
+        //TODO the HTTP2 impl instantiation should be in a subclass
+        return new HttpInputOverHTTP2(state);
     }
 
     protected HttpOutput newHttpOutput()

@@ -34,6 +34,7 @@ import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpParser.RequestHandler;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.AbstractConnection;
@@ -316,21 +317,20 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     }
 
     /**
-     * Fill and parse data looking for content
-     *
-     * @return true if an {@link RequestHandler} method was called and it returned true;
+     * Parse and fill data, looking for content
      */
-    protected boolean fillAndParseForContent()
+    protected void parseAndFillForContent()
     {
-        boolean handled = false;
+        // parseRequestBuffer() must always be called after fillRequestBuffer() otherwise this method doesn't trigger EOF/earlyEOF
+        // which breaks AsyncRequestReadTest.testPartialReadThenShutdown()
+        int filled = Integer.MAX_VALUE;
         while (_parser.inContentState())
         {
-            int filled = fillRequestBuffer();
-            handled = parseRequestBuffer();
+            boolean handled = parseRequestBuffer();
             if (handled || filled <= 0 || _input.hasContent())
                 break;
+            filled = fillRequestBuffer();
         }
-        return handled;
     }
 
     private int fillRequestBuffer()
@@ -655,8 +655,15 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         @Override
         public void succeeded()
         {
-            if (_contentBufferReferences.decrementAndGet() == 0)
+            int counter = _contentBufferReferences.decrementAndGet();
+            if (counter == 0)
                 releaseRequestBuffer();
+            // TODO: this should do something (warn? fail?) if _contentBufferReferences goes below 0
+            if (counter < 0)
+            {
+                LOG.warn("Content reference counting went below zero: {}", counter);
+                _contentBufferReferences.incrementAndGet();
+            }
         }
 
         @Override

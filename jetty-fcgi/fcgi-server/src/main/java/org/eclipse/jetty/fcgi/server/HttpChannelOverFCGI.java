@@ -33,7 +33,10 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpChannel;
+import org.eclipse.jetty.server.HttpChannelState;
 import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpInput;
+import org.eclipse.jetty.server.HttpInputOverFCGI;
 import org.eclipse.jetty.server.HttpTransport;
 import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
@@ -55,6 +58,12 @@ public class HttpChannelOverFCGI extends HttpChannel
     {
         super(connector, configuration, endPoint, transport);
         this.dispatcher = new Dispatcher(connector.getServer().getThreadPool(), this);
+    }
+
+    @Override
+    protected HttpInput newHttpInput(HttpChannelState state)
+    {
+        return new HttpInputOverFCGI(state);
     }
 
     protected void header(HttpField field)
