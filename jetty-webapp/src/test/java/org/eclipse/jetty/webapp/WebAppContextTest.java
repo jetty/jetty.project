@@ -80,6 +80,65 @@ public class WebAppContextTest
     }
 
     @Test
+    public void testDefaultContextPath() throws Exception
+    {
+        Server server = new Server();
+        File webXml = MavenTestingUtils.getTestResourceFile("web-with-default-context-path.xml");
+        File webXmlEmptyPath = MavenTestingUtils.getTestResourceFile("web-with-empty-default-context-path.xml");
+        File webDefaultXml = MavenTestingUtils.getTestResourceFile("web-default-with-default-context-path.xml");
+        File overrideWebXml = MavenTestingUtils.getTestResourceFile("override-web-with-default-context-path.xml");
+        assertNotNull(webXml);
+        assertNotNull(webDefaultXml);
+        assertNotNull(overrideWebXml);
+        assertNotNull(webXmlEmptyPath);
+        
+        try
+        {
+            WebAppContext wac = new WebAppContext();
+            wac.setResourceBase(MavenTestingUtils.getTargetTestingDir().getAbsolutePath());
+            server.setHandler(wac);
+            
+            //test that an empty default-context-path defaults to root
+            wac.setDescriptor(webXmlEmptyPath.getAbsolutePath());
+            server.start();
+            assertEquals("/", wac.getContextPath());
+            
+            server.stop();
+            
+            //test web-default.xml value is used
+            wac.setDescriptor(null);
+            wac.setDefaultsDescriptor(webDefaultXml.getAbsolutePath());
+            server.start();
+            assertEquals("/one", wac.getContextPath());
+            
+            server.stop();
+            
+            //test web.xml value is used
+            wac.setDescriptor(webXml.getAbsolutePath());
+            server.start();
+            assertEquals("/two", wac.getContextPath());
+            
+            server.stop();
+            
+            //test override-web.xml value is used
+            wac.setOverrideDescriptor(overrideWebXml.getAbsolutePath());
+            server.start();
+            assertEquals("/three", wac.getContextPath());
+
+            server.stop();
+            
+            //test that explicitly set context path is used instead
+            wac.setContextPath("/foo");
+            server.start();
+            assertEquals("/foo", wac.getContextPath());
+        }
+        finally
+        {
+            server.stop();
+        }
+    }
+
+    @Test
     public void testSessionListeners()
     {
         Server server = new Server();
