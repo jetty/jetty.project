@@ -108,7 +108,7 @@ import org.eclipse.jetty.util.resource.Resource;
  * these alias checkers are not required, then {@link #clearAliasChecks()} or {@link #setAliasChecks(List)} should be called.
  */
 @ManagedObject("URI Context")
-public class ContextHandler extends ScopedHandler implements Attributes, Graceful
+public class ContextHandler extends ScopedHandler implements Attributes, Graceful, AbstractHandlerContainer.GracefulContainer
 {
     public static final int SERVLET_MAJOR_VERSION = 4;
     public static final int SERVLET_MINOR_VERSION = 0;
@@ -179,19 +179,16 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     private boolean _contextPathDefault = true;
     private String _contextPath = "/";
     private String _contextPathEncoded = "/";
-
     private String _displayName;
-
+    private long _stopTimeout;
     private Resource _baseResource;
     private MimeTypes _mimeTypes;
     private Map<String, String> _localeEncodingMap;
     private String[] _welcomeFiles;
     private ErrorHandler _errorHandler;
-
     private String[] _vhosts; // Host name portion, matching _vconnectors array
     private boolean[] _vhostswildcard;
     private String[] _vconnectors; // connector portion, matching _vhosts array
-
     private Logger _logger;
     private boolean _allowNullPathInfo;
     private int _maxFormKeys = Integer.getInteger(MAX_FORM_KEYS_KEY, DEFAULT_MAX_FORM_KEYS);
@@ -904,6 +901,18 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         l.contextDestroyed(e);
     }
 
+    @Override
+    public void setStopTimeout(long stopTimeout)
+    {
+        _stopTimeout = stopTimeout;
+    }
+
+    @Override
+    public long getStopTimeout()
+    {
+        return _stopTimeout;
+    }
+
     /*
      * @see org.eclipse.thread.AbstractLifeCycle#doStop()
      */
@@ -913,16 +922,13 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         // Should we attempt a graceful shutdown?
         MultiException mex = null;
 
-        if (getStopTimeout() > 0)
+        try
         {
-            try
-            {
-                doShutdown(null);
-            }
-            catch (MultiException e)
-            {
-                mex = e;
-            }
+            shutdown(this);
+        }
+        catch (MultiException e)
+        {
+            mex = e;
         }
 
         _availability = Availability.UNAVAILABLE;
@@ -1082,7 +1088,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             case SHUTDOWN:
             case UNAVAILABLE:
                 baseRequest.setHandled(true);
-                response.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
+                response.resetBuffer();
+                response.setStatus(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
+                response.flushBuffer();
                 return false;
             default:
                 if ((DispatcherType.REQUEST.equals(dispatch) && baseRequest.isHandled()))

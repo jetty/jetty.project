@@ -549,11 +549,6 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
                     }
                 }
             }
-
-            if (bean._bean instanceof AbstractLifeCycle)
-            {
-                ((AbstractLifeCycle)bean._bean).setStopTimeout(getStopTimeout());
-            }
         }
     }
 
@@ -699,17 +694,6 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
             return true;
         }
         return false;
-    }
-
-    @Override
-    public void setStopTimeout(long stopTimeout)
-    {
-        super.setStopTimeout(stopTimeout);
-        for (Bean bean : _beans)
-        {
-            if (bean.isManaged() && bean._bean instanceof AbstractLifeCycle)
-                ((AbstractLifeCycle)bean._bean).setStopTimeout(stopTimeout);
-        }
     }
 
     /**

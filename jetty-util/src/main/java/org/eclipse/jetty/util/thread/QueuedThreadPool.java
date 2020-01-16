@@ -40,13 +40,14 @@ import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
+import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ThreadPool.SizedThreadPool;
 
 @ManagedObject("A thread pool")
-public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactory, SizedThreadPool, Dumpable, TryExecutor
+public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactory, SizedThreadPool, Dumpable, TryExecutor, Graceful.LifeCycle
 {
     private static final Logger LOG = Log.getLogger(QueuedThreadPool.class);
     private static Runnable NOOP = () ->
@@ -80,6 +81,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
     private boolean _detailedDump = false;
     private int _lowThreadsThreshold = 1;
     private ThreadPoolBudget _budget;
+    private long _stopTimeout;
 
     public QueuedThreadPool()
     {
@@ -157,6 +159,18 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
         if (budget != null && budget.getSizedThreadPool() != this)
             throw new IllegalArgumentException();
         _budget = budget;
+    }
+
+    @Override
+    public void setStopTimeout(long stopTimeout)
+    {
+        _stopTimeout = stopTimeout;
+    }
+
+    @Override
+    public long getStopTimeout()
+    {
+        return _stopTimeout;
     }
 
     @Override
@@ -675,10 +689,17 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
             int threads = AtomicBiInteger.getHi(encoded);
             int idle = AtomicBiInteger.getLo(encoded);
             if (threads == Integer.MIN_VALUE) // This is a marker that the pool is stopped.
-                return false;
-            long update = AtomicBiInteger.encode(threads + deltaThreads, idle + deltaIdle);
-            if (_counts.compareAndSet(encoded, update))
-                return true;
+            {
+                long update = AtomicBiInteger.encode(threads, idle + deltaIdle);
+                if (_counts.compareAndSet(encoded, update))
+                    return false;
+            }
+            else
+            {
+                long update = AtomicBiInteger.encode(threads + deltaThreads, idle + deltaIdle);
+                if (_counts.compareAndSet(encoded, update))
+                    return true;
+            }
         }
     }
 
@@ -880,10 +901,10 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
                     // If we had a job,
                     if (job != null)
                     {
+                        idle = true;
                         // signal that we are idle again
                         if (!addCounts(0, 1))
                             break;
-                        idle = true;
                     }
                     // else check we are still running
                     else if (_counts.getHi() == Integer.MIN_VALUE)

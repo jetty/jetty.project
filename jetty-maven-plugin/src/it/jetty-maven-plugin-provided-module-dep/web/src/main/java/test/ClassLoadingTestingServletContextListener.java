@@ -61,7 +61,7 @@ public class ClassLoadingTestingServletContextListener
     {
     }
     
-    private void printURLs (URLClassLoader l)
+    private void printURLs(URLClassLoader l)
     {
         if (l == null)
             return;

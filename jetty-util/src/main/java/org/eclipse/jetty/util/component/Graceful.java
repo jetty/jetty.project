@@ -21,8 +21,8 @@ package org.eclipse.jetty.util.component;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
 
 /**
  * <p>Jetty components that wish to be part of a Graceful shutdown implement this interface so that
@@ -43,47 +43,83 @@ import org.eclipse.jetty.util.FutureCallback;
  */
 public interface Graceful
 {
+    /**
+     * Shutdown the component. When this method returns, the component should not accept any new load.
+     * @return A future that is completed once all load on the component is completed
+     */
     Future<Void> shutdown();
 
+    /**
+     * @return True if {@link #shutdown()} has been called.
+     */
     boolean isShutdown();
 
     /**
-     * A utility Graceful that uses a {@link FutureCallback} to indicate if shutdown is completed.
-     * By default the {@link FutureCallback} is returned as already completed, but the {@link #newShutdownCallback()} method
-     * can be overloaded to return a non-completed callback that will require a {@link Callback#succeeded()} or
-     * {@link Callback#failed(Throwable)} call to be completed.
+     * A Graceful LifeCycle that may take a controlled time to stop.
      */
-    class Shutdown implements Graceful
+    interface LifeCycle extends org.eclipse.jetty.util.component.LifeCycle
     {
-        private final AtomicReference<FutureCallback> _shutdown = new AtomicReference<>();
+        void setStopTimeout(long stopTimeout);
 
-        protected FutureCallback newShutdownCallback()
+        @ManagedAttribute("Time in ms to gracefully shutdown the server")
+        long getStopTimeout();
+    }
+
+    /**
+     * A utility class to assist implementing the Graceful interface.
+     * The {@link #isShutdownDone()} method should be implemented to check if the future
+     * returned by {@link #shutdown()} should be completed or not.  The {@link #check()}
+     * method should be called when any state is changed which may complete the shutdown.
+     */
+    abstract class Shutdown implements Graceful
+    {
+        final Object _component;
+        final AtomicReference<FutureCallback> _done = new AtomicReference<>();
+
+        protected Shutdown(Object component)
         {
-            return FutureCallback.SUCCEEDED;
+            _component = component;
         }
 
         @Override
         public Future<Void> shutdown()
         {
-            return _shutdown.updateAndGet(fcb -> fcb == null ? newShutdownCallback() : fcb);
+            if (_done.get() == null)
+                _done.compareAndSet(null, new FutureCallback()
+                {
+                    @Override
+                    public String toString()
+                    {
+                        return String.format("Shutdown<%s>@%x", _component, hashCode());
+                    }
+                });
+            FutureCallback done = _done.get();
+            check();
+            return done;
         }
 
         @Override
         public boolean isShutdown()
         {
-            return _shutdown.get() != null;
+            return _done.get() != null;
         }
 
-        public void cancel()
+        /**
+         * This method should be called whenever the components state has been updated.
+         * If {@link #shutdown()} has been called, then {@link #isShutdownDone()} is called
+         * by this method and if it returns true then the {@link Future} returned by
+         * {@link #shutdown()} is completed.
+         */
+        public void check()
         {
-            FutureCallback shutdown = _shutdown.getAndSet(null);
-            if (shutdown != null && !shutdown.isDone())
-                shutdown.cancel(true);
+            FutureCallback done = _done.get();
+            if (done != null && isShutdownDone())
+                done.succeeded();
         }
 
-        public FutureCallback get()
-        {
-            return _shutdown.get();
-        }
+        /**
+         * @return True if the component is shutdown and has no remaining load.
+         */
+        public abstract boolean isShutdownDone();
     }
 }

@@ -24,12 +24,14 @@ import java.util.Date;
 import java.util.List;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HandlerContainer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.MultiException;
+import org.eclipse.jetty.util.component.Container;
 import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -139,50 +141,51 @@ public abstract class AbstractHandlerContainer extends AbstractHandler implement
             }
     }
 
-    /**
-     * Shutdown nested Gracefule handlers
-     *
-     * @param futures A list of Futures which must also be waited on for the shutdown (or null)
-     * returns A MultiException to which any failures are added or null
-     */
-    protected void doShutdown(List<Future<Void>> futures) throws MultiException
+    public interface GracefulContainer extends Graceful.LifeCycle, Container
     {
+    }
+
+    public static void shutdown(GracefulContainer component) throws MultiException
+    {
+        if (component.getStopTimeout() <= 0)
+            return;
+
         MultiException mex = null;
 
         // tell the graceful handlers that we are shutting down
-        Handler[] gracefuls = getChildHandlersByClass(Graceful.class);
-        if (futures == null)
-            futures = new ArrayList<>(gracefuls.length);
-        for (Handler graceful : gracefuls)
-        {
-            futures.add(((Graceful)graceful).shutdown());
-        }
+        List<Future<Void>> futures = new ArrayList<>();
+        if (component instanceof Graceful)
+            futures.add(((Graceful)component).shutdown());
+        component.getContainedBeans(Graceful.class).stream().map(Graceful::shutdown).forEach(futures::add);
 
         // Wait for all futures with a reducing time budget
-        long stopTimeout = getStopTimeout();
-        if (stopTimeout > 0)
-        {
-            long stopBy = System.currentTimeMillis() + stopTimeout;
-            if (LOG.isDebugEnabled())
-                LOG.debug("Graceful shutdown {} by ", this, new Date(stopBy));
+        long stopTimeout = component.getStopTimeout();
+        long stopBy = System.currentTimeMillis() + stopTimeout;
+        if (LOG.isDebugEnabled())
+            LOG.debug("Graceful shutdown {} by ", component, new Date(stopBy));
 
-            // Wait for shutdowns
-            for (Future<Void> future : futures)
+        // Wait for shutdowns
+        for (Future<Void> future : futures)
+        {
+            try
             {
-                try
-                {
-                    if (!future.isDone())
-                        future.get(Math.max(1L, stopBy - System.currentTimeMillis()), TimeUnit.MILLISECONDS);
-                }
-                catch (Exception e)
-                {
-                    // If the future is also a callback, fail it here (rather than cancel) so we can capture the exception 
-                    if (future instanceof Callback && !future.isDone())
-                        ((Callback)future).failed(e);
-                    if (mex == null)
-                        mex = new MultiException();
-                    mex.add(e);
-                }
+                if (!future.isDone())
+                    future.get(Math.max(1L, stopBy - System.currentTimeMillis()), TimeUnit.MILLISECONDS);
+            }
+            catch (TimeoutException e)
+            {
+                if (mex == null)
+                    mex = new MultiException();
+                mex.add(new Exception("Failed to gracefully stop " + future, e));
+            }
+            catch (Throwable e)
+            {
+                // If the future is also a callback, fail it here (rather than cancel) so we can capture the exception
+                if (future instanceof Callback && !future.isDone())
+                    ((Callback)future).failed(e);
+                if (mex == null)
+                    mex = new MultiException();
+                mex.add(e);
             }
         }
 

@@ -244,7 +244,6 @@ public class ReservedThreadExecutorTest
     public void stressTest() throws Exception
     {
         QueuedThreadPool pool = new QueuedThreadPool(20);
-        pool.setStopTimeout(10000);
         pool.start();
         ReservedThreadExecutor reserved = new ReservedThreadExecutor(pool, 10);
         reserved.setIdleTimeout(0, null);
