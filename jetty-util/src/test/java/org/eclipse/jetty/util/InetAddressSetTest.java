@@ -19,11 +19,13 @@
 package org.eclipse.jetty.util;
 
 import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.toolchain.test.Net;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -113,8 +115,17 @@ public class InetAddressSetTest
 
     @ParameterizedTest
     @MethodSource("badsingletons")
-    public void testBadSingleton(String badAddr)
+    public void testBadSingleton(final String badAddr)
     {
+        try
+        {
+            InetAddress inetAddress = InetAddress.getByName(badAddr);
+            Assumptions.assumeTrue(inetAddress == null);
+        }
+        catch (UnknownHostException ignored)
+        {
+        }
+
         //noinspection MismatchedQueryAndUpdateOfCollection
         InetAddressSet inetAddressSet = new InetAddressSet();
         IllegalArgumentException cause = assertThrows(IllegalArgumentException.class, () -> inetAddressSet.add(badAddr));
