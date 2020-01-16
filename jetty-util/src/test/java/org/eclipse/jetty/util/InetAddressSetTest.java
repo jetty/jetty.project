@@ -122,14 +122,13 @@ public class InetAddressSetTest
             InetAddress inetAddress = InetAddress.getByName(badAddr);
             Assumptions.assumeTrue(inetAddress == null);
         }
-        catch (UnknownHostException ignored)
+        catch (UnknownHostException expected)
         {
+            //noinspection MismatchedQueryAndUpdateOfCollection
+            InetAddressSet inetAddressSet = new InetAddressSet();
+            IllegalArgumentException cause = assertThrows(IllegalArgumentException.class, () -> inetAddressSet.add(badAddr));
+            assertThat(cause.getMessage(), containsString(badAddr));
         }
-
-        //noinspection MismatchedQueryAndUpdateOfCollection
-        InetAddressSet inetAddressSet = new InetAddressSet();
-        IllegalArgumentException cause = assertThrows(IllegalArgumentException.class, () -> inetAddressSet.add(badAddr));
-        assertThat(cause.getMessage(), containsString(badAddr));
     }
 
     @Test
