@@ -278,7 +278,7 @@ public class ServerCloseTest
     }
 
     @Test
-    public void testHardClose() throws Exception
+    public void testSecondCloseFromOnClosed() throws Exception
     {
         // Testing WebSocketSession.close() in onClosed() does not cause deadlock.
         ClientUpgradeRequest request = new ClientUpgradeRequest();
@@ -290,6 +290,31 @@ public class ServerCloseTest
 
         // Hard close from the server. Server onClosed() will try to close again which should be a NOOP.
         AbstractCloseEndpoint serverEndpoint = serverEndpointCreator.pollLastCreated();
+        assertTrue(serverEndpoint.openLatch.await(5, SECONDS));
+        serverEndpoint.getSession().close(StatusCode.SHUTDOWN, "SHUTDOWN hard close");
+
+        // Verify that client got close
+        clientEndpoint.assertReceivedCloseEvent(5000, is(StatusCode.SHUTDOWN), containsString("SHUTDOWN hard close"));
+
+        // Verify that server socket got close event
+        assertTrue(serverEndpoint.closeLatch.await(5, SECONDS));
+        assertThat(serverEndpoint.closeStatusCode, is(StatusCode.SHUTDOWN));
+    }
+
+    @Test
+    public void testSecondCloseFromOnClosedInNewThread() throws Exception
+    {
+        // Testing WebSocketSession.close() in onClosed() does not cause deadlock.
+        ClientUpgradeRequest request = new ClientUpgradeRequest();
+        request.setSubProtocols("closeInOnCloseNewThread");
+        CloseTrackingEndpoint clientEndpoint = new CloseTrackingEndpoint();
+
+        URI wsUri = WSURI.toWebsocket(server.getURI().resolve("/ws"));
+        client.connect(clientEndpoint, wsUri, request).get(5, SECONDS);
+
+        // Hard close from the server. Server onClosed() will try to close again which should be a NOOP.
+        AbstractCloseEndpoint serverEndpoint = serverEndpointCreator.pollLastCreated();
+        assertTrue(serverEndpoint.openLatch.await(5, SECONDS));
         serverEndpoint.getSession().close(StatusCode.SHUTDOWN, "SHUTDOWN hard close");
 
         // Verify that client got close
