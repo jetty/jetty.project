@@ -135,7 +135,7 @@ public class ComplianceViolations2616Test
     }
 
     @Test
-    public void testNoColonHeader_Middle() throws Exception
+    public void testNoColonHeaderMiddle() throws Exception
     {
         StringBuffer req1 = new StringBuffer();
         req1.append("GET /dump/ HTTP/1.1\r\n");
@@ -152,7 +152,7 @@ public class ComplianceViolations2616Test
     }
 
     @Test
-    public void testNoColonHeader_End() throws Exception
+    public void testNoColonHeaderEnd() throws Exception
     {
         StringBuffer req1 = new StringBuffer();
         req1.append("GET /dump/ HTTP/1.1\r\n");

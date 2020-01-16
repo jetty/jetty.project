@@ -183,7 +183,7 @@ public class RequestURITest
 
     @ParameterizedTest
     @MethodSource("data")
-    public void testGetRequestURI_HTTP10(String rawpath, String expectedReqUri, String expectedQuery) throws Exception
+    public void testGetRequestURIHTTP10(String rawpath, String expectedReqUri, String expectedQuery) throws Exception
     {
         try (Socket client = newSocket(serverURI.getHost(), serverURI.getPort()))
         {
@@ -205,7 +205,7 @@ public class RequestURITest
 
     @ParameterizedTest
     @MethodSource("data")
-    public void testGetRequestURI_HTTP11(String rawpath, String expectedReqUri, String expectedQuery) throws Exception
+    public void testGetRequestURIHTTP11(String rawpath, String expectedReqUri, String expectedQuery) throws Exception
     {
         try (Socket client = newSocket(serverURI.getHost(), serverURI.getPort()))
         {

@@ -32,7 +32,7 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
-public class InvokerUtils_StaticParamsTest
+public class InvokerUtilsStaticParamsTest
 {
     @SuppressWarnings("unused")
     public static class Foo
@@ -59,7 +59,7 @@ public class InvokerUtils_StaticParamsTest
     }
 
     @Test
-    public void testOnlyParam_String() throws Throwable
+    public void testOnlyParamString() throws Throwable
     {
         Method method = ReflectUtils.findMethod(Foo.class, "onFruit", String.class);
 
@@ -90,7 +90,7 @@ public class InvokerUtils_StaticParamsTest
     }
 
     @Test
-    public void testOnlyParam_Int() throws Throwable
+    public void testOnlyParamInt() throws Throwable
     {
         Method method = ReflectUtils.findMethod(Foo.class, "onCount", int.class);
 
@@ -119,7 +119,7 @@ public class InvokerUtils_StaticParamsTest
     }
 
     @Test
-    public void testLabeledParam_StringInt() throws Throwable
+    public void testLabeledParamStringInt() throws Throwable
     {
         Method method = ReflectUtils.findMethod(Foo.class, "onLabeledCount", String.class, int.class);
 

@@ -89,6 +89,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+// @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
 public class ResponseTest
 {
 
@@ -121,14 +122,14 @@ public class ResponseTest
         BufferUtil.clear(_content);
 
         _server = new Server();
-        Scheduler _scheduler = new TimerScheduler();
+        Scheduler scheduler = new TimerScheduler();
         HttpConfiguration config = new HttpConfiguration();
-        LocalConnector connector = new LocalConnector(_server, null, _scheduler, null, 1, new HttpConnectionFactory(config));
+        LocalConnector connector = new LocalConnector(_server, null, scheduler, null, 1, new HttpConnectionFactory(config));
         _server.addConnector(connector);
         _server.setHandler(new DumpHandler());
         _server.start();
 
-        AbstractEndPoint endp = new ByteArrayEndPoint(_scheduler, 5000)
+        AbstractEndPoint endp = new ByteArrayEndPoint(scheduler, 5000)
         {
             @Override
             public InetSocketAddress getLocalAddress()
@@ -509,20 +510,20 @@ public class ResponseTest
         Response response = getResponse();
         Request request = response.getHttpChannel().getRequest();
 
-        SessionHandler session_handler = new SessionHandler();
-        session_handler.setServer(_server);
-        session_handler.setUsingCookies(true);
-        session_handler.start();
-        request.setSessionHandler(session_handler);
+        SessionHandler sessionHandler = new SessionHandler();
+        sessionHandler.setServer(_server);
+        sessionHandler.setUsingCookies(true);
+        sessionHandler.start();
+        request.setSessionHandler(sessionHandler);
         HttpSession session = request.getSession(true);
 
         assertThat(session, not(nullValue()));
         assertTrue(session.isNew());
 
-        HttpField set_cookie = response.getHttpFields().getField(HttpHeader.SET_COOKIE);
-        assertThat(set_cookie, not(nullValue()));
-        assertThat(set_cookie.getValue(), startsWith("JSESSIONID"));
-        assertThat(set_cookie.getValue(), containsString(session.getId()));
+        HttpField setCookie = response.getHttpFields().getField(HttpHeader.SET_COOKIE);
+        assertThat(setCookie, not(nullValue()));
+        assertThat(setCookie.getValue(), startsWith("JSESSIONID"));
+        assertThat(setCookie.getValue(), containsString(session.getId()));
         response.setHeader("Some", "Header");
         response.addCookie(new Cookie("Some", "Cookie"));
         response.getOutputStream().print("X");
@@ -530,10 +531,10 @@ public class ResponseTest
 
         response.reset();
 
-        set_cookie = response.getHttpFields().getField(HttpHeader.SET_COOKIE);
-        assertThat(set_cookie, not(nullValue()));
-        assertThat(set_cookie.getValue(), startsWith("JSESSIONID"));
-        assertThat(set_cookie.getValue(), containsString(session.getId()));
+        setCookie = response.getHttpFields().getField(HttpHeader.SET_COOKIE);
+        assertThat(setCookie, not(nullValue()));
+        assertThat(setCookie.getValue(), startsWith("JSESSIONID"));
+        assertThat(setCookie.getValue(), containsString(session.getId()));
         assertThat(response.getHttpFields().size(), is(2));
         response.getWriter();
     }
@@ -567,7 +568,7 @@ public class ResponseTest
     }
 
     @Test
-    public void testPrint_Empty() throws Exception
+    public void testPrintEmpty() throws Exception
     {
         Response response = getResponse();
         response.setCharacterEncoding(UTF_8.name());
@@ -977,7 +978,7 @@ public class ResponseTest
      * https://bugs.chromium.org/p/chromium/issues/detail?id=700618
      */
     @Test
-    public void testAddCookie_JavaxServletHttp() throws Exception
+    public void testAddCookieJavaxServletHttp() throws Exception
     {
         Response response = getResponse();
 
@@ -996,7 +997,7 @@ public class ResponseTest
      * https://bugs.chromium.org/p/chromium/issues/detail?id=700618
      */
     @Test
-    public void testAddCookie_JavaNet() throws Exception
+    public void testAddCookieJavaNet() throws Exception
     {
         java.net.HttpCookie cookie = new java.net.HttpCookie("foo", URLEncoder.encode("bar;baz", UTF_8.toString()));
         cookie.setPath("/secure");

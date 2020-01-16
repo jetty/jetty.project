@@ -104,8 +104,8 @@ public class StressTest
         _connector.setIdleTimeout(30000);
         _server.addConnector(_connector);
 
-        TestHandler _handler = new TestHandler();
-        _server.setHandler(_handler);
+        TestHandler handler = new TestHandler();
+        _server.setHandler(handler);
 
         _server.start();
     }
@@ -256,9 +256,9 @@ public class StressTest
                     throw throwable;
             }
 
-            for (ConcurrentLinkedQueue _latency : _latencies)
+            for (ConcurrentLinkedQueue latency : _latencies)
             {
-                assertEquals(_handled.get(), _latency.size());
+                assertEquals(_handled.get(), latency.size());
             }
         }
         finally

@@ -55,7 +55,7 @@ public class CookieCutterTest
      * Example from RFC2109 and RFC2965
      */
     @Test
-    public void testRFC_Single()
+    public void testRFCSingle()
     {
         String rawCookie = "$Version=\"1\"; Customer=\"WILE_E_COYOTE\"; $Path=\"/acme\"";
 
@@ -69,7 +69,7 @@ public class CookieCutterTest
      * Example from RFC2109 and RFC2965
      */
     @Test
-    public void testRFC_Double()
+    public void testRFCDouble()
     {
         String rawCookie = "$Version=\"1\"; " +
             "Customer=\"WILE_E_COYOTE\"; $Path=\"/acme\"; " +
@@ -86,7 +86,7 @@ public class CookieCutterTest
      * Example from RFC2109 and RFC2965
      */
     @Test
-    public void testRFC_Triple()
+    public void testRFCTriple()
     {
         String rawCookie = "$Version=\"1\"; " +
             "Customer=\"WILE_E_COYOTE\"; $Path=\"/acme\"; " +
@@ -105,7 +105,7 @@ public class CookieCutterTest
      * Example from RFC2109 and RFC2965
      */
     @Test
-    public void testRFC_PathExample()
+    public void testRFCPathExample()
     {
         String rawCookie = "$Version=\"1\"; " +
             "Part_Number=\"Riding_Rocket_0023\"; $Path=\"/acme/ammo\"; " +
@@ -122,7 +122,7 @@ public class CookieCutterTest
      * Example from RFC2109
      */
     @Test
-    public void testRFC2109_CookieSpoofingExample()
+    public void testRFC2109CookieSpoofingExample()
     {
         String rawCookie = "$Version=\"1\"; " +
             "session_id=\"1234\"; " +
@@ -139,7 +139,7 @@ public class CookieCutterTest
      * Example from RFC2965
      */
     @Test
-    public void testRFC2965_CookieSpoofingExample()
+    public void testRFC2965CookieSpoofingExample()
     {
         String rawCookie = "$Version=\"1\"; session_id=\"1234\", " +
             "$Version=\"1\"; session_id=\"1111\"; $Domain=\".cracker.edu\"";
@@ -160,7 +160,7 @@ public class CookieCutterTest
      * Example from RFC6265
      */
     @Test
-    public void testRFC6265_SidExample()
+    public void testRFC6265SidExample()
     {
         String rawCookie = "SID=31d4d96e407aad42";
 
@@ -174,7 +174,7 @@ public class CookieCutterTest
      * Example from RFC6265
      */
     @Test
-    public void testRFC6265_SidLangExample()
+    public void testRFC6265SidLangExample()
     {
         String rawCookie = "SID=31d4d96e407aad42; lang=en-US";
 

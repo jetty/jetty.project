@@ -261,7 +261,7 @@ public class HugeResourceTest
 
     @ParameterizedTest
     @MethodSource("staticFiles")
-    public void testUpload_Multipart(String filename, long expectedSize) throws Exception
+    public void testUploadMultipart(String filename, long expectedSize) throws Exception
     {
         MultiPartContentProvider multipart = new MultiPartContentProvider();
         Path inputFile = staticBase.resolve(filename);

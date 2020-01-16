@@ -45,13 +45,13 @@ public class TestEndpointMultiplePublishProblem
     private static String default_impl = System.getProperty("com.sun.net.httpserver.HttpServerProvider");
 
     @BeforeAll
-    public static void change_Impl()
+    public static void changeImpl()
     {
         System.setProperty("com.sun.net.httpserver.HttpServerProvider", JettyHttpServerProvider.class.getName());
     }
 
     @AfterAll
-    public static void restore_Impl()
+    public static void restoreImpl()
     {
         if (default_impl != null)
         {

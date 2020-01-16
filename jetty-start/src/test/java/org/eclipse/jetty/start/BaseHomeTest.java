@@ -98,7 +98,7 @@ public class BaseHomeTest
     }
 
     @Test
-    public void testGetPath_OnlyHome() throws IOException
+    public void testGetPathOnlyHome() throws IOException
     {
         File homeDir = MavenTestingUtils.getTestResourceDir("hb.1/home");
 
@@ -116,7 +116,7 @@ public class BaseHomeTest
     }
 
     @Test
-    public void testGetPaths_OnlyHome() throws IOException
+    public void testGetPathsOnlyHome() throws IOException
     {
         File homeDir = MavenTestingUtils.getTestResourceDir("hb.1/home");
 
@@ -138,7 +138,7 @@ public class BaseHomeTest
     }
 
     @Test
-    public void testGetPaths_OnlyHome_InisOnly() throws IOException
+    public void testGetPathsOnlyHomeInisOnly() throws IOException
     {
         File homeDir = MavenTestingUtils.getTestResourceDir("hb.1/home");
 
@@ -160,7 +160,7 @@ public class BaseHomeTest
     }
 
     @Test
-    public void testGetPaths_Both() throws IOException
+    public void testGetPathsBoth() throws IOException
     {
         File homeDir = MavenTestingUtils.getTestResourceDir("hb.1/home");
         File baseDir = MavenTestingUtils.getTestResourceDir("hb.1/base");
@@ -193,7 +193,7 @@ public class BaseHomeTest
     }
 
     @Test
-    public void testGetPath_Both() throws IOException
+    public void testGetPathBoth() throws IOException
     {
         File homeDir = MavenTestingUtils.getTestResourceDir("hb.1/home");
         File baseDir = MavenTestingUtils.getTestResourceDir("hb.1/base");

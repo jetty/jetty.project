@@ -268,6 +268,7 @@ public class PrimitivesTextEchoTest
         addCase(data, CharacterEchoSocket.class, Character.toString((char)40), "(");
         addCase(data, CharacterEchoSocket.class, Character.toString((char)106), "j");
         addCase(data, CharacterEchoSocket.class, Character.toString((char)64), "@");
+        // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
         addCase(data, CharacterEchoSocket.class, Character.toString((char)0x262f), "\u262f");
 
         addCase(data, CharacterObjEchoSocket.class, Character.toString((char)40), "(");

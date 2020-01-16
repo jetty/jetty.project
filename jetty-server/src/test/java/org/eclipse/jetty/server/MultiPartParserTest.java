@@ -491,6 +491,7 @@ public class MultiPartParserTest
                 "Foo/Bar: value\r\n",
                 "Foo]Bar: value\r\n",
                 "Foo[Bar: value\r\n",
+                // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
                 "\u0192\u00f8\u00f8\u00df\u00e5\u00ae: value\r\n"
             };
 

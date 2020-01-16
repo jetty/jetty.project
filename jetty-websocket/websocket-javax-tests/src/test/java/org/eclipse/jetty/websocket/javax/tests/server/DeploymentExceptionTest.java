@@ -93,7 +93,7 @@ public class DeploymentExceptionTest
 
     @ParameterizedTest(name = "{0}")
     @MethodSource("data")
-    public void testDeploy_InvalidSignature(Class<?> pojo) throws Exception
+    public void testDeployInvalidSignature(Class<?> pojo) throws Exception
     {
         ServletContextHandler context = new ServletContextHandler();
         context.setServer(server);

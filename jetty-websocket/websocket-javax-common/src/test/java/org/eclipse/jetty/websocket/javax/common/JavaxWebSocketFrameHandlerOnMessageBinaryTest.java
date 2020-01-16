@@ -40,7 +40,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class JavaxWebSocketFrameHandler_OnMessage_BinaryTest extends AbstractJavaxWebSocketFrameHandlerTest
+public class JavaxWebSocketFrameHandlerOnMessageBinaryTest extends AbstractJavaxWebSocketFrameHandlerTest
 {
     private void assertOnMessageInvocation(TrackingSocket socket, Matcher<String> eventMatcher) throws Exception
     {

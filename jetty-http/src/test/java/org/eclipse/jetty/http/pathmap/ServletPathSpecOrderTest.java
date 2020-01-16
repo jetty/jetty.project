@@ -56,6 +56,7 @@ public class ServletPathSpecOrderTest
         data.add(Arguments.of("/downloads/script.gz", "gzipped"));
         data.add(Arguments.of("/animal/arhive.gz", "animals"));
         data.add(Arguments.of("/Other/path", "default"));
+        // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
         data.add(Arguments.of("/\u20ACuro/path", "money"));
         data.add(Arguments.of("/", "root"));
 

@@ -716,43 +716,43 @@ public class AsyncServletTest
                 historyAdd("wrapped" + ((request instanceof ServletRequestWrapper) ? " REQ" : "") + ((response instanceof ServletResponseWrapper) ? " RSP" : ""));
 
             boolean wrap = "true".equals(request.getParameter("wrap"));
-            int read_before = 0;
-            long sleep_for = -1;
-            long start_for = -1;
-            long start2_for = -1;
-            long dispatch_after = -1;
-            long dispatch2_after = -1;
-            long complete_after = -1;
-            long complete2_after = -1;
+            int readBefore = 0;
+            long sleepFor = -1;
+            long startFor = -1;
+            long start2For = -1;
+            long dispatchAfter = -1;
+            long dispatch2After = -1;
+            long completeAfter = -1;
+            long complete2After = -1;
 
             if (request.getParameter("read") != null)
-                read_before = Integer.parseInt(request.getParameter("read"));
+                readBefore = Integer.parseInt(request.getParameter("read"));
             if (request.getParameter("sleep") != null)
-                sleep_for = Integer.parseInt(request.getParameter("sleep"));
+                sleepFor = Integer.parseInt(request.getParameter("sleep"));
             if (request.getParameter("start") != null)
-                start_for = Integer.parseInt(request.getParameter("start"));
+                startFor = Integer.parseInt(request.getParameter("start"));
             if (request.getParameter("start2") != null)
-                start2_for = Integer.parseInt(request.getParameter("start2"));
+                start2For = Integer.parseInt(request.getParameter("start2"));
             if (request.getParameter("dispatch") != null)
-                dispatch_after = Integer.parseInt(request.getParameter("dispatch"));
+                dispatchAfter = Integer.parseInt(request.getParameter("dispatch"));
             final String path = request.getParameter("path");
             if (request.getParameter("dispatch2") != null)
-                dispatch2_after = Integer.parseInt(request.getParameter("dispatch2"));
+                dispatch2After = Integer.parseInt(request.getParameter("dispatch2"));
             if (request.getParameter("complete") != null)
-                complete_after = Integer.parseInt(request.getParameter("complete"));
+                completeAfter = Integer.parseInt(request.getParameter("complete"));
             if (request.getParameter("complete2") != null)
-                complete2_after = Integer.parseInt(request.getParameter("complete2"));
+                complete2After = Integer.parseInt(request.getParameter("complete2"));
 
             if (request.getAttribute("State") == null)
             {
                 request.setAttribute("State", 1);
                 historyAdd("initial");
-                if (read_before > 0)
+                if (readBefore > 0)
                 {
-                    byte[] buf = new byte[read_before];
+                    byte[] buf = new byte[readBefore];
                     request.getInputStream().read(buf);
                 }
-                else if (read_before < 0)
+                else if (readBefore < 0)
                 {
                     InputStream in = request.getInputStream();
                     int b = in.read();
@@ -788,18 +788,18 @@ public class AsyncServletTest
                     }.start();
                 }
 
-                if (start_for >= 0)
+                if (startFor >= 0)
                 {
                     final AsyncContext async = wrap ? request.startAsync(new HttpServletRequestWrapper(request), new HttpServletResponseWrapper(response)) : request.startAsync();
-                    if (start_for > 0)
-                        async.setTimeout(start_for);
+                    if (startFor > 0)
+                        async.setTimeout(startFor);
                     async.addListener(__listener);
                     historyAdd("start");
 
                     if ("1".equals(request.getParameter("throw")))
                         throw new QuietServletException(new Exception("test throw in async 1"));
 
-                    if (complete_after > 0)
+                    if (completeAfter > 0)
                     {
                         TimerTask complete = new TimerTask()
                         {
@@ -821,17 +821,17 @@ public class AsyncServletTest
                         };
                         synchronized (_timer)
                         {
-                            _timer.schedule(complete, complete_after);
+                            _timer.schedule(complete, completeAfter);
                         }
                     }
-                    else if (complete_after == 0)
+                    else if (completeAfter == 0)
                     {
                         response.setStatus(200);
                         response.getOutputStream().println("COMPLETED\n");
                         historyAdd("complete");
                         async.complete();
                     }
-                    else if (dispatch_after > 0)
+                    else if (dispatchAfter > 0)
                     {
                         TimerTask dispatch = new TimerTask()
                         {
@@ -853,10 +853,10 @@ public class AsyncServletTest
                         };
                         synchronized (_timer)
                         {
-                            _timer.schedule(dispatch, dispatch_after);
+                            _timer.schedule(dispatch, dispatchAfter);
                         }
                     }
-                    else if (dispatch_after == 0)
+                    else if (dispatchAfter == 0)
                     {
                         historyAdd("dispatch");
                         if (path != null)
@@ -865,11 +865,11 @@ public class AsyncServletTest
                             async.dispatch();
                     }
                 }
-                else if (sleep_for >= 0)
+                else if (sleepFor >= 0)
                 {
                     try
                     {
-                        Thread.sleep(sleep_for);
+                        Thread.sleep(sleepFor);
                     }
                     catch (InterruptedException e)
                     {
@@ -888,22 +888,22 @@ public class AsyncServletTest
             {
                 historyAdd("!initial");
 
-                if (start2_for >= 0 && request.getAttribute("2nd") == null)
+                if (start2For >= 0 && request.getAttribute("2nd") == null)
                 {
                     final AsyncContext async = wrap ? request.startAsync(new HttpServletRequestWrapper(request), new HttpServletResponseWrapper(response)) : request.startAsync();
                     async.addListener(__listener);
                     request.setAttribute("2nd", "cycle");
 
-                    if (start2_for > 0)
+                    if (start2For > 0)
                     {
-                        async.setTimeout(start2_for);
+                        async.setTimeout(start2For);
                     }
                     historyAdd("start");
 
                     if ("2".equals(request.getParameter("throw")))
                         throw new QuietServletException(new Exception("test throw in async 2"));
 
-                    if (complete2_after > 0)
+                    if (complete2After > 0)
                     {
                         TimerTask complete = new TimerTask()
                         {
@@ -925,17 +925,17 @@ public class AsyncServletTest
                         };
                         synchronized (_timer)
                         {
-                            _timer.schedule(complete, complete2_after);
+                            _timer.schedule(complete, complete2After);
                         }
                     }
-                    else if (complete2_after == 0)
+                    else if (complete2After == 0)
                     {
                         response.setStatus(200);
                         response.getOutputStream().println("COMPLETED\n");
                         historyAdd("complete");
                         async.complete();
                     }
-                    else if (dispatch2_after > 0)
+                    else if (dispatch2After > 0)
                     {
                         TimerTask dispatch = new TimerTask()
                         {
@@ -948,10 +948,10 @@ public class AsyncServletTest
                         };
                         synchronized (_timer)
                         {
-                            _timer.schedule(dispatch, dispatch2_after);
+                            _timer.schedule(dispatch, dispatch2After);
                         }
                     }
-                    else if (dispatch2_after == 0)
+                    else if (dispatch2After == 0)
                     {
                         historyAdd("dispatch");
                         async.dispatch();

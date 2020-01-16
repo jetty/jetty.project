@@ -72,112 +72,112 @@ public class AvailableDecodersTest
     }
 
     @Test
-    public void testCoreDecode_Boolean() throws IllegalAccessException, InstantiationException, DecodeException
+    public void testCoreDecodeBoolean() throws IllegalAccessException, InstantiationException, DecodeException
     {
         Boolean expected = Boolean.TRUE;
         assertTextDecoder(Boolean.class, "true", expected);
     }
 
     @Test
-    public void testCoreDecode_boolean() throws IllegalAccessException, InstantiationException, DecodeException
+    public void testCoreDecodeboolean() throws IllegalAccessException, InstantiationException, DecodeException
     {
         boolean expected = false;
         assertTextDecoder(Boolean.TYPE, "false", expected);
     }
 
     @Test
-    public void testCoreDecode_Byte() throws IllegalAccessException, InstantiationException, DecodeException
+    public void testCoreDecodeByte() throws IllegalAccessException, InstantiationException, DecodeException
     {
         Byte expected = (byte)0x21;
         assertTextDecoder(Byte.class, "33", expected);
     }
 
     @Test
-    public void testCoreDecode_byte() throws IllegalAccessException, InstantiationException, DecodeException
+    public void testCoreDecodebyte() throws IllegalAccessException, InstantiationException, DecodeException
     {
         byte expected = 0x21;
         assertTextDecoder(Byte.TYPE, "33", expected);
     }
 
     @Test
-    public void testCoreDecode_Character() throws IllegalAccessException, InstantiationException, DecodeException
+    public void testCoreDecodeCharacter() throws IllegalAccessException, InstantiationException, DecodeException
     {
         Character expected = '!';
         assertTextDecoder(Character.class, "!", expected);
     }
 
     @Test
-    public void testCoreDecode_char() throws IllegalAccessException, InstantiationException, DecodeException
+    public void testCoreDecodechar() throws IllegalAccessException, InstantiationException, DecodeException
     {
         char expected = '!';
         assertTextDecoder(Character.TYPE, "!", expected);
     }
 
     @Test
-    public void testCoreDecode_Double() throws IllegalAccessException, InstantiationException, DecodeException
+    public void testCoreDecodeDouble() throws IllegalAccessException, InstantiationException, DecodeException
     {
         Double expected = 123.45D;
         assertTextDecoder(Double.class, "123.45", expected);
     }
 
     @Test
-    public void testCoreDecode_double() throws IllegalAccessException, InstantiationException, DecodeException
+    public void testCoreDecodedouble() throws IllegalAccessException, InstantiationException, DecodeException
     {
         double expected = 123.45D;
         assertTextDecoder(Double.TYPE, "123.45", expected);
     }
 
     @Test
-    public void testCoreDecode_Float() throws IllegalAccessException, InstantiationException, DecodeException
+    public void testCoreDecodeFloat() throws IllegalAccessException, InstantiationException, DecodeException
     {
         Float expected = 123.4567F;
         assertTextDecoder(Float.class, "123.4567", expected);
     }
 
     @Test
-    public void testCoreDecode_float() throws IllegalAccessException, InstantiationException, DecodeException
+    public void testCoreDecodefloat() throws IllegalAccessException, InstantiationException, DecodeException
     {
         float expected = 123.4567F;
         assertTextDecoder(Float.TYPE, "123.4567", expected);
     }
 
     @Test
-    public void testCoreDecode_Integer() throws IllegalAccessException, InstantiationException, DecodeException
+    public void testCoreDecodeInteger() throws IllegalAccessException, InstantiationException, DecodeException
     {
         Integer expected = 1234;
         assertTextDecoder(Integer.class, "1234", expected);
     }
 
     @Test
-    public void testCoreDecode_int() throws IllegalAccessException, InstantiationException, DecodeException
+    public void testCoreDecodeint() throws IllegalAccessException, InstantiationException, DecodeException
     {
         int expected = 1234;
         assertTextDecoder(Integer.TYPE, "1234", expected);
     }
 
     @Test
-    public void testCoreDecode_Long() throws IllegalAccessException, InstantiationException, DecodeException
+    public void testCoreDecodeLong() throws IllegalAccessException, InstantiationException, DecodeException
     {
         Long expected = 123_456_789L;
         assertTextDecoder(Long.class, "123456789", expected);
     }
 
     @Test
-    public void testCoreDecode_long() throws IllegalAccessException, InstantiationException, DecodeException
+    public void testCoreDecodelong() throws IllegalAccessException, InstantiationException, DecodeException
     {
         long expected = 123_456_789L;
         assertTextDecoder(Long.TYPE, "123456789", expected);
     }
 
     @Test
-    public void testCoreDecode_String() throws IllegalAccessException, InstantiationException, DecodeException
+    public void testCoreDecodeString() throws IllegalAccessException, InstantiationException, DecodeException
     {
         String expected = "Hello World";
         assertTextDecoder(String.class, "Hello World", expected);
     }
 
     @Test
-    public void testCoreDecode_ByteBuffer() throws IllegalAccessException, InstantiationException, DecodeException
+    public void testCoreDecodeByteBuffer() throws IllegalAccessException, InstantiationException, DecodeException
     {
         ByteBuffer val = Hex.asByteBuffer("112233445566778899");
         ByteBuffer expected = Hex.asByteBuffer("112233445566778899");
@@ -185,7 +185,7 @@ public class AvailableDecodersTest
     }
 
     @Test
-    public void testCoreDecode_ByteArray() throws IllegalAccessException, InstantiationException, DecodeException
+    public void testCoreDecodeByteArray() throws IllegalAccessException, InstantiationException, DecodeException
     {
         ByteBuffer val = Hex.asByteBuffer("112233445566778899");
         byte[] expected = Hex.asByteArray("112233445566778899");
@@ -193,7 +193,7 @@ public class AvailableDecodersTest
     }
 
     @Test
-    public void testCustomDecoder_Integer() throws IllegalAccessException, InstantiationException, DecodeException
+    public void testCustomDecoderInteger() throws IllegalAccessException, InstantiationException, DecodeException
     {
         decoders.register(IntegerDecoder.class);
 
@@ -203,7 +203,7 @@ public class AvailableDecodersTest
     }
 
     @Test
-    public void testCustomDecoder_Time() throws IllegalAccessException, InstantiationException, DecodeException
+    public void testCustomDecoderTime() throws IllegalAccessException, InstantiationException, DecodeException
     {
         decoders.register(TimeDecoder.class);
 
@@ -222,7 +222,7 @@ public class AvailableDecodersTest
     }
 
     @Test
-    public void testCustomDecoder_Date() throws IllegalAccessException, InstantiationException, DecodeException
+    public void testCustomDecoderDate() throws IllegalAccessException, InstantiationException, DecodeException
     {
         decoders.register(DateDecoder.class);
 
@@ -241,7 +241,7 @@ public class AvailableDecodersTest
     }
 
     @Test
-    public void testCustomDecoder_DateTime() throws IllegalAccessException, InstantiationException, DecodeException
+    public void testCustomDecoderDateTime() throws IllegalAccessException, InstantiationException, DecodeException
     {
         decoders.register(DateTimeDecoder.class);
 
@@ -264,7 +264,7 @@ public class AvailableDecodersTest
     }
 
     @Test
-    public void testCustomDecoder_ValidDual_Text() throws IllegalAccessException, InstantiationException, DecodeException
+    public void testCustomDecoderValidDualText() throws IllegalAccessException, InstantiationException, DecodeException
     {
         decoders.register(ValidDualDecoder.class);
 
@@ -278,7 +278,7 @@ public class AvailableDecodersTest
     }
 
     @Test
-    public void testCustomDecoder_ValidDual_Binary() throws IllegalAccessException, InstantiationException, DecodeException
+    public void testCustomDecoderValidDualBinary() throws IllegalAccessException, InstantiationException, DecodeException
     {
         decoders.register(ValidDualDecoder.class);
 
@@ -296,7 +296,7 @@ public class AvailableDecodersTest
     }
 
     @Test
-    public void testCustomDecoder_Register_Duplicate()
+    public void testCustomDecoderRegisterDuplicate()
     {
         // has duplicated support for the same target Type
         Exception e = assertThrows(InvalidWebSocketException.class, () -> decoders.register(BadDualDecoder.class));
@@ -304,7 +304,7 @@ public class AvailableDecodersTest
     }
 
     @Test
-    public void testCustomDecoder_Register_OtherDuplicate()
+    public void testCustomDecoderRegisterOtherDuplicate()
     {
         // Register DateDecoder (decodes java.util.Date)
         decoders.register(DateDecoder.class);

@@ -39,6 +39,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 
+// @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
 public class Utf8AppendableTest
 {
     public static final List<Class<? extends Utf8Appendable>> APPENDABLE_IMPLS;
@@ -157,7 +158,7 @@ public class Utf8AppendableTest
 
     @ParameterizedTest
     @MethodSource("implementations")
-    public void testFastFail_1(Class<Utf8Appendable> impl) throws Exception
+    public void testFastFail1(Class<Utf8Appendable> impl) throws Exception
     {
         byte[] part1 = TypeUtil.fromHexString("cebae1bdb9cf83cebcceb5");
         byte[] part2 = TypeUtil.fromHexString("f4908080"); // INVALID
@@ -177,7 +178,7 @@ public class Utf8AppendableTest
 
     @ParameterizedTest
     @MethodSource("implementations")
-    public void testFastFail_2(Class<Utf8Appendable> impl) throws Exception
+    public void testFastFail2(Class<Utf8Appendable> impl) throws Exception
     {
         byte[] part1 = TypeUtil.fromHexString("cebae1bdb9cf83cebcceb5f4");
         byte[] part2 = TypeUtil.fromHexString("90"); // INVALID
@@ -197,7 +198,7 @@ public class Utf8AppendableTest
 
     @ParameterizedTest
     @MethodSource("implementations")
-    public void testPartial_UnsplitCodepoint(Class<Utf8Appendable> impl) throws Exception
+    public void testPartialUnsplitCodepoint(Class<Utf8Appendable> impl) throws Exception
     {
         Utf8Appendable utf8 = impl.getDeclaredConstructor().newInstance();
 
@@ -216,7 +217,7 @@ public class Utf8AppendableTest
 
     @ParameterizedTest
     @MethodSource("implementations")
-    public void testPartial_SplitCodepoint(Class<Utf8Appendable> impl) throws Exception
+    public void testPartialSplitCodepoint(Class<Utf8Appendable> impl) throws Exception
     {
         Utf8Appendable utf8 = impl.getDeclaredConstructor().newInstance();
 
@@ -235,7 +236,7 @@ public class Utf8AppendableTest
 
     @ParameterizedTest
     @MethodSource("implementations")
-    public void testPartial_SplitCodepoint_WithNoBuf(Class<Utf8Appendable> impl) throws Exception
+    public void testPartialSplitCodepointWithNoBuf(Class<Utf8Appendable> impl) throws Exception
     {
         Utf8Appendable utf8 = impl.getDeclaredConstructor().newInstance();
 

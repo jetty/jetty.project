@@ -63,7 +63,7 @@ public class HttpReceiverOverHTTPTest
     private ByteArrayEndPoint endPoint;
     private HttpConnectionOverHTTP connection;
 
-    public static Stream<Arguments> complianceModes() throws Exception
+    public static Stream<Arguments> complianceModes()
     {
         return Stream.of(
             HttpCompliance.RFC7230,
@@ -106,7 +106,7 @@ public class HttpReceiverOverHTTPTest
 
     @ParameterizedTest
     @MethodSource("complianceModes")
-    public void test_Receive_NoResponseContent(HttpCompliance compliance) throws Exception
+    public void testReceiveNoResponseContent(HttpCompliance compliance) throws Exception
     {
         init(compliance);
         endPoint.addInput(
@@ -130,7 +130,7 @@ public class HttpReceiverOverHTTPTest
 
     @ParameterizedTest
     @MethodSource("complianceModes")
-    public void test_Receive_ResponseContent(HttpCompliance compliance) throws Exception
+    public void testReceiveResponseContent(HttpCompliance compliance) throws Exception
     {
         init(compliance);
         String content = "0123456789ABCDEF";
@@ -158,7 +158,7 @@ public class HttpReceiverOverHTTPTest
 
     @ParameterizedTest
     @MethodSource("complianceModes")
-    public void test_Receive_ResponseContent_EarlyEOF(HttpCompliance compliance) throws Exception
+    public void testReceiveResponseContentEarlyEOF(HttpCompliance compliance) throws Exception
     {
         init(compliance);
         String content1 = "0123456789";
@@ -180,7 +180,7 @@ public class HttpReceiverOverHTTPTest
 
     @ParameterizedTest
     @MethodSource("complianceModes")
-    public void test_Receive_ResponseContent_IdleTimeout(HttpCompliance compliance) throws Exception
+    public void testReceiveResponseContentIdleTimeout(HttpCompliance compliance) throws Exception
     {
         init(compliance);
         endPoint.addInput(
@@ -201,7 +201,7 @@ public class HttpReceiverOverHTTPTest
 
     @ParameterizedTest
     @MethodSource("complianceModes")
-    public void test_Receive_BadResponse(HttpCompliance compliance) throws Exception
+    public void testReceiveBadResponse(HttpCompliance compliance) throws Exception
     {
         init(compliance);
         endPoint.addInput(
@@ -220,7 +220,7 @@ public class HttpReceiverOverHTTPTest
 
     @ParameterizedTest
     @MethodSource("complianceModes")
-    public void test_FillInterested_RacingWith_BufferRelease(HttpCompliance compliance) throws Exception
+    public void testFillInterestedRacingWithBufferRelease(HttpCompliance compliance) throws Exception
     {
         init(compliance);
         connection = new HttpConnectionOverHTTP(endPoint, destination, new Promise.Adapter<>())

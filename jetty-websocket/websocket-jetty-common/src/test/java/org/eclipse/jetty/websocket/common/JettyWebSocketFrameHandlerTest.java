@@ -147,7 +147,7 @@ public class JettyWebSocketFrameHandlerTest
     }
 
     @Test
-    public void testAnnotatedStreamedText_Single() throws Exception
+    public void testAnnotatedStreamedTextSingle() throws Exception
     {
         assertTimeout(Duration.ofMillis(1000), () ->
         {
@@ -169,7 +169,7 @@ public class JettyWebSocketFrameHandlerTest
     }
 
     @Test
-    public void testAnnotatedStreamedText_MultipleParts() throws Exception
+    public void testAnnotatedStreamedTextMultipleParts() throws Exception
     {
         assertTimeout(Duration.ofMillis(1000), () ->
         {
@@ -251,7 +251,7 @@ public class JettyWebSocketFrameHandlerTest
     }
 
     @Test
-    public void testListenerBasicSocket_Error() throws Exception
+    public void testListenerBasicSocketError() throws Exception
     {
         // Setup
         ListenerBasicSocket socket = new ListenerBasicSocket();

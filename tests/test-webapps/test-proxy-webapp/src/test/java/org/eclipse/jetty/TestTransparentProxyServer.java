@@ -49,7 +49,7 @@ public class TestTransparentProxyServer
     {
         ((StdErrLog)Log.getLog()).setSource(false);
 
-        String jetty_root = "../../..";
+        String jettyRoot = "../../..";
 
         // Setup Threadpool
         QueuedThreadPool threadPool = new QueuedThreadPool();
@@ -65,14 +65,14 @@ public class TestTransparentProxyServer
         server.addBean(Log.getLog());
 
         // Common HTTP configuration
-        HttpConfiguration config = new HttpConfiguration();
-        config.setSecurePort(8443);
-        config.addCustomizer(new ForwardedRequestCustomizer());
-        config.setSendDateHeader(true);
-        config.setSendServerVersion(true);
+        HttpConfiguration httpConfig = new HttpConfiguration();
+        httpConfig.setSecurePort(8443);
+        httpConfig.addCustomizer(new ForwardedRequestCustomizer());
+        httpConfig.setSendDateHeader(true);
+        httpConfig.setSendServerVersion(true);
 
         // Http Connector
-        HttpConnectionFactory http = new HttpConnectionFactory(config);
+        HttpConnectionFactory http = new HttpConnectionFactory(httpConfig);
         ServerConnector httpConnector = new ServerConnector(server, http);
         httpConnector.setPort(8080);
         httpConnector.setIdleTimeout(30000);
@@ -80,10 +80,10 @@ public class TestTransparentProxyServer
 
         // SSL configurations
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-        sslContextFactory.setKeyStorePath(jetty_root + "/jetty-server/src/main/config/etc/keystore");
+        sslContextFactory.setKeyStorePath(jettyRoot + "/jetty-server/src/main/config/etc/keystore");
         sslContextFactory.setKeyStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
         sslContextFactory.setKeyManagerPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");
-        sslContextFactory.setTrustStorePath(jetty_root + "/jetty-server/src/main/config/etc/keystore");
+        sslContextFactory.setTrustStorePath(jettyRoot + "/jetty-server/src/main/config/etc/keystore");
         sslContextFactory.setTrustStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
         sslContextFactory.setExcludeCipherSuites(
             "SSL_RSA_WITH_DES_CBC_SHA",
@@ -96,11 +96,11 @@ public class TestTransparentProxyServer
         sslContextFactory.setCipherComparator(new HTTP2Cipher.CipherComparator());
 
         // HTTPS Configuration
-        HttpConfiguration https_config = new HttpConfiguration(config);
-        https_config.addCustomizer(new SecureRequestCustomizer());
+        HttpConfiguration httpsConfig = new HttpConfiguration(httpConfig);
+        httpsConfig.addCustomizer(new SecureRequestCustomizer());
 
         // HTTP2 factory
-        HTTP2ServerConnectionFactory h2 = new HTTP2ServerConnectionFactory(https_config);
+        HTTP2ServerConnectionFactory h2 = new HTTP2ServerConnectionFactory(httpsConfig);
         ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory();
         alpn.setDefaultProtocol(h2.getProtocol());
 
@@ -109,7 +109,7 @@ public class TestTransparentProxyServer
 
         // HTTP2 Connector
         ServerConnector http2Connector =
-            new ServerConnector(server, ssl, alpn, h2, new HttpConnectionFactory(https_config));
+            new ServerConnector(server, ssl, alpn, h2, new HttpConnectionFactory(httpsConfig));
         http2Connector.setPort(8443);
         http2Connector.setIdleTimeout(15000);
         server.addConnector(http2Connector);

@@ -63,7 +63,7 @@ public class HttpClientChunkedContentTest
     }
 
     @Test
-    public void test_Server_HeadersPauseTerminal_Client_Response() throws Exception
+    public void testServerHeadersPauseTerminalClientResponse() throws Exception
     {
         startClient();
 
@@ -115,7 +115,7 @@ public class HttpClientChunkedContentTest
     }
 
     @Test
-    public void test_Server_ContentTerminal_Client_ContentDelay() throws Exception
+    public void testServerContentTerminalClientContentDelay() throws Exception
     {
         startClient();
 

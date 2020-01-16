@@ -91,7 +91,7 @@ public class DoSFilterTest extends AbstractDoSFilterTest
     }
 
     @Test
-    public void testRemotePortLoadIdCreation_ipv6() throws ServletException
+    public void testRemotePortLoadIdCreationIpv6() throws ServletException
     {
         final ServletRequest request = new RemoteAddressRequest("::192.9.5.5", 12345);
         DoSFilter doSFilter = new DoSFilter();
@@ -114,7 +114,7 @@ public class DoSFilterTest extends AbstractDoSFilterTest
     }
 
     @Test
-    public void testRemotePortLoadIdCreation_ipv4() throws ServletException
+    public void testRemotePortLoadIdCreationIpv4() throws ServletException
     {
         final ServletRequest request = new RemoteAddressRequest("127.0.0.1", 12345);
         DoSFilter doSFilter = new DoSFilter();

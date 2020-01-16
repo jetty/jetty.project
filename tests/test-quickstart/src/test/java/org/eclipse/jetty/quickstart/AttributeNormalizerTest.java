@@ -202,7 +202,7 @@ public class AttributeNormalizerTest
 
     @ParameterizedTest
     @MethodSource("scenarios")
-    public void testNormalizeJettyBaseAsURI_WithAuthority(final Scenario scenario)
+    public void testNormalizeJettyBaseAsURIWithAuthority(final Scenario scenario)
     {
         // Normalize jetty.base as URI path
         // Path.toUri() typically includes an URI authority
@@ -211,7 +211,7 @@ public class AttributeNormalizerTest
 
     @ParameterizedTest
     @MethodSource("scenarios")
-    public void testNormalizeJettyBaseAsURI_WithoutAuthority(final Scenario scenario)
+    public void testNormalizeJettyBaseAsURIWithoutAuthority(final Scenario scenario)
     {
         // Normalize jetty.base as URI path
         // File.toURI() typically DOES NOT include an URI authority
@@ -220,7 +220,7 @@ public class AttributeNormalizerTest
 
     @ParameterizedTest
     @MethodSource("scenarios")
-    public void testNormalizeJettyHomeAsURI_WithAuthority(final Scenario scenario)
+    public void testNormalizeJettyHomeAsURIWithAuthority(final Scenario scenario)
     {
         // Normalize jetty.home as URI path
         String expected = scenario.jettyBase.equals(scenario.jettyHome) ? "${jetty.base.uri}" : "${jetty.home.uri}";
@@ -231,7 +231,7 @@ public class AttributeNormalizerTest
 
     @ParameterizedTest
     @MethodSource("scenarios")
-    public void testNormalizeJettyHomeAsURI_WithoutAuthority(final Scenario scenario)
+    public void testNormalizeJettyHomeAsURIWithoutAuthority(final Scenario scenario)
     {
         // Normalize jetty.home as URI path
         String expected = scenario.jettyBase.equals(scenario.jettyHome) ? "${jetty.base.uri}" : "${jetty.home.uri}";

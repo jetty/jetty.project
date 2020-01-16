@@ -29,7 +29,7 @@ import static org.hamcrest.Matchers.containsString;
 public class EncoderTextTest
 {
     @Test
-    public void testQuotesEncoder_Direct() throws Exception
+    public void testQuotesEncoderDirect() throws Exception
     {
         QuotesEncoder encoder = new QuotesEncoder();
         Quotes quotes = QuotesUtil.loadQuote("quotes-ben.txt");

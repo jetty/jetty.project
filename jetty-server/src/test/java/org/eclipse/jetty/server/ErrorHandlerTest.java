@@ -119,7 +119,9 @@ public class ErrorHandlerTest
                 // produce an exception with a UTF-8 cause message
                 if (target.startsWith("/utf8message/"))
                 {
+                    // @checkstyle-disable-check : AvoidEscapedUnicodeCharacters
                     String message = "Euro is &euro; and \u20AC and %E2%82%AC";
+                    // @checkstyle-enable-check : AvoidEscapedUnicodeCharacters
                     throw new ServletException(new RuntimeException(message));
                 }
             }
@@ -455,8 +457,10 @@ public class ErrorHandlerTest
 
         if (path.startsWith("/utf8"))
         {
+            // @checkstyle-disable-check : AvoidEscapedUnicodeCharacters
             // we are Not expecting UTF-8 output, look for mangled ISO-8859-1 version
             assertThat("content", content, containsString("Euro is &amp;euro; and \u20AC and %E2%82%AC"));
+            // @checkstyle-enabled-check : AvoidEscapedUnicodeCharacters
         }
     }
 
@@ -555,8 +559,10 @@ public class ErrorHandlerTest
 
         if (path.startsWith("/utf8"))
         {
+            // @checkstyle-disable-check : AvoidEscapedUnicodeCharacters
             // we are expecting UTF-8 output, look for it.
             assertThat("content", content, containsString("Euro is &amp;euro; and \u20AC and %E2%82%AC"));
+            // @checkstyle-enable-check : AvoidEscapedUnicodeCharacters
         }
     }
 }

@@ -24,9 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- *
- */
+// @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
 public class QuotedStringTokenizerTest
 {
     /*
@@ -191,9 +189,9 @@ public class QuotedStringTokenizerTest
     @Test
     public void testNextTokenOnContentDisposition()
     {
-        String content_disposition = "form-data; name=\"fileup\"; filename=\"Taken on Aug 22 \\ 2012.jpg\"";
+        String contentDisposition = "form-data; name=\"fileup\"; filename=\"Taken on Aug 22 \\ 2012.jpg\"";
 
-        QuotedStringTokenizer tok = new QuotedStringTokenizer(content_disposition, ";", false, true);
+        QuotedStringTokenizer tok = new QuotedStringTokenizer(contentDisposition, ";", false, true);
 
         assertEquals("form-data", tok.nextToken().trim());
         assertEquals("name=\"fileup\"", tok.nextToken().trim());

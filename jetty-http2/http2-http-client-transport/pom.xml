@@ -14,19 +14,6 @@
     <bundle-symbolic-name>${project.groupId}.client.http</bundle-symbolic-name>
   </properties>
 
-  <build>
-    <plugins>
-      <plugin>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
-          <argLine>
-            @{argLine} ${jetty.surefire.argLine} --add-reads org.eclipse.jetty.http2.http.client.transport=jetty.servlet.api --add-modules jetty.servlet.api
-          </argLine>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
-
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>

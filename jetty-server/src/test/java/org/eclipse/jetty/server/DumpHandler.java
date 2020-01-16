@@ -154,17 +154,17 @@ public class DumpHandler extends AbstractHandler
             }
         }
 
-        String cookie_name = request.getParameter("CookieName");
-        if (cookie_name != null && cookie_name.trim().length() > 0)
+        String cookieName = request.getParameter("CookieName");
+        if (cookieName != null && cookieName.trim().length() > 0)
         {
-            String cookie_action = request.getParameter("Button");
+            String cookieAction = request.getParameter("Button");
             try
             {
                 String val = request.getParameter("CookieVal");
                 val = val.replaceAll("[ \n\r=<>]", "?");
                 Cookie cookie =
-                    new Cookie(cookie_name.trim(), val);
-                if ("Clear Cookie".equals(cookie_action))
+                    new Cookie(cookieName.trim(), val);
+                if ("Clear Cookie".equals(cookieAction))
                     cookie.setMaxAge(0);
                 response.addCookie(cookie);
             }

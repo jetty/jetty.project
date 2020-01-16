@@ -98,7 +98,7 @@ public class LocalConnectorTest
     }
 
     @Test
-    public void testOneResponse_10() throws Exception
+    public void testOneResponse10() throws Exception
     {
         String response = _connector.getResponse("GET /R1 HTTP/1.0\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
@@ -106,7 +106,7 @@ public class LocalConnectorTest
     }
 
     @Test
-    public void testOneResponse_10_keep_alive() throws Exception
+    public void testOneResponse10KeepAlive() throws Exception
     {
         String response = _connector.getResponse(
             "GET /R1 HTTP/1.0\r\n" +
@@ -117,7 +117,7 @@ public class LocalConnectorTest
     }
 
     @Test
-    public void testOneResponse_10_keep_alive_empty() throws Exception
+    public void testOneResponse10KeepAliveEmpty() throws Exception
     {
         String response = _connector.getResponse(
             "GET /R1?empty=true HTTP/1.0\r\n" +
@@ -128,7 +128,7 @@ public class LocalConnectorTest
     }
 
     @Test
-    public void testOneResponse_11() throws Exception
+    public void testOneResponse11() throws Exception
     {
         String response = _connector.getResponse(
             "GET /R1 HTTP/1.1\r\n" +
@@ -139,7 +139,7 @@ public class LocalConnectorTest
     }
 
     @Test
-    public void testOneResponse_11_close() throws Exception
+    public void testOneResponse11close() throws Exception
     {
         String response = _connector.getResponse(
             "GET /R1 HTTP/1.1\r\n" +
@@ -151,7 +151,7 @@ public class LocalConnectorTest
     }
 
     @Test
-    public void testOneResponse_11_empty() throws Exception
+    public void testOneResponse11empty() throws Exception
     {
         String response = _connector.getResponse(
             "GET /R1?empty=true HTTP/1.1\r\n" +
@@ -163,7 +163,7 @@ public class LocalConnectorTest
     }
 
     @Test
-    public void testOneResponse_11_chunked() throws Exception
+    public void testOneResponse11chunked() throws Exception
     {
         String response = _connector.getResponse(
             "GET /R1?flush=true HTTP/1.1\r\n" +
@@ -175,7 +175,7 @@ public class LocalConnectorTest
     }
 
     @Test
-    public void testThreeResponsePipeline_11() throws Exception
+    public void testThreeResponsePipeline11() throws Exception
     {
         LocalEndPoint endp = _connector.connect();
         endp.addInput(
@@ -201,7 +201,7 @@ public class LocalConnectorTest
     }
 
     @Test
-    public void testThreeResponse_11() throws Exception
+    public void testThreeResponse11() throws Exception
     {
         LocalEndPoint endp = _connector.connect();
         endp.addInput(
@@ -234,7 +234,7 @@ public class LocalConnectorTest
     }
 
     @Test
-    public void testThreeResponseClosed_11() throws Exception
+    public void testThreeResponseClosed11() throws Exception
     {
         LocalEndPoint endp = _connector.connect();
         endp.addInput(

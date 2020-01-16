@@ -194,7 +194,7 @@ public class PartialListenerTest
      * Test to ensure that the internal state tracking the partial messages is reset after each complete message.
      */
     @Test
-    public void testPartial_TextBinaryText() throws Exception
+    public void testPartialTextBinaryText() throws Exception
     {
         ClientUpgradeRequest request = new ClientUpgradeRequest();
         CloseTrackingEndpoint clientEndpoint = new CloseTrackingEndpoint();

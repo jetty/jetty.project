@@ -86,7 +86,7 @@ public class ParserGoodCloseStatusCodesTest
 
     @ParameterizedTest(name = "closeCode={0} {1}")
     @MethodSource("data")
-    public void testGoodCloseCode_WithReasonPhrase(int closeCode, String description) throws InterruptedException
+    public void testGoodCloseCodeWithReasonPhrase(int closeCode, String description) throws InterruptedException
     {
         ParserCapture capture = new ParserCapture();
 

@@ -195,11 +195,11 @@ public class ResourceHandlerTest
         assertThat(response.getStatus(), equalTo(200));
         assertThat(response.get(LAST_MODIFIED), Matchers.notNullValue());
         assertThat(response.getContent(), containsString("simple text"));
-        String last_modified = response.get(LAST_MODIFIED);
+        String lastModified = response.get(LAST_MODIFIED);
 
         response = HttpTester.parseResponse(_local.getResponse(
             "GET /resource/simple.txt HTTP/1.0\r\n" +
-                "If-Modified-Since: " + last_modified + "\r\n" +
+                "If-Modified-Since: " + lastModified + "\r\n" +
                 "\r\n"));
 
         assertThat(response.getStatus(), equalTo(304));

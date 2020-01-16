@@ -158,7 +158,7 @@ public class WebAppContextTest
     public void testConfigurationClassesFromDefault()
     {
         Configurations.cleanKnown();
-        String[] known_and_enabled = Configurations.getKnown().stream()
+        String[] knownAndEnabled = Configurations.getKnown().stream()
             .filter(c -> c.isEnabledByDefault())
             .map(c -> c.getClass().getName())
             .toArray(String[]::new);
@@ -170,7 +170,7 @@ public class WebAppContextTest
         assertThat(wac.getConfigurations().stream()
                 .map(c -> c.getClass().getName())
                 .collect(Collectors.toList()),
-            Matchers.containsInAnyOrder(known_and_enabled));
+            Matchers.containsInAnyOrder(knownAndEnabled));
         String[] classNames = wac.getConfigurationClasses();
         assertNotNull(classNames);
 

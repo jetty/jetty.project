@@ -379,7 +379,7 @@ public class ServletRequestLogTest
      */
     @ParameterizedTest
     @MethodSource("data")
-    public void testLogHandlerCollection_ErrorHandler_ServerBean(Servlet testServlet, String requestPath, String expectedLogEntry) throws Exception
+    public void testLogHandlerCollectionErrorHandlerServerBean(Servlet testServlet, String requestPath, String expectedLogEntry) throws Exception
     {
         Server server = new Server();
         ServerConnector connector = new ServerConnector(server);
@@ -470,7 +470,7 @@ public class ServletRequestLogTest
      */
     @ParameterizedTest
     @MethodSource("data")
-    public void testLogHandlerCollection_SimpleErrorPageMapping(Servlet testServlet, String requestPath, String expectedLogEntry) throws Exception
+    public void testLogHandlerCollectionSimpleErrorPageMapping(Servlet testServlet, String requestPath, String expectedLogEntry) throws Exception
     {
         Server server = new Server();
         ServerConnector connector = new ServerConnector(server);

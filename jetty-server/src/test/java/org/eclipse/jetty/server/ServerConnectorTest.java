@@ -119,7 +119,7 @@ public class ServerConnectorTest
     }
 
     @Test
-    public void testReuseAddress_Default() throws Exception
+    public void testReuseAddressDefault() throws Exception
     {
         Server server = new Server();
         ServerConnector connector = new ServerConnector(server);
@@ -154,7 +154,7 @@ public class ServerConnectorTest
     }
 
     @Test
-    public void testReuseAddress_True() throws Exception
+    public void testReuseAddressTrue() throws Exception
     {
         Server server = new Server();
         ServerConnector connector = new ServerConnector(server);
@@ -190,7 +190,7 @@ public class ServerConnectorTest
     }
 
     @Test
-    public void testReuseAddress_False() throws Exception
+    public void testReuseAddressFalse() throws Exception
     {
         Server server = new Server();
         ServerConnector connector = new ServerConnector(server);

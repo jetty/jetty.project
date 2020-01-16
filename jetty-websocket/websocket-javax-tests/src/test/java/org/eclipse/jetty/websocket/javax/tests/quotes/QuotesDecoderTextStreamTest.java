@@ -77,7 +77,7 @@ public class QuotesDecoderTextStreamTest
     }
 
     @Test
-    public void testQuoteEchoString_Bulk() throws Exception
+    public void testQuoteEchoStringBulk() throws Exception
     {
         List<Frame> send = QuotesUtil.loadAsWebSocketFrames("quotes-ben.txt");
         send.add(CloseStatus.toFrame(CloseStatus.NORMAL));
@@ -97,7 +97,7 @@ public class QuotesDecoderTextStreamTest
     }
 
     @Test
-    public void testQuoteEchoString_SmallSegments() throws Exception
+    public void testQuoteEchoStringSmallSegments() throws Exception
     {
         List<Frame> send = QuotesUtil.loadAsWebSocketFrames("quotes-ben.txt");
         send.add(CloseStatus.toFrame(CloseStatus.NORMAL));
@@ -117,7 +117,7 @@ public class QuotesDecoderTextStreamTest
     }
 
     @Test
-    public void testQuoteEchoString_FrameWise() throws Exception
+    public void testQuoteEchoStringFrameWise() throws Exception
     {
         List<Frame> send = QuotesUtil.loadAsWebSocketFrames("quotes-ben.txt");
         send.add(CloseStatus.toFrame(CloseStatus.NORMAL));

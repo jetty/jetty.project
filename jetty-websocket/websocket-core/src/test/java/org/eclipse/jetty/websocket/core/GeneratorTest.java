@@ -63,7 +63,7 @@ public class GeneratorTest
      * </p>
      */
     @Test
-    public void testGenerate_Binary_125BytePayload()
+    public void testGenerateBinary125BytePayload()
     {
         int length = 125;
 
@@ -106,7 +106,7 @@ public class GeneratorTest
      * </p>
      */
     @Test
-    public void testGenerate_Binary_126BytePayload()
+    public void testGenerateBinary126BytePayload()
     {
         int length = 126;
 
@@ -151,7 +151,7 @@ public class GeneratorTest
      * </p>
      */
     @Test
-    public void testGenerate_Binary_127BytePayload()
+    public void testGenerateBinary127BytePayload()
     {
         int length = 127;
 
@@ -196,7 +196,7 @@ public class GeneratorTest
      * </p>
      */
     @Test
-    public void testGenerate_Binary_128BytePayload()
+    public void testGenerateBinary128BytePayload()
     {
         int length = 128;
 
@@ -241,7 +241,7 @@ public class GeneratorTest
      * </p>
      */
     @Test
-    public void testGenerate_Binary_65535BytePayload()
+    public void testGenerateBinary65535BytePayload()
     {
         int length = 65535;
 
@@ -285,7 +285,7 @@ public class GeneratorTest
      * </p>
      */
     @Test
-    public void testGenerate_Binary_65536BytePayload()
+    public void testGenerateBinary65536BytePayload()
     {
         int length = 65536;
 
@@ -326,7 +326,7 @@ public class GeneratorTest
      * From Autobahn WebSocket Client Testcase 1.2.1
      */
     @Test
-    public void testGenerate_Binary_Empty()
+    public void testGenerateBinaryEmpty()
     {
         Frame binaryFrame = new Frame(OpCode.BINARY).setPayload(new byte[]{});
 
@@ -346,13 +346,13 @@ public class GeneratorTest
      * From Autobahn WebSocket Client Testcase 7.3.2
      */
     @Test
-    public void testGenerate_Close_1BytePayload()
+    public void testGenerateClose1BytePayload()
     {
         assertThrows(ProtocolException.class, () -> new CloseStatus(Hex.asByteBuffer("00")));
     }
 
     @Test
-    public void testGenerate_Close_CodeNoReason()
+    public void testGenerateCloseCodeNoReason()
     {
         CloseStatus close = new CloseStatus(CloseStatus.NORMAL);
         // 2 byte payload (2 bytes for status code)
@@ -360,7 +360,7 @@ public class GeneratorTest
     }
 
     @Test
-    public void testGenerate_Close_CodeOkReason()
+    public void testGenerateCloseCodeOkReason()
     {
         CloseStatus close = new CloseStatus(CloseStatus.NORMAL, "OK");
         // 4 byte payload (2 bytes for status code, 2 more for "OK")
@@ -371,7 +371,7 @@ public class GeneratorTest
      * From Autobahn WebSocket Client Testcase 7.3.1
      */
     @Test
-    public void testGenerate_Close_Empty()
+    public void testGenerateCloseEmpty()
     {
         // 0 byte payload (no status code)
         assertGeneratedBytes("8800", new Frame(OpCode.CLOSE));
@@ -381,7 +381,7 @@ public class GeneratorTest
      * From Autobahn WebSocket Client Testcase 7.3.6
      */
     @Test
-    public void testGenerate_Close_WithInvalidStatusReason()
+    public void testGenerateCloseWithInvalidStatusReason()
     {
         StringBuilder message = new StringBuilder();
         for (int i = 0; i < 124; ++i)
@@ -408,7 +408,7 @@ public class GeneratorTest
      * From Autobahn WebSocket Client Testcase 7.3.3
      */
     @Test
-    public void testGenerate_Close_WithStatus()
+    public void testGenerateCloseWithStatus()
     {
         CloseStatus close = new CloseStatus(1000);
 
@@ -428,7 +428,7 @@ public class GeneratorTest
      * From Autobahn WebSocket Client Testcase 7.3.5
      */
     @Test
-    public void testGenerate_Close_WithStatusMaxReason()
+    public void testGenerateCloseWithStatusMaxReason()
     {
         StringBuilder message = new StringBuilder();
         for (int i = 0; i < 123; ++i)
@@ -462,7 +462,7 @@ public class GeneratorTest
      * From Autobahn WebSocket Client Testcase 7.3.4
      */
     @Test
-    public void testGenerate_Close_WithStatusReason()
+    public void testGenerateCloseWithStatusReason()
     {
         String message = "bad cough";
         byte[] messageBytes = message.getBytes();
@@ -491,7 +491,7 @@ public class GeneratorTest
      * Prevent regression of masking of many packets.
      */
     @Test
-    public void testGenerate_Masked_ManyFrames()
+    public void testGenerateMaskedManyFrames()
     {
         int pingCount = 2;
 
@@ -528,7 +528,7 @@ public class GeneratorTest
      * From Autobahn WebSocket Client Testcase 2.4
      */
     @Test
-    public void testGenerate_Ping_125BytePayload()
+    public void testGeneratePing125BytePayload()
     {
         byte[] bytes = new byte[125];
 
@@ -560,7 +560,7 @@ public class GeneratorTest
      * From Autobahn WebSocket Client Testcase 2.3
      */
     @Test
-    public void testGenerate_Ping_BinaryPaylod()
+    public void testGeneratePingBinaryPaylod()
     {
         byte[] bytes = new byte[]{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08};
 
@@ -587,7 +587,7 @@ public class GeneratorTest
      * From Autobahn WebSocket Client Testcase 2.1
      */
     @Test
-    public void testGenerate_Ping_Empty()
+    public void testGeneratePingEmpty()
     {
         Frame pingFrame = new Frame(OpCode.PING);
 
@@ -607,7 +607,7 @@ public class GeneratorTest
      * From Autobahn WebSocket Client Testcase 2.2
      */
     @Test
-    public void testGenerate_Ping_HelloPayload()
+    public void testGeneratePingHelloPayload()
     {
         String message = "Hello, world!";
         byte[] messageBytes = StringUtil.getUtf8Bytes(message);
@@ -635,7 +635,7 @@ public class GeneratorTest
      * From Autobahn WebSocket Client Testcase 2.5
      */
     @Test
-    public void testGenerate_Ping_OverSizedPayload()
+    public void testGeneratePingOverSizedPayload()
     {
         byte[] bytes = new byte[126];
         Arrays.fill(bytes, (byte)0x00);
@@ -649,7 +649,7 @@ public class GeneratorTest
      * From Autobahn WebSocket Client Testcase 2.5
      */
     @Test
-    public void testGenerate_Pong_OverSizedPayload()
+    public void testGeneratePongOverSizedPayload()
     {
         byte[] bytes = new byte[126];
         Arrays.fill(bytes, (byte)0x00);
@@ -666,7 +666,7 @@ public class GeneratorTest
      * </p>
      */
     @Test
-    public void testGenerate_RFC6455_FragmentedUnmaskedTextMessage()
+    public void testGenerateRFC6455FragmentedUnmaskedTextMessage()
     {
         Frame text1 = new Frame(OpCode.TEXT).setPayload("Hel").setFin(false);
         Frame text2 = new Frame(OpCode.CONTINUATION).setPayload("lo");
@@ -698,7 +698,7 @@ public class GeneratorTest
      * </p>
      */
     @Test
-    public void testGenerate_RFC6455_SingleMaskedPongRequest()
+    public void testGenerateRFC6455SingleMaskedPongRequest()
     {
         Frame pong = new Frame(OpCode.PONG).setPayload("Hello");
         pong.setMask(new byte[]
@@ -723,7 +723,7 @@ public class GeneratorTest
      * </p>
      */
     @Test
-    public void testGenerate_RFC6455_SingleMaskedTextMessage()
+    public void testGenerateRFC6455SingleMaskedTextMessage()
     {
         Frame text = new Frame(OpCode.TEXT).setPayload("Hello");
         text.setMask(new byte[]
@@ -748,7 +748,7 @@ public class GeneratorTest
      * </p>
      */
     @Test
-    public void testGenerate_RFC6455_SingleUnmasked256ByteBinaryMessage()
+    public void testGenerateRFC6455SingleUnmasked256ByteBinaryMessage()
     {
         int dataSize = 256;
 
@@ -783,7 +783,7 @@ public class GeneratorTest
      * </p>
      */
     @Test
-    public void testGenerate_RFC6455_SingleUnmasked64KBinaryMessage()
+    public void testGenerateRFC6455SingleUnmasked64KBinaryMessage()
     {
         int dataSize = 1024 * 64;
 
@@ -819,7 +819,7 @@ public class GeneratorTest
      * </p>
      */
     @Test
-    public void testGenerate_RFC6455_SingleUnmaskedPingRequest() throws Exception
+    public void testGenerateRFC6455SingleUnmaskedPingRequest() throws Exception
     {
         Frame ping = new Frame(OpCode.PING).setPayload("Hello");
 
@@ -840,7 +840,7 @@ public class GeneratorTest
      * </p>
      */
     @Test
-    public void testGenerate_RFC6455_SingleUnmaskedTextMessage()
+    public void testGenerateRFC6455SingleUnmaskedTextMessage()
     {
         Frame text = new Frame(OpCode.TEXT).setPayload("Hello");
 
@@ -860,7 +860,7 @@ public class GeneratorTest
      * From Autobahn WebSocket Client Testcase 1.1.2
      */
     @Test
-    public void testGenerate_Text_125BytePaylod()
+    public void testGenerateText125BytePaylod()
     {
         int length = 125;
         byte[] buf = new byte[length];
@@ -894,7 +894,7 @@ public class GeneratorTest
      * From Autobahn WebSocket Client Testcase 1.1.3
      */
     @Test
-    public void testGenerate_Text_126BytePaylod()
+    public void testGenerateText126BytePaylod()
     {
         int length = 126;
 
@@ -934,7 +934,7 @@ public class GeneratorTest
      * From Autobahn WebSocket Client Testcase 1.1.4
      */
     @Test
-    public void testGenerate_Text_127BytePayload()
+    public void testGenerateText127BytePayload()
     {
         int length = 127;
 
@@ -974,7 +974,7 @@ public class GeneratorTest
      * From Autobahn WebSocket Client Testcase 1.1.5
      */
     @Test
-    public void testGenerate_Text_128BytePayload()
+    public void testGenerateText128BytePayload()
     {
         int length = 128;
 
@@ -1016,7 +1016,7 @@ public class GeneratorTest
      * From Autobahn WebSocket Client Testcase 1.1.6
      */
     @Test
-    public void testGenerate_Text_65535BytePayload()
+    public void testGenerateText65535BytePayload()
     {
         int length = 65535;
 
@@ -1056,7 +1056,7 @@ public class GeneratorTest
      * From Autobahn WebSocket Client Testcase 1.1.7
      */
     @Test
-    public void testGenerate_Text_65536BytePayload()
+    public void testGenerateText65536BytePayload()
     {
         int length = 65536;
 
@@ -1096,7 +1096,7 @@ public class GeneratorTest
      * From Autobahn WebSocket Client Testcase 1.1.1
      */
     @Test
-    public void testGenerate_Text_Empty()
+    public void testGenerateTextEmpty()
     {
         Frame textFrame = new Frame(OpCode.TEXT).setPayload("");
 
@@ -1113,7 +1113,7 @@ public class GeneratorTest
     }
 
     @Test
-    public void testGenerate_Text_Hello()
+    public void testGenerateTextHello()
     {
         Frame frame = new Frame(OpCode.TEXT).setPayload("Hello");
         byte[] utf = StringUtil.getUtf8Bytes("Hello");
@@ -1121,7 +1121,7 @@ public class GeneratorTest
     }
 
     @Test
-    public void testGenerate_Text_Masked()
+    public void testGenerateTextMasked()
     {
         Frame frame = new Frame(OpCode.TEXT).setPayload("Hello");
         byte[] maskingKey = Hex.asByteArray("11223344");
@@ -1137,7 +1137,7 @@ public class GeneratorTest
     }
 
     @Test
-    public void testGenerate_Text_Masked_OffsetSourceByteBuffer()
+    public void testGenerateTextMaskedOffsetSourceByteBuffer()
     {
         ByteBuffer payload = ByteBuffer.allocate(100);
         payload.position(5);
@@ -1166,7 +1166,7 @@ public class GeneratorTest
      * Test the windowed generate of a frame that has no masking.
      */
     @Test
-    public void testGenerate_Windowed()
+    public void testGenerateWindowed()
     {
         // A decent sized frame, no masking
         byte[] payload = new byte[10240];
@@ -1194,7 +1194,7 @@ public class GeneratorTest
      * This is to prevent a regression in the masking of many frames.
      */
     @Test
-    public void testGenerate_WithMasking() throws Exception
+    public void testGenerateWithMasking() throws Exception
     {
         // A decent sized frame, with masking
         byte[] payload = new byte[10240];
