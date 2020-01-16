@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.util.BlockingCallback;
 import org.eclipse.jetty.util.BufferUtil;
@@ -44,7 +43,6 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
     private static final Logger LOG = Log.getLogger(JettyWebSocketRemoteEndpoint.class);
 
     private final FrameHandler.CoreSession coreSession;
-    private final AtomicBoolean closeInitiated = new AtomicBoolean(false);
     private byte messageType = -1;
     private BatchMode batchMode;
 
@@ -73,18 +71,15 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
      */
     public void close(int statusCode, String reason)
     {
-        if (!closeInitiated.compareAndSet(false, true))
-            return;
-
         try
         {
             BlockingCallback blockingCallback = newBlockingCallback();
             coreSession.close(statusCode, reason, blockingCallback);
             blockingCallback.block();
         }
-        catch (Throwable t)
+        catch (IOException e)
         {
-            LOG.warn(t);
+            LOG.ignore(e);
         }
     }
 
