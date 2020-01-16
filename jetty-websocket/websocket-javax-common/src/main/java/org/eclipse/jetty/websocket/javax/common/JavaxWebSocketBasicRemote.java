@@ -160,6 +160,6 @@ public class JavaxWebSocketBasicRemote extends JavaxWebSocketRemoteEndpoint impl
 
     private BlockingCallback newBlockingCallback()
     {
-        return new BlockingCallback(getIdleTimeout() + 1000);
-    }
+        long idleTimeout = getIdleTimeout();
+        return new BlockingCallback((idleTimeout > 0) ? idleTimeout + 1000 : idleTimeout);    }
 }

@@ -260,6 +260,7 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
 
     private BlockingCallback newBlockingCallback()
     {
-        return new BlockingCallback(coreSession.getIdleTimeout().toMillis() + 1000);
+        long idleTimeout = coreSession.getIdleTimeout().toMillis();
+        return new BlockingCallback((idleTimeout > 0) ? idleTimeout + 1000 : idleTimeout);
     }
 }

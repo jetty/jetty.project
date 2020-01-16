@@ -190,7 +190,8 @@ public class JavaxWebSocketSession implements javax.websocket.Session
     @Override
     public void close(CloseReason closeReason) throws IOException
     {
-        BlockingCallback b = new BlockingCallback(getMaxIdleTimeout() + 1000);
+        long idleTimeout = getMaxIdleTimeout();
+        BlockingCallback b = new BlockingCallback((idleTimeout > 0) ? idleTimeout + 1000 : idleTimeout);
         coreSession.close(closeReason.getCloseCode().getCode(), closeReason.getReasonPhrase(), b);
         b.block();
     }
