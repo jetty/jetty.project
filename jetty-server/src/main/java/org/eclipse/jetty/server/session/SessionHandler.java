@@ -136,11 +136,12 @@ public class SessionHandler extends ScopedHandler
 
     /**
      * Web.xml session-timeout is set in minutes, but is stored as an int in seconds by HttpSession and
-     * the sessionmanager. Thus MAX_INT is the max number of seconds that can be set, and MAX_INT/60 is the
+     * the sessionmanager. Thus MAX_INT is the max number of seconds that can be set so MAX_INT/60 is the
      * max number of minutes that you can set.
      */
-    public static final java.math.BigDecimal MAX_INACTIVE_MINUTES = new java.math.BigDecimal(Integer.MAX_VALUE / 60);
-
+    public static final int MAX_SESSION_TIMEOUT_MINS = Integer.MAX_VALUE / 60;
+    public static final int MIN_SESSION_TIMEOUT_MINS = Integer.MIN_VALUE / 60;
+    
     @Deprecated(since = "Servlet API 2.1")
     static final HttpSessionContext __nullSessionContext = new HttpSessionContext()
     {
@@ -160,6 +161,29 @@ public class SessionHandler extends ScopedHandler
         }
     };
 
+    /**
+     * Session timeout values are specified in web.xml and
+     * by ServletContext.setSessionTimeout in minutes, expressed
+     * as an integer, but treated as seconds by the HttpSession
+     * also as an integer. Thus, there is a floor and ceiling to
+     * the session timeout values. This method enforces that
+     * floor and ceiling. Note that all values <= 0
+     * are effectively equivalent, meaning that the session will
+     * never expire.
+     * @param minutes the number of minutes before an idle session expires
+     * @return the number of minutes, limited by the max and min value
+     */
+    public static int clipSessionTimeout(int minutes)
+    {
+        int tmp = minutes;
+        if (tmp >= 0)
+            tmp = Math.min(tmp, MAX_SESSION_TIMEOUT_MINS);
+        else
+            tmp = Math.max(tmp, MIN_SESSION_TIMEOUT_MINS);
+        
+        return tmp;
+    }
+    
     /**
      * Setting of max inactive interval for new sessions
      * -1 means no timeout

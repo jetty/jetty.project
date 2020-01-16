@@ -29,6 +29,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterRegistration;
@@ -1394,7 +1395,7 @@ public class ServletContextHandler extends ContextHandler
             if (_sessionHandler != null)
             {
                 int maxInactive = _sessionHandler.getMaxInactiveInterval();
-                timeout = (maxInactive < 0 ? 0 : maxInactive / 60);
+                timeout = maxInactive / 60;
             }
 
             return timeout;
@@ -1409,7 +1410,12 @@ public class ServletContextHandler extends ContextHandler
                 throw new UnsupportedOperationException();
 
             if (_sessionHandler != null)
-                _sessionHandler.setMaxInactiveInterval((sessionTimeout < 0 ? 0 : sessionTimeout * 60));
+            {
+                //sessionTimeout is in mins, but session and SessionHandler use seconds,
+                //both represented as an int, thus there is a floor and ceiling value
+                //for session timeout minutes.
+                _sessionHandler.setMaxInactiveInterval(SessionHandler.clipSessionTimeout(sessionTimeout) * 60); //in seconds
+            }
         }
 
         @Override
