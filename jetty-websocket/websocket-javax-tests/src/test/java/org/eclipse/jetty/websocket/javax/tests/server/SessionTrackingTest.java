@@ -104,14 +104,14 @@ public class SessionTrackingTest
         EventSocket clientSocket2 = new EventSocket();
         EventSocket clientSocket3 = new EventSocket();
 
-        try (Session session1 = client.connectToServer(clientSocket1, server.getWsUri().resolve("/session-info/1")))
+        Session session1 = client.connectToServer(clientSocket1, server.getWsUri().resolve("/session-info/1"));
         {
             Session serverSession1 = serverSessions.poll(5, TimeUnit.SECONDS);
             assertNotNull(serverSession1);
             sendTextFrameToAll("openSessions|in-1", session1);
             assertThat(clientSocket1.messageQueue.poll(5, TimeUnit.SECONDS), is("openSessions(@in-1).size=1"));
 
-            try (Session session2 = client.connectToServer(clientSocket2, server.getWsUri().resolve("/session-info/2")))
+            Session session2 = client.connectToServer(clientSocket2, server.getWsUri().resolve("/session-info/2"));
             {
                 Session serverSession2 = serverSessions.poll(5, TimeUnit.SECONDS);
                 assertNotNull(serverSession2);
@@ -119,7 +119,7 @@ public class SessionTrackingTest
                 assertThat(clientSocket1.messageQueue.poll(5, TimeUnit.SECONDS), is("openSessions(@in-2).size=2"));
                 assertThat(clientSocket2.messageQueue.poll(5, TimeUnit.SECONDS), is("openSessions(@in-2).size=2"));
 
-                try (Session session3 = client.connectToServer(clientSocket3, server.getWsUri().resolve("/session-info/3")))
+                Session session3 = client.connectToServer(clientSocket3, server.getWsUri().resolve("/session-info/3"));
                 {
                     Session serverSession3 = serverSessions.poll(5, TimeUnit.SECONDS);
                     assertNotNull(serverSession3);

@@ -71,6 +71,8 @@ public class BlockingCallback implements Callback
             Throwable cause = e.getCause();
             if (cause instanceof RuntimeException)
                 throw (RuntimeException)cause;
+            else if (cause instanceof IOException)
+                throw (IOException)cause;
             else
                 throw new IOException(cause);
         }
