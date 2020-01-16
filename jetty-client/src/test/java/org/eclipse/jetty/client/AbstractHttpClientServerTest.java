@@ -195,7 +195,7 @@ public abstract class AbstractHttpClientServerTest
 
         private void configure(SslContextFactory ssl)
         {
-            Path keystorePath = MavenTestingUtils.getTestResourcePath("keystore.jks");
+            Path keystorePath = MavenTestingUtils.getTestResourcePath("keystore.p12");
             ssl.setKeyStorePath(keystorePath.toString());
             ssl.setKeyStorePassword("storepwd");
         }

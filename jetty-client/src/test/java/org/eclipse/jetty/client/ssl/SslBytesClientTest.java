@@ -72,7 +72,7 @@ public class SslBytesClientTest extends SslBytesTest
         sslContextFactory = new SslContextFactory.Client(true);
         client = new HttpClient(sslContextFactory);
         client.setMaxConnectionsPerDestination(1);
-        File keyStore = MavenTestingUtils.getTestResourceFile("keystore.jks");
+        File keyStore = MavenTestingUtils.getTestResourceFile("keystore.p12");
         sslContextFactory.setKeyStorePath(keyStore.getAbsolutePath());
         sslContextFactory.setKeyStorePassword("storepwd");
         client.start();
