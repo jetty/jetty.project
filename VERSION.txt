@@ -1,4 +1,10 @@
-jetty-9.4.26-SNAPSHOT
+jetty-9.4.26.v20200117 - 17 January 2020
+ + 2620 Exception from user endpoint onClose results in unclosed
+   WebSocketSession
+ + 4383 Errors deleting multipart tmp files java.lang.NullPointerException
+   under heavy load
+ + 4444 TLS Connection Timeout Intermittently
+ + 4461 IllegalStateException in HttpOutput with Jersey
 
 jetty-9.4.25.v20191220 - 20 December 2019
  + 995 UrlEncoded.encodeString should skip more characters
@@ -9,13 +15,13 @@ jetty-9.4.25.v20191220 - 20 December 2019
  + 4269 ResponseWriter should not throw RuntimeIOExceptions
  + 4323 QOS Filter does not handle IllegalStateException and never releases
    passes
- + 4329 rewrite prevents URL session tracking.
+ + 4329 rewrite prevents URL session tracking
  + 4331 Improve handling of HttpOutput.close() for pending writes
  + 4350 Deprecated MultiPartInputStreamParser still used in jetty-server
    (MultiPartsUtilParser) but OSGi ExportPackage suppressed
  + 4351 Servlet.service called before Servlet.init is finished when servlet is
    lazily initialized
- + 4363 jetty-maven-plugin no longer processes supplied context.xml-file.
+ + 4363 jetty-maven-plugin no longer processes supplied context.xml-file
  + 4366 HTTP client uses SOCKS4 proxy hostname for SSL hostname verification
  + 4374 Jetty client: Response.AsyncContentListener.onContent is not called
  + 4376 Async Content Complete bug results in
@@ -24,10 +30,10 @@ jetty-9.4.25.v20191220 - 20 December 2019
    SslContextFactory usage
  + 4392 Suppress logging of QuietException in HttpChannelState.asyncError()
  + 4402 NPE in JettyRunWarExplodedMojo
- + 4411 Jetty server spins on incomplete request due to delayed dispatch
-   until content
- + 4415 GzipHandler invalid input zip size on large
-   (over 2,147,483,647 bytes) request body content
+ + 4411 Jetty server spins on incomplete request due to delayed dispatch until
+   content
+ + 4415 GzipHandler invalid input zip size on large (over 2,147,483,647 bytes)
+   request body content
  + 4421 HttpClient support for PROXY protocol
  + 4427 Retried HttpClient Requests can result in duplicates cookies
 
