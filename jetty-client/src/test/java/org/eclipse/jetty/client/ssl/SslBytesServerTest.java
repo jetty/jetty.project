@@ -117,7 +117,7 @@ public class SslBytesServerTest extends SslBytesTest
         httpParses.set(0);
         serverEndPoint.set(null);
 
-        File keyStore = MavenTestingUtils.getTestResourceFile("keystore.jks");
+        File keyStore = MavenTestingUtils.getTestResourceFile("keystore.p12");
         sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setKeyStorePath(keyStore.getAbsolutePath());
         sslContextFactory.setKeyStorePassword("storepwd");

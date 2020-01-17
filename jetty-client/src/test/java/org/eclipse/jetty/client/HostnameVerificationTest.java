@@ -62,7 +62,7 @@ public class HostnameVerificationTest
         server = new Server(serverThreads);
 
         SslContextFactory.Server serverSslContextFactory = new SslContextFactory.Server();
-        serverSslContextFactory.setKeyStorePath("src/test/resources/keystore.jks");
+        serverSslContextFactory.setKeyStorePath("src/test/resources/keystore.p12");
         serverSslContextFactory.setKeyStorePassword("storepwd");
         connector = new ServerConnector(server, serverSslContextFactory);
         server.addConnector(connector);
@@ -78,7 +78,7 @@ public class HostnameVerificationTest
         server.start();
 
         // The keystore contains a hostname which doesn't match localhost
-        clientSslContextFactory.setKeyStorePath("src/test/resources/keystore.jks");
+        clientSslContextFactory.setKeyStorePath("src/test/resources/keystore.p12");
         clientSslContextFactory.setKeyStorePassword("storepwd");
 
         ClientConnector clientConnector = new ClientConnector();

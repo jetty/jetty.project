@@ -87,7 +87,7 @@ public class NeedWantClientAuthTest
     private SslContextFactory.Server createServerSslContextFactory()
     {
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-        sslContextFactory.setKeyStorePath("src/test/resources/keystore.jks");
+        sslContextFactory.setKeyStorePath("src/test/resources/keystore.p12");
         sslContextFactory.setKeyStorePassword("storepwd");
         return sslContextFactory;
     }
@@ -146,7 +146,7 @@ public class NeedWantClientAuthTest
         });
 
         SslContextFactory.Client clientSSL = new SslContextFactory.Client(true);
-        clientSSL.setKeyStorePath("src/test/resources/client_keystore.jks");
+        clientSSL.setKeyStorePath("src/test/resources/client_keystore.p12");
         clientSSL.setKeyStorePassword("storepwd");
         startClient(clientSSL);
 
@@ -237,7 +237,7 @@ public class NeedWantClientAuthTest
         });
 
         SslContextFactory.Client clientSSL = new SslContextFactory.Client(true);
-        clientSSL.setKeyStorePath("src/test/resources/client_keystore.jks");
+        clientSSL.setKeyStorePath("src/test/resources/client_keystore.p12");
         clientSSL.setKeyStorePassword("storepwd");
         startClient(clientSSL);
 
