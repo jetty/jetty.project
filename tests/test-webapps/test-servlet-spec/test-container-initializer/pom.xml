@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>test-servlet-spec-parent</artifactId>
-    <version>9.4.26.v20200117</version>
+    <version>9.4.27-SNAPSHOT</version>
   </parent>
   <artifactId>test-container-initializer</artifactId>
   <packaging>jar</packaging>

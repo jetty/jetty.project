@@ -1,3 +1,5 @@
+jetty-9.4.27-SNAPSHOT
+
 jetty-9.4.26.v20200117 - 17 January 2020
  + 2620 Exception from user endpoint onClose results in unclosed
    WebSocketSession
