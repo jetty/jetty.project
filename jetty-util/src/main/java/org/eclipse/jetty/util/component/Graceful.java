@@ -25,6 +25,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
@@ -156,21 +157,32 @@ public interface Graceful
      */
     static void shutdown(GracefulContainer component) throws Exception
     {
+        Logger log = Log.getLogger(component.getClass());
+
+        log.info("Shutdown {} in {}ms", component, component.getStopTimeout());
+
         if (component.getStopTimeout() <= 0)
             return;
 
         MultiException mex = null;
 
         // tell the graceful handlers that we are shutting down
-        List<Future<Void>> futures = new ArrayList<>();
+        List<Graceful> gracefuls = new ArrayList<>();
         if (component instanceof Graceful)
-            futures.add(((Graceful)component).shutdown());
-        component.getContainedBeans(Graceful.class).stream().map(Graceful::shutdown).forEach(futures::add);
+            gracefuls.add((Graceful) component);
+        component.getContainedBeans(Graceful.class).forEach(gracefuls::add);
+
+        if (log.isDebugEnabled())
+            gracefuls.forEach(g -> log.debug("graceful {}", g));
+
+        List<Future<Void>> futures = gracefuls.stream().map(Graceful::shutdown).collect(Collectors.toList());
+
+        if (log.isDebugEnabled())
+            futures.forEach(f -> log.debug("future {}", f));
 
         // Wait for all futures with a reducing time budget
         long stopTimeout = component.getStopTimeout();
         long stopBy = System.currentTimeMillis() + stopTimeout;
-        Logger log = Log.getLogger(component.getClass());
         if (log.isDebugEnabled())
             log.debug("Graceful shutdown {} by {}", component, new Date(stopBy));
 
@@ -181,6 +193,8 @@ public interface Graceful
             {
                 if (!future.isDone())
                     future.get(Math.max(1L, stopBy - System.currentTimeMillis()), TimeUnit.MILLISECONDS);
+                if (log.isDebugEnabled())
+                    log.debug("done {}", future);
             }
             catch (TimeoutException e)
             {

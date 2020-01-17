@@ -39,6 +39,7 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
@@ -57,6 +58,7 @@ import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -345,7 +347,6 @@ public class StopTest
     }
 
     @Test
-    @Disabled // TODO diagnose
     public void testCommittedResponsesAreClosed() throws Exception
     {
         Server server = new Server();
@@ -403,35 +404,36 @@ public class StopTest
 
         exchanger0.exchange(null);
 
-        CountDownLatch latch = new CountDownLatch(1);
+        FutureCallback stopped = new FutureCallback();
         new Thread(() ->
         {
             try
             {
                 server.stop();
-                latch.countDown();
+                stopped.succeeded();
             }
-            catch (Exception e)
+            catch (Throwable e)
             {
-                e.printStackTrace();
+                stopped.failed(e);
             }
         }).start();
-        while (server.isStarted())
+
+        long start = System.nanoTime();
+        while (!connector.isShutdown())
         {
+            assertThat(TimeUnit.NANOSECONDS.toSeconds(System.nanoTime() - start), lessThan(10L));
             Thread.sleep(10);
         }
 
         // Check new connections rejected!
-        String unavailable = connector.getResponse("GET / HTTP/1.1\r\nHost:localhost\r\n\r\n");
-        assertThat(unavailable, containsString(" 503 Service Unavailable"));
-        assertThat(unavailable, Matchers.containsString("Connection: close"));
+        assertThrows(IllegalStateException.class, ()->connector.getResponse("GET / HTTP/1.1\r\nHost:localhost\r\n\r\n"));
 
         // Check completed 200 has close
         exchanger1.exchange(null);
         response = endp.getResponse();
         assertThat(response, containsString("200 OK"));
         assertThat(response, Matchers.containsString("Connection: close"));
-        assertTrue(latch.await(10, TimeUnit.SECONDS));
+        stopped.get(10, TimeUnit.SECONDS);
     }
 
     @Test
