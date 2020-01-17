@@ -105,48 +105,6 @@ public class JSON
         _stringBufferSize = stringBufferSize;
     }
 
-    /**
-     * <p>Converts the given object to JSON.</p>
-     *
-     * @param object the object to convert
-     * @return the JSON string representation of the object
-     * @deprecated use {@link JSON#toJSON(Object)} instead
-     */
-    @Deprecated(forRemoval = true)
-    public static String toString(Object object)
-    {
-        JSON json = new JSON();
-        return json.toJSON(object);
-    }
-
-    /**
-     * <p>Converts the given Map to JSON.</p>
-     *
-     * @param map the Map to convert
-     * @return the JSON string representation of the map
-     * @deprecated use {@link JSON#toJSON(Object)} instead
-     */
-    @Deprecated(forRemoval = true)
-    public static String toString(Map<?, ?> map)
-    {
-        JSON json = new JSON();
-        return json.toJSON(map);
-    }
-
-    /**
-     * <p>Converts the given array to JSON.</p>
-     *
-     * @param array the array to convert
-     * @return the JSON string representation of the array
-     * @deprecated use {@link JSON#toJSON(Object)} instead
-     */
-    @Deprecated(forRemoval = true)
-    public static String toString(Object[] array)
-    {
-        JSON json = new JSON();
-        return json.toJSON(array);
-    }
-
     private void quotedEscape(Appendable buffer, String input)
     {
         try
@@ -646,54 +604,6 @@ public class JSON
     public Convertor getConvertorFor(String name)
     {
         return _convertors.get(name);
-    }
-
-    /**
-     * @param reader the Reader to read the JSON representation from
-     * @return the object constructed from the JSON string representation
-     * @throws IOException if unable to parse
-     * @deprecated use {@link #fromJSON(Reader)}
-     */
-    @Deprecated(forRemoval = true)
-    public static Object parse(Reader reader) throws IOException
-    {
-        return new JSON().parse(new ReaderSource(reader), false);
-    }
-
-    /**
-     * @param reader the Reader to read the JSON representation from
-     * @param stripOuterComment whether to ignore an outer comment around the JSON
-     * @return the object constructed from the JSON string representation
-     * @throws IOException if unable to parse
-     * @deprecated use {@link #fromJSON(Reader)}
-     */
-    @Deprecated(forRemoval = true)
-    public static Object parse(Reader reader, boolean stripOuterComment) throws IOException
-    {
-        return new JSON().parse(new ReaderSource(reader), stripOuterComment);
-    }
-
-    /**
-     * @param json the JSON string to parse
-     * @return the object constructed from the JSON string representation
-     * @deprecated use {@link #fromJSON(String)}
-     */
-    @Deprecated(forRemoval = true)
-    public static Object parse(String json)
-    {
-        return new JSON().parse(new StringSource(json), false);
-    }
-
-    /**
-     * @param json the JSON string to parse
-     * @param stripOuterComment whether to ignore an outer comment around the JSON
-     * @return the object constructed from the JSON string representation
-     * @deprecated use {@link #fromJSON(String)}
-     */
-    @Deprecated(forRemoval = true)
-    public static Object parse(String json, boolean stripOuterComment)
-    {
-        return new JSON().parse(new StringSource(json), stripOuterComment);
     }
 
     /**
