@@ -478,7 +478,8 @@ public class ErrorHandlerTest
         }
         else if (contentType.contains("text/json"))
         {
-            Map jo = (Map)JSON.parse(response.getContent());
+            @SuppressWarnings("unchecked")
+            Map<String, Object> jo = (Map<String, Object>)new JSON().fromJSON(response.getContent());
 
             Set<String> acceptableKeyNames = new HashSet<>();
             acceptableKeyNames.add("url");

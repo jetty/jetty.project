@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.util.ajax;
 
-import java.lang.reflect.Method;
 import java.util.Map;
 
 import org.eclipse.jetty.util.Loader;
@@ -36,19 +35,6 @@ public class JSONEnumConvertor implements JSON.Convertor
 {
     private static final Logger LOG = Log.getLogger(JSONEnumConvertor.class);
     private boolean _fromJSON;
-    private Method _valueOf;
-
-    {
-        try
-        {
-            Class<?> e = Loader.loadClass("java.lang.Enum");
-            _valueOf = e.getMethod("valueOf", Class.class, String.class);
-        }
-        catch (Exception e)
-        {
-            throw new RuntimeException("!Enums", e);
-        }
-    }
 
     public JSONEnumConvertor()
     {
@@ -61,20 +47,21 @@ public class JSONEnumConvertor implements JSON.Convertor
     }
 
     @Override
-    public Object fromJSON(Map map)
+    public Object fromJSON(Map<String, Object> map)
     {
         if (!_fromJSON)
             throw new UnsupportedOperationException();
         try
         {
-            Class c = Loader.loadClass((String)map.get("class"));
-            return _valueOf.invoke(null, c, map.get("value"));
+            @SuppressWarnings({"rawtypes", "unchecked"})
+            Class<? extends Enum> type = Loader.loadClass((String)map.get("class"));
+            return Enum.valueOf(type, (String)map.get("value"));
         }
         catch (Exception e)
         {
             LOG.warn(e);
+            return null;
         }
-        return null;
     }
 
     @Override
@@ -83,11 +70,11 @@ public class JSONEnumConvertor implements JSON.Convertor
         if (_fromJSON)
         {
             out.addClass(obj.getClass());
-            out.add("value", ((Enum)obj).name());
+            out.add("value", ((Enum<?>)obj).name());
         }
         else
         {
-            out.add(((Enum)obj).name());
+            out.add(((Enum<?>)obj).name());
         }
     }
 }

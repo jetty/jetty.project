@@ -45,7 +45,7 @@ public class SerialRestServlet extends AbstractRestServlet
         final long start = System.nanoTime();
 
         String[] keywords = sanitize(request.getParameter(ITEMS_PARAM)).split(",");
-        Queue<Map<String, String>> results = new LinkedList<Map<String, String>>();
+        Queue<Map<String, Object>> results = new LinkedList<>();
 
         // make all requests serially
         for (String itemName : keywords)
@@ -55,13 +55,16 @@ public class SerialRestServlet extends AbstractRestServlet
             HttpURLConnection connection = (HttpURLConnection)url.openConnection();
             connection.setRequestMethod("GET");
 
-            Map query = (Map)JSON.parse(new BufferedReader(new InputStreamReader(connection.getInputStream())));
+            @SuppressWarnings("unchecked")
+            Map<String, Object> query = (Map<String, Object>)new JSON().fromJSON(new BufferedReader(new InputStreamReader(connection.getInputStream())));
             Object[] auctions = (Object[])query.get("Item");
             if (auctions != null)
             {
                 for (Object o : auctions)
                 {
-                    results.add((Map)o);
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> auction = (Map<String, Object>)o;
+                    results.add(auction);
                 }
             }
         }

@@ -101,19 +101,19 @@ public class AbstractRestServlet extends HttpServlet
         }
     }
 
-    protected String generateThumbs(Queue<Map<String, String>> results)
+    protected String generateThumbs(Queue<Map<String, Object>> results)
     {
         StringBuilder thumbs = new StringBuilder();
-        for (Map<String, String> m : results)
+        for (Map<String, Object> m : results)
         {
             if (!m.containsKey("GalleryURL"))
                 continue;
 
-            thumbs.append("<a href=\"" + m.get("ViewItemURLForNaturalSearch") + "\">");
-            thumbs.append("<img class='thumb' border='1px' height='25px'" +
-                " src='" + m.get("GalleryURL") + "'" +
-                " title='" + m.get("Title") + "'" +
-                "/>");
+            thumbs.append("<a href=\"").append(m.get("ViewItemURLForNaturalSearch")).append("\">");
+            thumbs.append("<img class='thumb' border='1px' height='25px' src='")
+                .append(m.get("GalleryURL")).append("'")
+                .append(" title='").append(m.get("Title")).append("'")
+                .append("/>");
             thumbs.append("</a>&nbsp;");
         }
         return thumbs.toString();
