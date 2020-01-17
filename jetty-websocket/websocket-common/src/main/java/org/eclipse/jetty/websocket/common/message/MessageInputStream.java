@@ -48,8 +48,15 @@ public class MessageInputStream extends InputStream implements MessageAppender
     private final BlockingDeque<ByteBuffer> buffers = new LinkedBlockingDeque<>();
     private final long timeoutMs;
     private ByteBuffer activeBuffer = null;
-    private volatile boolean closed = false;
-    private volatile SuspendToken suspendToken;
+    private SuspendToken suspendToken;
+    private State state = State.RESUMED;
+
+    private enum State
+    {
+        RESUMED,
+        SUSPENDED,
+        CLOSED
+    }
 
     public MessageInputStream(Session session)
     {
@@ -61,7 +68,6 @@ public class MessageInputStream extends InputStream implements MessageAppender
         this.timeoutMs = timeoutMs;
         this.session = session;
         this.bufferPool = (session instanceof WebSocketSession) ? ((WebSocketSession)session).getBufferPool() : null;
-        this.suspendToken = session.suspend();
     }
 
     @Override
@@ -70,8 +76,8 @@ public class MessageInputStream extends InputStream implements MessageAppender
         if (LOG.isDebugEnabled())
             LOG.debug("Appending {} chunk: {}", fin ? "final" : "non-final", BufferUtil.toDetailString(framePayload));
 
-        // If closed, we should just toss incoming payloads into the bit bucket.
-        if (closed)
+        // Early non atomic test that we aren't closed to avoid an unnecessary copy (will be checked again later).
+        if (state == State.CLOSED)
             return;
 
         // Put the payload into the queue, by copying it.
@@ -89,11 +95,20 @@ public class MessageInputStream extends InputStream implements MessageAppender
 
             synchronized (this)
             {
-                if (closed)
-                    return;
+                switch (state)
+                {
+                    case CLOSED:
+                        return;
 
-                if (suspendToken == null)
-                    suspendToken = session.suspend();
+                    case RESUMED:
+                        suspendToken = session.suspend();
+                        state = State.SUSPENDED;
+                        break;
+
+                    case SUSPENDED:
+                        throw new IllegalStateException();
+                }
+
                 buffers.put(copy);
             }
         }
@@ -101,35 +116,37 @@ public class MessageInputStream extends InputStream implements MessageAppender
         {
             throw new IOException(e);
         }
-        finally
-        {
-            if (fin)
-                buffers.offer(EOF);
-        }
-    }
-
-    private ByteBuffer acquire(int capacity, boolean direct)
-    {
-        ByteBuffer buffer;
-        if (bufferPool != null)
-            buffer = bufferPool.acquire(capacity, direct);
-        else
-            buffer = direct ? BufferUtil.allocateDirect(capacity) : BufferUtil.allocate(capacity);
-        return buffer;
     }
 
     @Override
     public void close()
     {
+        SuspendToken resume = null;
         synchronized (this)
         {
-            closed = true;
+            switch (state)
+            {
+                case CLOSED:
+                    return;
+
+                case SUSPENDED:
+                    resume = suspendToken;
+                    suspendToken = null;
+                    state = State.CLOSED;
+                    break;
+
+                case RESUMED:
+                    state = State.CLOSED;
+                    break;
+            }
+
             buffers.clear();
             buffers.offer(EOF);
         }
 
-        // Resume to discard util we reach next message.
-        resume();
+        // May need to resume to discard until we reach next message.
+        if (resume != null)
+            resume.resume();
     }
 
     @Override
@@ -157,7 +174,7 @@ public class MessageInputStream extends InputStream implements MessageAppender
     {
         try
         {
-            if (closed)
+            if (state == State.CLOSED)
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Stream closed");
@@ -194,7 +211,31 @@ public class MessageInputStream extends InputStream implements MessageAppender
 
             int result = activeBuffer.get() & 0xFF;
             if (!activeBuffer.hasRemaining())
-                resume();
+            {
+
+                SuspendToken resume = null;
+                synchronized (this)
+                {
+                    switch (state)
+                    {
+                        case CLOSED:
+                            return -1;
+
+                        case SUSPENDED:
+                            resume = suspendToken;
+                            suspendToken = null;
+                            state = State.RESUMED;
+                            break;
+
+                        case RESUMED:
+                            throw new IllegalStateException();
+                    }
+                }
+
+                // Get more content to read.
+                if (resume != null)
+                    resume.resume();
+            }
 
             return result;
         }
@@ -207,21 +248,19 @@ public class MessageInputStream extends InputStream implements MessageAppender
         }
     }
 
-    private void resume()
-    {
-        SuspendToken resume;
-        synchronized (this)
-        {
-            resume = suspendToken;
-            suspendToken = null;
-        }
-        if (resume != null)
-            resume.resume();
-    }
-
     @Override
     public void reset() throws IOException
     {
         throw new IOException("reset() not supported");
+    }
+
+    private ByteBuffer acquire(int capacity, boolean direct)
+    {
+        ByteBuffer buffer;
+        if (bufferPool != null)
+            buffer = bufferPool.acquire(capacity, direct);
+        else
+            buffer = direct ? BufferUtil.allocateDirect(capacity) : BufferUtil.allocate(capacity);
+        return buffer;
     }
 }
