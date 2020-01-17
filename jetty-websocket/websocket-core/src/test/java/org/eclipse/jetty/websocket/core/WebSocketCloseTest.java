@@ -526,7 +526,7 @@ public class WebSocketCloseTest extends WebSocketTester
         private SslContextFactory.Server createServerSslContextFactory()
         {
             SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-            sslContextFactory.setKeyStorePath("src/test/resources/keystore.jks");
+            sslContextFactory.setKeyStorePath("src/test/resources/keystore.p12");
             sslContextFactory.setKeyStorePassword("storepwd");
             return sslContextFactory;
         }

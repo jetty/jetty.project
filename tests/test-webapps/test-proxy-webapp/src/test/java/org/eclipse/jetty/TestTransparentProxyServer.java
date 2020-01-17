@@ -80,10 +80,9 @@ public class TestTransparentProxyServer
 
         // SSL configurations
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-        sslContextFactory.setKeyStorePath(jettyRoot + "/jetty-server/src/main/config/etc/keystore");
+        sslContextFactory.setKeyStorePath(jettyRoot + "/jetty-server/src/main/config/modules/test-keystore/keystore.p12");
         sslContextFactory.setKeyStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
-        sslContextFactory.setKeyManagerPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");
-        sslContextFactory.setTrustStorePath(jettyRoot + "/jetty-server/src/main/config/etc/keystore");
+        sslContextFactory.setTrustStorePath(jettyRoot + "/jetty-server/src/main/config/modules/test-keystore/keystore.p12");
         sslContextFactory.setTrustStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
         sslContextFactory.setExcludeCipherSuites(
             "SSL_RSA_WITH_DES_CBC_SHA",

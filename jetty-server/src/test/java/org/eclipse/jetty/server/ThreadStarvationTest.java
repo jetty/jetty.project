@@ -88,13 +88,10 @@ public class ThreadStarvationTest
         // HTTPS/SSL/TLS
         ConnectorProvider https = (server, acceptors, selectors) ->
         {
-            Path keystorePath = MavenTestingUtils.getTestResourcePath("keystore");
+            Path keystorePath = MavenTestingUtils.getTestResourcePath("keystore.p12");
             SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
             sslContextFactory.setKeyStorePath(keystorePath.toString());
             sslContextFactory.setKeyStorePassword("storepwd");
-            sslContextFactory.setKeyManagerPassword("keypwd");
-            sslContextFactory.setTrustStorePath(keystorePath.toString());
-            sslContextFactory.setTrustStorePassword("storepwd");
             ByteBufferPool pool = new LeakTrackingByteBufferPool(new MappedByteBufferPool.Tagged());
 
             HttpConnectionFactory httpConnectionFactory = new HttpConnectionFactory();

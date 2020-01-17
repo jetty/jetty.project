@@ -170,10 +170,9 @@ public class ConnectionOpenCloseTest extends AbstractHttpTest
     public void testSSLOpenRequestClose() throws Exception
     {
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-        File keystore = MavenTestingUtils.getTestResourceFile("keystore");
+        File keystore = MavenTestingUtils.getTestResourceFile("keystore.p12");
         sslContextFactory.setKeyStoreResource(Resource.newResource(keystore));
         sslContextFactory.setKeyStorePassword("storepwd");
-        sslContextFactory.setKeyManagerPassword("keypwd");
         server.addBean(sslContextFactory);
 
         server.removeConnector(connector);

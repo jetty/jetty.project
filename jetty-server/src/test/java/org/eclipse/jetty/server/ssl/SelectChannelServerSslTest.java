@@ -81,13 +81,10 @@ public class SelectChannelServerSslTest extends HttpServerTestBase
     @BeforeEach
     public void init() throws Exception
     {
-        String keystorePath = MavenTestingUtils.getTestResourcePath("keystore").toString();
+        String keystorePath = MavenTestingUtils.getTestResourcePath("keystore.p12").toString();
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setKeyStorePath(keystorePath);
         sslContextFactory.setKeyStorePassword("storepwd");
-        sslContextFactory.setKeyManagerPassword("keypwd");
-        sslContextFactory.setTrustStorePath(keystorePath);
-        sslContextFactory.setTrustStorePassword("storepwd");
         ByteBufferPool pool = new LeakTrackingByteBufferPool(new MappedByteBufferPool.Tagged());
 
         HttpConnectionFactory httpConnectionFactory = new HttpConnectionFactory();

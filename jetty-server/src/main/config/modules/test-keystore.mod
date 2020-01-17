@@ -9,13 +9,10 @@ ssl
 ssl
 
 [files]
-basehome:modules/test-keystore/keystore|etc/test-keystore
+basehome:modules/test-keystore/keystore.p12|etc/test-keystore.p12
 
 [ini]
-jetty.sslContext.keyStorePath?=etc/test-keystore
-jetty.sslContext.trustStorePath?=etc/test-keystore
+jetty.sslContext.keyStorePath?=etc/test-keystore.p12
+jetty.sslContext.trustStorePath?=etc/test-keystore.p12
+jetty.sslContext.keyStoreType?=PKCS12
 jetty.sslContext.keyStorePassword?=OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4
-jetty.sslContext.keyStoreType?=JKS
-jetty.sslContext.keyManagerPassword?=OBF:1u2u1wml1z7s1z7a1wnl1u2g
-jetty.sslContext.trustStorePassword?=OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4
-jetty.sslContext.trustStoreType?=JKS

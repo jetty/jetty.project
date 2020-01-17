@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InterruptedIOException;
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -46,6 +47,7 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http2.FlowControlStrategy;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
@@ -356,7 +358,9 @@ public class HttpClientTest extends AbstractTest<TransportScenario>
 
         assertThrows(ExecutionException.class, () ->
         {
-            scenario.client.newRequest(scenario.newURI())
+            // Use IP address since the certificate contains a host name.
+            int serverPort = ((ServerConnector)scenario.connector).getLocalPort();
+            scenario.client.newRequest("https://127.0.0.1:" + serverPort)
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
         });

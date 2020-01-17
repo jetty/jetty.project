@@ -104,9 +104,8 @@ public class HttpInputIntegrationTest
         // SSL Context Factory for HTTPS and HTTP/2
         String jettyDistro = System.getProperty("jetty.distro", "../../jetty-distribution/target/distribution");
         __sslContextFactory = new SslContextFactory.Server();
-        __sslContextFactory.setKeyStorePath(jettyDistro + "/../../../jetty-server/src/test/config/etc/keystore");
-        __sslContextFactory.setKeyStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
-        __sslContextFactory.setKeyManagerPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");
+        __sslContextFactory.setKeyStorePath(jettyDistro + "/../../../jetty-server/src/test/resources/keystore.p12");
+        __sslContextFactory.setKeyStorePassword("storepwd");
 
         // HTTPS Configuration
         __sslConfig = new HttpConfiguration(__config);

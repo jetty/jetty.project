@@ -37,10 +37,8 @@ public class DrupalHTTP2FastCGIProxyServer
     public static void main(String[] args) throws Exception
     {
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-        sslContextFactory.setKeyStorePath("src/test/resources/keystore.jks");
+        sslContextFactory.setKeyStorePath("src/test/resources/keystore.p12");
         sslContextFactory.setKeyStorePassword("storepwd");
-        sslContextFactory.setTrustStorePath("src/test/resources/truststore.jks");
-        sslContextFactory.setTrustStorePassword("storepwd");
         sslContextFactory.setCipherComparator(new HTTP2Cipher.CipherComparator());
 
         Server server = new Server();

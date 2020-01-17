@@ -232,7 +232,7 @@ public class ConnectorServerTest
     public void testJMXOverTLS() throws Exception
     {
         SslContextFactory sslContextFactory = new SslContextFactory.Server();
-        String keyStorePath = MavenTestingUtils.getTestResourcePath("keystore.jks").toString();
+        String keyStorePath = MavenTestingUtils.getTestResourcePath("keystore.p12").toString();
         String keyStorePassword = "storepwd";
         sslContextFactory.setKeyStorePath(keyStorePath);
         sslContextFactory.setKeyStorePassword(keyStorePassword);

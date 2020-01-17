@@ -630,10 +630,9 @@ public class SocketChannelEndPointTest
         public SslScenario(NormalScenario normalScenario) throws Exception
         {
             _normalScenario = normalScenario;
-            File keystore = MavenTestingUtils.getTestResourceFile("keystore");
+            File keystore = MavenTestingUtils.getTestResourceFile("keystore.p12");
             _sslCtxFactory.setKeyStorePath(keystore.getAbsolutePath());
             _sslCtxFactory.setKeyStorePassword("storepwd");
-            _sslCtxFactory.setKeyManagerPassword("keypwd");
             _sslCtxFactory.start();
         }
 

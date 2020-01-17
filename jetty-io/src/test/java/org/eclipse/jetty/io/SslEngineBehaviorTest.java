@@ -44,10 +44,9 @@ public class SslEngineBehaviorTest
     public static void startSsl() throws Exception
     {
         sslCtxFactory = new SslContextFactory.Server();
-        File keystore = MavenTestingUtils.getTestResourceFile("keystore");
+        File keystore = MavenTestingUtils.getTestResourceFile("keystore.p12");
         sslCtxFactory.setKeyStorePath(keystore.getAbsolutePath());
         sslCtxFactory.setKeyStorePassword("storepwd");
-        sslCtxFactory.setKeyManagerPassword("keypwd");
         sslCtxFactory.start();
     }
 
