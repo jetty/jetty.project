@@ -46,7 +46,6 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matcher;
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -131,7 +130,7 @@ public class StopTest
         Server server = new Server();
         server.setStopTimeout(stopTimeout);
 
-        CountDownLatch closed = new CountDownLatch(1);
+        FutureCallback closed = new FutureCallback();
         ServerConnector connector = new ServerConnector(server, 2, 2, new HttpConnectionFactory()
         {
 
@@ -142,35 +141,40 @@ public class StopTest
                 HttpConnection conn = new HttpConnection(getHttpConfiguration(), con, endPoint, isRecordHttpComplianceViolations())
                 {
                     @Override
-                    public void close()
+                    public void onClose(Throwable cause)
                     {
                         try
                         {
-                            long start = System.nanoTime();
-                            new Thread(() ->
-                            {
-                                try
-                                {
-                                    Thread.sleep(closeWait - TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start));
-                                }
-                                catch (InterruptedException e)
-                                {
-                                    // no op
-                                }
-                                finally
-                                {
-                                    super.close();
-                                }
-                            }).start();
-                        }
-                        catch (Exception e)
-                        {
-                            // e.printStackTrace();
+                            super.onClose(cause);
                         }
                         finally
                         {
-                            closed.countDown();
+                            if (cause == null)
+                                closed.succeeded();
+                            else
+                                closed.failed(cause);
                         }
+                    }
+
+                    @Override
+                    public void close()
+                    {
+                        long start = System.nanoTime();
+                        new Thread(() ->
+                        {
+                            try
+                            {
+                                Thread.sleep(closeWait - TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start));
+                            }
+                            catch (Throwable e)
+                            {
+                                // no op
+                            }
+                            finally
+                            {
+                                super.close();
+                            }
+                        }).start();
                     }
                 };
                 return configure(conn, con, endPoint);
@@ -230,8 +234,7 @@ public class StopTest
         }
 
         // onClose Thread interrupted or completed
-        if (stopTimeout > 0)
-            assertTrue(closed.await(1000, TimeUnit.MILLISECONDS));
+        closed.get(Math.max(closeWait, stopTimeout) + 1000, TimeUnit.MILLISECONDS);
 
         if (!client.isClosed())
             client.close();
@@ -267,7 +270,6 @@ public class StopTest
      * @throws Exception on test failure
      */
     @Test
-    @Disabled // TODO diagnose
     public void testSlowCloseGraceful() throws Exception
     {
         testSlowClose(5000, 1000, Matchers.allOf(greaterThan(750L), lessThan(4999L)));
