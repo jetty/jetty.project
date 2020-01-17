@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -44,7 +44,7 @@ public class TestABCase4 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase4_1_1() throws Exception
+    public void testCase411() throws Exception
     {
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new BadFrame((byte)3)); // intentionally bad
@@ -68,7 +68,7 @@ public class TestABCase4 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase4_1_2() throws Exception
+    public void testCase412() throws Exception
     {
         byte[] payload = StringUtil.getUtf8Bytes("reserved payload");
         ByteBuffer buf = ByteBuffer.wrap(payload);
@@ -95,7 +95,7 @@ public class TestABCase4 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase4_1_3() throws Exception
+    public void testCase413() throws Exception
     {
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new TextFrame().setPayload("hello"));
@@ -122,7 +122,7 @@ public class TestABCase4 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase4_1_4() throws Exception
+    public void testCase414() throws Exception
     {
         ByteBuffer buf = ByteBuffer.wrap(StringUtil.getUtf8Bytes("bad"));
 
@@ -151,7 +151,7 @@ public class TestABCase4 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase4_1_5() throws Exception
+    public void testCase415() throws Exception
     {
         ByteBuffer buf = ByteBuffer.wrap(StringUtil.getUtf8Bytes("bad"));
 
@@ -180,7 +180,7 @@ public class TestABCase4 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase4_2_1() throws Exception
+    public void testCase421() throws Exception
     {
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new BadFrame((byte)11)); // intentionally bad
@@ -204,7 +204,7 @@ public class TestABCase4 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase4_2_2() throws Exception
+    public void testCase422() throws Exception
     {
         ByteBuffer buf = ByteBuffer.wrap(StringUtil.getUtf8Bytes("bad"));
 
@@ -230,7 +230,7 @@ public class TestABCase4 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase4_2_3() throws Exception
+    public void testCase423() throws Exception
     {
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new TextFrame().setPayload("hello"));
@@ -257,7 +257,7 @@ public class TestABCase4 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase4_2_4() throws Exception
+    public void testCase424() throws Exception
     {
         ByteBuffer buf = ByteBuffer.wrap(StringUtil.getUtf8Bytes("bad"));
 
@@ -286,7 +286,7 @@ public class TestABCase4 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase4_2_5() throws Exception
+    public void testCase425() throws Exception
     {
         ByteBuffer buf = ByteBuffer.wrap(StringUtil.getUtf8Bytes("bad"));
 

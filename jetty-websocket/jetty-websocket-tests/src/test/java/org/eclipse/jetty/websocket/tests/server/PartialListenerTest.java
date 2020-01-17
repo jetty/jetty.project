@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -191,7 +191,7 @@ public class PartialListenerTest
      * Test to ensure that the internal state tracking the partial messages is reset after each complete message.
      */
     @Test
-    public void testPartial_TextBinaryText() throws Exception
+    public void testPartialTextBinaryText() throws Exception
     {
         ClientUpgradeRequest request = new ClientUpgradeRequest();
         CloseTrackingEndpoint clientEndpoint = new CloseTrackingEndpoint();

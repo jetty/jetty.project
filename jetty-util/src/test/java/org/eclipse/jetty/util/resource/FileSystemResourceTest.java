@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -229,7 +229,7 @@ public class FileSystemResourceTest
     @ParameterizedTest
     @EnabledOnOs(WINDOWS)
     @MethodSource("fsResourceProvider")
-    public void testBogusFilename_Windows(Class resourceClass)
+    public void testBogusFilenameWindows(Class resourceClass)
     {
         // "CON" is a reserved name under windows
         assertThrows(IllegalArgumentException.class,
@@ -239,7 +239,7 @@ public class FileSystemResourceTest
     @ParameterizedTest
     @EnabledOnOs({LINUX, MAC})
     @MethodSource("fsResourceProvider")
-    public void testBogusFilename_Unix(Class resourceClass)
+    public void testBogusFilenameUnix(Class resourceClass)
     {
         // A windows path is invalid under unix
         assertThrows(IllegalArgumentException.class,
@@ -248,7 +248,7 @@ public class FileSystemResourceTest
 
     @ParameterizedTest
     @MethodSource("fsResourceProvider")
-    public void testNewResource_WithSpace(Class resourceClass) throws Exception
+    public void testNewResourceWithSpace(Class resourceClass) throws Exception
     {
         Path dir = workDir.getPath().normalize().toRealPath();
 
@@ -437,7 +437,7 @@ public class FileSystemResourceTest
 
     @ParameterizedTest
     @MethodSource("fsResourceProvider")
-    public void testLastModified_NotExists(Class resourceClass) throws Exception
+    public void testLastModifiedNotExists(Class resourceClass) throws Exception
     {
         Path dir = workDir.getEmptyPathDir();
 
@@ -469,7 +469,7 @@ public class FileSystemResourceTest
 
     @ParameterizedTest
     @MethodSource("fsResourceProvider")
-    public void testLength_NotExists(Class resourceClass) throws Exception
+    public void testLengthNotExists(Class resourceClass) throws Exception
     {
         Path dir = workDir.getEmptyPathDir();
         Files.createDirectories(dir);
@@ -504,7 +504,7 @@ public class FileSystemResourceTest
 
     @ParameterizedTest
     @MethodSource("fsResourceProvider")
-    public void testDelete_NotExists(Class resourceClass) throws Exception
+    public void testDeleteNotExists(Class resourceClass) throws Exception
     {
         Path dir = workDir.getEmptyPathDir();
         Files.createDirectories(dir);
@@ -1158,7 +1158,7 @@ public class FileSystemResourceTest
      */
     @ParameterizedTest
     @MethodSource("fsResourceProvider")
-    public void testExist_Normal(Class resourceClass) throws Exception
+    public void testExistNormal(Class resourceClass) throws Exception
     {
         Path dir = workDir.getEmptyPathDir();
         Files.createDirectories(dir);
@@ -1239,7 +1239,7 @@ public class FileSystemResourceTest
 
     @ParameterizedTest
     @MethodSource("fsResourceProvider")
-    public void testExist_BadURINull(Class resourceClass) throws Exception
+    public void testExistBadURINull(Class resourceClass) throws Exception
     {
         Path dir = workDir.getEmptyPathDir();
         Files.createDirectories(dir);
@@ -1266,7 +1266,7 @@ public class FileSystemResourceTest
 
     @ParameterizedTest
     @MethodSource("fsResourceProvider")
-    public void testExist_BadURINullX(Class resourceClass) throws Exception
+    public void testExistBadURINullX(Class resourceClass) throws Exception
     {
         Path dir = workDir.getEmptyPathDir();
         Files.createDirectories(dir);
@@ -1293,7 +1293,7 @@ public class FileSystemResourceTest
 
     @ParameterizedTest
     @MethodSource("fsResourceProvider")
-    public void testAddPath_WindowsSlash(Class resourceClass) throws Exception
+    public void testAddPathWindowsSlash(Class resourceClass) throws Exception
     {
         Path dir = workDir.getEmptyPathDir();
         Files.createDirectories(dir);
@@ -1334,7 +1334,7 @@ public class FileSystemResourceTest
 
     @ParameterizedTest
     @MethodSource("fsResourceProvider")
-    public void testAddPath_WindowsExtensionLess(Class resourceClass) throws Exception
+    public void testAddPathWindowsExtensionLess(Class resourceClass) throws Exception
     {
         Path dir = workDir.getEmptyPathDir();
         Files.createDirectories(dir);

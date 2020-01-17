@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -78,14 +78,14 @@ public class SimpleServletServer
         if (ssl)
         {
             // HTTP Configuration
-            HttpConfiguration http_config = new HttpConfiguration();
-            http_config.setSecureScheme("https");
-            http_config.setSecurePort(0);
-            http_config.setOutputBufferSize(32768);
-            http_config.setRequestHeaderSize(8192);
-            http_config.setResponseHeaderSize(8192);
-            http_config.setSendServerVersion(true);
-            http_config.setSendDateHeader(false);
+            HttpConfiguration httpConfig = new HttpConfiguration();
+            httpConfig.setSecureScheme("https");
+            httpConfig.setSecurePort(0);
+            httpConfig.setOutputBufferSize(32768);
+            httpConfig.setRequestHeaderSize(8192);
+            httpConfig.setResponseHeaderSize(8192);
+            httpConfig.setSendServerVersion(true);
+            httpConfig.setSendDateHeader(false);
 
             sslContextFactory = new SslContextFactory.Server();
             sslContextFactory.setKeyStorePath(MavenTestingUtils.getTestResourceFile("keystore").getAbsolutePath());
@@ -93,11 +93,11 @@ public class SimpleServletServer
             sslContextFactory.setKeyManagerPassword("keypwd");
 
             // SSL HTTP Configuration
-            HttpConfiguration https_config = new HttpConfiguration(http_config);
-            https_config.addCustomizer(new SecureRequestCustomizer());
+            HttpConfiguration httpsConfig = new HttpConfiguration(httpConfig);
+            httpsConfig.addCustomizer(new SecureRequestCustomizer());
 
             // SSL Connector
-            connector = new ServerConnector(server, new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString()), new HttpConnectionFactory(https_config));
+            connector = new ServerConnector(server, new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString()), new HttpConnectionFactory(httpsConfig));
             connector.setPort(0);
         }
         else

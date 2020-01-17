@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -42,12 +42,12 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class TestABCase7_3
+public class TestABCase73
 {
     private WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
 
     @Test
-    public void testCase7_3_1GenerateEmptyClose()
+    public void testCase731GenerateEmptyClose()
     {
         CloseInfo close = new CloseInfo();
 
@@ -64,7 +64,7 @@ public class TestABCase7_3
     }
 
     @Test
-    public void testCase7_3_1ParseEmptyClose()
+    public void testCase731ParseEmptyClose()
     {
         ByteBuffer expected = ByteBuffer.allocate(5);
 
@@ -85,7 +85,7 @@ public class TestABCase7_3
     }
 
     @Test
-    public void testCase7_3_2Generate1BytePayloadClose()
+    public void testCase732Generate1BytePayloadClose()
     {
         CloseFrame closeFrame = new CloseFrame();
         closeFrame.setPayload(Hex.asByteBuffer("00"));
@@ -94,7 +94,7 @@ public class TestABCase7_3
     }
 
     @Test
-    public void testCase7_3_2Parse1BytePayloadClose()
+    public void testCase732Parse1BytePayloadClose()
     {
         ByteBuffer expected = Hex.asByteBuffer("880100");
 
@@ -105,7 +105,7 @@ public class TestABCase7_3
     }
 
     @Test
-    public void testCase7_3_3GenerateCloseWithStatus()
+    public void testCase733GenerateCloseWithStatus()
     {
         CloseInfo close = new CloseInfo(1000);
 
@@ -122,7 +122,7 @@ public class TestABCase7_3
     }
 
     @Test
-    public void testCase7_3_3ParseCloseWithStatus()
+    public void testCase733ParseCloseWithStatus()
     {
         ByteBuffer expected = ByteBuffer.allocate(5);
 
@@ -143,7 +143,7 @@ public class TestABCase7_3
     }
 
     @Test
-    public void testCase7_3_4GenerateCloseWithStatusReason()
+    public void testCase734GenerateCloseWithStatusReason()
     {
         String message = "bad cough";
         byte[] messageBytes = message.getBytes();
@@ -169,7 +169,7 @@ public class TestABCase7_3
     }
 
     @Test
-    public void testCase7_3_4ParseCloseWithStatusReason()
+    public void testCase734ParseCloseWithStatusReason()
     {
         String message = "bad cough";
         byte[] messageBytes = message.getBytes();
@@ -197,7 +197,7 @@ public class TestABCase7_3
     }
 
     @Test
-    public void testCase7_3_5GenerateCloseWithStatusMaxReason()
+    public void testCase735GenerateCloseWithStatusMaxReason()
     {
         StringBuilder message = new StringBuilder();
         for (int i = 0; i < 123; ++i)
@@ -228,7 +228,7 @@ public class TestABCase7_3
     }
 
     @Test
-    public void testCase7_3_5ParseCloseWithStatusMaxReason()
+    public void testCase735ParseCloseWithStatusMaxReason()
     {
         StringBuilder message = new StringBuilder();
         for (int i = 0; i < 123; ++i)
@@ -263,7 +263,7 @@ public class TestABCase7_3
     }
 
     @Test
-    public void testCase7_3_6GenerateCloseWithInvalidStatusReason()
+    public void testCase736GenerateCloseWithInvalidStatusReason()
     {
         StringBuilder message = new StringBuilder();
         for (int i = 0; i < 124; ++i)
@@ -290,7 +290,7 @@ public class TestABCase7_3
     }
 
     @Test
-    public void testCase7_3_6ParseCloseWithInvalidStatusReason()
+    public void testCase736ParseCloseWithInvalidStatusReason()
     {
         byte[] messageBytes = new byte[124];
         Arrays.fill(messageBytes, (byte)'*');

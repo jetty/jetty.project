@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -32,7 +32,7 @@ import static org.hamcrest.Matchers.is;
 /**
  * Test QuoteUtil.quote(), and QuoteUtil.dequote()
  */
-public class QuoteUtil_QuoteTest
+public class QuoteUtilQuoteTest
 {
     public static Stream<Arguments> data()
     {

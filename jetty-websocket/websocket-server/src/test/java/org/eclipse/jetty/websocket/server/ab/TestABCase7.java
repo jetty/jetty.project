@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -51,7 +51,7 @@ public class TestABCase7 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase7_1_1() throws Exception
+    public void testCase711() throws Exception
     {
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new TextFrame().setPayload("Hello World"));
@@ -76,7 +76,7 @@ public class TestABCase7 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase7_1_2() throws Exception
+    public void testCase712() throws Exception
     {
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
@@ -101,7 +101,7 @@ public class TestABCase7 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase7_1_3() throws Exception
+    public void testCase713() throws Exception
     {
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
@@ -126,7 +126,7 @@ public class TestABCase7 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase7_1_4() throws Exception
+    public void testCase714() throws Exception
     {
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
@@ -151,7 +151,7 @@ public class TestABCase7 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase7_1_5() throws Exception
+    public void testCase715() throws Exception
     {
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new TextFrame().setPayload("an").setFin(false));
@@ -177,7 +177,7 @@ public class TestABCase7 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase7_1_6() throws Exception
+    public void testCase716() throws Exception
     {
         byte[] msg = new byte[256 * 1024];
         Arrays.fill(msg, (byte)'*');
@@ -208,7 +208,7 @@ public class TestABCase7 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase7_3_1() throws Exception
+    public void testCase731() throws Exception
     {
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new CloseFrame());
@@ -232,7 +232,7 @@ public class TestABCase7 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase7_3_2() throws Exception
+    public void testCase732() throws Exception
     {
         byte[] payload = new byte[]{0x00};
         ByteBuffer buf = ByteBuffer.wrap(payload);
@@ -260,7 +260,7 @@ public class TestABCase7 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase7_3_3() throws Exception
+    public void testCase733() throws Exception
     {
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new CloseInfo(StatusCode.NORMAL).asFrame());
@@ -284,7 +284,7 @@ public class TestABCase7 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase7_3_4() throws Exception
+    public void testCase734() throws Exception
     {
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new CloseInfo(StatusCode.NORMAL, "Hic").asFrame());
@@ -308,7 +308,7 @@ public class TestABCase7 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase7_3_5() throws Exception
+    public void testCase735() throws Exception
     {
         byte[] utf = new byte[123];
         Arrays.fill(utf, (byte)'!');
@@ -337,7 +337,7 @@ public class TestABCase7 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase7_5_1() throws Exception
+    public void testCase751() throws Exception
     {
         ByteBuffer payload = ByteBuffer.allocate(256);
         BufferUtil.clearToFill(payload);

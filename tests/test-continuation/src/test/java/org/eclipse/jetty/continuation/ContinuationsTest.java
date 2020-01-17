@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -408,44 +408,44 @@ public class ContinuationsTest
 
             history.add(continuation.getClass().getName());
 
-            int read_before = 0;
-            long sleep_for = -1;
-            long suspend_for = -1;
-            long suspend2_for = -1;
-            long resume_after = -1;
-            long resume2_after = -1;
-            long complete_after = -1;
-            long complete2_after = -1;
+            int readBefore = 0;
+            long sleepFor = -1;
+            long suspendFor = -1;
+            long suspend2For = -1;
+            long resumeAfter = -1;
+            long resume2After = -1;
+            long completeAfter = -1;
+            long complete2After = -1;
             boolean undispatch = false;
 
             if (request.getParameter("read") != null)
-                read_before = Integer.parseInt(request.getParameter("read"));
+                readBefore = Integer.parseInt(request.getParameter("read"));
             if (request.getParameter("sleep") != null)
-                sleep_for = Integer.parseInt(request.getParameter("sleep"));
+                sleepFor = Integer.parseInt(request.getParameter("sleep"));
             if (request.getParameter("suspend") != null)
-                suspend_for = Integer.parseInt(request.getParameter("suspend"));
+                suspendFor = Integer.parseInt(request.getParameter("suspend"));
             if (request.getParameter("suspend2") != null)
-                suspend2_for = Integer.parseInt(request.getParameter("suspend2"));
+                suspend2For = Integer.parseInt(request.getParameter("suspend2"));
             if (request.getParameter("resume") != null)
-                resume_after = Integer.parseInt(request.getParameter("resume"));
+                resumeAfter = Integer.parseInt(request.getParameter("resume"));
             if (request.getParameter("resume2") != null)
-                resume2_after = Integer.parseInt(request.getParameter("resume2"));
+                resume2After = Integer.parseInt(request.getParameter("resume2"));
             if (request.getParameter("complete") != null)
-                complete_after = Integer.parseInt(request.getParameter("complete"));
+                completeAfter = Integer.parseInt(request.getParameter("complete"));
             if (request.getParameter("complete2") != null)
-                complete2_after = Integer.parseInt(request.getParameter("complete2"));
+                complete2After = Integer.parseInt(request.getParameter("complete2"));
             if (request.getParameter("undispatch") != null)
                 undispatch = Boolean.parseBoolean(request.getParameter("undispatch"));
 
             if (continuation.isInitial())
             {
                 history.add("initial");
-                if (read_before > 0)
+                if (readBefore > 0)
                 {
-                    byte[] buf = new byte[read_before];
+                    byte[] buf = new byte[readBefore];
                     request.getInputStream().read(buf);
                 }
-                else if (read_before < 0)
+                else if (readBefore < 0)
                 {
                     InputStream in = request.getInputStream();
                     int b = in.read();
@@ -455,15 +455,15 @@ public class ContinuationsTest
                     }
                 }
 
-                if (suspend_for >= 0)
+                if (suspendFor >= 0)
                 {
-                    if (suspend_for > 0)
-                        continuation.setTimeout(suspend_for);
+                    if (suspendFor > 0)
+                        continuation.setTimeout(suspendFor);
                     continuation.addContinuationListener(listener);
                     history.add("suspend");
                     continuation.suspend(response);
 
-                    if (complete_after > 0)
+                    if (completeAfter > 0)
                     {
                         TimerTask complete = new TimerTask()
                         {
@@ -482,15 +482,15 @@ public class ContinuationsTest
                                 }
                             }
                         };
-                        _timer.schedule(complete, complete_after);
+                        _timer.schedule(complete, completeAfter);
                     }
-                    else if (complete_after == 0)
+                    else if (completeAfter == 0)
                     {
                         response.setStatus(200);
                         response.getOutputStream().println("COMPLETED");
                         continuation.complete();
                     }
-                    else if (resume_after > 0)
+                    else if (resumeAfter > 0)
                     {
                         TimerTask resume = new TimerTask()
                         {
@@ -501,9 +501,9 @@ public class ContinuationsTest
                                 continuation.resume();
                             }
                         };
-                        _timer.schedule(resume, resume_after);
+                        _timer.schedule(resume, resumeAfter);
                     }
-                    else if (resume_after == 0)
+                    else if (resumeAfter == 0)
                     {
                         history.add("resume");
                         continuation.resume();
@@ -514,11 +514,11 @@ public class ContinuationsTest
                         continuation.undispatch();
                     }
                 }
-                else if (sleep_for >= 0)
+                else if (sleepFor >= 0)
                 {
                     try
                     {
-                        Thread.sleep(sleep_for);
+                        Thread.sleep(sleepFor);
                     }
                     catch (InterruptedException e)
                     {
@@ -536,17 +536,17 @@ public class ContinuationsTest
             else
             {
                 history.add("!initial");
-                if (suspend2_for >= 0 && request.getAttribute("2nd") == null)
+                if (suspend2For >= 0 && request.getAttribute("2nd") == null)
                 {
                     request.setAttribute("2nd", "cycle");
 
-                    if (suspend2_for > 0)
-                        continuation.setTimeout(suspend2_for);
+                    if (suspend2For > 0)
+                        continuation.setTimeout(suspend2For);
 
                     history.add("suspend");
                     continuation.suspend(response);
 
-                    if (complete2_after > 0)
+                    if (complete2After > 0)
                     {
                         TimerTask complete = new TimerTask()
                         {
@@ -565,15 +565,15 @@ public class ContinuationsTest
                                 }
                             }
                         };
-                        _timer.schedule(complete, complete2_after);
+                        _timer.schedule(complete, complete2After);
                     }
-                    else if (complete2_after == 0)
+                    else if (complete2After == 0)
                     {
                         response.setStatus(200);
                         response.getOutputStream().println("COMPLETED");
                         continuation.complete();
                     }
-                    else if (resume2_after > 0)
+                    else if (resume2After > 0)
                     {
                         TimerTask resume = new TimerTask()
                         {
@@ -584,9 +584,9 @@ public class ContinuationsTest
                                 continuation.resume();
                             }
                         };
-                        _timer.schedule(resume, resume2_after);
+                        _timer.schedule(resume, resume2After);
                     }
-                    else if (resume2_after == 0)
+                    else if (resume2After == 0)
                     {
                         history.add("resume");
                         continuation.resume();

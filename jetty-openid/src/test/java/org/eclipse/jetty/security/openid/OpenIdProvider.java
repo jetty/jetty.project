@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -142,8 +142,8 @@ public class OpenIdProvider extends ContainerLifeCycle
             final Request baseRequest = Request.getBaseRequest(req);
             final Response baseResponse = baseRequest.getResponse();
             redirectUri += "?code=" + authCode + "&state=" + state;
-            int redirectCode = (baseRequest.getHttpVersion().getVersion() < HttpVersion.HTTP_1_1.getVersion() ?
-                HttpServletResponse.SC_MOVED_TEMPORARILY : HttpServletResponse.SC_SEE_OTHER);
+            int redirectCode = (baseRequest.getHttpVersion().getVersion() < HttpVersion.HTTP_1_1.getVersion()
+                ? HttpServletResponse.SC_MOVED_TEMPORARILY : HttpServletResponse.SC_SEE_OTHER);
             baseResponse.sendRedirect(redirectCode, resp.encodeRedirectURL(redirectUri));
         }
     }

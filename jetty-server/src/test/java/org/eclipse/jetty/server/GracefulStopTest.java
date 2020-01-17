@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -168,9 +168,9 @@ public class GracefulStopTest
         client.close();
     }
 
-
     /**
      * Test completed writes during shutdown do not close output
+     *
      * @throws Exception on test failure
      */
     @Test
@@ -205,7 +205,7 @@ public class GracefulStopTest
         stopper.start();
 
         final int port = connector.getLocalPort();
-        try(Socket client = new Socket("127.0.0.1", port))
+        try (Socket client = new Socket("127.0.0.1", port))
         {
             client.getOutputStream().write((
                 "GET / HTTP/1.1\r\n" +
@@ -215,7 +215,9 @@ public class GracefulStopTest
             client.getOutputStream().flush();
 
             while (!connector.isShutdown())
+            {
                 Thread.sleep(10);
+            }
 
             handler.latchB.countDown();
 
@@ -838,7 +840,7 @@ public class GracefulStopTest
             int c = 0;
             try
             {
-                int content_length = request.getContentLength();
+                int contentLength = request.getContentLength();
                 InputStream in = request.getInputStream();
 
                 while (true)
@@ -850,7 +852,7 @@ public class GracefulStopTest
 
                 baseRequest.setHandled(true);
                 response.setStatus(200);
-                response.getWriter().printf("read %d/%d%n", c, content_length);
+                response.getWriter().printf("read %d/%d%n", c, contentLength);
             }
             catch (Throwable th)
             {

@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-project</artifactId>
-  <version>9.4.25-SNAPSHOT</version>
+  <version>9.4.26-SNAPSHOT</version>
   <name>Jetty :: Project</name>
   <description>The Eclipse Jetty Project</description>
   <packaging>pom</packaging>
@@ -17,6 +17,7 @@
     <jetty.url>http://www.eclipse.org/jetty</jetty.url>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <build-support.version>1.4</build-support.version>
+    <checkstyle.version>8.20</checkstyle.version>
     <slf4j.version>1.7.25</slf4j.version>
     <log4j2.version>2.11.2</log4j2.version>
     <disruptor.version>3.4.2</disruptor.version>
@@ -346,7 +347,7 @@
           <aggregate>true</aggregate>
           <strictCheck>true</strictCheck>
           <properties>
-            <copyright-range>${project.inceptionYear}-2019</copyright-range>
+            <copyright-range>${project.inceptionYear}-2020</copyright-range>
           </properties>
         </configuration>
         <executions>
@@ -431,6 +432,43 @@
           </execution>
         </executions>
       </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-checkstyle-plugin</artifactId>
+        <version>3.1.0</version>
+        <configuration>
+          <configLocation>jetty-checkstyle.xml</configLocation>
+          <includeTestSourceDirectory>true</includeTestSourceDirectory>
+          <violationSeverity>warning</violationSeverity>
+          <consoleOutput>true</consoleOutput>
+          <sourceDirectories>
+            <!-- only scan source directory (not generated, filtered, or copied source) -->
+            <sourceDirectory>${project.build.sourceDirectory}</sourceDirectory>
+            <sourceDirectory>${project.build.testSourceDirectory}</sourceDirectory>
+          </sourceDirectories>
+        </configuration>
+        <dependencies>
+          <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>build-resources</artifactId>
+            <version>${project.version}</version>
+          </dependency>
+          <dependency>
+            <groupId>com.puppycrawl.tools</groupId>
+            <artifactId>checkstyle</artifactId>
+            <version>${checkstyle.version}</version>
+          </dependency>
+        </dependencies>
+        <executions>
+          <execution>
+            <id>checkstyle-check</id>
+            <phase>validate</phase>
+            <goals>
+              <goal>check</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
 
     <pluginManagement>
@@ -456,24 +494,6 @@
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-checkstyle-plugin</artifactId>
           <version>3.1.0</version>
-          <configuration>
-            <configLocation>jetty-checkstyle.xml</configLocation>
-            <suppressionsLocation>jetty-suppressions.xml</suppressionsLocation>
-            <suppressionsFileExpression>checkstyle.suppressions.file</suppressionsFileExpression>
-            <includeTestSourceDirectory>true</includeTestSourceDirectory>
-          </configuration>
-          <dependencies>
-            <dependency>
-              <groupId>org.eclipse.jetty</groupId>
-              <artifactId>build-resources</artifactId>
-              <version>${project.version}</version>
-            </dependency>
-            <dependency>
-              <groupId>com.puppycrawl.tools</groupId>
-              <artifactId>checkstyle</artifactId>
-              <version>8.20</version>
-            </dependency>
-          </dependencies>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -700,7 +720,7 @@
               <Bundle-DocURL>${jetty.url}</Bundle-DocURL>
               <Bundle-Vendor>Eclipse Jetty Project</Bundle-Vendor>
               <Bundle-Classpath>.</Bundle-Classpath>
-              <Bundle-Copyright>Copyright (c) 2008-2019 Mort Bay Consulting Pty. Ltd.</Bundle-Copyright>
+              <Bundle-Copyright>Copyright (c) 2008-2020 Mort Bay Consulting Pty Ltd and others.</Bundle-Copyright>
               <_provider-policy><![CDATA[$<range;[===,=+)>]]></_provider-policy>
               <_consumer-policy><![CDATA[$<range;[===,+)>]]></_consumer-policy>
             </instructions>
@@ -2018,7 +2038,7 @@
         <repository>
           <id>jetty-snapshots</id>
           <name>jetty-snapshots</name>
-          <url>http://oss.sonatype.org/content/repositories/jetty-snapshots</url>
+          <url>https://oss.sonatype.org/content/repositories/jetty-snapshots</url>
           <snapshots>
             <enabled>true</enabled>
           </snapshots>

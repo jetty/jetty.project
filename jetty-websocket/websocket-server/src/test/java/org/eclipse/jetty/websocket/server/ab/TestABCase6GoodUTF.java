@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -40,9 +40,9 @@ import org.junit.jupiter.params.provider.MethodSource;
  * <p>
  * Should be preserved / echoed back, with normal close code.
  */
-public class TestABCase6_GoodUTF extends AbstractABCase
+public class TestABCase6GoodUTF extends AbstractABCase
 {
-    private static final Logger LOG = Log.getLogger(TestABCase6_GoodUTF.class);
+    private static final Logger LOG = Log.getLogger(TestABCase6GoodUTF.class);
 
     public static Stream<Arguments> utfSequences()
     {

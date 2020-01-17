@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -199,7 +199,7 @@ public class Socks4ProxyTest
         {
             // The client keystore contains the trustedCertEntry for the
             // self-signed server certificate, so it acts as a truststore.
-            ssl.setTrustStorePath("src/test/resources/client_keystore.jks");
+            ssl.setTrustStorePath("src/test/resources/client_keystore.p12");
             ssl.setTrustStorePassword("storepwd");
             // Disable TLS hostname verification, but
             // enable application hostname verification.
@@ -233,7 +233,7 @@ public class Socks4ProxyTest
 
             // Wrap the socket with TLS.
             SslContextFactory.Server serverTLS = new SslContextFactory.Server();
-            serverTLS.setKeyStorePath("src/test/resources/keystore.jks");
+            serverTLS.setKeyStorePath("src/test/resources/keystore.p12");
             serverTLS.setKeyStorePassword("storepwd");
             serverTLS.start();
             SSLContext sslContext = serverTLS.getSslContext();

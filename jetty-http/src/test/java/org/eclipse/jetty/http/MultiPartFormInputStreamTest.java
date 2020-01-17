@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -507,6 +507,16 @@ public class MultiPartFormInputStreamTest
         assertThat(stuff.exists(), is(true));
         part.cleanUp();
         assertThat(stuff.exists(), is(false));  //tmp file was removed after cleanup
+    }
+
+    @Test
+    public void testDeleteNPE()
+    {
+        final InputStream input = new ByteArrayInputStream(createMultipartRequestString("myFile").getBytes());
+        MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 1024, 50);
+        MultiPartFormInputStream mpis = new MultiPartFormInputStream(input, _contentType, config, _tmpDir);
+
+        mpis.deleteParts(); // this should not be an NPE
     }
 
     @Test

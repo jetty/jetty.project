@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -78,7 +78,7 @@ public class DefaultHandlerTest
     }
 
     @Test
-    public void testGET_URL() throws Exception
+    public void testGetURL() throws Exception
     {
         URL url = new URL("http://localhost:" + serverPort + "/tests/alpha.txt");
         URLConnection conn = url.openConnection();
@@ -93,7 +93,7 @@ public class DefaultHandlerTest
     }
 
     @Test
-    public void testGET_Raw() throws Exception
+    public void testGetRaw() throws Exception
     {
         StringBuffer rawRequest = new StringBuffer();
         rawRequest.append("GET /tests/alpha.txt HTTP/1.1\r\n");
@@ -118,7 +118,7 @@ public class DefaultHandlerTest
     }
 
     @Test
-    public void testGET_HttpTesting() throws Exception
+    public void testGetHttpTesting() throws Exception
     {
         HttpTester.Request request = HttpTester.newRequest();
         request.setMethod("GET");

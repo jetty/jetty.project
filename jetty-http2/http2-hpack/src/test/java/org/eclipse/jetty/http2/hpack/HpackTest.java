@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -145,6 +145,7 @@ public class HpackTest
         ByteBuffer buffer = BufferUtil.allocate(16 * 1024);
 
         HttpFields fields0 = new HttpFields();
+        // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
         fields0.add("Cookie", "[\uD842\uDF9F]");
         fields0.add("custom-key", "[\uD842\uDF9F]");
         Response original0 = new MetaData.Response(HttpVersion.HTTP_2, 200, fields0);

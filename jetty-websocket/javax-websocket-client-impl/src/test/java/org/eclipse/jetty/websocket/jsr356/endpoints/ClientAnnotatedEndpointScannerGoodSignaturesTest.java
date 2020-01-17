@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -62,7 +62,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * Test {@link AnnotatedEndpointScanner} against various valid, simple, 1 method {@link ClientEndpoint} annotated classes with valid signatures.
  */
-public class ClientAnnotatedEndpointScanner_GoodSignaturesTest
+public class ClientAnnotatedEndpointScannerGoodSignaturesTest
 {
 
     private static ClientContainer container = new ClientContainer();
@@ -115,7 +115,7 @@ public class ClientAnnotatedEndpointScanner_GoodSignaturesTest
 
     @ParameterizedTest
     @MethodSource("scenarios")
-    public void testScan_Basic(Scenario scenario) throws Exception
+    public void testScanBasic(Scenario scenario) throws Exception
     {
         AnnotatedClientEndpointMetadata metadata = new AnnotatedClientEndpointMetadata(container, scenario.pojo);
         AnnotatedEndpointScanner<ClientEndpoint, ClientEndpointConfig> scanner = new AnnotatedEndpointScanner<>(metadata);

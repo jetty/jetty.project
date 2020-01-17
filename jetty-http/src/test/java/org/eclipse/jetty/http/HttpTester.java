@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -361,8 +361,8 @@ public class HttpTester
                 return null;
             byte[] bytes = _content.toByteArray();
 
-            String content_type = get(HttpHeader.CONTENT_TYPE);
-            String encoding = MimeTypes.getCharsetFromContentType(content_type);
+            String contentType = get(HttpHeader.CONTENT_TYPE);
+            String encoding = MimeTypes.getCharsetFromContentType(contentType);
             Charset charset = encoding == null ? StandardCharsets.UTF_8 : Charset.forName(encoding);
 
             return new String(bytes, charset);

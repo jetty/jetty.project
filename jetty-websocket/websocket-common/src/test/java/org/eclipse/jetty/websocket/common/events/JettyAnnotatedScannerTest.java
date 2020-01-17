@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -95,7 +95,7 @@ public class JettyAnnotatedScannerTest
      * Test Case for bad declaration a method with a non-void return type
      */
     @Test
-    public void testAnnotatedBadSignature_NonVoidReturn()
+    public void testAnnotatedBadSignatureNonVoidReturn()
     {
         JettyAnnotatedScanner impl = new JettyAnnotatedScanner();
         InvalidWebSocketException e = assertThrows(InvalidWebSocketException.class, () ->
@@ -111,7 +111,7 @@ public class JettyAnnotatedScannerTest
      * Test Case for bad declaration a method with a public static method
      */
     @Test
-    public void testAnnotatedBadSignature_Static()
+    public void testAnnotatedBadSignatureStatic()
     {
         JettyAnnotatedScanner impl = new JettyAnnotatedScanner();
         InvalidWebSocketException e = assertThrows(InvalidWebSocketException.class, () ->

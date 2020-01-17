@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -67,7 +67,7 @@ public class EventDriverTest
     }
 
     @Test
-    public void testAdapter_ConnectClose(TestInfo testInfo) throws Exception
+    public void testAdapterConnectClose(TestInfo testInfo) throws Exception
     {
         AdapterConnectCloseSocket socket = new AdapterConnectCloseSocket();
         EventDriver driver = wrap(socket);
@@ -83,7 +83,7 @@ public class EventDriverTest
     }
 
     @Test
-    public void testAnnotated_ByteArray(TestInfo testInfo) throws Exception
+    public void testAnnotatedByteArray(TestInfo testInfo) throws Exception
     {
         AnnotatedBinaryArraySocket socket = new AnnotatedBinaryArraySocket();
         EventDriver driver = wrap(socket);
@@ -101,7 +101,7 @@ public class EventDriverTest
     }
 
     @Test
-    public void testAnnotated_Error(TestInfo testInfo) throws Exception
+    public void testAnnotatedError(TestInfo testInfo) throws Exception
     {
         AnnotatedTextSocket socket = new AnnotatedTextSocket();
         EventDriver driver = wrap(socket);
@@ -119,7 +119,7 @@ public class EventDriverTest
     }
 
     @Test
-    public void testAnnotated_Frames(TestInfo testInfo) throws Exception
+    public void testAnnotatedFrames(TestInfo testInfo) throws Exception
     {
         AnnotatedFramesSocket socket = new AnnotatedFramesSocket();
         EventDriver driver = wrap(socket);
@@ -142,7 +142,7 @@ public class EventDriverTest
     }
 
     @Test
-    public void testAnnotated_InputStream(TestInfo testInfo) throws InterruptedException
+    public void testAnnotatedInputStream(TestInfo testInfo) throws InterruptedException
     {
         AnnotatedBinaryStreamSocket socket = new AnnotatedBinaryStreamSocket();
         EventDriver driver = wrap(socket);
@@ -160,7 +160,7 @@ public class EventDriverTest
     }
 
     @Test
-    public void testListenerBasic_Text(TestInfo testInfo) throws Exception
+    public void testListenerBasicText(TestInfo testInfo) throws Exception
     {
         ListenerBasicSocket socket = new ListenerBasicSocket();
         EventDriver driver = wrap(socket);

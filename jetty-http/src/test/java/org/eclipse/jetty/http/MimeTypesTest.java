@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -29,13 +29,13 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 public class MimeTypesTest
 {
     @Test
-    public void testGetMimeByExtension_Gzip()
+    public void testGetMimeByExtensionGzip()
     {
         assertMimeTypeByExtension("application/gzip", "test.gz");
     }
 
     @Test
-    public void testGetMimeByExtension_Png()
+    public void testGetMimeByExtensionPng()
     {
         assertMimeTypeByExtension("image/png", "test.png");
         assertMimeTypeByExtension("image/png", "TEST.PNG");
@@ -43,26 +43,26 @@ public class MimeTypesTest
     }
 
     @Test
-    public void testGetMimeByExtension_Png_MultiDot()
+    public void testGetMimeByExtensionPngMultiDot()
     {
         assertMimeTypeByExtension("image/png", "org.eclipse.jetty.Logo.png");
     }
 
     @Test
-    public void testGetMimeByExtension_Png_DeepPath()
+    public void testGetMimeByExtensionPngDeepPath()
     {
         assertMimeTypeByExtension("image/png", "/org/eclipse/jetty/Logo.png");
     }
 
     @Test
-    public void testGetMimeByExtension_Text()
+    public void testGetMimeByExtensionText()
     {
         assertMimeTypeByExtension("text/plain", "test.txt");
         assertMimeTypeByExtension("text/plain", "TEST.TXT");
     }
 
     @Test
-    public void testGetMimeByExtension_NoExtension()
+    public void testGetMimeByExtensionNoExtension()
     {
         MimeTypes mimetypes = new MimeTypes();
         String contentType = mimetypes.getMimeByExtension("README");

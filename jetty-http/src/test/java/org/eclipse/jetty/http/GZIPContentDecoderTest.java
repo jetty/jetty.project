@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -359,10 +359,10 @@ public class GZIPContentDecoderTest
     }
 
     // Signed Integer Max
-    final long INT_MAX = Integer.MAX_VALUE;
+    static final long INT_MAX = Integer.MAX_VALUE;
 
     // Unsigned Integer Max == 2^32
-    final long UINT_MAX = 0xFFFFFFFFL;
+    static final long UINT_MAX = 0xFFFFFFFFL;
 
     @ParameterizedTest
     @ValueSource(longs = {INT_MAX, INT_MAX + 1, UINT_MAX, UINT_MAX + 1})

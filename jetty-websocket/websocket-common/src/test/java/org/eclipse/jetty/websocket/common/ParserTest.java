@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -44,13 +44,14 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+// @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
 public class ParserTest
 {
     /**
      * Similar to the server side 5.15 testcase. A normal 2 fragment text text message, followed by another continuation.
      */
     @Test
-    public void testParseCase5_15()
+    public void testParseCase515()
     {
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new TextFrame().setPayload("fragment1").setFin(false));
@@ -72,7 +73,7 @@ public class ParserTest
      * Similar to the server side 5.18 testcase. Text message fragmented as 2 frames, both as opcode=TEXT
      */
     @Test
-    public void testParseCase5_18()
+    public void testParseCase518()
     {
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new TextFrame().setPayload("fragment1").setFin(false));
@@ -92,7 +93,7 @@ public class ParserTest
      * Similar to the server side 5.19 testcase. text message, send in 5 frames/fragments, with 2 pings in the mix.
      */
     @Test
-    public void testParseCase5_19()
+    public void testParseCase519()
     {
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new TextFrame().setPayload("f1").setFin(false));
@@ -120,7 +121,7 @@ public class ParserTest
      * Similar to the server side 5.6 testcase. pong, then text, then close frames.
      */
     @Test
-    public void testParseCase5_6()
+    public void testParseCase56()
     {
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new PongFrame().setPayload("ping"));
@@ -142,7 +143,7 @@ public class ParserTest
      * Similar to the server side 6.2.3 testcase. Lots of small 1 byte UTF8 Text frames, representing 1 overall text message.
      */
     @Test
-    public void testParseCase6_2_3()
+    public void testParseCase623()
     {
         String utf8 = "Hello-\uC2B5@\uC39F\uC3A4\uC3BC\uC3A0\uC3A1-UTF-8!!";
         byte[] msg = StringUtil.getUtf8Bytes(utf8);

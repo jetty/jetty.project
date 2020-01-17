@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -52,7 +52,7 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
 {
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_FirstAcquire_WithEmptyQueue(Scenario scenario) throws Exception
+    public void testFirstAcquireWithEmptyQueue(Scenario scenario) throws Exception
     {
         start(scenario, new EmptyServerHandler());
 
@@ -72,7 +72,7 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_SecondAcquire_AfterFirstAcquire_WithEmptyQueue_ReturnsSameConnection(Scenario scenario) throws Exception
+    public void testSecondAcquireAfterFirstAcquireWithEmptyQueueReturnsSameConnection(Scenario scenario) throws Exception
     {
         start(scenario, new EmptyServerHandler());
 
@@ -96,7 +96,7 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_SecondAcquire_ConcurrentWithFirstAcquire_WithEmptyQueue_CreatesTwoConnections(Scenario scenario) throws Exception
+    public void testSecondAcquireConcurrentWithFirstAcquireWithEmptyQueueCreatesTwoConnections(Scenario scenario) throws Exception
     {
         start(scenario, new EmptyServerHandler());
 
@@ -154,7 +154,7 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_Acquire_Process_Release_Acquire_ReturnsSameConnection(Scenario scenario) throws Exception
+    public void testAcquireProcessReleaseAcquireReturnsSameConnection(Scenario scenario) throws Exception
     {
         start(scenario, new EmptyServerHandler());
 
@@ -181,7 +181,7 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_IdleConnection_IdleTimeout(Scenario scenario) throws Exception
+    public void testIdleConnectionIdleTimeout(Scenario scenario) throws Exception
     {
         start(scenario, new EmptyServerHandler());
 
@@ -209,7 +209,7 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_Request_Failed_If_MaxRequestsQueuedPerDestination_Exceeded(Scenario scenario) throws Exception
+    public void testRequestFailedIfMaxRequestsQueuedPerDestinationExceeded(Scenario scenario) throws Exception
     {
         start(scenario, new EmptyServerHandler());
         String scheme = scenario.getScheme();

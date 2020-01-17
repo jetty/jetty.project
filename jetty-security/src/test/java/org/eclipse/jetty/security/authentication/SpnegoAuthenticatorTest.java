@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -118,10 +118,10 @@ public class SpnegoAuthenticatorTest
         };
         Request req = channel.getRequest();
         Response res = channel.getResponse();
-        HttpFields http_fields = new HttpFields();
+        HttpFields httpFields = new HttpFields();
         // Create a bogus Authorization header. We don't care about the actual credentials.
-        http_fields.add(HttpHeader.AUTHORIZATION, "Basic asdf");
-        MetaData.Request metadata = new MetaData.Request(http_fields);
+        httpFields.add(HttpHeader.AUTHORIZATION, "Basic asdf");
+        MetaData.Request metadata = new MetaData.Request(httpFields);
         metadata.setURI(new HttpURI("http://localhost"));
         req.setMetaData(metadata);
 
@@ -168,7 +168,7 @@ public class SpnegoAuthenticatorTest
     {
         public MockConnector()
         {
-            super(new Server() , null, null, null, 0);
+            super(new Server(), null, null, null, 0);
         }
 
         @Override

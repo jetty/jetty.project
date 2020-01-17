@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -383,13 +383,14 @@ public class HTTP2ServerTest extends AbstractServerTest
     @Test
     public void testNonISOHeader() throws Exception
     {
-        try (StacklessLogging stackless = new StacklessLogging(HttpChannel.class))
+        try (StacklessLogging ignored = new StacklessLogging(HttpChannel.class))
         {
             startServer(new HttpServlet()
             {
                 @Override
-                protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+                protected void service(HttpServletRequest request, HttpServletResponse response)
                 {
+                    // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
                     // Invalid header name, the connection must be closed.
                     response.setHeader("Euro_(\u20AC)", "42");
                 }

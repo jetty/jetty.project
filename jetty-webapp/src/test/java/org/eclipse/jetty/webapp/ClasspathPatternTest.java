@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -133,13 +133,13 @@ public class ClasspathPatternTest
     public void testIncludedLocations() throws Exception
     {
         // jar from JVM classloader
-        URI loc_string = TypeUtil.getLocationOfClass(String.class);
+        URI locString = TypeUtil.getLocationOfClass(String.class);
 
         // a jar from maven repo jar
-        URI loc_junit = TypeUtil.getLocationOfClass(Test.class);
+        URI locJunit = TypeUtil.getLocationOfClass(Test.class);
 
         // class file 
-        URI loc_test = TypeUtil.getLocationOfClass(ClasspathPatternTest.class);
+        URI locTest = TypeUtil.getLocationOfClass(ClasspathPatternTest.class);
 
         ClasspathPattern pattern = new ClasspathPattern();
         pattern.include("something");
@@ -148,10 +148,10 @@ public class ClasspathPatternTest
         assertThat(pattern.match(ClasspathPatternTest.class), Matchers.is(false));
 
         // Add directory for both JVM classes
-        pattern.include(loc_string.toASCIIString());
+        pattern.include(locString.toASCIIString());
 
         // Add jar for individual class and classes directory
-        pattern.include(loc_junit.toString(), loc_test.toString());
+        pattern.include(locJunit.toString(), locTest.toString());
 
         assertThat(pattern.match(String.class), Matchers.is(true));
         assertThat(pattern.match(Test.class), Matchers.is(true));
@@ -166,18 +166,18 @@ public class ClasspathPatternTest
     @SuppressWarnings("restriction")
     @Test
     @DisabledOnJre(JRE.JAVA_8)
-    public void testIncludedLocationsOrModule() throws Exception
+    public void testIncludedLocationsOrModule()
     {
         // jar from JVM classloader
-        URI mod_string = TypeUtil.getLocationOfClass(String.class);
+        URI modString = TypeUtil.getLocationOfClass(String.class);
         // System.err.println(mod_string);
 
         // a jar from maven repo jar
-        URI loc_junit = TypeUtil.getLocationOfClass(Test.class);
+        URI locJunit = TypeUtil.getLocationOfClass(Test.class);
         // System.err.println(loc_junit);
 
         // class file
-        URI loc_test = TypeUtil.getLocationOfClass(ClasspathPatternTest.class);
+        URI locTest = TypeUtil.getLocationOfClass(ClasspathPatternTest.class);
         // System.err.println(loc_test);
 
         ClasspathPattern pattern = new ClasspathPattern();
@@ -190,7 +190,7 @@ public class ClasspathPatternTest
         pattern.include("jrt:/java.base");
 
         // Add jar for individual class and classes directory
-        pattern.include(loc_junit.toString(), loc_test.toString());
+        pattern.include(locJunit.toString(), locTest.toString());
 
         assertThat(pattern.match(String.class), Matchers.is(true));
         assertThat(pattern.match(Test.class), Matchers.is(true));
@@ -205,19 +205,19 @@ public class ClasspathPatternTest
     @SuppressWarnings("restriction")
     @Test
     @EnabledOnJre(JRE.JAVA_8)
-    public void testExcludeLocations() throws Exception
+    public void testExcludeLocations()
     {
         // jar from JVM classloader
-        URI loc_string = TypeUtil.getLocationOfClass(String.class);
-        // System.err.println(loc_string);
+        URI locString = TypeUtil.getLocationOfClass(String.class);
+        // System.err.println(locString);
 
         // a jar from maven repo jar
-        URI loc_junit = TypeUtil.getLocationOfClass(Test.class);
-        // System.err.println(loc_junit);
+        URI locJunit = TypeUtil.getLocationOfClass(Test.class);
+        // System.err.println(locJunit);
 
         // class file 
-        URI loc_test = TypeUtil.getLocationOfClass(ClasspathPatternTest.class);
-        // System.err.println(loc_test);
+        URI locTest = TypeUtil.getLocationOfClass(ClasspathPatternTest.class);
+        // System.err.println(locTest);
 
         ClasspathPattern pattern = new ClasspathPattern();
 
@@ -229,10 +229,10 @@ public class ClasspathPatternTest
         assertThat(pattern.match(ClasspathPatternTest.class), Matchers.is(true));
 
         // Add directory for both JVM classes
-        pattern.exclude(loc_string.toString());
+        pattern.exclude(locString.toString());
 
         // Add jar for individual class and classes directory
-        pattern.exclude(loc_junit.toString(), loc_test.toString());
+        pattern.exclude(locJunit.toString(), locTest.toString());
 
         assertThat(pattern.match(String.class), Matchers.is(false));
         assertThat(pattern.match(Test.class), Matchers.is(false));
@@ -245,16 +245,16 @@ public class ClasspathPatternTest
     public void testExcludeLocationsOrModule() throws Exception
     {
         // jar from JVM classloader
-        URI mod_string = TypeUtil.getLocationOfClass(String.class);
-        // System.err.println(mod_string);
+        URI modString = TypeUtil.getLocationOfClass(String.class);
+        // System.err.println(modString);
 
         // a jar from maven repo jar
-        URI loc_junit = TypeUtil.getLocationOfClass(Test.class);
-        // System.err.println(loc_junit);
+        URI locJunit = TypeUtil.getLocationOfClass(Test.class);
+        // System.err.println(locJunit);
 
         // class file
-        URI loc_test = TypeUtil.getLocationOfClass(ClasspathPatternTest.class);
-        // System.err.println(loc_test);
+        URI locTest = TypeUtil.getLocationOfClass(ClasspathPatternTest.class);
+        // System.err.println(locTest);
 
         ClasspathPattern pattern = new ClasspathPattern();
 
@@ -269,7 +269,7 @@ public class ClasspathPatternTest
         pattern.exclude("jrt:/java.base/");
 
         // Add jar for individual class and classes directory
-        pattern.exclude(loc_junit.toString(), loc_test.toString());
+        pattern.exclude(locJunit.toString(), locTest.toString());
 
         assertThat(pattern.match(String.class), Matchers.is(false));
         assertThat(pattern.match(Test.class), Matchers.is(false));

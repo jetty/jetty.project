@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -124,7 +124,7 @@ public class WebSocketClientTest
     }
 
     @Test
-    public void testAddExtension_NotInstalled() throws Exception
+    public void testAddExtensionNotInstalled() throws Exception
     {
         CloseTrackingEndpoint cliSock = new CloseTrackingEndpoint();
 
@@ -143,7 +143,7 @@ public class WebSocketClientTest
     }
 
     @Test
-    public void testBasicEcho_FromClient() throws Exception
+    public void testBasicEchoFromClient() throws Exception
     {
         CloseTrackingEndpoint cliSock = new CloseTrackingEndpoint();
 
@@ -174,7 +174,7 @@ public class WebSocketClientTest
     }
 
     @Test
-    public void testBasicEcho_PartialUsage_FromClient() throws Exception
+    public void testBasicEchoPartialUsageFromClient() throws Exception
     {
         CloseTrackingEndpoint cliSock = new CloseTrackingEndpoint();
 
@@ -207,7 +207,7 @@ public class WebSocketClientTest
     }
 
     @Test
-    public void testBasicEcho_PartialText_WithPartialBinary_FromClient() throws Exception
+    public void testBasicEchoPartialTextWithPartialBinaryFromClient() throws Exception
     {
         CloseTrackingEndpoint cliSock = new CloseTrackingEndpoint();
 
@@ -254,7 +254,7 @@ public class WebSocketClientTest
     }
 
     @Test
-    public void testBasicEcho_UsingCallback() throws Exception
+    public void testBasicEchoUsingCallback() throws Exception
     {
         CloseTrackingEndpoint cliSock = new CloseTrackingEndpoint();
 
@@ -287,7 +287,7 @@ public class WebSocketClientTest
     }
 
     @Test
-    public void testBasicEcho_FromServer() throws Exception
+    public void testBasicEchoFromServer() throws Exception
     {
         CloseTrackingEndpoint cliSock = new CloseTrackingEndpoint();
 

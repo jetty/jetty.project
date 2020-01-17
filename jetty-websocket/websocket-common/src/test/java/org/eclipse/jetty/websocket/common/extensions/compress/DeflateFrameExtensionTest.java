@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -146,7 +146,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
     }
 
     @Test
-    public void testBlockheadClient_HelloThere()
+    public void testBlockheadClientHelloThere()
     {
         Tester tester = serverExtensions.newTester("deflate-frame");
 
@@ -161,7 +161,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
     }
 
     @Test
-    public void testChrome20_Hello()
+    public void testChrome20Hello()
     {
         Tester tester = serverExtensions.newTester("deflate-frame");
 
@@ -175,7 +175,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
     }
 
     @Test
-    public void testChrome20_HelloThere()
+    public void testChrome20HelloThere()
     {
         Tester tester = serverExtensions.newTester("deflate-frame");
 
@@ -190,7 +190,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
     }
 
     @Test
-    public void testChrome20_Info()
+    public void testChrome20Info()
     {
         Tester tester = serverExtensions.newTester("deflate-frame");
 
@@ -204,7 +204,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
     }
 
     @Test
-    public void testChrome20_TimeTime()
+    public void testChrome20TimeTime()
     {
         Tester tester = serverExtensions.newTester("deflate-frame");
 
@@ -219,7 +219,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
     }
 
     @Test
-    public void testPyWebSocket_TimeTimeTime()
+    public void testPyWebSocketTimeTimeTime()
     {
         Tester tester = serverExtensions.newTester("deflate-frame");
 
@@ -235,7 +235,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
     }
 
     @Test
-    public void testCompress_TimeTimeTime()
+    public void testCompressTimeTimeTime()
     {
         // What pywebsocket produces for "time:", "time:", "time:"
         String[] expected = new String[]
@@ -265,7 +265,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
     }
 
     @Test
-    public void testDeflateBasics() throws Exception
+    public void testDeflateBasics()
     {
         // Setup deflater basics
         Deflater compressor = new Deflater(Deflater.BEST_COMPRESSION, true);
@@ -353,7 +353,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
     }
 
     @Test
-    public void testPyWebSocketServer_Hello()
+    public void testPyWebSocketServerHello()
     {
         // Captured from PyWebSocket - "Hello" (echo from server)
         byte[] rawbuf = TypeUtil.fromHexString("c107f248cdc9c90700");
@@ -361,7 +361,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
     }
 
     @Test
-    public void testPyWebSocketServer_Long()
+    public void testPyWebSocketServerLong()
     {
         // Captured from PyWebSocket - Long Text (echo from server)
         byte[] rawbuf = TypeUtil.fromHexString("c1421cca410a80300c44d1abccce9df7" +
@@ -373,7 +373,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
     }
 
     @Test
-    public void testPyWebSocketServer_Medium()
+    public void testPyWebSocketServerMedium()
     {
         // Captured from PyWebSocket - "stackoverflow" (echo from server)
         byte[] rawbuf = TypeUtil.fromHexString("c10f2a2e494ccece2f4b2d4acbc92f0700");

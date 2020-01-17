@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -48,6 +48,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpParserTest
 {
+    // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
+
     static
     {
         HttpCompliance.CUSTOM0.sections().remove(HttpComplianceSection.NO_WS_AFTER_FIELD_NAME);
@@ -72,16 +74,16 @@ public class HttpParserTest
         int remaining = buffer.remaining();
         while (!parser.isState(State.END) && remaining > 0)
         {
-            int was_remaining = remaining;
+            int wasRemaining = remaining;
             parser.parseNext(buffer);
             remaining = buffer.remaining();
-            if (remaining == was_remaining)
+            if (remaining == wasRemaining)
                 break;
         }
     }
 
     @Test
-    public void HttpMethodTest()
+    public void httpMethodTest()
     {
         assertNull(HttpMethod.lookAheadGet(BufferUtil.toBuffer("Wibble ")));
         assertNull(HttpMethod.lookAheadGet(BufferUtil.toBuffer("GET")));
@@ -831,8 +833,8 @@ public class HttpParserTest
                 "Foo\"Bar: value\r\n",
                 "Foo/Bar: value\r\n",
                 "Foo]Bar: value\r\n",
-                "Foo[Bar: value\r\n",
-                };
+                "Foo[Bar: value\r\n"
+            };
 
         for (String s : bad)
         {
@@ -1558,7 +1560,7 @@ public class HttpParserTest
     }
 
     @Test
-    public void testResponseReasonIso8859_1()
+    public void testResponseReasonIso88591()
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
             "HTTP/1.1 302 déplacé temporairement\r\n" +

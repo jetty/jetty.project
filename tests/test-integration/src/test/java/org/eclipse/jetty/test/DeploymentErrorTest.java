@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -166,7 +166,7 @@ public class DeploymentErrorTest
      * The webapp is a WebAppContext with {@code throwUnavailableOnStartupException=true;}.
      */
     @Test
-    public void testInitial_BadApp_UnavailableTrue()
+    public void testInitialBadAppUnavailableTrue()
     {
         assertThrows(NoClassDefFoundError.class, () ->
         {
@@ -183,7 +183,7 @@ public class DeploymentErrorTest
      * The webapp is a WebAppContext with {@code throwUnavailableOnStartupException=false;}.
      */
     @Test
-    public void testInitial_BadApp_UnavailableFalse() throws Exception
+    public void testInitialBadAppUnavailableFalse() throws Exception
     {
         startServer(docroots -> copyBadApp("badapp-unavailable-false.xml", docroots));
 
@@ -220,7 +220,7 @@ public class DeploymentErrorTest
      * The webapp is a WebAppContext with {@code throwUnavailableOnStartupException=true;}.
      */
     @Test
-    public void testDelayedAdd_BadApp_UnavailableTrue() throws Exception
+    public void testDelayedAddBadAppUnavailableTrue() throws Exception
     {
         Path docroots = startServer(null);
 
@@ -266,7 +266,7 @@ public class DeploymentErrorTest
      * The webapp is a WebAppContext with {@code throwUnavailableOnStartupException=false;}.
      */
     @Test
-    public void testDelayedAdd_BadApp_UnavailableFalse() throws Exception
+    public void testDelayedAddBadAppUnavailableFalse() throws Exception
     {
         Path docroots = startServer(null);
 

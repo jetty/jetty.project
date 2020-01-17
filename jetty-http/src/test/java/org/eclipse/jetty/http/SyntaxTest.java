@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -28,7 +28,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 public class SyntaxTest
 {
     @Test
-    public void testRequireValidRFC2616Token_Good()
+    public void testRequireValidRFC2616TokenGood()
     {
         String[] tokens = {
             "name",
@@ -50,7 +50,7 @@ public class SyntaxTest
     }
 
     @Test
-    public void testRequireValidRFC2616Token_Bad()
+    public void testRequireValidRFC2616TokenBad()
     {
         String[] tokens = {
             "\"name\"",
@@ -81,7 +81,7 @@ public class SyntaxTest
     }
 
     @Test
-    public void testRequireValidRFC6265CookieValue_Good()
+    public void testRequireValidRFC6265CookieValueGood()
     {
         String[] values = {
             "value",
@@ -102,7 +102,7 @@ public class SyntaxTest
     }
 
     @Test
-    public void testRequireValidRFC6265CookieValue_Bad()
+    public void testRequireValidRFC6265CookieValueBad()
     {
         String[] values = {
             "va\tlue",

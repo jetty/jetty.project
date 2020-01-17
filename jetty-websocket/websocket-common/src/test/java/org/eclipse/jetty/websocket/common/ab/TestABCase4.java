@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -36,7 +36,7 @@ public class TestABCase4
     private WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.CLIENT);
 
     @Test
-    public void testParserControlOpCode11Case4_2_1() throws Exception
+    public void testParserControlOpCode11Case421() throws Exception
     {
         ByteBuffer expected = ByteBuffer.allocate(32);
 
@@ -55,7 +55,7 @@ public class TestABCase4
     }
 
     @Test
-    public void testParserControlOpCode12WithPayloadCase4_2_2() throws Exception
+    public void testParserControlOpCode12WithPayloadCase422() throws Exception
     {
         ByteBuffer expected = ByteBuffer.allocate(32);
 
@@ -74,7 +74,7 @@ public class TestABCase4
     }
 
     @Test
-    public void testParserNonControlOpCode3Case4_1_1() throws Exception
+    public void testParserNonControlOpCode3Case411() throws Exception
     {
         ByteBuffer expected = ByteBuffer.allocate(32);
 
@@ -93,7 +93,7 @@ public class TestABCase4
     }
 
     @Test
-    public void testParserNonControlOpCode4WithPayloadCase4_1_2() throws Exception
+    public void testParserNonControlOpCode4WithPayloadCase412() throws Exception
     {
         ByteBuffer expected = ByteBuffer.allocate(32);
 

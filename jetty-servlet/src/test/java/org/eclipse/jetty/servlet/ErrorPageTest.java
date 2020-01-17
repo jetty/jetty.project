@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -183,7 +183,7 @@ public class ErrorPageTest
     }
 
     @Test
-    public void testGenerateAcceptableResponse_noAcceptHeader() throws Exception
+    public void testGenerateAcceptableResponseNoAcceptHeader() throws Exception
     {
         // no global error page here
         _errorPageErrorHandler.getErrorPages().remove(ErrorPageErrorHandler.GLOBAL_ERROR_PAGE);
@@ -196,7 +196,7 @@ public class ErrorPageTest
     }
 
     @Test
-    public void testGenerateAcceptableResponse_htmlAcceptHeader() throws Exception
+    public void testGenerateAcceptableResponseHtmlAcceptHeader() throws Exception
     {
         // no global error page here
         _errorPageErrorHandler.getErrorPages().remove(ErrorPageErrorHandler.GLOBAL_ERROR_PAGE);
@@ -211,7 +211,7 @@ public class ErrorPageTest
     }
 
     @Test
-    public void testGenerateAcceptableResponse_noHtmlAcceptHeader() throws Exception
+    public void testGenerateAcceptableResponseNoHtmlAcceptHeader() throws Exception
     {
         // no global error page here
         _errorPageErrorHandler.getErrorPages().remove(ErrorPageErrorHandler.GLOBAL_ERROR_PAGE);
@@ -415,7 +415,7 @@ public class ErrorPageTest
     @Test
     public void testPermanentlyUnavailable() throws Exception
     {
-        try (StacklessLogging ignore =new StacklessLogging(_context.getLogger()))
+        try (StacklessLogging ignore = new StacklessLogging(_context.getLogger()))
         {
             try (StacklessLogging ignore2 = new StacklessLogging(HttpChannel.class))
             {
@@ -426,10 +426,11 @@ public class ErrorPageTest
             }
         }
     }
+
     @Test
     public void testUnavailable() throws Exception
     {
-        try (StacklessLogging ignore =new StacklessLogging(_context.getLogger()))
+        try (StacklessLogging ignore = new StacklessLogging(_context.getLogger()))
         {
             try (StacklessLogging ignore2 = new StacklessLogging(HttpChannel.class))
             {
@@ -494,7 +495,7 @@ public class ErrorPageTest
             {
                 final CountDownLatch hold = new CountDownLatch(1);
                 final String mode = request.getParameter("mode");
-                switch(mode)
+                switch (mode)
                 {
                     case "DSC":
                     case "SDC":
@@ -510,7 +511,7 @@ public class ErrorPageTest
                 {
                     try
                     {
-                        switch(mode)
+                        switch (mode)
                         {
                             case "SDC":
                                 response.sendError(599);
@@ -553,7 +554,7 @@ public class ErrorPageTest
                                     break;
                             }
                         }
-                        catch(IllegalStateException e)
+                        catch (IllegalStateException e)
                         {
                             Log.getLog().ignore(e);
                         }
@@ -660,7 +661,6 @@ public class ErrorPageTest
             writer.println("getParameterMap()= " + request.getParameterMap());
         }
     }
-
 
     public static class UnavailableServlet extends HttpServlet implements Servlet
     {

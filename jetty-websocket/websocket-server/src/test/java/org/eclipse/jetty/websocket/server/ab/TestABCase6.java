@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -40,6 +40,7 @@ import org.junit.jupiter.api.Test;
 /**
  * UTF-8 Tests
  */
+// @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
 public class TestABCase6 extends AbstractABCase
 {
     /**
@@ -80,7 +81,7 @@ public class TestABCase6 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase6_1_1() throws Exception
+    public void testCase611() throws Exception
     {
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new TextFrame());
@@ -105,7 +106,7 @@ public class TestABCase6 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase6_1_2() throws Exception
+    public void testCase612() throws Exception
     {
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new TextFrame().setFin(false));
@@ -132,7 +133,7 @@ public class TestABCase6 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase6_1_3() throws Exception
+    public void testCase613() throws Exception
     {
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new TextFrame().setFin(false));
@@ -159,7 +160,7 @@ public class TestABCase6 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase6_2_2() throws Exception
+    public void testCase622() throws Exception
     {
         String utf1 = "Hello-\uC2B5@\uC39F\uC3A4";
         String utf2 = "\uC3BC\uC3A0\uC3A1-UTF-8!!";
@@ -195,7 +196,7 @@ public class TestABCase6 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase6_2_3() throws Exception
+    public void testCase623() throws Exception
     {
         String utf8 = "Hello-\uC2B5@\uC39F\uC3A4\uC3BC\uC3A0\uC3A1-UTF-8!!";
         byte[] msg = StringUtil.getUtf8Bytes(utf8);
@@ -223,7 +224,7 @@ public class TestABCase6 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase6_2_4() throws Exception
+    public void testCase624() throws Exception
     {
         byte[] msg = Hex.asByteArray("CEBAE1BDB9CF83CEBCCEB5");
 
@@ -250,7 +251,7 @@ public class TestABCase6 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase6_3_2() throws Exception
+    public void testCase632() throws Exception
     {
         byte[] invalid = Hex.asByteArray("CEBAE1BDB9CF83CEBCCEB5EDA080656469746564");
 
@@ -280,7 +281,7 @@ public class TestABCase6 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase6_4_1() throws Exception
+    public void testCase641() throws Exception
     {
         byte[] part1 = StringUtil.getUtf8Bytes("\u03BA\u1F79\u03C3\u03BC\u03B5");
         byte[] part2 = Hex.asByteArray("F4908080"); // invalid
@@ -320,7 +321,7 @@ public class TestABCase6 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase6_4_2() throws Exception
+    public void testCase642() throws Exception
     {
         byte[] part1 = Hex.asByteArray("CEBAE1BDB9CF83CEBCCEB5F4"); // split code point
         byte[] part2 = Hex.asByteArray("90"); // continue code point & invalid
@@ -354,7 +355,7 @@ public class TestABCase6 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase6_4_3() throws Exception
+    public void testCase643() throws Exception
     {
         // Disable Long Stacks from Parser (we know this test will throw an exception)
         try (StacklessLogging scope = new StacklessLogging(Parser.class))
@@ -405,7 +406,7 @@ public class TestABCase6 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase6_4_4() throws Exception
+    public void testCase644() throws Exception
     {
         byte[] invalid = Hex.asByteArray("CEBAE1BDB9CF83CEBCCEB5F49080808080656469746564");
 
