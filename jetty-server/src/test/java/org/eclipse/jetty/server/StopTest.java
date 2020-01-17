@@ -355,7 +355,7 @@ public class StopTest
         }
 
         // Check new connections rejected!
-        assertThrows(IllegalStateException.class, ()->connector.getResponse("GET / HTTP/1.1\r\nHost:localhost\r\n\r\n"));
+        assertThrows(IllegalStateException.class, () -> connector.getResponse("GET / HTTP/1.1\r\nHost:localhost\r\n\r\n"));
 
         // Check completed 200 has close
         exchanger1.exchange(null);

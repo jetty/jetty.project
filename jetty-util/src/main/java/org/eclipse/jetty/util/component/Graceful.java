@@ -169,7 +169,7 @@ public interface Graceful
         // tell the graceful handlers that we are shutting down
         List<Graceful> gracefuls = new ArrayList<>();
         if (component instanceof Graceful)
-            gracefuls.add((Graceful) component);
+            gracefuls.add((Graceful)component);
         component.getContainedBeans(Graceful.class).forEach(gracefuls::add);
 
         if (log.isDebugEnabled())
