@@ -139,10 +139,21 @@ public class DemoBaseTests extends AbstractDistributionTest
             assertTrue(run1.awaitConsoleLogsFor("Started Server@", 20, TimeUnit.SECONDS));
 
             startHttpClient();
+
+            //test the async listener
             ContentResponse response = client.POST("http://localhost:" + httpPort + "/test-spec/asy/xx").send();
             assertEquals(HttpStatus.OK_200, response.getStatus());
             assertThat(response.getContentAsString(), containsString("<span class=\"pass\">PASS</span>"));
             assertThat(response.getContentAsString(), not(containsString("<span class=\"fail\">FAIL</span>")));
+
+            //test the servlet 3.1/4 features
+            response = client.POST("http://localhost:" + httpPort + "/test-spec/test/xx").send();
+            assertThat(response.getContentAsString(), containsString("<span class=\"pass\">PASS</span>"));
+            assertThat(response.getContentAsString(), not(containsString("<span class=\"fail\">FAIL</span>")));
+
+            //test dynamic jsp
+            response = client.POST("http://localhost:" + httpPort + "/test-spec/dynamicjsp/xx").send();
+            assertThat(response.getContentAsString(), containsString("Programmatically Added Jsp File"));
         }
     }
 
