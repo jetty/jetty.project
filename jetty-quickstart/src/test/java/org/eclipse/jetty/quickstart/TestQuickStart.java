@@ -53,7 +53,6 @@ public class TestQuickStart
         FS.ensureEmpty(testDir);
         webInf = new File(testDir, "WEB-INF");
         FS.ensureDirExists(webInf);
-        
         server = new Server();
     }
     
