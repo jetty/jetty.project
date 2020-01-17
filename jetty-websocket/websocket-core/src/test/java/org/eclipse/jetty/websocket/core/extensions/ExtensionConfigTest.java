@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.websocket.core.extensions;
@@ -26,8 +26,10 @@ import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class ExtensionConfigTest
 {
@@ -108,7 +110,7 @@ public class ExtensionConfigTest
     }
 
     @Test
-    public void testParseSimple_BasicParameters()
+    public void testParseSimpleBasicParameters()
     {
         ExtensionConfig cfg = ExtensionConfig.parse("bar; baz=2");
         Map<String, String> expectedParams = new HashMap<>();
@@ -117,7 +119,7 @@ public class ExtensionConfigTest
     }
 
     @Test
-    public void testParseSimple_NoParameters()
+    public void testParseSimpleNoParameters()
     {
         ExtensionConfig cfg = ExtensionConfig.parse("foo");
         Map<String, String> expectedParams = new HashMap<>();
@@ -125,7 +127,7 @@ public class ExtensionConfigTest
     }
 
     @Test
-    public void testParseList_Simple()
+    public void testParseListSimple()
     {
         String[] rawHeaders = new String[]{
             "permessage-compress; client_max_window_bits",
@@ -145,7 +147,7 @@ public class ExtensionConfigTest
      * where they include multiple extensions in 1 header.
      */
     @Test
-    public void testParseList_Unsplit()
+    public void testParseListUnsplit()
     {
         String[] rawHeaders = new String[]{
             "permessage-compress; client_max_window_bits, identity",
@@ -157,5 +159,29 @@ public class ExtensionConfigTest
         assertThat("Configs[0]", configs.get(0).getName(), is("permessage-compress"));
         assertThat("Configs[1]", configs.get(1).getName(), is("identity"));
         assertThat("Configs[2]", configs.get(2).getName(), is("capture"));
+    }
+
+    @Test
+    public void testParseNoExtensions()
+    {
+        IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
+            () -> ExtensionConfig.parse("=params"));
+        assertThat(error.getMessage(), containsString("contains no ExtensionConfigs"));
+    }
+
+    @Test
+    public void testParseMultipleExtensions()
+    {
+        IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
+            () -> ExtensionConfig.parse("ext1;param1, ext2;param2"));
+        assertThat(error.getMessage(), containsString("contains multiple ExtensionConfigs"));
+    }
+
+    @Test
+    public void testParseMultipleExtensionsSameName()
+    {
+        IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
+            () -> ExtensionConfig.parse("ext1;paramOption1, ext1;paramOption2"));
+        assertThat(error.getMessage(), containsString("contains multiple ExtensionConfigs"));
     }
 }

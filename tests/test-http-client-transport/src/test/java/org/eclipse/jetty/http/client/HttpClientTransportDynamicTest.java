@@ -1,27 +1,25 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.http.client;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Function;
@@ -32,13 +30,11 @@ import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.HttpRequest;
-import org.eclipse.jetty.client.MultiplexHttpDestination;
 import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.client.dynamic.HttpClientTransportDynamic;
 import org.eclipse.jetty.client.http.HttpClientConnectionFactory;
-import org.eclipse.jetty.client.proxy.ProxyProtocolClientConnectionFactory;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
@@ -62,6 +58,7 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
+import static org.eclipse.jetty.client.ProxyProtocolClientConnectionFactory.V1;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -96,7 +93,7 @@ public class HttpClientTransportDynamicTest
         return connector;
     }
 
-    private ServerConnector h1_h2c(Server server)
+    private ServerConnector h1H2C(Server server)
     {
         HttpConfiguration httpConfiguration = new HttpConfiguration();
         HttpConnectionFactory h1 = new HttpConnectionFactory(httpConfiguration);
@@ -106,7 +103,7 @@ public class HttpClientTransportDynamicTest
         return connector;
     }
 
-    private ServerConnector ssl_alpn_h1(Server server)
+    private ServerConnector sslAlpnH1(Server server)
     {
         HttpConfiguration httpConfiguration = new HttpConfiguration();
         HttpConnectionFactory h1 = new HttpConnectionFactory(httpConfiguration);
@@ -118,7 +115,7 @@ public class HttpClientTransportDynamicTest
         return connector;
     }
 
-    private ServerConnector ssl_h1_h2c(Server server)
+    private ServerConnector sslH1H2C(Server server)
     {
         HttpConfiguration httpConfiguration = new HttpConfiguration();
         HttpConnectionFactory h1 = new HttpConnectionFactory(httpConfiguration);
@@ -130,7 +127,7 @@ public class HttpClientTransportDynamicTest
         return connector;
     }
 
-    private ServerConnector ssl_alpn_h1_h2(Server server)
+    private ServerConnector sslAlpnH1H2(Server server)
     {
         HttpConfiguration httpConfiguration = new HttpConfiguration();
         HttpConnectionFactory h1 = new HttpConnectionFactory(httpConfiguration);
@@ -144,7 +141,7 @@ public class HttpClientTransportDynamicTest
         return connector;
     }
 
-    private ServerConnector ssl_alpn_h2_h1(Server server)
+    private ServerConnector sslAlpnH2H1(Server server)
     {
         HttpConfiguration httpConfiguration = new HttpConfiguration();
         HttpConnectionFactory h1 = new HttpConnectionFactory(httpConfiguration);
@@ -157,7 +154,7 @@ public class HttpClientTransportDynamicTest
         return connector;
     }
 
-    private ServerConnector proxy_h1_h2c(Server server)
+    private ServerConnector proxyH1H2C(Server server)
     {
         HttpConfiguration httpConfiguration = new HttpConfiguration();
         HttpConnectionFactory h1 = new HttpConnectionFactory(httpConfiguration);
@@ -202,7 +199,7 @@ public class HttpClientTransportDynamicTest
     @Test
     public void testClearTextHTTP1() throws Exception
     {
-        startServer(this::h1_h2c, new EmptyServerHandler());
+        startServer(this::h1H2C, new EmptyServerHandler());
 
         HttpClientConnectionFactory.Info h1c = HttpClientConnectionFactory.HTTP11;
         client = new HttpClient(new HttpClientTransportDynamic(new ClientConnector(), h1c));
@@ -215,7 +212,7 @@ public class HttpClientTransportDynamicTest
     @Test
     public void testClearTextHTTP2() throws Exception
     {
-        startServer(this::h1_h2c, new EmptyServerHandler());
+        startServer(this::h1H2C, new EmptyServerHandler());
 
         // TODO: why do we need HTTP2Client? we only use it for configuration,
         //  so the configuration can instead be moved to the CCF?
@@ -234,14 +231,14 @@ public class HttpClientTransportDynamicTest
     @Test
     public void testClearTextProtocolSelection() throws Exception
     {
-        startServer(this::h1_h2c, new EmptyServerHandler());
+        startServer(this::h1H2C, new EmptyServerHandler());
         testProtocolSelection(HttpScheme.HTTP);
     }
 
     @Test
     public void testEncryptedProtocolSelectionWithoutNegotiation() throws Exception
     {
-        startServer(this::ssl_h1_h2c, new EmptyServerHandler());
+        startServer(this::sslH1H2C, new EmptyServerHandler());
         testProtocolSelection(HttpScheme.HTTPS);
     }
 
@@ -255,11 +252,11 @@ public class HttpClientTransportDynamicTest
         HttpClientTransportDynamic transport = new HttpClientTransportDynamic(clientConnector, h1, h2c)
         {
             @Override
-            public HttpDestination.Key newDestinationKey(HttpRequest request, Origin origin)
+            public Origin newOrigin(HttpRequest request)
             {
                 // Use prior-knowledge, i.e. negotiate==false.
                 List<String> protocols = HttpVersion.HTTP_2 == request.getVersion() ? h2c.getProtocols() : h1.getProtocols();
-                return new HttpDestination.Key(origin, new HttpDestination.Protocol(protocols, false));
+                return new Origin(request.getScheme(), request.getHost(), request.getPort(), request.getTag(), new Origin.Protocol(protocols, false));
             }
         };
         client = new HttpClient(transport);
@@ -285,8 +282,8 @@ public class HttpClientTransportDynamicTest
         assertEquals(2, destinations.size());
         assertEquals(1, destinations.stream()
             .map(HttpDestination.class::cast)
-            .map(HttpDestination::getKey)
-            .map(HttpDestination.Key::getOrigin)
+            .map(HttpDestination::getOrigin)
+            .map(Origin::asString)
             .distinct()
             .count());
     }
@@ -294,7 +291,7 @@ public class HttpClientTransportDynamicTest
     @Test
     public void testEncryptedProtocolSelectionWithNegotiation() throws Exception
     {
-        startServer(this::ssl_alpn_h1_h2, new EmptyServerHandler());
+        startServer(this::sslAlpnH1H2, new EmptyServerHandler());
 
         ClientConnector clientConnector = new ClientConnector();
         clientConnector.setSslContextFactory(newClientSslContextFactory());
@@ -323,8 +320,8 @@ public class HttpClientTransportDynamicTest
         assertEquals(2, destinations.size());
         assertEquals(1, destinations.stream()
             .map(HttpDestination.class::cast)
-            .map(HttpDestination::getKey)
-            .map(HttpDestination.Key::getOrigin)
+            .map(HttpDestination::getOrigin)
+            .map(Origin::asString)
             .distinct()
             .count());
     }
@@ -332,7 +329,7 @@ public class HttpClientTransportDynamicTest
     @Test
     public void testServerOnlySpeaksEncryptedHTTP11ClientFallsBackToHTTP11() throws Exception
     {
-        startServer(this::ssl_alpn_h1, new EmptyServerHandler());
+        startServer(this::sslAlpnH1, new EmptyServerHandler());
 
         ClientConnector clientConnector = new ClientConnector();
         clientConnector.setSslContextFactory(newClientSslContextFactory());
@@ -388,7 +385,7 @@ public class HttpClientTransportDynamicTest
         // client :1234 <-> :8888 proxy :5678 <-> server :8080
         // client :2345 <-> :8888 proxy :6789 <-> server :8080
 
-        startServer(this::proxy_h1_h2c, new EmptyServerHandler()
+        startServer(this::proxyH1H2C, new EmptyServerHandler()
         {
             @Override
             protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
@@ -402,42 +399,21 @@ public class HttpClientTransportDynamicTest
         clientConnector.setSslContextFactory(newClientSslContextFactory());
         ClientConnectionFactory.Info h1 = HttpClientConnectionFactory.HTTP11;
 
-        Map<HttpRequest, String> mapping = new ConcurrentHashMap<>();
-        client = new HttpClient(new HttpClientTransportDynamic(clientConnector, h1)
-        {
-            @Override
-            public HttpDestination.Key newDestinationKey(HttpRequest request, Origin origin)
-            {
-                String kind = mapping.remove(request);
-                return new HttpDestination.Key(origin, new HttpDestination.Protocol(List.of("http/1.1"), false), kind);
-            }
-
-            @Override
-            public HttpDestination newHttpDestination(HttpDestination.Key key)
-            {
-                // Here we want to wrap the destination with the PROXY
-                // protocol, for a specific remote client socket address.
-                return new MultiplexHttpDestination(client, key, factory -> new ProxyProtocolClientConnectionFactory(factory, () ->
-                {
-                    String[] address = key.getKind().split(":");
-                    return new Origin.Address(address[0], Integer.parseInt(address[1]));
-                }));
-            }
-        });
+        client = new HttpClient(new HttpClientTransportDynamic(clientConnector, h1));
         client.start();
 
         // Simulate a proxy request to the server.
         HttpRequest proxyRequest1 = (HttpRequest)client.newRequest("localhost", connector.getLocalPort());
         // Map the proxy request to client IP:port.
         int clientPort1 = ThreadLocalRandom.current().nextInt(1024, 65536);
-        mapping.put(proxyRequest1, "localhost:" + clientPort1);
+        proxyRequest1.tag(new V1.Tag("localhost", clientPort1));
         ContentResponse proxyResponse1 = proxyRequest1.send();
         assertEquals(String.valueOf(clientPort1), proxyResponse1.getContentAsString());
 
         // Simulate another request to the server, from a different client port.
         HttpRequest proxyRequest2 = (HttpRequest)client.newRequest("localhost", connector.getLocalPort());
         int clientPort2 = ThreadLocalRandom.current().nextInt(1024, 65536);
-        mapping.put(proxyRequest2, "localhost:" + clientPort2);
+        proxyRequest2.tag(new V1.Tag("localhost", clientPort2));
         ContentResponse proxyResponse2 = proxyRequest2.send();
         assertEquals(String.valueOf(clientPort2), proxyResponse2.getContentAsString());
 
@@ -446,8 +422,8 @@ public class HttpClientTransportDynamicTest
         assertEquals(2, destinations.size());
         assertEquals(1, destinations.stream()
             .map(HttpDestination.class::cast)
-            .map(HttpDestination::getKey)
-            .map(HttpDestination.Key::getOrigin)
+            .map(HttpDestination::getOrigin)
+            .map(Origin::asString)
             .distinct()
             .count());
     }
@@ -455,8 +431,8 @@ public class HttpClientTransportDynamicTest
     @Test
     public void testClearTextAndEncryptedHTTP2() throws Exception
     {
-        prepareServer(this::ssl_alpn_h2_h1, new EmptyServerHandler());
-        ServerConnector clearConnector = h1_h2c(server);
+        prepareServer(this::sslAlpnH2H1, new EmptyServerHandler());
+        ServerConnector clearConnector = h1H2C(server);
         server.start();
 
         ClientConnector clientConnector = new ClientConnector();
@@ -500,8 +476,8 @@ public class HttpClientTransportDynamicTest
         assertEquals(4, destinations.size());
         assertEquals(2, destinations.stream()
             .map(HttpDestination.class::cast)
-            .map(HttpDestination::getKey)
-            .map(HttpDestination.Key::getOrigin)
+            .map(HttpDestination::getOrigin)
+            .map(Origin::asString)
             .distinct()
             .count());
     }

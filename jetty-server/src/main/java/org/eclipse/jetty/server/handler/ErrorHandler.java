@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.server.handler;
@@ -21,6 +21,7 @@ package org.eclipse.jetty.server.handler;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.io.Writer;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
@@ -474,24 +475,24 @@ public class ErrorHandler extends AbstractHandler
         writer.append(json.entrySet().stream()
                 .map(e -> QuotedStringTokenizer.quote(e.getKey()) +
                         ":" +
-                        QuotedStringTokenizer.quote((e.getValue())))
+                    QuotedStringTokenizer.quote(StringUtil.sanitizeXmlString((e.getValue()))))
                 .collect(Collectors.joining(",\n", "{\n", "\n}")));
-
-
     }
 
     protected void writeErrorPageStacks(HttpServletRequest request, Writer writer)
         throws IOException
     {
         Throwable th = (Throwable)request.getAttribute(RequestDispatcher.ERROR_EXCEPTION);
-        if (_showStacks && th != null)
+        if (th != null)
         {
-            PrintWriter pw = writer instanceof PrintWriter ? (PrintWriter)writer : new PrintWriter(writer);
-            pw.write("<pre>");
-            while (th != null)
+            writer.write("<h3>Caused by:</h3><pre>");
+            // You have to pre-generate and then use #write(writer, String)
+            try (StringWriter sw = new StringWriter();
+                 PrintWriter pw = new PrintWriter(sw))
             {
                 th.printStackTrace(pw);
-                th = th.getCause();
+                pw.flush();
+                write(writer, sw.getBuffer().toString()); // sanitize
             }
             writer.write("</pre>\n");
         }

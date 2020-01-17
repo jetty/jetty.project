@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.util;
@@ -504,12 +504,12 @@ public class PathWatcherTest
         // Files we don't care about
         Files.createFile(dir.resolve("foo.war.backup"));
 
-        String hidden_war = ".hidden.war";
+        String hiddenWar = ".hidden.war";
         if (org.junit.jupiter.api.condition.OS.WINDOWS.isCurrentOs())
-            hidden_war = "hidden.war";
-        Files.createFile(dir.resolve(hidden_war));
+            hiddenWar = "hidden.war";
+        Files.createFile(dir.resolve(hiddenWar));
         if (org.junit.jupiter.api.condition.OS.WINDOWS.isCurrentOs())
-            Files.setAttribute(dir.resolve(hidden_war), "dos:hidden", Boolean.TRUE);
+            Files.setAttribute(dir.resolve(hiddenWar), "dos:hidden", Boolean.TRUE);
         Files.createDirectories(dir.resolve(".wat/WEB-INF"));
         Files.createFile(dir.resolve(".wat/huh.war"));
         Files.createFile(dir.resolve(".wat/WEB-INF/web.xml"));
@@ -603,7 +603,7 @@ public class PathWatcherTest
     }
 
     @Test
-    public void testDeployFiles_Update_Delete() throws Exception
+    public void testDeployFilesUpdateDelete() throws Exception
     {
         Path dir = testdir.getEmptyPathDir();
 
@@ -667,7 +667,7 @@ public class PathWatcherTest
     }
 
     @Test
-    public void testDeployFiles_NewWar() throws Exception
+    public void testDeployFilesNewWar() throws Exception
     {
         Path dir = testdir.getEmptyPathDir();
 
@@ -730,7 +730,7 @@ public class PathWatcherTest
     }
 
     @Test
-    public void testDeployFiles_NewDir() throws Exception
+    public void testDeployFilesNewDir() throws Exception
     {
         Path dir = testdir.getEmptyPathDir();
 
@@ -922,7 +922,7 @@ public class PathWatcherTest
      * @throws Exception on test failure
      */
     @Test
-    public void testDeployFiles_ModifyWar_LargeSlowCopy() throws Exception
+    public void testDeployFilesModifyWarLargeSlowCopy() throws Exception
     {
         Path dir = testdir.getEmptyPathDir();
 

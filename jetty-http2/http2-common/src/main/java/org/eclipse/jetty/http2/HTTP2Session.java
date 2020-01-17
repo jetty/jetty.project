@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.http2;
@@ -97,6 +97,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     private int initialSessionRecvWindow;
     private int writeThreshold;
     private boolean pushEnabled;
+    private boolean connectProtocolEnabled;
     private long idleTime;
     private GoAwayFrame closeFrame;
 
@@ -368,6 +369,14 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                     if (LOG.isDebugEnabled())
                         LOG.debug("Updating max header list size to {} for {}", value, this);
                     generator.setMaxHeaderListSize(value);
+                    break;
+                }
+                case SettingsFrame.ENABLE_CONNECT_PROTOCOL:
+                {
+                    boolean enabled = value == 1;
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("{} CONNECT protocol for {}", enabled ? "Enabling" : "Disabling", this);
+                    connectProtocolEnabled = enabled;
                     break;
                 }
                 default:
@@ -904,6 +913,17 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     public boolean isPushEnabled()
     {
         return pushEnabled;
+    }
+
+    @ManagedAttribute(value = "Whether CONNECT requests supports a protocol", readonly = true)
+    public boolean isConnectProtocolEnabled()
+    {
+        return connectProtocolEnabled;
+    }
+
+    public void setConnectProtocolEnabled(boolean connectProtocolEnabled)
+    {
+        this.connectProtocolEnabled = connectProtocolEnabled;
     }
 
     /**

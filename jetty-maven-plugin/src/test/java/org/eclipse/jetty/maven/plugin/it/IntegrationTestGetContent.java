@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.maven.plugin.it;
@@ -32,17 +32,18 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- *
- */
 public class IntegrationTestGetContent
 {
     @Test
-    public void get_content_response()
+    public void getContentResponse()
         throws Exception
     {
         int port = getPort();
         assertTrue(port > 0);
+        String contextPath = getContextPath();
+        if (contextPath.endsWith("/"))
+            contextPath = contextPath.substring(0, contextPath.lastIndexOf('/'));
+
         HttpClient httpClient = new HttpClient();
         try
         {
@@ -50,16 +51,16 @@ public class IntegrationTestGetContent
 
             if (Boolean.getBoolean("helloServlet"))
             {
-                String response = httpClient.GET("http://localhost:" + port + "/hello?name=beer").getContentAsString();
+                String response = httpClient.GET("http://localhost:" + port + contextPath + "/hello?name=beer").getContentAsString();
                 assertEquals("Hello beer", response.trim(), "it test " + System.getProperty("maven.it.name"));
-                response = httpClient.GET("http://localhost:" + port + "/hello?name=foo").getContentAsString();
+                response = httpClient.GET("http://localhost:" + port + contextPath + "/hello?name=foo").getContentAsString();
                 assertEquals("Hello foo", response.trim(), "it test " + System.getProperty("maven.it.name"));
                 System.out.println("helloServlet");
             }
             if (Boolean.getBoolean("pingServlet"))
             {
                 System.out.println("pingServlet");
-                String response = httpClient.GET("http://localhost:" + port + "/ping?name=beer").getContentAsString();
+                String response = httpClient.GET("http://localhost:" + port + contextPath + "/ping?name=beer").getContentAsString();
                 assertEquals("pong beer", response.trim(), "it test " + System.getProperty("maven.it.name"));
                 System.out.println("pingServlet ok");
             }
@@ -67,7 +68,7 @@ public class IntegrationTestGetContent
             String pathToCheck = System.getProperty("pathToCheck");
             if (StringUtils.isNotBlank(contentCheck))
             {
-                String url = "http://localhost:" + port;
+                String url = "http://localhost:" + port + contextPath;
                 if (pathToCheck != null)
                 {
                     url += pathToCheck;
@@ -79,9 +80,9 @@ public class IntegrationTestGetContent
             }
             if (Boolean.getBoolean("helloTestServlet"))
             {
-                String response = httpClient.GET("http://localhost:" + port + "/testhello?name=beer").getContentAsString();
+                String response = httpClient.GET("http://localhost:" + port + contextPath + "/testhello?name=beer").getContentAsString();
                 assertEquals("Hello from test beer", response.trim(), "it test " + System.getProperty("maven.it.name"));
-                response = httpClient.GET("http://localhost:" + port + "/testhello?name=foo").getContentAsString();
+                response = httpClient.GET("http://localhost:" + port + contextPath + "/testhello?name=foo").getContentAsString();
                 assertEquals("Hello from test foo", response.trim(), "it test " + System.getProperty("maven.it.name"));
                 System.out.println("helloServlet");
             }
@@ -90,6 +91,11 @@ public class IntegrationTestGetContent
         {
             httpClient.stop();
         }
+    }
+
+    public static String getContextPath()
+    {
+        return System.getProperty("context.path", "/");
     }
 
     public static int getPort()

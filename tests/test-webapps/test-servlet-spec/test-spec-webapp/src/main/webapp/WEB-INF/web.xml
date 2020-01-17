@@ -9,6 +9,8 @@
   <display-name>Test Annotations WebApp</display-name>
 
   <default-context-path>/test-spec</default-context-path>
+  <request-character-encoding>utf-8</request-character-encoding>
+  <response-character-encoding>utf-8</response-character-encoding>
   
   <listener>
     <listener-class>com.acme.test.TestListener</listener-class>
@@ -79,7 +81,6 @@
   <security-role>
     <role-name>server-administrator</role-name>
   </security-role>
-
 
 <!--
   <login-config>

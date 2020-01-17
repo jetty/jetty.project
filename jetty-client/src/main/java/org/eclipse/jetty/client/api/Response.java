@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.client.api;
@@ -85,14 +85,14 @@ public interface Response
     /**
      * Common, empty, super-interface for response listeners
      */
-    public interface ResponseListener extends EventListener
+    interface ResponseListener extends EventListener
     {
     }
 
     /**
      * Listener for the response begin event.
      */
-    public interface BeginListener extends ResponseListener
+    interface BeginListener extends ResponseListener
     {
         /**
          * Callback method invoked when the response line containing HTTP version,
@@ -102,13 +102,13 @@ public interface Response
          *
          * @param response the response containing the response line data
          */
-        public void onBegin(Response response);
+        void onBegin(Response response);
     }
 
     /**
      * Listener for a response header event.
      */
-    public interface HeaderListener extends ResponseListener
+    interface HeaderListener extends ResponseListener
     {
         /**
          * Callback method invoked when a response header has been received and parsed,
@@ -118,20 +118,20 @@ public interface Response
          * @param field the header received
          * @return true to process the header, false to skip processing of the header
          */
-        public boolean onHeader(Response response, HttpField field);
+        boolean onHeader(Response response, HttpField field);
     }
 
     /**
      * Listener for the response headers event.
      */
-    public interface HeadersListener extends ResponseListener
+    interface HeadersListener extends ResponseListener
     {
         /**
          * Callback method invoked when all the response headers have been received and parsed.
          *
          * @param response the response containing the response line data and the headers
          */
-        public void onHeaders(Response response);
+        void onHeaders(Response response);
     }
 
     /**
@@ -139,7 +139,7 @@ public interface Response
      *
      * @see AsyncContentListener
      */
-    public interface ContentListener extends ResponseListener
+    interface ContentListener extends AsyncContentListener
     {
         /**
          * Callback method invoked when the response content has been received, parsed and there is demand.
@@ -149,7 +149,21 @@ public interface Response
          * @param response the response containing the response line data and the headers
          * @param content the content bytes received
          */
-        public void onContent(Response response, ByteBuffer content);
+        void onContent(Response response, ByteBuffer content);
+
+        @Override
+        default void onContent(Response response, ByteBuffer content, Callback callback)
+        {
+            try
+            {
+                onContent(response, content);
+                callback.succeeded();
+            }
+            catch (Throwable x)
+            {
+                callback.failed(x);
+            }
+        }
     }
 
     /**
@@ -157,7 +171,7 @@ public interface Response
      *
      * @see DemandedContentListener
      */
-    public interface AsyncContentListener extends ResponseListener
+    interface AsyncContentListener extends DemandedContentListener
     {
         /**
          * Callback method invoked when the response content has been received, parsed and there is demand.
@@ -168,13 +182,23 @@ public interface Response
          * @param content the content bytes received
          * @param callback the callback to call when the content is consumed and to demand more content
          */
-        public void onContent(Response response, ByteBuffer content, Callback callback);
+        void onContent(Response response, ByteBuffer content, Callback callback);
+
+        @Override
+        default void onContent(Response response, LongConsumer demand, ByteBuffer content, Callback callback)
+        {
+            onContent(response, content, Callback.from(() ->
+            {
+                callback.succeeded();
+                demand.accept(1);
+            }, callback::failed));
+        }
     }
 
     /**
      * Asynchronous listener for the response content events.
      */
-    public interface DemandedContentListener extends ResponseListener
+    interface DemandedContentListener extends ResponseListener
     {
         /**
          * Callback method invoked before response content events.
@@ -186,7 +210,7 @@ public interface Response
          * @param response the response containing the response line data and the headers
          * @param demand the object that allows to demand content buffers
          */
-        public default void onBeforeContent(Response response, LongConsumer demand)
+        default void onBeforeContent(Response response, LongConsumer demand)
         {
             demand.accept(1);
         }
@@ -203,26 +227,26 @@ public interface Response
          * @param content the content bytes received
          * @param callback the callback to call when the content is consumed
          */
-        public void onContent(Response response, LongConsumer demand, ByteBuffer content, Callback callback);
+        void onContent(Response response, LongConsumer demand, ByteBuffer content, Callback callback);
     }
 
     /**
      * Listener for the response succeeded event.
      */
-    public interface SuccessListener extends ResponseListener
+    interface SuccessListener extends ResponseListener
     {
         /**
          * Callback method invoked when the whole response has been successfully received.
          *
          * @param response the response containing the response line data and the headers
          */
-        public void onSuccess(Response response);
+        void onSuccess(Response response);
     }
 
     /**
      * Listener for the response failure event.
      */
-    public interface FailureListener extends ResponseListener
+    interface FailureListener extends ResponseListener
     {
         /**
          * Callback method invoked when the response has failed in the process of being received
@@ -230,13 +254,13 @@ public interface Response
          * @param response the response containing data up to the point the failure happened
          * @param failure the failure happened
          */
-        public void onFailure(Response response, Throwable failure);
+        void onFailure(Response response, Throwable failure);
     }
 
     /**
      * Listener for the request and response completed event.
      */
-    public interface CompleteListener extends ResponseListener
+    interface CompleteListener extends ResponseListener
     {
         /**
          * Callback method invoked when the request <em><b>and</b></em> the response have been processed,
@@ -252,13 +276,13 @@ public interface Response
          *
          * @param result the result of the request / response exchange
          */
-        public void onComplete(Result result);
+        void onComplete(Result result);
     }
 
     /**
      * Listener for all response events.
      */
-    public interface Listener extends BeginListener, HeaderListener, HeadersListener, ContentListener, AsyncContentListener, DemandedContentListener, SuccessListener, FailureListener, CompleteListener
+    interface Listener extends BeginListener, HeaderListener, HeadersListener, ContentListener, SuccessListener, FailureListener, CompleteListener
     {
         @Override
         public default void onBegin(Response response)
@@ -277,38 +301,8 @@ public interface Response
         }
 
         @Override
-        public default void onBeforeContent(Response response, LongConsumer demand)
-        {
-            demand.accept(1);
-        }
-
-        @Override
         public default void onContent(Response response, ByteBuffer content)
         {
-        }
-
-        @Override
-        public default void onContent(Response response, ByteBuffer content, Callback callback)
-        {
-            try
-            {
-                onContent(response, content);
-                callback.succeeded();
-            }
-            catch (Throwable x)
-            {
-                callback.failed(x);
-            }
-        }
-
-        @Override
-        public default void onContent(Response response, LongConsumer demand, ByteBuffer content, Callback callback)
-        {
-            onContent(response, content, Callback.from(() ->
-            {
-                callback.succeeded();
-                demand.accept(1);
-            }, callback::failed));
         }
 
         @Override
@@ -329,7 +323,7 @@ public interface Response
         /**
          * An empty implementation of {@link Listener}
          */
-        public static class Adapter implements Listener
+        class Adapter implements Listener
         {
         }
     }

@@ -1,25 +1,26 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.client.util;
 
 import java.io.BufferedWriter;
 import java.io.ByteArrayInputStream;
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -31,10 +32,12 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.servlet.MultipartConfigElement;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -59,6 +62,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+// @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
 public class MultiPartContentProviderTest extends AbstractHttpClientServerTest
 {
     @ParameterizedTest
@@ -435,6 +439,46 @@ public class MultiPartContentProviderTest extends AbstractHttpClientServerTest
         assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
     }
 
+    @ParameterizedTest
+    @ArgumentsSource(ScenarioProvider.class)
+    public void testEachPartIsClosed(Scenario scenario) throws Exception
+    {
+        String name1 = "field1";
+        String value1 = "value1";
+        String name2 = "field2";
+        String value2 = "value2";
+        start(scenario, new AbstractMultiPartHandler()
+        {
+            @Override
+            protected void handle(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            {
+                Collection<Part> parts = request.getParts();
+                assertEquals(2, parts.size());
+                Iterator<Part> iterator = parts.iterator();
+                Part part1 = iterator.next();
+                assertEquals(name1, part1.getName());
+                assertEquals(value1, IO.toString(part1.getInputStream()));
+                Part part2 = iterator.next();
+                assertEquals(name2, part2.getName());
+                assertEquals(value2, IO.toString(part2.getInputStream()));
+            }
+        });
+
+        AtomicInteger closeCount = new AtomicInteger();
+        MultiPartContentProvider multiPart = new MultiPartContentProvider();
+        multiPart.addFieldPart(name1, new CloseableStringContentProvider(value1, closeCount::incrementAndGet), null);
+        multiPart.addFieldPart(name2, new CloseableStringContentProvider(value2, closeCount::incrementAndGet), null);
+        multiPart.close();
+        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+            .scheme(scenario.getScheme())
+            .method(HttpMethod.POST)
+            .content(multiPart)
+            .send();
+
+        assertEquals(200, response.getStatus());
+        assertEquals(2, closeCount.get());
+    }
+
     private abstract static class AbstractMultiPartHandler extends AbstractHandler
     {
         @Override
@@ -447,5 +491,50 @@ public class MultiPartContentProviderTest extends AbstractHttpClientServerTest
         }
 
         protected abstract void handle(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException;
+    }
+
+    private static class CloseableStringContentProvider extends StringContentProvider
+    {
+        private final Runnable closeFn;
+
+        private CloseableStringContentProvider(String content, Runnable closeFn)
+        {
+            super(content);
+            this.closeFn = closeFn;
+        }
+
+        @Override
+        public Iterator<ByteBuffer> iterator()
+        {
+            return new CloseableIterator<>(super.iterator());
+        }
+
+        private class CloseableIterator<T> implements Iterator<T>, Closeable
+        {
+            private final Iterator<T> iterator;
+
+            public CloseableIterator(Iterator<T> iterator)
+            {
+                this.iterator = iterator;
+            }
+
+            @Override
+            public boolean hasNext()
+            {
+                return iterator.hasNext();
+            }
+
+            @Override
+            public T next()
+            {
+                return iterator.next();
+            }
+
+            @Override
+            public void close()
+            {
+                closeFn.run();
+            }
+        }
     }
 }

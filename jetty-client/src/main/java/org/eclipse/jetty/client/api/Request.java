@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.client.api;
@@ -179,6 +179,28 @@ public interface Request
      * @return this request object
      */
     Request cookie(HttpCookie cookie);
+
+    /**
+     * <p>Tags this request with the given metadata tag.</p>
+     * <p>Each different tag will create a different destination,
+     * even if the destination origin is the same.</p>
+     * <p>This is particularly useful in proxies, where requests
+     * for the same origin but from different clients may be tagged
+     * with client's metadata (e.g. the client remote address).</p>
+     * <p>The tag metadata class must correctly implement
+     * {@link Object#hashCode()} and {@link Object#equals(Object)}
+     * so that it can be used, along with the origin, to identify
+     * a destination.</p>
+     *
+     * @param tag the metadata to tag the request with
+     * @return this request object
+     */
+    Request tag(Object tag);
+
+    /**
+     * @return the metadata this request has been tagged with
+     */
+    Object getTag();
 
     /**
      * @param name the name of the attribute

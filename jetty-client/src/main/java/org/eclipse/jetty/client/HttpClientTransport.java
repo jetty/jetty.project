@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.client;
@@ -51,13 +51,12 @@ public interface HttpClientTransport extends ClientConnectionFactory
     public void setHttpClient(HttpClient client);
 
     /**
-     * Creates a new Key with the given request and origin.
+     * Creates a new Origin with the given request.
      *
-     * @param request the request that triggers the creation of the Key
-     * @param origin the origin of the server for the request
-     * @return a Key that identifies a destination
+     * @param request the request that triggers the creation of the Origin
+     * @return an Origin that identifies a destination
      */
-    public HttpDestination.Key newDestinationKey(HttpRequest request, Origin origin);
+    public Origin newOrigin(HttpRequest request);
 
     /**
      * Creates a new, transport-specific, {@link HttpDestination} object.
@@ -65,10 +64,10 @@ public interface HttpClientTransport extends ClientConnectionFactory
      * {@link HttpDestination} controls the destination-connection cardinality: protocols like
      * HTTP have 1-N cardinality, while multiplexed protocols like HTTP/2 have a 1-1 cardinality.
      *
-     * @param key the destination key
+     * @param origin the destination origin
      * @return a new, transport-specific, {@link HttpDestination} object
      */
-    public HttpDestination newHttpDestination(HttpDestination.Key key);
+    public HttpDestination newHttpDestination(Origin origin);
 
     /**
      * Establishes a physical connection to the given {@code address}.

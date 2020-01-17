@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.http.client;
@@ -21,6 +21,7 @@ package org.eclipse.jetty.http.client;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InterruptedIOException;
+import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -35,6 +36,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.util.BytesContentProvider;
 import org.eclipse.jetty.client.util.FutureResponseListener;
@@ -647,6 +649,30 @@ public class HttpClientTest extends AbstractTest<TransportScenario>
 
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertEquals(0, response.getContent().length);
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(TransportProvider.class)
+    public void testOneDestinationPerUser(Transport transport) throws Exception
+    {
+        init(transport);
+        scenario.start(new EmptyServerHandler());
+
+        int runs = 4;
+        int users = 16;
+        for (int i = 0; i < runs; ++i)
+        {
+            for (int j = 0; j < users; ++j)
+            {
+                ContentResponse response = scenario.client.newRequest(scenario.newURI())
+                    .tag(j)
+                    .send();
+                assertEquals(HttpStatus.OK_200, response.getStatus());
+            }
+        }
+
+        List<Destination> destinations = scenario.client.getDestinations();
+        assertEquals(users, destinations.size());
     }
 
     private void sleep(long time) throws IOException

@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.security.authentication;
@@ -113,10 +113,10 @@ public class SpnegoAuthenticatorTest
         };
         Request req = channel.getRequest();
         Response res = channel.getResponse();
-        HttpFields http_fields = new HttpFields();
+        HttpFields httpFields = new HttpFields();
         // Create a bogus Authorization header. We don't care about the actual credentials.
-        http_fields.add(HttpHeader.AUTHORIZATION, "Basic asdf");
-        MetaData.Request metadata = new MetaData.Request(http_fields);
+        httpFields.add(HttpHeader.AUTHORIZATION, "Basic asdf");
+        MetaData.Request metadata = new MetaData.Request(httpFields);
         metadata.setURI(new HttpURI("http://localhost"));
         req.setMetaData(metadata);
 
@@ -130,7 +130,7 @@ public class SpnegoAuthenticatorTest
     {
         public MockConnector()
         {
-            super(new Server() , null, null, null, 0);
+            super(new Server(), null, null, null, 0);
         }
 
         @Override
@@ -150,29 +150,5 @@ public class SpnegoAuthenticatorTest
             return null;
         }
     }
-    }
-
-    class MockConnector extends AbstractConnector
-    {
-        public MockConnector()
-        {
-            super(new Server() , null, null, null, 0);
-        }
-
-        @Override
-        protected void accept(int acceptorID) throws IOException, InterruptedException
-        {
-        }
-
-        @Override
-        public Object getTransport()
-        {
-            return null;
-        }
-
-        @Override
-        public String dumpSelf()
-        {
-            return null;
-        }
 }
+

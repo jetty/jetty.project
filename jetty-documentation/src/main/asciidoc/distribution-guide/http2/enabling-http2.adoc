@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ========================================================================
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 [[http2-enabling]]
@@ -27,11 +27,12 @@ A demo Jetty base that supports HTTP/1, HTTPS/1 and deployment from a webapps di
 $ JETTY_BASE=http2-demo
 $ mkdir $JETTY_BASE
 $ cd $JETTY_BASE
-$ java -jar $JETTY_HOME/start.jar --add-to-start=http,https,deploy
+$ java -jar $JETTY_HOME/start.jar --add-to-start=http,https,deploy,test-keystore
 ....
 
 The commands above create a `$JETTY_BASE` directory called `http2-demo`, and initializes the `http,` `https` and `deploy` modules (and their dependencies) to run a typical Jetty Server on port 8080 (for HTTP/1) and 8443 (for HTTPS/1).
-Note that the HTTPS module downloads a demo keystore file with a self signed certificate, which needs to be replaced by a Certificate Authority issued certificate for real deployment.
+Note that the `test-keystore` module downloads a demo keystore file with a self signed certificate, which needs to be replaced by a Certificate Authority issued certificate for real deployment.
+A keystore can also be added by enabling and configuring the `ssl` module.
 
 To add HTTP/2 to this demo base, it is just a matter of enabling the `http2` module with the following command:
 

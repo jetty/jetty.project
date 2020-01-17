@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.websocket.core.internal;
@@ -64,6 +64,7 @@ public class FrameFlusher extends IteratingCallback
     private final List<Entry> previousEntries;
     private final List<Entry> failedEntries;
 
+    private List<ByteBuffer> releasableBuffers = new ArrayList<>();
     private ByteBuffer batchBuffer;
     private boolean canEnqueue = true;
     private boolean flushed = true;
@@ -200,6 +201,7 @@ public class FrameFlusher extends IteratingCallback
             LOG.debug("Flushing {}", this);
 
         boolean flush = false;
+        Callback releasingCallback = this;
         synchronized (this)
         {
             if (closedCause != null)
@@ -233,44 +235,63 @@ public class FrameFlusher extends IteratingCallback
 
                 if (batch)
                 {
-                    // Acquire a batchBuffer if we don't have one
+                    // Acquire a batchBuffer if we don't have one.
                     if (batchBuffer == null)
                     {
                         batchBuffer = acquireBuffer(bufferSize);
                         buffers.add(batchBuffer);
                     }
 
-                    // generate the frame into the batchBuffer
-                    entry.generateHeaderBytes(batchBuffer);
-                    ByteBuffer payload = entry.frame.getPayload();
-                    if (BufferUtil.hasContent(payload))
-                        BufferUtil.append(batchBuffer, payload);
-                }
-                else if (batchBuffer != null && batchSpace >= Generator.MAX_HEADER_LENGTH)
-                {
-                    // Use the batch space for our header
-                    entry.generateHeaderBytes(batchBuffer);
-                    flush = true;
-
-                    // Add the payload to the list of buffers
-                    ByteBuffer payload = entry.frame.getPayload();
-                    if (BufferUtil.hasContent(payload))
-                        buffers.add(payload);
+                    // Generate the frame into the batchBuffer.
+                    generator.generateWholeFrame(entry.frame, batchBuffer);
                 }
                 else
                 {
-                    // Add headers and payload to the list of buffers
-                    // TODO: release this buffer.
-                    ByteBuffer buffer = acquireBuffer(Generator.MAX_HEADER_LENGTH);
-                    buffers.add(buffer);
-                    entry.generateHeaderBytes(buffer);
-                    flush = true;
+                    if (batchBuffer != null && batchSpace >= Generator.MAX_HEADER_LENGTH)
+                    {
+                        // Use the batch space for our header.
+                        generator.generateHeader(entry.frame, batchBuffer);
+                    }
+                    else
+                    {
+                        // Add headers to the list of buffers.
+                        ByteBuffer headerBuffer = acquireBuffer(Generator.MAX_HEADER_LENGTH);
+                        releasableBuffers.add(headerBuffer);
+                        generator.generateHeader(entry.frame, headerBuffer);
+                        buffers.add(headerBuffer);
+                    }
+
+                    // Add the payload to the list of buffers.
                     ByteBuffer payload = entry.frame.getPayload();
                     if (BufferUtil.hasContent(payload))
-                        buffers.add(payload);
+                    {
+                        if (entry.frame.isMasked())
+                        {
+                            payload = acquireBuffer(entry.frame.getPayloadLength());
+                            releasableBuffers.add(payload);
+                            generator.generatePayload(entry.frame, payload);
+                        }
+
+                        buffers.add(payload.slice());
+                    }
+                    flush = true;
                 }
 
                 flushed = flush;
+            }
+
+            // If we are going to flush we should release any buffers we have allocated after the callback completes.
+            if (flush)
+            {
+                final List<ByteBuffer> callbackBuffers = releasableBuffers;
+                releasableBuffers = new ArrayList<>();
+                releasingCallback = Callback.from(releasingCallback, () ->
+                {
+                    for (ByteBuffer buffer : callbackBuffers)
+                    {
+                        bufferPool.release(buffer);
+                    }
+                });
             }
         }
 
@@ -288,7 +309,6 @@ public class FrameFlusher extends IteratingCallback
             if (entry.frame.getOpCode() == OpCode.CLOSE)
                 endPoint.shutdownOutput();
             notifyCallbackSuccess(entry.callback);
-            entry.release();
         }
         previousEntries.clear();
 
@@ -310,7 +330,7 @@ public class FrameFlusher extends IteratingCallback
                 bufferArray[i++] = bb;
             }
             bytesOut.add(bytes);
-            endPoint.write(this, bufferArray);
+            endPoint.write(releasingCallback, bufferArray);
             buffers.clear();
         }
         else
@@ -397,6 +417,12 @@ public class FrameFlusher extends IteratingCallback
             failedEntries.addAll(entries);
             entries.clear();
 
+            for (ByteBuffer buffer : releasableBuffers)
+            {
+                bufferPool.release(buffer);
+            }
+            releasableBuffers.clear();
+
             if (closedCause == null)
                 closedCause = failure;
             else if (closedCause != failure)
@@ -406,7 +432,6 @@ public class FrameFlusher extends IteratingCallback
         for (Entry entry : failedEntries)
         {
             notifyCallbackFailure(entry.callback, failure);
-            entry.release();
         }
 
         failedEntries.clear();
@@ -491,22 +516,6 @@ public class FrameFlusher extends IteratingCallback
         private Entry(Frame frame, Callback callback, boolean batch)
         {
             super(frame, callback, batch);
-        }
-
-        private void generateHeaderBytes(ByteBuffer buffer)
-        {
-            int pos = BufferUtil.flipToFill(buffer);
-            generator.generateHeaderBytes(frame, buffer);
-            BufferUtil.flipToFlush(buffer, pos);
-        }
-
-        private void release()
-        {
-            if (headerBuffer != null)
-            {
-                generator.getBufferPool().release(headerBuffer);
-                headerBuffer = null;
-            }
         }
 
         private long getTimeOfCreation()

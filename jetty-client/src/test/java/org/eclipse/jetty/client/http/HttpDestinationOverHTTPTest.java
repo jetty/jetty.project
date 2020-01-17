@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.client.http;
@@ -54,7 +54,7 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
 {
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_FirstAcquire_WithEmptyQueue(Scenario scenario) throws Exception
+    public void testFirstAcquireWithEmptyQueue(Scenario scenario) throws Exception
     {
         start(scenario, new EmptyServerHandler());
 
@@ -74,7 +74,7 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_SecondAcquire_AfterFirstAcquire_WithEmptyQueue_ReturnsSameConnection(Scenario scenario) throws Exception
+    public void testSecondAcquireAfterFirstAcquireWithEmptyQueueReturnsSameConnection(Scenario scenario) throws Exception
     {
         start(scenario, new EmptyServerHandler());
 
@@ -98,7 +98,7 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_SecondAcquire_ConcurrentWithFirstAcquire_WithEmptyQueue_CreatesTwoConnections(Scenario scenario) throws Exception
+    public void testSecondAcquireConcurrentWithFirstAcquireWithEmptyQueueCreatesTwoConnections(Scenario scenario) throws Exception
     {
         start(scenario, new EmptyServerHandler());
 
@@ -155,7 +155,7 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_Acquire_Process_Release_Acquire_ReturnsSameConnection(Scenario scenario) throws Exception
+    public void testAcquireProcessReleaseAcquireReturnsSameConnection(Scenario scenario) throws Exception
     {
         start(scenario, new EmptyServerHandler());
 
@@ -182,7 +182,7 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_IdleConnection_IdleTimeout(Scenario scenario) throws Exception
+    public void testIdleConnectionIdleTimeout(Scenario scenario) throws Exception
     {
         startServer(scenario, new EmptyServerHandler());
         long idleTimeout = 1000;
@@ -209,7 +209,7 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_Request_Failed_If_MaxRequestsQueuedPerDestination_Exceeded(Scenario scenario) throws Exception
+    public void testRequestFailedIfMaxRequestsQueuedPerDestinationExceeded(Scenario scenario) throws Exception
     {
         start(scenario, new EmptyServerHandler());
         String scheme = scenario.getScheme();

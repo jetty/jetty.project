@@ -40,13 +40,11 @@
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-client</artifactId>
       <version>${project.version}</version>
-      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-server</artifactId>
       <version>${project.version}</version>
-      <scope>provided</scope>
     </dependency>
 
     <dependency>
@@ -71,7 +69,7 @@
               <rules>
                 <bannedDependencies>
                   <includes>
-                    <include>org.eclipse.jetty.websocket:jetty-websocket-api</include>
+                    <include>org.eclipse.jetty.websocket:websocket-jetty-api</include>
                     <include>javax.websocket</include>
                   </includes>
                 </bannedDependencies>

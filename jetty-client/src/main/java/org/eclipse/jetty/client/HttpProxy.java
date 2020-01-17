@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.client;
@@ -53,25 +53,25 @@ public class HttpProxy extends ProxyConfiguration.Proxy
 
     public HttpProxy(Origin.Address address, boolean secure)
     {
-        this(address, secure, null, new HttpDestination.Protocol(List.of("http/1.1"), false));
+        this(address, secure, null, new Origin.Protocol(List.of("http/1.1"), false));
     }
 
-    public HttpProxy(Origin.Address address, boolean secure, HttpDestination.Protocol protocol)
+    public HttpProxy(Origin.Address address, boolean secure, Origin.Protocol protocol)
     {
         this(address, secure, null, Objects.requireNonNull(protocol));
     }
 
     public HttpProxy(Origin.Address address, SslContextFactory.Client sslContextFactory)
     {
-        this(address, true, sslContextFactory, new HttpDestination.Protocol(List.of("http/1.1"), false));
+        this(address, true, sslContextFactory, new Origin.Protocol(List.of("http/1.1"), false));
     }
 
-    public HttpProxy(Origin.Address address, SslContextFactory.Client sslContextFactory, HttpDestination.Protocol protocol)
+    public HttpProxy(Origin.Address address, SslContextFactory.Client sslContextFactory, Origin.Protocol protocol)
     {
         this(address, true, sslContextFactory, Objects.requireNonNull(protocol));
     }
 
-    private HttpProxy(Origin.Address address, boolean secure, SslContextFactory.Client sslContextFactory, HttpDestination.Protocol protocol)
+    private HttpProxy(Origin.Address address, boolean secure, SslContextFactory.Client sslContextFactory, Origin.Protocol protocol)
     {
         super(address, secure, sslContextFactory, Objects.requireNonNull(protocol));
     }
@@ -85,13 +85,7 @@ public class HttpProxy extends ProxyConfiguration.Proxy
     @Override
     public URI getURI()
     {
-        return URI.create(newOrigin().asString());
-    }
-
-    private Origin newOrigin()
-    {
-        String scheme = isSecure() ? HttpScheme.HTTPS.asString() : HttpScheme.HTTP.asString();
-        return new Origin(scheme, getAddress());
+        return URI.create(getOrigin().asString());
     }
 
     private class HttpProxyClientConnectionFactory implements ClientConnectionFactory
@@ -107,7 +101,7 @@ public class HttpProxy extends ProxyConfiguration.Proxy
         public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
         {
             HttpDestination destination = (HttpDestination)context.get(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY);
-            HttpDestination.Protocol serverProtocol = destination.getKey().getProtocol();
+            Origin.Protocol serverProtocol = destination.getOrigin().getProtocol();
             boolean sameProtocol = proxySpeaksServerProtocol(serverProtocol);
             if (destination.isSecure() || !sameProtocol)
             {
@@ -135,7 +129,7 @@ public class HttpProxy extends ProxyConfiguration.Proxy
             }
         }
 
-        private boolean proxySpeaksServerProtocol(HttpDestination.Protocol serverProtocol)
+        private boolean proxySpeaksServerProtocol(Origin.Protocol serverProtocol)
         {
             return serverProtocol != null && getProtocol().getProtocols().stream().anyMatch(p -> serverProtocol.getProtocols().stream().anyMatch(p::equalsIgnoreCase));
         }
@@ -151,7 +145,7 @@ public class HttpProxy extends ProxyConfiguration.Proxy
             // Replace the destination with the proxy destination.
             HttpDestination destination = (HttpDestination)context.get(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY);
             HttpClient client = destination.getHttpClient();
-            HttpDestination proxyDestination = client.resolveDestination(new HttpDestination.Key(newOrigin(), getProtocol()));
+            HttpDestination proxyDestination = client.resolveDestination(getOrigin());
             context.put(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY, proxyDestination);
             try
             {
@@ -170,7 +164,7 @@ public class HttpProxy extends ProxyConfiguration.Proxy
      * tunnel after the TCP connection is succeeded, and needs to notify
      * the nested promise when the tunnel is established (or failed).</p>
      */
-    private class CreateTunnelPromise implements Promise<Connection>
+    private static class CreateTunnelPromise implements Promise<Connection>
     {
         private final ClientConnectionFactory connectionFactory;
         private final EndPoint endPoint;
@@ -283,7 +277,7 @@ public class HttpProxy extends ProxyConfiguration.Proxy
         }
     }
 
-    private class ProxyConnection implements Connection
+    private static class ProxyConnection implements Connection
     {
         private final Destination destination;
         private final Connection connection;
@@ -322,7 +316,7 @@ public class HttpProxy extends ProxyConfiguration.Proxy
         }
     }
 
-    private class TunnelPromise implements Promise<Connection>
+    private static class TunnelPromise implements Promise<Connection>
     {
         private final Request request;
         private final Response.CompleteListener listener;

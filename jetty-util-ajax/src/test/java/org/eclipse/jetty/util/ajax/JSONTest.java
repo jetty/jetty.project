@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.util.ajax;
@@ -42,6 +42,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class JSONTest
 {
+    // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
+
     String test = "\n\n\n\t\t    " +
         "// ignore this ,a [ \" \n" +
         "/* and this \n" +
@@ -142,7 +144,7 @@ public class JSONTest
     }
 
     @Test
-    public void testToString_LineFeed()
+    public void testToStringLineFeed()
     {
         Map<String, String> map = new HashMap<>();
         map.put("str", "line\nfeed");
@@ -151,7 +153,7 @@ public class JSONTest
     }
 
     @Test
-    public void testToString_Tab()
+    public void testToStringTab()
     {
         Map<String, String> map = new HashMap<>();
         map.put("str", "tab\tchar");
@@ -160,7 +162,7 @@ public class JSONTest
     }
 
     @Test
-    public void testToString_Bel()
+    public void testToStringBel()
     {
         Map<String, String> map = new HashMap<>();
         map.put("str", "ascii\u0007bel");
@@ -169,7 +171,7 @@ public class JSONTest
     }
 
     @Test
-    public void testToString_Utf8()
+    public void testToStringUtf8()
     {
         Map<String, String> map = new HashMap<>();
         map.put("str", "japanese: 桟橋");
@@ -178,7 +180,7 @@ public class JSONTest
     }
 
     @Test
-    public void testToJson_Utf8_Encoded()
+    public void testToJsonUtf8Encoded()
     {
         JSON jsonUnicode = new JSON()
         {
@@ -196,7 +198,7 @@ public class JSONTest
     }
 
     @Test
-    public void testParse_Utf8_JsonEncoded()
+    public void testParseUtf8JsonEncoded()
     {
         String jsonStr = "{\"str\": \"japanese: \\u685f\\u6a4b\"}";
         Map map = (Map)JSON.parse(jsonStr);
@@ -204,7 +206,7 @@ public class JSONTest
     }
 
     @Test
-    public void testParse_Utf8_JavaEncoded()
+    public void testParseUtf8JavaEncoded()
     {
         String jsonStr = "{\"str\": \"japanese: \u685f\u6a4b\"}";
         Map map = (Map)JSON.parse(jsonStr);
@@ -212,7 +214,7 @@ public class JSONTest
     }
 
     @Test
-    public void testParse_Utf8_Raw()
+    public void testParseUtf8Raw()
     {
         String jsonStr = "{\"str\": \"japanese: 桟橋\"}";
         Map map = (Map)JSON.parse(jsonStr);

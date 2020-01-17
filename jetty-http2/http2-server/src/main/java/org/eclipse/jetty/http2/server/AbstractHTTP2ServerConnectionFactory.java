@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.http2.server;
@@ -60,6 +60,7 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
     private int maxHeaderBlockFragment = 0;
     private int maxFrameLength = Frame.DEFAULT_MAX_LENGTH;
     private int maxSettingsKeys = SettingsFrame.DEFAULT_MAX_KEYS;
+    private boolean connectProtocolEnabled = true;
     private RateControl.Factory rateControlFactory = new WindowRateControl.Factory(20);
     private FlowControlStrategy.Factory flowControlStrategyFactory = () -> new BufferingFlowControlStrategy(0.5F);
     private long streamIdleTimeout;
@@ -185,6 +186,17 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         this.maxSettingsKeys = maxSettingsKeys;
     }
 
+    @ManagedAttribute("Whether CONNECT requests supports a protocol")
+    public boolean isConnectProtocolEnabled()
+    {
+        return connectProtocolEnabled;
+    }
+
+    public void setConnectProtocolEnabled(boolean connectProtocolEnabled)
+    {
+        this.connectProtocolEnabled = connectProtocolEnabled;
+    }
+
     /**
      * @return the factory that creates RateControl objects
      */
@@ -237,6 +249,7 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         if (maxConcurrentStreams >= 0)
             settings.put(SettingsFrame.MAX_CONCURRENT_STREAMS, maxConcurrentStreams);
         settings.put(SettingsFrame.MAX_HEADER_LIST_SIZE, getHttpConfiguration().getRequestHeaderSize());
+        settings.put(SettingsFrame.ENABLE_CONNECT_PROTOCOL, isConnectProtocolEnabled() ? 1 : 0);
         return settings;
     }
 
@@ -259,6 +272,7 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
             session.setStreamIdleTimeout(streamIdleTimeout);
         session.setInitialSessionRecvWindow(getInitialSessionRecvWindow());
         session.setWriteThreshold(getHttpConfiguration().getOutputBufferSize());
+        session.setConnectProtocolEnabled(isConnectProtocolEnabled());
 
         ServerParser parser = newServerParser(connector, session, getRateControlFactory().newRateControl(endPoint));
         parser.setMaxFrameLength(getMaxFrameLength());

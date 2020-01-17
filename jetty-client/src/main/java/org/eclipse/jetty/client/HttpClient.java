@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.client;
@@ -124,7 +124,7 @@ public class HttpClient extends ContainerLifeCycle
     public static final String USER_AGENT = "Jetty/" + Jetty.VERSION;
     private static final Logger LOG = Log.getLogger(HttpClient.class);
 
-    private final ConcurrentMap<HttpDestination.Key, HttpDestination> destinations = new ConcurrentHashMap<>();
+    private final ConcurrentMap<Origin, HttpDestination> destinations = new ConcurrentHashMap<>();
     private final ProtocolHandlers handlers = new ProtocolHandlers();
     private final List<Request.Listener> requestListeners = new ArrayList<>();
     private final Set<ContentDecoder.Factory> decoderFactories = new ContentDecoderFactorySet();
@@ -499,33 +499,33 @@ public class HttpClient extends ContainerLifeCycle
 
     public Destination resolveDestination(Request request)
     {
-        Origin origin = createOrigin(request.getScheme(), request.getHost(), request.getPort());
         HttpClientTransport transport = getTransport();
-        HttpDestination.Key destinationKey = transport.newDestinationKey((HttpRequest)request, origin);
-        HttpDestination destination = resolveDestination(destinationKey);
+        Origin origin = transport.newOrigin((HttpRequest)request);
+        HttpDestination destination = resolveDestination(origin);
         if (LOG.isDebugEnabled())
             LOG.debug("Resolved {} for {}", destination, request);
         return destination;
     }
 
-    private Origin createOrigin(String scheme, String host, int port)
+    public Origin createOrigin(HttpRequest request, Origin.Protocol protocol)
     {
+        String scheme = request.getScheme();
         if (!HttpScheme.HTTP.is(scheme) && !HttpScheme.HTTPS.is(scheme) &&
             !HttpScheme.WS.is(scheme) && !HttpScheme.WSS.is(scheme))
             throw new IllegalArgumentException("Invalid protocol " + scheme);
-
         scheme = scheme.toLowerCase(Locale.ENGLISH);
+        String host = request.getHost();
         host = host.toLowerCase(Locale.ENGLISH);
+        int port = request.getPort();
         port = normalizePort(scheme, port);
-
-        return new Origin(scheme, host, port);
+        return new Origin(scheme, host, port, request.getTag(), protocol);
     }
 
-    HttpDestination resolveDestination(HttpDestination.Key key)
+    HttpDestination resolveDestination(Origin origin)
     {
-        return destinations.computeIfAbsent(key, k ->
+        return destinations.computeIfAbsent(origin, o ->
         {
-            HttpDestination destination = getTransport().newHttpDestination(k);
+            HttpDestination destination = getTransport().newHttpDestination(o);
             // Start the destination before it's published to other threads.
             addManaged(destination);
             if (LOG.isDebugEnabled())
@@ -537,7 +537,7 @@ public class HttpClient extends ContainerLifeCycle
     protected boolean removeDestination(HttpDestination destination)
     {
         removeBean(destination);
-        return destinations.remove(destination.getKey(), destination);
+        return destinations.remove(destination.getOrigin(), destination);
     }
 
     /**
@@ -1101,7 +1101,7 @@ public class HttpClient extends ContainerLifeCycle
             return port == 80;
     }
 
-    static boolean isSchemeSecure(String scheme)
+    public static boolean isSchemeSecure(String scheme)
     {
         return HttpScheme.HTTPS.is(scheme) || HttpScheme.WSS.is(scheme);
     }

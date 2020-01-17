@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.server;
@@ -33,6 +33,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.concurrent.Exchanger;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.servlet.AsyncContext;
 import javax.servlet.ServletException;
 import javax.servlet.ServletInputStream;
@@ -273,6 +274,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             assertThat(response, Matchers.containsString("HTTP/1.1 400 "));
         }
     }
+
     @Test
     public void testExceptionThrownInHandlerLoop() throws Exception
     {
@@ -511,7 +513,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                 "\r\n" +
                 "ABCDE\r\n" +
                 "\r\n"
-            //@checkstyle-enable-check : IllegalTokenText
+                //@checkstyle-enable-check : IllegalTokenText
             ).getBytes());
             os.flush();
 
@@ -1020,13 +1022,22 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     @Test
     public void testPipeline() throws Exception
     {
-        configureServer(new HelloWorldHandler());
+        AtomicInteger served = new AtomicInteger();
+        configureServer(new HelloWorldHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                served.incrementAndGet();
+                super.handle(target, baseRequest, request, response);
+            }
+        });
 
-        //for (int pipeline=1;pipeline<32;pipeline++)
-        for (int pipeline = 1; pipeline < 32; pipeline++)
+        int pipeline = 64;
         {
             try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
             {
+                served.set(0);
                 client.setSoTimeout(5000);
                 OutputStream os = client.getOutputStream();
 
@@ -1065,6 +1076,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                         count++;
                     line = in.readLine();
                 }
+                assertEquals(pipeline, served.get());
                 assertEquals(pipeline, count);
             }
         }
@@ -1188,7 +1200,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                     "Connection: close\r\n" +
                     "\r\n" +
                     "abcdefghi\n"
-            //@checkstyle-enable-check : IllegalTokenText
+                //@checkstyle-enable-check : IllegalTokenText
             ).getBytes(StandardCharsets.ISO_8859_1));
 
             String in = IO.toString(is);
@@ -1853,7 +1865,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         public SendAsyncContentHandler(int size)
         {
             content = BufferUtil.allocate(size);
-            Arrays.fill(content.array(),0,size,(byte)'X');
+            Arrays.fill(content.array(), 0, size, (byte)'X');
             content.position(0);
             content.limit(size);
         }

@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.http.client;
@@ -43,7 +43,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.servlet.AsyncContext;
+import javax.servlet.ReadListener;
 import javax.servlet.ServletOutputStream;
+import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -56,6 +58,7 @@ import org.eclipse.jetty.client.util.DeferredContentProvider;
 import org.eclipse.jetty.client.util.InputStreamContentProvider;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
 import org.eclipse.jetty.client.util.OutputStreamContentProvider;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
@@ -1263,5 +1266,78 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
 
         Result result = listener.await(5, TimeUnit.SECONDS);
         assertTrue(result.isSucceeded());
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(TransportProvider.class)
+    public void testClientDefersContentServerIdleTimeout(Transport transport) throws Exception
+    {
+        init(transport);
+        CountDownLatch dataLatch = new CountDownLatch(1);
+        CountDownLatch errorLatch = new CountDownLatch(1);
+        scenario.start(new HttpServlet()
+        {
+            @Override
+            protected void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException
+            {
+                AsyncContext asyncContext = request.startAsync();
+                asyncContext.setTimeout(0);
+                request.getInputStream().setReadListener(new ReadListener()
+                {
+                    @Override
+                    public void onDataAvailable()
+                    {
+                        dataLatch.countDown();
+                    }
+
+                    @Override
+                    public void onAllDataRead()
+                    {
+                        dataLatch.countDown();
+                    }
+
+                    @Override
+                    public void onError(Throwable t)
+                    {
+                        errorLatch.countDown();
+                        response.setStatus(HttpStatus.REQUEST_TIMEOUT_408);
+                        asyncContext.complete();
+                    }
+                });
+            }
+        });
+        long idleTimeout = 1000;
+        scenario.setServerIdleTimeout(idleTimeout);
+
+        CountDownLatch latch = new CountDownLatch(1);
+        byte[] bytes = "[{\"key\":\"value\"}]".getBytes(StandardCharsets.UTF_8);
+        OutputStreamContentProvider content = new OutputStreamContentProvider()
+        {
+            @Override
+            public long getLength()
+            {
+                return bytes.length;
+            }
+        };
+        scenario.client.newRequest(scenario.newURI())
+            .method(HttpMethod.POST)
+            .path(scenario.servletPath)
+            .content(content, "application/json;charset=UTF-8")
+            .onResponseSuccess(response ->
+            {
+                assertEquals(HttpStatus.REQUEST_TIMEOUT_408, response.getStatus());
+                latch.countDown();
+            })
+            .send(null);
+
+        // Wait for the server to idle timeout.
+        Thread.sleep(2 * idleTimeout);
+
+        assertTrue(errorLatch.await(5, TimeUnit.SECONDS));
+
+        // Do not send the content to the server.
+
+        assertFalse(dataLatch.await(1, TimeUnit.SECONDS));
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 }

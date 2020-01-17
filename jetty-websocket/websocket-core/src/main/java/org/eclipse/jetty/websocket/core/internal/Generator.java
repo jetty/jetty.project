@@ -1,26 +1,25 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.websocket.core.internal;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.core.Frame;
 
@@ -54,57 +53,27 @@ public class Generator
      * The overhead (maximum) for a framing header. Assuming a maximum sized payload with masking key.
      */
     public static final int MAX_HEADER_LENGTH = 28;
-    private static byte[] mask = {0x00, (byte)0xF0, 0x0F, (byte)0xFF};
-
-    public static void putMask(ByteBuffer buffer)
-    {
-        buffer.put(mask, 0, mask.length);
-    }
-
-    public static void putPayload(ByteBuffer buffer, byte[] payload)
-    {
-        int len = payload.length;
-        for (int i = 0; i < len; i++)
-        {
-            buffer.put((byte)(payload[i] ^ mask[i % 4]));
-        }
-    }
-
-    private final ByteBufferPool bufferPool;
-    private final boolean readOnly;
 
     /**
-     * Construct Generator with provided policy and bufferPool
-     *
-     * @param bufferPool the buffer pool to use
+     * Generate the whole frame (header + payload copy) into a single ByteBuffer.
+     * @param frame the frame to generate.
+     * @param buffer the buffer to output the generated frame to.
      */
-    public Generator(ByteBufferPool bufferPool)
+    public void generateWholeFrame(Frame frame, ByteBuffer buffer)
     {
-        this(bufferPool, false);
+        generateHeader(frame, buffer);
+        generatePayload(frame, buffer);
     }
 
     /**
-     * Construct Generator with provided policy and bufferPool
-     *
-     * @param bufferPool the buffer pool to use
+     * Generate the header bytes of a frame into a single ByteBuffer.
+     * @param frame the frame to generate.
+     * @param buffer the buffer to output the generated frame to.
      */
-    public Generator(ByteBufferPool bufferPool, boolean readOnly)
+    public void generateHeader(Frame frame, ByteBuffer buffer)
     {
-        this.bufferPool = bufferPool;
-        this.readOnly = readOnly;
-    }
+        int pos = BufferUtil.flipToFill(buffer);
 
-    public ByteBuffer generateHeaderBytes(Frame frame)
-    {
-        ByteBuffer buffer = bufferPool.acquire(MAX_HEADER_LENGTH, false);
-        BufferUtil.clearToFill(buffer);
-        generateHeaderBytes(frame, buffer);
-        BufferUtil.flipToFlush(buffer, 0);
-        return buffer;
-    }
-
-    public void generateHeaderBytes(Frame frame, ByteBuffer buffer)
-    {
         /*
          * start the generation process
          */
@@ -177,68 +146,63 @@ public class Generator
         }
 
         // masking key
-        if (frame.isMasked() && !readOnly)
-        {
-            byte[] mask = frame.getMask();
-            buffer.put(mask);
-            int maskInt = 0;
-            for (byte maskByte : mask)
-            {
-                maskInt = (maskInt << 8) + (maskByte & 0xFF);
-            }
+        if (frame.isMasked())
+            buffer.put(frame.getMask());
 
-            // perform data masking here
-            ByteBuffer payload = frame.getPayload();
-            if ((payload != null) && (payload.remaining() > 0))
-            {
-                int maskOffset = 0;
-                int start = payload.position();
-                int end = payload.limit();
-                int remaining;
-                while ((remaining = end - start) > 0)
-                {
-                    if (remaining >= 4)
-                    {
-                        payload.putInt(start, payload.getInt(start) ^ maskInt);
-                        start += 4;
-                    }
-                    else
-                    {
-                        payload.put(start, (byte)(payload.get(start) ^ mask[maskOffset & 3]));
-                        ++start;
-                        ++maskOffset;
-                    }
-                }
-            }
-        }
+        BufferUtil.flipToFlush(buffer, pos);
     }
 
     /**
-     * Generate the whole frame (header + payload copy) into a single ByteBuffer.
-     * <p>
-     * Note: This is slow, moves lots of memory around. Only use this if you must (such as in unit testing).
-     *
-     * @param frame the frame to generate
-     * @param buf the buffer to output the generated frame to
+     * Generate the payload of a frame into a single ByteBuffer, if the frame has a mask the payload
+     * will be masked as it is copied to the output buffer.
+     * @param frame the frame to generate.
+     * @param buffer the buffer to output the generated frame to.
      */
-    public void generateWholeFrame(Frame frame, ByteBuffer buf)
+    public void generatePayload(Frame frame, ByteBuffer buffer)
     {
-        generateHeaderBytes(frame, buf);
-        if (frame.hasPayload())
-        {
-            if (readOnly)
-            {
-                buf.put(frame.getPayload().slice());
-            }
-            else
-            {
-                buf.put(frame.getPayload());
-            }
-        }
+        ByteBuffer payload = frame.getPayload();
+        if (!BufferUtil.hasContent(payload))
+            return;
+
+        int pos = BufferUtil.flipToFill(buffer);
+        if (frame.isMasked())
+            maskPayload(buffer, frame);
+        else
+            buffer.put(payload.slice());
+        BufferUtil.flipToFlush(buffer, pos);
     }
 
-    public ByteBufferPool getBufferPool()
+    private void maskPayload(ByteBuffer buffer, Frame frame)
     {
-        return bufferPool;
+        byte[] mask = frame.getMask();
+        int maskInt = 0;
+        for (byte maskByte : mask)
+        {
+            maskInt = (maskInt << 8) + (maskByte & 0xFF);
+        }
+
+        // perform data masking here
+        ByteBuffer payload = frame.getPayload();
+        if ((payload != null) && (payload.remaining() > 0))
+        {
+            int maskOffset = 0;
+            int start = payload.position();
+            int end = payload.limit();
+            int remaining;
+            while ((remaining = end - start) > 0)
+            {
+                if (remaining >= 4)
+                {
+                    buffer.putInt(payload.getInt(start) ^ maskInt);
+                    start += 4;
+                }
+                else
+                {
+                    buffer.put((byte)(payload.get(start) ^ mask[maskOffset & 3]));
+                    ++start;
+                    ++maskOffset;
+                }
+            }
+        }
     }
 }

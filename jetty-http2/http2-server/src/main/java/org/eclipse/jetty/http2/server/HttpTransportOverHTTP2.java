@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.http2.server;
@@ -177,7 +177,7 @@ public class HttpTransportOverHTTP2 implements HttpTransport
         }
         else
         {
-            if (hasContent || (lastContent && !isTunnel(request, response)))
+            if (hasContent || (lastContent && !isTunnel(request, metaData)))
             {
                 if (lastContent)
                 {
@@ -318,12 +318,19 @@ public class HttpTransportOverHTTP2 implements HttpTransport
     {
         HttpChannelOverHTTP2 channel = (HttpChannelOverHTTP2)stream.getAttachment();
         Request request = channel.getRequest();
+        if (request.getHttpInput().hasContent())
+            return channel.sendErrorOrAbort("Unexpected content in CONNECT request");
         Connection connection = (Connection)request.getAttribute(UPGRADE_CONNECTION_ATTRIBUTE);
         EndPoint endPoint = connection.getEndPoint();
         endPoint.upgrade(connection);
         stream.setAttachment(endPoint);
-        if (request.getHttpInput().hasContent())
-            return channel.sendErrorOrAbort("Unexpected content in CONNECT request");
+        // Only now that we have switched the attachment,
+        // we can demand DATA frames to process them.
+        stream.demand(1);
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("Upgrading to {}", connection);
+
         return false;
     }
 
@@ -333,6 +340,8 @@ public class HttpTransportOverHTTP2 implements HttpTransport
         Object attachment = stream.getAttachment();
         if (attachment instanceof HttpChannelOverHTTP2)
         {
+            // TODO: we used to "fake" a 101 response to upgrade the endpoint
+            //  but we don't anymore, so this code should be deleted.
             HttpChannelOverHTTP2 channel = (HttpChannelOverHTTP2)attachment;
             if (channel.getResponse().getStatus() == HttpStatus.SWITCHING_PROTOCOLS_101)
             {

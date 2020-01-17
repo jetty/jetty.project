@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.client.http;
@@ -26,6 +26,7 @@ import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.HttpResponse;
 import org.eclipse.jetty.client.HttpResponseException;
+import org.eclipse.jetty.client.HttpUpgrader;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.http.HttpFields;
@@ -98,29 +99,24 @@ public class HttpChannelOverHTTP extends HttpChannel
             return result;
 
         HttpResponse response = exchange.getResponse();
-
-        if ((response.getVersion() == HttpVersion.HTTP_1_1) &&
-            (response.getStatus() == HttpStatus.SWITCHING_PROTOCOLS_101))
+        if (response.getVersion() == HttpVersion.HTTP_1_1 && response.getStatus() == HttpStatus.SWITCHING_PROTOCOLS_101)
         {
-            String nextConnection = response.getHeaders().get(HttpHeader.CONNECTION);
-            if ((nextConnection == null) || !nextConnection.toLowerCase(Locale.US).contains("upgrade"))
-            {
-                return new Result(result, new HttpResponseException("101 Switching Protocols without Connection: Upgrade not supported", response));
-            }
+            String header = response.getHeaders().get(HttpHeader.CONNECTION);
+            if (header == null || !header.toLowerCase(Locale.US).contains("upgrade"))
+                return new Result(result, new HttpResponseException("101 response without 'Connection: Upgrade'", response));
 
-            // Upgrade Response
             HttpRequest request = exchange.getRequest();
-            HttpConnectionUpgrader upgrader = (HttpConnectionUpgrader)request.getConversation().getAttribute(HttpConnectionUpgrader.class.getName());
-            if (upgrader != null)
+            HttpUpgrader upgrader = (HttpUpgrader)request.getConversation().getAttribute(HttpUpgrader.class.getName());
+            if (upgrader == null)
+                return new Result(result, new HttpResponseException("101 response without " + HttpUpgrader.class.getSimpleName(), response));
+
+            try
             {
-                try
-                {
-                    upgrader.upgrade(response, getHttpConnection());
-                }
-                catch (Throwable x)
-                {
-                    return new Result(result, x);
-                }
+                upgrader.upgrade(response, getHttpConnection().getEndPoint());
+            }
+            catch (Throwable x)
+            {
+                return new Result(result, new HttpResponseException("Could not upgrade to WebSocket", response, x));
             }
         }
 

@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.client;
@@ -88,6 +88,9 @@ public class HttpRequest implements Request
     private List<RequestListener> requestListeners;
     private BiFunction<Request, Request, Response.CompleteListener> pushListener;
     private Supplier<HttpFields> trailers;
+    private String upgradeProtocol;
+    private Object tag;
+    private boolean normalized;
 
     protected HttpRequest(HttpClient client, HttpConversation conversation, URI uri)
     {
@@ -321,6 +324,19 @@ public class HttpRequest implements Request
     }
 
     @Override
+    public Request tag(Object tag)
+    {
+        this.tag = tag;
+        return this;
+    }
+
+    @Override
+    public Object getTag()
+    {
+        return tag;
+    }
+
+    @Override
     public Request attribute(String name, Object value)
     {
         if (attributes == null)
@@ -509,21 +525,12 @@ public class HttpRequest implements Request
     @Override
     public Request onResponseContent(final Response.ContentListener listener)
     {
-        this.responseListeners.add(new Response.DemandedContentListener()
+        this.responseListeners.add(new Response.ContentListener()
         {
             @Override
-            public void onContent(Response response, LongConsumer demand, ByteBuffer content, Callback callback)
+            public void onContent(Response response, ByteBuffer content)
             {
-                try
-                {
-                    listener.onContent(response, content);
-                    callback.succeeded();
-                    demand.accept(1);
-                }
-                catch (Throwable x)
-                {
-                    callback.failed(x);
-                }
+                listener.onContent(response, content);
             }
         });
         return this;
@@ -532,16 +539,12 @@ public class HttpRequest implements Request
     @Override
     public Request onResponseContentAsync(final Response.AsyncContentListener listener)
     {
-        this.responseListeners.add(new Response.DemandedContentListener()
+        this.responseListeners.add(new Response.AsyncContentListener()
         {
             @Override
-            public void onContent(Response response, LongConsumer demand, ByteBuffer content, Callback callback)
+            public void onContent(Response response, ByteBuffer content, Callback callback)
             {
-                listener.onContent(response, content, Callback.from(() ->
-                {
-                    callback.succeeded();
-                    demand.accept(1);
-                }, callback::failed));
+                listener.onContent(response, content, callback);
             }
         });
         return this;
@@ -632,6 +635,12 @@ public class HttpRequest implements Request
     public HttpRequest trailers(Supplier<HttpFields> trailers)
     {
         this.trailers = trailers;
+        return this;
+    }
+
+    public HttpRequest upgradeProtocol(String upgradeProtocol)
+    {
+        this.upgradeProtocol = upgradeProtocol;
         return this;
     }
 
@@ -791,6 +800,11 @@ public class HttpRequest implements Request
         return trailers;
     }
 
+    public String getUpgradeProtocol()
+    {
+        return upgradeProtocol;
+    }
+
     @Override
     public boolean abort(Throwable cause)
     {
@@ -807,6 +821,23 @@ public class HttpRequest implements Request
     public Throwable getAbortCause()
     {
         return aborted.get();
+    }
+
+    /**
+     * <p>Marks this request as <em>normalized</em>.</p>
+     * <p>A request is normalized by setting things that applications give
+     * for granted such as defaulting the method to {@code GET}, adding the
+     * {@code Host} header, adding the cookies, adding {@code Authorization}
+     * headers, etc.</p>
+     *
+     * @return whether this request was already normalized
+     * @see HttpConnection#normalizeRequest(Request)
+     */
+    boolean normalized()
+    {
+        boolean result = normalized;
+        normalized = true;
+        return result;
     }
 
     private String buildQuery()

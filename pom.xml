@@ -18,12 +18,14 @@
     <jetty.url>http://www.eclipse.org/jetty</jetty.url>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <build-support.version>1.4</build-support.version>
+    <checkstyle.version>8.20</checkstyle.version>
     <slf4j.version>1.8.0-beta2</slf4j.version>
     <log4j2.version>2.11.2</log4j2.version>
     <logback.version>1.3.0-alpha4</logback.version>
     <spring-version>5.1.1.RELEASE</spring-version>
     <jetty-test-policy.version>1.2</jetty-test-policy.version>
-    <servlet.api.version>4.0.2</servlet.api.version>
+    <servlet.api.version>4.0.3</servlet.api.version>
+    <websocket.api.version>1.1.2</websocket.api.version>
     <jsp.version>9.0.29</jsp.version>
     <infinispan.version>9.4.8.Final</infinispan.version>
     <!-- default values are unsupported, but required to be defined for reactor sanity reasons -->
@@ -66,17 +68,17 @@
     <jackson-databind.version>2.9.9</jackson-databind.version>
     <localRepoPath>${project.build.directory}/local-repo</localRepoPath>
     <settingsPath>src/it/settings.xml</settingsPath>
-    <surefire.rerunFailingTestsCount>3</surefire.rerunFailingTestsCount>
+    <surefire.rerunFailingTestsCount>0</surefire.rerunFailingTestsCount>
   </properties>
 
   <licenses>
     <license>
-      <name>Apache Software License - Version 2.0</name>
-      <url>http://www.apache.org/licenses/LICENSE-2.0</url>
+      <name>Eclipse Public License - Version 2.0</name>
+      <url>https://www.eclipse.org/legal/epl-2.0</url>
     </license>
     <license>
-      <name>Eclipse Public License - Version 1.0</name>
-      <url>http://www.eclipse.org/org/documents/epl-v10.php</url>
+      <name>Apache Software License - Version 2.0</name>
+      <url>https://www.apache.org/licenses/LICENSE-2.0</url>
     </license>
   </licenses>
 
@@ -283,13 +285,14 @@
         <artifactId>maven-remote-resources-plugin</artifactId>
         <executions>
           <execution>
+            <id>copy-shared-resources</id>
             <phase>generate-resources</phase>
             <goals>
               <goal>process</goal>
             </goals>
             <configuration>
               <resourceBundles>
-                <resourceBundle>org.eclipse.jetty.toolchain:jetty-artifact-remote-resources:1.2</resourceBundle>
+                <resourceBundle>org.eclipse.jetty:build-resources:${project.version}</resourceBundle>
               </resourceBundles>
             </configuration>
           </execution>
@@ -331,7 +334,7 @@
           <aggregate>true</aggregate>
           <strictCheck>true</strictCheck>
           <properties>
-            <copyright-range>${project.inceptionYear}-2019</copyright-range>
+            <copyright-range>${project.inceptionYear}-2020</copyright-range>
           </properties>
         </configuration>
         <executions>
@@ -342,12 +345,14 @@
               <goal>check</goal>
             </goals>
             <configuration>
-              <header>header-template-java.txt</header>
+              <header>header-template.txt</header>
               <mapping>
                 <java>DOUBLESLASH_STYLE</java>
+                <adoc>DOUBLESLASH_STYLE</adoc>
               </mapping>
               <includes>
                 <include>**/*.java</include>
+                <include>**/*.adoc</include>
               </includes>
               <excludes>
                 <exclude>jetty-util/src/main/java/org/eclipse/jetty/util/security/UnixCrypt.java</exclude>
@@ -357,22 +362,6 @@
                 <exclude>jetty-infinispan/**</exclude>
                 <exclude>tests/test-sessions/test-infinispan-sessions/**</exclude>
               </excludes>
-            </configuration>
-          </execution>
-          <execution>
-            <id>check-doc-headers</id>
-            <phase>verify</phase>
-            <goals>
-              <goal>check</goal>
-            </goals>
-            <configuration>
-              <header>header-template-doc.txt</header>
-              <mapping>
-                <adoc>DOUBLESLASH_STYLE</adoc>
-              </mapping>
-              <includes>
-                <include>**/*.adoc</include>
-              </includes>
             </configuration>
           </execution>
         </executions>
@@ -416,6 +405,43 @@
           </execution>
         </executions>
       </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-checkstyle-plugin</artifactId>
+        <version>3.1.0</version>
+        <configuration>
+          <configLocation>jetty-checkstyle.xml</configLocation>
+          <includeTestSourceDirectory>true</includeTestSourceDirectory>
+          <violationSeverity>warning</violationSeverity>
+          <consoleOutput>true</consoleOutput>
+          <sourceDirectories>
+            <!-- only scan source directory (not generated, filtered, or copied source) -->
+            <sourceDirectory>${project.build.sourceDirectory}</sourceDirectory>
+            <sourceDirectory>${project.build.testSourceDirectory}</sourceDirectory>
+          </sourceDirectories>
+        </configuration>
+        <dependencies>
+          <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>build-resources</artifactId>
+            <version>${project.version}</version>
+          </dependency>
+          <dependency>
+            <groupId>com.puppycrawl.tools</groupId>
+            <artifactId>checkstyle</artifactId>
+            <version>${checkstyle.version}</version>
+          </dependency>
+        </dependencies>
+        <executions>
+          <execution>
+            <id>checkstyle-check</id>
+            <phase>validate</phase>
+            <goals>
+              <goal>check</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
 
     <pluginManagement>
@@ -439,29 +465,6 @@
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-checkstyle-plugin</artifactId>
-          <version>3.1.0</version>
-          <configuration>
-            <configLocation>jetty-checkstyle.xml</configLocation>
-            <suppressionsLocation>jetty-suppressions.xml</suppressionsLocation>
-            <suppressionsFileExpression>checkstyle.suppressions.file</suppressionsFileExpression>
-            <includeTestSourceDirectory>true</includeTestSourceDirectory>
-          </configuration>
-          <dependencies>
-            <dependency>
-              <groupId>org.eclipse.jetty</groupId>
-              <artifactId>build-resources</artifactId>
-              <version>${project.version}</version>
-            </dependency>
-            <dependency>
-              <groupId>com.puppycrawl.tools</groupId>
-              <artifactId>checkstyle</artifactId>
-              <version>8.20</version>
-            </dependency>
-          </dependencies>
-        </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-clean-plugin</artifactId>
           <version>3.1.0</version>
         </plugin>
@@ -473,6 +476,9 @@
             <source>${compiler.source}</source>
             <target>${compiler.target}</target>
             <release>${compiler.release}</release>
+            <compilerArgs>
+              <compilerArg>-Xlint:exports</compilerArg>
+            </compilerArgs>
           </configuration>
         </plugin>
         <plugin>
@@ -600,7 +606,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-remote-resources-plugin</artifactId>
-          <version>1.5</version>
+          <version>1.6.0</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -667,7 +673,7 @@
         <plugin>
           <groupId>org.eclipse.jetty.toolchain</groupId>
           <artifactId>jetty-version-maven-plugin</artifactId>
-          <version>2.5</version>
+          <version>2.6</version>
         </plugin>
         <plugin>
           <groupId>org.jacoco</groupId>
@@ -701,7 +707,7 @@
               <Bundle-DocURL>${jetty.url}</Bundle-DocURL>
               <Bundle-Vendor>Eclipse Jetty Project</Bundle-Vendor>
               <Bundle-Classpath>.</Bundle-Classpath>
-              <Bundle-Copyright>Copyright (c) 2008-2019 Mort Bay Consulting Pty. Ltd.</Bundle-Copyright>
+              <Bundle-Copyright>Copyright (c) 2008-2020 Mort Bay Consulting Pty Ltd and others.</Bundle-Copyright>
               <_provider-policy><![CDATA[$<range;[===,=+)>]]></_provider-policy>
               <_consumer-policy><![CDATA[$<range;[===,+)>]]></_consumer-policy>
               <_noee>true</_noee>
@@ -953,7 +959,7 @@
       <dependency>
         <groupId>org.eclipse.jetty.toolchain</groupId>
         <artifactId>jetty-javax-websocket-api</artifactId>
-        <version>1.1.1</version>
+        <version>${websocket.api.version}</version>
       </dependency>
       <dependency>
         <groupId>jakarta.annotation</groupId>
@@ -1286,6 +1292,7 @@
       <id>ci</id>
       <properties>
         <settingsPath>${env.GLOBAL_MVN_SETTINGS}</settingsPath>
+        <surefire.rerunFailingTestsCount>3</surefire.rerunFailingTestsCount>
       </properties>
       <modules>
         <module>aggregates/jetty-all</module>
@@ -1410,7 +1417,7 @@
         <repository>
           <id>jetty-snapshots</id>
           <name>jetty-snapshots</name>
-          <url>http://oss.sonatype.org/content/repositories/jetty-snapshots</url>
+          <url>https://oss.sonatype.org/content/repositories/jetty-snapshots</url>
           <snapshots>
             <enabled>true</enabled>
           </snapshots>

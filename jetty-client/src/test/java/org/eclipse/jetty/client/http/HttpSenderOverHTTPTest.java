@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.client.http;
@@ -63,7 +63,7 @@ public class HttpSenderOverHTTPTest
     }
 
     @Test
-    public void test_Send_NoRequestContent() throws Exception
+    public void testSendNoRequestContent() throws Exception
     {
         ByteArrayEndPoint endPoint = new ByteArrayEndPoint();
         HttpDestination destination = new DuplexHttpDestination(client, new Origin("http", "localhost", 8080));
@@ -97,7 +97,7 @@ public class HttpSenderOverHTTPTest
 
     @Test
     @DisabledIfSystemProperty(named = "env", matches = "ci") // TODO: SLOW, needs review
-    public void test_Send_NoRequestContent_IncompleteFlush() throws Exception
+    public void testSendNoRequestContentIncompleteFlush() throws Exception
     {
         ByteArrayEndPoint endPoint = new ByteArrayEndPoint("", 16);
         HttpDestination destination = new DuplexHttpDestination(client, new Origin("http", "localhost", 8080));
@@ -125,7 +125,7 @@ public class HttpSenderOverHTTPTest
     }
 
     @Test
-    public void test_Send_NoRequestContent_Exception() throws Exception
+    public void testSendNoRequestContentException() throws Exception
     {
         ByteArrayEndPoint endPoint = new ByteArrayEndPoint();
         // Shutdown output to trigger the exception on write
@@ -157,7 +157,7 @@ public class HttpSenderOverHTTPTest
     }
 
     @Test
-    public void test_Send_NoRequestContent_IncompleteFlush_Exception() throws Exception
+    public void testSendNoRequestContentIncompleteFlushException() throws Exception
     {
         ByteArrayEndPoint endPoint = new ByteArrayEndPoint("", 16);
         HttpDestination destination = new DuplexHttpDestination(client, new Origin("http", "localhost", 8080));
@@ -193,7 +193,7 @@ public class HttpSenderOverHTTPTest
     }
 
     @Test
-    public void test_Send_SmallRequestContent_InOneBuffer() throws Exception
+    public void testSendSmallRequestContentInOneBuffer() throws Exception
     {
         ByteArrayEndPoint endPoint = new ByteArrayEndPoint();
         HttpDestination destination = new DuplexHttpDestination(client, new Origin("http", "localhost", 8080));
@@ -228,7 +228,7 @@ public class HttpSenderOverHTTPTest
     }
 
     @Test
-    public void test_Send_SmallRequestContent_InTwoBuffers() throws Exception
+    public void testSendSmallRequestContentInTwoBuffers() throws Exception
     {
         ByteArrayEndPoint endPoint = new ByteArrayEndPoint();
         HttpDestination destination = new DuplexHttpDestination(client, new Origin("http", "localhost", 8080));
@@ -264,7 +264,7 @@ public class HttpSenderOverHTTPTest
     }
 
     @Test
-    public void test_Send_SmallRequestContent_Chunked_InTwoChunks() throws Exception
+    public void testSendSmallRequestContentChunkedInTwoChunks() throws Exception
     {
         ByteArrayEndPoint endPoint = new ByteArrayEndPoint();
         HttpDestination destination = new DuplexHttpDestination(client, new Origin("http", "localhost", 8080));
