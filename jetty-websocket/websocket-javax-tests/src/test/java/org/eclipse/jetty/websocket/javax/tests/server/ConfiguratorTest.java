@@ -585,7 +585,7 @@ public class ConfiguratorTest
      * @throws Exception on test failure
      */
     @Test
-    public void testProtocol_Single() throws Exception
+    public void testProtocolSingle() throws Exception
     {
         URI wsUri = server.getWsUri().resolve("/protocols");
         ProtocolsConfigurator.seenProtocols.set(null);
@@ -604,7 +604,7 @@ public class ConfiguratorTest
      * @throws Exception on test failure
      */
     @Test
-    public void testProtocol_Triple() throws Exception
+    public void testProtocolTriple() throws Exception
     {
         URI wsUri = server.getWsUri().resolve("/protocols");
         ProtocolsConfigurator.seenProtocols.set(null);
@@ -623,7 +623,7 @@ public class ConfiguratorTest
      * @throws Exception on test failure
      */
     @Test
-    public void testProtocol_LowercaseHeader() throws Exception
+    public void testProtocolLowercaseHeader() throws Exception
     {
         URI wsUri = server.getWsUri().resolve("/protocols");
         ProtocolsConfigurator.seenProtocols.set(null);
@@ -642,7 +642,7 @@ public class ConfiguratorTest
      * @throws Exception on test failure
      */
     @Test
-    public void testProtocol_AltHeaderCase() throws Exception
+    public void testProtocolAltHeaderCase() throws Exception
     {
         URI wsUri = server.getWsUri().resolve("/protocols");
         ProtocolsConfigurator.seenProtocols.set(null);

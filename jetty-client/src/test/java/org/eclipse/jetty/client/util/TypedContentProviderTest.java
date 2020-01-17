@@ -51,6 +51,7 @@ public class TypedContentProviderTest extends AbstractHttpClientServerTest
         final String value1 = "1";
         final String name2 = "b";
         final String value2 = "2";
+        // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
         final String value3 = "\u20AC";
 
         start(scenario, new AbstractHandler()

@@ -63,7 +63,7 @@ public class HttpSenderOverHTTPTest
     }
 
     @Test
-    public void test_Send_NoRequestContent() throws Exception
+    public void testSendNoRequestContent() throws Exception
     {
         ByteArrayEndPoint endPoint = new ByteArrayEndPoint();
         HttpDestination destination = new DuplexHttpDestination(client, new Origin("http", "localhost", 8080));
@@ -97,7 +97,7 @@ public class HttpSenderOverHTTPTest
 
     @Test
     @DisabledIfSystemProperty(named = "env", matches = "ci") // TODO: SLOW, needs review
-    public void test_Send_NoRequestContent_IncompleteFlush() throws Exception
+    public void testSendNoRequestContentIncompleteFlush() throws Exception
     {
         ByteArrayEndPoint endPoint = new ByteArrayEndPoint("", 16);
         HttpDestination destination = new DuplexHttpDestination(client, new Origin("http", "localhost", 8080));
@@ -125,7 +125,7 @@ public class HttpSenderOverHTTPTest
     }
 
     @Test
-    public void test_Send_NoRequestContent_Exception() throws Exception
+    public void testSendNoRequestContentException() throws Exception
     {
         ByteArrayEndPoint endPoint = new ByteArrayEndPoint();
         // Shutdown output to trigger the exception on write
@@ -157,7 +157,7 @@ public class HttpSenderOverHTTPTest
     }
 
     @Test
-    public void test_Send_NoRequestContent_IncompleteFlush_Exception() throws Exception
+    public void testSendNoRequestContentIncompleteFlushException() throws Exception
     {
         ByteArrayEndPoint endPoint = new ByteArrayEndPoint("", 16);
         HttpDestination destination = new DuplexHttpDestination(client, new Origin("http", "localhost", 8080));
@@ -193,7 +193,7 @@ public class HttpSenderOverHTTPTest
     }
 
     @Test
-    public void test_Send_SmallRequestContent_InOneBuffer() throws Exception
+    public void testSendSmallRequestContentInOneBuffer() throws Exception
     {
         ByteArrayEndPoint endPoint = new ByteArrayEndPoint();
         HttpDestination destination = new DuplexHttpDestination(client, new Origin("http", "localhost", 8080));
@@ -228,7 +228,7 @@ public class HttpSenderOverHTTPTest
     }
 
     @Test
-    public void test_Send_SmallRequestContent_InTwoBuffers() throws Exception
+    public void testSendSmallRequestContentInTwoBuffers() throws Exception
     {
         ByteArrayEndPoint endPoint = new ByteArrayEndPoint();
         HttpDestination destination = new DuplexHttpDestination(client, new Origin("http", "localhost", 8080));
@@ -264,7 +264,7 @@ public class HttpSenderOverHTTPTest
     }
 
     @Test
-    public void test_Send_SmallRequestContent_Chunked_InTwoChunks() throws Exception
+    public void testSendSmallRequestContentChunkedInTwoChunks() throws Exception
     {
         ByteArrayEndPoint endPoint = new ByteArrayEndPoint();
         HttpDestination destination = new DuplexHttpDestination(client, new Origin("http", "localhost", 8080));

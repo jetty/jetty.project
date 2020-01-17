@@ -65,7 +65,7 @@ public class ParserReservedBitTest
      * @throws Exception on test failure
      */
     @Test
-    public void testCase3_1()
+    public void testCase31()
     {
         List<Frame> send = new ArrayList<>();
         send.add(new Frame(OpCode.TEXT).setPayload("small").setRsv1(true)); // intentionally bad
@@ -82,7 +82,7 @@ public class ParserReservedBitTest
      * @throws Exception on test failure
      */
     @Test
-    public void testCase3_2()
+    public void testCase32()
     {
         List<Frame> send = new ArrayList<>();
         send.add(new Frame(OpCode.TEXT).setPayload("small"));
@@ -101,7 +101,7 @@ public class ParserReservedBitTest
      * @throws Exception on test failure
      */
     @Test
-    public void testCase3_3()
+    public void testCase33()
     {
         List<Frame> send = new ArrayList<>();
         send.add(new Frame(OpCode.TEXT).setPayload("small"));
@@ -120,7 +120,7 @@ public class ParserReservedBitTest
      * @throws Exception on test failure
      */
     @Test
-    public void testCase3_4()
+    public void testCase34()
     {
         List<Frame> send = new ArrayList<>();
         send.add(new Frame(OpCode.TEXT).setPayload("small"));
@@ -139,7 +139,7 @@ public class ParserReservedBitTest
      * @throws Exception on test failure
      */
     @Test
-    public void testCase3_5()
+    public void testCase35()
     {
         byte[] payload = new byte[8];
         Arrays.fill(payload, (byte)0xFF);
@@ -159,7 +159,7 @@ public class ParserReservedBitTest
      * @throws Exception on test failure
      */
     @Test
-    public void testCase3_6()
+    public void testCase36()
     {
         byte[] payload = new byte[8];
         Arrays.fill(payload, (byte)0xFF);
@@ -179,7 +179,7 @@ public class ParserReservedBitTest
      * @throws Exception on test failure
      */
     @Test
-    public void testCase3_7()
+    public void testCase37()
     {
         List<Frame> send = new ArrayList<>();
         Frame frame = CloseStatus.toFrame(1000);

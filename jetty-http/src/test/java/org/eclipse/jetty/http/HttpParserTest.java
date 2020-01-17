@@ -48,6 +48,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+// @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
 public class HttpParserTest
 {
     /**
@@ -69,16 +70,16 @@ public class HttpParserTest
         int remaining = buffer.remaining();
         while (!parser.isState(State.END) && remaining > 0)
         {
-            int was_remaining = remaining;
+            int wasRemaining = remaining;
             parser.parseNext(buffer);
             remaining = buffer.remaining();
-            if (remaining == was_remaining)
+            if (remaining == wasRemaining)
                 break;
         }
     }
 
     @Test
-    public void HttpMethodTest()
+    public void testHttpMethod()
     {
         assertNull(HttpMethod.lookAheadGet(BufferUtil.toBuffer("Wibble ")));
         assertNull(HttpMethod.lookAheadGet(BufferUtil.toBuffer("GET")));
@@ -1488,7 +1489,7 @@ public class HttpParserTest
     }
 
     @Test
-    public void testResponseReasonIso8859_1()
+    public void testResponseReasonIso88591()
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
             "HTTP/1.1 302 déplacé temporairement\r\n" +

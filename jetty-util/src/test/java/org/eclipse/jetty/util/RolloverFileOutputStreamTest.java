@@ -86,7 +86,7 @@ public class RolloverFileOutputStreamTest
      * <a href="Issue #1507">https://github.com/eclipse/jetty.project/issues/1507</a>
      */
     @Test
-    public void testMidnightRolloverCalc_PDT_Issue1507()
+    public void testMidnightRolloverCalcPDTIssue1507()
     {
         ZoneId zone = toZoneId("PST");
         ZonedDateTime initialDate = toDateTime("2017.04.26-08:00:00.0 PM PDT", zone);
@@ -107,7 +107,7 @@ public class RolloverFileOutputStreamTest
     }
 
     @Test
-    public void testMidnightRolloverCalc_PST_DST_Start()
+    public void testMidnightRolloverCalcPSTDSTStart()
     {
         ZoneId zone = toZoneId("PST");
         ZonedDateTime initialDate = toDateTime("2016.03.10-01:23:45.0 PM PST", zone);
@@ -127,7 +127,7 @@ public class RolloverFileOutputStreamTest
     }
 
     @Test
-    public void testMidnightRolloverCalc_PST_DST_End()
+    public void testMidnightRolloverCalcPSTDSTEnd()
     {
         ZoneId zone = toZoneId("PST");
         ZonedDateTime initialDate = toDateTime("2016.11.03-11:22:33.0 AM PDT", zone);
@@ -147,7 +147,7 @@ public class RolloverFileOutputStreamTest
     }
 
     @Test
-    public void testMidnightRolloverCalc_Sydney_DST_Start()
+    public void testMidnightRolloverCalcSydneyDSTStart()
     {
         ZoneId zone = toZoneId("Australia/Sydney");
         ZonedDateTime initialDate = toDateTime("2016.09.31-01:23:45.0 PM AEST", zone);
@@ -167,7 +167,7 @@ public class RolloverFileOutputStreamTest
     }
 
     @Test
-    public void testMidnightRolloverCalc_Sydney_DST_End()
+    public void testMidnightRolloverCalcSydneyDSTEnd()
     {
         ZoneId zone = toZoneId("Australia/Sydney");
         ZonedDateTime initialDate = toDateTime("2016.04.01-11:22:33.0 AM AEDT", zone);

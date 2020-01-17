@@ -87,7 +87,7 @@ public class ProxyProtocolTest
     }
 
     @Test
-    public void test_PROXY_GET_v1() throws Exception
+    public void testProxyGetV1() throws Exception
     {
         startServer(new AbstractHandler()
         {
@@ -139,7 +139,7 @@ public class ProxyProtocolTest
     }
 
     @Test
-    public void test_PROXY_GET_v2() throws Exception
+    public void testProxyGetV2() throws Exception
     {
         startServer(new AbstractHandler()
         {

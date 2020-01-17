@@ -32,7 +32,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class JavaxWebSocketFrameHandler_BadSignaturesTest extends AbstractJavaxWebSocketFrameHandlerTest
+public class JavaxWebSocketFrameHandlerBadSignaturesTest extends AbstractJavaxWebSocketFrameHandlerTest
 {
     private void assertBadSocket(Object socket, String expectedString) throws Exception
     {

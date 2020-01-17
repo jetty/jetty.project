@@ -81,6 +81,7 @@ public class DelayedServerTest extends HttpServerTestBase
                 }
                 catch (InterruptedException ignored)
                 {
+                    // ignored
                 }
                 finally
                 {
@@ -100,6 +101,7 @@ public class DelayedServerTest extends HttpServerTestBase
                 }
                 catch (InterruptedException ignored)
                 {
+                    // ignored
                 }
                 finally
                 {

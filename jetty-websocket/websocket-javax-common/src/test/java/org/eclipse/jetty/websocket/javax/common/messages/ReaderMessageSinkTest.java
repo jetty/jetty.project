@@ -40,7 +40,7 @@ import static org.hamcrest.Matchers.is;
 public class ReaderMessageSinkTest extends AbstractMessageSinkTest
 {
     @Test
-    public void testReader_1_Frame() throws InterruptedException, ExecutionException, TimeoutException
+    public void testReader1Frame() throws InterruptedException, ExecutionException, TimeoutException
     {
         CompletableFuture<StringWriter> copyFuture = new CompletableFuture<>();
         ReaderCopy copy = new ReaderCopy(copyFuture);
@@ -57,7 +57,7 @@ public class ReaderMessageSinkTest extends AbstractMessageSinkTest
     }
 
     @Test
-    public void testReader_3_Frames() throws InterruptedException, ExecutionException, TimeoutException
+    public void testReader3Frames() throws InterruptedException, ExecutionException, TimeoutException
     {
         CompletableFuture<StringWriter> copyFuture = new CompletableFuture<>();
         ReaderCopy copy = new ReaderCopy(copyFuture);

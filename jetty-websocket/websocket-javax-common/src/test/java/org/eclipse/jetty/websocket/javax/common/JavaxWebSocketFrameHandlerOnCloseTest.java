@@ -35,7 +35,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
 
-public class JavaxWebSocketFrameHandler_OnCloseTest extends AbstractJavaxWebSocketFrameHandlerTest
+public class JavaxWebSocketFrameHandlerOnCloseTest extends AbstractJavaxWebSocketFrameHandlerTest
 {
     private static final String EXPECTED_REASON = "CloseReason[1000,Normal]";
 

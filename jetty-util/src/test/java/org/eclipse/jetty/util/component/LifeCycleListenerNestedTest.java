@@ -176,7 +176,7 @@ public class LifeCycleListenerNestedTest
     }
 
     @Test
-    public void testAddBean_AddListener_Start() throws Exception
+    public void testAddBeanAddListenerStart() throws Exception
     {
         Foo foo = new Foo();
         Bar bara = new Bar("a");
@@ -211,7 +211,7 @@ public class LifeCycleListenerNestedTest
     }
 
     @Test
-    public void testAddListener_AddBean_Start() throws Exception
+    public void testAddListenerAddBeanStart() throws Exception
     {
         Foo foo = new Foo();
 
@@ -247,7 +247,7 @@ public class LifeCycleListenerNestedTest
     }
 
     @Test
-    public void testAddListener_Start_AddBean() throws Exception
+    public void testAddListenerStartAddBean() throws Exception
     {
         Foo foo = new Foo();
         Bar bara = new Bar("a");

@@ -79,49 +79,49 @@ public class ReflectUtilsTest
     }
 
     @Test
-    public void testFindGeneric_PearFruit()
+    public void testFindGenericPearFruit()
     {
         assertFindGenericClass(Pear.class, Fruit.class, String.class);
     }
 
     @Test
-    public void testFindGeneric_PizzaFruit()
+    public void testFindGenericPizzaFruit()
     {
         assertFindGenericClass(Pizza.class, Fruit.class, Integer.class);
     }
 
     @Test
-    public void testFindGeneric_KiwiFruit()
+    public void testFindGenericKiwiFruit()
     {
         assertFindGenericClass(Kiwi.class, Fruit.class, Character.class);
     }
 
     @Test
-    public void testFindGeneric_PearColor()
+    public void testFindGenericPearColor()
     {
         assertFindGenericClass(Pear.class, Color.class, Double.class);
     }
 
     @Test
-    public void testFindGeneric_GrannySmithFruit()
+    public void testFindGenericGrannySmithFruit()
     {
         assertFindGenericClass(GrannySmith.class, Fruit.class, Long.class);
     }
 
     @Test
-    public void testFindGeneric_CavendishFruit()
+    public void testFindGenericCavendishFruit()
     {
         assertFindGenericClass(Cavendish.class, Fruit.class, String.class);
     }
 
     @Test
-    public void testFindGeneric_RainierFruit()
+    public void testFindGenericRainierFruit()
     {
         assertFindGenericClass(Rainier.class, Fruit.class, Short.class);
     }
 
     @Test
-    public void testFindGeneric_WashingtonFruit()
+    public void testFindGenericWashingtonFruit()
     {
         // Washington does not have a concrete implementation
         // of the Fruit interface, this should return null

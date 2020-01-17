@@ -99,113 +99,113 @@ public class AvailableEncodersTest
     }
 
     @Test
-    public void testCoreEncoder_Boolean() throws IllegalAccessException, InstantiationException, EncodeException
+    public void testCoreEncoderBoolean() throws IllegalAccessException, InstantiationException, EncodeException
     {
         assertTextEncoder(Boolean.class, Boolean.TRUE, "true");
     }
 
     @Test
-    public void testCoreEncoder_bool() throws IllegalAccessException, InstantiationException, EncodeException
+    public void testCoreEncoderbool() throws IllegalAccessException, InstantiationException, EncodeException
     {
         assertTextEncoder(Boolean.TYPE, true, "true");
     }
 
     @Test
-    public void testCoreEncoder_Byte() throws IllegalAccessException, InstantiationException, EncodeException
+    public void testCoreEncoderByte() throws IllegalAccessException, InstantiationException, EncodeException
     {
         assertTextEncoder(Byte.class, (byte)0x21, "33");
     }
 
     @Test
-    public void testCoreEncoder_byte() throws IllegalAccessException, InstantiationException, EncodeException
+    public void testCoreEncoderbyte() throws IllegalAccessException, InstantiationException, EncodeException
     {
         assertTextEncoder(Byte.TYPE, (byte)0x21, "33");
     }
 
     @Test
-    public void testCoreEncoder_Character() throws IllegalAccessException, InstantiationException, EncodeException
+    public void testCoreEncoderCharacter() throws IllegalAccessException, InstantiationException, EncodeException
     {
         assertTextEncoder(Character.class, '!', "!");
     }
 
     @Test
-    public void testCoreEncoder_char() throws IllegalAccessException, InstantiationException, EncodeException
+    public void testCoreEncoderchar() throws IllegalAccessException, InstantiationException, EncodeException
     {
         assertTextEncoder(Character.TYPE, '!', "!");
     }
 
     @Test
-    public void testCoreEncoder_Double() throws IllegalAccessException, InstantiationException, EncodeException
+    public void testCoreEncoderDouble() throws IllegalAccessException, InstantiationException, EncodeException
     {
         assertTextEncoder(Double.class, 123.45D, "123.45");
     }
 
     @Test
-    public void testCoreEncoder_double() throws IllegalAccessException, InstantiationException, EncodeException
+    public void testCoreEncoderdouble() throws IllegalAccessException, InstantiationException, EncodeException
     {
         //noinspection RedundantCast
         assertTextEncoder(Double.TYPE, 123.45D, "123.45");
     }
 
     @Test
-    public void testCoreEncoder_Float() throws IllegalAccessException, InstantiationException, EncodeException
+    public void testCoreEncoderFloat() throws IllegalAccessException, InstantiationException, EncodeException
     {
         assertTextEncoder(Float.class, 123.4567f, "123.4567");
     }
 
     @Test
-    public void testCoreEncoder_float() throws IllegalAccessException, InstantiationException, EncodeException
+    public void testCoreEncoderfloat() throws IllegalAccessException, InstantiationException, EncodeException
     {
         //noinspection RedundantCast
         assertTextEncoder(Float.TYPE, 123.4567F, "123.4567");
     }
 
     @Test
-    public void testCoreEncoder_Integer() throws IllegalAccessException, InstantiationException, EncodeException
+    public void testCoreEncoderInteger() throws IllegalAccessException, InstantiationException, EncodeException
     {
         assertTextEncoder(Integer.class, 123, "123");
     }
 
     @Test
-    public void testCoreEncoder_int() throws IllegalAccessException, InstantiationException, EncodeException
+    public void testCoreEncoderint() throws IllegalAccessException, InstantiationException, EncodeException
     {
         assertTextEncoder(Integer.TYPE, 123, "123");
     }
 
     @Test
-    public void testCoreEncoder_Long() throws IllegalAccessException, InstantiationException, EncodeException
+    public void testCoreEncoderLong() throws IllegalAccessException, InstantiationException, EncodeException
     {
         assertTextEncoder(Long.class, 123_456_789L, "123456789");
     }
 
     @Test
-    public void testCoreEncoder_long() throws IllegalAccessException, InstantiationException, EncodeException
+    public void testCoreEncoderlong() throws IllegalAccessException, InstantiationException, EncodeException
     {
         assertTextEncoder(Long.TYPE, 123_456_789L, "123456789");
     }
 
     @Test
-    public void testCoreEncoder_String() throws IllegalAccessException, InstantiationException, EncodeException
+    public void testCoreEncoderString() throws IllegalAccessException, InstantiationException, EncodeException
     {
         assertTextEncoder(String.class, "Hello World", "Hello World");
     }
 
     @Test
-    public void testCoreEncoder_ByteBuffer() throws IllegalAccessException, InstantiationException, EncodeException
+    public void testCoreEncoderByteBuffer() throws IllegalAccessException, InstantiationException, EncodeException
     {
         ByteBuffer buf = Hex.asByteBuffer("1122334455");
         assertBinaryEncoder(ByteBuffer.class, buf, "1122334455");
     }
 
     @Test
-    public void testCoreEncoder_ByteArray() throws IllegalAccessException, InstantiationException, EncodeException
+    public void testCoreEncoderByteArray() throws IllegalAccessException, InstantiationException, EncodeException
     {
         byte[] buf = Hex.asByteArray("998877665544332211");
         assertBinaryEncoder(byte[].class, buf, "998877665544332211");
     }
 
     @Test
-    public void testCustomEncoder_Integer() throws IllegalAccessException, InstantiationException, EncodeException
+    public void testCustomEncoderInteger() throws IllegalAccessException, InstantiationException, EncodeException
     {
         encoders.register(IntegerEncoder.class);
         int val = 99887766;
@@ -214,7 +214,7 @@ public class AvailableEncodersTest
     }
 
     @Test
-    public void testCustomEncoder_Time() throws IllegalAccessException, InstantiationException, EncodeException, IOException
+    public void testCustomEncoderTime() throws IllegalAccessException, InstantiationException, EncodeException, IOException
     {
         encoders.register(TimeEncoder.class);
 
@@ -229,7 +229,7 @@ public class AvailableEncodersTest
     }
 
     @Test
-    public void testCustomEncoder_Date() throws IllegalAccessException, InstantiationException, EncodeException, IOException
+    public void testCustomEncoderDate() throws IllegalAccessException, InstantiationException, EncodeException, IOException
     {
         encoders.register(DateEncoder.class);
 
@@ -244,7 +244,7 @@ public class AvailableEncodersTest
     }
 
     @Test
-    public void testCustomEncoder_DateTime() throws IllegalAccessException, InstantiationException, EncodeException, IOException
+    public void testCustomEncoderDateTime() throws IllegalAccessException, InstantiationException, EncodeException, IOException
     {
         encoders.register(DateTimeEncoder.class);
 
@@ -263,14 +263,14 @@ public class AvailableEncodersTest
     }
 
     @Test
-    public void testCustomEncoder_ValidDual_Text() throws IllegalAccessException, InstantiationException, EncodeException, IOException
+    public void testCustomEncoderValidDualText() throws IllegalAccessException, InstantiationException, EncodeException, IOException
     {
         encoders.register(ValidDualEncoder.class);
         assertTextEncoder(Integer.class, 1234567, "[1,234,567]");
     }
 
     @Test
-    public void testCustomEncoder_ValidDual_Binary() throws IllegalAccessException, InstantiationException, EncodeException, IOException
+    public void testCustomEncoderValidDualBinary() throws IllegalAccessException, InstantiationException, EncodeException, IOException
     {
         encoders.register(ValidDualEncoder.class);
         long value = 0x112233445566L;
@@ -278,7 +278,7 @@ public class AvailableEncodersTest
     }
 
     @Test
-    public void testCustomEncoder_Register_Duplicate()
+    public void testCustomEncoderRegisterDuplicate()
     {
         // has duplicated support for the same target Type
         Exception e = assertThrows(InvalidWebSocketException.class, () -> encoders.register(BadDualEncoder.class));
@@ -286,7 +286,7 @@ public class AvailableEncodersTest
     }
 
     @Test
-    public void testCustomEncoder_Register_OtherDuplicate()
+    public void testCustomEncoderRegisterOtherDuplicate()
     {
         // Register DateEncoder (decodes java.util.Date)
         encoders.register(DateEncoder.class);

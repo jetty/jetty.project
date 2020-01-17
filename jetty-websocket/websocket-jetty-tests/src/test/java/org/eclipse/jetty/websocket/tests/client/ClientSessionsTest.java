@@ -95,7 +95,7 @@ public class ClientSessionsTest
     }
 
     @Test
-    public void testBasicEcho_FromClient() throws Exception
+    public void testBasicEchoFromClient() throws Exception
     {
         WebSocketClient client = new WebSocketClient();
 

@@ -71,7 +71,7 @@ public class DateCacheTest
     }
 
     @Test
-    public void test_all_methods()
+    public void testAllMethods()
     {
         // we simply check we do not have any exception
         DateCache dateCache = new DateCache();

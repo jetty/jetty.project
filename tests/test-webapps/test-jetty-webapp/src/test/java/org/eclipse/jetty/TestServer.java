@@ -66,11 +66,11 @@ public class TestServer
         ((StdErrLog)Log.getLog()).setSource(false);
 
         // TODO don't depend on this file structure
-        Path jetty_root = FileSystems.getDefault().getPath(".").toAbsolutePath().normalize();
-        if (!Files.exists(jetty_root.resolve("VERSION.txt")))
-            jetty_root = FileSystems.getDefault().getPath("../../..").toAbsolutePath().normalize();
-        if (!Files.exists(jetty_root.resolve("VERSION.txt")))
-            throw new IllegalArgumentException(jetty_root.toString());
+        Path jettyRoot = FileSystems.getDefault().getPath(".").toAbsolutePath().normalize();
+        if (!Files.exists(jettyRoot.resolve("VERSION.txt")))
+            jettyRoot = FileSystems.getDefault().getPath("../../..").toAbsolutePath().normalize();
+        if (!Files.exists(jettyRoot.resolve("VERSION.txt")))
+            throw new IllegalArgumentException(jettyRoot.toString());
 
         // Setup Threadpool
         QueuedThreadPool threadPool = new QueuedThreadPool();
@@ -115,7 +115,7 @@ public class TestServer
         // Setup context
         HashLoginService login = new HashLoginService();
         login.setName("Test Realm");
-        login.setConfig(jetty_root.resolve("tests/test-webapps/test-jetty-webapp/src/main/config/demo-base/etc/realm.properties").toString());
+        login.setConfig(jettyRoot.resolve("tests/test-webapps/test-jetty-webapp/src/main/config/demo-base/etc/realm.properties").toString());
         server.addBean(login);
 
         File log = File.createTempFile("jetty-yyyy_mm_dd", "log");
@@ -127,7 +127,7 @@ public class TestServer
         WebAppContext webapp = new WebAppContext();
         webapp.setContextPath("/test");
         webapp.setParentLoaderPriority(true);
-        webapp.setResourceBase(jetty_root.resolve("tests/test-webapps/test-jetty-webapp/src/main/webapp").toString());
+        webapp.setResourceBase(jettyRoot.resolve("tests/test-webapps/test-jetty-webapp/src/main/webapp").toString());
         webapp.setAttribute(MetaInfConfiguration.CONTAINER_JAR_PATTERN,
             ".*/test-jetty-webapp/target/classes.*$|" +
                 ".*/jetty-servlet-api-[^/]*\\.jar$|.*/javax.servlet.jsp.jstl-.*\\.jar$|.*/org.apache.taglibs.taglibs-standard-impl-.*\\.jar$"
@@ -148,7 +148,7 @@ public class TestServer
         contexts.addHandler(webapp);
 
         ContextHandler srcroot = new ContextHandler();
-        srcroot.setResourceBase(jetty_root.resolve("tests/test-webapps/test-jetty-webapp/src").toString());
+        srcroot.setResourceBase(jettyRoot.resolve("tests/test-webapps/test-jetty-webapp/src").toString());
         srcroot.setHandler(new ResourceHandler());
         srcroot.setContextPath("/src");
         contexts.addHandler(srcroot);

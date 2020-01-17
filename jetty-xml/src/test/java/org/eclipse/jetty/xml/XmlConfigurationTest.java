@@ -1112,7 +1112,7 @@ public class XmlConfigurationTest
     }
 
     @Test
-    public void testJettyStandardIdsAndProperties_JettyWebappsUri() throws Exception
+    public void testJettyStandardIdsAndPropertiesJettyWebappsUri() throws Exception
     {
         Path war = MavenTestingUtils.getTargetPath("no.war");
         XmlConfiguration configuration =

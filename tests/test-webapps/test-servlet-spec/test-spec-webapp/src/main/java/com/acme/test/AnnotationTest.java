@@ -186,6 +186,17 @@ public class AnnotationTest extends HttpServlet
             out.println("<body>");
             out.println("<h1>Results</h1>");
 
+            out.println("<h2>Context Defaults</h2>");
+            out.println("<p><b>default-context-path: " +
+                (request.getServletContext().getAttribute("default-context-path") != null ? "<span class=\"pass\">PASS" : "<span class=\"fail\">FAIL") +
+                "</span></p>");
+            out.println("<p><b>request-character-encoding: " +
+                ("utf-8".equals(request.getServletContext().getAttribute("request-character-encoding")) ? "<span class=\"pass\">PASS" : "<span class=\"fail\">FAIL") +
+                "</span></p>");
+            out.println("<p><b>response-character-encoding: " +
+                ("utf-8".equals(request.getServletContext().getAttribute("response-character-encoding")) ? "<span class=\"pass\">PASS" : "<span class=\"fail\">FAIL") +
+                "</span></p>");
+
             out.println("<h2>Init Params from Annotation</h2>");
             out.println("<pre>");
             out.println("initParams={@WebInitParam(name=\"fromAnnotation\", value=\"xyz\")}");

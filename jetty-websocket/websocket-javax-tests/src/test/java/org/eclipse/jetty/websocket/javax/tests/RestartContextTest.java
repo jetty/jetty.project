@@ -56,7 +56,7 @@ public class RestartContextTest
     }
 
     @Test
-    public void testStartStopStart_ServletContextListener() throws Exception
+    public void testStartStopStartServletContextListener() throws Exception
     {
         server = new Server();
 
@@ -96,7 +96,7 @@ public class RestartContextTest
     }
 
     @Test
-    public void testStartStopStart_Configurator() throws Exception
+    public void testStartStopStartConfigurator() throws Exception
     {
         server = new Server();
 

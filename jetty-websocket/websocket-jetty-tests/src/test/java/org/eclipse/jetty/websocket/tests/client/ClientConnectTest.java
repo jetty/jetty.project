@@ -185,7 +185,7 @@ public class ClientConnectTest
     }
 
     @Test
-    public void testUpgradeRequest_PercentEncodedQuery() throws Exception
+    public void testUpgradeRequestPercentEncodedQuery() throws Exception
     {
         CloseTrackingEndpoint cliSock = new CloseTrackingEndpoint();
         client.setIdleTimeout(Duration.ofSeconds(10));
@@ -249,7 +249,7 @@ public class ClientConnectTest
     }
 
     @Test
-    public void testBadHandshake_GetOK() throws Exception
+    public void testBadHandshakeGetOK() throws Exception
     {
         CloseTrackingEndpoint cliSock = new CloseTrackingEndpoint();
 
@@ -267,7 +267,7 @@ public class ClientConnectTest
     }
 
     @Test
-    public void testBadHandshake_GetOK_WithSecWebSocketAccept() throws Exception
+    public void testBadHandshakeGetOKWithSecWebSocketAccept() throws Exception
     {
         CloseTrackingEndpoint cliSock = new CloseTrackingEndpoint();
 
@@ -285,7 +285,7 @@ public class ClientConnectTest
     }
 
     @Test
-    public void testBadHandshake_SwitchingProtocols_InvalidConnectionHeader() throws Exception
+    public void testBadHandshakeSwitchingProtocolsInvalidConnectionHeader() throws Exception
     {
         CloseTrackingEndpoint cliSock = new CloseTrackingEndpoint();
 
@@ -303,7 +303,7 @@ public class ClientConnectTest
     }
 
     @Test
-    public void testBadHandshake_SwitchingProtocols_NoConnectionHeader() throws Exception
+    public void testBadHandshakeSwitchingProtocolsNoConnectionHeader() throws Exception
     {
         CloseTrackingEndpoint cliSock = new CloseTrackingEndpoint();
 
@@ -403,7 +403,7 @@ public class ClientConnectTest
     }
 
     @Test
-    public void testConnectionTimeout_Concurrent() throws Exception
+    public void testConnectionTimeoutConcurrent() throws Exception
     {
         client.setConnectTimeout(1000);
         client.setIdleTimeout(Duration.ofSeconds(1));

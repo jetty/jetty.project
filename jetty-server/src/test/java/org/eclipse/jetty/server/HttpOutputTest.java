@@ -878,6 +878,7 @@ public class HttpOutputTest
                 response.setCharacterEncoding("UTF8");
                 HttpOutput out = (HttpOutput)response.getOutputStream();
 
+                // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
                 exp.print("\u20AC\u0939\uD55C");
                 out.print("\u20AC\u0939\uD55C");
                 exp.print("zero");

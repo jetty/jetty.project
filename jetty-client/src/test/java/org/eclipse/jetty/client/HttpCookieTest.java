@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.client;
 
-import java.io.IOException;
 import java.net.HttpCookie;
 import java.net.URI;
 import java.util.Arrays;
@@ -27,7 +26,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import javax.servlet.ServletException;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -52,14 +50,14 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_CookieIsStored(Scenario scenario) throws Exception
+    public void testCookieIsStored(Scenario scenario) throws Exception
     {
         final String name = "foo";
         final String value = "bar";
         start(scenario, new EmptyServerHandler()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
             {
                 response.addCookie(new Cookie(name, value));
             }
@@ -82,14 +80,14 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_CookieIsSent(Scenario scenario) throws Exception
+    public void testCookieIsSent(Scenario scenario) throws Exception
     {
         final String name = "foo";
         final String value = "bar";
         start(scenario, new EmptyServerHandler()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
             {
                 Cookie[] cookies = request.getCookies();
                 assertNotNull(cookies);
@@ -113,12 +111,12 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_CookieWithoutValue(Scenario scenario) throws Exception
+    public void testCookieWithoutValue(Scenario scenario) throws Exception
     {
         start(scenario, new EmptyServerHandler()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
             {
                 response.addHeader("Set-Cookie", "");
             }
@@ -133,14 +131,14 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_PerRequestCookieIsSent(Scenario scenario) throws Exception
+    public void testPerRequestCookieIsSent(Scenario scenario) throws Exception
     {
         final String name = "foo";
         final String value = "bar";
         start(scenario, new EmptyServerHandler()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
             {
                 Cookie[] cookies = request.getCookies();
                 assertNotNull(cookies);
@@ -161,7 +159,7 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_SetCookieWithoutPath_RequestURIWithOneSegment(Scenario scenario) throws Exception
+    public void testSetCookieWithoutPathRequestURIWithOneSegment(Scenario scenario) throws Exception
     {
         String headerName = "X-Request";
         String cookieName = "a";
@@ -169,7 +167,7 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
         start(scenario, new EmptyServerHandler()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
             {
                 int r = request.getIntHeader(headerName);
                 if ("/foo".equals(target) && r == 0)
@@ -217,7 +215,7 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_SetCookieWithoutPath_RequestURIWithTwoSegments(Scenario scenario) throws Exception
+    public void testSetCookieWithoutPathRequestURIWithTwoSegments(Scenario scenario) throws Exception
     {
         String headerName = "X-Request";
         String cookieName = "a";
@@ -225,7 +223,7 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
         start(scenario, new EmptyServerHandler()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
             {
                 int r = request.getIntHeader(headerName);
                 if ("/foo/bar".equals(target) && r == 0)
@@ -278,7 +276,7 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_SetCookieWithLongerPath(Scenario scenario) throws Exception
+    public void testSetCookieWithLongerPath(Scenario scenario) throws Exception
     {
         String headerName = "X-Request";
         String cookieName = "a";
@@ -286,7 +284,7 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
         start(scenario, new EmptyServerHandler()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
             {
                 int r = request.getIntHeader(headerName);
                 if ("/foo".equals(target) && r == 0)
@@ -339,7 +337,7 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_SetCookieWithShorterPath(Scenario scenario) throws Exception
+    public void testSetCookieWithShorterPath(Scenario scenario) throws Exception
     {
         String headerName = "X-Request";
         String cookieName = "a";
@@ -347,7 +345,7 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
         start(scenario, new EmptyServerHandler()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
             {
                 int r = request.getIntHeader(headerName);
                 if ("/foo/bar".equals(target) && r == 0)
@@ -400,7 +398,7 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_TwoSetCookieWithSameNameSamePath(Scenario scenario) throws Exception
+    public void testTwoSetCookieWithSameNameSamePath(Scenario scenario) throws Exception
     {
         String headerName = "X-Request";
         String cookieName = "a";
@@ -409,7 +407,7 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
         start(scenario, new EmptyServerHandler()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
             {
                 int r = request.getIntHeader(headerName);
                 if ("/foo".equals(target) && r == 0)
@@ -463,7 +461,7 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_TwoSetCookieWithSameNameDifferentPath(Scenario scenario) throws Exception
+    public void testTwoSetCookieWithSameNameDifferentPath(Scenario scenario) throws Exception
     {
         String headerName = "X-Request";
         String cookieName = "a";
@@ -472,7 +470,7 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
         start(scenario, new EmptyServerHandler()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
             {
                 int r = request.getIntHeader(headerName);
                 if ("/foo".equals(target) && r == 0)
@@ -533,7 +531,7 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_TwoSetCookieWithSameNamePath1PrefixOfPath2(Scenario scenario) throws Exception
+    public void testTwoSetCookieWithSameNamePath1PrefixOfPath2(Scenario scenario) throws Exception
     {
         String headerName = "X-Request";
         String cookieName = "a";
@@ -542,7 +540,7 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
         start(scenario, new EmptyServerHandler()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
             {
                 int r = request.getIntHeader(headerName);
                 if ("/foo".equals(target) && r == 0)
@@ -606,7 +604,7 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_CookiePathWithTrailingSlash(Scenario scenario) throws Exception
+    public void testCookiePathWithTrailingSlash(Scenario scenario) throws Exception
     {
         String headerName = "X-Request";
         String cookieName = "a";
@@ -614,7 +612,7 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
         start(scenario, new EmptyServerHandler()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
             {
                 int r = request.getIntHeader(headerName);
                 if ("/foo/bar".equals(target) && r == 0)

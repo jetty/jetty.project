@@ -39,7 +39,7 @@ import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class JavaxWebSocketFrameHandler_OnMessage_TextTest extends AbstractJavaxWebSocketFrameHandlerTest
+public class JavaxWebSocketFrameHandlerOnMessageTextTest extends AbstractJavaxWebSocketFrameHandlerTest
 {
     private void onText(TrackingSocket socket, String msg) throws Exception
     {

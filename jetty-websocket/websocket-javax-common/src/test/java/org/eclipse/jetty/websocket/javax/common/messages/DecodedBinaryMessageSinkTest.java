@@ -44,7 +44,7 @@ public class DecodedBinaryMessageSinkTest extends AbstractMessageSinkTest
     public static final TimeZone GMT = TimeZone.getTimeZone("GMT");
 
     @Test
-    public void testCalendar_1_Frame() throws Exception
+    public void testCalendar1Frame() throws Exception
     {
         CompletableFuture<Calendar> copyFuture = new CompletableFuture<>();
         DecodedCalendarCopy copy = new DecodedCalendarCopy(copyFuture);
@@ -67,7 +67,7 @@ public class DecodedBinaryMessageSinkTest extends AbstractMessageSinkTest
     }
 
     @Test
-    public void testCalendar_3_Frames() throws Exception
+    public void testCalendar3Frames() throws Exception
     {
         CompletableFuture<Calendar> copyFuture = new CompletableFuture<>();
         DecodedCalendarCopy copy = new DecodedCalendarCopy(copyFuture);

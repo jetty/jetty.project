@@ -133,13 +133,13 @@ public class ClassMatcherTest
     public void testIncludedLocations() throws Exception
     {
         // jar from JVM classloader
-        URI loc_string = TypeUtil.getLocationOfClass(String.class);
+        URI locString = TypeUtil.getLocationOfClass(String.class);
 
         // a jar from maven repo jar
-        URI loc_junit = TypeUtil.getLocationOfClass(Test.class);
+        URI locJunit = TypeUtil.getLocationOfClass(Test.class);
 
         // class file 
-        URI loc_test = TypeUtil.getLocationOfClass(ClassMatcherTest.class);
+        URI locTest = TypeUtil.getLocationOfClass(ClassMatcherTest.class);
 
         ClassMatcher pattern = new ClassMatcher();
         pattern.include("something");
@@ -148,10 +148,10 @@ public class ClassMatcherTest
         assertThat(pattern.match(ClassMatcherTest.class), Matchers.is(false));
 
         // Add directory for both JVM classes
-        pattern.include(loc_string.toASCIIString());
+        pattern.include(locString.toASCIIString());
 
         // Add jar for individual class and classes directory
-        pattern.include(loc_junit.toString(), loc_test.toString());
+        pattern.include(locJunit.toString(), locTest.toString());
 
         assertThat(pattern.match(String.class), Matchers.is(true));
         assertThat(pattern.match(Test.class), Matchers.is(true));
@@ -169,16 +169,16 @@ public class ClassMatcherTest
     public void testIncludedLocationsOrModule() throws Exception
     {
         // jar from JVM classloader
-        URI mod_string = TypeUtil.getLocationOfClass(String.class);
-        // System.err.println(mod_string);
+        URI modString = TypeUtil.getLocationOfClass(String.class);
+        // System.err.println(modString);
 
         // a jar from maven repo jar
-        URI loc_junit = TypeUtil.getLocationOfClass(Test.class);
-        // System.err.println(loc_junit);
+        URI locJunit = TypeUtil.getLocationOfClass(Test.class);
+        // System.err.println(locJunit);
 
         // class file
-        URI loc_test = TypeUtil.getLocationOfClass(ClassMatcherTest.class);
-        // System.err.println(loc_test);
+        URI locTest = TypeUtil.getLocationOfClass(ClassMatcherTest.class);
+        // System.err.println(locTest);
 
         ClassMatcher pattern = new ClassMatcher();
         pattern.include("something");
@@ -190,7 +190,7 @@ public class ClassMatcherTest
         pattern.include("jrt:/java.base");
 
         // Add jar for individual class and classes directory
-        pattern.include(loc_junit.toString(), loc_test.toString());
+        pattern.include(locJunit.toString(), locTest.toString());
 
         assertThat(pattern.match(String.class), Matchers.is(true));
         assertThat(pattern.match(Test.class), Matchers.is(true));
@@ -208,16 +208,16 @@ public class ClassMatcherTest
     public void testExcludeLocations() throws Exception
     {
         // jar from JVM classloader
-        URI loc_string = TypeUtil.getLocationOfClass(String.class);
-        // System.err.println(loc_string);
+        URI locString = TypeUtil.getLocationOfClass(String.class);
+        // System.err.println(locString);
 
         // a jar from maven repo jar
-        URI loc_junit = TypeUtil.getLocationOfClass(Test.class);
-        // System.err.println(loc_junit);
+        URI locJunit = TypeUtil.getLocationOfClass(Test.class);
+        // System.err.println(locJunit);
 
         // class file 
-        URI loc_test = TypeUtil.getLocationOfClass(ClassMatcherTest.class);
-        // System.err.println(loc_test);
+        URI locTest = TypeUtil.getLocationOfClass(ClassMatcherTest.class);
+        // System.err.println(locTest);
 
         ClassMatcher pattern = new ClassMatcher();
 
@@ -229,10 +229,10 @@ public class ClassMatcherTest
         assertThat(pattern.match(ClassMatcherTest.class), Matchers.is(true));
 
         // Add directory for both JVM classes
-        pattern.exclude(loc_string.toString());
+        pattern.exclude(locString.toString());
 
         // Add jar for individual class and classes directory
-        pattern.exclude(loc_junit.toString(), loc_test.toString());
+        pattern.exclude(locJunit.toString(), locTest.toString());
 
         assertThat(pattern.match(String.class), Matchers.is(false));
         assertThat(pattern.match(Test.class), Matchers.is(false));
@@ -245,16 +245,16 @@ public class ClassMatcherTest
     public void testExcludeLocationsOrModule() throws Exception
     {
         // jar from JVM classloader
-        URI mod_string = TypeUtil.getLocationOfClass(String.class);
-        // System.err.println(mod_string);
+        URI modString = TypeUtil.getLocationOfClass(String.class);
+        // System.err.println(modString);
 
         // a jar from maven repo jar
-        URI loc_junit = TypeUtil.getLocationOfClass(Test.class);
-        // System.err.println(loc_junit);
+        URI locJunit = TypeUtil.getLocationOfClass(Test.class);
+        // System.err.println(locJunit);
 
         // class file
-        URI loc_test = TypeUtil.getLocationOfClass(ClassMatcherTest.class);
-        // System.err.println(loc_test);
+        URI locTest = TypeUtil.getLocationOfClass(ClassMatcherTest.class);
+        // System.err.println(locTest);
 
         ClassMatcher pattern = new ClassMatcher();
 
@@ -269,7 +269,7 @@ public class ClassMatcherTest
         pattern.exclude("jrt:/java.base/");
 
         // Add jar for individual class and classes directory
-        pattern.exclude(loc_junit.toString(), loc_test.toString());
+        pattern.exclude(locJunit.toString(), locTest.toString());
 
         assertThat(pattern.match(String.class), Matchers.is(false));
         assertThat(pattern.match(Test.class), Matchers.is(false));
