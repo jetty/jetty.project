@@ -48,7 +48,7 @@ public class MessageInputStreamTest
     @Test
     public void testBasicAppendRead() throws IOException
     {
-        try (MessageInputStream stream = new MessageInputStream())
+        try (MessageInputStream stream = new MessageInputStream(new EmptySession()))
         {
             Assertions.assertTimeoutPreemptively(ofSeconds(5), () ->
             {
@@ -71,7 +71,7 @@ public class MessageInputStreamTest
     @Test
     public void testBlockOnRead() throws Exception
     {
-        try (MessageInputStream stream = new MessageInputStream())
+        try (MessageInputStream stream = new MessageInputStream(new EmptySession()))
         {
             final AtomicBoolean hadError = new AtomicBoolean(false);
             final CountDownLatch startLatch = new CountDownLatch(1);
@@ -123,7 +123,7 @@ public class MessageInputStreamTest
     @Test
     public void testBlockOnReadInitial() throws IOException
     {
-        try (MessageInputStream stream = new MessageInputStream())
+        try (MessageInputStream stream = new MessageInputStream(new EmptySession()))
         {
             final AtomicBoolean hadError = new AtomicBoolean(false);
 
@@ -163,7 +163,7 @@ public class MessageInputStreamTest
     @Test
     public void testReadByteNoBuffersClosed() throws IOException
     {
-        try (MessageInputStream stream = new MessageInputStream())
+        try (MessageInputStream stream = new MessageInputStream(new EmptySession()))
         {
             final AtomicBoolean hadError = new AtomicBoolean(false);
 
@@ -202,7 +202,7 @@ public class MessageInputStreamTest
     @Test
     public void testAppendEmptyPayloadRead() throws IOException
     {
-        try (MessageInputStream stream = new MessageInputStream())
+        try (MessageInputStream stream = new MessageInputStream(new EmptySession()))
         {
             Assertions.assertTimeoutPreemptively(ofSeconds(10), () ->
             {
@@ -229,7 +229,7 @@ public class MessageInputStreamTest
     @Test
     public void testAppendNullPayloadRead() throws IOException
     {
-        try (MessageInputStream stream = new MessageInputStream())
+        try (MessageInputStream stream = new MessageInputStream(new EmptySession()))
         {
             Assertions.assertTimeoutPreemptively(ofSeconds(10), () ->
             {

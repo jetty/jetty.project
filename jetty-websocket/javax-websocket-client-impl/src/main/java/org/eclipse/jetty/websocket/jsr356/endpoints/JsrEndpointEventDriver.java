@@ -23,7 +23,6 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.nio.ByteBuffer;
 import java.util.Map;
-import java.util.concurrent.CountDownLatch;
 import javax.websocket.CloseReason;
 import javax.websocket.Endpoint;
 import javax.websocket.MessageHandler;
@@ -88,17 +87,22 @@ public class JsrEndpointEventDriver extends AbstractJsrEventDriver
             }
             else if (wrapper.wantsStreams())
             {
-                final MessageInputStream stream = new MessageInputStream();
-                activeMessage = stream;
-                dispatch(new Runnable()
+                @SuppressWarnings("unchecked")
+                MessageHandler.Whole<InputStream> handler = (Whole<InputStream>)wrapper.getHandler();
+                MessageInputStream inputStream = new MessageInputStream(session);
+                activeMessage = inputStream;
+                dispatch(() ->
                 {
-                    @SuppressWarnings("unchecked")
-                    @Override
-                    public void run()
+                    try
                     {
-                        MessageHandler.Whole<InputStream> handler = (Whole<InputStream>)wrapper.getHandler();
-                        handler.onMessage(stream);
+                        handler.onMessage(inputStream);
                     }
+                    catch (Throwable t)
+                    {
+                        session.close(t);
+                    }
+
+                    inputStream.close();
                 });
             }
             else
@@ -191,35 +195,23 @@ public class JsrEndpointEventDriver extends AbstractJsrEventDriver
             }
             else if (wrapper.wantsStreams())
             {
-                final CountDownLatch completed = new CountDownLatch(1);
-                final MessageReader stream = new MessageReader(new MessageInputStream())
+                @SuppressWarnings("unchecked")
+                MessageHandler.Whole<Reader> handler = (Whole<Reader>)wrapper.getHandler();
+                MessageInputStream inputStream = new MessageInputStream(session);
+                MessageReader reader = new MessageReader(inputStream);
+                activeMessage = reader;
+                dispatch(() ->
                 {
-                    @Override
-                    public void messageComplete()
+                    try
                     {
-                        super.messageComplete();
-                        try
-                        {
-                            completed.await();
-                        }
-                        catch (Exception e)
-                        {
-                            throw new RuntimeException(e);
-                        }
+                        handler.onMessage(reader);
                     }
-                };
-                activeMessage = stream;
+                    catch (Throwable t)
+                    {
+                        session.close(t);
+                    }
 
-                dispatch(new Runnable()
-                {
-                    @SuppressWarnings("unchecked")
-                    @Override
-                    public void run()
-                    {
-                        MessageHandler.Whole<Reader> handler = (Whole<Reader>)wrapper.getHandler();
-                        handler.onMessage(stream);
-                        completed.countDown();
-                    }
+                    inputStream.close();
                 });
             }
             else
