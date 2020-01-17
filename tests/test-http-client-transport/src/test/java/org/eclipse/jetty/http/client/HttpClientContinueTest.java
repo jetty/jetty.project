@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -76,19 +76,19 @@ public class HttpClientContinueTest extends AbstractTest<TransportScenario>
 
     @ParameterizedTest
     @ArgumentsSource(TransportProvider.class)
-    public void test_Expect100Continue_WithOneContent_Respond100Continue(Transport transport) throws Exception
+    public void testExpect100ContinueWithOneContentRespond100Continue(Transport transport) throws Exception
     {
-        test_Expect100Continue_Respond100Continue(transport, "data1".getBytes(StandardCharsets.UTF_8));
+        testExpect100ContinueRespond100Continue(transport, "data1".getBytes(StandardCharsets.UTF_8));
     }
 
     @ParameterizedTest
     @ArgumentsSource(TransportProvider.class)
-    public void test_Expect100Continue_WithMultipleContents_Respond100Continue(Transport transport) throws Exception
+    public void testExpect100ContinueWithMultipleContentsRespond100Continue(Transport transport) throws Exception
     {
-        test_Expect100Continue_Respond100Continue(transport, "data1".getBytes(StandardCharsets.UTF_8), "data2".getBytes(StandardCharsets.UTF_8), "data3".getBytes(StandardCharsets.UTF_8));
+        testExpect100ContinueRespond100Continue(transport, "data1".getBytes(StandardCharsets.UTF_8), "data2".getBytes(StandardCharsets.UTF_8), "data3".getBytes(StandardCharsets.UTF_8));
     }
 
-    private void test_Expect100Continue_Respond100Continue(Transport transport, byte[]... contents) throws Exception
+    private void testExpect100ContinueRespond100Continue(Transport transport, byte[]... contents) throws Exception
     {
         init(transport);
         scenario.start(new AbstractHandler()
@@ -124,7 +124,7 @@ public class HttpClientContinueTest extends AbstractTest<TransportScenario>
 
     @ParameterizedTest
     @ArgumentsSource(TransportProvider.class)
-    public void test_Expect100Continue_WithChunkedContent_Respond100Continue(Transport transport) throws Exception
+    public void testExpect100ContinueWithChunkedContentRespond100Continue(Transport transport) throws Exception
     {
         init(transport);
         scenario.start(new AbstractHandler()
@@ -173,19 +173,19 @@ public class HttpClientContinueTest extends AbstractTest<TransportScenario>
 
     @ParameterizedTest
     @ArgumentsSource(TransportProvider.class)
-    public void test_Expect100Continue_WithContent_Respond417ExpectationFailed(Transport transport) throws Exception
+    public void testExpect100ContinueWithContentRespond417ExpectationFailed(Transport transport) throws Exception
     {
-        test_Expect100Continue_WithContent_RespondError(transport, 417);
+        testExpect100ContinueWithContentRespondError(transport, 417);
     }
 
     @ParameterizedTest
     @ArgumentsSource(TransportProvider.class)
-    public void test_Expect100Continue_WithContent_Respond413RequestEntityTooLarge(Transport transport) throws Exception
+    public void testExpect100ContinueWithContentRespond413RequestEntityTooLarge(Transport transport) throws Exception
     {
-        test_Expect100Continue_WithContent_RespondError(transport, 413);
+        testExpect100ContinueWithContentRespondError(transport, 413);
     }
 
-    private void test_Expect100Continue_WithContent_RespondError(Transport transport, final int error) throws Exception
+    private void testExpect100ContinueWithContentRespondError(Transport transport, final int error) throws Exception
     {
         init(transport);
         scenario.start(new AbstractHandler()
@@ -225,7 +225,7 @@ public class HttpClientContinueTest extends AbstractTest<TransportScenario>
 
     @ParameterizedTest
     @ArgumentsSource(TransportProvider.class)
-    public void test_Expect100Continue_WithContent_WithRedirect(Transport transport) throws Exception
+    public void testExpect100ContinueWithContentWithRedirect(Transport transport) throws Exception
     {
         init(transport);
         final String data = "success";
@@ -273,7 +273,7 @@ public class HttpClientContinueTest extends AbstractTest<TransportScenario>
 
     @ParameterizedTest
     @ArgumentsSource(TransportProvider.class)
-    public void test_Redirect_WithExpect100Continue_WithContent(Transport transport) throws Exception
+    public void testRedirectWithExpect100ContinueWithContent(Transport transport) throws Exception
     {
         init(transport);
         // A request with Expect: 100-Continue cannot receive non-final responses like 3xx
@@ -326,7 +326,7 @@ public class HttpClientContinueTest extends AbstractTest<TransportScenario>
     @ArgumentsSource(TransportProvider.class)
     @Tag("Slow")
     @DisabledIfSystemProperty(named = "env", matches = "ci") // TODO: SLOW, needs review
-    public void test_Expect100Continue_WithContent_WithResponseFailure_Before100Continue(Transport transport) throws Exception
+    public void testExpect100ContinueWithContentWithResponseFailureBefore100Continue(Transport transport) throws Exception
     {
         init(transport);
         final long idleTimeout = 1000;
@@ -374,7 +374,7 @@ public class HttpClientContinueTest extends AbstractTest<TransportScenario>
     @ArgumentsSource(TransportProvider.class)
     @Tag("Slow")
     @DisabledIfSystemProperty(named = "env", matches = "ci") // TODO: SLOW, needs review
-    public void test_Expect100Continue_WithContent_WithResponseFailure_After100Continue(Transport transport) throws Exception
+    public void testExpect100ContinueWithContentWithResponseFailureAfter100Continue(Transport transport) throws Exception
     {
         init(transport);
         final long idleTimeout = 1000;
@@ -421,7 +421,7 @@ public class HttpClientContinueTest extends AbstractTest<TransportScenario>
 
     @ParameterizedTest
     @ArgumentsSource(TransportProvider.class)
-    public void test_Expect100Continue_WithContent_WithResponseFailure_During100Continue(Transport transport) throws Exception
+    public void testExpect100ContinueWithContentWithResponseFailureDuring100Continue(Transport transport) throws Exception
     {
         init(transport);
         scenario.start(new AbstractHandler()
@@ -483,7 +483,7 @@ public class HttpClientContinueTest extends AbstractTest<TransportScenario>
     @ArgumentsSource(TransportProvider.class)
     @Tag("Slow")
     @DisabledIfSystemProperty(named = "env", matches = "ci") // TODO: SLOW, needs review
-    public void test_Expect100Continue_WithDeferredContent_Respond100Continue(Transport transport) throws Exception
+    public void testExpect100ContinueWithDeferredContentRespond100Continue(Transport transport) throws Exception
     {
         init(transport);
         scenario.start(new AbstractHandler()
@@ -534,7 +534,7 @@ public class HttpClientContinueTest extends AbstractTest<TransportScenario>
     @ArgumentsSource(TransportProvider.class)
     @Tag("Slow")
     @DisabledIfSystemProperty(named = "env", matches = "ci") // TODO: SLOW, needs review
-    public void test_Expect100Continue_WithInitialAndDeferredContent_Respond100Continue(Transport transport) throws Exception
+    public void testExpect100ContinueWithInitialAndDeferredContentRespond100Continue(Transport transport) throws Exception
     {
         init(transport);
         scenario.start(new AbstractHandler()
@@ -579,7 +579,7 @@ public class HttpClientContinueTest extends AbstractTest<TransportScenario>
 
     @ParameterizedTest
     @ArgumentsSource(TransportProvider.class)
-    public void test_Expect100Continue_WithConcurrentDeferredContent_Respond100Continue(Transport transport) throws Exception
+    public void testExpect100ContinueWithConcurrentDeferredContentRespond100Continue(Transport transport) throws Exception
     {
         init(transport);
         scenario.start(new AbstractHandler()
@@ -620,7 +620,7 @@ public class HttpClientContinueTest extends AbstractTest<TransportScenario>
 
     @ParameterizedTest
     @ArgumentsSource(TransportProvider.class)
-    public void test_Expect100Continue_WithInitialAndConcurrentDeferredContent_Respond100Continue(Transport transport) throws Exception
+    public void testExpect100ContinueWithInitialAndConcurrentDeferredContentRespond100Continue(Transport transport) throws Exception
     {
         init(transport);
         scenario.start(new AbstractHandler()
@@ -679,7 +679,7 @@ public class HttpClientContinueTest extends AbstractTest<TransportScenario>
 
     @ParameterizedTest
     @ArgumentsSource(TransportProvider.class)
-    public void test_Expect100Continue_WithTwoResponsesInOneRead(Transport transport) throws Exception
+    public void testExpect100ContinueWithTwoResponsesInOneRead(Transport transport) throws Exception
     {
         init(transport);
         assumeTrue(scenario.transport.isHttp1Based());
@@ -739,7 +739,7 @@ public class HttpClientContinueTest extends AbstractTest<TransportScenario>
 
     @ParameterizedTest
     @ArgumentsSource(TransportProvider.class)
-    public void test_NoExpect_Respond100Continue(Transport transport) throws Exception
+    public void testNoExpectRespond100Continue(Transport transport) throws Exception
     {
         init(transport);
         scenario.start(new AbstractHandler()
@@ -768,7 +768,7 @@ public class HttpClientContinueTest extends AbstractTest<TransportScenario>
 
     @ParameterizedTest
     @ArgumentsSource(TransportProvider.class)
-    public void test_NoExpect_100Continue_ThenRedirect_Then100Continue_ThenResponse(Transport transport) throws Exception
+    public void testNoExpect100ContinueThenRedirectThen100ContinueThenResponse(Transport transport) throws Exception
     {
         init(transport);
         assumeTrue(scenario.transport.isHttp1Based());

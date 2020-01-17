@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -37,7 +37,6 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.HandlerList;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -48,7 +47,6 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 public class CookiePatternRuleTest
 {
-
     private Server server;
     private LocalConnector localConnector;
 
@@ -150,7 +148,6 @@ public class CookiePatternRuleTest
     }
 
     @Test
-    @Disabled("See #2675 for details") // TODO: needs to be fixed in RuleContainer
     public void testUrlParameter() throws Exception
     {
         CookiePatternRule rule = new CookiePatternRule();
@@ -170,7 +167,6 @@ public class CookiePatternRuleTest
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
         String responseContent = response.getContent();
-        System.out.println(responseContent);
         assertResponseContentLine(responseContent, "baseRequest.requestUri=", "/other;fruit=apple");
 
         // verify

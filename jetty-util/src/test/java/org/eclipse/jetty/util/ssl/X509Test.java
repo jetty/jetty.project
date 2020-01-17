@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,23 +18,23 @@
 
 package org.eclipse.jetty.util.ssl;
 
+import java.nio.file.Path;
 import java.security.cert.X509Certificate;
-import javax.net.ssl.KeyManager;
-import javax.net.ssl.X509ExtendedKeyManager;
 
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class X509Test
 {
     @Test
-    public void testIsCertSign_Normal()
+    public void testIsCertSignNormal()
     {
         X509Certificate bogusX509 = new X509CertificateAdapter()
         {
@@ -51,7 +51,7 @@ public class X509Test
     }
 
     @Test
-    public void testIsCertSign_Normal_NoSupported()
+    public void testIsCertSignNormalNoSupported()
     {
         X509Certificate bogusX509 = new X509CertificateAdapter()
         {
@@ -68,7 +68,7 @@ public class X509Test
     }
 
     @Test
-    public void testIsCertSign_NonStandard_Short()
+    public void testIsCertSignNonStandardShort()
     {
         X509Certificate bogusX509 = new X509CertificateAdapter()
         {
@@ -85,7 +85,7 @@ public class X509Test
     }
 
     @Test
-    public void testIsCertSign_NonStandard_Shorter()
+    public void testIsCertSignNonStandardShorter()
     {
         X509Certificate bogusX509 = new X509CertificateAdapter()
         {
@@ -101,7 +101,7 @@ public class X509Test
     }
 
     @Test
-    public void testIsCertSign_Normal_Null()
+    public void testIsCertSignNormalNull()
     {
         X509Certificate bogusX509 = new X509CertificateAdapter()
         {
@@ -116,7 +116,7 @@ public class X509Test
     }
 
     @Test
-    public void testIsCertSign_Normal_Empty()
+    public void testIsCertSignNormalEmpty()
     {
         X509Certificate bogusX509 = new X509CertificateAdapter()
         {
@@ -130,55 +130,70 @@ public class X509Test
         assertThat("Normal X509", X509.isCertSign(bogusX509), is(false));
     }
 
-    private X509ExtendedKeyManager getX509ExtendedKeyManager(SslContextFactory sslContextFactory) throws Exception
-    {
-        Resource keystoreResource = Resource.newSystemResource("keystore");
-        Resource truststoreResource = Resource.newSystemResource("keystore");
-        sslContextFactory.setKeyStoreResource(keystoreResource);
-        sslContextFactory.setTrustStoreResource(truststoreResource);
-        sslContextFactory.setKeyStorePassword("storepwd");
-        sslContextFactory.setKeyManagerPassword("keypwd");
-        sslContextFactory.setTrustStorePassword("storepwd");
-        sslContextFactory.start();
-
-        KeyManager[] keyManagers = sslContextFactory.getKeyManagers(sslContextFactory.getKeyStore());
-        X509ExtendedKeyManager x509ExtendedKeyManager = null;
-
-        for (KeyManager keyManager : keyManagers)
-        {
-            if (keyManager instanceof X509ExtendedKeyManager)
-            {
-                x509ExtendedKeyManager = (X509ExtendedKeyManager)keyManager;
-                break;
-            }
-        }
-        assertThat("Found X509ExtendedKeyManager", x509ExtendedKeyManager, is(notNullValue()));
-        return x509ExtendedKeyManager;
-    }
-
     @Test
-    public void testSniX509ExtendedKeyManager_BaseClass() throws Exception
+    public void testBaseClassWithSni()
     {
         SslContextFactory baseSsl = new SslContextFactory();
-        X509ExtendedKeyManager x509ExtendedKeyManager = getX509ExtendedKeyManager(baseSsl);
-        UnsupportedOperationException npe = assertThrows(UnsupportedOperationException.class, () -> baseSsl.newSniX509ExtendedKeyManager(x509ExtendedKeyManager));
-        assertThat("UnsupportedOperationException.message", npe.getMessage(), containsString("X509ExtendedKeyManager only supported on Server"));
+        Path keystorePath = MavenTestingUtils.getTestResourcePathFile("keystore_sni.p12");
+        baseSsl.setKeyStoreResource(new PathResource(keystorePath));
+        baseSsl.setKeyStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
+        baseSsl.setKeyManagerPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");
+        IllegalStateException ex = assertThrows(IllegalStateException.class, baseSsl::start);
+        assertThat("IllegalStateException.message", ex.getMessage(), containsString("KeyStores with multiple certificates are not supported on the base class"));
     }
 
     @Test
-    public void testSniX509ExtendedKeyManager_ClientClass() throws Exception
-    {
-        SslContextFactory clientSsl = new SslContextFactory.Client();
-        X509ExtendedKeyManager x509ExtendedKeyManager = getX509ExtendedKeyManager(clientSsl);
-        UnsupportedOperationException re = assertThrows(UnsupportedOperationException.class, () -> clientSsl.newSniX509ExtendedKeyManager(x509ExtendedKeyManager));
-        assertThat("UnsupportedOperationException.message", re.getMessage(), containsString("X509ExtendedKeyManager only supported on Server"));
-    }
-
-    @Test
-    public void testSniX509ExtendedKeyManager_ServerClass() throws Exception
+    public void testServerClassWithSni() throws Exception
     {
         SslContextFactory serverSsl = new SslContextFactory.Server();
-        X509ExtendedKeyManager x509ExtendedKeyManager = getX509ExtendedKeyManager(serverSsl);
-        serverSsl.newSniX509ExtendedKeyManager(x509ExtendedKeyManager);
+        Path keystorePath = MavenTestingUtils.getTestResourcePathFile("keystore_sni.p12");
+        serverSsl.setKeyStoreResource(new PathResource(keystorePath));
+        serverSsl.setKeyStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
+        serverSsl.setKeyManagerPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");
+        serverSsl.start();
+    }
+
+    @Test
+    public void testClientClassWithSni() throws Exception
+    {
+        SslContextFactory clientSsl = new SslContextFactory.Client();
+        Path keystorePath = MavenTestingUtils.getTestResourcePathFile("keystore_sni.p12");
+        clientSsl.setKeyStoreResource(new PathResource(keystorePath));
+        clientSsl.setKeyStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
+        clientSsl.setKeyManagerPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");
+        clientSsl.start();
+    }
+
+    @Test
+    public void testBaseClassWithoutSni() throws Exception
+    {
+        SslContextFactory baseSsl = new SslContextFactory();
+        Resource keystoreResource = Resource.newSystemResource("keystore");
+        baseSsl.setKeyStoreResource(keystoreResource);
+        baseSsl.setKeyStorePassword("storepwd");
+        baseSsl.setKeyManagerPassword("keypwd");
+        baseSsl.start();
+    }
+
+    @Test
+    public void testServerClassWithoutSni() throws Exception
+    {
+        SslContextFactory serverSsl = new SslContextFactory.Server();
+        Resource keystoreResource = Resource.newSystemResource("keystore");
+        serverSsl.setKeyStoreResource(keystoreResource);
+        serverSsl.setKeyStorePassword("storepwd");
+        serverSsl.setKeyManagerPassword("keypwd");
+        serverSsl.start();
+    }
+
+    @Test
+    public void testClientClassWithoutSni() throws Exception
+    {
+        SslContextFactory clientSsl = new SslContextFactory.Client();
+        Resource keystoreResource = Resource.newSystemResource("keystore");
+        clientSsl.setKeyStoreResource(keystoreResource);
+        clientSsl.setKeyStorePassword("storepwd");
+        clientSsl.setKeyManagerPassword("keypwd");
+        clientSsl.start();
     }
 }

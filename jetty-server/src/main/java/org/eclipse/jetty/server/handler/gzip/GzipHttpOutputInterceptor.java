@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -381,7 +381,7 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
                         int len = slice.remaining();
                         _crc.update(array, off, len);
                         _deflater.setInput(array, off, len);  // TODO use ByteBuffer API in Jetty-10
-                        BufferUtil.clear(slice);
+                        slice.position(slice.position() + len);
                         if (_last && BufferUtil.isEmpty(_content))
                             _deflater.finish();
                     }

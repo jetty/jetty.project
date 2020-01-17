@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -37,17 +37,17 @@ public class UnixSocketClient
         java.io.File content = new java.io.File("/tmp/data.txt");
 
         String method = "GET";
-        int content_length = 0;
+        int contentLength = 0;
         String body = null;
         if (content.exists())
         {
             method = "POST";
             body = IO.readToString(content);
-            content_length = body.length();
+            contentLength = body.length();
         }
         String data = method + " / HTTP/1.1\r\n" +
             "Host: unixsock\r\n" +
-            "Content-Length: " + content_length + "\r\n" +
+            "Content-Length: " + contentLength + "\r\n" +
             "Connection: close\r\n" +
             "\r\n";
         if (body != null)

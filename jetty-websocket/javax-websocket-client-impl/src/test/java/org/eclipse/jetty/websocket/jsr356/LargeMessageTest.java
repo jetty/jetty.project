@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -78,7 +78,7 @@ public class LargeMessageTest
 
     @SuppressWarnings("Duplicates")
     @Test
-    public void testLargeEcho_AsEndpointInstance() throws Exception
+    public void testLargeEchoAsEndpointInstance() throws Exception
     {
         WebSocketContainer container = ContainerProvider.getWebSocketContainer();
         server.addBean(container); // allow to shutdown with server

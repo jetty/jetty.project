@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -106,7 +106,7 @@ public class ExtensionConfigTest
     }
 
     @Test
-    public void testParseSimple_BasicParameters()
+    public void testParseSimpleBasicParameters()
     {
         ExtensionConfig cfg = ExtensionConfig.parse("bar; baz=2");
         Map<String, String> expectedParams = new HashMap<>();
@@ -115,7 +115,7 @@ public class ExtensionConfigTest
     }
 
     @Test
-    public void testParseSimple_NoParameters()
+    public void testParseSimpleNoParameters()
     {
         ExtensionConfig cfg = ExtensionConfig.parse("foo");
         Map<String, String> expectedParams = new HashMap<>();

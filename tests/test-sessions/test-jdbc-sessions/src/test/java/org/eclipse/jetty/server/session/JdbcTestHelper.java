@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -174,7 +174,7 @@ public class JdbcTestHelper
         try (Connection con = DriverManager.getConnection(DEFAULT_CONNECTION_URL);)
         {
             statement = con.prepareStatement("select * from " + TABLE +
-                " where " + ID_COL + " = ? and " + CONTEXT_COL +
+                    " where " + ID_COL + " = ? and " + CONTEXT_COL +
                 " = ? and virtualHost = ?");
             statement.setString(1, data.getId());
             statement.setString(2, data.getContextPath());
@@ -199,16 +199,19 @@ public class JdbcTestHelper
 
             Blob blob = result.getBlob(MAP_COL);
 
-            SessionData tmp = new SessionData(data.getId(), data.getContextPath(), data.getVhost(), result.getLong(CREATE_COL),
-                result.getLong(ACCESS_COL), result.getLong(LAST_ACCESS_COL), result.getLong(MAX_IDLE_COL));
+            SessionData tmp =
+                new SessionData(data.getId(), data.getContextPath(), data.getVhost(), result.getLong(CREATE_COL),
+                    result.getLong(ACCESS_COL), result.getLong(LAST_ACCESS_COL),
+                    result.getLong(MAX_IDLE_COL));
 
-            try (InputStream is = blob.getBinaryStream();
-                 ClassLoadingObjectInputStream ois = new ClassLoadingObjectInputStream(is))
+            if (blob.length() > 0)
             {
-
-                SessionData.deserializeAttributes(tmp, ois);
+                try (InputStream is = blob.getBinaryStream();
+                     ClassLoadingObjectInputStream ois = new ClassLoadingObjectInputStream(is))
+                {
+                    SessionData.deserializeAttributes(tmp, ois);
+                }
             }
-
             //same number of attributes
             assertEquals(data.getAllAttributes().size(), tmp.getAllAttributes().size());
             //same keys

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -179,6 +179,28 @@ public interface Request
      * @return this request object
      */
     Request cookie(HttpCookie cookie);
+
+    /**
+     * <p>Tags this request with the given metadata tag.</p>
+     * <p>Each different tag will create a different destination,
+     * even if the destination origin is the same.</p>
+     * <p>This is particularly useful in proxies, where requests
+     * for the same origin but from different clients may be tagged
+     * with client's metadata (e.g. the client remote address).</p>
+     * <p>The tag metadata class must correctly implement
+     * {@link Object#hashCode()} and {@link Object#equals(Object)}
+     * so that it can be used, along with the origin, to identify
+     * a destination.</p>
+     *
+     * @param tag the metadata to tag the request with
+     * @return this request object
+     */
+    Request tag(Object tag);
+
+    /**
+     * @return the metadata this request has been tagged with
+     */
+    Object getTag();
 
     /**
      * @param name the name of the attribute

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -58,7 +58,6 @@ import org.eclipse.jetty.websocket.common.WebSocketSessionFactory;
 import org.eclipse.jetty.websocket.common.WebSocketSessionListener;
 import org.eclipse.jetty.websocket.common.events.EventDriverFactory;
 import org.eclipse.jetty.websocket.common.extensions.WebSocketExtensionFactory;
-import org.eclipse.jetty.websocket.common.scopes.SimpleContainerScope;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 
 /**
@@ -77,26 +76,26 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
     // WebSocket Specifics
     private final WebSocketPolicy policy;
     private final WebSocketExtensionFactory extensionRegistry;
-    private final EventDriverFactory eventDriverFactory;
-    private final SessionFactory sessionFactory;
     private final SessionTracker sessionTracker = new SessionTracker();
     private final List<WebSocketSessionListener> sessionListeners = new ArrayList<>();
+    private EventDriverFactory eventDriverFactory;
+    private SessionFactory sessionFactory;
 
     // defaults to true for backwards compatibility
     private boolean stopAtShutdown = true;
 
     /**
-     * Instantiate a WebSocketClient with defaults
+     * Instantiate a WebSocketClient with defaults.
      */
     public WebSocketClient()
     {
-        this((HttpClient)null);
+        this(HttpClientProvider.get(null), null);
     }
 
     /**
-     * Instantiate a WebSocketClient using HttpClient for defaults
+     * Instantiate a WebSocketClient using provided HttpClient.
      *
-     * @param httpClient the HttpClient to base internal defaults off of
+     * @param httpClient the HttpClient to use for WebSocketClient.
      */
     public WebSocketClient(HttpClient httpClient)
     {
@@ -106,42 +105,64 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
     /**
      * Instantiate a WebSocketClient using HttpClient for defaults
      *
-     * @param httpClient the HttpClient to base internal defaults off of
-     * @param objectFactory the DecoratedObjectFactory for all client instantiated classes
+     * @param httpClient the HttpClient that underlying WebSocket client uses
+     * @param decoratedObjectFactory the DecoratedObjectFactory for all client instantiated classes
      */
-    public WebSocketClient(HttpClient httpClient, DecoratedObjectFactory objectFactory)
+    public WebSocketClient(HttpClient httpClient, DecoratedObjectFactory decoratedObjectFactory)
     {
-        this(new SimpleContainerScope(new WebSocketPolicy(WebSocketBehavior.CLIENT), null, null, null, objectFactory), null, null, httpClient);
+        this.httpClient = Objects.requireNonNull(httpClient, "HttpClient");
+
+        addBean(httpClient);
+        addBean(sessionTracker);
+        addSessionListener(sessionTracker);
+
+        // Always a pristine Client policy
+        this.policy = WebSocketPolicy.newClientPolicy();
+        // We do not support late binding of DecoratedObjectFactory in this WebSocketClient
+        DecoratedObjectFactory objectFactory = decoratedObjectFactory == null ? new DecoratedObjectFactory() : decoratedObjectFactory;
+        this.objectFactorySupplier = () -> objectFactory;
+
+        this.extensionRegistry = new WebSocketExtensionFactory(this);
+        addBean(extensionRegistry);
+
+        this.eventDriverFactory = new EventDriverFactory(this);
+        this.sessionFactory = new WebSocketSessionFactory(this);
     }
 
     /**
      * Create a new WebSocketClient
      *
      * @param sslContextFactory ssl context factory to use on the internal {@link HttpClient}
+     * @deprecated use {@link #WebSocketClient(HttpClient)} instead
      */
+    @Deprecated
     public WebSocketClient(SslContextFactory sslContextFactory)
     {
-        this(sslContextFactory, null, null);
+        this(newHttpClient(sslContextFactory, null, null), null);
     }
 
     /**
      * Create a new WebSocketClient
      *
      * @param executor the executor to use on the internal {@link HttpClient}
+     * @deprecated use {@link #WebSocketClient(HttpClient)} instead
      */
+    @Deprecated
     public WebSocketClient(Executor executor)
     {
-        this(null, executor, null);
+        this(newHttpClient(null, executor, null), null);
     }
 
     /**
      * Create a new WebSocketClient
      *
      * @param bufferPool byte buffer pool to use on the internal {@link HttpClient}
+     * @deprecated use {@link #WebSocketClient(HttpClient)} instead
      */
+    @Deprecated
     public WebSocketClient(ByteBufferPool bufferPool)
     {
-        this(null, null, bufferPool);
+        this(newHttpClient(null, null, bufferPool), null);
     }
 
     /**
@@ -149,10 +170,12 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
      *
      * @param sslContextFactory ssl context factory to use on the internal {@link HttpClient}
      * @param executor the executor to use on the internal {@link HttpClient}
+     * @deprecated use {@link #WebSocketClient(HttpClient)} instead
      */
+    @Deprecated
     public WebSocketClient(SslContextFactory sslContextFactory, Executor executor)
     {
-        this(sslContextFactory, executor, null);
+        this(newHttpClient(sslContextFactory, executor, null), null);
     }
 
     /**
@@ -160,10 +183,12 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
      * internal features like Executor, ByteBufferPool, SSLContextFactory, etc.
      *
      * @param scope the Container Scope
+     * @deprecated use {@link #WebSocketClient(HttpClient)} instead
      */
+    @Deprecated
     public WebSocketClient(WebSocketContainerScope scope)
     {
-        this(scope, null, null, null);
+        this(newHttpClient(scope.getSslContextFactory(), scope.getExecutor(), scope.getBufferPool()), scope.getObjectFactory());
     }
 
     /**
@@ -173,10 +198,22 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
      * @param scope the Container Scope
      * @param sslContextFactory SSL ContextFactory to use in preference to one from
      * {@link WebSocketContainerScope#getSslContextFactory()}
+     * @deprecated use {@link #WebSocketClient(HttpClient)} instead
      */
+    @Deprecated
     public WebSocketClient(WebSocketContainerScope scope, SslContextFactory sslContextFactory)
     {
-        this(sslContextFactory, scope.getExecutor(), scope.getBufferPool(), scope.getObjectFactory());
+        /* This is constructor is in an awful place, it's got a signature that has a scope,
+         * a concept that javax.websocket ServerContainer uses to share its buffer pools / executors / etc
+         * with the underlying HttpClient.
+         * This means that the constructor should go through the HttpClientProvider.get(scope) behaviors.
+         * but it also has an arbitrary SslContextFactory parameter, which isn't in the scope that
+         * HttpClientProvider uses.
+         * Since this isn't used by Jetty's implementation of the javax.websocket ServerContainer
+         * this behavior has been changed to be non-scoped so as to be able to use the provided
+         * SslContextFactory for the underlying HttpClient instance.
+         */
+        this(newHttpClient(sslContextFactory, scope.getExecutor(), scope.getBufferPool()), scope.getObjectFactory());
     }
 
     /**
@@ -186,25 +223,12 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
      * @param sslContextFactory shared SSL ContextFactory
      * @param executor shared Executor
      * @param bufferPool shared ByteBufferPool
+     * @deprecated use {@link #WebSocketClient(HttpClient)} instead
      */
+    @Deprecated
     public WebSocketClient(SslContextFactory sslContextFactory, Executor executor, ByteBufferPool bufferPool)
     {
-        this(sslContextFactory, executor, bufferPool, null);
-    }
-
-    /**
-     * Create WebSocketClient using sharing instances of SSLContextFactory
-     * Executor, and ByteBufferPool
-     *
-     * @param sslContextFactory shared SSL ContextFactory
-     * @param executor shared Executor
-     * @param bufferPool shared ByteBufferPool
-     * @param objectFactory shared DecoratedObjectFactory
-     */
-    private WebSocketClient(SslContextFactory sslContextFactory, Executor executor, ByteBufferPool bufferPool, DecoratedObjectFactory objectFactory)
-    {
-        this(new SimpleContainerScope(new WebSocketPolicy(WebSocketBehavior.CLIENT), bufferPool, executor, sslContextFactory, objectFactory));
-        addBean(this.httpClient);
+        this(newHttpClient(sslContextFactory, executor, bufferPool), null);
     }
 
     /**
@@ -214,10 +238,15 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
      * @param scope the Container Scope
      * @param eventDriverFactory the EventDriver Factory to use
      * @param sessionFactory the SessionFactory to use
+     * @deprecated use {@link WebSocketClient#WebSocketClient(WebSocketContainerScope, EventDriverFactory, SessionFactory, HttpClient)} instead
      */
+    @Deprecated
     public WebSocketClient(final WebSocketContainerScope scope, EventDriverFactory eventDriverFactory, SessionFactory sessionFactory)
     {
-        this(scope, eventDriverFactory, sessionFactory, null);
+        /* Nothing in Jetty uses this constructor anymore.
+         * It's left in for backwards compat reasons.
+         */
+        this(scope, eventDriverFactory, sessionFactory, HttpClientProvider.get(scope));
     }
 
     /**
@@ -231,28 +260,31 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
      */
     public WebSocketClient(final WebSocketContainerScope scope, EventDriverFactory eventDriverFactory, SessionFactory sessionFactory, HttpClient httpClient)
     {
-        if (httpClient == null)
-        {
-            this.httpClient = HttpClientProvider.get(scope);
-            addBean(this.httpClient);
-        }
-        else
-        {
-            this.httpClient = httpClient;
-        }
+        this.httpClient = httpClient == null ? HttpClientProvider.get(scope) : httpClient;
+        addBean(this.httpClient);
 
         addBean(sessionTracker);
         addSessionListener(sessionTracker);
 
         // Ensure we get a Client version of the policy.
         this.policy = scope.getPolicy().delegateAs(WebSocketBehavior.CLIENT);
-        // Support Late Binding of Object Factory (for CDI)
-        this.objectFactorySupplier = () -> scope.getObjectFactory();
+
+        // Support Late Binding of DecoratedObjectFactory (that CDI establishes in its own servlet context listeners)
+        this.objectFactorySupplier = scope::getObjectFactory;
+
         this.extensionRegistry = new WebSocketExtensionFactory(this);
         addBean(extensionRegistry);
 
         this.eventDriverFactory = eventDriverFactory == null ? new EventDriverFactory(this) : eventDriverFactory;
         this.sessionFactory = sessionFactory == null ? new WebSocketSessionFactory(this) : sessionFactory;
+    }
+
+    private static HttpClient newHttpClient(SslContextFactory sslContextFactory, Executor executor, ByteBufferPool bufferPool)
+    {
+        HttpClient httpClient = new HttpClient(sslContextFactory);
+        httpClient.setExecutor(executor);
+        httpClient.setByteBufferPool(bufferPool);
+        return httpClient;
     }
 
     public Future<Session> connect(Object websocket, URI toUri) throws IOException
@@ -345,6 +377,16 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
 
         wsReq.setUpgradeListener(upgradeListener);
         return wsReq.sendAsync();
+    }
+
+    public void setEventDriverFactory(EventDriverFactory eventDriverFactory)
+    {
+        this.eventDriverFactory = eventDriverFactory;
+    }
+
+    public void setSessionFactory(SessionFactory sessionFactory)
+    {
+        this.sessionFactory = sessionFactory;
     }
 
     @Override

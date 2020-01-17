@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -72,7 +72,7 @@ public class HttpProxy extends ProxyConfiguration.Proxy
         return URI.create(new Origin(scheme, getAddress()).asString());
     }
 
-    private class HttpProxyClientConnectionFactory implements ClientConnectionFactory
+    private static class HttpProxyClientConnectionFactory implements ClientConnectionFactory
     {
         private final ClientConnectionFactory connectionFactory;
 
@@ -127,7 +127,7 @@ public class HttpProxy extends ProxyConfiguration.Proxy
      * tunnel after the TCP connection is succeeded, and needs to notify
      * the nested promise when the tunnel is established (or failed).</p>
      */
-    private class CreateTunnelPromise implements Promise<Connection>
+    private static class CreateTunnelPromise implements Promise<Connection>
     {
         private final ClientConnectionFactory connectionFactory;
         private final EndPoint endPoint;
@@ -233,7 +233,7 @@ public class HttpProxy extends ProxyConfiguration.Proxy
         }
     }
 
-    private class ProxyConnection implements Connection
+    private static class ProxyConnection implements Connection
     {
         private final Destination destination;
         private final Connection connection;
@@ -272,7 +272,7 @@ public class HttpProxy extends ProxyConfiguration.Proxy
         }
     }
 
-    private class TunnelPromise implements Promise<Connection>
+    private static class TunnelPromise implements Promise<Connection>
     {
         private final Request request;
         private final Response.CompleteListener listener;

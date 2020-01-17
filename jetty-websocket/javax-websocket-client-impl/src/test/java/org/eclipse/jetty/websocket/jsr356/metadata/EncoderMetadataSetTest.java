@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -115,9 +115,9 @@ public class EncoderMetadataSetTest
 
         coders.add(ValidDualEncoder.class);
 
-        List<Class<? extends Encoder>> EncodersList = coders.getList();
-        assertThat("Encoder List", EncodersList, notNullValue());
-        assertThat("Encoder List count", EncodersList.size(), is(2));
+        List<Class<? extends Encoder>> encodersList = coders.getList();
+        assertThat("Encoder List", encodersList, notNullValue());
+        assertThat("Encoder List count", encodersList.size(), is(2));
 
         EncoderMetadata metadata;
         metadata = coders.getMetadataByType(Integer.class);

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.client;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -84,6 +85,7 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.Net;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.IO;
@@ -110,6 +112,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @ExtendWith(WorkDirExtension.class)
 public class HttpClientTest extends AbstractHttpClientServerTest
 {
+    // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
     public WorkDir testdir;
 
     @ParameterizedTest
@@ -149,7 +152,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_DestinationCount(Scenario scenario) throws Exception
+    public void testDestinationCount(Scenario scenario) throws Exception
     {
         start(scenario, new EmptyServerHandler());
 
@@ -169,7 +172,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_GET_ResponseWithoutContent(Scenario scenario) throws Exception
+    public void testGETResponseWithoutContent(Scenario scenario) throws Exception
     {
         start(scenario, new EmptyServerHandler());
 
@@ -181,7 +184,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_GET_ResponseWithContent(Scenario scenario) throws Exception
+    public void testGETResponseWithContent(Scenario scenario) throws Exception
     {
         final byte[] data = new byte[]{0, 1, 2, 3, 4, 5, 6, 7};
         start(scenario, new AbstractHandler()
@@ -205,7 +208,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_GET_WithParameters_ResponseWithContent(Scenario scenario) throws Exception
+    public void testGETWithParametersResponseWithContent(Scenario scenario) throws Exception
     {
         final String paramName1 = "a";
         final String paramName2 = "b";
@@ -238,7 +241,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_GET_WithParametersMultiValued_ResponseWithContent(Scenario scenario) throws Exception
+    public void testGETWithParametersMultiValuedResponseWithContent(Scenario scenario) throws Exception
     {
         final String paramName1 = "a";
         final String paramName2 = "b";
@@ -277,7 +280,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_POST_WithParameters(Scenario scenario) throws Exception
+    public void testPOSTWithParameters(Scenario scenario) throws Exception
     {
         final String paramName = "a";
         final String paramValue = "\u20AC";
@@ -309,7 +312,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_PUT_WithParameters(Scenario scenario) throws Exception
+    public void testPUTWithParameters(Scenario scenario) throws Exception
     {
         final String paramName = "a";
         final String paramValue = "\u20AC";
@@ -343,7 +346,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_POST_WithParameters_WithContent(Scenario scenario) throws Exception
+    public void testPOSTWithParametersWithContent(Scenario scenario) throws Exception
     {
         final byte[] content = {0, 1, 2, 3};
         final String paramName = "a";
@@ -378,7 +381,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_POST_WithContent_NotifiesRequestContentListener(Scenario scenario) throws Exception
+    public void testPOSTWithContentNotifiesRequestContentListener(Scenario scenario) throws Exception
     {
         start(scenario, new AbstractHandler()
         {
@@ -409,7 +412,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_POST_WithContent_TracksProgress(Scenario scenario) throws Exception
+    public void testPOSTWithContentTracksProgress(Scenario scenario) throws Exception
     {
         start(scenario, new AbstractHandler()
         {
@@ -443,7 +446,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_QueuedRequest_IsSent_WhenPreviousRequestSucceeded(Scenario scenario) throws Exception
+    public void testQueuedRequestIsSentWhenPreviousRequestSucceeded(Scenario scenario) throws Exception
     {
         start(scenario, new EmptyServerHandler());
 
@@ -492,7 +495,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_QueuedRequest_IsSent_WhenPreviousRequestClosedConnection(Scenario scenario) throws Exception
+    public void testQueuedRequestIsSentWhenPreviousRequestClosedConnection(Scenario scenario) throws Exception
     {
         start(scenario, new AbstractHandler()
         {
@@ -508,7 +511,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
         client.setMaxConnectionsPerDestination(1);
 
-        try (StacklessLogging stackless = new StacklessLogging(org.eclipse.jetty.server.HttpChannel.class))
+        try (StacklessLogging ignored = new StacklessLogging(org.eclipse.jetty.server.HttpChannel.class))
         {
             final CountDownLatch latch = new CountDownLatch(2);
             client.newRequest("localhost", connector.getLocalPort())
@@ -533,7 +536,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_ExchangeIsComplete_OnlyWhenBothRequestAndResponseAreComplete(Scenario scenario) throws Exception
+    public void testExchangeIsCompleteOnlyWhenBothRequestAndResponseAreComplete(Scenario scenario) throws Exception
     {
         start(scenario, new AbstractHandler()
         {
@@ -612,7 +615,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_ExchangeIsComplete_WhenRequestFailsMidway_WithResponse(Scenario scenario) throws Exception
+    public void testExchangeIsCompleteWhenRequestFailsMidwayWithResponse(Scenario scenario) throws Exception
     {
         start(scenario, new AbstractHandler()
         {
@@ -675,7 +678,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_ExchangeIsComplete_WhenRequestFails_WithNoResponse(Scenario scenario) throws Exception
+    public void testExchangeIsCompleteWhenRequestFailsWithNoResponse(Scenario scenario) throws Exception
     {
         start(scenario, new EmptyServerHandler());
 
@@ -705,7 +708,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
     @DisabledIfSystemProperty(named = "env", matches = "ci") // TODO: SLOW, needs review
-    public void test_Request_IdleTimeout(Scenario scenario) throws Exception
+    public void testRequestIdleTimeout(Scenario scenario) throws Exception
     {
         final long idleTimeout = 1000;
         start(scenario, new AbstractHandler()
@@ -822,7 +825,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_HEAD_With_ResponseContentLength(Scenario scenario) throws Exception
+    public void testHEADWithResponseContentLength(Scenario scenario) throws Exception
     {
         final int length = 1024;
         start(scenario, new AbstractHandler()
@@ -1326,7 +1329,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws ServletException
             {
                 baseRequest.setHandled(true);
                 request.startAsync();
@@ -1353,7 +1356,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void testSmallContentDelimitedByEOFWithSlowRequestHTTP10(Scenario scenario) throws Exception
+    public void testSmallContentDelimitedByEOFWithSlowRequestHTTP10(Scenario scenario)
     {
         Assumptions.assumeTrue(HttpScheme.HTTP.is(scenario.getScheme()));
 
@@ -1368,7 +1371,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(NonSslScenarioProvider.class)
-    public void testBigContentDelimitedByEOFWithSlowRequestHTTP10(Scenario scenario) throws Exception
+    public void testBigContentDelimitedByEOFWithSlowRequestHTTP10(Scenario scenario)
     {
         ExecutionException e = assertThrows(ExecutionException.class, () ->
         {
@@ -1407,7 +1410,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 baseRequest.setHandled(true);
                 // Send Connection: close to avoid that the server chunks the content with HTTP 1.1.
@@ -1443,7 +1446,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 int count = requests.incrementAndGet();
                 if (count == maxRetries)
@@ -1472,7 +1475,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 baseRequest.setHandled(true);
                 ServletOutputStream output = response.getOutputStream();
@@ -1522,7 +1525,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         startServer(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             {
                 baseRequest.setHandled(true);
             }
@@ -1626,13 +1629,13 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_IPv6_Host(Scenario scenario) throws Exception
+    public void testIPv6Host(Scenario scenario) throws Exception
     {
         Assumptions.assumeTrue(Net.isIpv6InterfaceAvailable());
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 baseRequest.setHandled(true);
                 response.setContentType("text/plain");
@@ -1707,7 +1710,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             {
                 baseRequest.setHandled(true);
                 assertThat(request.getHeader("Host"), Matchers.notNullValue());
@@ -1786,6 +1789,57 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 assertEquals(200, response.getStatus());
             }
         }
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(ScenarioProvider.class)
+    public void testContentListenerAsCompleteListener(Scenario scenario) throws Exception
+    {
+        byte[] bytes = new byte[1024];
+        new Random().nextBytes(bytes);
+        start(scenario, new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                ServletOutputStream output = response.getOutputStream();
+                output.write(bytes);
+            }
+        });
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        CountDownLatch latch = new CountDownLatch(1);
+        class L implements Response.ContentListener, Response.CompleteListener
+        {
+            @Override
+            public void onContent(Response response, ByteBuffer content)
+            {
+                try
+                {
+                    BufferUtil.writeTo(content, baos);
+                }
+                catch (IOException x)
+                {
+                    baos.reset();
+                    x.printStackTrace();
+                }
+            }
+
+            @Override
+            public void onComplete(Result result)
+            {
+                if (result.isSucceeded())
+                    latch.countDown();
+            }
+        }
+
+        client.newRequest("localhost", connector.getLocalPort())
+            .scheme(scenario.getScheme())
+            .send(new L());
+
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
+        assertArrayEquals(bytes, baos.toByteArray());
     }
 
     private void assertCopyRequest(Request original)

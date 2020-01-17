@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -124,7 +124,7 @@ public abstract class RFC2616BaseTest
      * @see <a href="http://tools.ietf.org/html/rfc2616#section-3.3">RFC 2616 (section 3.3)</a>
      */
     @Test
-    public void test3_3()
+    public void test33()
     {
         Calendar expected = Calendar.getInstance();
         expected.set(Calendar.YEAR, 1994);
@@ -162,7 +162,7 @@ public abstract class RFC2616BaseTest
      * @see <a href="http://tools.ietf.org/html/rfc2616#section-3.6">RFC 2616 (section 3.6)</a>
      */
     @Test
-    public void test3_6() throws Throwable
+    public void test36() throws Throwable
     {
         // Chunk last
         StringBuffer req1 = new StringBuffer();
@@ -187,7 +187,7 @@ public abstract class RFC2616BaseTest
      * @see <a href="http://tools.ietf.org/html/rfc2616#section-3.6">RFC 2616 (section 3.6)</a>
      */
     @Test
-    public void test3_6_2() throws Throwable
+    public void test362() throws Throwable
     {
         // Chunked
         StringBuffer req2 = new StringBuffer();
@@ -240,7 +240,7 @@ public abstract class RFC2616BaseTest
      * @see <a href="http://tools.ietf.org/html/rfc2616#section-3.6">RFC 2616 (section 3.6)</a>
      */
     @Test
-    public void test3_6_3() throws Throwable
+    public void test363() throws Throwable
     {
         // Chunked
         StringBuffer req3 = new StringBuffer();
@@ -293,7 +293,7 @@ public abstract class RFC2616BaseTest
      * @see <a href="http://tools.ietf.org/html/rfc2616#section-3.6">RFC 2616 (section 3.6)</a>
      */
     @Test
-    public void test3_6_4() throws Throwable
+    public void test364() throws Throwable
     {
         // Chunked and keep alive
         StringBuffer req4 = new StringBuffer();
@@ -332,7 +332,7 @@ public abstract class RFC2616BaseTest
      * @see <a href="http://tools.ietf.org/html/rfc2616#section-3.9">RFC 2616 (section 3.9)</a>
      */
     @Test
-    public void test3_9()
+    public void test39()
     {
         HttpFields fields = new HttpFields();
 
@@ -353,7 +353,7 @@ public abstract class RFC2616BaseTest
      * @see <a href="http://tools.ietf.org/html/rfc2616#section-4.4">RFC 2616 (section 4.4)</a>
      */
     @Test
-    public void test4_4() throws Exception
+    public void test44() throws Exception
     {
         // 4.4.2 - transfer length is 'chunked' when the 'Transfer-Encoding' header
         // is provided with a value other than 'identity', unless the
@@ -448,7 +448,7 @@ public abstract class RFC2616BaseTest
      * @see <a href="http://tools.ietf.org/html/rfc2616#section-5.2">RFC 2616 (section 5.2)</a>
      */
     @Test
-    public void test5_2_DefaultHost() throws Exception
+    public void test52DefaultHost() throws Exception
     {
         // Default Host
 
@@ -470,7 +470,7 @@ public abstract class RFC2616BaseTest
      * @see <a href="http://tools.ietf.org/html/rfc2616#section-5.2">RFC 2616 (section 5.2)</a>
      */
     @Test
-    public void test5_2_VirtualHost() throws Exception
+    public void test52VirtualHost() throws Exception
     {
         // Virtual Host
 
@@ -492,7 +492,7 @@ public abstract class RFC2616BaseTest
      * @see <a href="http://tools.ietf.org/html/rfc2616#section-5.2">RFC 2616 (section 5.2)</a>
      */
     @Test
-    public void test5_2_VirtualHostInsensitive() throws Exception
+    public void test52VirtualHostInsensitive() throws Exception
     {
         // Virtual Host case insensitive
 
@@ -514,7 +514,7 @@ public abstract class RFC2616BaseTest
      * @see <a href="http://tools.ietf.org/html/rfc2616#section-5.2">RFC 2616 (section 5.2)</a>
      */
     @Test
-    public void test5_2_NoVirtualHost() throws Exception
+    public void test52NoVirtualHost() throws Exception
     {
         // No Virtual Host
 
@@ -534,7 +534,7 @@ public abstract class RFC2616BaseTest
      * @see <a href="http://tools.ietf.org/html/rfc2616#section-5.2">RFC 2616 (section 5.2)</a>
      */
     @Test
-    public void test5_2_BadVirtualHost() throws Exception
+    public void test52BadVirtualHost() throws Exception
     {
         // Bad Virtual Host
 
@@ -556,7 +556,7 @@ public abstract class RFC2616BaseTest
      * @see <a href="http://tools.ietf.org/html/rfc2616#section-5.2">RFC 2616 (section 5.2)</a>
      */
     @Test
-    public void test5_2_VirtualHostAbsoluteURI_Http11_WithoutHostHeader() throws Exception
+    public void test52VirtualHostAbsoluteURIHttp11WithoutHostHeader() throws Exception
     {
         // Virtual Host as Absolute URI
 
@@ -577,7 +577,7 @@ public abstract class RFC2616BaseTest
      * @see <a href="http://tools.ietf.org/html/rfc2616#section-5.2">RFC 2616 (section 5.2)</a>
      */
     @Test
-    public void test5_2_VirtualHostAbsoluteURI_Http10_WithoutHostHeader() throws Exception
+    public void test52VirtualHostAbsoluteURIHttp10WithoutHostHeader() throws Exception
     {
         // Virtual Host as Absolute URI
 
@@ -598,7 +598,7 @@ public abstract class RFC2616BaseTest
      * @see <a href="http://tools.ietf.org/html/rfc2616#section-5.2">RFC 2616 (section 5.2)</a>
      */
     @Test
-    public void test5_2_VirtualHostAbsoluteURI_WithHostHeader() throws Exception
+    public void test52VirtualHostAbsoluteURIWithHostHeader() throws Exception
     {
         // Virtual Host as Absolute URI (with Host header)
 
@@ -620,7 +620,7 @@ public abstract class RFC2616BaseTest
      * @see <a href="http://tools.ietf.org/html/rfc2616#section-8.1">RFC 2616 (section 8.1)</a>
      */
     @Test
-    public void test8_1() throws Exception
+    public void test81() throws Exception
     {
         StringBuffer req1 = new StringBuffer();
         req1.append("GET /tests/R1.txt HTTP/1.1\n");
@@ -671,7 +671,7 @@ public abstract class RFC2616BaseTest
      * @see <a href="http://tools.ietf.org/html/rfc2616#section-8.2">RFC 2616 (section 8.2)</a>
      */
     @Test
-    public void test8_2_ExpectInvalid() throws Exception
+    public void test82ExpectInvalid() throws Exception
     {
         // Expect Failure
 
@@ -695,7 +695,7 @@ public abstract class RFC2616BaseTest
      * @see <a href="http://tools.ietf.org/html/rfc2616#section-8.2">RFC 2616 (section 8.2)</a>
      */
     @Test
-    public void test8_2_ExpectWithBody() throws Exception
+    public void test82ExpectWithBody() throws Exception
     {
         // Expect with body
 
@@ -723,7 +723,7 @@ public abstract class RFC2616BaseTest
      * @see <a href="http://tools.ietf.org/html/rfc2616#section-8.2">RFC 2616 (section 8.2)</a>
      */
     @Test
-    public void test8_2_UnexpectWithBody() throws Exception
+    public void test82UnexpectWithBody() throws Exception
     {
         // Expect with body
 
@@ -758,7 +758,7 @@ public abstract class RFC2616BaseTest
      * @see <a href="http://tools.ietf.org/html/rfc2616#section-8.2">RFC 2616 (section 8.2)</a>
      */
     @Test
-    public void test8_2_ExpectNormal() throws Exception
+    public void test82ExpectNormal() throws Exception
     {
         // Expect 100
 
@@ -798,7 +798,7 @@ public abstract class RFC2616BaseTest
      * @see <a href="http://tools.ietf.org/html/rfc2616#section-9.2">RFC 2616 (section 9.2)</a>
      */
     @Test
-    public void test9_2_ServerOptions() throws Exception
+    public void test92ServerOptions() throws Exception
     {
         // Unsupported in Jetty.
         // Server can handle many webapps, each with their own set of supported OPTIONS.
@@ -837,7 +837,7 @@ public abstract class RFC2616BaseTest
      * @see <a href="http://tools.ietf.org/html/rfc2616#section-9.2">RFC 2616 (section 9.2)</a>
      */
     @Test
-    public void test9_2_ResourceOptions() throws Exception
+    public void test92ResourceOptions() throws Exception
     {
         // Jetty is conditionally compliant.
         // Possible Bug in the Spec.
@@ -884,7 +884,7 @@ public abstract class RFC2616BaseTest
      * @see <a href="http://tools.ietf.org/html/rfc2616#section-9.4">RFC 2616 (section 9.4)</a>
      */
     @Test
-    public void test9_4() throws Exception
+    public void test94() throws Exception
     {
         /* Test GET first. (should have body) */
 
@@ -948,7 +948,7 @@ public abstract class RFC2616BaseTest
      */
     @Test
     @Disabled("Introduction of fix for realm-less security constraints has rendered this test invalid due to default configuration preventing use of TRACE in webdefault.xml")
-    public void test9_8() throws Exception
+    public void test98() throws Exception
     {
 
         StringBuffer req1 = new StringBuffer();
@@ -971,7 +971,7 @@ public abstract class RFC2616BaseTest
      * @see <a href="http://tools.ietf.org/html/rfc2616#section-10.2.7">RFC 2616 (section 10.2.7)</a>
      */
     @Test
-    public void test10_2_7() throws Exception
+    public void test1027() throws Exception
     {
         // check to see if corresponding GET w/o range would return
         // a) ETag
@@ -1050,7 +1050,7 @@ public abstract class RFC2616BaseTest
      * @see <a href="http://tools.ietf.org/html/rfc2616#section-10.3">RFC 2616 (section 10.3)</a>
      */
     @Test
-    public void test10_3_RedirectHttp10Path() throws Exception
+    public void test103RedirectHttp10Path() throws Exception
     {
         String specId;
 
@@ -1076,7 +1076,7 @@ public abstract class RFC2616BaseTest
      * @see <a href="http://tools.ietf.org/html/rfc2616#section-10.3">RFC 2616 (section 10.3)</a>
      */
     @Test
-    public void test10_3_RedirectHttp11Path() throws Exception
+    public void test103RedirectHttp11Path() throws Exception
     {
         // HTTP/1.1
 
@@ -1111,7 +1111,7 @@ public abstract class RFC2616BaseTest
      * @see <a href="http://tools.ietf.org/html/rfc2616#section-10.3">RFC 2616 (section 10.3)</a>
      */
     @Test
-    public void test10_3_RedirectHttp10Resource() throws Exception
+    public void test103RedirectHttp10Resource() throws Exception
     {
         // HTTP/1.0 - redirect with resource/content
 
@@ -1134,7 +1134,7 @@ public abstract class RFC2616BaseTest
      * @see <a href="http://tools.ietf.org/html/rfc2616#section-10.3">RFC 2616 (section 10.3)</a>
      */
     @Test
-    public void test10_3_RedirectHttp11Resource() throws Exception
+    public void test103RedirectHttp11Resource() throws Exception
     {
         // HTTP/1.1 - redirect with resource/content
 
@@ -1159,7 +1159,7 @@ public abstract class RFC2616BaseTest
      * @see <a href="http://tools.ietf.org/html/rfc2616#section-14.3">RFC 2616 (section 14.3)</a>
      */
     @Test
-    public void test14_3_AcceptEncodingGzip() throws Exception
+    public void test143AcceptEncodingGzip() throws Exception
     {
         String specId;
 
@@ -1185,7 +1185,7 @@ public abstract class RFC2616BaseTest
      * @see <a href="http://tools.ietf.org/html/rfc2616#section-14.16">RFC 2616 (section 14.16)</a>
      */
     @Test
-    public void test14_16_NoRange() throws Exception
+    public void test1416NoRange() throws Exception
     {
         //
         // calibrate with normal request (no ranges); if this doesnt
@@ -1231,7 +1231,7 @@ public abstract class RFC2616BaseTest
      * @see <a href="http://tools.ietf.org/html/rfc2616#section-14.16">RFC 2616 (section 14.16)</a>
      */
     @Test
-    public void test14_16_PartialRange() throws Exception
+    public void test1416PartialRange() throws Exception
     {
         String alpha = ALPHA;
 
@@ -1251,7 +1251,7 @@ public abstract class RFC2616BaseTest
      * @see <a href="http://tools.ietf.org/html/rfc2616#section-14.16">RFC 2616 (section 14.16)</a>
      */
     @Test
-    public void test14_16_PartialRange_MixedRanges() throws Exception
+    public void test1416PartialRangeMixedRanges() throws Exception
     {
         String alpha = ALPHA;
 
@@ -1292,7 +1292,7 @@ public abstract class RFC2616BaseTest
      * @see <a href="http://tools.ietf.org/html/rfc2616#section-14.16">RFC 2616 (section 14.16)</a>
      */
     @Test
-    public void test14_16_PartialRange_MixedBytes() throws Exception
+    public void test1416PartialRangeMixedBytes() throws Exception
     {
         String alpha = ALPHA;
 
@@ -1331,7 +1331,7 @@ public abstract class RFC2616BaseTest
      * @see <a href="http://tools.ietf.org/html/rfc2616#section-14.16">RFC 2616 (section 14.16)</a>
      */
     @Test
-    public void test14_16_PartialRange_MixedMultiple() throws Exception
+    public void test1416PartialRangeMixedMultiple() throws Exception
     {
         String alpha = ALPHA;
 
@@ -1370,7 +1370,7 @@ public abstract class RFC2616BaseTest
      * @see <a href="http://tools.ietf.org/html/rfc2616#section-14.23">RFC 2616 (section 14.23)</a>
      */
     @Test
-    public void test14_23_Http10_NoHostHeader() throws Exception
+    public void test1423Http10NoHostHeader() throws Exception
     {
         // HTTP/1.0 OK with no host
 
@@ -1389,7 +1389,7 @@ public abstract class RFC2616BaseTest
      * @see <a href="http://tools.ietf.org/html/rfc2616#section-14.23">RFC 2616 (section 14.23)</a>
      */
     @Test
-    public void test14_23_Http11_NoHost() throws Exception
+    public void test1423Http11NoHost() throws Exception
     {
         // HTTP/1.1 400 (bad request) with no host
 
@@ -1408,7 +1408,7 @@ public abstract class RFC2616BaseTest
      * @see <a href="http://tools.ietf.org/html/rfc2616#section-14.23">RFC 2616 (section 14.23)</a>
      */
     @Test
-    public void test14_23_ValidHost() throws Exception
+    public void test1423ValidHost() throws Exception
     {
         // HTTP/1.1 - Valid host
 
@@ -1428,7 +1428,7 @@ public abstract class RFC2616BaseTest
      * @see <a href="http://tools.ietf.org/html/rfc2616#section-14.23">RFC 2616 (section 14.23)</a>
      */
     @Test
-    public void test14_23_IncompleteHostHeader() throws Exception
+    public void test1423IncompleteHostHeader() throws Exception
     {
         // HTTP/1.1 - Incomplete (empty) Host header
         try (StacklessLogging stackless = new StacklessLogging(HttpParser.class))
@@ -1474,7 +1474,7 @@ public abstract class RFC2616BaseTest
      * @see <a href="http://tools.ietf.org/html/rfc2616#section-14.35">RFC 2616 (section 14.35)</a>
      */
     @Test
-    public void test14_35_Range() throws Exception
+    public void test1435Range() throws Exception
     {
         //
         // test various valid range specs that have not been
@@ -1503,7 +1503,7 @@ public abstract class RFC2616BaseTest
      * @see <a href="http://tools.ietf.org/html/rfc2616#section-14.35">RFC 2616 (section 14.35)</a>
      */
     @Test
-    public void test14_35_Range_Multipart1() throws Exception
+    public void test1435RangeMultipart1() throws Exception
     {
         String rangedef = "23-23,-2"; // Request byte at offset 23, and the last 2 bytes
 
@@ -1560,7 +1560,7 @@ public abstract class RFC2616BaseTest
      * @see <a href="http://tools.ietf.org/html/rfc2616#section-14.35">RFC 2616 (section 14.35)</a>
      */
     @Test
-    public void test14_35_PartialRange() throws Exception
+    public void test1435PartialRange() throws Exception
     {
         //
         // test various valid range specs that have not been
@@ -1596,7 +1596,7 @@ public abstract class RFC2616BaseTest
      * @see <a href="http://tools.ietf.org/html/rfc2616#section-14.35">RFC 2616 (section 14.35)</a>
      */
     @Test
-    public void test14_35_BadRange_InvalidSyntax() throws Exception
+    public void test1435BadRangeInvalidSyntax() throws Exception
     {
         // server should ignore all range headers which include
         // at least one syntactically invalid range
@@ -1613,7 +1613,7 @@ public abstract class RFC2616BaseTest
      * @see <a href="http://tools.ietf.org/html/rfc2616#section-14.39">RFC 2616 (section 14.39)</a>
      */
     @Test
-    public void test14_39_TEGzip() throws Exception
+    public void test1439TEGzip() throws Exception
     {
         if (STRICT)
         {
@@ -1641,7 +1641,7 @@ public abstract class RFC2616BaseTest
      * @see <a href="http://tools.ietf.org/html/rfc2616#section-14.39">RFC 2616 (section 14.39)</a>
      */
     @Test
-    public void test14_39_TEDeflate() throws Exception
+    public void test1439TEDeflate() throws Exception
     {
         if (STRICT)
         {
@@ -1667,7 +1667,7 @@ public abstract class RFC2616BaseTest
      * @see <a href="http://tools.ietf.org/html/rfc2616#section-19.6">RFC 2616 (section 19.6)</a>
      */
     @Test
-    public void test19_6() throws Exception
+    public void test196() throws Exception
     {
 
         String specId;

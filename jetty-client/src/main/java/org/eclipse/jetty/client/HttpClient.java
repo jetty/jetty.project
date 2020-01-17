@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -531,15 +531,28 @@ public class HttpClient extends ContainerLifeCycle
 
     protected HttpDestination destinationFor(String scheme, String host, int port)
     {
+        return resolveDestination(scheme, host, port, null);
+    }
+
+    protected HttpDestination resolveDestination(String scheme, String host, int port, Object tag)
+    {
+        Origin origin = createOrigin(scheme, host, port, tag);
+        return resolveDestination(origin);
+    }
+
+    protected Origin createOrigin(String scheme, String host, int port, Object tag)
+    {
         if (!HttpScheme.HTTP.is(scheme) && !HttpScheme.HTTPS.is(scheme) &&
             !HttpScheme.WS.is(scheme) && !HttpScheme.WSS.is(scheme))
             throw new IllegalArgumentException("Invalid protocol " + scheme);
-
         scheme = scheme.toLowerCase(Locale.ENGLISH);
         host = host.toLowerCase(Locale.ENGLISH);
         port = normalizePort(scheme, port);
+        return new Origin(scheme, host, port, tag);
+    }
 
-        Origin origin = new Origin(scheme, host, port);
+    protected HttpDestination resolveDestination(Origin origin)
+    {
         return destinations.computeIfAbsent(origin, o ->
         {
             HttpDestination newDestination = getTransport().newHttpDestination(o);
@@ -566,7 +579,7 @@ public class HttpClient extends ContainerLifeCycle
 
     protected void send(final HttpRequest request, List<Response.ResponseListener> listeners)
     {
-        HttpDestination destination = destinationFor(request.getScheme(), request.getHost(), request.getPort());
+        HttpDestination destination = resolveDestination(request.getScheme(), request.getHost(), request.getPort(), request.getTag());
         destination.send(request, listeners);
     }
 

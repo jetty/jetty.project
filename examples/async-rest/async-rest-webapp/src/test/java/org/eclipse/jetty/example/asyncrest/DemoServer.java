@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -26,13 +26,13 @@ public class DemoServer
     public static void main(String[] args)
         throws Exception
     {
-        String jetty_home = System.getProperty("jetty.home", ".");
+        String jettyHome = System.getProperty("jetty.home", ".");
 
         Server server = new Server(Integer.getInteger("jetty.http.port", 8080).intValue());
 
         WebAppContext webapp = new WebAppContext();
         webapp.setContextPath("/");
-        webapp.setWar(jetty_home + "/target/async-rest/");
+        webapp.setWar(jettyHome + "/target/async-rest/");
         webapp.setParentLoaderPriority(true);
         webapp.setServerClasses(new String[]{});
         server.setHandler(webapp);

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -151,6 +151,7 @@ public class WebInfConfigurationTest
             Arguments.of("another one/bites the dust/", "bites the dust"),
             Arguments.of("another+one/bites+the+dust/", "bites+the+dust"),
             Arguments.of("another%20one/bites%20the%20dust/", "bites%20the%20dust"),
+            // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
             Arguments.of("spanish/n\u00FAmero.war", "n\u00FAmero.war"),
             Arguments.of("spanish/n%C3%BAmero.war", "n%C3%BAmero.war"),
             Arguments.of("a/b!/", "b!"),

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,14 +18,12 @@
 
 package org.eclipse.jetty.client;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Queue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -62,7 +60,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_SuccessfulRequest_ReturnsConnection(Scenario scenario) throws Exception
+    public void testSuccessfulRequestReturnsConnection(Scenario scenario) throws Exception
     {
         start(scenario, new EmptyServerHandler());
 
@@ -113,7 +111,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_FailedRequest_RemovesConnection(Scenario scenario) throws Exception
+    public void testFailedRequestRemovesConnection(Scenario scenario) throws Exception
     {
         start(scenario, new EmptyServerHandler());
 
@@ -165,7 +163,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_BadRequest_RemovesConnection(Scenario scenario) throws Exception
+    public void testBadRequestRemovesConnection(Scenario scenario) throws Exception
     {
         start(scenario, new EmptyServerHandler());
 
@@ -227,7 +225,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
     @ArgumentsSource(ScenarioProvider.class)
     @Tag("Slow")
     @DisabledIfSystemProperty(named = "env", matches = "ci") // TODO: SLOW, needs review
-    public void test_BadRequest_WithSlowRequest_RemovesConnection(Scenario scenario) throws Exception
+    public void testBadRequestWithSlowRequestRemovesConnection(Scenario scenario) throws Exception
     {
         start(scenario, new EmptyServerHandler());
 
@@ -301,7 +299,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_ConnectionFailure_RemovesConnection(Scenario scenario) throws Exception
+    public void testConnectionFailureRemovesConnection(Scenario scenario) throws Exception
     {
         start(scenario, new EmptyServerHandler());
 
@@ -336,12 +334,12 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_ResponseWithConnectionCloseHeader_RemovesConnection(Scenario scenario) throws Exception
+    public void testResponseWithConnectionCloseHeaderRemovesConnection(Scenario scenario) throws Exception
     {
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             {
                 response.setHeader("Connection", "close");
                 baseRequest.setHandled(true);
@@ -382,14 +380,14 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_BigRequestContent_ResponseWithConnectionCloseHeader_RemovesConnection(Scenario scenario) throws Exception
+    public void testBigRequestContentResponseWithConnectionCloseHeaderRemovesConnection(Scenario scenario) throws Exception
     {
         try (StacklessLogging ignore = new StacklessLogging(HttpConnection.class))
         {
             start(scenario, new AbstractHandler()
             {
                 @Override
-                public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+                public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response)
                 {
                     response.setHeader("Connection", "close");
                     baseRequest.setHandled(true);
@@ -441,7 +439,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
     @ArgumentsSource(ScenarioProvider.class)
     @Tag("Slow")
     @DisabledIfSystemProperty(named = "env", matches = "ci") // TODO: SLOW, needs review
-    public void test_IdleConnection_IsClosed_OnRemoteClose(Scenario scenario) throws Exception
+    public void testIdleConnectionIsClosedOnRemoteClose(Scenario scenario) throws Exception
     {
         start(scenario, new EmptyServerHandler());
 

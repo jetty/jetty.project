@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -87,7 +87,7 @@ public class ProxyProtocolTest
     }
 
     @Test
-    public void test_PROXY_GET_v1() throws Exception
+    public void testProxyGetV1() throws Exception
     {
         startServer(new AbstractHandler()
         {
@@ -139,7 +139,7 @@ public class ProxyProtocolTest
     }
 
     @Test
-    public void test_PROXY_GET_v2() throws Exception
+    public void testProxyGetV2() throws Exception
     {
         startServer(new AbstractHandler()
         {

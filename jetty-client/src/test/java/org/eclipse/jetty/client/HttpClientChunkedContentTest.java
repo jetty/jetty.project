@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -63,7 +63,7 @@ public class HttpClientChunkedContentTest
     }
 
     @Test
-    public void test_Server_HeadersPauseTerminal_Client_Response() throws Exception
+    public void testServerHeadersPauseTerminalClientResponse() throws Exception
     {
         startClient();
 
@@ -115,7 +115,7 @@ public class HttpClientChunkedContentTest
     }
 
     @Test
-    public void test_Server_ContentTerminal_Client_ContentDelay() throws Exception
+    public void testServerContentTerminalClientContentDelay() throws Exception
     {
         startClient();
 

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -539,9 +539,10 @@ public abstract class AbstractJettyMojo extends AbstractMojo
                 path = workDir.resolve(path);
                 contextXml = path.toFile().getAbsolutePath();
             }
-
-            XmlConfiguration xmlConfiguration = new XmlConfiguration(Resource.toURL(path.toFile()));
+            
             getLog().info("Applying context xml file " + contextXml);
+            XmlConfiguration xmlConfiguration = new XmlConfiguration(Resource.toURL(path.toFile()));
+            xmlConfiguration.configure(webApp);
         }
 
         //If no contextPath was specified, go with default of project artifactid

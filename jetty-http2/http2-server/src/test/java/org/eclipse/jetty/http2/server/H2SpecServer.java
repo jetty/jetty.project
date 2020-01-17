@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -34,11 +34,11 @@ public class H2SpecServer
 
         Server server = new Server();
 
-        HttpConfiguration http_config = new HttpConfiguration();
-        http_config.setRequestHeaderSize(16 * 1024);
+        HttpConfiguration httpConfig = new HttpConfiguration();
+        httpConfig.setRequestHeaderSize(16 * 1024);
 
-        HttpConnectionFactory http = new HttpConnectionFactory(http_config);
-        HTTP2CServerConnectionFactory h2c = new HTTP2CServerConnectionFactory(http_config);
+        HttpConnectionFactory http = new HttpConnectionFactory(httpConfig);
+        HTTP2CServerConnectionFactory h2c = new HTTP2CServerConnectionFactory(httpConfig);
         ServerConnector connector = new ServerConnector(server, http, h2c);
         connector.setPort(port);
         server.addConnector(connector);

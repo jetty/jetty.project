@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -44,7 +44,7 @@ public class BadAppTests extends AbstractDistributionTest
      * It is expected that the server does not start and exits with an error code
      */
     @Test
-    public void testXml_ThrowOnUnavailable_True() throws Exception
+    public void testXmlThrowOnUnavailableTrue() throws Exception
     {
         String jettyVersion = System.getProperty("jettyVersion");
         DistributionTester distribution = DistributionTester.Builder.newInstance()
@@ -81,7 +81,7 @@ public class BadAppTests extends AbstractDistributionTest
      * that it is unavailable.
      */
     @Test
-    public void testXml_ThrowOnUnavailable_False() throws Exception
+    public void testXmlThrowOnUnavailableFalse() throws Exception
     {
         String jettyVersion = System.getProperty("jettyVersion");
         DistributionTester distribution = DistributionTester.Builder.newInstance()
@@ -123,7 +123,7 @@ public class BadAppTests extends AbstractDistributionTest
      * that it is unavailable.
      */
     @Test
-    public void testNoXml_ThrowOnUnavailable_Default() throws Exception
+    public void testNoXmlThrowOnUnavailableDefault() throws Exception
     {
         String jettyVersion = System.getProperty("jettyVersion");
         DistributionTester distribution = DistributionTester.Builder.newInstance()

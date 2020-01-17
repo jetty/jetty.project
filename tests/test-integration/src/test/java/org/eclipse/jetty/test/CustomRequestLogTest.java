@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.server.handler;
+package org.eclipse.jetty.test;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -26,15 +26,25 @@ import java.net.NetworkInterface;
 import java.net.Socket;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.Enumeration;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
+import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.security.ConstraintMapping;
+import org.eclipse.jetty.security.ConstraintSecurityHandler;
+import org.eclipse.jetty.security.HashLoginService;
+import org.eclipse.jetty.security.SecurityHandler;
+import org.eclipse.jetty.security.UserStore;
+import org.eclipse.jetty.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.server.CustomRequestLog;
 import org.eclipse.jetty.server.ForwardedRequestCustomizer;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -44,8 +54,12 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.DateCache;
+import org.eclipse.jetty.util.security.Constraint;
+import org.eclipse.jetty.util.security.Credential;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -88,22 +102,68 @@ public class CustomRequestLogTest
         TestRequestLogWriter writer = new TestRequestLogWriter();
         _log = new CustomRequestLog(writer, formatString);
         _server.setRequestLog(_log);
-        _server.setHandler(new TestHandler());
+        ServletContextHandler contextHandler = new ServletContextHandler();
+        contextHandler.setSecurityHandler(getSecurityHandler("username", "password", "testRealm"));
+        contextHandler.addServlet(new ServletHolder(new TestServlet()), "/");
+        _server.setHandler(contextHandler);
         _server.start();
 
         String host = _serverConnector.getHost();
         if (host == null)
-        {
             host = "localhost";
-        }
+
         int localPort = _serverConnector.getLocalPort();
         _serverURI = new URI(String.format("http://%s:%d/", host, localPort));
+    }
+
+    private static SecurityHandler getSecurityHandler(String username, String password, String realm)
+    {
+        HashLoginService loginService = new HashLoginService();
+        UserStore userStore = new UserStore();
+        userStore.addUser(username, Credential.getCredential(password), new String[]{"user"});
+        loginService.setUserStore(userStore);
+        loginService.setName(realm);
+
+        Constraint constraint = new Constraint();
+        constraint.setName("auth");
+        constraint.setAuthenticate(true);
+        constraint.setRoles(new String[]{"**"});
+
+        ConstraintMapping mapping = new ConstraintMapping();
+        mapping.setPathSpec("/secure/*");
+        mapping.setConstraint(constraint);
+
+        ConstraintSecurityHandler security = new ConstraintSecurityHandler();
+        security.addConstraintMapping(mapping);
+        security.setAuthenticator(new BasicAuthenticator());
+        security.setLoginService(loginService);
+
+        return security;
     }
 
     @AfterEach
     public void after() throws Exception
     {
         _server.stop();
+    }
+
+    @Test
+    public void testLogRemoteUser() throws Exception
+    {
+        String authHeader = HttpHeader.AUTHORIZATION + ": Basic " + Base64.getEncoder().encodeToString("username:password".getBytes());
+        testHandlerServerStart("%u %{d}u");
+
+        _connector.getResponse("GET / HTTP/1.0\n\n\n");
+        String log = _entries.poll(5, TimeUnit.SECONDS);
+        assertThat(log, is("- -"));
+
+        _connector.getResponse("GET / HTTP/1.0\n" + authHeader + "\n\n\n");
+        log = _entries.poll(5, TimeUnit.SECONDS);
+        assertThat(log, is("- username"));
+
+        _connector.getResponse("GET /secure HTTP/1.0\n" + authHeader + "\n\n\n");
+        log = _entries.poll(5, TimeUnit.SECONDS);
+        assertThat(log, is("username username"));
     }
 
     @Test
@@ -374,7 +434,7 @@ public class CustomRequestLogTest
         _connector.getResponse("GET / HTTP/1.0\n\n");
         String log = _entries.poll(5, TimeUnit.SECONDS);
         long requestTime = requestTimes.poll(5, TimeUnit.SECONDS);
-        DateCache dateCache = new DateCache(_log.DEFAULT_DATE_FORMAT, Locale.getDefault(), "GMT");
+        DateCache dateCache = new DateCache(CustomRequestLog.DEFAULT_DATE_FORMAT, Locale.getDefault(), "GMT");
         assertThat(log, is("RequestTime: [" + dateCache.format(requestTime) + "]"));
     }
 
@@ -549,11 +609,13 @@ public class CustomRequestLogTest
         }
     }
 
-    private class TestHandler extends AbstractHandler
+    private class TestServlet extends HttpServlet
     {
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
+            Request baseRequest = Objects.requireNonNull(Request.getBaseRequest(request));
+
             if (request.getRequestURI().contains("error404"))
             {
                 response.setStatus(404);
@@ -596,10 +658,7 @@ public class CustomRequestLogTest
             if (request.getContentLength() > 0)
             {
                 InputStream in = request.getInputStream();
-                while (in.read() > 0)
-                {
-                    ;
-                }
+                while (in.read() > 0);
             }
         }
     }

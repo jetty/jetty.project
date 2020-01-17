@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -1252,7 +1252,9 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
                     for (int idx = 0; idx < managers.length; idx++)
                     {
                         if (managers[idx] instanceof X509ExtendedKeyManager)
+                        {
                             managers[idx] = newSniX509ExtendedKeyManager((X509ExtendedKeyManager)managers[idx]);
+                        }
                     }
                 }
             }
@@ -1270,7 +1272,11 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     @Deprecated
     protected X509ExtendedKeyManager newSniX509ExtendedKeyManager(X509ExtendedKeyManager keyManager)
     {
-        throw new UnsupportedOperationException("X509ExtendedKeyManager only supported on Server");
+        throw new IllegalStateException(String.format(
+            "KeyStores with multiple certificates are not supported on the base class %s. (Use %s or %s instead)",
+            SslContextFactory.class.getName(),
+            Server.class.getName(),
+            Client.class.getName()));
     }
 
     protected TrustManager[] getTrustManagers(KeyStore trustStore, Collection<? extends CRL> crls) throws Exception
@@ -2177,6 +2183,13 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
             checkTrustAll();
             checkEndPointIdentificationAlgorithm();
             super.checkConfiguration();
+        }
+
+        @Override
+        protected X509ExtendedKeyManager newSniX509ExtendedKeyManager(X509ExtendedKeyManager keyManager)
+        {
+            // Client has no SNI functionality.
+            return keyManager;
         }
     }
 

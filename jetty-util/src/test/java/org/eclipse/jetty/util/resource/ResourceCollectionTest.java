@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -43,7 +43,7 @@ public class ResourceCollectionTest
     public WorkDir workdir;
 
     @Test
-    public void testUnsetCollection_ThrowsISE()
+    public void testUnsetCollectionThrowsISE()
     {
         ResourceCollection coll = new ResourceCollection();
 
@@ -51,7 +51,7 @@ public class ResourceCollectionTest
     }
 
     @Test
-    public void testEmptyResourceArray_ThrowsISE()
+    public void testEmptyResourceArrayThrowsISE()
     {
         ResourceCollection coll = new ResourceCollection(new Resource[0]);
 
@@ -59,7 +59,7 @@ public class ResourceCollectionTest
     }
 
     @Test
-    public void testResourceArrayWithNull_ThrowsISE()
+    public void testResourceArrayWithNullThrowsISE()
     {
         ResourceCollection coll = new ResourceCollection(new Resource[]{null});
 
@@ -67,7 +67,7 @@ public class ResourceCollectionTest
     }
 
     @Test
-    public void testEmptyStringArray_ThrowsISE()
+    public void testEmptyStringArrayThrowsISE()
     {
         ResourceCollection coll = new ResourceCollection(new String[0]);
 
@@ -75,14 +75,14 @@ public class ResourceCollectionTest
     }
 
     @Test
-    public void testStringArrayWithNull_ThrowsIAE()
+    public void testStringArrayWithNullThrowsIAE()
     {
         assertThrows(IllegalArgumentException.class,
             () -> new ResourceCollection(new String[]{null}));
     }
 
     @Test
-    public void testNullCsv_ThrowsIAE()
+    public void testNullCsvThrowsIAE()
     {
         assertThrows(IllegalArgumentException.class, () ->
         {
@@ -92,7 +92,7 @@ public class ResourceCollectionTest
     }
 
     @Test
-    public void testEmptyCsv_ThrowsIAE()
+    public void testEmptyCsvThrowsIAE()
     {
         assertThrows(IllegalArgumentException.class, () ->
         {
@@ -102,7 +102,7 @@ public class ResourceCollectionTest
     }
 
     @Test
-    public void testBlankCsv_ThrowsIAE()
+    public void testBlankCsvThrowsIAE()
     {
         assertThrows(IllegalArgumentException.class, () ->
         {
@@ -112,7 +112,7 @@ public class ResourceCollectionTest
     }
 
     @Test
-    public void testSetResourceNull_ThrowsISE()
+    public void testSetResourceNullThrowsISE()
     {
         // Create a ResourceCollection with one valid entry
         Path path = MavenTestingUtils.getTargetPath();
@@ -126,7 +126,7 @@ public class ResourceCollectionTest
     }
 
     @Test
-    public void testSetResourceEmpty_ThrowsISE()
+    public void testSetResourceEmptyThrowsISE()
     {
         // Create a ResourceCollection with one valid entry
         Path path = MavenTestingUtils.getTargetPath();
@@ -140,7 +140,7 @@ public class ResourceCollectionTest
     }
 
     @Test
-    public void testSetResourceAllNulls_ThrowsISE()
+    public void testSetResourceAllNullsThrowsISE()
     {
         // Create a ResourceCollection with one valid entry
         Path path = MavenTestingUtils.getTargetPath();

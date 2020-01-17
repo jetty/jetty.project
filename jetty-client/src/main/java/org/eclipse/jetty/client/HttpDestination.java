@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -94,6 +94,9 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
             if (isSecure())
                 connectionFactory = newSslClientConnectionFactory(null, connectionFactory);
         }
+        Object tag = origin.getTag();
+        if (tag instanceof ClientConnectionFactory.Decorator)
+            connectionFactory = ((ClientConnectionFactory.Decorator)tag).apply(connectionFactory);
         this.connectionFactory = connectionFactory;
 
         String host = HostPort.normalizeHost(getHost());
@@ -323,10 +326,10 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
         }
     }
 
-    public boolean process(final Connection connection)
+    public boolean process(Connection connection)
     {
         HttpClient client = getHttpClient();
-        final HttpExchange exchange = getHttpExchanges().poll();
+        HttpExchange exchange = getHttpExchanges().poll();
         if (LOG.isDebugEnabled())
             LOG.debug("Processing exchange {} on {} of {}", exchange, connection, this);
         if (exchange == null)
@@ -343,7 +346,7 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
         }
         else
         {
-            final Request request = exchange.getRequest();
+            Request request = exchange.getRequest();
             Throwable cause = request.getAbortCause();
             if (cause != null)
             {
@@ -365,9 +368,13 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
                     if (LOG.isDebugEnabled())
                         LOG.debug("Send failed {} for {}", result, exchange);
                     if (result.retry)
+                    {
+                        // Resend this exchange, likely on another connection,
+                        // and return false to avoid to re-enter this method.
                         send(exchange);
-                    else
-                        request.abort(result.failure);
+                        return false;
+                    }
+                    request.abort(result.failure);
                 }
             }
             return getHttpExchanges().peek() != null;

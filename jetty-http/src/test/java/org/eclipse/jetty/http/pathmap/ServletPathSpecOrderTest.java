@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -56,6 +56,7 @@ public class ServletPathSpecOrderTest
         data.add(Arguments.of("/downloads/script.gz", "gzipped"));
         data.add(Arguments.of("/animal/arhive.gz", "animals"));
         data.add(Arguments.of("/Other/path", "default"));
+        // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
         data.add(Arguments.of("/\u20ACuro/path", "money"));
         data.add(Arguments.of("/", "root"));
 

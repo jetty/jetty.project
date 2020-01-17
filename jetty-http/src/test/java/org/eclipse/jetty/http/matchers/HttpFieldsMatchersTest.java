@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -59,7 +59,7 @@ public class HttpFieldsMatchersTest
     }
 
     @Test
-    public void testContainsHeader_MisMatch()
+    public void testContainsHeaderMisMatch()
     {
         HttpFields fields = new HttpFields();
         fields.put("a", "foo");
@@ -75,7 +75,7 @@ public class HttpFieldsMatchersTest
     }
 
     @Test
-    public void testContainsHeaderValue_MisMatch_NoSuchHeader()
+    public void testContainsHeaderValueMisMatchNoSuchHeader()
     {
         HttpFields fields = new HttpFields();
         fields.put("a", "foo");
@@ -91,7 +91,7 @@ public class HttpFieldsMatchersTest
     }
 
     @Test
-    public void testContainsHeaderValue_MisMatch_NoSuchValue()
+    public void testContainsHeaderValueMisMatchNoSuchValue()
     {
         HttpFields fields = new HttpFields();
         fields.put("a", "foo");

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -44,6 +44,7 @@ public class PathMapTest
         p.put("/", "8");
         p.put("/XXX:/YYY", "9");
         p.put("", "10");
+        // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
         p.put("/\u20ACuro/*", "11");
 
         String[][] tests = {
@@ -64,9 +65,10 @@ public class PathMapTest
             {"/suffix/path.gz", "7"},
             {"/animal/path.gz", "5"},
             {"/Other/path", "8"},
+            // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
             {"/\u20ACuro/path", "11"},
-            {"/", "10"},
-            };
+            {"/", "10"}
+        };
 
         for (String[] test : tests)
         {

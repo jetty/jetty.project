@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>9.4.24-SNAPSHOT</version>
+    <version>9.4.26-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -122,6 +122,13 @@
       <groupId>org.apache.kerby</groupId>
       <artifactId>kerb-simplekdc</artifactId>
       <version>1.1.1</version>
+      <scope>test</scope>
+    </dependency>
+    <!-- transitive dependency defined as a range and we don't want that -->
+    <dependency>
+      <groupId>net.minidev</groupId>
+      <artifactId>json-smart</artifactId>
+      <version>2.3</version>
       <scope>test</scope>
     </dependency>
     <dependency>

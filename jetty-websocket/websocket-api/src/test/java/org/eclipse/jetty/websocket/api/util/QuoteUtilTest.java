@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -44,14 +44,14 @@ public class QuoteUtilTest
     }
 
     @Test
-    public void testSplitAt_PreserveQuoting()
+    public void testSplitAtPreserveQuoting()
     {
         Iterator<String> iter = QuoteUtil.splitAt("permessage-compress; method=\"foo, bar\"", ";");
         assertSplitAt(iter, "permessage-compress", "method=\"foo, bar\"");
     }
 
     @Test
-    public void testSplitAt_PreserveQuotingWithNestedDelim()
+    public void testSplitAtPreserveQuotingWithNestedDelim()
     {
         Iterator<String> iter = QuoteUtil.splitAt("permessage-compress; method=\"foo; x=10\"", ";");
         assertSplitAt(iter, "permessage-compress", "method=\"foo; x=10\"");
@@ -81,7 +81,7 @@ public class QuoteUtilTest
     }
 
     @Test
-    public void testSplitAtKeyValue_Message()
+    public void testSplitAtKeyValueMessage()
     {
         Iterator<String> iter = QuoteUtil.splitAt("method=\"foo, bar\"", "=");
         assertSplitAt(iter, "method", "foo, bar");
@@ -104,35 +104,35 @@ public class QuoteUtilTest
     }
 
     @Test
-    public void testSplitKeyValue_Quoted()
+    public void testSplitKeyValueQuoted()
     {
         Iterator<String> iter = QuoteUtil.splitAt("Key = \"Value\"", "=");
         assertSplitAt(iter, "Key", "Value");
     }
 
     @Test
-    public void testSplitKeyValue_QuotedValueList()
+    public void testSplitKeyValueQuotedValueList()
     {
         Iterator<String> iter = QuoteUtil.splitAt("Fruit = \"Apple, Banana, Cherry\"", "=");
         assertSplitAt(iter, "Fruit", "Apple, Banana, Cherry");
     }
 
     @Test
-    public void testSplitKeyValue_QuotedWithDelim()
+    public void testSplitKeyValueQuotedWithDelim()
     {
         Iterator<String> iter = QuoteUtil.splitAt("Key = \"Option=Value\"", "=");
         assertSplitAt(iter, "Key", "Option=Value");
     }
 
     @Test
-    public void testSplitKeyValue_Simple()
+    public void testSplitKeyValueSimple()
     {
         Iterator<String> iter = QuoteUtil.splitAt("Key=Value", "=");
         assertSplitAt(iter, "Key", "Value");
     }
 
     @Test
-    public void testSplitKeyValue_WithWhitespace()
+    public void testSplitKeyValueWithWhitespace()
     {
         Iterator<String> iter = QuoteUtil.splitAt("Key = Value", "=");
         assertSplitAt(iter, "Key", "Value");
@@ -147,7 +147,7 @@ public class QuoteUtilTest
     }
 
     @Test
-    public void testQuoteIfNeeded_null()
+    public void testQuoteIfNeedednull()
     {
         StringBuilder buf = new StringBuilder();
         QuoteUtil.quoteIfNeeded(buf, null, ";=");

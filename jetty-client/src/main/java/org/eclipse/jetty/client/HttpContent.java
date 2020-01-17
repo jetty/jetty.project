@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -26,6 +26,7 @@ import java.util.Iterator;
 import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -218,15 +219,8 @@ public class HttpContent implements Callback, Closeable
     @Override
     public void close()
     {
-        try
-        {
-            if (iterator instanceof Closeable)
-                ((Closeable)iterator).close();
-        }
-        catch (Throwable x)
-        {
-            LOG.ignore(x);
-        }
+        if (iterator instanceof Closeable)
+            IO.close((Closeable)iterator);
     }
 
     @Override

@@ -1,4 +1,41 @@
-jetty-9.4.24-SNAPSHOT
+jetty-9.4.26-SNAPSHOT
+
+jetty-9.4.25.v20191220 - 20 December 2019
+ + 995 UrlEncoded.encodeString should skip more characters
+ + 2195 Add parameter expansion to start.jar --exec parameters
+ + 3512 File descriptor is not released after zip file uploaded via
+   jetty-client
+ + 3730 WebSocketClient constructor cleanup (and deprecations)
+ + 4269 ResponseWriter should not throw RuntimeIOExceptions
+ + 4323 QOS Filter does not handle IllegalStateException and never releases
+   passes
+ + 4329 rewrite prevents URL session tracking.
+ + 4331 Improve handling of HttpOutput.close() for pending writes
+ + 4350 Deprecated MultiPartInputStreamParser still used in jetty-server
+   (MultiPartsUtilParser) but OSGi ExportPackage suppressed
+ + 4351 Servlet.service called before Servlet.init is finished when servlet is
+   lazily initialized
+ + 4363 jetty-maven-plugin no longer processes supplied context.xml-file.
+ + 4366 HTTP client uses SOCKS4 proxy hostname for SSL hostname verification
+ + 4374 Jetty client: Response.AsyncContentListener.onContent is not called
+ + 4376 Async Content Complete bug results in
+   org.eclipse.jetty.io.EofException: Async closed
+ + 4385 Limit new UnsupportedOperationException to direct base class
+   SslContextFactory usage
+ + 4392 Suppress logging of QuietException in HttpChannelState.asyncError()
+ + 4402 NPE in JettyRunWarExplodedMojo
+ + 4411 Jetty server spins on incomplete request due to delayed dispatch
+   until content
+ + 4415 GzipHandler invalid input zip size on large
+   (over 2,147,483,647 bytes) request body content
+ + 4421 HttpClient support for PROXY protocol
+ + 4427 Retried HttpClient Requests can result in duplicates cookies
+
+jetty-9.4.24.v20191120 - 20 November 2019
+ + 3083 The ini-template for jetty.console-capture.dir does not match the
+   default value
+ + 4128 OpenIdCredetials can't decode JWT ID token
+ + 4334 Better test ErrorHandler changes
 
 jetty-9.4.23.v20191118 - 18 November 2019
  + 1485 Add systemd service file
@@ -13,7 +50,7 @@ jetty-9.4.23.v20191118 - 18 November 2019
    URIUtil.equalsIgnoreEncodings()
  + 4138 OpenID module should use HttpClient instead of HttpURLConnection
  + 4156 IllegalStateException when forwarding to jsp with new session
- + 4161 Regression: EofException: request lifecycle violation 
+ + 4161 Regression: EofException: request lifecycle violation
  + 4173 NullPointerException warning in log from WebInfConfiguration after
    upgrade
  + 4217 SslConnection.DecryptedEnpoint.flush eternal busy loop
@@ -30,7 +67,7 @@ jetty-9.4.23.v20191118 - 18 November 2019
  + 4277 Reading streamed gzipped body never terminates
  + 4279 Regression: ResponseWriter#close blocks indefinitely
  + 4282 Review HttpParser handling in case of no content
- + 4283 Wrong package for OpenJDK8ClientALPNProcessor 
+ + 4283 Wrong package for OpenJDK8ClientALPNProcessor
  + 4284 Possible NullPointerException in Main.java when stopped from command
    line
  + 4287 Move getUriLastPathSegment(URI uri) to URIUtil

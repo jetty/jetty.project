@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -38,7 +38,7 @@ public class WebSocketClientInitTest
      * @throws Exception on test failure
      */
     @Test
-    public void testInit_HttpClient_StartedOutside() throws Exception
+    public void testInitHttpClientStartedOutside() throws Exception
     {
         HttpClient http = new HttpClient();
         http.start();
@@ -55,7 +55,6 @@ public class WebSocketClientInitTest
                 assertThat("HttpClient started", http.isStarted(), is(true));
 
                 HttpClient httpBean = ws.getBean(HttpClient.class);
-                assertThat("HttpClient should not be found in WebSocketClient", httpBean, nullValue());
                 assertThat("HttpClient bean is managed", ws.isManaged(httpBean), is(false));
                 assertThat("WebSocketClient should not be found in HttpClient", http.getBean(WebSocketClient.class), nullValue());
             }
@@ -81,7 +80,7 @@ public class WebSocketClientInitTest
      * @throws Exception on test failure
      */
     @Test
-    public void testInit_HttpClient_SyntheticStart() throws Exception
+    public void testInitHttpClientSyntheticStart() throws Exception
     {
         HttpClient http = null;
         WebSocketClient ws = new WebSocketClient();

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -322,12 +322,12 @@ public class IncludeExcludeBasedFilterTest
         @Override
         public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
         {
-            HttpServletRequest http_request = (HttpServletRequest)request;
-            HttpServletResponse http_response = (HttpServletResponse)response;
+            HttpServletRequest httpRequest = (HttpServletRequest)request;
+            HttpServletResponse httpResponse = (HttpServletResponse)response;
 
-            if (super.shouldFilter(http_request, http_response))
+            if (super.shouldFilter(httpRequest, httpResponse))
             {
-                http_response.setHeader("X-Custom-Value", "1");
+                httpResponse.setHeader("X-Custom-Value", "1");
             }
 
             chain.doFilter(request, response);

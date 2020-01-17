@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -79,12 +79,12 @@ public class DataConstraintsTest
         _connectorS = new LocalConnector(_server, https);
         _server.setConnectors(new Connector[]{_connector, _connectorS});
 
-        ContextHandler _context = new ContextHandler();
+        ContextHandler contextHandler = new ContextHandler();
         _session = new SessionHandler();
 
-        _context.setContextPath("/ctx");
-        _server.setHandler(_context);
-        _context.setHandler(_session);
+        contextHandler.setContextPath("/ctx");
+        _server.setHandler(contextHandler);
+        contextHandler.setHandler(_session);
 
         _security = new ConstraintSecurityHandler();
         _session.setHandler(_security);

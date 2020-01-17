@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -45,7 +45,7 @@ public class TestABCase5 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase5_1() throws Exception
+    public void testCase51() throws Exception
     {
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new PingFrame().setPayload("hello, ").setFin(false));
@@ -71,7 +71,7 @@ public class TestABCase5 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase5_10() throws Exception
+    public void testCase510() throws Exception
     {
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new ContinuationFrame().setPayload("sorry").setFin(true));
@@ -97,7 +97,7 @@ public class TestABCase5 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase5_11() throws Exception
+    public void testCase511() throws Exception
     {
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new ContinuationFrame().setPayload("sorry").setFin(true));
@@ -124,7 +124,7 @@ public class TestABCase5 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase5_12() throws Exception
+    public void testCase512() throws Exception
     {
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new ContinuationFrame().setPayload("sorry").setFin(false));
@@ -150,7 +150,7 @@ public class TestABCase5 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase5_13() throws Exception
+    public void testCase513() throws Exception
     {
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new ContinuationFrame().setPayload("sorry").setFin(false));
@@ -176,7 +176,7 @@ public class TestABCase5 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase5_14() throws Exception
+    public void testCase514() throws Exception
     {
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new ContinuationFrame().setPayload("sorry").setFin(false));
@@ -203,7 +203,7 @@ public class TestABCase5 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase5_15() throws Exception
+    public void testCase515() throws Exception
     {
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new TextFrame().setPayload("fragment1").setFin(false));
@@ -232,7 +232,7 @@ public class TestABCase5 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase5_16() throws Exception
+    public void testCase516() throws Exception
     {
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new ContinuationFrame().setPayload("fragment1").setFin(false)); // bad frame
@@ -262,7 +262,7 @@ public class TestABCase5 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase5_17() throws Exception
+    public void testCase517() throws Exception
     {
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new ContinuationFrame().setPayload("fragment1").setFin(true)); // nothing to continue
@@ -292,7 +292,7 @@ public class TestABCase5 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase5_18() throws Exception
+    public void testCase518() throws Exception
     {
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new TextFrame().setPayload("fragment1").setFin(false));
@@ -318,7 +318,7 @@ public class TestABCase5 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase5_19() throws Exception
+    public void testCase519() throws Exception
     {
         // phase 1
         List<WebSocketFrame> send1 = new ArrayList<>();
@@ -367,7 +367,7 @@ public class TestABCase5 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase5_2() throws Exception
+    public void testCase52() throws Exception
     {
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new PongFrame().setPayload("hello, ").setFin(false));
@@ -393,7 +393,7 @@ public class TestABCase5 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase5_20() throws Exception
+    public void testCase520() throws Exception
     {
         List<WebSocketFrame> send1 = new ArrayList<>();
         send1.add(new TextFrame().setPayload("f1").setFin(false));
@@ -437,7 +437,7 @@ public class TestABCase5 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase5_20_slow() throws Exception
+    public void testCase520Slow() throws Exception
     {
         List<WebSocketFrame> send1 = new ArrayList<>();
         send1.add(new TextFrame().setPayload("f1").setFin(false));
@@ -482,7 +482,7 @@ public class TestABCase5 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase5_3() throws Exception
+    public void testCase53() throws Exception
     {
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new TextFrame().setPayload("hello, ").setFin(false));
@@ -509,7 +509,7 @@ public class TestABCase5 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase5_4() throws Exception
+    public void testCase54() throws Exception
     {
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new TextFrame().setPayload("hello, ").setFin(false));
@@ -536,7 +536,7 @@ public class TestABCase5 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase5_5() throws Exception
+    public void testCase55() throws Exception
     {
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new TextFrame().setPayload("hello, ").setFin(false));
@@ -564,7 +564,7 @@ public class TestABCase5 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase5_6() throws Exception
+    public void testCase56() throws Exception
     {
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new TextFrame().setPayload("hello, ").setFin(false));
@@ -593,7 +593,7 @@ public class TestABCase5 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase5_7() throws Exception
+    public void testCase57() throws Exception
     {
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new TextFrame().setPayload("hello, ").setFin(false));
@@ -622,7 +622,7 @@ public class TestABCase5 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase5_8() throws Exception
+    public void testCase58() throws Exception
     {
         List<WebSocketFrame> send = new ArrayList<>();
         send.add(new TextFrame().setPayload("hello, ").setFin(false));
@@ -652,7 +652,7 @@ public class TestABCase5 extends AbstractABCase
      * @throws Exception on test failure
      */
     @Test
-    public void testCase5_9() throws Exception
+    public void testCase59() throws Exception
     {
 
         List<WebSocketFrame> send = new ArrayList<>();

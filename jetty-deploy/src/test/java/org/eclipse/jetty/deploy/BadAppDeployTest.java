@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -63,7 +63,7 @@ public class BadAppDeployTest
     }
 
     @Test
-    public void testBadApp_ThrowOnUnavailableTrue_XmlOrder() throws Exception
+    public void testBadAppThrowOnUnavailableTrueXmlOrder() throws Exception
     {
         /* Non-working Bean Order as reported in Issue #3620
            It is important that this Order be maintained for an accurate test case.
@@ -116,7 +116,7 @@ public class BadAppDeployTest
     }
 
     @Test
-    public void testBadApp_ThrowOnUnavailableTrue_EmbeddedOrder() throws Exception
+    public void testBadAppThrowOnUnavailableTrueEmbeddedOrder() throws Exception
     {
         /* Working Bean Order
            ### BEAN: QueuedThreadPool[qtp1530388690]@5b37e0d2{STOPPED,8<=0<=200,i=0,r=-1,q=0}[NO_TRY]

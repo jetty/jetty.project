@@ -11,7 +11,7 @@ pipeline {
           agent { node { label 'linux' } }
           steps {
             timeout(time: 120, unit: 'MINUTES') {
-              mavenBuild("jdk8", "-Pmongodb clean install", "maven3", true)
+              mavenBuild("jdk8", "-T3 -Pmongodb clean install", "maven3", true)
               // Collect up the jacoco execution results (only on main build)
               jacoco inclusionPattern: '**/org/eclipse/jetty/**/*.class',
                   exclusionPattern: '' +
@@ -45,7 +45,7 @@ pipeline {
           agent { node { label 'linux' } }
           steps {
             timeout(time: 120, unit: 'MINUTES') {
-              mavenBuild("jdk11", "-Pmongodb clean install", "maven3", true)
+              mavenBuild("jdk11", "-T3 -Pmongodb clean install", "maven3", true)
               warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'Java']]
               junit testResults: '**/target/surefire-reports/*.xml,**/target/invoker-reports/TEST*.xml'
             }
@@ -56,7 +56,7 @@ pipeline {
           agent { node { label 'linux' } }
           steps {
             timeout(time: 120, unit: 'MINUTES') {
-              mavenBuild("jdk13", "-Pmongodb clean install", "maven3", true)
+              mavenBuild("jdk13", "-T3 -Pmongodb clean install", "maven3", true)
               warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'Java']]
               junit testResults: '**/target/surefire-reports/*.xml,**/target/invoker-reports/TEST*.xml'
             }
@@ -66,22 +66,9 @@ pipeline {
         stage("Build Javadoc") {
           agent { node { label 'linux' } }
           steps {
-            timeout(time: 30, unit: 'MINUTES') {
-              mavenBuild("jdk11", "install javadoc:javadoc javadoc:aggregate-jar -DskipTests", "maven3", true)
+            timeout(time: 40, unit: 'MINUTES') {
+              mavenBuild("jdk11", "install javadoc:javadoc javadoc:aggregate-jar -DskipTests -Dpmd.skip=true -Dcheckstyle.skip=true", "maven3", true)
               warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'JavaDoc'], [parserName: 'Java']]
-            }
-          }
-        }
-
-        stage("Checkstyle ") {
-          agent { node { label 'linux' } }
-          steps {
-            timeout(time: 30, unit: 'MINUTES') {
-              mavenBuild("jdk11", "clean install -f build-resources", "maven3", true)
-              mavenBuild("jdk11", "install checkstyle:check -DskipTests", "maven3", true)
-              recordIssues(
-                      enabledForFailure: true, aggregatingResults: true,
-                      tools: [java(), checkStyle(pattern: '**/target/checkstyle-result.xml', reportEncoding: 'UTF-8')])
             }
           }
         }
@@ -90,7 +77,7 @@ pipeline {
           agent { node { label 'linux' } }
           steps {
             timeout(time: 30, unit: 'MINUTES') {
-              mavenBuild("jdk8", "-Pcompact3 clean install -DskipTests", "maven3", true)
+              mavenBuild("jdk8", "-T3 -Pcompact3 clean install -DskipTests", "maven3", true)
               warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'Java']]
             }
           }
@@ -152,7 +139,7 @@ def mavenBuild(jdk, cmdline, mvnName, junitPublishDisabled) {
       mavenOpts: mavenOpts,
       mavenLocalRepo: localRepo) {
     // Some common Maven command line + provided command line
-    sh "mvn -Pci -V -B -T3 -e -Dmaven.test.failure.ignore=true -Djetty.testtracker.log=true $cmdline -Dunix.socket.tmp=" + env.JENKINS_HOME
+    sh "mvn -Pci -V -B -e -Dmaven.test.failure.ignore=true -Djetty.testtracker.log=true $cmdline -Dunix.socket.tmp=" + env.JENKINS_HOME
   }
 }
 

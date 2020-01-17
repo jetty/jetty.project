@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -94,7 +94,7 @@ public class ClientSessionsTest
     }
 
     @Test
-    public void testBasicEcho_FromClient() throws Exception
+    public void testBasicEchoFromClient() throws Exception
     {
         WebSocketClient client = new WebSocketClient();
 
