@@ -391,7 +391,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     public boolean isShutdown()
     {
         Shutdown shutdown = _shutdown;
-        return shutdown == null || _shutdown.isShutdown();
+        return shutdown == null || shutdown.isShutdown();
     }
 
     @Override

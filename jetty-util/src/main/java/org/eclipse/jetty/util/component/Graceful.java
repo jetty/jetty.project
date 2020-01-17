@@ -18,11 +18,20 @@
 
 package org.eclipse.jetty.util.component;
 
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /**
  * <p>Jetty components that wish to be part of a Graceful shutdown implement this interface so that
@@ -55,14 +64,25 @@ public interface Graceful
     boolean isShutdown();
 
     /**
-     * A Graceful LifeCycle that may take a controlled time to stop.
+     * A LifeCycle that may take a controlled time to stop.
+     * This may be during a {@link Graceful#shutdown()} (eg ContextHandler)
+     * or it may be during a {@link org.eclipse.jetty.util.component.LifeCycle#stop()} (eg QueuedThreadPool)
      */
-    interface LifeCycle extends org.eclipse.jetty.util.component.LifeCycle
+    interface GracefulLifeCycle extends LifeCycle
     {
         void setStopTimeout(long stopTimeout);
 
         @ManagedAttribute("Time in ms to gracefully shutdown the server")
         long getStopTimeout();
+    }
+
+    /**
+     * Containers that are {@link GracefulLifeCycle}s and that apply the
+     * stop timeout during shutdown in a call to
+     * {@link Graceful#shutdown(GracefulContainer)}
+     */
+    interface GracefulContainer extends Container, GracefulLifeCycle
+    {
     }
 
     /**
@@ -121,5 +141,75 @@ public interface Graceful
          * @return True if the component is shutdown and has no remaining load.
          */
         public abstract boolean isShutdownDone();
+    }
+
+    /**
+     * Shutdown a component:<ul>
+     *     <li>All contained {@link Graceful} instances are found and their {@link Graceful#shutdown()} method is called.</li>
+     *     <li>The {@link GracefulLifeCycle#getStopTimeout()} time is used to limit the time waiting on the {@link Future}s returned
+     *     from the shutdown calls</li>
+     *     <li>Any uncompleted futures after the time is exhausted are cancelled.</li>
+     * </ul>
+     *
+     * @param component The component to shutdown.
+     * @throws Exception If there was a problem in the shutdown.
+     */
+    static void shutdown(GracefulContainer component) throws Exception
+    {
+        if (component.getStopTimeout() <= 0)
+            return;
+
+        MultiException mex = null;
+
+        // tell the graceful handlers that we are shutting down
+        List<Future<Void>> futures = new ArrayList<>();
+        if (component instanceof Graceful)
+            futures.add(((Graceful)component).shutdown());
+        component.getContainedBeans(Graceful.class).stream().map(Graceful::shutdown).forEach(futures::add);
+
+        // Wait for all futures with a reducing time budget
+        long stopTimeout = component.getStopTimeout();
+        long stopBy = System.currentTimeMillis() + stopTimeout;
+        Logger log = Log.getLogger(component.getClass());
+        if (log.isDebugEnabled())
+            log.debug("Graceful shutdown {} by {}", component, new Date(stopBy));
+
+        // Wait for shutdowns
+        for (Future<Void> future : futures)
+        {
+            try
+            {
+                if (!future.isDone())
+                    future.get(Math.max(1L, stopBy - System.currentTimeMillis()), TimeUnit.MILLISECONDS);
+            }
+            catch (TimeoutException e)
+            {
+                if (mex == null)
+                    mex = new MultiException();
+                mex.add(new Exception("Failed to gracefully stop " + future, e));
+            }
+            catch (Throwable e)
+            {
+                // If the future is also a callback, fail it here (rather than cancel) so we can capture the exception
+                if (future instanceof Callback && !future.isDone())
+                    ((Callback)future).failed(e);
+                if (mex == null)
+                    mex = new MultiException();
+                mex.add(e);
+            }
+        }
+
+        // Cancel any shutdowns not done
+        for (Future<Void> future : futures)
+        {
+            if (!future.isDone())
+                future.cancel(true);
+        }
+
+        if (mex != null)
+            mex.ifExceptionThrow();
+
+        if (log.isDebugEnabled())
+            log.debug("Graceful shutdown {}", component);
     }
 }

@@ -34,12 +34,12 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.tools.HttpTester;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.server.handler.AbstractHandlerContainer;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.util.FuturePromise;
+import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
@@ -371,7 +371,7 @@ public class GracefulStopTest
         backgroundComplete(client1, handlerB);
         Future<Integer> status2 = backgroundUnavailable(client2, POST_B_12345, contextB, handlerB);
 
-        AbstractHandlerContainer.shutdown(contextB);
+        Graceful.shutdown(contextB);
 
         assertResponse(client0, false);
         assertResponse(client1, false);

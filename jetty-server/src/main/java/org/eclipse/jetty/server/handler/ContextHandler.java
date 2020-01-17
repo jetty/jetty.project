@@ -108,7 +108,7 @@ import org.eclipse.jetty.util.resource.Resource;
  * these alias checkers are not required, then {@link #clearAliasChecks()} or {@link #setAliasChecks(List)} should be called.
  */
 @ManagedObject("URI Context")
-public class ContextHandler extends ScopedHandler implements Attributes, Graceful, AbstractHandlerContainer.GracefulContainer
+public class ContextHandler extends ScopedHandler implements Attributes, Graceful, Graceful.GracefulContainer
 {
     public static final int SERVLET_MAJOR_VERSION = 4;
     public static final int SERVLET_MINOR_VERSION = 0;
@@ -924,7 +924,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
         try
         {
-            shutdown(this);
+            Graceful.shutdown(this);
         }
         catch (MultiException e)
         {

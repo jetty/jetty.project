@@ -40,11 +40,9 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.PreEncodedHttpField;
-import org.eclipse.jetty.server.handler.AbstractHandlerContainer;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
-import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.MultiException;
@@ -54,6 +52,7 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.AttributeContainerMap;
+import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -70,7 +69,7 @@ import org.eclipse.jetty.util.thread.ThreadPool;
  * to run jobs that will eventually call the handle method.
  */
 @ManagedObject(value = "Jetty HTTP Servlet server")
-public class Server extends HandlerWrapper implements Attributes, AbstractHandlerContainer.GracefulContainer
+public class Server extends HandlerWrapper implements Attributes, Graceful.GracefulContainer
 {
     private static final Logger LOG = Log.getLogger(Server.class);
 
@@ -174,18 +173,13 @@ public class Server extends HandlerWrapper implements Attributes, AbstractHandle
         return Jetty.VERSION;
     }
 
-    /**
-     * Set a graceful stop time.
-     * The {@link StatisticsHandler} must be configured so that open connections can
-     * be tracked for a graceful shutdown.
-     *
-     */
+    @Override
     public void setStopTimeout(long stopTimeout)
     {
         _stopTimeout = stopTimeout;
     }
 
-    @ManagedAttribute("Time in ms to gracefully shutdown the server")
+    @Override
     public long getStopTimeout()
     {
         return _stopTimeout;
@@ -473,7 +467,7 @@ public class Server extends HandlerWrapper implements Attributes, AbstractHandle
 
         try
         {
-            shutdown(this);
+            Graceful.shutdown(this);
         }
         catch (Throwable e)
         {
