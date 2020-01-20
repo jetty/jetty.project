@@ -1753,6 +1753,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
         if (vhosts != null && vhosts.length > 0)
             b.append(',').append(vhosts[0]);
+        b.append(",sto=").append(getStopTimeout());
         b.append('}');
 
         return b.toString();

@@ -699,7 +699,7 @@ public class Server extends HandlerWrapper implements Attributes, Graceful.Grace
     @Override
     public String toString()
     {
-        return String.format("%s[%s]", super.toString(), getVersion());
+        return String.format("%s[%s,sto=%d]", super.toString(), getVersion(), getStopTimeout());
     }
 
     @Override

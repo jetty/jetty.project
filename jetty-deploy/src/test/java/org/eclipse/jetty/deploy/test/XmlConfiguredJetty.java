@@ -366,7 +366,6 @@ public class XmlConfiguredJetty
         assertEquals(1, serverCount, "Server load count");
 
         this._server = foundServer;
-        this._server.setStopTimeout(10);
     }
 
     public void removeWebapp(String name)
