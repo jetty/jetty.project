@@ -1411,10 +1411,7 @@ public class ServletContextHandler extends ContextHandler
 
             if (_sessionHandler != null)
             {
-                //sessionTimeout is in mins, but session and SessionHandler use seconds,
-                //both represented as an int, thus there is a floor and ceiling value
-                //for session timeout minutes.
-                _sessionHandler.setMaxInactiveInterval(SessionHandler.clipSessionTimeout(sessionTimeout) * 60); //in seconds
+                _sessionHandler.setMaxInactiveIntervalMins(sessionTimeout);
             }
         }
 

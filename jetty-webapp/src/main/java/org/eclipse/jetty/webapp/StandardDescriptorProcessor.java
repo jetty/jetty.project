@@ -654,7 +654,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             int val = Integer.parseInt(tNode.toString(false, true));
             if (val > SessionHandler.MAX_SESSION_TIMEOUT_MINS)
                 throw new IllegalStateException("Max session-timeout in minutes is " + SessionHandler.MAX_SESSION_TIMEOUT_MINS);
-            context.getSessionHandler().setMaxInactiveInterval(SessionHandler.clipSessionTimeout(val) * 60);
+            context.getSessionHandler().setMaxInactiveIntervalMins(val);
         }
 
         //Servlet Spec 3.0

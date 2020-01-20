@@ -485,9 +485,9 @@ public class ServletContextHandlerTest
         //test can get session timeout from ServletContainerInitializer
         assertEquals(timeout, (Integer)root.getServletContext().getAttribute("MYSCI.getSessionTimeout"));
         assertNull(root.getAttribute("MYSCI.sessionTimeoutFailure"));
-        //test can't get session timeout from ContextListener not from annotation or web.xml
+        //test can't get session timeout from ContextListener that is not from annotation or web.xml
         assertTrue((Boolean)root.getServletContext().getAttribute("MyContextListener.getSessionTimeout"));
-        //test can't set session timeout from ContextListener not from annotation or web.xml
+        //test can't set session timeout from ContextListener that is not from annotation or web.xml
         assertTrue((Boolean)root.getServletContext().getAttribute("MyContextListener.setSessionTimeout"));
     }
 

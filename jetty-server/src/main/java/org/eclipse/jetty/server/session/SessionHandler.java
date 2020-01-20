@@ -174,7 +174,7 @@ public class SessionHandler extends ScopedHandler
      * @param minutes the number of minutes before an idle session expires
      * @return the number of minutes, limited by the max and min value
      */
-    public static int clipSessionTimeout(int minutes)
+    private static int clipSessionTimeoutMins(int minutes)
     {
         int tmp = minutes;
         if (tmp >= 0)
@@ -875,6 +875,18 @@ public class SessionHandler extends ScopedHandler
             else
                 LOG.debug("SessionManager default maxInactiveInterval={}", _dftMaxIdleSecs);
         }
+    }
+    
+    /**
+     * Set the max period of inactivity expressed as minutes.
+     * The minutes are converted to seconds, and their min and
+     * max values constrained.
+     * 
+     * @param mins the number of minutes.
+     */
+    public void setMaxInactiveIntervalMins(int mins)
+    {
+        setMaxInactiveInterval(clipSessionTimeoutMins(mins) * 60);
     }
 
     public void setRefreshCookieAge(int ageInSeconds)
