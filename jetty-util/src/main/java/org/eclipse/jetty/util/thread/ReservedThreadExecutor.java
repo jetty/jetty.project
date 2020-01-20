@@ -217,7 +217,8 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
         }
 
         int size = _size.decrementAndGet();
-        thread.offer(task);
+        if (!thread.offer(task))
+            return false;
 
         if (size == 0 && task != STOP)
             startReservedThread();
@@ -267,12 +268,23 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
         private final SynchronousQueue<Runnable> _task = new SynchronousQueue<>();
         private boolean _starting = true;
 
-        public void offer(Runnable task)
+        public boolean offer(Runnable task)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("{} offer {}", this, task);
 
-            _task.offer(task);
+            try
+            {
+                _task.put(task);
+                return true;
+            }
+            catch (InterruptedException e)
+            {
+                LOG.ignore(e);
+                _size.getAndIncrement();
+                _stack.offerFirst(this);
+                return false;
+            }
         }
 
         public void stop()
@@ -292,7 +304,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
 
                 try
                 {
-                    Runnable task = _task.poll(_idleTime, _idleTimeUnit);
+                    Runnable task = _idleTime == 0 ? _task.take() : _task.poll(_idleTime, _idleTimeUnit);
                     if (task != null)
                         return task;
 
