@@ -83,7 +83,7 @@ public class ManyHandlers
             if (!params.isEmpty())
             {
                 response.setContentType("text/plain");
-                response.getWriter().println(JSON.toString(params));
+                response.getWriter().println(new JSON().toJSON(params));
                 baseRequest.setHandled(true);
             }
         }

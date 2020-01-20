@@ -127,7 +127,7 @@ public class HttpClientTLSTest
 
     private void configureSslContextFactory(SslContextFactory sslContextFactory)
     {
-        sslContextFactory.setKeyStorePath("src/test/resources/keystore.jks");
+        sslContextFactory.setKeyStorePath("src/test/resources/keystore.p12");
         sslContextFactory.setKeyStorePassword("storepwd");
     }
 

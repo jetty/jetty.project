@@ -185,9 +185,9 @@ public class OpenIdCredentials implements Serializable
         if (LOG.isDebugEnabled())
             LOG.debug("Authentication response: {}", responseBody);
 
-        Object parsedResponse = JSON.parse(responseBody);
+        Object parsedResponse = new JSON().fromJSON(responseBody);
         if (!(parsedResponse instanceof Map))
             throw new IllegalStateException("Malformed response from OpenID Provider");
-        return (Map)parsedResponse;
+        return (Map<String, Object>)parsedResponse;
     }
 }

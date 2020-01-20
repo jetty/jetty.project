@@ -26,7 +26,7 @@
     <jetty-test-policy.version>1.2</jetty-test-policy.version>
     <servlet.api.version>4.0.3</servlet.api.version>
     <websocket.api.version>1.1.2</websocket.api.version>
-    <jsp.version>9.0.19</jsp.version>
+    <jsp.version>9.0.29</jsp.version>
     <infinispan.version>9.4.8.Final</infinispan.version>
     <!-- default values are unsupported, but required to be defined for reactor sanity reasons -->
     <alpn.version>undefined</alpn.version>
@@ -703,7 +703,7 @@
             <instructions>
               <Bundle-SymbolicName>${bundle-symbolic-name}</Bundle-SymbolicName>
               <Bundle-Description>Jetty module for ${project.name}</Bundle-Description>
-              <Bundle-RequiredExecutionEnvironment>JavaSE-1.8</Bundle-RequiredExecutionEnvironment>
+              <Bundle-RequiredExecutionEnvironment>JavaSE-11</Bundle-RequiredExecutionEnvironment>
               <Bundle-DocURL>${jetty.url}</Bundle-DocURL>
               <Bundle-Vendor>Eclipse Jetty Project</Bundle-Vendor>
               <Bundle-Classpath>.</Bundle-Classpath>

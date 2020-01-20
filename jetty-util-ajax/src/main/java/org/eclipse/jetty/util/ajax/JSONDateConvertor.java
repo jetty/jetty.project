@@ -71,7 +71,7 @@ public class JSONDateConvertor implements JSON.Convertor
     }
 
     @Override
-    public Object fromJSON(Map map)
+    public Object fromJSON(Map<String, Object> map)
     {
         if (!_fromJSON)
             throw new UnsupportedOperationException();

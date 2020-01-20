@@ -411,6 +411,68 @@ public class ResponseTest
     }
 
     @Test
+    public void testResponseCharacterEncoding() throws Exception
+    {   
+        _server.stop();
+        ContextHandler handler = new CharEncodingContextHandler();
+        _server.setHandler(handler);
+        handler.setDefaultResponseCharacterEncoding("utf-16");
+        handler.setHandler(new DumpHandler());
+        _server.start();
+
+        //test setting the default response character encoding
+        Response response = getResponse();
+        _channel.getRequest().setContext(handler.getServletContext());
+        assertThat("utf-16", Matchers.equalTo(response.getCharacterEncoding()));
+
+        _channel.getRequest().setContext(null);
+        response.recycle();
+        
+        //test that explicit overrides default
+        response = getResponse();
+        _channel.getRequest().setContext(handler.getServletContext());
+        response.setCharacterEncoding("ascii");
+        assertThat("ascii", Matchers.equalTo(response.getCharacterEncoding()));
+        //getWriter should not change explicit character encoding
+        response.getWriter();
+        assertThat("ascii", Matchers.equalTo(response.getCharacterEncoding()));
+        
+        _channel.getRequest().setContext(null);
+        response.recycle();
+        
+        //test that assumed overrides default
+        response = getResponse();
+        _channel.getRequest().setContext(handler.getServletContext());
+        response.setContentType("application/json");
+        assertThat("utf-8", Matchers.equalTo(response.getCharacterEncoding()));
+        response.getWriter();
+        //getWriter should not have modified character encoding
+        assertThat("utf-8", Matchers.equalTo(response.getCharacterEncoding()));
+        
+        _channel.getRequest().setContext(null);
+        response.recycle();
+        
+        //test that inferred overrides default
+        response = getResponse();
+        _channel.getRequest().setContext(handler.getServletContext());
+        response.setContentType("application/xhtml+xml");
+        assertThat("utf-8", Matchers.equalTo(response.getCharacterEncoding()));
+        //getWriter should not have modified character encoding
+        response.getWriter();
+        assertThat("utf-8", Matchers.equalTo(response.getCharacterEncoding()));
+        
+        _channel.getRequest().setContext(null);
+        response.recycle();
+        
+        //test that without a default or any content type, use iso-8859-1
+        response = getResponse();
+        assertThat("iso-8859-1", Matchers.equalTo(response.getCharacterEncoding()));
+        //getWriter should not have modified character encoding
+        response.getWriter();
+        assertThat("iso-8859-1", Matchers.equalTo(response.getCharacterEncoding()));
+    }
+
+    @Test
     public void testContentTypeCharacterEncoding() throws Exception
     {
         Response response = getResponse();

@@ -35,6 +35,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+
 import javax.servlet.DispatcherType;
 import javax.servlet.MultipartConfigElement;
 import javax.servlet.ServletException;
@@ -117,6 +119,66 @@ public class RequestTest
     {
         _server.stop();
         _server.join();
+    }
+    
+    @Test
+    public void testRequestCharacterEncoding() throws Exception
+    {
+        AtomicReference<String> result = new AtomicReference<>(null);
+        AtomicReference<String> overrideCharEncoding = new AtomicReference<>(null);
+        
+        _server.stop();
+        ContextHandler handler = new CharEncodingContextHandler();
+        _server.setHandler(handler);
+        handler.setHandler(_handler);
+        _handler._checker = new RequestTester()
+        {
+            @Override
+            public boolean check(HttpServletRequest request, HttpServletResponse response)
+            {
+                try
+                {
+                    String s = overrideCharEncoding.get();
+                    if (s != null)
+                        request.setCharacterEncoding(s);
+
+                    result.set(request.getCharacterEncoding());
+                    return true;
+                }
+                catch (UnsupportedEncodingException e)
+                {
+                    return false;
+                }
+            }
+        };
+        _server.start();
+   
+        String request = "GET / HTTP/1.1\n" +
+            "Host: whatever\r\n" +
+            "Content-Type: text/html;charset=utf8\n" +
+            "Connection: close\n" +
+            "\n";
+        
+        //test setting the default char encoding
+        handler.setDefaultRequestCharacterEncoding("ascii"); 
+        String response = _connector.getResponse(request);
+        assertTrue(response.startsWith("HTTP/1.1 200"));
+        assertEquals("ascii", result.get());
+        
+        //test overriding the default char encoding with explicit encoding
+        result.set(null);
+        overrideCharEncoding.set("utf-16");
+        response = _connector.getResponse(request);
+        assertTrue(response.startsWith("HTTP/1.1 200"));
+        assertEquals("utf-16", result.get());
+        
+        //test fallback to content-type encoding
+        result.set(null);
+        overrideCharEncoding.set(null);
+        handler.setDefaultRequestCharacterEncoding(null);
+        response = _connector.getResponse(request);
+        assertTrue(response.startsWith("HTTP/1.1 200"));
+        assertEquals("utf-8", result.get());
     }
 
     @Test
@@ -1731,7 +1793,7 @@ public class RequestTest
         assertNotNull(request.getParameterMap());
         assertEquals(0, request.getParameterMap().size());
     }
-
+    
     interface RequestTester
     {
         boolean check(HttpServletRequest request, HttpServletResponse response) throws IOException;
