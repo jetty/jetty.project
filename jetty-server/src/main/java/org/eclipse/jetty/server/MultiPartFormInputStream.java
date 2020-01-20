@@ -31,17 +31,16 @@ import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 import javax.servlet.MultipartConfigElement;
 import javax.servlet.ServletInputStream;
 import javax.servlet.http.Part;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.ByteArrayOutputStream2;
-import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
@@ -58,19 +57,27 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class MultiPartFormInputStream
 {
+    private enum State
+    {
+        UNPARSED,
+        PARSING,
+        PARSED,
+        CLOSING,
+        CLOSED
+    }
+
     private static final Logger LOG = Log.getLogger(MultiPartFormInputStream.class);
-    private static final MultiMap<Part> EMPTY_MAP = new MultiMap<>(Collections.emptyMap());
-    private final MultiMap<Part> _parts;
-    private InputStream _in;
-    private MultipartConfigElement _config;
-    private String _contentType;
-    private Throwable _err;
-    private File _tmpDir;
-    private File _contextTmpDir;
-    private boolean _deleteOnExit;
-    private boolean _writeFilesWithFilenames;
-    private boolean _parsed;
-    private int _bufferSize = 16 * 1024;
+    private final MultiMap<Part> _parts = new MultiMap<>();
+    private final InputStream _in;
+    private final MultipartConfigElement _config;
+    private final File _contextTmpDir;
+    private final String _contentType;
+    private volatile Throwable _err;
+    private volatile File _tmpDir;
+    private volatile boolean _deleteOnExit;
+    private volatile boolean _writeFilesWithFilenames;
+    private volatile int _bufferSize = 16 * 1024;
+    private volatile State state = State.UNPARSED;
 
     public class MultiPart implements Part
     {
@@ -333,39 +340,33 @@ public class MultiPartFormInputStream
     public MultiPartFormInputStream(InputStream in, String contentType, MultipartConfigElement config, File contextTmpDir)
     {
         _contentType = contentType;
-        _config = config;
-        _contextTmpDir = contextTmpDir;
-        if (_contextTmpDir == null)
-            _contextTmpDir = new File(System.getProperty("java.io.tmpdir"));
-
-        if (_config == null)
-            _config = new MultipartConfigElement(_contextTmpDir.getAbsolutePath());
-
-        MultiMap parts = new MultiMap();
+        _contextTmpDir =  (contextTmpDir != null) ? contextTmpDir : new File(System.getProperty("java.io.tmpdir"));
+        _config = (config != null) ? config : new MultipartConfigElement(_contextTmpDir.getAbsolutePath());
 
         if (in instanceof ServletInputStream)
         {
             if (((ServletInputStream)in).isFinished())
             {
-                parts = EMPTY_MAP;
-                _parsed = true;
+                _in = null;
+                state = State.PARSED;
+                return;
             }
         }
-        if (!_parsed)
-            _in = new BufferedInputStream(in);
-        _parts = parts;
+        
+        _in = new BufferedInputStream(in);
     }
 
     /**
      * @return whether the list of parsed parts is empty
+     * @deprecated use getParts().isEmpty()
      */
+    @Deprecated
     public boolean isEmpty()
     {
-        if (_parts == null)
+        if (_parts.isEmpty())
             return true;
 
-        Collection<List<Part>> values = _parts.values();
-        for (List<Part> partList : values)
+        for (List<Part> partList : _parts.values())
         {
             if (!partList.isEmpty())
                 return false;
@@ -379,6 +380,26 @@ public class MultiPartFormInputStream
      */
     public void deleteParts()
     {
+        synchronized (this)
+        {
+            switch (state)
+            {
+                case CLOSED:
+                case UNPARSED:
+                    state = State.CLOSED;
+                    return;
+
+                case PARSING:
+                    state = State.CLOSING;
+                    return;
+
+                case PARSED:
+                case CLOSING:
+                    state = State.CLOSED;
+                    break;
+            }
+        }
+
         MultiException err = null;
         for (List<Part> parts : _parts.values())
         {
@@ -410,21 +431,9 @@ public class MultiPartFormInputStream
      */
     public Collection<Part> getParts() throws IOException
     {
-        if (!_parsed)
-            parse();
+        parse();
         throwIfError();
-
-        if (_parts.isEmpty())
-            return Collections.emptyList();
-
-        Collection<List<Part>> values = _parts.values();
-        List<Part> parts = new ArrayList<>();
-        for (List<Part> o : values)
-        {
-            List<Part> asList = LazyList.getList(o, false);
-            parts.addAll(asList);
-        }
-        return parts;
+        return _parts.values().stream().flatMap(List::stream).collect(Collectors.toList());
     }
 
     /**
@@ -436,8 +445,7 @@ public class MultiPartFormInputStream
      */
     public Part getPart(String name) throws IOException
     {
-        if (!_parsed)
-            parse();
+        parse();
         throwIfError();
         return _parts.getValue(name, 0);
     }
@@ -468,13 +476,24 @@ public class MultiPartFormInputStream
      */
     protected void parse()
     {
-        // have we already parsed the input?
-        if (_parsed)
-            return;
-        _parsed = true;
+        synchronized (this)
+        {
+            switch (state)
+            {
+                case UNPARSED:
+                    state = State.PARSING;
+                    break;
+
+                case PARSED:
+                    return;
+
+                default:
+                    _err = new IllegalStateException(state.name());
+                    return;
+            }
+        }
 
         MultiPartParser parser = null;
-        Handler handler = new Handler();
         try
         {
             // if its not a multipart request, don't parse it
@@ -507,16 +526,23 @@ public class MultiPartFormInputStream
                 contentTypeBoundary = QuotedStringTokenizer.unquote(value(_contentType.substring(bstart, bend)).trim());
             }
 
-            parser = new MultiPartParser(handler, contentTypeBoundary);
+            parser = new MultiPartParser(new Handler(), contentTypeBoundary);
             byte[] data = new byte[_bufferSize];
             int len;
             long total = 0;
 
             while (true)
             {
+                synchronized (this)
+                {
+                    if (state != State.PARSING)
+                    {
+                        _err = new IllegalStateException(state.name());
+                        return;
+                    }
+                }
 
                 len = _in.read(data);
-
                 if (len > 0)
                 {
                     // keep running total of size of bytes read from input and throw an exception if exceeds MultipartConfigElement._maxRequestSize
@@ -569,6 +595,29 @@ public class MultiPartFormInputStream
             // Notify parser if failure occurs
             if (parser != null)
                 parser.parse(BufferUtil.EMPTY_BUFFER, true);
+        }
+        finally
+        {
+            boolean cleanup = false;
+            synchronized (this)
+            {
+                switch (state)
+                {
+                    case PARSING:
+                        state = State.PARSED;
+                        break;
+
+                    case CLOSING:
+                        cleanup = true;
+                        break;
+
+                    default:
+                        _err = new IllegalStateException(state.name());
+                }
+            }
+
+            if (cleanup)
+                deleteParts();
         }
     }
 
