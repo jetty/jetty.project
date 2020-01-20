@@ -888,6 +888,11 @@ public class SessionHandler extends ScopedHandler
     {
         setMaxInactiveInterval(clipSessionTimeoutMins(mins) * 60);
     }
+    
+    public int getMaxInactiveIntervalMins()
+    {
+        return getMaxInactiveInterval() / 60;
+    }
 
     public void setRefreshCookieAge(int ageInSeconds)
     {

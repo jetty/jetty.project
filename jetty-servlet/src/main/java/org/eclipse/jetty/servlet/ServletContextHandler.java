@@ -1394,8 +1394,7 @@ public class ServletContextHandler extends ContextHandler
             int timeout = -1;
             if (_sessionHandler != null)
             {
-                int maxInactive = _sessionHandler.getMaxInactiveInterval();
-                timeout = maxInactive / 60;
+               timeout = _sessionHandler.getMaxInactiveIntervalMins();
             }
 
             return timeout;
