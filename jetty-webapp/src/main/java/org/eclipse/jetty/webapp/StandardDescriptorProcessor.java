@@ -30,6 +30,8 @@ import java.util.ListIterator;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
+
 import javax.servlet.DispatcherType;
 import javax.servlet.MultipartConfigElement;
 import javax.servlet.SessionTrackingMode;
@@ -38,7 +40,6 @@ import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.security.ConstraintAware;
 import org.eclipse.jetty.security.ConstraintMapping;
 import org.eclipse.jetty.security.authentication.FormAuthenticator;
-import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.FilterMapping;
@@ -651,10 +652,11 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         XmlParser.Node tNode = node.get("session-timeout");
         if (tNode != null)
         {
-            int val = Integer.parseInt(tNode.toString(false, true));
-            if (val > SessionHandler.MAX_SESSION_TIMEOUT_MINS)
-                throw new IllegalStateException("Max session-timeout in minutes is " + SessionHandler.MAX_SESSION_TIMEOUT_MINS);
-            context.getSessionHandler().setMaxInactiveIntervalMins(val);
+            long val = Long.parseLong(tNode.toString(false, true));
+            val = TimeUnit.MINUTES.toSeconds(val);
+            if (val > Integer.MAX_VALUE)
+                throw new IllegalStateException("Max session-timeout in minutes is " + TimeUnit.SECONDS.toMinutes(Integer.MAX_VALUE));
+            context.getServletContext().setSessionTimeout((int)val);
         }
 
         //Servlet Spec 3.0

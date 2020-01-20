@@ -29,6 +29,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
@@ -1394,10 +1395,10 @@ public class ServletContextHandler extends ContextHandler
             int timeout = -1;
             if (_sessionHandler != null)
             {
-               timeout = _sessionHandler.getMaxInactiveIntervalMins();
+                timeout = _sessionHandler.getMaxInactiveInterval();
             }
 
-            return timeout;
+            return (int)TimeUnit.SECONDS.toMinutes(timeout);
         }
 
         @Override
@@ -1410,7 +1411,12 @@ public class ServletContextHandler extends ContextHandler
 
             if (_sessionHandler != null)
             {
-                _sessionHandler.setMaxInactiveIntervalMins(sessionTimeout);
+                long tmp = TimeUnit.MINUTES.toSeconds(sessionTimeout);
+                if (tmp > Integer.MAX_VALUE)
+                    tmp = Integer.MAX_VALUE;
+                if (tmp < Integer.MIN_VALUE)
+                    tmp = Integer.MIN_VALUE;
+                _sessionHandler.setMaxInactiveInterval((int)tmp);
             }
         }
 
