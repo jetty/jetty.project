@@ -453,7 +453,7 @@ public class WebSocketCloseTest extends WebSocketTester
 
     @ParameterizedTest
     @ValueSource(strings = {WS_SCHEME, WSS_SCHEME})
-    public void doubleClose_AbnormalOvertakesNormalClose(String scheme) throws Exception
+    public void doubleCloseAbnormalOvertakesNormalClose(String scheme) throws Exception
     {
         setup(State.OPEN, scheme);
 
