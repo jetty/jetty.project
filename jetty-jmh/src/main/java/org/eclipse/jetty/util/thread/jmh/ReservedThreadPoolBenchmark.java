@@ -24,10 +24,10 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ReservedThreadExecutor;
+import org.eclipse.jetty.util.thread.ReservedThreadExecutorLQ;
 import org.eclipse.jetty.util.thread.ReservedThreadExecutorLQSQ;
 import org.eclipse.jetty.util.thread.ReservedThreadExecutorSQ;
 import org.eclipse.jetty.util.thread.ReservedThreadExecutorSQ2;
-import org.eclipse.jetty.util.thread.ReservedThreadExecutorSQ3;
 import org.eclipse.jetty.util.thread.TryExecutor;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -41,22 +41,23 @@ import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.annotations.Threads;
 import org.openjdk.jmh.annotations.Warmup;
 import org.openjdk.jmh.infra.Blackhole;
+import org.openjdk.jmh.profile.LinuxPerfProfiler;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 @State(Scope.Benchmark)
-@Warmup(iterations = 5, time = 10000, timeUnit = TimeUnit.MILLISECONDS)
-@Measurement(iterations = 5, time = 10000, timeUnit = TimeUnit.MILLISECONDS)
+@Warmup(iterations = 5, time = 5000, timeUnit = TimeUnit.MILLISECONDS)
+@Measurement(iterations = 5, time = 5000, timeUnit = TimeUnit.MILLISECONDS)
 public class ReservedThreadPoolBenchmark
 {
     public enum Type
     {
-        RTP, RTPSQ, RTPSQ2, RTPSQ3, RTPLQSQ
+        RTP, RTPSQ, RTPSQ2, RTPLQ, RTPLQSQ
     }
 
-    @Param({"RTP", "RTPSQ", "RTPSQ2", "RTPSQ3", "RTPLQSQ"})
+    @Param({"RTP", "RTPSQ", "RTPSQ2", "RTPLQ", "RTPLQSQ"})
     Type type;
 
     @Param({"10"})
@@ -92,9 +93,9 @@ public class ReservedThreadPoolBenchmark
                 this.pool = pool;
                 break;
             }
-            case RTPSQ3:
+            case RTPLQ:
             {
-                ReservedThreadExecutorSQ3 pool = new ReservedThreadExecutorSQ3(qtp, size);
+                ReservedThreadExecutorLQ pool = new ReservedThreadExecutorLQ(qtp, size);
                 pool.setIdleTimeout(1, TimeUnit.SECONDS);
                 this.pool = pool;
                 break;
@@ -120,6 +121,7 @@ public class ReservedThreadPoolBenchmark
         qtp = null;
     }
 
+    /*
     @Benchmark
     @BenchmarkMode(Mode.Throughput)
     @Threads(1)
@@ -127,10 +129,11 @@ public class ReservedThreadPoolBenchmark
     {
         doJob();
     }
+     */
 
     @Benchmark
     @BenchmarkMode(Mode.Throughput)
-    @Threads(4)
+    @Threads(8)
     public void testSome() throws Exception
     {
         doJob();
@@ -168,7 +171,7 @@ public class ReservedThreadPoolBenchmark
             // .threads(400)
             // .syncIterations(true) // Don't start all threads at same time
             // .addProfiler(CompilerProfiler.class)
-            // .addProfiler(LinuxPerfProfiler.class)
+            .addProfiler(LinuxPerfProfiler.class)
             // .addProfiler(LinuxPerfNormProfiler.class)
             // .addProfiler(LinuxPerfAsmProfiler.class)
             // .resultFormat(ResultFormatType.CSV)
