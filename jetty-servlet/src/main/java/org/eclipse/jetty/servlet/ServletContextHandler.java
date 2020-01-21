@@ -1288,6 +1288,15 @@ public class ServletContextHandler extends ContextHandler
         }
 
         @Override
+        public String getInitParameter(String name)
+        {
+            //since servlet spec 4.0
+            if (name == null)
+                throw new NullPointerException();
+            return super.getInitParameter(name);
+        }
+
+        @Override
         public boolean setInitParameter(String name, String value)
         {
             if (!isStarting())
@@ -1295,6 +1304,10 @@ public class ServletContextHandler extends ContextHandler
 
             if (!_enabled)
                 throw new UnsupportedOperationException();
+
+            //since servlet spec 4.0
+            if (name == null)
+                throw new NullPointerException();
 
             return super.setInitParameter(name, value);
         }
