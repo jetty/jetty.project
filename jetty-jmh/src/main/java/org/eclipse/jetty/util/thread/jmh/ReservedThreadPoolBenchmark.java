@@ -27,7 +27,6 @@ import org.eclipse.jetty.util.thread.ReservedThreadExecutor;
 import org.eclipse.jetty.util.thread.ReservedThreadExecutorLQ;
 import org.eclipse.jetty.util.thread.ReservedThreadExecutorLQSQ;
 import org.eclipse.jetty.util.thread.ReservedThreadExecutorSQ;
-import org.eclipse.jetty.util.thread.ReservedThreadExecutorSQ2;
 import org.eclipse.jetty.util.thread.TryExecutor;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -54,10 +53,10 @@ public class ReservedThreadPoolBenchmark
 {
     public enum Type
     {
-        RTP, RTPSQ, RTPSQ2, RTPLQ, RTPLQSQ
+        RTP, RTPSQ, RTPLQ, RTPLQSQ
     }
 
-    @Param({"RTP", "RTPSQ", "RTPSQ2", "RTPLQ", "RTPLQSQ"})
+    @Param({"RTP", "RTPSQ", "RTPLQ", "RTPLQSQ"})
     Type type;
 
     @Param({"10"})
@@ -82,13 +81,6 @@ public class ReservedThreadPoolBenchmark
             case RTPSQ:
             {
                 ReservedThreadExecutorSQ pool = new ReservedThreadExecutorSQ(qtp, size);
-                pool.setIdleTimeout(1, TimeUnit.SECONDS);
-                this.pool = pool;
-                break;
-            }
-            case RTPSQ2:
-            {
-                ReservedThreadExecutorSQ2 pool = new ReservedThreadExecutorSQ2(qtp, size);
                 pool.setIdleTimeout(1, TimeUnit.SECONDS);
                 this.pool = pool;
                 break;
@@ -129,7 +121,6 @@ public class ReservedThreadPoolBenchmark
     {
         doJob();
     }
-     */
 
     @Benchmark
     @BenchmarkMode(Mode.Throughput)
@@ -138,6 +129,7 @@ public class ReservedThreadPoolBenchmark
     {
         doJob();
     }
+     */
 
     @Benchmark
     @BenchmarkMode(Mode.Throughput)
@@ -171,7 +163,7 @@ public class ReservedThreadPoolBenchmark
             // .threads(400)
             // .syncIterations(true) // Don't start all threads at same time
             // .addProfiler(CompilerProfiler.class)
-            .addProfiler(LinuxPerfProfiler.class)
+            // .addProfiler(LinuxPerfProfiler.class)
             // .addProfiler(LinuxPerfNormProfiler.class)
             // .addProfiler(LinuxPerfAsmProfiler.class)
             // .resultFormat(ResultFormatType.CSV)

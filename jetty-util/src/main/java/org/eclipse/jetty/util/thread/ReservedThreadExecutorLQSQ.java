@@ -308,22 +308,18 @@ public class ReservedThreadExecutorLQSQ extends AbstractLifeCycle implements Try
 
                 try
                 {
-                    Runnable task;
-                    if (_idleTime > 0)
-                    {
-                        // Always shrink at idle time.  Even if not really idle another thread will be created if needed.
-                        long now = System.nanoTime();
-                        long next = _nextShrink.get();
-                        if (now > next && _nextShrink.compareAndSet(next, now + _idleTimeUnit.toNanos(_idleTime)))
-                            tryExecute(STOP);
-                        task = _task.poll(_idleTime, _idleTimeUnit);
-                    }
-                    else
-                    {
-                        task = _task.take();
-                    }
+                    Runnable task = _idleTime == 0 ? _task.take() : _task.poll(_idleTime, _idleTimeUnit);
                     if (task != null)
                         return task;
+
+                    // Because threads are held in a stack, excess threads will be
+                    // idle.  However, we cannot remove threads from the bottom of
+                    // the stack, so we submit a poison pill job to stop the thread
+                    // on top of the stack (which unfortunately will be the most
+                    // recently used)
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("{} IDLE", this);
+                    tryExecute(STOP);
                 }
                 catch (InterruptedException e)
                 {
