@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.util.thread.ReservedThreadExecutor;
+import org.eclipse.jetty.util.thread.ReservedThreadExecutorDQ;
 import org.eclipse.jetty.util.thread.ReservedThreadExecutorLQ;
 import org.eclipse.jetty.util.thread.ReservedThreadExecutorLQSQ;
 import org.eclipse.jetty.util.thread.ReservedThreadExecutorSQ;
@@ -40,7 +40,6 @@ import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.annotations.Threads;
 import org.openjdk.jmh.annotations.Warmup;
 import org.openjdk.jmh.infra.Blackhole;
-import org.openjdk.jmh.profile.LinuxPerfProfiler;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
@@ -53,10 +52,10 @@ public class ReservedThreadPoolBenchmark
 {
     public enum Type
     {
-        RTP, RTPSQ, RTPLQ, RTPLQSQ
+        RTPDQ, RTPSQ, RTPLQ, RTPLQSQ
     }
 
-    @Param({"RTP", "RTPSQ", "RTPLQ", "RTPLQSQ"})
+    @Param({"RTPDQ", "RTPSQ", "RTPLQ", "RTPLQSQ"})
     Type type;
 
     @Param({"10"})
@@ -71,9 +70,9 @@ public class ReservedThreadPoolBenchmark
         qtp = new QueuedThreadPool();
         switch (type)
         {
-            case RTP:
+            case RTPDQ:
             {
-                ReservedThreadExecutor pool = new ReservedThreadExecutor(qtp, size);
+                ReservedThreadExecutorDQ pool = new ReservedThreadExecutorDQ(qtp, size);
                 pool.setIdleTimeout(1, TimeUnit.SECONDS);
                 this.pool = pool;
                 break;
