@@ -114,8 +114,6 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
         }
     };
 
-
-
     /**
      * Resets the current request statistics.
      */

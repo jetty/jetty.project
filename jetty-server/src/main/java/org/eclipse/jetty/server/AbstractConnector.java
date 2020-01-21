@@ -153,7 +153,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     private final Thread[] _acceptors;
     private final Set<EndPoint> _endpoints = Collections.newSetFromMap(new ConcurrentHashMap<>());
     private final Set<EndPoint> _immutableEndPoints = Collections.unmodifiableSet(_endpoints);
-    private volatile Shutdown _shutdown;
+    private Shutdown _shutdown;
     private HttpChannel.Listener _httpChannelListeners = HttpChannel.NOOP_LISTENER;
     private long _idleTimeout = 30000;
     private long _shutdownIdleTimeout = 1000L;

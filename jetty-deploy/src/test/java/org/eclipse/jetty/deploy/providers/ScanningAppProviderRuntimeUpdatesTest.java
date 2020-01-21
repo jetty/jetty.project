@@ -92,7 +92,6 @@ public class ScanningAppProviderRuntimeUpdatesTest
     public void teardownEnvironment() throws Exception
     {
         // Stop jetty.
-        jetty.getServer().dumpStdErr();
         jetty.stop();
     }
 
@@ -172,7 +171,6 @@ public class ScanningAppProviderRuntimeUpdatesTest
         waitForDirectoryScan();
 
         jetty.assertWebAppContextsExists("/foo");
-        jetty.getServer().dumpStdErr();
 
         // Test that webapp response contains "-1"
         jetty.assertResponseContains("/foo/info", "FooServlet-1");
@@ -189,6 +187,5 @@ public class ScanningAppProviderRuntimeUpdatesTest
 
         // Test that webapp response contains "-2"
         jetty.assertResponseContains("/foo/info", "FooServlet-2");
-        jetty.getServer().dumpStdErr();
     }
 }
