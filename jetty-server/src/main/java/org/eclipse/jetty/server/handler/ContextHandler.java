@@ -1090,9 +1090,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             case SHUTDOWN:
             case UNAVAILABLE:
                 baseRequest.setHandled(true);
-                response.resetBuffer();
-                response.setStatus(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
-                response.flushBuffer();
+                response.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
                 return false;
             default:
                 if ((DispatcherType.REQUEST.equals(dispatch) && baseRequest.isHandled()))
