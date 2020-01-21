@@ -52,7 +52,24 @@ import org.eclipse.jetty.util.log.Logger;
  * MultiPartInputStream
  * <p>
  * Handle a MultiPart Mime input stream, breaking it up on the boundary into files and strings.
- *
+ * </p>
+ * <p>
+ * Deleting the parts can be done from a different thread if the parts are parsed asynchronously.
+ * Because of this we use the state to fail the parsing and coordinate which thread will delete any remaining parts.
+ * The deletion of parts is done by the cleanup thread in all cases except the transition from ERROR->DELETED which
+ * is done by the parsing thread.
+ * </p>
+ * <pre>
+ *                              deleteParts()
+ *     +--------------------------------------------------------------+
+ *     |                                                              |
+ *     |                                          deleteParts()       v
+ *  UNPARSED -------> PARSING --------> PARSED  ------------------>DELETED
+ *                      |                                             ^
+ *                      |                                             |
+ *                      +----------------> ERROR ---------------------+
+ *                        deleteParts()             parsing thread
+ * </pre>
  * @see <a href="https://tools.ietf.org/html/rfc7578">https://tools.ietf.org/html/rfc7578</a>
  */
 public class MultiPartFormInputStream
@@ -62,8 +79,8 @@ public class MultiPartFormInputStream
         UNPARSED,
         PARSING,
         PARSED,
-        CLOSING,
-        CLOSED
+        DELETED,
+        ERROR
     }
 
     private static final Logger LOG = Log.getLogger(MultiPartFormInputStream.class);
@@ -384,22 +401,29 @@ public class MultiPartFormInputStream
         {
             switch (state)
             {
-                case CLOSED:
-                case UNPARSED:
-                    state = State.CLOSED;
+                case DELETED:
+                case ERROR:
                     return;
 
                 case PARSING:
-                    state = State.CLOSING;
+                    state = State.ERROR;
+                    return;
+
+                case UNPARSED:
+                    state = State.DELETED;
                     return;
 
                 case PARSED:
-                case CLOSING:
-                    state = State.CLOSED;
+                    state = State.DELETED;
                     break;
             }
         }
 
+        uncheckedDeleteParts();
+    }
+
+    private void uncheckedDeleteParts()
+    {
         MultiException err = null;
         for (List<Part> parts : _parts.values())
         {
@@ -488,7 +512,7 @@ public class MultiPartFormInputStream
                     return;
 
                 default:
-                    _err = new IllegalStateException(state.name());
+                    _err = new IOException(state.name());
                     return;
             }
         }
@@ -537,7 +561,7 @@ public class MultiPartFormInputStream
                 {
                     if (state != State.PARSING)
                     {
-                        _err = new IllegalStateException(state.name());
+                        _err = new IOException(state.name());
                         return;
                     }
                 }
@@ -607,7 +631,8 @@ public class MultiPartFormInputStream
                         state = State.PARSED;
                         break;
 
-                    case CLOSING:
+                    case ERROR:
+                        state = State.DELETED;
                         cleanup = true;
                         break;
 
@@ -617,7 +642,7 @@ public class MultiPartFormInputStream
             }
 
             if (cleanup)
-                deleteParts();
+                uncheckedDeleteParts();
         }
     }
 
