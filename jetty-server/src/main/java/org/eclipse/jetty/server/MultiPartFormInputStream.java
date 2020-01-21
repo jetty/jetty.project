@@ -56,10 +56,10 @@ import org.eclipse.jetty.util.log.Logger;
  * <p>
  * Deleting the parts can be done from a different thread if the parts are parsed asynchronously.
  * Because of this we use the state to fail the parsing and coordinate which thread will delete any remaining parts.
- * The deletion of parts is done by the cleanup thread in all cases except the transition from ERROR->DELETED which
+ * The deletion of parts is done by the cleanup thread in all cases except the transition from ERROR-&gt;DELETED which
  * is done by the parsing thread.
  * </p>
- * <pre>
+ * <pre>{@code
  *                              deleteParts()
  *     +--------------------------------------------------------------+
  *     |                                                              |
@@ -69,7 +69,7 @@ import org.eclipse.jetty.util.log.Logger;
  *                      |                                             |
  *                      +----------------> ERROR ---------------------+
  *                        deleteParts()             parsing thread
- * </pre>
+ * }</pre>
  * @see <a href="https://tools.ietf.org/html/rfc7578">https://tools.ietf.org/html/rfc7578</a>
  */
 public class MultiPartFormInputStream
