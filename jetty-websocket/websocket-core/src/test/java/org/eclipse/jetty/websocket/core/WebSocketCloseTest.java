@@ -55,7 +55,6 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -470,32 +469,6 @@ public class WebSocketCloseTest extends WebSocketTester
         assertThat(server.handler.closeStatus.getReason(), containsString("error close should overtake normal close"));
 
         Frame frame = receiveFrame(client.getInputStream());
-        assertThat(CloseStatus.getCloseStatus(frame).getCode(), is(CloseStatus.NORMAL));
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = {WS_SCHEME, WSS_SCHEME})
-    public void flushWithNormalClose(String scheme) throws Exception
-    {
-        setup(State.OPEN, scheme);
-
-        CountDownLatchCallback textCallback = new CountDownLatchCallback();
-        server.handler.getCoreSession().sendFrame(new Frame(OpCode.TEXT, "text payload"), textCallback, true);
-        assertTrue(textCallback.succeeded.await(5, TimeUnit.SECONDS));
-
-        Throwable t = assertThrows(Throwable.class,
-            () -> assertTimeoutPreemptively(Duration.ofSeconds(1), () -> receiveFrame(client.getInputStream())));
-        t.printStackTrace();
-
-        CountDownLatchCallback closeCallback = new CountDownLatchCallback();
-        server.handler.getCoreSession().close(CloseStatus.NORMAL, "normal close", closeCallback);
-        assertTrue(closeCallback.succeeded.await(5, TimeUnit.SECONDS));
-
-        Frame frame = receiveFrame(client.getInputStream());
-        assertThat(frame.getOpCode(), is(OpCode.TEXT));
-        assertThat(frame.getPayloadAsUTF8(), is("text payload"));
-
-        frame = receiveFrame(client.getInputStream());
         assertThat(CloseStatus.getCloseStatus(frame).getCode(), is(CloseStatus.NORMAL));
     }
 
