@@ -59,7 +59,7 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
 {
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_303(Scenario scenario) throws Exception
+    public void test303(Scenario scenario) throws Exception
     {
         start(scenario, new RedirectHandler());
 
@@ -75,7 +75,7 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_303_302(Scenario scenario) throws Exception
+    public void test303302(Scenario scenario) throws Exception
     {
         start(scenario, new RedirectHandler());
 
@@ -91,7 +91,7 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_303_302_OnDifferentDestinations(Scenario scenario) throws Exception
+    public void test303302OnDifferentDestinations(Scenario scenario) throws Exception
     {
         start(scenario, new RedirectHandler());
 
@@ -107,7 +107,7 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_301(Scenario scenario) throws Exception
+    public void test301(Scenario scenario) throws Exception
     {
         start(scenario, new RedirectHandler());
 
@@ -124,7 +124,7 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_301_WithWrongMethod(Scenario scenario) throws Exception
+    public void test301WithWrongMethod(Scenario scenario) throws Exception
     {
         start(scenario, new RedirectHandler());
 
@@ -144,7 +144,7 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_307_WithRequestContent(Scenario scenario) throws Exception
+    public void test307WithRequestContent(Scenario scenario) throws Exception
     {
         start(scenario, new RedirectHandler());
 
@@ -184,7 +184,7 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_303_WithConnectionClose_WithBigRequest(Scenario scenario) throws Exception
+    public void test303WithConnectionCloseWithBigRequest(Scenario scenario) throws Exception
     {
         start(scenario, new RedirectHandler());
 
@@ -314,84 +314,84 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_HEAD_301(Scenario scenario) throws Exception
+    public void testHEAD301(Scenario scenario) throws Exception
     {
         testSameMethodRedirect(scenario, HttpMethod.HEAD, HttpStatus.MOVED_PERMANENTLY_301);
     }
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_POST_301(Scenario scenario) throws Exception
+    public void testPOST301(Scenario scenario) throws Exception
     {
         testGETRedirect(scenario, HttpMethod.POST, HttpStatus.MOVED_PERMANENTLY_301);
     }
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_PUT_301(Scenario scenario) throws Exception
+    public void testPUT301(Scenario scenario) throws Exception
     {
         testSameMethodRedirect(scenario, HttpMethod.PUT, HttpStatus.MOVED_PERMANENTLY_301);
     }
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_HEAD_302(Scenario scenario) throws Exception
+    public void testHEAD302(Scenario scenario) throws Exception
     {
         testSameMethodRedirect(scenario, HttpMethod.HEAD, HttpStatus.FOUND_302);
     }
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_POST_302(Scenario scenario) throws Exception
+    public void testPOST302(Scenario scenario) throws Exception
     {
         testGETRedirect(scenario, HttpMethod.POST, HttpStatus.FOUND_302);
     }
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_PUT_302(Scenario scenario) throws Exception
+    public void testPUT302(Scenario scenario) throws Exception
     {
         testSameMethodRedirect(scenario, HttpMethod.PUT, HttpStatus.FOUND_302);
     }
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_HEAD_303(Scenario scenario) throws Exception
+    public void testHEAD303(Scenario scenario) throws Exception
     {
         testSameMethodRedirect(scenario, HttpMethod.HEAD, HttpStatus.SEE_OTHER_303);
     }
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_POST_303(Scenario scenario) throws Exception
+    public void testPOST303(Scenario scenario) throws Exception
     {
         testGETRedirect(scenario, HttpMethod.POST, HttpStatus.SEE_OTHER_303);
     }
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_PUT_303(Scenario scenario) throws Exception
+    public void testPUT303(Scenario scenario) throws Exception
     {
         testGETRedirect(scenario, HttpMethod.PUT, HttpStatus.SEE_OTHER_303);
     }
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_HEAD_307(Scenario scenario) throws Exception
+    public void testHEAD307(Scenario scenario) throws Exception
     {
         testSameMethodRedirect(scenario, HttpMethod.HEAD, HttpStatus.TEMPORARY_REDIRECT_307);
     }
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_POST_307(Scenario scenario) throws Exception
+    public void testPOST307(Scenario scenario) throws Exception
     {
         testSameMethodRedirect(scenario, HttpMethod.POST, HttpStatus.TEMPORARY_REDIRECT_307);
     }
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_PUT_307(Scenario scenario) throws Exception
+    public void testPUT307(Scenario scenario) throws Exception
     {
         testSameMethodRedirect(scenario, HttpMethod.PUT, HttpStatus.TEMPORARY_REDIRECT_307);
     }

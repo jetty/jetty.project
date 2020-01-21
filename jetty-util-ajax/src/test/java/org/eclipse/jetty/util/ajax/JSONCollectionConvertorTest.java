@@ -39,35 +39,35 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 public class JSONCollectionConvertorTest
 {
     @Test
-    public void testArrayList() throws Exception
+    public void testArrayList()
     {
-        List<String> list = new ArrayList<String>();
+        List<String> list = new ArrayList<>();
         Collections.addAll(list, "one", "two");
         testList(list);
     }
 
     @Test
-    public void testLinkedList() throws Exception
+    public void testLinkedList()
     {
-        List<String> list = new LinkedList<String>();
+        List<String> list = new LinkedList<>();
         Collections.addAll(list, "one", "two");
         testList(list);
     }
 
     @Test
-    public void testCopyOnWriteArrayList() throws Exception
+    public void testCopyOnWriteArrayList()
     {
-        List<String> list = new CopyOnWriteArrayList<String>();
+        List<String> list = new CopyOnWriteArrayList<>();
         Collections.addAll(list, "one", "two");
         testList(list);
     }
 
-    private void testList(List<String> list1) throws Exception
+    private void testList(List<String> list1)
     {
         JSON json = new JSON();
         json.addConvertor(List.class, new JSONCollectionConvertor());
 
-        Map<String, Object> object1 = new HashMap<String, Object>();
+        Map<String, Object> object1 = new HashMap<>();
         String field = "field";
         object1.put(field, list1);
 
@@ -75,7 +75,7 @@ public class JSONCollectionConvertorTest
         assertThat(string, containsString(list1.getClass().getName()));
 
         @SuppressWarnings("unchecked")
-        Map<String, Object> object2 = (Map<String, Object>)json.parse(new JSON.StringSource(string));
+        Map<String, Object> object2 = (Map<String, Object>)json.fromJSON(string);
         @SuppressWarnings("unchecked")
         List<String> list2 = (List<String>)object2.get(field);
 
@@ -84,17 +84,17 @@ public class JSONCollectionConvertorTest
     }
 
     @Test
-    public void testHashSet() throws Exception
+    public void testHashSet()
     {
-        Set<String> set = new HashSet<String>();
+        Set<String> set = new HashSet<>();
         Collections.addAll(set, "one", "two", "three");
         testSet(set);
     }
 
     @Test
-    public void testTreeSet() throws Exception
+    public void testTreeSet()
     {
-        Set<String> set = new TreeSet<String>();
+        Set<String> set = new TreeSet<>();
         Collections.addAll(set, "one", "two", "three");
         testSet(set);
     }
@@ -108,7 +108,7 @@ public class JSONCollectionConvertorTest
         assertThat(string, containsString(set1.getClass().getName()));
 
         @SuppressWarnings("unchecked")
-        Set<String> set2 = (Set<String>)json.parse(new JSON.StringSource(string));
+        Set<String> set2 = (Set<String>)json.fromJSON(string);
 
         assertSame(set1.getClass(), set2.getClass());
         assertEquals(set1, set2);

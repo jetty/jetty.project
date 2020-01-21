@@ -174,7 +174,7 @@ public class WebSocketServerContainerExecutorTest
         try
         {
             server.start();
-            String response = GET(server.getURI().resolve("/connect"));
+            String response = doGet(server.getURI().resolve("/connect"));
             assertThat("Response", response, startsWith("Connected to ws://"));
 
             Executor containerExecutor = getJavaxServerContainerExecutor(contextHandler);
@@ -203,7 +203,7 @@ public class WebSocketServerContainerExecutorTest
         try
         {
             server.start();
-            String response = GET(server.getURI().resolve("/connect"));
+            String response = doGet(server.getURI().resolve("/connect"));
             assertThat("Response", response, startsWith("Connected to ws://"));
 
             Executor containerExecutor = getJavaxServerContainerExecutor(contextHandler);
@@ -215,7 +215,7 @@ public class WebSocketServerContainerExecutorTest
         }
     }
 
-    private String GET(URI destURI) throws IOException
+    private String doGet(URI destURI) throws IOException
     {
         HttpURLConnection http = (HttpURLConnection)destURI.toURL().openConnection();
         assertThat("HTTP GET (" + destURI + ") Response Code", http.getResponseCode(), is(200));

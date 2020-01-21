@@ -35,6 +35,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+
 import javax.servlet.DispatcherType;
 import javax.servlet.MultipartConfigElement;
 import javax.servlet.ServletException;
@@ -81,6 +83,7 @@ import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
+// @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
 public class RequestTest
 {
     private static final Logger LOG = Log.getLogger(RequestTest.class);
@@ -116,6 +119,66 @@ public class RequestTest
     {
         _server.stop();
         _server.join();
+    }
+    
+    @Test
+    public void testRequestCharacterEncoding() throws Exception
+    {
+        AtomicReference<String> result = new AtomicReference<>(null);
+        AtomicReference<String> overrideCharEncoding = new AtomicReference<>(null);
+        
+        _server.stop();
+        ContextHandler handler = new CharEncodingContextHandler();
+        _server.setHandler(handler);
+        handler.setHandler(_handler);
+        _handler._checker = new RequestTester()
+        {
+            @Override
+            public boolean check(HttpServletRequest request, HttpServletResponse response)
+            {
+                try
+                {
+                    String s = overrideCharEncoding.get();
+                    if (s != null)
+                        request.setCharacterEncoding(s);
+
+                    result.set(request.getCharacterEncoding());
+                    return true;
+                }
+                catch (UnsupportedEncodingException e)
+                {
+                    return false;
+                }
+            }
+        };
+        _server.start();
+   
+        String request = "GET / HTTP/1.1\n" +
+            "Host: whatever\r\n" +
+            "Content-Type: text/html;charset=utf8\n" +
+            "Connection: close\n" +
+            "\n";
+        
+        //test setting the default char encoding
+        handler.setDefaultRequestCharacterEncoding("ascii"); 
+        String response = _connector.getResponse(request);
+        assertTrue(response.startsWith("HTTP/1.1 200"));
+        assertEquals("ascii", result.get());
+        
+        //test overriding the default char encoding with explicit encoding
+        result.set(null);
+        overrideCharEncoding.set("utf-16");
+        response = _connector.getResponse(request);
+        assertTrue(response.startsWith("HTTP/1.1 200"));
+        assertEquals("utf-16", result.get());
+        
+        //test fallback to content-type encoding
+        result.set(null);
+        overrideCharEncoding.set(null);
+        handler.setDefaultRequestCharacterEncoding(null);
+        response = _connector.getResponse(request);
+        assertTrue(response.startsWith("HTTP/1.1 200"));
+        assertEquals("utf-8", result.get());
     }
 
     @Test
@@ -154,7 +217,7 @@ public class RequestTest
     }
 
     @Test
-    public void testParamExtraction_BadSequence() throws Exception
+    public void testParamExtractionBadSequence() throws Exception
     {
         _handler._checker = new RequestTester()
         {
@@ -180,7 +243,7 @@ public class RequestTest
     }
 
     @Test
-    public void testParamExtraction_Timeout() throws Exception
+    public void testParamExtractionTimeout() throws Exception
     {
         _handler._checker = new RequestTester()
         {
@@ -516,17 +579,17 @@ public class RequestTest
         final long HUGE_LENGTH = (long)Integer.MAX_VALUE * 10L;
 
         _handler._checker = (request, response) ->
-                request.getContentLength() == (-1) && // per HttpServletRequest javadoc this must return (-1);
+            request.getContentLength() == (-1) && // per HttpServletRequest javadoc this must return (-1);
                 request.getContentLengthLong() == HUGE_LENGTH;
 
         //Send a request with encoded form content
         String request = "POST / HTTP/1.1\r\n" +
-                "Host: whatever\r\n" +
-                "Content-Type: application/octet-stream\n" +
-                "Content-Length: " + HUGE_LENGTH + "\n" +
-                "Connection: close\n" +
-                "\n" +
-                "<insert huge amount of content here>\n";
+            "Host: whatever\r\n" +
+            "Content-Type: application/octet-stream\n" +
+            "Content-Length: " + HUGE_LENGTH + "\n" +
+            "Connection: close\n" +
+            "\n" +
+            "<insert huge amount of content here>\n";
 
         System.out.println(request);
 
@@ -544,8 +607,8 @@ public class RequestTest
 
         _handler._checker = (request, response) ->
             request.getHeader("Content-Length").equals(hugeLength) &&
-                    request.getContentLength() == (-1) && // per HttpServletRequest javadoc this must return (-1);
-                    request.getContentLengthLong() == (-1); // exact behavior here not specified in Servlet javadoc
+                request.getContentLength() == (-1) && // per HttpServletRequest javadoc this must return (-1);
+                request.getContentLengthLong() == (-1); // exact behavior here not specified in Servlet javadoc
 
         //Send a request with encoded form content
         String request = "POST / HTTP/1.1\r\n" +
@@ -1730,7 +1793,7 @@ public class RequestTest
         assertNotNull(request.getParameterMap());
         assertEquals(0, request.getParameterMap().size());
     }
-
+    
     interface RequestTester
     {
         boolean check(HttpServletRequest request, HttpServletResponse response) throws IOException;
@@ -1748,8 +1811,8 @@ public class RequestTest
             ((Request)request).setHandled(true);
 
             if (request.getContentLength() > 0 &&
-                    !request.getContentType().startsWith(MimeTypes.Type.FORM_ENCODED.asString()) &&
-                    !request.getContentType().startsWith("multipart/form-data"))
+                !request.getContentType().startsWith(MimeTypes.Type.FORM_ENCODED.asString()) &&
+                !request.getContentType().startsWith("multipart/form-data"))
                 _content = IO.toString(request.getInputStream());
 
             if (_checker != null && _checker.check(request, response))

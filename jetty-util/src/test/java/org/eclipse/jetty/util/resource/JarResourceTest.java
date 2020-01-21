@@ -219,7 +219,7 @@ public class JarResourceTest
      * Where the JAR entries contain names that are URI encoded / escaped
      */
     @Test
-    public void testJarFileResourceList_PreEncodedEntries() throws Exception
+    public void testJarFileResourceListPreEncodedEntries() throws Exception
     {
         Path testJar = MavenTestingUtils.getTestResourcePathFile("jar-file-resource.jar");
         String uri = "jar:" + testJar.toUri().toASCIIString() + "!/";
@@ -243,7 +243,7 @@ public class JarResourceTest
     }
 
     @Test
-    public void testJarFileResourceList_DirWithSpace() throws Exception
+    public void testJarFileResourceListDirWithSpace() throws Exception
     {
         Path testJar = MavenTestingUtils.getTestResourcePathFile("jar-file-resource.jar");
         String uri = "jar:" + testJar.toUri().toASCIIString() + "!/";

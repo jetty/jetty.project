@@ -87,7 +87,7 @@ public class UriTemplatePathSpecTest
     }
 
     @Test
-    public void testExactPathSpec_TestWebapp()
+    public void testExactPathSpecTestWebapp()
     {
         UriTemplatePathSpec spec = new UriTemplatePathSpec("/deep.thought/");
         assertEquals("/deep.thought/", spec.getDeclaration(), "Spec.pathSpec");

@@ -14,21 +14,6 @@
     <bundle-symbolic-name>${project.groupId}.unixsocket.client</bundle-symbolic-name>
   </properties>
 
-  <build>
-    <plugins>
-      <plugin>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
-          <argLine>
-            @{argLine} ${jetty.surefire.argLine}
-            --add-modules jetty.servlet.api
-            --add-reads org.eclipse.jetty.unixsocket.client=jetty.servlet.api
-          </argLine>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
-
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>

@@ -186,6 +186,17 @@ public class AnnotationTest extends HttpServlet
             out.println("<body>");
             out.println("<h1>Results</h1>");
 
+            out.println("<h2>Context Defaults</h2>");
+            out.println("<p><b>default-context-path: " +
+                (request.getServletContext().getAttribute("default-context-path") != null ? "<span class=\"pass\">PASS" : "<span class=\"fail\">FAIL") +
+                "</span></p>");
+            out.println("<p><b>request-character-encoding: " +
+                ("utf-8".equals(request.getServletContext().getAttribute("request-character-encoding")) ? "<span class=\"pass\">PASS" : "<span class=\"fail\">FAIL") +
+                "</span></p>");
+            out.println("<p><b>response-character-encoding: " +
+                ("utf-8".equals(request.getServletContext().getAttribute("response-character-encoding")) ? "<span class=\"pass\">PASS" : "<span class=\"fail\">FAIL") +
+                "</span></p>");
+
             out.println("<h2>Init Params from Annotation</h2>");
             out.println("<pre>");
             out.println("initParams={@WebInitParam(name=\"fromAnnotation\", value=\"xyz\")}");
@@ -251,7 +262,11 @@ public class AnnotationTest extends HttpServlet
             out.println("<h2>ServletContextListener Registration Prevented from ServletContextListener</h2>");
             Boolean webListenerPrevention = (Boolean)config.getServletContext().getAttribute("com.acme.AnnotationTest.sclFromSclRegoTest");
             out.println("<p><b>Result: " + (webListenerPrevention.booleanValue() ? "<span class=\"pass\">PASS" : "<span class=\"fail\">FAIL") + "</span></b></p>");
-
+            
+            out.println("<h2>Add Jsp File Registration</h2>");
+            complete = (Boolean)config.getServletContext().getAttribute("com.acme.jsp.file");
+            out.println("<p><b>Result: " + (complete.booleanValue() ? "<span class=\"pass\">PASS" : "<span class=\"fail\">FAIL") + "</span></b></p>");
+            
             out.println("<h2>ServletContextListener In web.xml Injected</h2>");
             Boolean listenerInject = (Boolean)config.getServletContext().getAttribute("com.acme.AnnotationTest.sclInjectTest");
             out.println("<p><b>Result: " + (listenerInject.booleanValue() ? "<span class=\"pass\">PASS" : "<span class=\"fail\">FAIL") + "</span></b></p>");

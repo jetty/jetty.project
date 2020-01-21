@@ -322,12 +322,12 @@ public class IncludeExcludeBasedFilterTest
         @Override
         public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
         {
-            HttpServletRequest http_request = (HttpServletRequest)request;
-            HttpServletResponse http_response = (HttpServletResponse)response;
+            HttpServletRequest httpRequest = (HttpServletRequest)request;
+            HttpServletResponse httpResponse = (HttpServletResponse)response;
 
-            if (super.shouldFilter(http_request, http_response))
+            if (super.shouldFilter(httpRequest, httpResponse))
             {
-                http_response.setHeader("X-Custom-Value", "1");
+                httpResponse.setHeader("X-Custom-Value", "1");
             }
 
             chain.doFilter(request, response);

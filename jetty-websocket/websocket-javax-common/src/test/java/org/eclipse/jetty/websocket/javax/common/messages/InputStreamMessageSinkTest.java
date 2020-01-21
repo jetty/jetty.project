@@ -45,7 +45,7 @@ import static org.hamcrest.Matchers.is;
 public class InputStreamMessageSinkTest extends AbstractMessageSinkTest
 {
     @Test
-    public void testInputStream_1_Message_1_Frame() throws InterruptedException, ExecutionException, TimeoutException
+    public void testInputStream1Message1Frame() throws InterruptedException, ExecutionException, TimeoutException
     {
         InputStreamCopy copy = new InputStreamCopy();
         MethodHandle copyHandle = getAcceptHandle(copy, InputStream.class);
@@ -62,7 +62,7 @@ public class InputStreamMessageSinkTest extends AbstractMessageSinkTest
     }
 
     @Test
-    public void testInputStream_2_Messages_2_Frames() throws InterruptedException, ExecutionException, TimeoutException
+    public void testInputStream2Messages2Frames() throws InterruptedException, ExecutionException, TimeoutException
     {
         InputStreamCopy copy = new InputStreamCopy();
         MethodHandle copyHandle = getAcceptHandle(copy, InputStream.class);
@@ -88,7 +88,7 @@ public class InputStreamMessageSinkTest extends AbstractMessageSinkTest
     }
 
     @Test
-    public void testInputStream_1_Message_3_Frames() throws InterruptedException, ExecutionException, TimeoutException
+    public void testInputStream1Message3Frames() throws InterruptedException, ExecutionException, TimeoutException
     {
         InputStreamCopy copy = new InputStreamCopy();
         MethodHandle copyHandle = getAcceptHandle(copy, InputStream.class);
@@ -112,7 +112,7 @@ public class InputStreamMessageSinkTest extends AbstractMessageSinkTest
     }
 
     @Test
-    public void testInputStream_1_Message_4_Frames_Empty_Fin() throws InterruptedException, ExecutionException, TimeoutException
+    public void testInputStream1Message4FramesEmptyFin() throws InterruptedException, ExecutionException, TimeoutException
     {
         InputStreamCopy copy = new InputStreamCopy();
         MethodHandle copyHandle = getAcceptHandle(copy, InputStream.class);

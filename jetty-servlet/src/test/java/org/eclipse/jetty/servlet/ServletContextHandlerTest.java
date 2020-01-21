@@ -59,6 +59,7 @@ import javax.servlet.http.HttpSessionEvent;
 import javax.servlet.http.HttpSessionIdListener;
 import javax.servlet.http.HttpSessionListener;
 
+import org.eclipse.jetty.http.pathmap.MappedResource;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.security.RoleInfo;
 import org.eclipse.jetty.security.SecurityHandler;
@@ -885,6 +886,117 @@ public class ServletContextHandlerTest
     }
 
     @Test
+    public void testAddJspFile() throws Exception
+    {
+        ContextHandlerCollection contexts = new ContextHandlerCollection();
+        _server.setHandler(contexts);
+
+        ServletContextHandler root = new ServletContextHandler(contexts, "/");
+        ServletHolder jspServlet = new ServletHolder();
+        jspServlet.setName("jsp");
+        jspServlet.setHeldClass(FakeJspServlet.class);
+        root.addServlet(jspServlet, "*.jsp");
+        class JSPAddingSCI implements ServletContainerInitializer
+        {
+            @Override
+            public void onStartup(Set<Class<?>> c, ServletContext ctx) throws ServletException
+            {
+                try
+                {
+                    ServletRegistration rego = ctx.addJspFile("some.jsp", "/path/to/some.jsp");
+                    rego.addMapping("/somejsp/*");
+                }
+                catch (Exception e)
+                {
+                    fail(e);
+                }
+            }
+        }
+
+        root.addBean(new MySCIStarter(root.getServletContext(), new JSPAddingSCI()), true);
+        _server.start();
+        MappedResource<ServletHolder> mappedServlet = root.getServletHandler().getMappedServlet("/somejsp/xxx");
+        assertNotNull(mappedServlet.getResource());
+        assertEquals("some.jsp", mappedServlet.getResource().getName());
+    }
+
+    @Test
+    public void testAddJspFileWithExistingRegistration() throws Exception
+    {
+        ContextHandlerCollection contexts = new ContextHandlerCollection();
+        _server.setHandler(contexts);
+
+        ServletContextHandler root = new ServletContextHandler(contexts, "/");
+        ServletHolder jspServlet = new ServletHolder();
+        jspServlet.setName("jsp");
+        jspServlet.setHeldClass(FakeJspServlet.class);
+        root.addServlet(jspServlet, "*.jsp");
+        //add a full registration so that the addJspFile will fail
+        ServletHolder barServlet = new ServletHolder();
+        barServlet.setName("some.jsp");
+        barServlet.setHeldClass(HelloServlet.class);
+        root.addServlet(barServlet, "/bar/*");
+        class JSPAddingSCI implements ServletContainerInitializer
+        {
+            @Override
+            public void onStartup(Set<Class<?>> c, ServletContext ctx) throws ServletException
+            {
+                try
+                {
+                    ServletRegistration rego = ctx.addJspFile("some.jsp", "/path/to/some.jsp");
+                    assertNull(rego);
+                }
+                catch (Exception e)
+                {
+                    fail(e);
+                }
+            }
+        }
+
+        root.addBean(new MySCIStarter(root.getServletContext(), new JSPAddingSCI()), true);
+        _server.start();
+    }
+
+    @Test
+    public void testAddJspFileWithPartialRegistration() throws Exception
+    {
+        ContextHandlerCollection contexts = new ContextHandlerCollection();
+        _server.setHandler(contexts);
+
+        ServletContextHandler root = new ServletContextHandler(contexts, "/");
+        ServletHolder jspServlet = new ServletHolder();
+        jspServlet.setName("jsp");
+        jspServlet.setHeldClass(FakeJspServlet.class);
+        root.addServlet(jspServlet, "*.jsp");
+        //add a preliminary registration so that the addJspFile will complete it
+        ServletHolder barServlet = new ServletHolder();
+        barServlet.setName("some.jsp");
+        root.addServlet(barServlet, "/bar/*");
+        class JSPAddingSCI implements ServletContainerInitializer
+        {
+            @Override
+            public void onStartup(Set<Class<?>> c, ServletContext ctx) throws ServletException
+            {
+                try
+                {
+                    ServletRegistration rego = ctx.addJspFile("some.jsp", "/path/to/some.jsp");
+                    assertNotNull(rego);
+                }
+                catch (Exception e)
+                {
+                    fail(e);
+                }
+            }
+        }
+
+        root.addBean(new MySCIStarter(root.getServletContext(), new JSPAddingSCI()), true);
+        _server.start();
+        MappedResource<ServletHolder> mappedServlet = root.getServletHandler().getMappedServlet("/bar/xxx");
+        assertNotNull(mappedServlet.getResource());
+        assertEquals("some.jsp", mappedServlet.getResource().getName());
+    }
+    
+    @Test
     public void testAddServletAfterStart() throws Exception
     {
         ServletContextHandler context = new ServletContextHandler();
@@ -1390,6 +1502,11 @@ public class ServletContextHandlerTest
                 out.printf("Object is NOT a DecoratedObjectFactory%n");
             }
         }
+    }
+    
+    public static class FakeJspServlet extends HttpServlet
+    {
+        
     }
 
     public static class ServletAddingServlet extends HttpServlet

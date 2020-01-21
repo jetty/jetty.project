@@ -183,7 +183,7 @@ public class ErrorPageTest
     }
 
     @Test
-    public void testGenerateAcceptableResponse_noAcceptHeader() throws Exception
+    public void testGenerateAcceptableResponseNoAcceptHeader() throws Exception
     {
         // no global error page here
         _errorPageErrorHandler.getErrorPages().remove(ErrorPageErrorHandler.GLOBAL_ERROR_PAGE);
@@ -196,7 +196,7 @@ public class ErrorPageTest
     }
 
     @Test
-    public void testGenerateAcceptableResponse_htmlAcceptHeader() throws Exception
+    public void testGenerateAcceptableResponseHtmlAcceptHeader() throws Exception
     {
         // no global error page here
         _errorPageErrorHandler.getErrorPages().remove(ErrorPageErrorHandler.GLOBAL_ERROR_PAGE);
@@ -211,7 +211,7 @@ public class ErrorPageTest
     }
 
     @Test
-    public void testGenerateAcceptableResponse_noHtmlAcceptHeader() throws Exception
+    public void testGenerateAcceptableResponseNoHtmlAcceptHeader() throws Exception
     {
         // no global error page here
         _errorPageErrorHandler.getErrorPages().remove(ErrorPageErrorHandler.GLOBAL_ERROR_PAGE);

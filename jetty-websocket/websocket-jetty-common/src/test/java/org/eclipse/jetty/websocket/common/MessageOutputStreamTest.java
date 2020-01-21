@@ -86,7 +86,7 @@ public class MessageOutputStreamTest
     }
 
     @Test
-    public void testWriteLarge_RequiringMultipleBuffers() throws Exception
+    public void testWriteLargeRequiringMultipleBuffers() throws Exception
     {
         int bufsize = (int)(OUTPUT_BUFFER_SIZE * 2.5);
         byte[] buf = new byte[bufsize];

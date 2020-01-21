@@ -20,7 +20,8 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <argLine>
-            @{argLine} ${jetty.surefire.argLine} --add-reads org.eclipse.jetty.http2.client=jetty.servlet.api,org.eclipse.jetty.http2.hpack --add-modules jetty.servlet.api
+            @{argLine} ${jetty.surefire.argLine}
+            --add-reads org.eclipse.jetty.http2.client=org.eclipse.jetty.http2.hpack
           </argLine>
         </configuration>
       </plugin>

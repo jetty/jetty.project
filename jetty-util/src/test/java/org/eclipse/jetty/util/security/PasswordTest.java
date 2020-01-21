@@ -44,6 +44,7 @@ public class PasswordTest
     @Test
     public void testObfuscateUnicode()
     {
+        // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
         String password = "secret password !#\u20ac ";
         String obfuscate = Password.obfuscate(password);
         assertEquals(password, Password.deobfuscate(obfuscate));

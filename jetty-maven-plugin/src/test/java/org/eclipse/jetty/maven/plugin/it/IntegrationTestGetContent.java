@@ -32,13 +32,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- *
- */
 public class IntegrationTestGetContent
 {
     @Test
-    public void get_content_response()
+    public void getContentResponse()
         throws Exception
     {
         int port = getPort();

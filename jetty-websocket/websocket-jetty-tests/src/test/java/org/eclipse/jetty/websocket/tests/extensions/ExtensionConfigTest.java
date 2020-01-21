@@ -107,7 +107,7 @@ public class ExtensionConfigTest
     }
 
     @Test
-    public void testParseSimple_BasicParameters()
+    public void testParseSimpleBasicParameters()
     {
         ExtensionConfig cfg = ExtensionConfig.parse("bar; baz=2");
         Map<String, String> expectedParams = new HashMap<>();
@@ -116,7 +116,7 @@ public class ExtensionConfigTest
     }
 
     @Test
-    public void testParseSimple_NoParameters()
+    public void testParseSimpleNoParameters()
     {
         ExtensionConfig cfg = ExtensionConfig.parse("foo");
         Map<String, String> expectedParams = new HashMap<>();

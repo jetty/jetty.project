@@ -70,9 +70,9 @@ public class AsyncListenerTest
     }
 
     @Test
-    public void test_StartAsync_Throw_OnError_Dispatch() throws Exception
+    public void testStartAsyncThrowOnErrorDispatch() throws Exception
     {
-        test_StartAsync_Throw_OnError(event -> event.getAsyncContext().dispatch("/dispatch"));
+        testStartAsyncThrowOnError(event -> event.getAsyncContext().dispatch("/dispatch"));
         String httpResponse = connector.getResponse(
             "GET /ctx/path HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
@@ -82,9 +82,9 @@ public class AsyncListenerTest
     }
 
     @Test
-    public void test_StartAsync_Throw_OnError_Complete() throws Exception
+    public void testStartAsyncThrowOnErrorComplete() throws Exception
     {
-        test_StartAsync_Throw_OnError(event ->
+        testStartAsyncThrowOnError(event ->
         {
             HttpServletResponse response = (HttpServletResponse)event.getAsyncContext().getResponse();
             response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR_500);
@@ -106,9 +106,9 @@ public class AsyncListenerTest
     }
 
     @Test
-    public void test_StartAsync_Throw_OnError_Throw() throws Exception
+    public void testStartAsyncThrowOnErrorThrow() throws Exception
     {
-        test_StartAsync_Throw_OnError(event ->
+        testStartAsyncThrowOnError(event ->
         {
             throw new IOException();
         });
@@ -122,9 +122,9 @@ public class AsyncListenerTest
     }
 
     @Test
-    public void test_StartAsync_Throw_OnError_Nothing() throws Exception
+    public void testStartAsyncThrowOnErrorNothing() throws Exception
     {
-        test_StartAsync_Throw_OnError(event ->
+        testStartAsyncThrowOnError(event ->
         {
         });
         String httpResponse = connector.getResponse(
@@ -137,9 +137,9 @@ public class AsyncListenerTest
     }
 
     @Test
-    public void test_StartAsync_Throw_OnError_SendError() throws Exception
+    public void testStartAsyncThrowOnErrorSendError() throws Exception
     {
-        test_StartAsync_Throw_OnError(event ->
+        testStartAsyncThrowOnError(event ->
         {
             HttpServletResponse response = (HttpServletResponse)event.getAsyncContext().getResponse();
             response.sendError(HttpStatus.BAD_GATEWAY_502, "Message!!!");
@@ -155,9 +155,9 @@ public class AsyncListenerTest
     }
 
     @Test
-    public void test_StartAsync_Throw_OnError_SendError_CustomErrorPage() throws Exception
+    public void testStartAsyncThrowOnErrorSendErrorCustomErrorPage() throws Exception
     {
-        test_StartAsync_Throw_OnError(event ->
+        testStartAsyncThrowOnError(event ->
         {
             HttpServletResponse response = (HttpServletResponse)event.getAsyncContext().getResponse();
             response.sendError(HttpStatus.BAD_GATEWAY_502);
@@ -184,14 +184,14 @@ public class AsyncListenerTest
         assertThat(httpResponse, containsString("CUSTOM"));
     }
 
-    private void test_StartAsync_Throw_OnError(IOConsumer<AsyncEvent> consumer) throws Exception
+    private void testStartAsyncThrowOnError(IOConsumer<AsyncEvent> consumer) throws Exception
     {
         ServletContextHandler context = new ServletContextHandler();
         context.setContextPath("/ctx");
         context.addServlet(new ServletHolder(new HttpServlet()
         {
             @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException
             {
                 AsyncContext asyncContext = request.startAsync();
                 asyncContext.setTimeout(10000);
@@ -209,7 +209,7 @@ public class AsyncListenerTest
         context.addServlet(new ServletHolder(new HttpServlet()
         {
             @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void service(HttpServletRequest request, HttpServletResponse response)
             {
                 response.setStatus(HttpStatus.OK_200);
             }
@@ -217,7 +217,7 @@ public class AsyncListenerTest
         context.addServlet(new ServletHolder(new HttpServlet()
         {
             @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 response.getOutputStream().print("CUSTOM");
             }
@@ -227,9 +227,9 @@ public class AsyncListenerTest
     }
 
     @Test
-    public void test_StartAsync_OnTimeout_Dispatch() throws Exception
+    public void testStartAsyncOnTimeoutDispatch() throws Exception
     {
-        test_StartAsync_OnTimeout(500, event -> event.getAsyncContext().dispatch("/dispatch"));
+        testStartAsyncOnTimeout(500, event -> event.getAsyncContext().dispatch("/dispatch"));
         String httpResponse = connector.getResponse(
             "GET / HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
@@ -239,9 +239,9 @@ public class AsyncListenerTest
     }
 
     @Test
-    public void test_StartAsync_OnTimeout_Complete() throws Exception
+    public void testStartAsyncOnTimeoutComplete() throws Exception
     {
-        test_StartAsync_OnTimeout(500, event ->
+        testStartAsyncOnTimeout(500, event ->
         {
             HttpServletResponse response = (HttpServletResponse)event.getAsyncContext().getResponse();
             response.setStatus(HttpStatus.OK_200);
@@ -259,9 +259,9 @@ public class AsyncListenerTest
     }
 
     @Test
-    public void test_StartAsync_OnTimeout_Throw() throws Exception
+    public void testStartAsyncOnTimeoutThrow() throws Exception
     {
-        test_StartAsync_OnTimeout(500, event ->
+        testStartAsyncOnTimeout(500, event ->
         {
             throw new TestRuntimeException();
         });
@@ -276,9 +276,9 @@ public class AsyncListenerTest
     }
 
     @Test
-    public void test_StartAsync_OnTimeout_Nothing() throws Exception
+    public void testStartAsyncOnTimeoutNothing() throws Exception
     {
-        test_StartAsync_OnTimeout(500, event ->
+        testStartAsyncOnTimeout(500, event ->
         {
         });
         String httpResponse = connector.getResponse(
@@ -290,9 +290,9 @@ public class AsyncListenerTest
     }
 
     @Test
-    public void test_StartAsync_OnTimeout_SendError() throws Exception
+    public void testStartAsyncOnTimeoutSendError() throws Exception
     {
-        test_StartAsync_OnTimeout(500, event ->
+        testStartAsyncOnTimeout(500, event ->
         {
             HttpServletResponse response = (HttpServletResponse)event.getAsyncContext().getResponse();
             response.sendError(HttpStatus.BAD_GATEWAY_502);
@@ -307,9 +307,9 @@ public class AsyncListenerTest
     }
 
     @Test
-    public void test_StartAsync_OnTimeout_SendError_CustomErrorPage() throws Exception
+    public void testStartAsyncOnTimeoutSendErrorCustomErrorPage() throws Exception
     {
-        test_StartAsync_OnTimeout(500, event ->
+        testStartAsyncOnTimeout(500, event ->
         {
             AsyncContext asyncContext = event.getAsyncContext();
             HttpServletResponse response = (HttpServletResponse)asyncContext.getResponse();
@@ -339,13 +339,13 @@ public class AsyncListenerTest
         assertThat(httpResponse, containsString("CUSTOM"));
     }
 
-    private void test_StartAsync_OnTimeout(long timeout, IOConsumer<AsyncEvent> consumer) throws Exception
+    private void testStartAsyncOnTimeout(long timeout, IOConsumer<AsyncEvent> consumer) throws Exception
     {
         ServletContextHandler context = new ServletContextHandler();
         context.addServlet(new ServletHolder(new HttpServlet()
         {
             @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void service(HttpServletRequest request, HttpServletResponse response)
             {
                 AsyncContext asyncContext = request.startAsync();
                 asyncContext.setTimeout(timeout);
@@ -362,7 +362,7 @@ public class AsyncListenerTest
         context.addServlet(new ServletHolder(new HttpServlet()
         {
             @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void service(HttpServletRequest request, HttpServletResponse response)
             {
                 response.setStatus(HttpStatus.OK_200);
             }
@@ -370,7 +370,7 @@ public class AsyncListenerTest
         context.addServlet(new ServletHolder(new HttpServlet()
         {
             @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 response.getOutputStream().print("CUSTOM");
             }
@@ -380,20 +380,20 @@ public class AsyncListenerTest
     }
 
     @Test
-    public void test_StartAsync_OnComplete_Throw() throws Exception
+    public void testStartAsyncOnCompleteThrow() throws Exception
     {
         ServletContextHandler context = new ServletContextHandler();
         context.addServlet(new ServletHolder(new HttpServlet()
         {
             @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 AsyncContext asyncContext = request.startAsync();
                 asyncContext.setTimeout(10000);
                 asyncContext.addListener(new AsyncListenerAdapter()
                 {
                     @Override
-                    public void onComplete(AsyncEvent event) throws IOException
+                    public void onComplete(AsyncEvent event)
                     {
                         throw new TestRuntimeException();
                     }
@@ -415,7 +415,7 @@ public class AsyncListenerTest
     }
 
     @Test
-    public void test_StartAsync_OnTimeout_CalledBy_PooledThread() throws Exception
+    public void testStartAsyncOnTimeoutCalledByPooledThread() throws Exception
     {
         String threadNamePrefix = "async_listener";
         threadPool = new QueuedThreadPool();
@@ -424,14 +424,14 @@ public class AsyncListenerTest
         context.addServlet(new ServletHolder(new HttpServlet()
         {
             @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void service(HttpServletRequest request, HttpServletResponse response)
             {
                 AsyncContext asyncContext = request.startAsync();
                 asyncContext.setTimeout(1000);
                 asyncContext.addListener(new AsyncListenerAdapter()
                 {
                     @Override
-                    public void onTimeout(AsyncEvent event) throws IOException
+                    public void onTimeout(AsyncEvent event)
                     {
                         if (Thread.currentThread().getName().startsWith(threadNamePrefix))
                             response.setStatus(HttpStatus.OK_200);
@@ -459,7 +459,7 @@ public class AsyncListenerTest
     public static class AsyncListenerAdapter implements AsyncListener
     {
         @Override
-        public void onComplete(AsyncEvent event) throws IOException
+        public void onComplete(AsyncEvent event)
         {
         }
 
@@ -474,7 +474,7 @@ public class AsyncListenerTest
         }
 
         @Override
-        public void onStartAsync(AsyncEvent event) throws IOException
+        public void onStartAsync(AsyncEvent event)
         {
         }
     }

@@ -840,7 +840,7 @@ public class GracefulStopTest
             int c = 0;
             try
             {
-                int content_length = request.getContentLength();
+                int contentLength = request.getContentLength();
                 InputStream in = request.getInputStream();
 
                 while (true)
@@ -852,7 +852,7 @@ public class GracefulStopTest
 
                 baseRequest.setHandled(true);
                 response.setStatus(200);
-                response.getWriter().printf("read %d/%d%n", c, content_length);
+                response.getWriter().printf("read %d/%d%n", c, contentLength);
             }
             catch (Throwable th)
             {

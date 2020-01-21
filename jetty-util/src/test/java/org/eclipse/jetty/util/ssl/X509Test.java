@@ -32,7 +32,7 @@ import static org.hamcrest.Matchers.is;
 public class X509Test
 {
     @Test
-    public void testIsCertSign_Normal()
+    public void testIsCertSignNormal()
     {
         X509Certificate bogusX509 = new X509CertificateAdapter()
         {
@@ -49,7 +49,7 @@ public class X509Test
     }
 
     @Test
-    public void testIsCertSign_Normal_NoSupported()
+    public void testIsCertSignNormalNoSupported()
     {
         X509Certificate bogusX509 = new X509CertificateAdapter()
         {
@@ -66,7 +66,7 @@ public class X509Test
     }
 
     @Test
-    public void testIsCertSign_NonStandard_Short()
+    public void testIsCertSignNonStandardShort()
     {
         X509Certificate bogusX509 = new X509CertificateAdapter()
         {
@@ -83,7 +83,7 @@ public class X509Test
     }
 
     @Test
-    public void testIsCertSign_NonStandard_Shorter()
+    public void testIsCertSignNonStandardShorter()
     {
         X509Certificate bogusX509 = new X509CertificateAdapter()
         {
@@ -99,7 +99,7 @@ public class X509Test
     }
 
     @Test
-    public void testIsCertSign_Normal_Null()
+    public void testIsCertSignNormalNull()
     {
         X509Certificate bogusX509 = new X509CertificateAdapter()
         {
@@ -114,7 +114,7 @@ public class X509Test
     }
 
     @Test
-    public void testIsCertSign_Normal_Empty()
+    public void testIsCertSignNormalEmpty()
     {
         X509Certificate bogusX509 = new X509CertificateAdapter()
         {
@@ -129,7 +129,7 @@ public class X509Test
     }
 
     @Test
-    public void testServerClass_WithSni() throws Exception
+    public void testServerClassWithSni() throws Exception
     {
         SslContextFactory serverSsl = new SslContextFactory.Server();
         Path keystorePath = MavenTestingUtils.getTestResourcePathFile("keystore_sni.p12");
@@ -140,7 +140,7 @@ public class X509Test
     }
 
     @Test
-    public void testClientClass_WithSni() throws Exception
+    public void testClientClassWithSni() throws Exception
     {
         SslContextFactory clientSsl = new SslContextFactory.Client();
         Path keystorePath = MavenTestingUtils.getTestResourcePathFile("keystore_sni.p12");
@@ -151,7 +151,7 @@ public class X509Test
     }
 
     @Test
-    public void testServerClass_WithoutSni() throws Exception
+    public void testServerClassWithoutSni() throws Exception
     {
         SslContextFactory serverSsl = new SslContextFactory.Server();
         Resource keystoreResource = Resource.newSystemResource("keystore");
@@ -162,7 +162,7 @@ public class X509Test
     }
 
     @Test
-    public void testClientClass_WithoutSni() throws Exception
+    public void testClientClassWithoutSni() throws Exception
     {
         SslContextFactory clientSsl = new SslContextFactory.Client();
         Resource keystoreResource = Resource.newSystemResource("keystore");

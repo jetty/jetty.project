@@ -93,7 +93,7 @@ public class HttpClientTransportDynamicTest
         return connector;
     }
 
-    private ServerConnector h1_h2c(Server server)
+    private ServerConnector h1H2C(Server server)
     {
         HttpConfiguration httpConfiguration = new HttpConfiguration();
         HttpConnectionFactory h1 = new HttpConnectionFactory(httpConfiguration);
@@ -103,7 +103,7 @@ public class HttpClientTransportDynamicTest
         return connector;
     }
 
-    private ServerConnector ssl_alpn_h1(Server server)
+    private ServerConnector sslAlpnH1(Server server)
     {
         HttpConfiguration httpConfiguration = new HttpConfiguration();
         HttpConnectionFactory h1 = new HttpConnectionFactory(httpConfiguration);
@@ -115,7 +115,7 @@ public class HttpClientTransportDynamicTest
         return connector;
     }
 
-    private ServerConnector ssl_h1_h2c(Server server)
+    private ServerConnector sslH1H2C(Server server)
     {
         HttpConfiguration httpConfiguration = new HttpConfiguration();
         HttpConnectionFactory h1 = new HttpConnectionFactory(httpConfiguration);
@@ -127,7 +127,7 @@ public class HttpClientTransportDynamicTest
         return connector;
     }
 
-    private ServerConnector ssl_alpn_h1_h2(Server server)
+    private ServerConnector sslAlpnH1H2(Server server)
     {
         HttpConfiguration httpConfiguration = new HttpConfiguration();
         HttpConnectionFactory h1 = new HttpConnectionFactory(httpConfiguration);
@@ -141,7 +141,7 @@ public class HttpClientTransportDynamicTest
         return connector;
     }
 
-    private ServerConnector ssl_alpn_h2_h1(Server server)
+    private ServerConnector sslAlpnH2H1(Server server)
     {
         HttpConfiguration httpConfiguration = new HttpConfiguration();
         HttpConnectionFactory h1 = new HttpConnectionFactory(httpConfiguration);
@@ -154,7 +154,7 @@ public class HttpClientTransportDynamicTest
         return connector;
     }
 
-    private ServerConnector proxy_h1_h2c(Server server)
+    private ServerConnector proxyH1H2C(Server server)
     {
         HttpConfiguration httpConfiguration = new HttpConfiguration();
         HttpConnectionFactory h1 = new HttpConnectionFactory(httpConfiguration);
@@ -199,7 +199,7 @@ public class HttpClientTransportDynamicTest
     @Test
     public void testClearTextHTTP1() throws Exception
     {
-        startServer(this::h1_h2c, new EmptyServerHandler());
+        startServer(this::h1H2C, new EmptyServerHandler());
 
         HttpClientConnectionFactory.Info h1c = HttpClientConnectionFactory.HTTP11;
         client = new HttpClient(new HttpClientTransportDynamic(new ClientConnector(), h1c));
@@ -212,7 +212,7 @@ public class HttpClientTransportDynamicTest
     @Test
     public void testClearTextHTTP2() throws Exception
     {
-        startServer(this::h1_h2c, new EmptyServerHandler());
+        startServer(this::h1H2C, new EmptyServerHandler());
 
         // TODO: why do we need HTTP2Client? we only use it for configuration,
         //  so the configuration can instead be moved to the CCF?
@@ -231,14 +231,14 @@ public class HttpClientTransportDynamicTest
     @Test
     public void testClearTextProtocolSelection() throws Exception
     {
-        startServer(this::h1_h2c, new EmptyServerHandler());
+        startServer(this::h1H2C, new EmptyServerHandler());
         testProtocolSelection(HttpScheme.HTTP);
     }
 
     @Test
     public void testEncryptedProtocolSelectionWithoutNegotiation() throws Exception
     {
-        startServer(this::ssl_h1_h2c, new EmptyServerHandler());
+        startServer(this::sslH1H2C, new EmptyServerHandler());
         testProtocolSelection(HttpScheme.HTTPS);
     }
 
@@ -291,7 +291,7 @@ public class HttpClientTransportDynamicTest
     @Test
     public void testEncryptedProtocolSelectionWithNegotiation() throws Exception
     {
-        startServer(this::ssl_alpn_h1_h2, new EmptyServerHandler());
+        startServer(this::sslAlpnH1H2, new EmptyServerHandler());
 
         ClientConnector clientConnector = new ClientConnector();
         clientConnector.setSslContextFactory(newClientSslContextFactory());
@@ -329,7 +329,7 @@ public class HttpClientTransportDynamicTest
     @Test
     public void testServerOnlySpeaksEncryptedHTTP11ClientFallsBackToHTTP11() throws Exception
     {
-        startServer(this::ssl_alpn_h1, new EmptyServerHandler());
+        startServer(this::sslAlpnH1, new EmptyServerHandler());
 
         ClientConnector clientConnector = new ClientConnector();
         clientConnector.setSslContextFactory(newClientSslContextFactory());
@@ -385,7 +385,7 @@ public class HttpClientTransportDynamicTest
         // client :1234 <-> :8888 proxy :5678 <-> server :8080
         // client :2345 <-> :8888 proxy :6789 <-> server :8080
 
-        startServer(this::proxy_h1_h2c, new EmptyServerHandler()
+        startServer(this::proxyH1H2C, new EmptyServerHandler()
         {
             @Override
             protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
@@ -431,8 +431,8 @@ public class HttpClientTransportDynamicTest
     @Test
     public void testClearTextAndEncryptedHTTP2() throws Exception
     {
-        prepareServer(this::ssl_alpn_h2_h1, new EmptyServerHandler());
-        ServerConnector clearConnector = h1_h2c(server);
+        prepareServer(this::sslAlpnH2H1, new EmptyServerHandler());
+        ServerConnector clearConnector = h1H2C(server);
         server.start();
 
         ClientConnector clientConnector = new ClientConnector();

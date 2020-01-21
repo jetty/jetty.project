@@ -204,7 +204,7 @@ public class Socks4ProxyTest
         {
             // The client keystore contains the trustedCertEntry for the
             // self-signed server certificate, so it acts as a truststore.
-            ssl.setTrustStorePath("src/test/resources/client_keystore.jks");
+            ssl.setTrustStorePath("src/test/resources/client_keystore.p12");
             ssl.setTrustStorePassword("storepwd");
             // Disable TLS hostname verification, but
             // enable application hostname verification.
@@ -238,7 +238,7 @@ public class Socks4ProxyTest
 
             // Wrap the socket with TLS.
             SslContextFactory.Server serverTLS = new SslContextFactory.Server();
-            serverTLS.setKeyStorePath("src/test/resources/keystore.jks");
+            serverTLS.setKeyStorePath("src/test/resources/keystore.p12");
             serverTLS.setKeyStorePassword("storepwd");
             serverTLS.start();
             SSLContext sslContext = serverTLS.getSslContext();

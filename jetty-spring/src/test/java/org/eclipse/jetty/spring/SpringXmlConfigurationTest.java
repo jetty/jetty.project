@@ -156,7 +156,7 @@ public class SpringXmlConfigurationTest
     }
 
     @Test
-    public void XmlConfigurationMain() throws Exception
+    public void xmlConfigurationMain() throws Exception
     {
         XmlConfiguration.main("src/test/resources/org/eclipse/jetty/spring/jetty.xml");
     }

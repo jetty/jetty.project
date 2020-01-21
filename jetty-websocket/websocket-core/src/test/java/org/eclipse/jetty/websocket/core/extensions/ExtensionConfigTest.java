@@ -110,7 +110,7 @@ public class ExtensionConfigTest
     }
 
     @Test
-    public void testParseSimple_BasicParameters()
+    public void testParseSimpleBasicParameters()
     {
         ExtensionConfig cfg = ExtensionConfig.parse("bar; baz=2");
         Map<String, String> expectedParams = new HashMap<>();
@@ -119,7 +119,7 @@ public class ExtensionConfigTest
     }
 
     @Test
-    public void testParseSimple_NoParameters()
+    public void testParseSimpleNoParameters()
     {
         ExtensionConfig cfg = ExtensionConfig.parse("foo");
         Map<String, String> expectedParams = new HashMap<>();
@@ -127,7 +127,7 @@ public class ExtensionConfigTest
     }
 
     @Test
-    public void testParseList_Simple()
+    public void testParseListSimple()
     {
         String[] rawHeaders = new String[]{
             "permessage-compress; client_max_window_bits",
@@ -147,7 +147,7 @@ public class ExtensionConfigTest
      * where they include multiple extensions in 1 header.
      */
     @Test
-    public void testParseList_Unsplit()
+    public void testParseListUnsplit()
     {
         String[] rawHeaders = new String[]{
             "permessage-compress; client_max_window_bits, identity",

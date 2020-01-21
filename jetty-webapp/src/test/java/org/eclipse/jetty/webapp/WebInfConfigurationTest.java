@@ -69,6 +69,7 @@ public class WebInfConfigurationTest
             Arguments.of("another one/bites the dust/", "bites the dust"),
             Arguments.of("another+one/bites+the+dust/", "bites+the+dust"),
             Arguments.of("another%20one/bites%20the%20dust/", "bites%20the%20dust"),
+            // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
             Arguments.of("spanish/n\u00FAmero.war", "n\u00FAmero.war"),
             Arguments.of("spanish/n%C3%BAmero.war", "n%C3%BAmero.war"),
             Arguments.of("a/b!/", "b!"),

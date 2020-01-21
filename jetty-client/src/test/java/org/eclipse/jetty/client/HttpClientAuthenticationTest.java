@@ -115,51 +115,51 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_BasicAuthentication(Scenario scenario) throws Exception
+    public void testBasicAuthentication(Scenario scenario) throws Exception
     {
         startBasic(scenario, new EmptyServerHandler());
         URI uri = URI.create(scenario.getScheme() + "://localhost:" + connector.getLocalPort());
-        test_Authentication(scenario, new BasicAuthentication(uri, realm, "basic", "basic"));
+        testAuthentication(scenario, new BasicAuthentication(uri, realm, "basic", "basic"));
     }
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_BasicEmptyRealm(Scenario scenario) throws Exception
+    public void testBasicEmptyRealm(Scenario scenario) throws Exception
     {
         realm = "";
         startBasic(scenario, new EmptyServerHandler());
         URI uri = URI.create(scenario.getScheme() + "://localhost:" + connector.getLocalPort());
-        test_Authentication(scenario, new BasicAuthentication(uri, realm, "basic", "basic"));
+        testAuthentication(scenario, new BasicAuthentication(uri, realm, "basic", "basic"));
     }
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_BasicAnyRealm(Scenario scenario) throws Exception
+    public void testBasicAnyRealm(Scenario scenario) throws Exception
     {
         startBasic(scenario, new EmptyServerHandler());
         URI uri = URI.create(scenario.getScheme() + "://localhost:" + connector.getLocalPort());
-        test_Authentication(scenario, new BasicAuthentication(uri, ANY_REALM, "basic", "basic"));
+        testAuthentication(scenario, new BasicAuthentication(uri, ANY_REALM, "basic", "basic"));
     }
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_DigestAuthentication(Scenario scenario) throws Exception
+    public void testDigestAuthentication(Scenario scenario) throws Exception
     {
         startDigest(scenario, new EmptyServerHandler());
         URI uri = URI.create(scenario.getScheme() + "://localhost:" + connector.getLocalPort());
-        test_Authentication(scenario, new DigestAuthentication(uri, realm, "digest", "digest"));
+        testAuthentication(scenario, new DigestAuthentication(uri, realm, "digest", "digest"));
     }
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_DigestAnyRealm(Scenario scenario) throws Exception
+    public void testDigestAnyRealm(Scenario scenario) throws Exception
     {
         startDigest(scenario, new EmptyServerHandler());
         URI uri = URI.create(scenario.getScheme() + "://localhost:" + connector.getLocalPort());
-        test_Authentication(scenario, new DigestAuthentication(uri, ANY_REALM, "digest", "digest"));
+        testAuthentication(scenario, new DigestAuthentication(uri, ANY_REALM, "digest", "digest"));
     }
 
-    private void test_Authentication(final Scenario scenario, Authentication authentication) throws Exception
+    private void testAuthentication(final Scenario scenario, Authentication authentication) throws Exception
     {
         AuthenticationStore authenticationStore = client.getAuthenticationStore();
 
@@ -226,7 +226,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_BasicAuthentication_ThenRedirect(Scenario scenario) throws Exception
+    public void testBasicAuthenticationThenRedirect(Scenario scenario) throws Exception
     {
         startBasic(scenario, new EmptyServerHandler()
         {
@@ -271,7 +271,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_Redirect_ThenBasicAuthentication(Scenario scenario) throws Exception
+    public void testRedirectThenBasicAuthentication(Scenario scenario) throws Exception
     {
         startBasic(scenario, new EmptyServerHandler()
         {
@@ -310,7 +310,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_BasicAuthentication_WithAuthenticationRemoved(Scenario scenario) throws Exception
+    public void testBasicAuthenticationWithAuthenticationRemoved(Scenario scenario) throws Exception
     {
         startBasic(scenario, new EmptyServerHandler());
 
@@ -359,7 +359,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_BasicAuthentication_WithWrongPassword(Scenario scenario) throws Exception
+    public void testBasicAuthenticationWithWrongPassword(Scenario scenario) throws Exception
     {
         startBasic(scenario, new EmptyServerHandler());
 
@@ -379,7 +379,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_Authentication_ThrowsException(Scenario scenario) throws Exception
+    public void testAuthenticationThrowsException(Scenario scenario) throws Exception
     {
         startBasic(scenario, new EmptyServerHandler());
 
@@ -419,7 +419,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_PreemptedAuthentication(Scenario scenario) throws Exception
+    public void testPreemptedAuthentication(Scenario scenario) throws Exception
     {
         startBasic(scenario, new EmptyServerHandler());
 
@@ -449,7 +449,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_NonReproducibleContent(Scenario scenario) throws Exception
+    public void testNonReproducibleContent(Scenario scenario) throws Exception
     {
         startBasic(scenario, new EmptyServerHandler());
 
@@ -484,7 +484,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_RequestFailsAfterResponse(Scenario scenario) throws Exception
+    public void testRequestFailsAfterResponse(Scenario scenario) throws Exception
     {
         startBasic(scenario, new EmptyServerHandler()
         {
@@ -576,7 +576,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_InfiniteAuthentication(Scenario scenario) throws Exception
+    public void testInfiniteAuthentication(Scenario scenario) throws Exception
     {
         String authType = "Authenticate";
         start(scenario, new EmptyServerHandler()

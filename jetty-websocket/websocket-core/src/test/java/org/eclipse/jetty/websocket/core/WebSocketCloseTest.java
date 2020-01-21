@@ -144,7 +144,7 @@ public class WebSocketCloseTest extends WebSocketTester
 
     @ParameterizedTest
     @ValueSource(strings = {WS_SCHEME, WSS_SCHEME})
-    public void serverClose_ISHUT(String scheme) throws Exception
+    public void testServerCloseISHUT(String scheme) throws Exception
     {
         setup(State.ISHUT, scheme);
 
@@ -158,7 +158,7 @@ public class WebSocketCloseTest extends WebSocketTester
 
     @ParameterizedTest
     @ValueSource(strings = {WS_SCHEME, WSS_SCHEME})
-    public void serverDifferentClose_ISHUT(String scheme) throws Exception
+    public void testServerDifferentCloseISHUT(String scheme) throws Exception
     {
         setup(State.ISHUT, scheme);
 
@@ -173,7 +173,7 @@ public class WebSocketCloseTest extends WebSocketTester
 
     @ParameterizedTest
     @ValueSource(strings = {WS_SCHEME, WSS_SCHEME})
-    public void serverFailClose_ISHUT(String scheme) throws Exception
+    public void testServerFailCloseISHUT(String scheme) throws Exception
     {
         setup(State.ISHUT, scheme);
         server.handler.receivedCallback.poll().failed(new Exception("test failure"));
@@ -188,7 +188,7 @@ public class WebSocketCloseTest extends WebSocketTester
 
     @ParameterizedTest
     @ValueSource(strings = {WS_SCHEME, WSS_SCHEME})
-    public void clientClosesOutput_ISHUT(String scheme) throws Exception
+    public void testClientClosesOutputISHUT(String scheme) throws Exception
     {
         setup(State.ISHUT, scheme);
 
@@ -202,7 +202,7 @@ public class WebSocketCloseTest extends WebSocketTester
 
     @ParameterizedTest
     @ValueSource(strings = {WS_SCHEME, WSS_SCHEME})
-    public void clientClose_OSHUT(String scheme) throws Exception
+    public void testClientCloseOSHUT(String scheme) throws Exception
     {
         setup(State.OSHUT, scheme);
         server.handler.getCoreSession().demand(1);
@@ -218,7 +218,7 @@ public class WebSocketCloseTest extends WebSocketTester
 
     @ParameterizedTest
     @ValueSource(strings = {WS_SCHEME, WSS_SCHEME})
-    public void clientDifferentClose_OSHUT(String scheme) throws Exception
+    public void testClientDifferentCloseOSHUT(String scheme) throws Exception
     {
         setup(State.OSHUT, scheme);
         server.handler.getCoreSession().demand(1);
@@ -234,9 +234,9 @@ public class WebSocketCloseTest extends WebSocketTester
 
     @ParameterizedTest
     @ValueSource(strings = {WS_SCHEME, WSS_SCHEME})
-    public void clientCloseServerFailClose_OSHUT(String scheme) throws Exception
+    public void testClientCloseServerFailCloseOSHUT(String scheme) throws Exception
     {
-        try (StacklessLogging stackless = new StacklessLogging(WebSocketCoreSession.class))
+        try (StacklessLogging ignored = new StacklessLogging(WebSocketCoreSession.class))
         {
             setup(State.OSHUT, scheme);
             server.handler.getCoreSession().demand(1);
@@ -253,7 +253,7 @@ public class WebSocketCloseTest extends WebSocketTester
 
     @ParameterizedTest
     @ValueSource(strings = {WS_SCHEME, WSS_SCHEME})
-    public void clientSendsBadFrame_OPEN(String scheme) throws Exception
+    public void testClientSendsBadFrameOPEN(String scheme) throws Exception
     {
         setup(State.OPEN, scheme);
 
@@ -266,7 +266,7 @@ public class WebSocketCloseTest extends WebSocketTester
 
     @ParameterizedTest
     @ValueSource(strings = {WS_SCHEME, WSS_SCHEME})
-    public void clientSendsBadFrame_OSHUT(String scheme) throws Exception
+    public void testClientSendsBadFrameOSHUT(String scheme) throws Exception
     {
         setup(State.OSHUT, scheme);
 
@@ -279,7 +279,7 @@ public class WebSocketCloseTest extends WebSocketTester
 
     @ParameterizedTest
     @ValueSource(strings = {WS_SCHEME, WSS_SCHEME})
-    public void clientSendsBadFrame_ISHUT(String scheme) throws Exception
+    public void testClientSendsBadFrameISHUT(String scheme) throws Exception
     {
         setup(State.ISHUT, scheme);
 
@@ -294,7 +294,7 @@ public class WebSocketCloseTest extends WebSocketTester
 
     @ParameterizedTest
     @ValueSource(strings = {WS_SCHEME, WSS_SCHEME})
-    public void clientHalfClose_ISHUT(String scheme) throws Exception
+    public void testClientHalfCloseISHUT(String scheme) throws Exception
     {
         setup(State.ISHUT, scheme);
 
@@ -313,7 +313,7 @@ public class WebSocketCloseTest extends WebSocketTester
 
     @ParameterizedTest
     @ValueSource(strings = {WS_SCHEME, WSS_SCHEME})
-    public void clientCloseServerWrite_ISHUT(String scheme) throws Exception
+    public void testClientCloseServerWriteISHUT(String scheme) throws Exception
     {
         setup(State.ISHUT, scheme);
 
@@ -341,7 +341,7 @@ public class WebSocketCloseTest extends WebSocketTester
 
     @ParameterizedTest
     @ValueSource(strings = {WS_SCHEME, WSS_SCHEME})
-    public void clientAborts_OPEN(String scheme) throws Exception
+    public void testClientAbortsOPEN(String scheme) throws Exception
     {
         setup(State.OPEN, scheme);
 
@@ -354,7 +354,7 @@ public class WebSocketCloseTest extends WebSocketTester
 
     @ParameterizedTest
     @ValueSource(strings = {WS_SCHEME, WSS_SCHEME})
-    public void clientAborts_OSHUT(String scheme) throws Exception
+    public void testClientAbortsOSHUT(String scheme) throws Exception
     {
         setup(State.OSHUT, scheme);
 
@@ -367,7 +367,7 @@ public class WebSocketCloseTest extends WebSocketTester
 
     @ParameterizedTest
     @ValueSource(strings = {WS_SCHEME, WSS_SCHEME})
-    public void clientAborts_ISHUT(String scheme) throws Exception
+    public void testClientAbortsISHUT(String scheme) throws Exception
     {
         setup(State.ISHUT, scheme);
 
@@ -380,7 +380,7 @@ public class WebSocketCloseTest extends WebSocketTester
 
     @ParameterizedTest
     @ValueSource(strings = {WS_SCHEME, WSS_SCHEME})
-    public void onFrameThrows_OPEN(String scheme) throws Exception
+    public void testOnFrameThrowsOPEN(String scheme) throws Exception
     {
         setup(State.OPEN, scheme);
 
@@ -398,7 +398,7 @@ public class WebSocketCloseTest extends WebSocketTester
 
     @ParameterizedTest
     @ValueSource(strings = {WS_SCHEME, WSS_SCHEME})
-    public void onFrameThrows_OSHUT(String scheme) throws Exception
+    public void testOnFrameThrowsOSHUT(String scheme) throws Exception
     {
         setup(State.OSHUT, scheme);
 
@@ -416,7 +416,7 @@ public class WebSocketCloseTest extends WebSocketTester
 
     @ParameterizedTest
     @ValueSource(strings = {WS_SCHEME, WSS_SCHEME})
-    public void abnormalCloseStatusIsHardClose(String scheme) throws Exception
+    public void testAbnormalCloseStatusIsHardClose(String scheme) throws Exception
     {
         setup(State.OPEN, scheme);
 

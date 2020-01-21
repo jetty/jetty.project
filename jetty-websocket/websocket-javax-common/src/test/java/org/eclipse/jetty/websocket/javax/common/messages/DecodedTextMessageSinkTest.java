@@ -43,7 +43,7 @@ public class DecodedTextMessageSinkTest extends AbstractMessageSinkTest
     public static final TimeZone GMT = TimeZone.getTimeZone("GMT");
 
     @Test
-    public void testDate_1_Frame() throws Exception
+    public void testDate1Frame() throws Exception
     {
         CompletableFuture<Date> copyFuture = new CompletableFuture<>();
         DecodedDateCopy copy = new DecodedDateCopy(copyFuture);
@@ -61,7 +61,7 @@ public class DecodedTextMessageSinkTest extends AbstractMessageSinkTest
     }
 
     @Test
-    public void testDate_3_Frames() throws Exception
+    public void testDate3Frames() throws Exception
     {
         CompletableFuture<Date> copyFuture = new CompletableFuture<>();
         DecodedDateCopy copy = new DecodedDateCopy(copyFuture);

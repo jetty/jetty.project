@@ -47,7 +47,7 @@ import static org.hamcrest.Matchers.notNullValue;
 public class DecoderTextStreamTest extends AbstractClientSessionTest
 {
     @Test
-    public void testQuotes_Decoder_Direct() throws Exception
+    public void testQuotesDecoderDirect() throws Exception
     {
         Decoder.TextStream<Quotes> decoder = new QuotesDecoder();
 
@@ -62,7 +62,7 @@ public class DecoderTextStreamTest extends AbstractClientSessionTest
     }
 
     @Test
-    public void testQuotes_DecodedReaderMessageSink() throws Exception
+    public void testQuotesDecodedReaderMessageSink() throws Exception
     {
         Decoder.TextStream<Quotes> decoder = new QuotesDecoder();
         CompletableFuture<Quotes> futureQuotes = new CompletableFuture<>();

@@ -31,12 +31,7 @@ public class JSONPojoConvertorFactory implements JSON.Convertor
 
     public JSONPojoConvertorFactory(JSON json)
     {
-        if (json == null)
-        {
-            throw new IllegalArgumentException();
-        }
-        _json = json;
-        _fromJson = true;
+        this(json, true);
     }
 
     /**
@@ -48,9 +43,7 @@ public class JSONPojoConvertorFactory implements JSON.Convertor
     public JSONPojoConvertorFactory(JSON json, boolean fromJSON)
     {
         if (json == null)
-        {
             throw new IllegalArgumentException();
-        }
         _json = json;
         _fromJson = fromJSON;
     }
@@ -58,31 +51,20 @@ public class JSONPojoConvertorFactory implements JSON.Convertor
     @Override
     public void toJSON(Object obj, Output out)
     {
-        String clsName = obj.getClass().getName();
+        Class<?> cls = obj.getClass();
+        String clsName = cls.getName();
         Convertor convertor = _json.getConvertorFor(clsName);
         if (convertor == null)
         {
-            try
-            {
-                Class cls = Loader.loadClass(clsName);
-                convertor = new JSONPojoConvertor(cls, _fromJson);
-                _json.addConvertorFor(clsName, convertor);
-            }
-            catch (ClassNotFoundException e)
-            {
-                JSON.LOG.warn(e);
-            }
+            convertor = new JSONPojoConvertor(cls, _fromJson);
+            _json.addConvertorFor(clsName, convertor);
         }
-        if (convertor != null)
-        {
-            convertor.toJSON(obj, out);
-        }
+        convertor.toJSON(obj, out);
     }
 
     @Override
-    public Object fromJSON(Map object)
+    public Object fromJSON(Map<String, Object> map)
     {
-        Map map = object;
         String clsName = (String)map.get("class");
         if (clsName != null)
         {
@@ -91,7 +73,7 @@ public class JSONPojoConvertorFactory implements JSON.Convertor
             {
                 try
                 {
-                    Class cls = Loader.loadClass(clsName);
+                    Class<?> cls = Loader.loadClass(clsName);
                     convertor = new JSONPojoConvertor(cls, _fromJson);
                     _json.addConvertorFor(clsName, convertor);
                 }
@@ -101,9 +83,7 @@ public class JSONPojoConvertorFactory implements JSON.Convertor
                 }
             }
             if (convertor != null)
-            {
-                return convertor.fromJSON(object);
-            }
+                return convertor.fromJSON(map);
         }
         return map;
     }

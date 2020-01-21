@@ -195,7 +195,7 @@ public class BufferUtilTest
     }
 
     @Test
-    public void testToBuffer_Array()
+    public void testToBufferArray()
     {
         byte[] arr = new byte[128];
         Arrays.fill(arr, (byte)0x44);
@@ -213,7 +213,7 @@ public class BufferUtilTest
     }
 
     @Test
-    public void testToBuffer_ArrayOffsetLength()
+    public void testToBufferArrayOffsetLength()
     {
         byte[] arr = new byte[128];
         Arrays.fill(arr, (byte)0xFF); // fill whole thing with FF
@@ -322,7 +322,7 @@ public class BufferUtilTest
     }
 
     @Test
-    public void testToDetail_WithDEL()
+    public void testToDetailWithDEL()
     {
         ByteBuffer b = ByteBuffer.allocate(40);
         b.putChar('a').putChar('b').putChar('c');

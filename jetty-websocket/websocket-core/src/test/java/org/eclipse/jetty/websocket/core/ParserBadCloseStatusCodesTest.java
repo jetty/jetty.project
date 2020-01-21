@@ -91,7 +91,7 @@ public class ParserBadCloseStatusCodesTest
 
     @ParameterizedTest(name = "closeCode={0} {1}")
     @MethodSource("data")
-    public void testBadStatusCode_WithReasonPhrase(int closeCode, String description)
+    public void testBadStatusCodeWithReasonPhrase(int closeCode, String description)
     {
         ParserCapture capture = new ParserCapture();
 

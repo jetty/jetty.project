@@ -49,10 +49,11 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Disabled
+// @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
 public class Usage
 {
     @Test
-    public void testGETBlocking_ShortAPI() throws Exception
+    public void testGETBlockingShortAPI() throws Exception
     {
         HttpClient client = new HttpClient();
         client.start();
@@ -120,7 +121,7 @@ public class Usage
     }
 
     @Test
-    public void testPOSTWithParams_ShortAPI() throws Exception
+    public void testPOSTWithParamsShortAPI() throws Exception
     {
         HttpClient client = new HttpClient();
         client.start();
