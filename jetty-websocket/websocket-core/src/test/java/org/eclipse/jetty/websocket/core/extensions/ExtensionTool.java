@@ -77,7 +77,7 @@ public class ExtensionTool
         {
             this.ext = components.getExtensionRegistry().newInstance(extConfig, components);
             this.ext.setNextIncomingFrames(capture);
-            this.ext.setConfiguration(newWebSocketCoreSession());
+            this.ext.setCoreSession(newWebSocketCoreSession());
         }
 
         public void parseIncomingHex(String... rawhex)

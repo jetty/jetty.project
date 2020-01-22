@@ -24,7 +24,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.AbstractExtension;
-import org.eclipse.jetty.websocket.core.Configuration;
+import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
@@ -55,13 +55,14 @@ public class ValidationExtension extends AbstractExtension
     }
 
     @Override
-    public void setConfiguration(Configuration configuration)
+    public void setCoreSession(CoreSession coreSession)
     {
-        super.setConfiguration(configuration);
+        super.setCoreSession(coreSession);
 
-        if (!(configuration instanceof WebSocketCoreSession))
+        // TODO: change validation to use static methods instead of down casting CoreSession.
+        if (!(coreSession instanceof WebSocketCoreSession))
             throw new IllegalArgumentException("ValidationExtension needs a CoreSession Configuration");
-        coreSession = (WebSocketCoreSession)configuration;
+        this.coreSession = (WebSocketCoreSession)coreSession;
     }
 
     @Override

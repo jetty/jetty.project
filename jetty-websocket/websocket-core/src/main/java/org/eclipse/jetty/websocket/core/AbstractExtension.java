@@ -168,9 +168,9 @@ public class AbstractExtension implements Extension
     }
 
     @Override
-    public void setConfiguration(Configuration configuration)
+    public void setCoreSession(CoreSession coreSession)
     {
-        this.configuration = configuration;
+        this.configuration = coreSession;
     }
 
     protected Configuration getConfiguration()

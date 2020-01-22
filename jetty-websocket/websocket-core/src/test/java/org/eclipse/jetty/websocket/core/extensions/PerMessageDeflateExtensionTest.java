@@ -376,7 +376,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
         PerMessageDeflateExtension ext = new PerMessageDeflateExtension();
         ExtensionConfig config = ExtensionConfig.parse("permessage-deflate");
         ext.init(config, components);
-        ext.setConfiguration(newSession());
+        ext.setCoreSession(newSession());
 
         // Setup capture of incoming frames
         IncomingFramesCapture capture = new IncomingFramesCapture();
@@ -450,7 +450,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
     {
         PerMessageDeflateExtension ext = new PerMessageDeflateExtension();
         ext.init(ExtensionConfig.parse("permessage-deflate"), components);
-        ext.setConfiguration(newSession());
+        ext.setCoreSession(newSession());
 
         // Setup capture of outgoing frames
         OutgoingFramesCapture capture = new OutgoingFramesCapture();
@@ -497,7 +497,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
         PerMessageDeflateExtension ext = new PerMessageDeflateExtension();
         ExtensionConfig config = ExtensionConfig.parse("permessage-deflate");
         ext.init(config, components);
-        ext.setConfiguration(newSession());
+        ext.setCoreSession(newSession());
 
         // Setup capture of incoming frames
         OutgoingFramesCapture capture = new OutgoingFramesCapture();
