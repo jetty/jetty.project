@@ -206,12 +206,10 @@ public class MultiPartFormInputStreamTest
         throws Exception
     {
         MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 50);
-        MultiPartFormInputStream mpis = new MultiPartFormInputStream(new ByteArrayInputStream(_multi.getBytes()),
-            "Content-type: text/plain",
-            config,
-            _tmpDir);
-        mpis.setDeleteOnExit(true);
-        assertTrue(mpis.getParts().isEmpty());
+        Throwable t = assertThrows(IllegalArgumentException.class, () ->
+            new MultiPartFormInputStream(new ByteArrayInputStream(_multi.getBytes()),
+                "Content-type: text/plain", config, _tmpDir));
+        assertThat(t.getMessage(), is("content type is not multipart/form-data"));
     }
 
     @Test

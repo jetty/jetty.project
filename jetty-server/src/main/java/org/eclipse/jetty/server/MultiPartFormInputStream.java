@@ -94,7 +94,7 @@ public class MultiPartFormInputStream
     private volatile boolean _deleteOnExit;
     private volatile boolean _writeFilesWithFilenames;
     private volatile int _bufferSize = 16 * 1024;
-    private volatile State state = State.UNPARSED;
+    private State state = State.UNPARSED;
 
     public class MultiPart implements Part
     {
@@ -356,7 +356,11 @@ public class MultiPartFormInputStream
      */
     public MultiPartFormInputStream(InputStream in, String contentType, MultipartConfigElement config, File contextTmpDir)
     {
+        // Must be a multipart request.
         _contentType = contentType;
+        if (_contentType == null || !_contentType.startsWith("multipart/form-data"))
+            throw new IllegalArgumentException("content type is not multipart/form-data");
+
         _contextTmpDir =  (contextTmpDir != null) ? contextTmpDir : new File(System.getProperty("java.io.tmpdir"));
         _config = (config != null) ? config : new MultipartConfigElement(_contextTmpDir.getAbsolutePath());
 
@@ -520,10 +524,6 @@ public class MultiPartFormInputStream
         MultiPartParser parser = null;
         try
         {
-            // if its not a multipart request, don't parse it
-            if (_contentType == null || !_contentType.startsWith("multipart/form-data"))
-                return;
-
             // sort out the location to which to write the files
             if (_config.getLocation() == null)
                 _tmpDir = _contextTmpDir;
