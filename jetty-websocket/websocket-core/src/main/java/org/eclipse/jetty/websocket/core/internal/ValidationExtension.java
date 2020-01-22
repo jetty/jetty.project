@@ -27,8 +27,8 @@ import org.eclipse.jetty.websocket.core.AbstractExtension;
 import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.exception.ProtocolException;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
+import org.eclipse.jetty.websocket.core.exception.ProtocolException;
 
 import static org.eclipse.jetty.websocket.core.OpCode.CONTINUATION;
 import static org.eclipse.jetty.websocket.core.OpCode.TEXT;
