@@ -30,6 +30,8 @@ import java.util.ListIterator;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
+
 import javax.servlet.DispatcherType;
 import javax.servlet.MultipartConfigElement;
 import javax.servlet.SessionTrackingMode;
@@ -650,11 +652,11 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         XmlParser.Node tNode = node.get("session-timeout");
         if (tNode != null)
         {
-            java.math.BigDecimal asDecimal = new java.math.BigDecimal(tNode.toString(false, true));
-            if (asDecimal.compareTo(org.eclipse.jetty.server.session.SessionHandler.MAX_INACTIVE_MINUTES) > 0)
-                throw new IllegalStateException("Max session-timeout in minutes is " + org.eclipse.jetty.server.session.SessionHandler.MAX_INACTIVE_MINUTES);
-
-            context.getSessionHandler().setMaxInactiveInterval(asDecimal.intValueExact() * 60);
+            long val = Long.parseLong(tNode.toString(false, true));
+            val = TimeUnit.MINUTES.toSeconds(val);
+            if (val > Integer.MAX_VALUE)
+                throw new IllegalStateException("Max session-timeout in minutes is " + TimeUnit.SECONDS.toMinutes(Integer.MAX_VALUE));
+            context.getServletContext().setSessionTimeout((int)val);
         }
 
         //Servlet Spec 3.0

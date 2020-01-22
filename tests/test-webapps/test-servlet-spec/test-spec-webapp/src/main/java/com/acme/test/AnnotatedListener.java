@@ -107,6 +107,29 @@ public class AnnotatedListener implements HttpSessionListener, HttpSessionAttrib
             throw new IllegalStateException("AnnotatedListener already initialized");
 
         sce.getServletContext().setAttribute("com.acme.AnnotationTest.sclInjectWebListenerTest", Boolean.valueOf(maxAmount != null));
+
+        boolean setSessionTimeout;
+        try
+        {
+            sce.getServletContext().setSessionTimeout(180);
+            setSessionTimeout = true;
+        }
+        catch (Exception e)
+        {
+            setSessionTimeout = false;
+        }
+        sce.getServletContext().setAttribute("com.acme.AnnotationTest.sclSetSessionTimeout", Boolean.valueOf(setSessionTimeout));
+
+        boolean getSessionTimeout;
+        try
+        {
+            getSessionTimeout = (sce.getServletContext().getSessionTimeout() == 180);
+        }
+        catch (Exception e)
+        {
+            getSessionTimeout = false;
+        }
+        sce.getServletContext().setAttribute("com.acme.AnnotationTest.sclGetSessionTimeout", Boolean.valueOf(getSessionTimeout));
     }
 
     public void requestCompleted(ServletRequestEvent rre)

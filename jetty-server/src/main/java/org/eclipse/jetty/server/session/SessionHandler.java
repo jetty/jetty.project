@@ -133,14 +133,7 @@ public class SessionHandler extends ScopedHandler
             HttpSessionIdListener.class,
             HttpSessionListener.class
         };
-
-    /**
-     * Web.xml session-timeout is set in minutes, but is stored as an int in seconds by HttpSession and
-     * the sessionmanager. Thus MAX_INT is the max number of seconds that can be set, and MAX_INT/60 is the
-     * max number of minutes that you can set.
-     */
-    public static final java.math.BigDecimal MAX_INACTIVE_MINUTES = new java.math.BigDecimal(Integer.MAX_VALUE / 60);
-
+    
     @Deprecated(since = "Servlet API 2.1")
     static final HttpSessionContext __nullSessionContext = new HttpSessionContext()
     {
@@ -159,7 +152,7 @@ public class SessionHandler extends ScopedHandler
             return Collections.enumeration(Collections.EMPTY_LIST);
         }
     };
-
+    
     /**
      * Setting of max inactive interval for new sessions
      * -1 means no timeout

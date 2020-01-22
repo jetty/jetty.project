@@ -275,6 +275,12 @@ public class AnnotationTest extends HttpServlet
             Boolean annotatedListenerInject = (Boolean)config.getServletContext().getAttribute("com.acme.AnnotationTest.sclInjectWebListenerTest");
             out.println("<p><b>Result: " + (annotatedListenerInject.booleanValue() ? "<span class=\"pass\">PASS" : "<span class=\"fail\">FAIL") + "</span></b></p>");
 
+            out.println("<h2>ServletContextListener as @WebListener Get/Set Session Timeout</h2>");
+            out.println("<p><b>getSessionTimeout Result: " + 
+                ((Boolean)config.getServletContext().getAttribute("com.acme.AnnotationTest.sclGetSessionTimeout") ? "<span class=\"pass\">PASS" : "<span class=\"fail\">FAIL") + "</span></b></p>");
+            out.println("<p><b>setSessionTimeout Result: " + 
+                ((Boolean)config.getServletContext().getAttribute("com.acme.AnnotationTest.sclSetSessionTimeout") ? "<span class=\"pass\">PASS" : "<span class=\"fail\">FAIL") + "</span></b></p>");
+            
             out.println("<h2>Programmatic Listener Injected</h2>");
             Boolean programListenerInject = (Boolean)config.getServletContext().getAttribute("com.acme.AnnotationTest.programListenerInjectTest");
             out.println("<p><b>Result: " + (programListenerInject.booleanValue() ? "<span class=\"pass\">PASS" : "<span class=\"fail\">FAIL") + "</span></b></p>");
