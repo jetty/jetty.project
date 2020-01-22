@@ -1028,6 +1028,9 @@ public class ServletContextHandlerTest
             }
         }
 
+        assertThrows(IllegalArgumentException.class, () ->  root.getServletContext().addJspFile(null, "/path/to/some.jsp"));
+        assertThrows(IllegalArgumentException.class, () ->  root.getServletContext().addJspFile("", "/path/to/some.jsp"));
+
         root.addBean(new MySCIStarter(root.getServletContext(), new JSPAddingSCI()), true);
         _server.start();
         MappedResource<ServletHolder> mappedServlet = root.getServletHandler().getMappedServlet("/somejsp/xxx");
