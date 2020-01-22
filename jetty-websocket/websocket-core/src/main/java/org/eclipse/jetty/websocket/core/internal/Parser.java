@@ -28,7 +28,6 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Configuration;
-import org.eclipse.jetty.websocket.core.Configuration.ConfigurationHolder;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.exception.MessageTooLargeException;
@@ -65,7 +64,7 @@ public class Parser
 
     public Parser(ByteBufferPool bufferPool)
     {
-        this(bufferPool, new ConfigurationHolder());
+        this(bufferPool, new Configuration.ConfigurationCustomizer());
     }
 
     public Parser(ByteBufferPool bufferPool, Configuration configuration)

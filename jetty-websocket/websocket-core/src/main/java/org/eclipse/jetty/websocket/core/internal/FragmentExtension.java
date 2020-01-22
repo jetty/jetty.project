@@ -35,7 +35,7 @@ public class FragmentExtension extends AbstractExtension
     private static final Logger LOG = Log.getLogger(FragmentExtension.class);
 
     private final FragmentingFlusher flusher;
-    private final Configuration configuration = new Configuration.ConfigurationHolder();
+    private final Configuration configuration = new Configuration.ConfigurationCustomizer();
 
     public FragmentExtension()
     {

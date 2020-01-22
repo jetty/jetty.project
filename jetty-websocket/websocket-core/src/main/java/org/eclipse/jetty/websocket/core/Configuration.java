@@ -79,16 +79,16 @@ public interface Configuration
         void customize(Configuration configurable);
     }
 
-    class ConfigurationHolder implements Configuration
+    class ConfigurationCustomizer implements Configuration, Customizer
     {
-        protected Duration idleTimeout;
-        protected Duration writeTimeout;
-        protected Boolean autoFragment;
-        protected Long maxFrameSize;
-        protected Integer outputBufferSize;
-        protected Integer inputBufferSize;
-        protected Long maxBinaryMessageSize;
-        protected Long maxTextMessageSize;
+        private Duration idleTimeout;
+        private Duration writeTimeout;
+        private Boolean autoFragment;
+        private Long maxFrameSize;
+        private Integer outputBufferSize;
+        private Integer inputBufferSize;
+        private Long maxBinaryMessageSize;
+        private Long maxTextMessageSize;
 
         @Override
         public Duration getIdleTimeout()
@@ -185,10 +185,7 @@ public interface Configuration
         {
             this.maxTextMessageSize = maxTextMessageSize;
         }
-    }
 
-    class ConfigurationCustomizer extends ConfigurationHolder implements Customizer
-    {
         @Override
         public void customize(Configuration configurable)
         {
