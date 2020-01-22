@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.servlet;
@@ -93,10 +93,10 @@ public class AsyncContextTest
         _contextHandler.addServlet(new ServletHolder(new BadExpireServlet()), "/badexpire/*");
         _contextHandler.addServlet(new ServletHolder(new ErrorServlet()), "/error/*");
 
-        ErrorPageErrorHandler error_handler = new ErrorPageErrorHandler();
-        _contextHandler.setErrorHandler(error_handler);
-        error_handler.addErrorPage(500, "/error/500");
-        error_handler.addErrorPage(IOException.class.getName(), "/error/IOE");
+        ErrorPageErrorHandler errorHandler = new ErrorPageErrorHandler();
+        _contextHandler.setErrorHandler(errorHandler);
+        errorHandler.addErrorPage(500, "/error/500");
+        errorHandler.addErrorPage(IOException.class.getName(), "/error/IOE");
 
         HandlerList handlers = new HandlerList();
         handlers.setHandlers(new Handler[]
@@ -227,7 +227,7 @@ public class AsyncContextTest
     }
 
     @Test
-    public void testDispatchAsyncContext_EncodedUrl() throws Exception
+    public void testDispatchAsyncContextEncodedUrl() throws Exception
     {
         String request = "GET /ctx/test/hello%2fthere?dispatch=true HTTP/1.1\r\n" +
             "Host: localhost\r\n" +
@@ -260,7 +260,7 @@ public class AsyncContextTest
     }
 
     @Test
-    public void testDispatchAsyncContext_SelfEncodedUrl() throws Exception
+    public void testDispatchAsyncContextSelfEncodedUrl() throws Exception
     {
         String request = "GET /ctx/self/hello%2fthere?dispatch=true HTTP/1.1\r\n" +
             "Host: localhost\r\n" +

@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.util;
@@ -71,37 +71,37 @@ public class StringReplaceBenchmark
     }
 
     @Benchmark
-    public void testJavaStringReplace_Growth(Blackhole blackhole)
+    public void testJavaStringReplaceGrowth(Blackhole blackhole)
     {
         blackhole.consume(input.replace("'", "FOOBAR"));
     }
 
     @Benchmark
-    public void testJavaStringReplace_Same(Blackhole blackhole)
+    public void testJavaStringReplaceSame(Blackhole blackhole)
     {
         blackhole.consume(input.replace("'", "X"));
     }
 
     @Benchmark
-    public void testJavaStringReplace_Reduce(Blackhole blackhole)
+    public void testJavaStringReplaceReduce(Blackhole blackhole)
     {
         blackhole.consume(input.replace("'", ""));
     }
 
     @Benchmark
-    public void testJettyStringUtilReplace_Growth(Blackhole blackhole)
+    public void testJettyStringUtilReplaceGrowth(Blackhole blackhole)
     {
         blackhole.consume(StringUtil.replace(input, "'", "FOOBAR"));
     }
 
     @Benchmark
-    public void testJettyStringUtilReplace_Same(Blackhole blackhole)
+    public void testJettyStringUtilReplaceSame(Blackhole blackhole)
     {
         blackhole.consume(StringUtil.replace(input, "'", "X"));
     }
 
     @Benchmark
-    public void testJettyStringUtilReplace_Reduce(Blackhole blackhole)
+    public void testJettyStringUtilReplaceReduce(Blackhole blackhole)
     {
         blackhole.consume(StringUtil.replace(input, "'", ""));
     }

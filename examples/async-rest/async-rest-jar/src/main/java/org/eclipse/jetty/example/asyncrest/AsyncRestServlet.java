@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.example.asyncrest;
@@ -77,17 +77,18 @@ public class AsyncRestServlet extends AbstractRestServlet
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
-        Long start = System.nanoTime();
+        long start = System.nanoTime();
 
         // Do we have results yet?
-        Queue<Map<String, String>> results = (Queue<Map<String, String>>)request.getAttribute(RESULTS_ATTR);
+        @SuppressWarnings("unchecked")
+        Queue<Map<String, Object>> results = (Queue<Map<String, Object>>)request.getAttribute(RESULTS_ATTR);
 
         // If no results, this must be the first dispatch, so send the REST request(s)
         if (results == null)
         {
             // define results data structures
-            final Queue<Map<String, String>> resultsQueue = new ConcurrentLinkedQueue<>();
-            request.setAttribute(RESULTS_ATTR, results = resultsQueue);
+            results = new ConcurrentLinkedQueue<>();
+            request.setAttribute(RESULTS_ATTR, results);
 
             // suspend the request
             // This is done before scheduling async handling to avoid race of
@@ -100,13 +101,14 @@ public class AsyncRestServlet extends AbstractRestServlet
             final AtomicInteger outstanding = new AtomicInteger(keywords.length);
 
             // Send request each keyword
+            Queue<Map<String, Object>> resultsQueue = results;
             for (final String item : keywords)
             {
                 _client.newRequest(restURL(item)).method(HttpMethod.GET).send(
                     new AsyncRestRequest()
                     {
                         @Override
-                        void onAuctionFound(Map<String, String> auction)
+                        void onAuctionFound(Map<String, Object> auction)
                         {
                             resultsQueue.add(auction);
                         }
@@ -163,9 +165,9 @@ public class AsyncRestServlet extends AbstractRestServlet
         out.close();
     }
 
-    private abstract class AsyncRestRequest extends Response.Listener.Adapter
+    private abstract static class AsyncRestRequest extends Response.Listener.Adapter
     {
-        final Utf8StringBuilder _content = new Utf8StringBuilder();
+        private final Utf8StringBuilder _content = new Utf8StringBuilder();
 
         AsyncRestRequest()
         {
@@ -182,13 +184,16 @@ public class AsyncRestServlet extends AbstractRestServlet
         public void onComplete(Result result)
         {
             // extract auctions from the results
-            Map<String, ?> query = (Map<String, ?>)JSON.parse(_content.toString());
+            @SuppressWarnings("unchecked")
+            Map<String, Object> query = (Map<String, Object>)new JSON().fromJSON(_content.toString());
             Object[] auctions = (Object[])query.get("Item");
             if (auctions != null)
             {
                 for (Object o : auctions)
                 {
-                    onAuctionFound((Map<String, String>)o);
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> auction = (Map<String, Object>)o;
+                    onAuctionFound(auction);
                 }
             }
             onComplete();
@@ -196,8 +201,7 @@ public class AsyncRestServlet extends AbstractRestServlet
 
         abstract void onComplete();
 
-        abstract void onAuctionFound(Map<String, String> details);
-
+        abstract void onAuctionFound(Map<String, Object> details);
     }
 
     @Override

@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.client;
@@ -109,6 +109,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+// @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
 @ExtendWith(WorkDirExtension.class)
 public class HttpClientTest extends AbstractHttpClientServerTest
 {
@@ -152,7 +153,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_DestinationCount(Scenario scenario) throws Exception
+    public void testDestinationCount(Scenario scenario) throws Exception
     {
         start(scenario, new EmptyServerHandler());
 
@@ -172,7 +173,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_GET_ResponseWithoutContent(Scenario scenario) throws Exception
+    public void testGETResponseWithoutContent(Scenario scenario) throws Exception
     {
         start(scenario, new EmptyServerHandler());
 
@@ -184,7 +185,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_GET_ResponseWithContent(Scenario scenario) throws Exception
+    public void testGETResponseWithContent(Scenario scenario) throws Exception
     {
         byte[] data = new byte[]{0, 1, 2, 3, 4, 5, 6, 7};
         start(scenario, new AbstractHandler()
@@ -208,7 +209,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_GET_WithParameters_ResponseWithContent(Scenario scenario) throws Exception
+    public void testGETWithParametersResponseWithContent(Scenario scenario) throws Exception
     {
         String paramName1 = "a";
         String paramName2 = "b";
@@ -241,7 +242,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_GET_WithParametersMultiValued_ResponseWithContent(Scenario scenario) throws Exception
+    public void testGETWithParametersMultiValuedResponseWithContent(Scenario scenario) throws Exception
     {
         String paramName1 = "a";
         String paramName2 = "b";
@@ -280,7 +281,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_POST_WithParameters(Scenario scenario) throws Exception
+    public void testPOSTWithParameters(Scenario scenario) throws Exception
     {
         String paramName = "a";
         String paramValue = "\u20AC";
@@ -312,7 +313,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_PUT_WithParameters(Scenario scenario) throws Exception
+    public void testPUTWithParameters(Scenario scenario) throws Exception
     {
         String paramName = "a";
         String paramValue = "\u20AC";
@@ -346,7 +347,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_POST_WithParameters_WithContent(Scenario scenario) throws Exception
+    public void testPOSTWithParametersWithContent(Scenario scenario) throws Exception
     {
         byte[] content = {0, 1, 2, 3};
         String paramName = "a";
@@ -381,7 +382,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_POST_WithContent_NotifiesRequestContentListener(Scenario scenario) throws Exception
+    public void testPOSTWithContentNotifiesRequestContentListener(Scenario scenario) throws Exception
     {
         start(scenario, new AbstractHandler()
         {
@@ -412,7 +413,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_POST_WithContent_TracksProgress(Scenario scenario) throws Exception
+    public void testPOSTWithContentTracksProgress(Scenario scenario) throws Exception
     {
         start(scenario, new AbstractHandler()
         {
@@ -426,16 +427,16 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
         AtomicInteger progress = new AtomicInteger();
         ContentResponse response = client.POST(scenario.getScheme() + "://localhost:" + connector.getLocalPort())
-        .onRequestContent((request, buffer) ->
-        {
-            byte[] bytes = new byte[buffer.remaining()];
-            assertEquals(1, bytes.length);
-            buffer.get(bytes);
-            assertEquals(bytes[0], progress.getAndIncrement());
-        })
-        .content(new BytesContentProvider(new byte[]{0}, new byte[]{1}, new byte[]{2}, new byte[]{3}, new byte[]{4}))
-        .timeout(5, TimeUnit.SECONDS)
-        .send();
+            .onRequestContent((request, buffer) ->
+            {
+                byte[] bytes = new byte[buffer.remaining()];
+                assertEquals(1, bytes.length);
+                buffer.get(bytes);
+                assertEquals(bytes[0], progress.getAndIncrement());
+            })
+            .content(new BytesContentProvider(new byte[]{0}, new byte[]{1}, new byte[]{2}, new byte[]{3}, new byte[]{4}))
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
 
         assertNotNull(response);
         assertEquals(200, response.getStatus());
@@ -444,7 +445,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_QueuedRequest_IsSent_WhenPreviousRequestSucceeded(Scenario scenario) throws Exception
+    public void testQueuedRequestIsSentWhenPreviousRequestSucceeded(Scenario scenario) throws Exception
     {
         start(scenario, new EmptyServerHandler());
 
@@ -493,7 +494,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_QueuedRequest_IsSent_WhenPreviousRequestClosedConnection(Scenario scenario) throws Exception
+    public void testQueuedRequestIsSentWhenPreviousRequestClosedConnection(Scenario scenario) throws Exception
     {
         start(scenario, new AbstractHandler()
         {
@@ -534,7 +535,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_ExchangeIsComplete_OnlyWhenBothRequestAndResponseAreComplete(Scenario scenario) throws Exception
+    public void testExchangeIsCompleteOnlyWhenBothRequestAndResponseAreComplete(Scenario scenario) throws Exception
     {
         start(scenario, new AbstractHandler()
         {
@@ -613,7 +614,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_ExchangeIsComplete_WhenRequestFailsMidway_WithResponse(Scenario scenario) throws Exception
+    public void testExchangeIsCompleteWhenRequestFailsMidwayWithResponse(Scenario scenario) throws Exception
     {
         start(scenario, new AbstractHandler()
         {
@@ -676,7 +677,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_ExchangeIsComplete_WhenRequestFails_WithNoResponse(Scenario scenario) throws Exception
+    public void testExchangeIsCompleteWhenRequestFailsWithNoResponse(Scenario scenario) throws Exception
     {
         start(scenario, new EmptyServerHandler());
 
@@ -706,7 +707,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
     @DisabledIfSystemProperty(named = "env", matches = "ci") // TODO: SLOW, needs review
-    public void test_Request_IdleTimeout(Scenario scenario) throws Exception
+    public void testRequestIdleTimeout(Scenario scenario) throws Exception
     {
         long idleTimeout = 1000;
         start(scenario, new AbstractHandler()
@@ -821,7 +822,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_HEAD_With_ResponseContentLength(Scenario scenario) throws Exception
+    public void testHEADWithResponseContentLength(Scenario scenario) throws Exception
     {
         int length = 1024;
         start(scenario, new AbstractHandler()
@@ -1622,7 +1623,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_IPv6_Host(Scenario scenario) throws Exception
+    public void testIPv6Host(Scenario scenario) throws Exception
     {
         Assumptions.assumeTrue(Net.isIpv6InterfaceAvailable());
         start(scenario, new AbstractHandler()

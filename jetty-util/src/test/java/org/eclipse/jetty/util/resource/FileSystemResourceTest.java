@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.util.resource;
@@ -230,7 +230,7 @@ public class FileSystemResourceTest
     @ParameterizedTest
     @EnabledOnOs(WINDOWS)
     @MethodSource("fsResourceProvider")
-    public void testBogusFilename_Windows(Class<PathResource> resourceClass)
+    public void testBogusFilenameWindows(Class<PathResource> resourceClass)
     {
         // "CON" is a reserved name under windows
         assertThrows(IllegalArgumentException.class,
@@ -240,7 +240,7 @@ public class FileSystemResourceTest
     @ParameterizedTest
     @EnabledOnOs({LINUX, MAC})
     @MethodSource("fsResourceProvider")
-    public void testBogusFilename_Unix(Class<PathResource> resourceClass)
+    public void testBogusFilenameUnix(Class<PathResource> resourceClass)
     {
         // A windows path is invalid under unix
         assertThrows(IllegalArgumentException.class,
@@ -249,7 +249,7 @@ public class FileSystemResourceTest
 
     @ParameterizedTest
     @MethodSource("fsResourceProvider")
-    public void testNewResource_WithSpace(Class<PathResource> resourceClass) throws Exception
+    public void testNewResourceWithSpace(Class<PathResource> resourceClass) throws Exception
     {
         Path dir = workDir.getPath().normalize().toRealPath();
 
@@ -438,7 +438,7 @@ public class FileSystemResourceTest
 
     @ParameterizedTest
     @MethodSource("fsResourceProvider")
-    public void testLastModified_NotExists(Class<PathResource> resourceClass) throws Exception
+    public void testLastModifiedNotExists(Class<PathResource> resourceClass) throws Exception
     {
         Path dir = workDir.getEmptyPathDir();
 
@@ -470,7 +470,7 @@ public class FileSystemResourceTest
 
     @ParameterizedTest
     @MethodSource("fsResourceProvider")
-    public void testLength_NotExists(Class<PathResource> resourceClass) throws Exception
+    public void testLengthNotExists(Class<PathResource> resourceClass) throws Exception
     {
         Path dir = workDir.getEmptyPathDir();
         Files.createDirectories(dir);
@@ -505,7 +505,7 @@ public class FileSystemResourceTest
 
     @ParameterizedTest
     @MethodSource("fsResourceProvider")
-    public void testDelete_NotExists(Class<PathResource> resourceClass) throws Exception
+    public void testDeleteNotExists(Class<PathResource> resourceClass) throws Exception
     {
         Path dir = workDir.getEmptyPathDir();
         Files.createDirectories(dir);
@@ -1139,7 +1139,7 @@ public class FileSystemResourceTest
      */
     @ParameterizedTest
     @MethodSource("fsResourceProvider")
-    public void testExist_Normal(Class<PathResource> resourceClass) throws Exception
+    public void testExistNormal(Class<PathResource> resourceClass) throws Exception
     {
         Path dir = workDir.getEmptyPathDir();
         Files.createDirectories(dir);
@@ -1218,7 +1218,7 @@ public class FileSystemResourceTest
 
     @ParameterizedTest
     @MethodSource("fsResourceProvider")
-    public void testExist_BadURINull(Class<PathResource> resourceClass) throws Exception
+    public void testExistBadURINull(Class<PathResource> resourceClass) throws Exception
     {
         Path dir = workDir.getEmptyPathDir();
         Files.createDirectories(dir);
@@ -1245,7 +1245,7 @@ public class FileSystemResourceTest
 
     @ParameterizedTest
     @MethodSource("fsResourceProvider")
-    public void testExist_BadURINullX(Class<PathResource> resourceClass) throws Exception
+    public void testExistBadURINullX(Class<PathResource> resourceClass) throws Exception
     {
         Path dir = workDir.getEmptyPathDir();
         Files.createDirectories(dir);
@@ -1272,7 +1272,7 @@ public class FileSystemResourceTest
 
     @ParameterizedTest
     @MethodSource("fsResourceProvider")
-    public void testAddPath_WindowsSlash(Class<PathResource> resourceClass) throws Exception
+    public void testAddPathWindowsSlash(Class<PathResource> resourceClass) throws Exception
     {
         Path dir = workDir.getEmptyPathDir();
         Files.createDirectories(dir);
@@ -1313,7 +1313,7 @@ public class FileSystemResourceTest
 
     @ParameterizedTest
     @MethodSource("fsResourceProvider")
-    public void testAddPath_WindowsExtensionLess(Class<PathResource> resourceClass) throws Exception
+    public void testAddPathWindowsExtensionLess(Class<PathResource> resourceClass) throws Exception
     {
         Path dir = workDir.getEmptyPathDir();
         Files.createDirectories(dir);

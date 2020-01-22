@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.io.ssl;
@@ -842,6 +842,11 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                             {
                                 interest = true;
                                 _fillState = FillState.INTERESTED;
+                                if (_flushState == FlushState.IDLE && BufferUtil.hasContent(_encryptedOutput))
+                                {
+                                    _flushState = FlushState.WRITING;
+                                    write = _encryptedOutput;
+                                }
                             }
                             break;
 
@@ -1259,9 +1264,26 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                     {
                         // If we still can't flush, but we are not closing the endpoint,
                         // let's just flush the encrypted output in the background.
-                        ByteBuffer write = _encryptedOutput;
-                        if (BufferUtil.hasContent(write))
-                            endPoint.write(Callback.from(Callback.NOOP::succeeded, t -> endPoint.close()), write);
+                        ByteBuffer write = null;
+                        synchronized (_decryptedEndPoint)
+                        {
+                            if (BufferUtil.hasContent(_encryptedOutput))
+                            {
+                                write = _encryptedOutput;
+                                _flushState = FlushState.WRITING;
+                            }
+                        }
+                        if (write != null)
+                        {
+                            endPoint.write(Callback.from(() ->
+                            {
+                                synchronized (_decryptedEndPoint)
+                                {
+                                    _flushState = FlushState.IDLE;
+                                    releaseEncryptedOutputBuffer();
+                                }
+                            }, t -> endPoint.close()), write);
+                        }
                     }
                 }
 
@@ -1471,19 +1493,23 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
             public void succeeded()
             {
                 boolean fillable;
+                boolean interested;
                 synchronized (_decryptedEndPoint)
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("IncompleteWriteCB succeeded {}", SslConnection.this);
-
                     releaseEncryptedOutputBuffer();
                     _flushState = FlushState.IDLE;
+
+                    interested = _fillState == FillState.INTERESTED;
                     fillable = _fillState == FillState.WAIT_FOR_FLUSH;
                     if (fillable)
                         _fillState = FillState.IDLE;
                 }
 
-                if (fillable)
+                if (interested)
+                    ensureFillInterested();
+                else if (fillable)
                     _decryptedEndPoint.getFillInterest().fillable();
 
                 _decryptedEndPoint.getWriteFlusher().completeWrite();
@@ -1502,7 +1528,8 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                     releaseEncryptedOutputBuffer();
 
                     _flushState = FlushState.IDLE;
-                    failFillInterest = _fillState == FillState.WAIT_FOR_FLUSH;
+                    failFillInterest = _fillState == FillState.WAIT_FOR_FLUSH ||
+                        _fillState == FillState.INTERESTED;
                     if (failFillInterest)
                         _fillState = FillState.IDLE;
                 }

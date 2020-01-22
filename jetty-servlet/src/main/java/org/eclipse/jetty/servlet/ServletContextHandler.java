@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.servlet;
@@ -29,6 +29,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
+
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterRegistration;
@@ -39,6 +41,7 @@ import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRegistration;
+import javax.servlet.ServletRegistration.Dynamic;
 import javax.servlet.ServletSecurityElement;
 import javax.servlet.SessionCookieConfig;
 import javax.servlet.SessionTrackingMode;
@@ -1256,6 +1259,33 @@ public class ServletContextHandler extends ContextHandler
             else
                 return null; //existing completed registration for servlet name
         }
+        
+        @Override
+        public ServletRegistration.Dynamic addJspFile(String servletName, String jspFile)
+        {
+            checkDynamic(servletName);
+            
+            final ServletHandler handler = ServletContextHandler.this.getServletHandler();
+            ServletHolder holder = handler.getServlet(servletName);
+            if (holder == null)
+            {
+                //new servlet
+                holder = handler.newServletHolder(Source.JAVAX_API);
+                holder.setName(servletName);
+                holder.setForcedPath(jspFile);
+                handler.addServlet(holder);
+                return dynamicHolderAdded(holder);
+            }
+            
+            //complete a partial registration
+            if (holder.getClassName() == null && holder.getHeldClass() == null && holder.getForcedPath() == null)
+            {
+                holder.setForcedPath(jspFile);
+                return holder.getRegistration();
+            }
+            else
+                return null; //existing completed registration for servlet name
+        }
 
         @Override
         public boolean setInitParameter(String name, String value)
@@ -1383,6 +1413,42 @@ public class ServletContextHandler extends ContextHandler
         }
 
         @Override
+        public int getSessionTimeout()
+        {
+            if (!isStarting())
+                throw new IllegalStateException();
+            if (!_enabled)
+                throw new UnsupportedOperationException();
+
+            int timeout = -1;
+            if (_sessionHandler != null)
+            {
+                timeout = _sessionHandler.getMaxInactiveInterval();
+            }
+
+            return (int)TimeUnit.SECONDS.toMinutes(timeout);
+        }
+
+        @Override
+        public void setSessionTimeout(int sessionTimeout)
+        {
+            if (!isStarting())
+                throw new IllegalStateException();
+            if (!_enabled)
+                throw new UnsupportedOperationException();
+
+            if (_sessionHandler != null)
+            {
+                long tmp = TimeUnit.MINUTES.toSeconds(sessionTimeout);
+                if (tmp > Integer.MAX_VALUE)
+                    tmp = Integer.MAX_VALUE;
+                if (tmp < Integer.MIN_VALUE)
+                    tmp = Integer.MIN_VALUE;
+                _sessionHandler.setMaxInactiveInterval((int)tmp);
+            }
+        }
+
+        @Override
         public void addListener(String className)
         {
             if (!isStarting())
@@ -1449,6 +1515,36 @@ public class ServletContextHandler extends ContextHandler
             if (!_enabled)
                 throw new UnsupportedOperationException();
             addRoles(roleNames);
+        }
+
+        @Override
+        public String getRequestCharacterEncoding()
+        {
+            return getDefaultRequestCharacterEncoding();
+        }
+
+        @Override
+        public void setRequestCharacterEncoding(String encoding)
+        {
+            if (!isStarting())
+                throw new IllegalStateException();
+            
+            setDefaultRequestCharacterEncoding(encoding);
+        }
+
+        @Override
+        public String getResponseCharacterEncoding()
+        {
+            return getDefaultResponseCharacterEncoding();
+        }
+
+        @Override
+        public void setResponseCharacterEncoding(String encoding)
+        {
+            if (!isStarting())
+                throw new IllegalStateException();
+            
+            setDefaultResponseCharacterEncoding(encoding);
         }
     }
 }

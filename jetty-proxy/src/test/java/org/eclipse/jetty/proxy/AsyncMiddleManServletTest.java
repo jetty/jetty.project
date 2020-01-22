@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.proxy;
@@ -863,20 +863,21 @@ public class AsyncMiddleManServletTest
     @Test
     public void testAfterContentTransformer() throws Exception
     {
-        final String key0 = "id";
+        String key0 = "id";
         long value0 = 1;
-        final String key1 = "channel";
+        String key1 = "channel";
         String value1 = "foo";
-        final String json = "{ \"" + key0 + "\":" + value0 + ", \"" + key1 + "\":\"" + value1 + "\" }";
+        String jsonString = "{ \"" + key0 + "\":" + value0 + ", \"" + key1 + "\":\"" + value1 + "\" }";
         startServer(new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                response.getOutputStream().write(json.getBytes(StandardCharsets.UTF_8));
+                response.getOutputStream().write(jsonString.getBytes(StandardCharsets.UTF_8));
             }
         });
-        final String key2 = "c";
+        String key2 = "c";
+        JSON json = new JSON();
         startProxy(new AsyncMiddleManServlet()
         {
             @Override
@@ -889,12 +890,12 @@ public class AsyncMiddleManServletTest
                     {
                         InputStream input = source.getInputStream();
                         @SuppressWarnings("unchecked")
-                        Map<String, Object> obj = (Map<String, Object>)JSON.parse(new InputStreamReader(input, StandardCharsets.UTF_8));
+                        Map<String, Object> obj = (Map<String, Object>)json.fromJSON(new InputStreamReader(input, StandardCharsets.UTF_8));
                         // Transform the object.
                         obj.put(key2, obj.remove(key1));
                         try (OutputStream output = sink.getOutputStream())
                         {
-                            output.write(JSON.toString(obj).getBytes(StandardCharsets.UTF_8));
+                            output.write(json.toJSON(obj).getBytes(StandardCharsets.UTF_8));
                             return true;
                         }
                     }
@@ -909,7 +910,7 @@ public class AsyncMiddleManServletTest
 
         assertEquals(200, response.getStatus());
         @SuppressWarnings("unchecked")
-        Map<String, Object> obj = (Map<String, Object>)JSON.parse(response.getContentAsString());
+        Map<String, Object> obj = (Map<String, Object>)json.fromJSON(response.getContentAsString());
         assertNotNull(obj);
         assertEquals(2, obj.size());
         assertEquals(value0, obj.get(key0));
@@ -984,24 +985,25 @@ public class AsyncMiddleManServletTest
     public void testAfterContentTransformerOverflowingToDisk() throws Exception
     {
         // Make sure the temporary directory we use exists and it's empty.
-        final Path targetTestsDir = prepareTargetTestsDir();
+        Path targetTestsDir = prepareTargetTestsDir();
 
-        final String key0 = "id";
+        String key0 = "id";
         long value0 = 1;
-        final String key1 = "channel";
+        String key1 = "channel";
         String value1 = "foo";
-        final String json = "{ \"" + key0 + "\":" + value0 + ", \"" + key1 + "\":\"" + value1 + "\" }";
+        String jsonString = "{ \"" + key0 + "\":" + value0 + ", \"" + key1 + "\":\"" + value1 + "\" }";
         startServer(new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                response.getOutputStream().write(json.getBytes(StandardCharsets.UTF_8));
+                response.getOutputStream().write(jsonString.getBytes(StandardCharsets.UTF_8));
             }
         });
-        final String inputPrefix = "in_";
-        final String outputPrefix = "out_";
-        final String key2 = "c";
+        String inputPrefix = "in_";
+        String outputPrefix = "out_";
+        String key2 = "c";
+        JSON json = new JSON();
         startProxy(new AsyncMiddleManServlet()
         {
             @Override
@@ -1014,18 +1016,18 @@ public class AsyncMiddleManServletTest
                     {
                         InputStream input = source.getInputStream();
                         @SuppressWarnings("unchecked")
-                        Map<String, Object> obj = (Map<String, Object>)JSON.parse(new InputStreamReader(input, StandardCharsets.UTF_8));
+                        Map<String, Object> obj = (Map<String, Object>)json.fromJSON(new InputStreamReader(input, StandardCharsets.UTF_8));
                         // Transform the object.
                         obj.put(key2, obj.remove(key1));
                         try (OutputStream output = sink.getOutputStream())
                         {
-                            output.write(JSON.toString(obj).getBytes(StandardCharsets.UTF_8));
+                            output.write(json.toJSON(obj).getBytes(StandardCharsets.UTF_8));
                             return true;
                         }
                     }
                 };
                 transformer.setOverflowDirectory(targetTestsDir);
-                int maxBufferSize = json.length() / 4;
+                int maxBufferSize = jsonString.length() / 4;
                 transformer.setMaxInputBufferSize(maxBufferSize);
                 transformer.setInputFilePrefix(inputPrefix);
                 transformer.setMaxOutputBufferSize(maxBufferSize);
@@ -1041,7 +1043,7 @@ public class AsyncMiddleManServletTest
 
         assertEquals(200, response.getStatus());
         @SuppressWarnings("unchecked")
-        Map<String, Object> obj = (Map<String, Object>)JSON.parse(response.getContentAsString());
+        Map<String, Object> obj = (Map<String, Object>)json.fromJSON(response.getContentAsString());
         assertNotNull(obj);
         assertEquals(2, obj.size());
         assertEquals(value0, obj.get(key0));
@@ -1202,19 +1204,20 @@ public class AsyncMiddleManServletTest
 
     private void testAfterContentTransformerDoNoTransform(final boolean readSource, final boolean useDisk) throws Exception
     {
-        final String key0 = "id";
+        String key0 = "id";
         long value0 = 1;
-        final String key1 = "channel";
+        String key1 = "channel";
         String value1 = "foo";
-        final String json = "{ \"" + key0 + "\":" + value0 + ", \"" + key1 + "\":\"" + value1 + "\" }";
+        String jsonString = "{ \"" + key0 + "\":" + value0 + ", \"" + key1 + "\":\"" + value1 + "\" }";
         startServer(new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                response.getOutputStream().write(json.getBytes(StandardCharsets.UTF_8));
+                response.getOutputStream().write(jsonString.getBytes(StandardCharsets.UTF_8));
             }
         });
+        JSON json = new JSON();
         startProxy(new AsyncMiddleManServlet()
         {
             @Override
@@ -1233,7 +1236,7 @@ public class AsyncMiddleManServletTest
                         if (readSource)
                         {
                             InputStream input = source.getInputStream();
-                            JSON.parse(new InputStreamReader(input, StandardCharsets.UTF_8));
+                            json.fromJSON(new InputStreamReader(input, StandardCharsets.UTF_8));
                         }
                         // No transformation.
                         return false;
@@ -1249,7 +1252,7 @@ public class AsyncMiddleManServletTest
 
         assertEquals(200, response.getStatus());
         @SuppressWarnings("unchecked")
-        Map<String, Object> obj = (Map<String, Object>)JSON.parse(response.getContentAsString());
+        Map<String, Object> obj = (Map<String, Object>)json.fromJSON(response.getContentAsString());
         assertNotNull(obj);
         assertEquals(2, obj.size());
         assertEquals(value0, obj.get(key0));

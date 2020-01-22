@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.util;
@@ -39,6 +39,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 
+// @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
 public class Utf8AppendableTest
 {
     public static final List<Class<? extends Utf8Appendable>> APPENDABLE_IMPLS;
@@ -157,7 +158,7 @@ public class Utf8AppendableTest
 
     @ParameterizedTest
     @MethodSource("implementations")
-    public void testFastFail_1(Class<Utf8Appendable> impl) throws Exception
+    public void testFastFail1(Class<Utf8Appendable> impl) throws Exception
     {
         byte[] part1 = TypeUtil.fromHexString("cebae1bdb9cf83cebcceb5");
         byte[] part2 = TypeUtil.fromHexString("f4908080"); // INVALID
@@ -177,7 +178,7 @@ public class Utf8AppendableTest
 
     @ParameterizedTest
     @MethodSource("implementations")
-    public void testFastFail_2(Class<Utf8Appendable> impl) throws Exception
+    public void testFastFail2(Class<Utf8Appendable> impl) throws Exception
     {
         byte[] part1 = TypeUtil.fromHexString("cebae1bdb9cf83cebcceb5f4");
         byte[] part2 = TypeUtil.fromHexString("90"); // INVALID
@@ -197,7 +198,7 @@ public class Utf8AppendableTest
 
     @ParameterizedTest
     @MethodSource("implementations")
-    public void testPartial_UnsplitCodepoint(Class<Utf8Appendable> impl) throws Exception
+    public void testPartialUnsplitCodepoint(Class<Utf8Appendable> impl) throws Exception
     {
         Utf8Appendable utf8 = impl.getDeclaredConstructor().newInstance();
 
@@ -216,7 +217,7 @@ public class Utf8AppendableTest
 
     @ParameterizedTest
     @MethodSource("implementations")
-    public void testPartial_SplitCodepoint(Class<Utf8Appendable> impl) throws Exception
+    public void testPartialSplitCodepoint(Class<Utf8Appendable> impl) throws Exception
     {
         Utf8Appendable utf8 = impl.getDeclaredConstructor().newInstance();
 
@@ -235,7 +236,7 @@ public class Utf8AppendableTest
 
     @ParameterizedTest
     @MethodSource("implementations")
-    public void testPartial_SplitCodepoint_WithNoBuf(Class<Utf8Appendable> impl) throws Exception
+    public void testPartialSplitCodepointWithNoBuf(Class<Utf8Appendable> impl) throws Exception
     {
         Utf8Appendable utf8 = impl.getDeclaredConstructor().newInstance();
 

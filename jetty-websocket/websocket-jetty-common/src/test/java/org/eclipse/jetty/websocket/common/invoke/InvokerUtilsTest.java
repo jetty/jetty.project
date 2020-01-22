@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.websocket.common.invoke;
@@ -195,7 +195,7 @@ public class InvokerUtilsTest
     }
 
     @Test
-    public void testKeyValue_ExtraArgs_AtEnd() throws Throwable
+    public void testKeyValueExtraArgsAtEnd() throws Throwable
     {
         Method method1 = ReflectUtils.findMethod(KeyValue.class, "onEntry", String.class, int.class);
 
@@ -213,7 +213,7 @@ public class InvokerUtilsTest
     }
 
     @Test
-    public void testKeyValue_ExtraArgs_InMiddle() throws Throwable
+    public void testKeyValueExtraArgsInMiddle() throws Throwable
     {
         Method method1 = ReflectUtils.findMethod(KeyValue.class, "onEntry", String.class, int.class);
 
@@ -231,7 +231,7 @@ public class InvokerUtilsTest
     }
 
     @Test
-    public void testKeyValue_ExtraArgs_AtStart() throws Throwable
+    public void testKeyValueExtraArgsAtStart() throws Throwable
     {
         Method method1 = ReflectUtils.findMethod(KeyValue.class, "onEntry", String.class, int.class);
 
@@ -249,7 +249,7 @@ public class InvokerUtilsTest
     }
 
     @Test
-    public void testKeyValue_ExtraArgs_Mixed() throws Throwable
+    public void testKeyValueExtraArgsMixed() throws Throwable
     {
         Method method1 = ReflectUtils.findMethod(KeyValue.class, "onEntry", String.class, int.class);
 
@@ -269,7 +269,7 @@ public class InvokerUtilsTest
     }
 
     @Test
-    public void testNamed_AllParams() throws Throwable
+    public void testNamedAllParams() throws Throwable
     {
         Method method = ReflectUtils.findMethod(NamedParams.class, "onMessage", String.class, String.class, int.class);
 
@@ -287,7 +287,7 @@ public class InvokerUtilsTest
     }
 
     @Test
-    public void testNamed_AllParams_Mixed() throws Throwable
+    public void testNamedAllParamsMixed() throws Throwable
     {
         Method method = ReflectUtils.findMethod(NamedParams.class, "onMessage", String.class, String.class, int.class);
 
@@ -305,7 +305,7 @@ public class InvokerUtilsTest
     }
 
     @Test
-    public void testEmpty_Call_None() throws Throwable
+    public void testEmptyCallNone() throws Throwable
     {
         SampleSignatures samples = new SampleSignatures();
         Method method = findMethodByName(samples, "sigEmpty");
@@ -318,7 +318,7 @@ public class InvokerUtilsTest
     }
 
     @Test
-    public void testEmpty_Call_File() throws Throwable
+    public void testEmptyCallFile() throws Throwable
     {
         SampleSignatures samples = new SampleSignatures();
         Method method = findMethodByName(samples, "sigEmpty");
@@ -333,7 +333,7 @@ public class InvokerUtilsTest
     }
 
     @Test
-    public void testEmpty_Call_NullFile() throws Throwable
+    public void testEmptyCallNullFile() throws Throwable
     {
         SampleSignatures samples = new SampleSignatures();
         Method method = findMethodByName(samples, "sigEmpty");
@@ -348,7 +348,7 @@ public class InvokerUtilsTest
     }
 
     @Test
-    public void testString_Call_String() throws Throwable
+    public void testStringCallString() throws Throwable
     {
         SampleSignatures samples = new SampleSignatures();
         Method method = findMethodByName(samples, "sigStr");
@@ -363,7 +363,7 @@ public class InvokerUtilsTest
     }
 
     @Test
-    public void testString_Call_File_String() throws Throwable
+    public void testStringCallFileString() throws Throwable
     {
         SampleSignatures samples = new SampleSignatures();
         Method method = findMethodByName(samples, "sigStr");
@@ -379,7 +379,7 @@ public class InvokerUtilsTest
     }
 
     @Test
-    public void testString_Call_String_File() throws Throwable
+    public void testStringCallStringFile() throws Throwable
     {
         SampleSignatures samples = new SampleSignatures();
         Method method = findMethodByName(samples, "sigStr");
@@ -395,7 +395,7 @@ public class InvokerUtilsTest
     }
 
     @Test
-    public void testStringFile_Call_String_File() throws Throwable
+    public void testStringFileCallStringFile() throws Throwable
     {
         SampleSignatures samples = new SampleSignatures();
         Method method = findMethodByName(samples, "sigStrFile");
@@ -411,7 +411,7 @@ public class InvokerUtilsTest
     }
 
     @Test
-    public void testStringFile_Call_File_String() throws Throwable
+    public void testStringFileCallFileString() throws Throwable
     {
         SampleSignatures samples = new SampleSignatures();
         Method method = findMethodByName(samples, "sigStrFile");
@@ -427,7 +427,7 @@ public class InvokerUtilsTest
     }
 
     @Test
-    public void testFileString_Call_String_File() throws Throwable
+    public void testFileStringCallStringFile() throws Throwable
     {
         SampleSignatures samples = new SampleSignatures();
         Method method = findMethodByName(samples, "sigFileStr");
@@ -443,7 +443,7 @@ public class InvokerUtilsTest
     }
 
     @Test
-    public void testFileString_Call_File_String() throws Throwable
+    public void testFileStringCallFileString() throws Throwable
     {
         SampleSignatures samples = new SampleSignatures();
         Method method = findMethodByName(samples, "sigFileStr");
@@ -459,7 +459,7 @@ public class InvokerUtilsTest
     }
 
     @Test
-    public void testFileStringFin_Call_File_String_BoolTag() throws Throwable
+    public void testFileStringFinCallFileStringBoolTag() throws Throwable
     {
         SampleSignatures samples = new SampleSignatures();
         Method method = findMethodByName(samples, "sigFileStrFin");
@@ -476,7 +476,7 @@ public class InvokerUtilsTest
     }
 
     @Test
-    public void testFileStringFin_Call_File_String_Bool() throws Throwable
+    public void testFileStringFinCallFileStringBool() throws Throwable
     {
         SampleSignatures samples = new SampleSignatures();
         Method method = findMethodByName(samples, "sigFileStrFin");
@@ -493,7 +493,7 @@ public class InvokerUtilsTest
     }
 
     @Test
-    public void testFileStringFin_Call_BoolTag_File_String() throws Throwable
+    public void testFileStringFinCallBoolTagFileString() throws Throwable
     {
         SampleSignatures samples = new SampleSignatures();
         Method method = findMethodByName(samples, "sigFileStrFin");
@@ -510,7 +510,7 @@ public class InvokerUtilsTest
     }
 
     @Test
-    public void testFileStringFin_Call_Bool_File_String() throws Throwable
+    public void testFileStringFinCallBoolFileString() throws Throwable
     {
         SampleSignatures samples = new SampleSignatures();
         Method method = findMethodByName(samples, "sigFileStrFin");
@@ -527,7 +527,7 @@ public class InvokerUtilsTest
     }
 
     @Test
-    public void testFileStringFin_Call_BoolTag_Null_String() throws Throwable
+    public void testFileStringFinCallBoolTagNullString() throws Throwable
     {
         SampleSignatures samples = new SampleSignatures();
         Method method = findMethodByName(samples, "sigFileStrFin");

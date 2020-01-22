@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.util.ajax;
@@ -31,12 +31,7 @@ public class JSONPojoConvertorFactory implements JSON.Convertor
 
     public JSONPojoConvertorFactory(JSON json)
     {
-        if (json == null)
-        {
-            throw new IllegalArgumentException();
-        }
-        _json = json;
-        _fromJson = true;
+        this(json, true);
     }
 
     /**
@@ -48,9 +43,7 @@ public class JSONPojoConvertorFactory implements JSON.Convertor
     public JSONPojoConvertorFactory(JSON json, boolean fromJSON)
     {
         if (json == null)
-        {
             throw new IllegalArgumentException();
-        }
         _json = json;
         _fromJson = fromJSON;
     }
@@ -58,31 +51,20 @@ public class JSONPojoConvertorFactory implements JSON.Convertor
     @Override
     public void toJSON(Object obj, Output out)
     {
-        String clsName = obj.getClass().getName();
+        Class<?> cls = obj.getClass();
+        String clsName = cls.getName();
         Convertor convertor = _json.getConvertorFor(clsName);
         if (convertor == null)
         {
-            try
-            {
-                Class cls = Loader.loadClass(clsName);
-                convertor = new JSONPojoConvertor(cls, _fromJson);
-                _json.addConvertorFor(clsName, convertor);
-            }
-            catch (ClassNotFoundException e)
-            {
-                JSON.LOG.warn(e);
-            }
+            convertor = new JSONPojoConvertor(cls, _fromJson);
+            _json.addConvertorFor(clsName, convertor);
         }
-        if (convertor != null)
-        {
-            convertor.toJSON(obj, out);
-        }
+        convertor.toJSON(obj, out);
     }
 
     @Override
-    public Object fromJSON(Map object)
+    public Object fromJSON(Map<String, Object> map)
     {
-        Map map = object;
         String clsName = (String)map.get("class");
         if (clsName != null)
         {
@@ -91,7 +73,7 @@ public class JSONPojoConvertorFactory implements JSON.Convertor
             {
                 try
                 {
-                    Class cls = Loader.loadClass(clsName);
+                    Class<?> cls = Loader.loadClass(clsName);
                     convertor = new JSONPojoConvertor(cls, _fromJson);
                     _json.addConvertorFor(clsName, convertor);
                 }
@@ -101,9 +83,7 @@ public class JSONPojoConvertorFactory implements JSON.Convertor
                 }
             }
             if (convertor != null)
-            {
-                return convertor.fromJSON(object);
-            }
+                return convertor.fromJSON(map);
         }
         return map;
     }

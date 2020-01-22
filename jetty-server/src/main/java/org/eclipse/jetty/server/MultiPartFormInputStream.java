@@ -1,22 +1,22 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
-package org.eclipse.jetty.http;
+package org.eclipse.jetty.server;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -60,10 +60,10 @@ public class MultiPartFormInputStream
 {
     private static final Logger LOG = Log.getLogger(MultiPartFormInputStream.class);
     private static final MultiMap<Part> EMPTY_MAP = new MultiMap<>(Collections.emptyMap());
+    private final MultiMap<Part> _parts;
     private InputStream _in;
     private MultipartConfigElement _config;
     private String _contentType;
-    private MultiMap<Part> _parts;
     private Throwable _err;
     private File _tmpDir;
     private File _contextTmpDir;
@@ -341,16 +341,19 @@ public class MultiPartFormInputStream
         if (_config == null)
             _config = new MultipartConfigElement(_contextTmpDir.getAbsolutePath());
 
+        MultiMap parts = new MultiMap();
+
         if (in instanceof ServletInputStream)
         {
             if (((ServletInputStream)in).isFinished())
             {
-                _parts = EMPTY_MAP;
+                parts = EMPTY_MAP;
                 _parsed = true;
-                return;
             }
         }
-        _in = new BufferedInputStream(in);
+        if (!_parsed)
+            _in = new BufferedInputStream(in);
+        _parts = parts;
     }
 
     /**
@@ -410,6 +413,9 @@ public class MultiPartFormInputStream
         if (!_parsed)
             parse();
         throwIfError();
+
+        if (_parts.isEmpty())
+            return Collections.emptyList();
 
         Collection<List<Part>> values = _parts.values();
         List<Part> parts = new ArrayList<>();
@@ -471,9 +477,6 @@ public class MultiPartFormInputStream
         Handler handler = new Handler();
         try
         {
-            // initialize
-            _parts = new MultiMap<>();
-
             // if its not a multipart request, don't parse it
             if (_contentType == null || !_contentType.startsWith("multipart/form-data"))
                 return;

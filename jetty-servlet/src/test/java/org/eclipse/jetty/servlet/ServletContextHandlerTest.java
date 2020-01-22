@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.servlet;
@@ -59,6 +59,7 @@ import javax.servlet.http.HttpSessionEvent;
 import javax.servlet.http.HttpSessionIdListener;
 import javax.servlet.http.HttpSessionListener;
 
+import org.eclipse.jetty.http.pathmap.MappedResource;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.security.RoleInfo;
 import org.eclipse.jetty.security.SecurityHandler;
@@ -108,6 +109,20 @@ public class ServletContextHandlerTest
 
     public static class MySCI implements ServletContainerInitializer
     {
+        boolean callSessionTimeouts;
+        int timeout;
+        
+        public MySCI(boolean callSessionTimeouts, int timeout)
+        {
+            this.callSessionTimeouts = callSessionTimeouts;
+            this.timeout = timeout;
+        }
+        
+        public MySCI()
+        {
+            this(false, -1);
+        }
+        
         @Override
         public void onStartup(Set<Class<?>> c, ServletContext ctx) throws ServletException
         {
@@ -115,7 +130,20 @@ public class ServletContextHandlerTest
             if (ctx.getAttribute("MySCI.startup") != null)
                 throw new IllegalStateException("MySCI already called");
             ctx.setAttribute("MySCI.startup", Boolean.TRUE);
-            ctx.addListener(new MyContextListener());
+            ctx.addListener(new MyContextListener(callSessionTimeouts, timeout));
+            if (callSessionTimeouts)
+            {
+                try
+                {
+                    ctx.setSessionTimeout(timeout);
+                    ctx.setAttribute("MYSCI.setSessionTimeout", Boolean.TRUE);
+                    ctx.setAttribute("MYSCI.getSessionTimeout", Integer.valueOf(ctx.getSessionTimeout()));
+                }
+                catch (Exception e)
+                {
+                    ctx.setAttribute("MYSCI.sessionTimeoutFailure", e);
+                }
+            }
         }
     }
 
@@ -142,12 +170,50 @@ public class ServletContextHandlerTest
 
     public static class MyContextListener implements ServletContextListener
     {
-
+        boolean callSessionTimeouts;
+        int timeout;
+        
+        public MyContextListener(boolean callSessionTimeouts, int timeout)
+        {
+            this.callSessionTimeouts = callSessionTimeouts;
+            this.timeout = timeout;
+        }
+        
+        public MyContextListener()
+        {
+            this(false, -1);
+        }
+        
         @Override
         public void contextInitialized(ServletContextEvent sce)
         {
             assertNull(sce.getServletContext().getAttribute("MyContextListener.contextInitialized"));
             sce.getServletContext().setAttribute("MyContextListener.contextInitialized", Boolean.TRUE);
+            
+            if (callSessionTimeouts)
+            {
+                try
+                {
+                    sce.getServletContext().setSessionTimeout(timeout);
+                    sce.getServletContext().setAttribute("MyContextListener.setSessionTimeout", Boolean.FALSE);
+                }
+                catch (UnsupportedOperationException e)
+                {
+                    //Should NOT be able to call setSessionTimeout from this SCL
+                    sce.getServletContext().setAttribute("MyContextListener.setSessionTimeout", Boolean.TRUE); 
+                }
+                
+                try
+                {
+                    sce.getServletContext().getSessionTimeout();
+                    sce.getServletContext().setAttribute("MyContextListener.getSessionTimeout", Boolean.FALSE);
+                }
+                catch (UnsupportedOperationException e)
+                {
+                    //Should NOT be able to call getSessionTimeout from this SCL
+                    sce.getServletContext().setAttribute("MyContextListener.getSessionTimeout", Boolean.TRUE); 
+                }
+            }
         }
 
         @Override
@@ -402,6 +468,28 @@ public class ServletContextHandlerTest
     {
         _server.stop();
         _server.join();
+    }
+    
+    @Test
+    public void testGetSetSessionTimeout() throws Exception
+    {
+        ContextHandlerCollection contexts = new ContextHandlerCollection();
+        _server.setHandler(contexts);
+
+        Integer timeout = Integer.valueOf(100);
+        ServletContextHandler root = new ServletContextHandler(contexts, "/", ServletContextHandler.SESSIONS);
+        root.addBean(new MySCIStarter(root.getServletContext(), new MySCI(true, timeout.intValue())), true);
+        _server.start();
+        
+        //test can set session timeout from ServletContainerInitializer
+        assertTrue((Boolean)root.getServletContext().getAttribute("MYSCI.setSessionTimeout"));
+        //test can get session timeout from ServletContainerInitializer
+        assertEquals(timeout, (Integer)root.getServletContext().getAttribute("MYSCI.getSessionTimeout"));
+        assertNull(root.getAttribute("MYSCI.sessionTimeoutFailure"));
+        //test can't get session timeout from ContextListener that is not from annotation or web.xml
+        assertTrue((Boolean)root.getServletContext().getAttribute("MyContextListener.getSessionTimeout"));
+        //test can't set session timeout from ContextListener that is not from annotation or web.xml
+        assertTrue((Boolean)root.getServletContext().getAttribute("MyContextListener.setSessionTimeout"));
     }
 
     @Test
@@ -884,6 +972,117 @@ public class ServletContextHandlerTest
         assertThat("Response", response, containsString("Hello World"));
     }
 
+    @Test
+    public void testAddJspFile() throws Exception
+    {
+        ContextHandlerCollection contexts = new ContextHandlerCollection();
+        _server.setHandler(contexts);
+
+        ServletContextHandler root = new ServletContextHandler(contexts, "/");
+        ServletHolder jspServlet = new ServletHolder();
+        jspServlet.setName("jsp");
+        jspServlet.setHeldClass(FakeJspServlet.class);
+        root.addServlet(jspServlet, "*.jsp");
+        class JSPAddingSCI implements ServletContainerInitializer
+        {
+            @Override
+            public void onStartup(Set<Class<?>> c, ServletContext ctx) throws ServletException
+            {
+                try
+                {
+                    ServletRegistration rego = ctx.addJspFile("some.jsp", "/path/to/some.jsp");
+                    rego.addMapping("/somejsp/*");
+                }
+                catch (Exception e)
+                {
+                    fail(e);
+                }
+            }
+        }
+
+        root.addBean(new MySCIStarter(root.getServletContext(), new JSPAddingSCI()), true);
+        _server.start();
+        MappedResource<ServletHolder> mappedServlet = root.getServletHandler().getMappedServlet("/somejsp/xxx");
+        assertNotNull(mappedServlet.getResource());
+        assertEquals("some.jsp", mappedServlet.getResource().getName());
+    }
+
+    @Test
+    public void testAddJspFileWithExistingRegistration() throws Exception
+    {
+        ContextHandlerCollection contexts = new ContextHandlerCollection();
+        _server.setHandler(contexts);
+
+        ServletContextHandler root = new ServletContextHandler(contexts, "/");
+        ServletHolder jspServlet = new ServletHolder();
+        jspServlet.setName("jsp");
+        jspServlet.setHeldClass(FakeJspServlet.class);
+        root.addServlet(jspServlet, "*.jsp");
+        //add a full registration so that the addJspFile will fail
+        ServletHolder barServlet = new ServletHolder();
+        barServlet.setName("some.jsp");
+        barServlet.setHeldClass(HelloServlet.class);
+        root.addServlet(barServlet, "/bar/*");
+        class JSPAddingSCI implements ServletContainerInitializer
+        {
+            @Override
+            public void onStartup(Set<Class<?>> c, ServletContext ctx) throws ServletException
+            {
+                try
+                {
+                    ServletRegistration rego = ctx.addJspFile("some.jsp", "/path/to/some.jsp");
+                    assertNull(rego);
+                }
+                catch (Exception e)
+                {
+                    fail(e);
+                }
+            }
+        }
+
+        root.addBean(new MySCIStarter(root.getServletContext(), new JSPAddingSCI()), true);
+        _server.start();
+    }
+
+    @Test
+    public void testAddJspFileWithPartialRegistration() throws Exception
+    {
+        ContextHandlerCollection contexts = new ContextHandlerCollection();
+        _server.setHandler(contexts);
+
+        ServletContextHandler root = new ServletContextHandler(contexts, "/");
+        ServletHolder jspServlet = new ServletHolder();
+        jspServlet.setName("jsp");
+        jspServlet.setHeldClass(FakeJspServlet.class);
+        root.addServlet(jspServlet, "*.jsp");
+        //add a preliminary registration so that the addJspFile will complete it
+        ServletHolder barServlet = new ServletHolder();
+        barServlet.setName("some.jsp");
+        root.addServlet(barServlet, "/bar/*");
+        class JSPAddingSCI implements ServletContainerInitializer
+        {
+            @Override
+            public void onStartup(Set<Class<?>> c, ServletContext ctx) throws ServletException
+            {
+                try
+                {
+                    ServletRegistration rego = ctx.addJspFile("some.jsp", "/path/to/some.jsp");
+                    assertNotNull(rego);
+                }
+                catch (Exception e)
+                {
+                    fail(e);
+                }
+            }
+        }
+
+        root.addBean(new MySCIStarter(root.getServletContext(), new JSPAddingSCI()), true);
+        _server.start();
+        MappedResource<ServletHolder> mappedServlet = root.getServletHandler().getMappedServlet("/bar/xxx");
+        assertNotNull(mappedServlet.getResource());
+        assertEquals("some.jsp", mappedServlet.getResource().getName());
+    }
+    
     @Test
     public void testAddServletAfterStart() throws Exception
     {
@@ -1390,6 +1589,11 @@ public class ServletContextHandlerTest
                 out.printf("Object is NOT a DecoratedObjectFactory%n");
             }
         }
+    }
+    
+    public static class FakeJspServlet extends HttpServlet
+    {
+        
     }
 
     public static class ServletAddingServlet extends HttpServlet

@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.http;
@@ -29,13 +29,13 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 public class MimeTypesTest
 {
     @Test
-    public void testGetMimeByExtension_Gzip()
+    public void testGetMimeByExtensionGzip()
     {
         assertMimeTypeByExtension("application/gzip", "test.gz");
     }
 
     @Test
-    public void testGetMimeByExtension_Png()
+    public void testGetMimeByExtensionPng()
     {
         assertMimeTypeByExtension("image/png", "test.png");
         assertMimeTypeByExtension("image/png", "TEST.PNG");
@@ -43,26 +43,26 @@ public class MimeTypesTest
     }
 
     @Test
-    public void testGetMimeByExtension_Png_MultiDot()
+    public void testGetMimeByExtensionPngMultiDot()
     {
         assertMimeTypeByExtension("image/png", "org.eclipse.jetty.Logo.png");
     }
 
     @Test
-    public void testGetMimeByExtension_Png_DeepPath()
+    public void testGetMimeByExtensionPngDeepPath()
     {
         assertMimeTypeByExtension("image/png", "/org/eclipse/jetty/Logo.png");
     }
 
     @Test
-    public void testGetMimeByExtension_Text()
+    public void testGetMimeByExtensionText()
     {
         assertMimeTypeByExtension("text/plain", "test.txt");
         assertMimeTypeByExtension("text/plain", "TEST.TXT");
     }
 
     @Test
-    public void testGetMimeByExtension_NoExtension()
+    public void testGetMimeByExtensionNoExtension()
     {
         MimeTypes mimetypes = new MimeTypes();
         String contentType = mimetypes.getMimeByExtension("README");

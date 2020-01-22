@@ -1,27 +1,25 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.util.ajax;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.util.Arrays;
-import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -29,36 +27,35 @@ import java.util.Set;
 import org.eclipse.jetty.util.ajax.JSON.Output;
 
 /**
- * Convert an Object to JSON using reflection on getters methods.
+ * Converts an Object to JSON using reflection on getters methods.
  */
 public class JSONObjectConvertor implements JSON.Convertor
 {
-    private boolean _fromJSON;
-    private Set _excluded = null;
+    private final boolean _fromJSON;
+    private final Set<String> _excluded;
 
     public JSONObjectConvertor()
     {
-        _fromJSON = false;
+        this(false);
     }
 
     public JSONObjectConvertor(boolean fromJSON)
     {
-        _fromJSON = fromJSON;
+        this(fromJSON, null);
     }
 
     /**
      * @param fromJSON true to convert from JSON
-     * @param excluded An array of field names to exclude from the conversion
+     * @param excludedFieldNames An array of field names to exclude from the conversion
      */
-    public JSONObjectConvertor(boolean fromJSON, String[] excluded)
+    public JSONObjectConvertor(boolean fromJSON, String[] excludedFieldNames)
     {
         _fromJSON = fromJSON;
-        if (excluded != null)
-            _excluded = new HashSet(Arrays.asList(excluded));
+        _excluded = excludedFieldNames == null ? Set.of() : Set.of(excludedFieldNames);
     }
 
     @Override
-    public Object fromJSON(Map map)
+    public Object fromJSON(Map<String, Object> map)
     {
         if (_fromJSON)
             throw new UnsupportedOperationException();
@@ -70,16 +67,13 @@ public class JSONObjectConvertor implements JSON.Convertor
     {
         try
         {
-            Class c = obj.getClass();
+            Class<?> c = obj.getClass();
 
             if (_fromJSON)
-                out.addClass(obj.getClass());
+                out.addClass(c);
 
-            Method[] methods = obj.getClass().getMethods();
-
-            for (int i = 0; i < methods.length; i++)
+            for (Method m : c.getMethods())
             {
-                Method m = methods[i];
                 if (!Modifier.isStatic(m.getModifiers()) &&
                     m.getParameterCount() == 0 &&
                     m.getReturnType() != null &&
@@ -92,7 +86,6 @@ public class JSONObjectConvertor implements JSON.Convertor
                         name = name.substring(3, 4).toLowerCase(Locale.ENGLISH) + name.substring(4);
                     else
                         continue;
-
                     if (includeField(name, obj, m))
                         out.add(name, m.invoke(obj, (Object[])null));
                 }
@@ -106,6 +99,6 @@ public class JSONObjectConvertor implements JSON.Convertor
 
     protected boolean includeField(String name, Object o, Method m)
     {
-        return _excluded == null || !_excluded.contains(name);
+        return !_excluded.contains(name);
     }
 }

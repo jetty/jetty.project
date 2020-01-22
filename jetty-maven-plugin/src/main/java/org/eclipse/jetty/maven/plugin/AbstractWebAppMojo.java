@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.maven.plugin;
@@ -68,7 +68,6 @@ import org.eclipse.jetty.util.resource.Resource;
  */
 public abstract class AbstractWebAppMojo extends AbstractMojo
 {
-    
     public static final String JETTY_HOME_GROUPID = "org.eclipse.jetty";
     public static final String JETTY_HOME_ARTIFACTID = "jetty-home";
     public static final String FAKE_WEBAPP = "webapp-synth";
@@ -374,7 +373,6 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
      * List of deps that are wars
      */
     protected List<Artifact> warArtifacts;
-    
     
     /**
      * Webapp base before applying overlays etc
@@ -798,8 +796,6 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
         getLog().info("Context path = " + webApp.getContextPath());
         getLog().info("Tmp directory = " + (webApp.getTempDirectory() == null ? " determined at runtime" : webApp.getTempDirectory()));
     }
-    
-
 
     /**
      * Try and find a jetty-web.xml file, using some

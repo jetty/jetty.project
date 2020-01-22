@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.servlets;
@@ -135,15 +135,15 @@ public class PutFilterTest
         request.setHeader("Content-Type", "text/plain");
         String data2 = "Blah blah blah Blah blah";
         request.setContent(data2);
-        String to_send = BufferUtil.toString(request.generate());
+        String toSend = BufferUtil.toString(request.generate());
         URL url = new URL(tester.createConnector(true));
         Socket socket = new Socket(url.getHost(), url.getPort());
         OutputStream out = socket.getOutputStream();
-        int l = to_send.length();
-        out.write(to_send.substring(0, l - 10).getBytes());
+        int l = toSend.length();
+        out.write(toSend.substring(0, l - 10).getBytes());
         out.flush();
         Thread.sleep(100);
-        out.write(to_send.substring(l - 10, l - 5).getBytes());
+        out.write(toSend.substring(l - 10, l - 5).getBytes());
         out.flush();
 
         // loop until the resource is hidden (ie the PUT is starting to
@@ -162,7 +162,7 @@ public class PutFilterTest
         while (response.getStatus() == 200);
         assertEquals(HttpServletResponse.SC_NOT_FOUND, response.getStatus());
 
-        out.write(to_send.substring(l - 5).getBytes());
+        out.write(toSend.substring(l - 5).getBytes());
         out.flush();
         String in = IO.toString(socket.getInputStream());
 
@@ -247,8 +247,8 @@ public class PutFilterTest
 
         assertTrue(!file.exists());
 
-        File n_file = new File(_dir, "blah.txt");
-        assertTrue(n_file.exists());
+        File nFile = new File(_dir, "blah.txt");
+        assertTrue(nFile.exists());
     }
 
     @Test

@@ -1,22 +1,22 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
-package org.eclipse.jetty.http;
+package org.eclipse.jetty.server;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -31,7 +31,7 @@ import javax.servlet.ReadListener;
 import javax.servlet.ServletInputStream;
 import javax.servlet.http.Part;
 
-import org.eclipse.jetty.http.MultiPartFormInputStream.MultiPart;
+import org.eclipse.jetty.server.MultiPartFormInputStream.MultiPart;
 import org.eclipse.jetty.util.IO;
 import org.junit.jupiter.api.Test;
 
@@ -507,6 +507,16 @@ public class MultiPartFormInputStreamTest
         assertThat(stuff.exists(), is(true));
         part.cleanUp();
         assertThat(stuff.exists(), is(false));  //tmp file was removed after cleanup
+    }
+
+    @Test
+    public void testDeleteNPE()
+    {
+        final InputStream input = new ByteArrayInputStream(createMultipartRequestString("myFile").getBytes());
+        MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 1024, 50);
+        MultiPartFormInputStream mpis = new MultiPartFormInputStream(input, _contentType, config, _tmpDir);
+
+        mpis.deleteParts(); // this should not be an NPE
     }
 
     @Test

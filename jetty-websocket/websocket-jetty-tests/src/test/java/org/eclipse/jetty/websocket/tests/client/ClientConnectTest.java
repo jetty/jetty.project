@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.websocket.tests.client;
@@ -185,7 +185,7 @@ public class ClientConnectTest
     }
 
     @Test
-    public void testUpgradeRequest_PercentEncodedQuery() throws Exception
+    public void testUpgradeRequestPercentEncodedQuery() throws Exception
     {
         CloseTrackingEndpoint cliSock = new CloseTrackingEndpoint();
         client.setIdleTimeout(Duration.ofSeconds(10));
@@ -249,7 +249,7 @@ public class ClientConnectTest
     }
 
     @Test
-    public void testBadHandshake_GetOK() throws Exception
+    public void testBadHandshakeGetOK() throws Exception
     {
         CloseTrackingEndpoint cliSock = new CloseTrackingEndpoint();
 
@@ -267,7 +267,7 @@ public class ClientConnectTest
     }
 
     @Test
-    public void testBadHandshake_GetOK_WithSecWebSocketAccept() throws Exception
+    public void testBadHandshakeGetOKWithSecWebSocketAccept() throws Exception
     {
         CloseTrackingEndpoint cliSock = new CloseTrackingEndpoint();
 
@@ -285,7 +285,7 @@ public class ClientConnectTest
     }
 
     @Test
-    public void testBadHandshake_SwitchingProtocols_InvalidConnectionHeader() throws Exception
+    public void testBadHandshakeSwitchingProtocolsInvalidConnectionHeader() throws Exception
     {
         CloseTrackingEndpoint cliSock = new CloseTrackingEndpoint();
 
@@ -303,7 +303,7 @@ public class ClientConnectTest
     }
 
     @Test
-    public void testBadHandshake_SwitchingProtocols_NoConnectionHeader() throws Exception
+    public void testBadHandshakeSwitchingProtocolsNoConnectionHeader() throws Exception
     {
         CloseTrackingEndpoint cliSock = new CloseTrackingEndpoint();
 
@@ -403,7 +403,7 @@ public class ClientConnectTest
     }
 
     @Test
-    public void testConnectionTimeout_Concurrent() throws Exception
+    public void testConnectionTimeoutConcurrent() throws Exception
     {
         client.setConnectTimeout(1000);
         client.setIdleTimeout(Duration.ofSeconds(1));

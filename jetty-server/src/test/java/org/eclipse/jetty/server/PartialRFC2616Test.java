@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.server;
@@ -81,7 +81,7 @@ public class PartialRFC2616Test
     }
 
     @Test
-    public void test3_3()
+    public void test33()
     {
         try
         {
@@ -107,9 +107,8 @@ public class PartialRFC2616Test
         }
     }
 
-
     @Test
-    public void test3_3_2()
+    public void test332()
     {
         try
         {
@@ -133,9 +132,8 @@ public class PartialRFC2616Test
         }
     }
 
-
     @Test
-    public void test3_6_a() throws Exception
+    public void test36a() throws Exception
     {
         int offset = 0;
         // Chunk last
@@ -152,7 +150,7 @@ public class PartialRFC2616Test
     }
 
     @Test
-    public void test3_6_b() throws Exception
+    public void test36b() throws Exception
     {
         String response;
         int offset = 0;
@@ -198,7 +196,7 @@ public class PartialRFC2616Test
     }
 
     @Test
-    public void test3_6_c() throws Exception
+    public void test36c() throws Exception
     {
         String response;
         int offset = 0;
@@ -246,7 +244,7 @@ public class PartialRFC2616Test
     }
 
     @Test
-    public void test3_6_d() throws Exception
+    public void test36d() throws Exception
     {
         String response;
         int offset = 0;
@@ -278,7 +276,7 @@ public class PartialRFC2616Test
     }
 
     @Test
-    public void test3_9() throws Exception
+    public void test39() throws Exception
     {
         HttpFields fields = new HttpFields();
 
@@ -293,7 +291,7 @@ public class PartialRFC2616Test
     }
 
     @Test
-    public void test4_1() throws Exception
+    public void test41() throws Exception
     {
         int offset = 0;
 
@@ -332,7 +330,7 @@ public class PartialRFC2616Test
     }
 
     @Test
-    public void test4_4_2() throws Exception
+    public void test442() throws Exception
     {
         String response;
         int offset = 0;
@@ -359,7 +357,7 @@ public class PartialRFC2616Test
     }
 
     @Test
-    public void test4_4_3() throws Exception
+    public void test443() throws Exception
     {
         // Due to smuggling concerns, handling has been changed to
         // treat content length and chunking as a bad request.
@@ -392,7 +390,7 @@ public class PartialRFC2616Test
     }
 
     @Test
-    public void test4_4_4() throws Exception
+    public void test444() throws Exception
     {
         // No _content length
         assertTrue(true, "Skip 411 checks as IE breaks this rule");
@@ -416,7 +414,7 @@ public class PartialRFC2616Test
     }
 
     @Test
-    public void test5_2_1() throws Exception
+    public void test521() throws Exception
     {
         // Default Host
         int offset = 0;
@@ -428,7 +426,7 @@ public class PartialRFC2616Test
     }
 
     @Test
-    public void test5_2_2() throws Exception
+    public void test522() throws Exception
     {
         // Default Host
         int offset = 0;
@@ -446,7 +444,7 @@ public class PartialRFC2616Test
     }
 
     @Test
-    public void test5_2() throws Exception
+    public void test52() throws Exception
     {
         // Virtual Host
         int offset = 0;
@@ -469,7 +467,7 @@ public class PartialRFC2616Test
     }
 
     @Test
-    public void test8_1() throws Exception
+    public void test81() throws Exception
     {
         int offset = 0;
         String response = connector.getResponse("GET /R1 HTTP/1.1\n" + "Host: localhost\n" + "\n", 250, TimeUnit.MILLISECONDS);
@@ -496,7 +494,7 @@ public class PartialRFC2616Test
     }
 
     @Test
-    public void test10_4_18() throws Exception
+    public void test10418() throws Exception
     {
         // Expect Failure
         int offset = 0;
@@ -511,7 +509,7 @@ public class PartialRFC2616Test
     }
 
     @Test
-    public void test8_2_3_dash5() throws Exception
+    public void test823dash5() throws Exception
     {
         // Expect with body: client sends the content right away, we should not send 100-Continue
         int offset = 0;
@@ -529,7 +527,7 @@ public class PartialRFC2616Test
     }
 
     @Test
-    public void test8_2_3() throws Exception
+    public void test823() throws Exception
     {
         int offset = 0;
         // Expect 100
@@ -551,7 +549,7 @@ public class PartialRFC2616Test
     }
 
     @Test
-    public void test8_2_4() throws Exception
+    public void test824() throws Exception
     {
         // Expect 100 not sent
         int offset = 0;
@@ -567,7 +565,7 @@ public class PartialRFC2616Test
     }
 
     @Test
-    public void test9_2() throws Exception
+    public void test92() throws Exception
     {
         int offset = 0;
 
@@ -586,7 +584,7 @@ public class PartialRFC2616Test
     }
 
     @Test
-    public void test9_4()
+    public void test94()
     {
         try
         {
@@ -609,7 +607,7 @@ public class PartialRFC2616Test
     }
 
     @Test
-    public void test14_23() throws Exception
+    public void test1423() throws Exception
     {
         try (StacklessLogging stackless = new StacklessLogging(HttpParser.class))
         {
@@ -632,7 +630,7 @@ public class PartialRFC2616Test
     }
 
     @Test
-    public void test19_6()
+    public void test196()
     {
         try
         {

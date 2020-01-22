@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.websocket.tests.client;
@@ -124,7 +124,7 @@ public class WebSocketClientTest
     }
 
     @Test
-    public void testAddExtension_NotInstalled() throws Exception
+    public void testAddExtensionNotInstalled() throws Exception
     {
         CloseTrackingEndpoint cliSock = new CloseTrackingEndpoint();
 
@@ -143,7 +143,7 @@ public class WebSocketClientTest
     }
 
     @Test
-    public void testBasicEcho_FromClient() throws Exception
+    public void testBasicEchoFromClient() throws Exception
     {
         CloseTrackingEndpoint cliSock = new CloseTrackingEndpoint();
 
@@ -174,7 +174,7 @@ public class WebSocketClientTest
     }
 
     @Test
-    public void testBasicEcho_PartialUsage_FromClient() throws Exception
+    public void testBasicEchoPartialUsageFromClient() throws Exception
     {
         CloseTrackingEndpoint cliSock = new CloseTrackingEndpoint();
 
@@ -207,7 +207,7 @@ public class WebSocketClientTest
     }
 
     @Test
-    public void testBasicEcho_PartialText_WithPartialBinary_FromClient() throws Exception
+    public void testBasicEchoPartialTextWithPartialBinaryFromClient() throws Exception
     {
         CloseTrackingEndpoint cliSock = new CloseTrackingEndpoint();
 
@@ -254,7 +254,7 @@ public class WebSocketClientTest
     }
 
     @Test
-    public void testBasicEcho_UsingCallback() throws Exception
+    public void testBasicEchoUsingCallback() throws Exception
     {
         CloseTrackingEndpoint cliSock = new CloseTrackingEndpoint();
 
@@ -287,7 +287,7 @@ public class WebSocketClientTest
     }
 
     @Test
-    public void testBasicEcho_FromServer() throws Exception
+    public void testBasicEchoFromServer() throws Exception
     {
         CloseTrackingEndpoint cliSock = new CloseTrackingEndpoint();
 

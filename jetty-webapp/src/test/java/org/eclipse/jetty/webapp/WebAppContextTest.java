@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.webapp;
@@ -80,6 +80,65 @@ public class WebAppContextTest
     }
 
     @Test
+    public void testDefaultContextPath() throws Exception
+    {
+        Server server = new Server();
+        File webXml = MavenTestingUtils.getTestResourceFile("web-with-default-context-path.xml");
+        File webXmlEmptyPath = MavenTestingUtils.getTestResourceFile("web-with-empty-default-context-path.xml");
+        File webDefaultXml = MavenTestingUtils.getTestResourceFile("web-default-with-default-context-path.xml");
+        File overrideWebXml = MavenTestingUtils.getTestResourceFile("override-web-with-default-context-path.xml");
+        assertNotNull(webXml);
+        assertNotNull(webDefaultXml);
+        assertNotNull(overrideWebXml);
+        assertNotNull(webXmlEmptyPath);
+        
+        try
+        {
+            WebAppContext wac = new WebAppContext();
+            wac.setResourceBase(MavenTestingUtils.getTargetTestingDir().getAbsolutePath());
+            server.setHandler(wac);
+            
+            //test that an empty default-context-path defaults to root
+            wac.setDescriptor(webXmlEmptyPath.getAbsolutePath());
+            server.start();
+            assertEquals("/", wac.getContextPath());
+            
+            server.stop();
+            
+            //test web-default.xml value is used
+            wac.setDescriptor(null);
+            wac.setDefaultsDescriptor(webDefaultXml.getAbsolutePath());
+            server.start();
+            assertEquals("/one", wac.getContextPath());
+            
+            server.stop();
+            
+            //test web.xml value is used
+            wac.setDescriptor(webXml.getAbsolutePath());
+            server.start();
+            assertEquals("/two", wac.getContextPath());
+            
+            server.stop();
+            
+            //test override-web.xml value is used
+            wac.setOverrideDescriptor(overrideWebXml.getAbsolutePath());
+            server.start();
+            assertEquals("/three", wac.getContextPath());
+
+            server.stop();
+            
+            //test that explicitly set context path is used instead
+            wac.setContextPath("/foo");
+            server.start();
+            assertEquals("/foo", wac.getContextPath());
+        }
+        finally
+        {
+            server.stop();
+        }
+    }
+
+    @Test
     public void testSessionListeners()
     {
         Server server = new Server();
@@ -99,7 +158,7 @@ public class WebAppContextTest
     public void testConfigurationClassesFromDefault()
     {
         Configurations.cleanKnown();
-        String[] known_and_enabled = Configurations.getKnown().stream()
+        String[] knownAndEnabled = Configurations.getKnown().stream()
             .filter(c -> c.isEnabledByDefault())
             .map(c -> c.getClass().getName())
             .toArray(String[]::new);
@@ -111,7 +170,7 @@ public class WebAppContextTest
         assertThat(wac.getConfigurations().stream()
                 .map(c -> c.getClass().getName())
                 .collect(Collectors.toList()),
-            Matchers.containsInAnyOrder(known_and_enabled));
+            Matchers.containsInAnyOrder(knownAndEnabled));
         String[] classNames = wac.getConfigurationClasses();
         assertNotNull(classNames);
 

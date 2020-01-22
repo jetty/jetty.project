@@ -1,24 +1,23 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.util.ajax;
 
-import java.lang.reflect.Method;
 import java.util.Map;
 
 import org.eclipse.jetty.util.Loader;
@@ -36,19 +35,6 @@ public class JSONEnumConvertor implements JSON.Convertor
 {
     private static final Logger LOG = Log.getLogger(JSONEnumConvertor.class);
     private boolean _fromJSON;
-    private Method _valueOf;
-
-    {
-        try
-        {
-            Class<?> e = Loader.loadClass("java.lang.Enum");
-            _valueOf = e.getMethod("valueOf", Class.class, String.class);
-        }
-        catch (Exception e)
-        {
-            throw new RuntimeException("!Enums", e);
-        }
-    }
 
     public JSONEnumConvertor()
     {
@@ -61,20 +47,21 @@ public class JSONEnumConvertor implements JSON.Convertor
     }
 
     @Override
-    public Object fromJSON(Map map)
+    public Object fromJSON(Map<String, Object> map)
     {
         if (!_fromJSON)
             throw new UnsupportedOperationException();
         try
         {
-            Class c = Loader.loadClass((String)map.get("class"));
-            return _valueOf.invoke(null, c, map.get("value"));
+            @SuppressWarnings({"rawtypes", "unchecked"})
+            Class<? extends Enum> type = Loader.loadClass((String)map.get("class"));
+            return Enum.valueOf(type, (String)map.get("value"));
         }
         catch (Exception e)
         {
             LOG.warn(e);
+            return null;
         }
-        return null;
     }
 
     @Override
@@ -83,11 +70,11 @@ public class JSONEnumConvertor implements JSON.Convertor
         if (_fromJSON)
         {
             out.addClass(obj.getClass());
-            out.add("value", ((Enum)obj).name());
+            out.add("value", ((Enum<?>)obj).name());
         }
         else
         {
-            out.add(((Enum)obj).name());
+            out.add(((Enum<?>)obj).name());
         }
     }
 }

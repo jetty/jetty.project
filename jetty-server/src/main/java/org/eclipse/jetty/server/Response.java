@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.server;
@@ -56,6 +56,7 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.RuntimeIOException;
+import org.eclipse.jetty.server.handler.ContextHandler.Context;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.util.AtomicBiInteger;
 import org.eclipse.jetty.util.Callback;
@@ -683,9 +684,18 @@ public class Response implements HttpServletResponse
             String encoding = MimeTypes.getCharsetAssumedFromContentType(_contentType);
             if (encoding != null)
                 return encoding;
+
             encoding = MimeTypes.getCharsetInferredFromContentType(_contentType);
             if (encoding != null)
                 return encoding;
+
+            Context context = _channel.getRequest().getContext();
+            if (context != null)
+            {
+                encoding = context.getResponseCharacterEncoding();
+                if (encoding != null)
+                    return encoding;
+            }
             return StringUtil.__ISO_8859_1;
         }
         return _characterEncoding;
@@ -729,23 +739,42 @@ public class Response implements HttpServletResponse
 
         if (_outputType == OutputType.NONE)
         {
-            /* get encoding from Content-Type header */
+            //first try explicit char encoding
             String encoding = _characterEncoding;
+
+            //try char set from mime type
             if (encoding == null)
             {
                 if (_mimeType != null && _mimeType.isCharsetAssumed())
                     encoding = _mimeType.getCharsetString();
-                else
-                {
-                    encoding = MimeTypes.getCharsetAssumedFromContentType(_contentType);
-                    if (encoding == null)
-                    {
-                        encoding = MimeTypes.getCharsetInferredFromContentType(_contentType);
-                        if (encoding == null)
-                            encoding = StringUtil.__ISO_8859_1;
-                        setCharacterEncoding(encoding, EncodingFrom.INFERRED);
-                    }
-                }
+            }
+
+            //try char set assumed from content type
+            if (encoding == null)
+            {
+                encoding = MimeTypes.getCharsetAssumedFromContentType(_contentType);
+            }
+            
+            //try char set inferred from content type
+            if (encoding == null)
+            {
+                encoding = MimeTypes.getCharsetInferredFromContentType(_contentType);
+                setCharacterEncoding(encoding, EncodingFrom.INFERRED);
+            }
+            
+            //try any default char encoding for the context
+            if (encoding == null)
+            {
+                Context context = _channel.getRequest().getContext();
+                if (context != null)
+                    encoding = context.getResponseCharacterEncoding();
+            }
+            
+            //fallback to last resort iso-8859-1
+            if (encoding == null)
+            {
+                encoding = StringUtil.__ISO_8859_1;
+                setCharacterEncoding(encoding, EncodingFrom.INFERRED);
             }
 
             Locale locale = getLocale();
