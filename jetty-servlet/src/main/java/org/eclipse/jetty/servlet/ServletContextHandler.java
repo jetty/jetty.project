@@ -1077,7 +1077,7 @@ public class ServletContextHandler extends ContextHandler
                 throw new IllegalStateException();
 
             if (StringUtil.isBlank(name))
-                throw new IllegalStateException("Missing name");
+                throw new IllegalArgumentException("Missing name");
 
             if (!_enabled)
                 throw new UnsupportedOperationException();
