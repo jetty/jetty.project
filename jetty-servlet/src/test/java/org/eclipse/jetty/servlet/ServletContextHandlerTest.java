@@ -87,6 +87,7 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.function.Executable;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -97,6 +98,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -468,6 +470,32 @@ public class ServletContextHandlerTest
     {
         _server.stop();
         _server.join();
+    }
+    
+    @Test
+    public void testInitParams() throws Exception
+    {
+        //Test get/setInitParam with null throws NPE
+        ServletContextHandler root = new ServletContextHandler(_server, "/", ServletContextHandler.SESSIONS);
+        _server.setHandler(root);
+        ListenerHolder initialListener = new ListenerHolder();
+        initialListener.setListener(new ServletContextListener()
+        {
+            public void contextInitialized(ServletContextEvent sce)
+            {
+                sce.getServletContext().setInitParameter("foo", "bar");
+                assertEquals("bar", sce.getServletContext().getInitParameter("foo"));
+                assertThrows(NullPointerException.class, 
+                    () ->  sce.getServletContext().setInitParameter(null, "bad")
+                );
+                assertThrows(NullPointerException.class,
+                    () -> sce.getServletContext().getInitParameter(null)
+                );
+            }
+        });
+        
+        root.getServletHandler().addListener(initialListener);
+        _server.start();
     }
     
     @Test
