@@ -403,7 +403,6 @@ public class StopTest
             }
         });
 
-        context.setStopTimeout(1000);
         server.start();
 
         LocalEndPoint endp = connector.executeRequest(

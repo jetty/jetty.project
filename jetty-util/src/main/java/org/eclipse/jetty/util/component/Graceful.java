@@ -19,18 +19,11 @@
 package org.eclipse.jetty.util.component;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
 
-import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.FutureCallback;
-import org.eclipse.jetty.util.MultiException;
-import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -57,34 +50,12 @@ public interface Graceful
      * Shutdown the component. When this method returns, the component should not accept any new load.
      * @return A future that is completed once all load on the component is completed
      */
-    Future<Void> shutdown();
+    CompletableFuture<Void> shutdown();
 
     /**
      * @return True if {@link #shutdown()} has been called.
      */
     boolean isShutdown();
-
-    /**
-     * A LifeCycle that may take a controlled time to stop.
-     * This may be during a {@link Graceful#shutdown()} (eg ContextHandler)
-     * or it may be during a {@link org.eclipse.jetty.util.component.LifeCycle#stop()} (eg QueuedThreadPool)
-     */
-    interface GracefulLifeCycle extends LifeCycle
-    {
-        void setStopTimeout(long stopTimeout);
-
-        @ManagedAttribute("Time in ms to gracefully shutdown the server")
-        long getStopTimeout();
-    }
-
-    /**
-     * Containers that are {@link GracefulLifeCycle}s and that apply the
-     * stop timeout during shutdown in a call to
-     * {@link Graceful#shutdown(GracefulContainer)}
-     */
-    interface GracefulContainer extends Container, GracefulLifeCycle
-    {
-    }
 
     /**
      * A utility class to assist implementing the Graceful interface.
@@ -95,7 +66,7 @@ public interface Graceful
     abstract class Shutdown implements Graceful
     {
         final Object _component;
-        final AtomicReference<FutureCallback> _done = new AtomicReference<>();
+        final AtomicReference<CompletableFuture<Void>> _done = new AtomicReference<>();
 
         protected Shutdown(Object component)
         {
@@ -103,10 +74,10 @@ public interface Graceful
         }
 
         @Override
-        public Future<Void> shutdown()
+        public CompletableFuture<Void> shutdown()
         {
             if (_done.get() == null)
-                _done.compareAndSet(null, new FutureCallback()
+                _done.compareAndSet(null, new CompletableFuture<Void>()
                 {
                     @Override
                     public String toString()
@@ -114,7 +85,7 @@ public interface Graceful
                         return String.format("Shutdown<%s>@%x", _component, hashCode());
                     }
                 });
-            FutureCallback done = _done.get();
+            CompletableFuture<Void> done = _done.get();
             check();
             return done;
         }
@@ -133,9 +104,9 @@ public interface Graceful
          */
         public void check()
         {
-            FutureCallback done = _done.get();
+            CompletableFuture<Void> done = _done.get();
             if (done != null && isShutdownDone())
-                done.succeeded();
+                done.complete(null);
         }
 
         /**
@@ -145,85 +116,26 @@ public interface Graceful
     }
 
     /**
-     * Shutdown a component:<ul>
-     *     <li>All contained {@link Graceful} instances are found and their {@link Graceful#shutdown()} method is called.</li>
-     *     <li>The {@link GracefulLifeCycle#getStopTimeout()} time is used to limit the time waiting on the {@link Future}s returned
-     *     from the shutdown calls</li>
-     *     <li>Any uncompleted futures after the time is exhausted are cancelled.</li>
-     * </ul>
-     *
-     * @param component The component to shutdown.
-     * @throws Exception If there was a problem in the shutdown.
+     * Utility method to shutdown all Gracefuls within a container.
+     * @param component The container in which to look for {@link Graceful}s
+     * @return A {@link CompletableFuture } that is complete once all returns from {@link Graceful#shutdown()}
+     * of the contained {@link Graceful}s are complete.
      */
-    static void shutdown(GracefulContainer component) throws Exception
+    static CompletableFuture<Void> shutdown(Container component)
     {
         Logger log = Log.getLogger(component.getClass());
 
-        log.info("Shutdown {} in {}ms", component, component.getStopTimeout());
-
-        if (component.getStopTimeout() <= 0)
-            return;
-
-        MultiException mex = null;
+        log.info("Shutdown {}", component);
 
         // tell the graceful handlers that we are shutting down
         List<Graceful> gracefuls = new ArrayList<>();
         if (component instanceof Graceful)
             gracefuls.add((Graceful)component);
-        component.getContainedBeans(Graceful.class).forEach(gracefuls::add);
+        gracefuls.addAll(component.getContainedBeans(Graceful.class));
 
         if (log.isDebugEnabled())
             gracefuls.forEach(g -> log.debug("graceful {}", g));
 
-        List<Future<Void>> futures = gracefuls.stream().map(Graceful::shutdown).collect(Collectors.toList());
-
-        if (log.isDebugEnabled())
-            futures.forEach(f -> log.debug("future {}", f));
-
-        // Wait for all futures with a reducing time budget
-        long stopTimeout = component.getStopTimeout();
-        long stopBy = System.currentTimeMillis() + stopTimeout;
-        if (log.isDebugEnabled())
-            log.debug("Graceful shutdown {} by {}", component, new Date(stopBy));
-
-        // Wait for shutdowns
-        for (Future<Void> future : futures)
-        {
-            try
-            {
-                if (!future.isDone())
-                    future.get(Math.max(1L, stopBy - System.currentTimeMillis()), TimeUnit.MILLISECONDS);
-                if (log.isDebugEnabled())
-                    log.debug("done {}", future);
-            }
-            catch (TimeoutException e)
-            {
-                if (mex == null)
-                    mex = new MultiException();
-                mex.add(new Exception("Failed to gracefully stop " + future, e));
-            }
-            catch (Throwable e)
-            {
-                // If the future is also a callback, fail it here (rather than cancel) so we can capture the exception
-                if (future instanceof Callback && !future.isDone())
-                    ((Callback)future).failed(e);
-                if (mex == null)
-                    mex = new MultiException();
-                mex.add(e);
-            }
-        }
-
-        // Cancel any shutdowns not done
-        for (Future<Void> future : futures)
-        {
-            if (!future.isDone())
-                future.cancel(true);
-        }
-
-        if (mex != null)
-            mex.ifExceptionThrow();
-
-        if (log.isDebugEnabled())
-            log.debug("Graceful shutdown {}", component);
+        return CompletableFuture.allOf(gracefuls.stream().map(Graceful::shutdown).toArray(CompletableFuture[]::new));
     }
 }

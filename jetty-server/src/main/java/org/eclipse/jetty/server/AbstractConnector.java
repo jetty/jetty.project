@@ -30,16 +30,15 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
-import java.util.concurrent.Future;
 import java.util.concurrent.locks.Condition;
 
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ssl.SslConnection;
-import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -369,14 +368,14 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     }
 
     @Override
-    public Future<Void> shutdown()
+    public CompletableFuture<Void> shutdown()
     {
         Shutdown shutdown = _shutdown;
         if (shutdown == null)
-            return FutureCallback.SUCCEEDED;
+            return CompletableFuture.completedFuture(null);
 
         // Signal for the acceptors to stop
-        Future<Void> done = shutdown.shutdown();
+        CompletableFuture<Void> done = shutdown.shutdown();
         interruptAcceptors();
 
         // Reduce the idle timeout of existing connections

@@ -19,7 +19,7 @@
 package org.eclipse.jetty.server.handler;
 
 import java.io.IOException;
-import java.util.concurrent.Future;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
@@ -35,7 +35,6 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpChannelState;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
-import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
@@ -575,11 +574,11 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
     }
 
     @Override
-    public Future<Void> shutdown()
+    public CompletableFuture<Void> shutdown()
     {
         Shutdown shutdown = _shutdown;
         if (shutdown == null)
-            return FutureCallback.SUCCEEDED;
+            return CompletableFuture.completedFuture(null);
         return shutdown.shutdown();
     }
 

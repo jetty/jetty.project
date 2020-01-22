@@ -39,8 +39,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.Future;
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterRegistration;
@@ -77,7 +77,6 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.AttributesMap;
-import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.StringUtil;
@@ -108,7 +107,7 @@ import org.eclipse.jetty.util.resource.Resource;
  * these alias checkers are not required, then {@link #clearAliasChecks()} or {@link #setAliasChecks(List)} should be called.
  */
 @ManagedObject("URI Context")
-public class ContextHandler extends ScopedHandler implements Attributes, Graceful, Graceful.GracefulContainer
+public class ContextHandler extends ScopedHandler implements Attributes, Graceful
 {
     public static final int SERVLET_MAJOR_VERSION = 4;
     public static final int SERVLET_MINOR_VERSION = 0;
@@ -706,10 +705,12 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
      * requests can complete, but no new requests are accepted.
      */
     @Override
-    public Future<Void> shutdown()
+    public CompletableFuture<Void> shutdown()
     {
         _availability = isRunning() ? Availability.SHUTDOWN : Availability.UNAVAILABLE;
-        return new FutureCallback(true);
+        CompletableFuture<Void> shutdown = new CompletableFuture<Void>();
+        shutdown.complete(null);
+        return shutdown;
     }
 
     /**
@@ -903,18 +904,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         l.contextDestroyed(e);
     }
 
-    @Override
-    public void setStopTimeout(long stopTimeout)
-    {
-        _stopTimeout = stopTimeout;
-    }
-
-    @Override
-    public long getStopTimeout()
-    {
-        return _stopTimeout;
-    }
-
     /*
      * @see org.eclipse.thread.AbstractLifeCycle#doStop()
      */
@@ -923,15 +912,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     {
         // Should we attempt a graceful shutdown?
         MultiException mex = null;
-
-        try
-        {
-            Graceful.shutdown(this);
-        }
-        catch (MultiException e)
-        {
-            mex = e;
-        }
 
         _availability = Availability.UNAVAILABLE;
 
@@ -1751,7 +1731,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
         if (vhosts != null && vhosts.length > 0)
             b.append(',').append(vhosts[0]);
-        b.append(",sto=").append(getStopTimeout());
         b.append('}');
 
         return b.toString();

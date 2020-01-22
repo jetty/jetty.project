@@ -127,8 +127,6 @@ public class GracefulStopTest
         statsB.setHandler(handlerB);
 
         server.setStopTimeout(10000);
-        contextA.setStopTimeout(10000);
-        contextB.setStopTimeout(10000);
 
         server.start();
     }
@@ -362,7 +360,6 @@ public class GracefulStopTest
     @Test
     public void testGracefulContext() throws Exception
     {
-        contextB.setStopTimeout(10000);
         Socket client0 = newClientBusy(POST_B_12345, handlerB);
         Socket client1 = newClientBusy(POST_B_12345_C, handlerB);
         Socket client2 = newClientIdle(POST_B_12345, handlerB);
@@ -371,7 +368,7 @@ public class GracefulStopTest
         backgroundComplete(client1, handlerB);
         Future<Integer> status2 = backgroundUnavailable(client2, POST_B_12345, contextB, handlerB);
 
-        Graceful.shutdown(contextB);
+        Graceful.shutdown(contextB).orTimeout(10, TimeUnit.SECONDS).get();
 
         assertResponse(client0, false);
         assertResponse(client1, false);

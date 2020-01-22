@@ -27,6 +27,7 @@ import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -69,7 +70,7 @@ import org.eclipse.jetty.util.thread.ThreadPool;
  * to run jobs that will eventually call the handle method.
  */
 @ManagedObject(value = "Jetty HTTP Servlet server")
-public class Server extends HandlerWrapper implements Attributes, Graceful.GracefulContainer
+public class Server extends HandlerWrapper implements Attributes
 {
     private static final Logger LOG = Log.getLogger(Server.class);
 
@@ -173,13 +174,11 @@ public class Server extends HandlerWrapper implements Attributes, Graceful.Grace
         return Jetty.VERSION;
     }
 
-    @Override
     public void setStopTimeout(long stopTimeout)
     {
         _stopTimeout = stopTimeout;
     }
 
-    @Override
     public long getStopTimeout()
     {
         return _stopTimeout;
@@ -465,13 +464,20 @@ public class Server extends HandlerWrapper implements Attributes, Graceful.Grace
 
         MultiException mex = new MultiException();
 
-        try
+        if (getStopTimeout() > 0)
         {
-            Graceful.shutdown(this);
-        }
-        catch (Throwable e)
-        {
-            mex.add(e);
+            try
+            {
+                long end = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(getStopTimeout());
+                Graceful.shutdown(this).get(getStopTimeout(), TimeUnit.MILLISECONDS);
+                QueuedThreadPool qtp = getBean(QueuedThreadPool.class);
+                if (qtp != null)
+                    qtp.setStopTimeout(Math.min(1000L, TimeUnit.NANOSECONDS.toMillis(end - System.nanoTime())));
+            }
+            catch (Throwable e)
+            {
+                mex.add(e);
+            }
         }
 
         // Now stop the connectors (this will close existing connections)

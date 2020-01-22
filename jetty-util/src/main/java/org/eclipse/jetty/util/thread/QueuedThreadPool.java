@@ -40,13 +40,12 @@ import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
-import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ThreadPool.SizedThreadPool;
 
 @ManagedObject("A thread pool")
-public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactory, SizedThreadPool, Dumpable, TryExecutor, Graceful.GracefulLifeCycle
+public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactory, SizedThreadPool, Dumpable, TryExecutor
 {
     private static final Logger LOG = Log.getLogger(QueuedThreadPool.class);
     private static Runnable NOOP = () ->
@@ -160,13 +159,11 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
         _budget = budget;
     }
 
-    @Override
     public void setStopTimeout(long stopTimeout)
     {
         _stopTimeout = stopTimeout;
     }
 
-    @Override
     public long getStopTimeout()
     {
         return _stopTimeout;
