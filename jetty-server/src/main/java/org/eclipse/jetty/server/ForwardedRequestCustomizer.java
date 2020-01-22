@@ -397,10 +397,20 @@ public class ForwardedRequestCustomizer implements Customizer
                 request.setSecure(true);
         }
 
-        if (forwarded._host != null)
+        if (forwarded._server != null && forwarded._host instanceof PortSetHostPort)
+        {
+            httpFields.put(new HostPortHttpField(forwarded._server, forwarded._host.getPort()));
+            request.setAuthority(forwarded._server, forwarded._host.getPort());
+        }
+        else if (forwarded._host != null)
         {
             httpFields.put(new HostPortHttpField(forwarded._host));
             request.setAuthority(forwarded._host.getHost(), forwarded._host.getPort());
+        }
+        else if (forwarded._server != null)
+        {
+            httpFields.put(new HostPortHttpField(forwarded._server));
+            request.setAuthority(forwarded._server, 0);
         }
 
         if (forwarded._for != null)
@@ -546,6 +556,7 @@ public class ForwardedRequestCustomizer implements Customizer
         String _proto;
         HostPort _for;
         HostPort _host;
+        String _server;
 
         public Forwarded(Request request, HttpConfiguration config)
         {
@@ -598,7 +609,7 @@ public class ForwardedRequestCustomizer implements Customizer
         {
             if (getProxyAsAuthority())
                 return;
-            handleHost(field);
+            _server = getLeftMost(field.getValue());
         }
 
         @SuppressWarnings("unused")
