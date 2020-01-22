@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -1291,8 +1292,7 @@ public class ServletContextHandler extends ContextHandler
         public String getInitParameter(String name)
         {
             //since servlet spec 4.0
-            if (name == null)
-                throw new NullPointerException();
+            Objects.requireNonNull(name);
             return super.getInitParameter(name);
         }
 
@@ -1306,8 +1306,7 @@ public class ServletContextHandler extends ContextHandler
                 throw new UnsupportedOperationException();
 
             //since servlet spec 4.0
-            if (name == null)
-                throw new NullPointerException();
+            Objects.requireNonNull(name);
 
             return super.setInitParameter(name, value);
         }

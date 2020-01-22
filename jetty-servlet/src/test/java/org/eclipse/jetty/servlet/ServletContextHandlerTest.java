@@ -484,26 +484,12 @@ public class ServletContextHandlerTest
             public void contextInitialized(ServletContextEvent sce)
             {
                 sce.getServletContext().setInitParameter("foo", "bar");
-                assertEquals("bar", root.getServletContext().getInitParameter("foo"));
+                assertEquals("bar", sce.getServletContext().getInitParameter("foo"));
                 assertThrows(NullPointerException.class, 
-                    new Executable()
-                    {
-                        @Override
-                        public void execute() throws Throwable
-                        {
-                            sce.getServletContext().setInitParameter(null, "bad");
-                        }
-                    }
+                    () ->  sce.getServletContext().setInitParameter(null, "bad")
                 );
                 assertThrows(NullPointerException.class,
-                    new Executable()
-                    {
-                        @Override
-                        public void execute() throws Throwable
-                        {
-                            sce.getServletContext().getInitParameter(null);
-                        }
-                    }
+                    () -> sce.getServletContext().getInitParameter(null)
                 );
             }
         });
