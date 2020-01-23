@@ -56,10 +56,16 @@ import org.eclipse.jetty.util.log.Logger;
  * <p>
  * Deleting the parts can be done from a different thread if the parts are parsed asynchronously.
  * Because of this we use the state to fail the parsing and coordinate which thread will delete any remaining parts.
- * The deletion of parts is done by the cleanup thread in all cases except the transition from ERROR-&gt;DELETED which
+ * The deletion of parts is done by the cleanup thread in all cases except the transition from DELETING-&gt;DELETED which
  * is done by the parsing thread.
  * </p>
  * <pre>{@code
+ * UNPARSED - Parsing has not started, there are no parts which need to be cleaned up.
+ * PARSING  - The parsing thread is reading from the InputStream and generating parts.
+ * PARSED   - Parsing has complete and no more parts will be generated.
+ * DELETING - deleteParts() has been called while we were in PARSING state, parsing thread will do the delete.
+ * DELETED  - The parts have been deleted, this is the terminal state.
+ *
  *                              deleteParts()
  *     +--------------------------------------------------------------+
  *     |                                                              |
@@ -67,8 +73,8 @@ import org.eclipse.jetty.util.log.Logger;
  *  UNPARSED -------> PARSING --------> PARSED  ------------------>DELETED
  *                      |                                             ^
  *                      |                                             |
- *                      +----------------> ERROR ---------------------+
- *                        deleteParts()             parsing thread
+ *                      +---------------> DELETING -------------------+
+ *                        deleteParts()               parsing thread
  * }</pre>
  * @see <a href="https://tools.ietf.org/html/rfc7578">https://tools.ietf.org/html/rfc7578</a>
  */
@@ -79,8 +85,8 @@ public class MultiPartFormInputStream
         UNPARSED,
         PARSING,
         PARSED,
-        DELETED,
-        ERROR
+        DELETING,
+        DELETED
     }
 
     private static final Logger LOG = Log.getLogger(MultiPartFormInputStream.class);
@@ -406,11 +412,11 @@ public class MultiPartFormInputStream
             switch (state)
             {
                 case DELETED:
-                case ERROR:
+                case DELETING:
                     return;
 
                 case PARSING:
-                    state = State.ERROR;
+                    state = State.DELETING;
                     return;
 
                 case UNPARSED:
@@ -423,10 +429,10 @@ public class MultiPartFormInputStream
             }
         }
 
-        uncheckedDeleteParts();
+        delete();
     }
 
-    private void uncheckedDeleteParts()
+    private void delete()
     {
         MultiException err = null;
         for (List<Part> parts : _parts.values())
@@ -631,7 +637,7 @@ public class MultiPartFormInputStream
                         state = State.PARSED;
                         break;
 
-                    case ERROR:
+                    case DELETING:
                         state = State.DELETED;
                         cleanup = true;
                         break;
@@ -642,7 +648,7 @@ public class MultiPartFormInputStream
             }
 
             if (cleanup)
-                uncheckedDeleteParts();
+                delete();
         }
     }
 

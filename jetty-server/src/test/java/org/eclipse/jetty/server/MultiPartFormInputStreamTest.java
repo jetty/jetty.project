@@ -563,7 +563,7 @@ public class MultiPartFormInputStreamTest
 
         // The call to getParts should throw an error.
         Throwable error = assertThrows(IOException.class, mpis::getParts);
-        assertThat(error.getMessage(), is("ERROR"));
+        assertThat(error.getMessage(), is("DELETING"));
 
         // There was no error with the cleanup.
         assertNull(cleanupError.get());
