@@ -87,17 +87,22 @@ public class JsrEndpointEventDriver extends AbstractJsrEventDriver
             }
             else if (wrapper.wantsStreams())
             {
-                final MessageInputStream stream = new MessageInputStream();
-                activeMessage = stream;
-                dispatch(new Runnable()
+                @SuppressWarnings("unchecked")
+                MessageHandler.Whole<InputStream> handler = (Whole<InputStream>)wrapper.getHandler();
+                MessageInputStream inputStream = new MessageInputStream(session);
+                activeMessage = inputStream;
+                dispatch(() ->
                 {
-                    @SuppressWarnings("unchecked")
-                    @Override
-                    public void run()
+                    try
                     {
-                        MessageHandler.Whole<InputStream> handler = (Whole<InputStream>)wrapper.getHandler();
-                        handler.onMessage(stream);
+                        handler.onMessage(inputStream);
                     }
+                    catch (Throwable t)
+                    {
+                        session.close(t);
+                    }
+
+                    inputStream.close();
                 });
             }
             else
@@ -190,18 +195,23 @@ public class JsrEndpointEventDriver extends AbstractJsrEventDriver
             }
             else if (wrapper.wantsStreams())
             {
-                final MessageReader stream = new MessageReader(new MessageInputStream());
-                activeMessage = stream;
-
-                dispatch(new Runnable()
+                @SuppressWarnings("unchecked")
+                MessageHandler.Whole<Reader> handler = (Whole<Reader>)wrapper.getHandler();
+                MessageInputStream inputStream = new MessageInputStream(session);
+                MessageReader reader = new MessageReader(inputStream);
+                activeMessage = reader;
+                dispatch(() ->
                 {
-                    @SuppressWarnings("unchecked")
-                    @Override
-                    public void run()
+                    try
                     {
-                        MessageHandler.Whole<Reader> handler = (Whole<Reader>)wrapper.getHandler();
-                        handler.onMessage(stream);
+                        handler.onMessage(reader);
                     }
+                    catch (Throwable t)
+                    {
+                        session.close(t);
+                    }
+
+                    inputStream.close();
                 });
             }
             else

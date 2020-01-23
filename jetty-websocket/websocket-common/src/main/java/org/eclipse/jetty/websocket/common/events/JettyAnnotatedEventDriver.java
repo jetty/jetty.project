@@ -97,23 +97,21 @@ public class JettyAnnotatedEventDriver extends AbstractEventDriver
         {
             if (events.onBinary.isStreaming())
             {
-                activeMessage = new MessageInputStream();
-                final MessageAppender msg = activeMessage;
-                dispatch(new Runnable()
+                final MessageInputStream inputStream = new MessageInputStream(session);
+                activeMessage = inputStream;
+                dispatch(() ->
                 {
-                    @Override
-                    public void run()
+                    try
                     {
-                        try
-                        {
-                            events.onBinary.call(websocket, session, msg);
-                        }
-                        catch (Throwable t)
-                        {
-                            // dispatched calls need to be reported
-                            onError(t);
-                        }
+                        events.onBinary.call(websocket, session, inputStream);
                     }
+                    catch (Throwable t)
+                    {
+                        // dispatched calls need to be reported
+                        session.close(t);
+                    }
+
+                    inputStream.close();
                 });
             }
             else
@@ -215,23 +213,22 @@ public class JettyAnnotatedEventDriver extends AbstractEventDriver
         {
             if (events.onText.isStreaming())
             {
-                activeMessage = new MessageReader(new MessageInputStream());
+                MessageInputStream inputStream = new MessageInputStream(session);
+                activeMessage = new MessageReader(inputStream);
                 final MessageAppender msg = activeMessage;
-                dispatch(new Runnable()
+                dispatch(() ->
                 {
-                    @Override
-                    public void run()
+                    try
                     {
-                        try
-                        {
-                            events.onText.call(websocket, session, msg);
-                        }
-                        catch (Throwable t)
-                        {
-                            // dispatched calls need to be reported
-                            onError(t);
-                        }
+                        events.onText.call(websocket, session, msg);
                     }
+                    catch (Throwable t)
+                    {
+                        // dispatched calls need to be reported
+                        session.close(t);
+                    }
+
+                    inputStream.close();
                 });
             }
             else

@@ -24,11 +24,14 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.SuspendToken;
+import org.eclipse.jetty.websocket.common.WebSocketSession;
 
 /**
  * Support class for reading a (single) WebSocket BINARY message via a InputStream.
@@ -40,85 +43,110 @@ public class MessageInputStream extends InputStream implements MessageAppender
     private static final Logger LOG = Log.getLogger(MessageInputStream.class);
     private static final ByteBuffer EOF = ByteBuffer.allocate(0).asReadOnlyBuffer();
 
+    private final Session session;
+    private final ByteBufferPool bufferPool;
     private final BlockingDeque<ByteBuffer> buffers = new LinkedBlockingDeque<>();
-    private AtomicBoolean closed = new AtomicBoolean(false);
     private final long timeoutMs;
     private ByteBuffer activeBuffer = null;
+    private SuspendToken suspendToken;
+    private State state = State.RESUMED;
 
-    private static boolean isTheEofBuffer(ByteBuffer buf)
+    private enum State
     {
-        @SuppressWarnings("ReferenceEquality")
-        boolean isTheEofBuffer = (buf == EOF);
-        return isTheEofBuffer;
+        RESUMED,
+        SUSPENDED,
+        CLOSED
     }
 
-    public MessageInputStream()
+    public MessageInputStream(Session session)
     {
-        this(-1);
+        this(session, -1);
     }
 
-    public MessageInputStream(int timeoutMs)
+    public MessageInputStream(Session session, int timeoutMs)
     {
         this.timeoutMs = timeoutMs;
+        this.session = session;
+        this.bufferPool = (session instanceof WebSocketSession) ? ((WebSocketSession)session).getBufferPool() : null;
     }
 
     @Override
     public void appendFrame(ByteBuffer framePayload, boolean fin) throws IOException
     {
         if (LOG.isDebugEnabled())
-        {
             LOG.debug("Appending {} chunk: {}", fin ? "final" : "non-final", BufferUtil.toDetailString(framePayload));
-        }
 
-        // If closed, we should just toss incoming payloads into the bit bucket.
-        if (closed.get())
-        {
+        // Early non atomic test that we aren't closed to avoid an unnecessary copy (will be checked again later).
+        if (state == State.CLOSED)
             return;
-        }
 
         // Put the payload into the queue, by copying it.
         // Copying is necessary because the payload will
         // be processed after this method returns.
         try
         {
-            if (framePayload == null)
-            {
-                // skip if no payload
+            if (framePayload == null || !framePayload.hasRemaining())
                 return;
-            }
 
-            int capacity = framePayload.remaining();
-            if (capacity <= 0)
+            ByteBuffer copy = acquire(framePayload.remaining(), framePayload.isDirect());
+            BufferUtil.clearToFill(copy);
+            copy.put(framePayload);
+            BufferUtil.flipToFlush(copy, 0);
+
+            synchronized (this)
             {
-                // skip if no payload data to copy
-                return;
+                switch (state)
+                {
+                    case CLOSED:
+                        return;
+
+                    case RESUMED:
+                        suspendToken = session.suspend();
+                        state = State.SUSPENDED;
+                        break;
+
+                    case SUSPENDED:
+                        throw new IllegalStateException();
+                }
+
+                buffers.put(copy);
             }
-            // TODO: the copy buffer should be pooled too, but no buffer pool available from here.
-            ByteBuffer copy = framePayload.isDirect() ? ByteBuffer.allocateDirect(capacity) : ByteBuffer.allocate(capacity);
-            copy.put(framePayload).flip();
-            buffers.put(copy);
         }
         catch (InterruptedException e)
         {
             throw new IOException(e);
         }
-        finally
-        {
-            if (fin)
-            {
-                buffers.offer(EOF);
-            }
-        }
     }
 
     @Override
-    public void close() throws IOException
+    public void close()
     {
-        if (closed.compareAndSet(false, true))
+        SuspendToken resume = null;
+        synchronized (this)
         {
+            switch (state)
+            {
+                case CLOSED:
+                    return;
+
+                case SUSPENDED:
+                    resume = suspendToken;
+                    suspendToken = null;
+                    state = State.CLOSED;
+                    break;
+
+                case RESUMED:
+                    state = State.CLOSED;
+                    break;
+            }
+
+            buffers.clear();
             buffers.offer(EOF);
-            super.close();
         }
+
+        // May need to resume to discard until we reach next message.
+        if (resume != null)
+            resume.resume();
     }
 
     @Override
@@ -146,7 +174,7 @@ public class MessageInputStream extends InputStream implements MessageAppender
     {
         try
         {
-            if (closed.get())
+            if (state == State.CLOSED)
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Stream closed");
@@ -168,30 +196,54 @@ public class MessageInputStream extends InputStream implements MessageAppender
                     // Wait at most for the given timeout.
                     activeBuffer = buffers.poll(timeoutMs, TimeUnit.MILLISECONDS);
                     if (activeBuffer == null)
-                    {
                         throw new IOException(String.format("Read timeout: %,dms expired", timeoutMs));
-                    }
                 }
 
-                if (isTheEofBuffer(activeBuffer))
+                if (activeBuffer == EOF)
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("Reached EOF");
-                    // Be sure that this stream cannot be reused.
-                    closed.set(true);
-                    // Removed buffers that may have remained in the queue.
-                    buffers.clear();
+
+                    close();
                     return -1;
                 }
             }
 
-            return activeBuffer.get() & 0xFF;
+            int result = activeBuffer.get() & 0xFF;
+            if (!activeBuffer.hasRemaining())
+            {
+
+                SuspendToken resume = null;
+                synchronized (this)
+                {
+                    switch (state)
+                    {
+                        case CLOSED:
+                            return -1;
+
+                        case SUSPENDED:
+                            resume = suspendToken;
+                            suspendToken = null;
+                            state = State.RESUMED;
+                            break;
+
+                        case RESUMED:
+                            throw new IllegalStateException();
+                    }
+                }
+
+                // Get more content to read.
+                if (resume != null)
+                    resume.resume();
+            }
+
+            return result;
         }
         catch (InterruptedException x)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Interrupted while waiting to read", x);
-            closed.set(true);
+            close();
             return -1;
         }
     }
@@ -200,5 +252,15 @@ public class MessageInputStream extends InputStream implements MessageAppender
     public void reset() throws IOException
     {
         throw new IOException("reset() not supported");
+    }
+
+    private ByteBuffer acquire(int capacity, boolean direct)
+    {
+        ByteBuffer buffer;
+        if (bufferPool != null)
+            buffer = bufferPool.acquire(capacity, direct);
+        else
+            buffer = direct ? BufferUtil.allocateDirect(capacity) : BufferUtil.allocate(capacity);
+        return buffer;
     }
 }
