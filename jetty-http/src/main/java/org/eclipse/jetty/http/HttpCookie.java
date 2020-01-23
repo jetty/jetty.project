@@ -19,14 +19,21 @@
 package org.eclipse.jetty.http;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.TimeUnit;
+
+import javax.servlet.ServletContext;
 
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 // TODO consider replacing this with java.net.HttpCookie (once it supports RFC6265)
 public class HttpCookie
 {
+    private static final Logger LOG = Log.getLogger(HttpCookie.class);
+    
     private static final String __COOKIE_DELIM = "\",;\\ \t";
     private static final String __01Jan1970_COOKIE = DateGenerator.formatCookieDate(0).trim();
 
@@ -41,6 +48,11 @@ public class HttpCookie
     public static final String SAME_SITE_NONE_COMMENT = SAME_SITE_COMMENT + "NONE__";
     public static final String SAME_SITE_LAX_COMMENT = SAME_SITE_COMMENT + "LAX__";
     public static final String SAME_SITE_STRICT_COMMENT = SAME_SITE_COMMENT + "STRICT__";
+    
+    /**
+     * Name of context attribute with default SameSite cookie value
+     */
+    public static final String SAME_SITE_DEFAULT_ATTRIBUTE = "org.eclipse.jetty.cookie.sameSiteDefault";
 
     public enum SameSite
     {
@@ -70,7 +82,7 @@ public class HttpCookie
     private final boolean _httpOnly;
     private final long _expiration;
     private final SameSite _sameSite;
-
+    
     public HttpCookie(String name, String value)
     {
         this(name, value, -1);
@@ -446,6 +458,39 @@ public class HttpCookie
         }
 
         return null;
+    }
+
+    /**
+     * Get the default value for SameSite cookie attribute, if one
+     * has been set for the given context.
+     * 
+     * @param context the context to check for default SameSite value
+     * @return the default SameSite value or null if one does not exist
+     * @throws IllegalStateException if the default value is not a permitted value
+     */
+    public static SameSite getSameSiteDefault(ServletContext context)
+    {
+        if (context == null)
+            return null;
+        Object o = context.getAttribute(SAME_SITE_DEFAULT_ATTRIBUTE);
+        if (o == null)
+        {
+            LOG.warn("No default value for SameSite");
+            return null;
+        }
+        
+        if (o instanceof SameSite)
+            return (SameSite)o;
+        
+        try
+        {
+            return Enum.valueOf(SameSite.class, ((String)o).trim().toUpperCase(Locale.ENGLISH));
+        }
+        catch (Exception e)
+        {
+            LOG.warn("Bad default value {} for SameSite", o);
+            throw new IllegalStateException(e);
+        }
     }
 
     public static String getCommentWithoutAttributes(String comment)
