@@ -206,13 +206,5 @@ public interface Configuration
             if (maxTextMessageSize != null)
                 configurable.setMaxTextMessageSize(maxTextMessageSize);
         }
-
-        public static ConfigurationCustomizer from(ConfigurationCustomizer parent, ConfigurationCustomizer child)
-        {
-            ConfigurationCustomizer customizer = new ConfigurationCustomizer();
-            parent.customize(customizer);
-            child.customize(customizer);
-            return customizer;
-        }
     }
 }
