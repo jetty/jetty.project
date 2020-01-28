@@ -29,14 +29,6 @@ import org.eclipse.jetty.websocket.javax.common.encoders.AvailableEncoders;
 
 public class JavaxWebSocketFrameHandlerMetadata
 {
-    /**
-     * Constant for "unset" @OnMessage annotation values.
-     * <p>
-     * (-2 means unset/undeclared, -1 means whatever that value means, such as: no idletimeout, or no maximum message size limit)
-     * </p>
-     */
-    public static final int UNSET = -2;
-
     private static final String[] NO_VARIABLES = new String[0];
 
     // EndpointConfig entries
@@ -228,6 +220,8 @@ public class JavaxWebSocketFrameHandlerMetadata
 
     public static class MessageMetadata
     {
+        private static final int UNSET = -1;
+
         public MethodHandle handle;
         public Class<? extends MessageSink> sinkClass;
         public AvailableDecoders.RegisteredDecoder registeredDecoder;
@@ -249,7 +243,7 @@ public class JavaxWebSocketFrameHandlerMetadata
 
         public boolean isMaxMessageSizeSet()
         {
-            return (maxMessageSize != UNSET) && (maxMessageSize != 0);
+            return maxMessageSize != UNSET;
         }
     }
 }

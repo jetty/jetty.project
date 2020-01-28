@@ -96,7 +96,7 @@ public class PathParamTest
         Session session = container.connectToServer(clientEndpoint, serverUri);
         session.getBasicRemote().sendText("echo");
 
-        String resp = clientEndpoint.messageQueue.poll(1, TimeUnit.SECONDS);
+        String resp = clientEndpoint.textMessages.poll(1, TimeUnit.SECONDS);
         assertThat("Response echo", resp, is("echo-myParam"));
         session.close();
         clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS);

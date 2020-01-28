@@ -41,9 +41,9 @@ public abstract class JavaxWebSocketContainer extends ContainerLifeCycle impleme
 {
     private static final Logger LOG = Log.getLogger(JavaxWebSocketContainer.class);
     private final SessionTracker sessionTracker = new SessionTracker();
+    protected final FrameHandler.ConfigurationCustomizer defaultCustomizer = new FrameHandler.ConfigurationCustomizer();
+    protected final WebSocketComponents components;
     private List<JavaxWebSocketSessionListener> sessionListeners = new ArrayList<>();
-    protected FrameHandler.ConfigurationCustomizer defaultCustomizer = new FrameHandler.ConfigurationCustomizer();
-    protected WebSocketComponents components;
 
     public JavaxWebSocketContainer(WebSocketComponents components)
     {

@@ -19,6 +19,7 @@
 package org.eclipse.jetty.websocket.javax.tests;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import javax.websocket.ClientEndpoint;
@@ -44,7 +45,8 @@ public class EventSocket
     public Session session;
     public EndpointConfig endpointConfig;
 
-    public BlockingQueue<String> messageQueue = new BlockingArrayQueue<>();
+    public BlockingQueue<String> textMessages = new BlockingArrayQueue<>();
+    public BlockingQueue<ByteBuffer> binaryMessages = new BlockingArrayQueue<>();
     public volatile Throwable error = null;
     public volatile CloseReason closeReason = null;
 
@@ -66,7 +68,15 @@ public class EventSocket
     {
         if (LOG.isDebugEnabled())
             LOG.debug("{}  onMessage(): {}", toString(), message);
-        messageQueue.offer(message);
+        textMessages.offer(message);
+    }
+
+    @OnMessage
+    public void onMessage(ByteBuffer message) throws IOException
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("{}  onMessage(): {}", toString(), message);
+        binaryMessages.offer(message);
     }
 
     @OnClose

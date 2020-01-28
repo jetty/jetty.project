@@ -160,7 +160,7 @@ public class JavaxAutobahnClient
         try
         {
             clientContainer.connectToServer(onCaseCount, wsUri);
-            String msg = onCaseCount.messageQueue.poll(10, TimeUnit.SECONDS);
+            String msg = onCaseCount.textMessages.poll(10, TimeUnit.SECONDS);
             onCaseCount.session.close(new CloseReason(CloseReason.CloseCodes.GOING_AWAY, null));
             assertTrue(onCaseCount.closeLatch.await(2, TimeUnit.SECONDS));
             assertNotNull(msg);

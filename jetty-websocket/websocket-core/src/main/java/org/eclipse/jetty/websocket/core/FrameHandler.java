@@ -545,7 +545,7 @@ public interface FrameHandler extends IncomingFrames
             if (idleTimeout != null)
                 configurable.setIdleTimeout(idleTimeout);
             if (writeTimeout != null)
-                configurable.setWriteTimeout(idleTimeout);
+                configurable.setWriteTimeout(writeTimeout);
             if (autoFragment != null)
                 configurable.setAutoFragment(autoFragment);
             if (maxFrameSize != null)
