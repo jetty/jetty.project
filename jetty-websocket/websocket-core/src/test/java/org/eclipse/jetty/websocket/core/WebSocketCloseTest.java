@@ -22,8 +22,8 @@ import java.net.Socket;
 import java.nio.channels.ClosedChannelException;
 import java.time.Duration;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.server.NetworkConnector;
@@ -52,9 +52,11 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -434,13 +436,17 @@ public class WebSocketCloseTest extends WebSocketTester
     {
         setup(State.OPEN, scheme);
 
-        CountDownLatchCallback callback1 = new CountDownLatchCallback();
+        Callback.Completable callback1 = new Callback.Completable();
         server.handler.getCoreSession().close(CloseStatus.SERVER_ERROR, "server error should succeed", callback1);
-        CountDownLatchCallback callback2 = new CountDownLatchCallback();
+        Callback.Completable callback2 = new Callback.Completable();
         server.handler.getCoreSession().close(CloseStatus.PROTOCOL, "protocol error should fail", callback2);
 
-        assertTrue(callback1.succeeded.await(5, TimeUnit.SECONDS));
-        assertThat(callback2.failed.get(5, TimeUnit.SECONDS), instanceOf(ClosedChannelException.class));
+        // First Callback Succeeded
+        assertDoesNotThrow(() -> callback1.get(5, TimeUnit.SECONDS));
+
+        // Second Callback Failed with ClosedChannelException
+        ExecutionException error = assertThrows(ExecutionException.class, () -> callback2.get(5, TimeUnit.SECONDS));
+        assertThat(error.getCause(), instanceOf(ClosedChannelException.class));
 
         assertTrue(server.handler.closed.await(5, TimeUnit.SECONDS));
         assertThat(server.handler.closeStatus.getCode(), is(CloseStatus.SERVER_ERROR));
@@ -456,13 +462,17 @@ public class WebSocketCloseTest extends WebSocketTester
     {
         setup(State.OPEN, scheme);
 
-        CountDownLatchCallback callback1 = new CountDownLatchCallback();
+        Callback.Completable callback1 = new Callback.Completable();
         server.handler.getCoreSession().close(CloseStatus.NORMAL, "normal close (client does not complete close handshake)", callback1);
-        CountDownLatchCallback callback2 = new CountDownLatchCallback();
+        Callback.Completable callback2 = new Callback.Completable();
         server.handler.getCoreSession().close(CloseStatus.SERVER_ERROR, "error close should overtake normal close", callback2);
 
-        assertTrue(callback1.succeeded.await(5, TimeUnit.SECONDS));
-        assertThat(callback2.failed.get(5, TimeUnit.SECONDS), instanceOf(ClosedChannelException.class));
+        // First Callback Succeeded
+        assertDoesNotThrow(() -> callback1.get(5, TimeUnit.SECONDS));
+
+        // Second Callback Failed with ClosedChannelException
+        ExecutionException error = assertThrows(ExecutionException.class, () -> callback2.get(5, TimeUnit.SECONDS));
+        assertThat(error.getCause(), instanceOf(ClosedChannelException.class));
 
         assertTrue(server.handler.closed.await(5, TimeUnit.SECONDS));
         assertThat(server.handler.closeStatus.getCode(), is(CloseStatus.SERVER_ERROR));
@@ -632,24 +642,6 @@ public class WebSocketCloseTest extends WebSocketTester
         public boolean isOpen()
         {
             return handler.getCoreSession().isOutputOpen();
-        }
-    }
-
-    public static class CountDownLatchCallback implements Callback
-    {
-        public CountDownLatch succeeded = new CountDownLatch(1);
-        public CompletableFuture<Throwable> failed = new CompletableFuture<>();
-
-        @Override
-        public void succeeded()
-        {
-            succeeded.countDown();
-        }
-
-        @Override
-        public void failed(Throwable x)
-        {
-            failed.complete(x);
         }
     }
 }

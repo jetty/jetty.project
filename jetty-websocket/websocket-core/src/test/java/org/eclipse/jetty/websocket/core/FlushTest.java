@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.core;
 import java.nio.channels.ClosedChannelException;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.Callback;
@@ -34,6 +35,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class FlushTest
@@ -57,8 +59,8 @@ public class FlushTest
     @AfterEach
     public void shutdown() throws Exception
     {
-        server.start();
-        client.start();
+        server.stop();
+        client.stop();
     }
 
     @Test
@@ -125,16 +127,9 @@ public class FlushTest
         assertTrue(clientHandler.closed.await(5, TimeUnit.SECONDS));
         assertNull(clientHandler.getError());
 
-        CompletableFuture<Throwable> failed = new CompletableFuture<>();
-        Callback flushCallback = new Callback()
-        {
-            @Override
-            public void failed(Throwable x)
-            {
-                failed.complete(x);
-            }
-        };
+        Callback.Completable flushCallback = new Callback.Completable();
         clientHandler.getCoreSession().flush(flushCallback);
-        assertThat(failed.get(), instanceOf(ClosedChannelException.class));
+        ExecutionException e = assertThrows(ExecutionException.class, () -> flushCallback.get(5, TimeUnit.SECONDS));
+        assertThat(e.getCause(), instanceOf(ClosedChannelException.class));
     }
 }
