@@ -148,7 +148,7 @@ public class JavaxWebSocketServletContainerInitializer implements ServletContain
      * @param context the context to work with
      * @return the default {@link ServerContainer} for this context
      */
-    public static JavaxWebSocketServerContainer initialize(ServletContextHandler context)
+    public static ServerContainer initialize(ServletContextHandler context)
     {
         JavaxWebSocketServerContainer serverContainer = JavaxWebSocketServerContainer.getContainer(context.getServletContext());
         if (serverContainer == null)
@@ -180,7 +180,7 @@ public class JavaxWebSocketServletContainerInitializer implements ServletContain
         }
 
         ServletContextHandler servletContextHandler = ServletContextHandler.getServletContextHandler(context, "Javax WebSocket SCI");
-        JavaxWebSocketServerContainer container = initialize(servletContextHandler);
+        ServerContainer container = initialize(servletContextHandler);
 
         try (ThreadClassLoaderScope scope = new ThreadClassLoaderScope(context.getClassLoader()))
         {
