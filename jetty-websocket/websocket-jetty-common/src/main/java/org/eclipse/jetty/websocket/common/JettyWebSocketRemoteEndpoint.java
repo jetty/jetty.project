@@ -22,10 +22,11 @@ import java.io.IOException;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.util.BlockingCallback;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.BatchMode;
@@ -73,9 +74,9 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
     {
         try
         {
-            BlockingCallback blockingCallback = newBlockingCallback();
-            coreSession.close(statusCode, reason, blockingCallback);
-            blockingCallback.block();
+            FutureCallback b = new FutureCallback();
+            coreSession.close(statusCode, reason, b);
+            b.block(getBlockingTimeout(), TimeUnit.MILLISECONDS);
         }
         catch (IOException e)
         {
@@ -113,9 +114,9 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
     @Override
     public void sendPartialBytes(ByteBuffer fragment, boolean isLast) throws IOException
     {
-        BlockingCallback b = newBlockingCallback();
+        FutureCallback b = new FutureCallback();
         sendPartialBytes(fragment, isLast, b);
-        b.block();
+        b.block(getBlockingTimeout(), TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -155,9 +156,9 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
     @Override
     public void sendPartialString(String fragment, boolean isLast) throws IOException
     {
-        BlockingCallback b = newBlockingCallback();
+        FutureCallback b = new FutureCallback();
         sendPartialText(fragment, isLast, b);
-        b.block();
+        b.block(getBlockingTimeout(), TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -222,9 +223,9 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
 
     private void sendBlocking(Frame frame) throws IOException
     {
-        BlockingCallback b = newBlockingCallback();
+        FutureCallback b = new FutureCallback();
         coreSession.sendFrame(frame, b, false);
-        b.block();
+        b.block(getBlockingTimeout(), TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -253,14 +254,14 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
     @Override
     public void flush() throws IOException
     {
-        BlockingCallback b = newBlockingCallback();
+        FutureCallback b = new FutureCallback();
         coreSession.flush(b);
-        b.block();
+        b.block(getBlockingTimeout(), TimeUnit.MILLISECONDS);
     }
 
-    private BlockingCallback newBlockingCallback()
+    private long getBlockingTimeout()
     {
         long idleTimeout = coreSession.getIdleTimeout().toMillis();
-        return new BlockingCallback((idleTimeout > 0) ? idleTimeout + 1000 : idleTimeout);
+        return (idleTimeout > 0) ? idleTimeout + 1000 : idleTimeout;
     }
 }

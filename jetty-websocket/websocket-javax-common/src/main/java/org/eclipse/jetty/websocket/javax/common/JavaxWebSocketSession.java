@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.websocket.CloseReason;
 import javax.websocket.EndpointConfig;
@@ -38,7 +39,7 @@ import javax.websocket.RemoteEndpoint.Basic;
 import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
 
-import org.eclipse.jetty.util.BlockingCallback;
+import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
@@ -190,10 +191,15 @@ public class JavaxWebSocketSession implements javax.websocket.Session
     @Override
     public void close(CloseReason closeReason) throws IOException
     {
-        long idleTimeout = getMaxIdleTimeout();
-        BlockingCallback b = new BlockingCallback((idleTimeout > 0) ? idleTimeout + 1000 : idleTimeout);
+        FutureCallback b = new FutureCallback();
         coreSession.close(closeReason.getCloseCode().getCode(), closeReason.getReasonPhrase(), b);
-        b.block();
+        b.block(getBlockingTimeout(), TimeUnit.MILLISECONDS);
+    }
+
+    private long getBlockingTimeout()
+    {
+        long idleTimeout = getMaxIdleTimeout();
+        return (idleTimeout > 0) ? idleTimeout + 1000 : idleTimeout;
     }
 
     /**

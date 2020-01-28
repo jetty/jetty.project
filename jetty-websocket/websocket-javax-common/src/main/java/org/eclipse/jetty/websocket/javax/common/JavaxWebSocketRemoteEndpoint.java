@@ -21,13 +21,14 @@ package org.eclipse.jetty.websocket.javax.common;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.time.Duration;
+import java.util.concurrent.TimeUnit;
 import javax.websocket.EncodeException;
 import javax.websocket.Encoder;
 import javax.websocket.SendHandler;
 
-import org.eclipse.jetty.util.BlockingCallback;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.Frame;
@@ -66,9 +67,9 @@ public class JavaxWebSocketRemoteEndpoint implements javax.websocket.RemoteEndpo
     @Override
     public void flushBatch() throws IOException
     {
-        BlockingCallback b = newBlockingCallback();
+        FutureCallback b = new FutureCallback();
         coreSession.flush(b);
-        b.block();
+        b.block(getBlockingTimeout(), TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -228,9 +229,9 @@ public class JavaxWebSocketRemoteEndpoint implements javax.websocket.RemoteEndpo
         if (LOG.isDebugEnabled())
             LOG.debug("sendPing({})", BufferUtil.toDetailString(data));
 
-        BlockingCallback b = newBlockingCallback();
+        FutureCallback b = new FutureCallback();
         sendFrame(new Frame(OpCode.PING).setPayload(data), b, batch);
-        b.block();
+        b.block(getBlockingTimeout(), TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -239,9 +240,9 @@ public class JavaxWebSocketRemoteEndpoint implements javax.websocket.RemoteEndpo
         if (LOG.isDebugEnabled())
             LOG.debug("sendPong({})", BufferUtil.toDetailString(data));
 
-        BlockingCallback b = newBlockingCallback();
+        FutureCallback b = new FutureCallback();
         sendFrame(new Frame(OpCode.PONG).setPayload(data), b, batch);
-        b.block();
+        b.block(getBlockingTimeout(), TimeUnit.MILLISECONDS);
     }
 
     protected void assertMessageNotNull(Object data)
@@ -260,9 +261,9 @@ public class JavaxWebSocketRemoteEndpoint implements javax.websocket.RemoteEndpo
         }
     }
 
-    private BlockingCallback newBlockingCallback()
+    private long getBlockingTimeout()
     {
         long idleTimeout = getIdleTimeout();
-        return new BlockingCallback((idleTimeout > 0) ? idleTimeout + 1000 : idleTimeout);
+        return (idleTimeout > 0) ? idleTimeout + 1000 : idleTimeout;
     }
 }

@@ -22,11 +22,12 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.Writer;
 import java.nio.ByteBuffer;
+import java.util.concurrent.TimeUnit;
 import javax.websocket.EncodeException;
 import javax.websocket.RemoteEndpoint;
 
-import org.eclipse.jetty.util.BlockingCallback;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.Frame;
@@ -66,9 +67,9 @@ public class JavaxWebSocketBasicRemote extends JavaxWebSocketRemoteEndpoint impl
             LOG.debug("sendBinary({})", BufferUtil.toDetailString(data));
         }
 
-        BlockingCallback b = newBlockingCallback();
+        FutureCallback b = new FutureCallback();
         sendFrame(new Frame(OpCode.BINARY).setPayload(data), b, false);
-        b.block();
+        b.block(getBlockingTimeout(), TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -98,17 +99,17 @@ public class JavaxWebSocketBasicRemote extends JavaxWebSocketRemoteEndpoint impl
 
         frame.setPayload(partialByte);
         frame.setFin(isLast);
-        BlockingCallback b = newBlockingCallback();
+        FutureCallback b = new FutureCallback();
         sendFrame(frame, b, false);
-        b.block();
+        b.block(getBlockingTimeout(), TimeUnit.MILLISECONDS);
     }
 
     @Override
     public void sendObject(Object data) throws IOException, EncodeException
     {
-        BlockingCallback b = newBlockingCallback();
+        FutureCallback b = new FutureCallback();
         super.sendObject(data, b);
-        b.block();
+        b.block(getBlockingTimeout(), TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -121,9 +122,9 @@ public class JavaxWebSocketBasicRemote extends JavaxWebSocketRemoteEndpoint impl
         }
 
 
-        BlockingCallback b = newBlockingCallback();
+        FutureCallback b = new FutureCallback();
         sendFrame(new Frame(OpCode.TEXT).setPayload(text), b, false);
-        b.block();
+        b.block(getBlockingTimeout(), TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -153,14 +154,14 @@ public class JavaxWebSocketBasicRemote extends JavaxWebSocketRemoteEndpoint impl
 
         frame.setPayload(BufferUtil.toBuffer(partialMessage, UTF_8));
         frame.setFin(isLast);
-        BlockingCallback b = newBlockingCallback();
+        FutureCallback b = new FutureCallback();
         sendFrame(frame, b, false);
-        b.block();
+        b.block(getBlockingTimeout(), TimeUnit.MILLISECONDS);
     }
 
-    private BlockingCallback newBlockingCallback()
+    private long getBlockingTimeout()
     {
         long idleTimeout = getIdleTimeout();
-        return new BlockingCallback((idleTimeout > 0) ? idleTimeout + 1000 : idleTimeout);
+        return (idleTimeout > 0) ? idleTimeout + 1000 : idleTimeout;
     }
 }
