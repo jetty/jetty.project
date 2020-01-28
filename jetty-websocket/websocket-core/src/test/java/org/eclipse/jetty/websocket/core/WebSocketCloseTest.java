@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.core;
 import java.net.Socket;
 import java.nio.channels.ClosedChannelException;
 import java.time.Duration;
+import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -432,7 +433,46 @@ public class WebSocketCloseTest extends WebSocketTester
 
     @ParameterizedTest
     @ValueSource(strings = {WS_SCHEME, WSS_SCHEME})
-    public void doubleClose(String scheme) throws Exception
+    public void doubleNormalClose(String scheme) throws Exception
+    {
+        setup(State.OPEN, scheme);
+
+        Callback.Completable callback1 = new Callback.Completable();
+        server.handler.getCoreSession().close(CloseStatus.NORMAL, "normal 1", callback1);
+        Callback.Completable callback2 = new Callback.Completable();
+        server.handler.getCoreSession().close(CloseStatus.NORMAL, "normal 2", callback2);
+
+        // First Callback Succeeded
+        assertDoesNotThrow(() -> callback1.get(5, TimeUnit.SECONDS));
+
+        // Second Callback Failed with ClosedChannelException
+        ExecutionException error = assertThrows(ExecutionException.class, () -> callback2.get(5, TimeUnit.SECONDS));
+        assertThat(error.getCause(), instanceOf(ClosedChannelException.class));
+
+        // Normal close frame received on client.
+        Frame closeFrame = receiveFrame(client.getInputStream());
+        assertThat(closeFrame.getOpCode(), is(OpCode.CLOSE));
+        CloseStatus closeStatus = CloseStatus.getCloseStatus(closeFrame);
+        assertThat(closeStatus.getCode(), is(CloseStatus.NORMAL));
+        assertThat(closeStatus.getReason(), is("normal 1"));
+
+        // Send close response from client.
+        client.getOutputStream().write(RawFrameBuilder.buildClose(
+            new CloseStatus(CloseStatus.NORMAL, "normal response 1"), true));
+
+        server.handler.getCoreSession().demand(1);
+        assertNotNull(server.handler.receivedFrames.poll(10, TimeUnit.SECONDS));
+        Callback closeFrameCallback = Objects.requireNonNull(server.handler.receivedCallback.poll());
+        closeFrameCallback.succeeded();
+
+        assertTrue(server.handler.closed.await(5, TimeUnit.SECONDS));
+        assertThat(server.handler.closeStatus.getCode(), is(CloseStatus.NORMAL));
+        assertThat(server.handler.closeStatus.getReason(), is("normal response 1"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {WS_SCHEME, WSS_SCHEME})
+    public void doubleAbnormalClose(String scheme) throws Exception
     {
         setup(State.OPEN, scheme);
 
