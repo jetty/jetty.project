@@ -37,7 +37,8 @@ import org.eclipse.jetty.util.log.Logger;
  *     <li>Waiting for existing load to complete (eg waiting for active request count to reduce to 0)</li>
  *     <li>Performing cleanup operations that may take time (eg closing an SSL connection)</li>
  * </ul>
- * <p>The {@link Future} returned by the the shutdown call will be completed to indicate the shutdown operation is completed.
+ * <p>The {@link CompletableFuture} returned by the the shutdown call will be completed to indicate the
+ * shutdown operation is completed.
  * Some shutdown operations may be instantaneous and always return a completed future.
  * </p><p>
  * Graceful shutdown is typically orchestrated by the doStop methods of Server or ContextHandler (for a full or partial
@@ -59,7 +60,7 @@ public interface Graceful
 
     /**
      * A utility class to assist implementing the Graceful interface.
-     * The {@link #isShutdownDone()} method should be implemented to check if the future
+     * The {@link #isShutdownDone()} method should be implemented to check if the {@link CompletableFuture}
      * returned by {@link #shutdown()} should be completed or not.  The {@link #check()}
      * method should be called when any state is changed which may complete the shutdown.
      */
