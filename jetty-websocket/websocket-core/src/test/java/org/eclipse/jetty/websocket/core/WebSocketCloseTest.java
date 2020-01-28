@@ -19,9 +19,12 @@
 package org.eclipse.jetty.websocket.core;
 
 import java.net.Socket;
+import java.nio.channels.ClosedChannelException;
 import java.time.Duration;
+import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.server.NetworkConnector;
@@ -48,10 +51,13 @@ import org.junit.jupiter.params.provider.ValueSource;
 import static org.eclipse.jetty.util.Callback.NOOP;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -423,6 +429,97 @@ public class WebSocketCloseTest extends WebSocketTester
 
         Frame frame = receiveFrame(client.getInputStream());
         assertThat(CloseStatus.getCloseStatus(frame).getCode(), is(CloseStatus.SERVER_ERROR));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {WS_SCHEME, WSS_SCHEME})
+    public void doubleNormalClose(String scheme) throws Exception
+    {
+        setup(State.OPEN, scheme);
+
+        Callback.Completable callback1 = new Callback.Completable();
+        server.handler.getCoreSession().close(CloseStatus.NORMAL, "normal 1", callback1);
+        Callback.Completable callback2 = new Callback.Completable();
+        server.handler.getCoreSession().close(CloseStatus.NORMAL, "normal 2", callback2);
+
+        // First Callback Succeeded
+        assertDoesNotThrow(() -> callback1.get(5, TimeUnit.SECONDS));
+
+        // Second Callback Failed with ClosedChannelException
+        ExecutionException error = assertThrows(ExecutionException.class, () -> callback2.get(5, TimeUnit.SECONDS));
+        assertThat(error.getCause(), instanceOf(ClosedChannelException.class));
+
+        // Normal close frame received on client.
+        Frame closeFrame = receiveFrame(client.getInputStream());
+        assertThat(closeFrame.getOpCode(), is(OpCode.CLOSE));
+        CloseStatus closeStatus = CloseStatus.getCloseStatus(closeFrame);
+        assertThat(closeStatus.getCode(), is(CloseStatus.NORMAL));
+        assertThat(closeStatus.getReason(), is("normal 1"));
+
+        // Send close response from client.
+        client.getOutputStream().write(RawFrameBuilder.buildClose(
+            new CloseStatus(CloseStatus.NORMAL, "normal response 1"), true));
+
+        server.handler.getCoreSession().demand(1);
+        assertNotNull(server.handler.receivedFrames.poll(10, TimeUnit.SECONDS));
+        Callback closeFrameCallback = Objects.requireNonNull(server.handler.receivedCallback.poll());
+        closeFrameCallback.succeeded();
+
+        assertTrue(server.handler.closed.await(5, TimeUnit.SECONDS));
+        assertThat(server.handler.closeStatus.getCode(), is(CloseStatus.NORMAL));
+        assertThat(server.handler.closeStatus.getReason(), is("normal response 1"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {WS_SCHEME, WSS_SCHEME})
+    public void doubleAbnormalClose(String scheme) throws Exception
+    {
+        setup(State.OPEN, scheme);
+
+        Callback.Completable callback1 = new Callback.Completable();
+        server.handler.getCoreSession().close(CloseStatus.SERVER_ERROR, "server error should succeed", callback1);
+        Callback.Completable callback2 = new Callback.Completable();
+        server.handler.getCoreSession().close(CloseStatus.PROTOCOL, "protocol error should fail", callback2);
+
+        // First Callback Succeeded
+        assertDoesNotThrow(() -> callback1.get(5, TimeUnit.SECONDS));
+
+        // Second Callback Failed with ClosedChannelException
+        ExecutionException error = assertThrows(ExecutionException.class, () -> callback2.get(5, TimeUnit.SECONDS));
+        assertThat(error.getCause(), instanceOf(ClosedChannelException.class));
+
+        assertTrue(server.handler.closed.await(5, TimeUnit.SECONDS));
+        assertThat(server.handler.closeStatus.getCode(), is(CloseStatus.SERVER_ERROR));
+        assertThat(server.handler.closeStatus.getReason(), containsString("server error should succeed"));
+
+        Frame frame = receiveFrame(client.getInputStream());
+        assertThat(CloseStatus.getCloseStatus(frame).getCode(), is(CloseStatus.SERVER_ERROR));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {WS_SCHEME, WSS_SCHEME})
+    public void doubleCloseAbnormalOvertakesNormalClose(String scheme) throws Exception
+    {
+        setup(State.OPEN, scheme);
+
+        Callback.Completable callback1 = new Callback.Completable();
+        server.handler.getCoreSession().close(CloseStatus.NORMAL, "normal close (client does not complete close handshake)", callback1);
+        Callback.Completable callback2 = new Callback.Completable();
+        server.handler.getCoreSession().close(CloseStatus.SERVER_ERROR, "error close should overtake normal close", callback2);
+
+        // First Callback Succeeded
+        assertDoesNotThrow(() -> callback1.get(5, TimeUnit.SECONDS));
+
+        // Second Callback Failed with ClosedChannelException
+        ExecutionException error = assertThrows(ExecutionException.class, () -> callback2.get(5, TimeUnit.SECONDS));
+        assertThat(error.getCause(), instanceOf(ClosedChannelException.class));
+
+        assertTrue(server.handler.closed.await(5, TimeUnit.SECONDS));
+        assertThat(server.handler.closeStatus.getCode(), is(CloseStatus.SERVER_ERROR));
+        assertThat(server.handler.closeStatus.getReason(), containsString("error close should overtake normal close"));
+
+        Frame frame = receiveFrame(client.getInputStream());
+        assertThat(CloseStatus.getCloseStatus(frame).getCode(), is(CloseStatus.NORMAL));
     }
 
     static class DemandingTestFrameHandler implements SynchronousFrameHandler

@@ -400,16 +400,19 @@ public interface FrameHandler extends IncomingFrames
             @Override
             public void flush(Callback callback)
             {
+                callback.succeeded();
             }
 
             @Override
             public void close(Callback callback)
             {
+                callback.succeeded();
             }
 
             @Override
             public void close(int statusCode, String reason, Callback callback)
             {
+                callback.succeeded();
             }
 
             @Override
@@ -420,6 +423,7 @@ public interface FrameHandler extends IncomingFrames
             @Override
             public void sendFrame(Frame frame, Callback callback, boolean batch)
             {
+                callback.succeeded();
             }
         }
     }

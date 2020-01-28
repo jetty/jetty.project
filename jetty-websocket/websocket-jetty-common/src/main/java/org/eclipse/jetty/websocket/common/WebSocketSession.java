@@ -183,7 +183,7 @@ public class WebSocketSession implements Session, SuspendToken, Dumpable
     @Override
     public boolean isOpen()
     {
-        return remoteEndpoint.getCoreSession().isOutputOpen();
+        return coreSession.isOutputOpen();
     }
 
     @Override

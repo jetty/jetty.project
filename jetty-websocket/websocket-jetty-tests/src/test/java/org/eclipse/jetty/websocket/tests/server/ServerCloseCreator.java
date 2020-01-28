@@ -63,6 +63,16 @@ public class ServerCloseCreator implements JettyWebSocketCreator
             closeSocket = new ContainerEndpoint(container);
             resp.setAcceptedSubProtocol("container");
         }
+        else if (req.hasSubProtocol("closeInOnClose"))
+        {
+            closeSocket = new CloseInOnCloseEndpoint();
+            resp.setAcceptedSubProtocol("closeInOnClose");
+        }
+        else if (req.hasSubProtocol("closeInOnCloseNewThread"))
+        {
+            closeSocket = new CloseInOnCloseEndpointNewThread();
+            resp.setAcceptedSubProtocol("closeInOnCloseNewThread");
+        }
 
         if (closeSocket != null)
         {
