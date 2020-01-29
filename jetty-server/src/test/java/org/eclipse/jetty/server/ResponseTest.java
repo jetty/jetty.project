@@ -32,10 +32,13 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.stream.Stream;
+
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.Cookie;
@@ -1015,6 +1018,32 @@ public class ResponseTest
 
         assertEquals("name=value; Path=/path; Domain=domain; Secure; HttpOnly", set);
     }
+    
+    @Test
+    public void testAddCookieSameSiteDefault() throws Exception
+    {
+        Response response = getResponse();
+        TestServletContextHandler context = new TestServletContextHandler();
+        _channel.getRequest().setContext(context.getServletContext());
+        context.setAttribute(HttpCookie.SAME_SITE_DEFAULT_ATTRIBUTE, HttpCookie.SameSite.STRICT);
+        Cookie cookie = new Cookie("name", "value");
+        cookie.setDomain("domain");
+        cookie.setPath("/path");
+        cookie.setSecure(true);
+        cookie.setComment("comment__HTTP_ONLY__");
+
+        response.addCookie(cookie);
+        String set = response.getHttpFields().get("Set-Cookie");
+        assertEquals("name=value; Path=/path; Domain=domain; Secure; HttpOnly; SameSite=Strict", set);
+        
+        response.getHttpFields().remove("Set-Cookie");
+        
+        //test bad default samesite value
+        context.setAttribute(HttpCookie.SAME_SITE_DEFAULT_ATTRIBUTE, "FooBar");
+        
+        assertThrows(IllegalStateException.class,
+            () -> response.addCookie(cookie));
+    }
 
     @Test
     public void testAddCookieComplianceRFC2965()
@@ -1154,6 +1183,23 @@ public class ResponseTest
         List<String> actual = Collections.list(response.getHttpFields().getValues("Set-Cookie"));
         assertThat("HttpCookie order", actual, hasItems(expected));
     }
+    
+    @Test
+    public void testReplaceHttpCookieSameSite()
+    {
+        Response response = getResponse();
+        TestServletContextHandler context = new TestServletContextHandler();
+        context.setAttribute(HttpCookie.SAME_SITE_DEFAULT_ATTRIBUTE, "LAX");
+        _channel.getRequest().setContext(context.getServletContext());
+        //replace with no prior does an add
+        response.replaceCookie(new HttpCookie("Foo", "123456"));
+        String set = response.getHttpFields().get("Set-Cookie");
+        assertEquals("Foo=123456; SameSite=Lax", set);
+        //check replacement
+        response.replaceCookie(new HttpCookie("Foo", "other"));
+        set = response.getHttpFields().get("Set-Cookie");
+        assertEquals("Foo=other; SameSite=Lax", set);
+    }
 
     @Test
     public void testReplaceParsedHttpCookie()
@@ -1178,6 +1224,20 @@ public class ResponseTest
         response.replaceCookie(new HttpCookie("Foo", "replaced", "Bah", "/path"));
         actual = Collections.list(response.getHttpFields().getValues("Set-Cookie"));
         assertThat(actual, hasItems(new String[]{"Foo=replaced; Path=/path; Domain=Bah"}));
+    }
+    
+    @Test
+    public void testReplaceParsedHttpCookieSiteDefault()
+    {
+        Response response = getResponse();
+        TestServletContextHandler context = new TestServletContextHandler();
+        context.setAttribute(HttpCookie.SAME_SITE_DEFAULT_ATTRIBUTE, "LAX");
+        _channel.getRequest().setContext(context.getServletContext());
+        
+        response.addHeader(HttpHeader.SET_COOKIE.asString(), "Foo=123456");
+        response.replaceCookie(new HttpCookie("Foo", "value"));
+        String set = response.getHttpFields().get("Set-Cookie");
+        assertEquals("Foo=value; SameSite=Lax", set);
     }
 
     @Test
@@ -1206,6 +1266,38 @@ public class ResponseTest
         protected TestSession(SessionHandler handler, String id)
         {
             super(handler, new SessionData(id, "", "0.0.0.0", 0, 0, 0, 300));
+        }
+    }
+    
+    private static class TestServletContextHandler extends ContextHandler
+    {
+        private class Context extends ContextHandler.Context
+        {
+            private Map<String, Object> _attributes = new HashMap<>();
+
+            @Override
+            public Object getAttribute(String name)
+            {
+                return _attributes.get(name);
+            }
+
+            @Override
+            public Enumeration<String> getAttributeNames()
+            {
+                return Collections.enumeration(_attributes.keySet());
+            }
+
+            @Override
+            public void setAttribute(String name, Object object)
+            {
+                _attributes.put(name,object);
+            }
+
+            @Override
+            public void removeAttribute(String name)
+            {
+                _attributes.remove(name);
+            }
         }
     }
 }
