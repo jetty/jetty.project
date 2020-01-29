@@ -475,7 +475,8 @@ public class HttpCookie
         Object o = context.getAttribute(SAME_SITE_DEFAULT_ATTRIBUTE);
         if (o == null)
         {
-            LOG.warn("No default value for SameSite");
+            if (LOG.isDebugEnabled())
+                LOG.debug("No default value for SameSite");
             return null;
         }
         
@@ -484,7 +485,9 @@ public class HttpCookie
         
         try
         {
-            return Enum.valueOf(SameSite.class, ((String)o).trim().toUpperCase(Locale.ENGLISH));
+            SameSite samesite = Enum.valueOf(SameSite.class, o.toString().trim().toUpperCase(Locale.ENGLISH));
+            context.setAttribute(SAME_SITE_DEFAULT_ATTRIBUTE, samesite);
+            return samesite;
         }
         catch (Exception e)
         {
