@@ -22,10 +22,12 @@ import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.nio.ByteBuffer;
+import java.nio.channels.ClosedChannelException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import javax.websocket.ClientEndpointConfig;
 import javax.websocket.CloseReason;
@@ -60,6 +62,8 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
     private final Logger logger;
     private final JavaxWebSocketContainer container;
     private final Object endpointInstance;
+    private final AtomicBoolean closeNotified = new AtomicBoolean();
+
     /**
      * List of configured named variables in the uri-template.
      * <p>
@@ -278,9 +282,27 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
             dataType = OpCode.UNDEFINED;
     }
 
+    public void onClose(Frame frame, Callback callback)
+    {
+        notifyOnClose(CloseStatus.getCloseStatus(frame), callback);
+    }
+
     @Override
     public void onClosed(CloseStatus closeStatus, Callback callback)
     {
+        notifyOnClose(closeStatus, callback);
+        container.notifySessionListeners((listener) -> listener.onJavaxWebSocketSessionClosed(session));
+    }
+
+    private void notifyOnClose(CloseStatus closeStatus, Callback callback)
+    {
+        // Make sure onClose is only notified once.
+        if (!closeNotified.compareAndSet(false, true))
+        {
+            callback.failed(new ClosedChannelException());
+            return;
+        }
+
         try
         {
             if (closeHandle != null)
@@ -288,14 +310,13 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
                 CloseReason closeReason = new CloseReason(CloseReason.CloseCodes.getCloseCode(closeStatus.getCode()), closeStatus.getReason());
                 closeHandle.invoke(closeReason);
             }
+
             callback.succeeded();
         }
         catch (Throwable cause)
         {
             callback.failed(new WebSocketException(endpointInstance.getClass().getSimpleName() + " CLOSE method error: " + cause.getMessage(), cause));
         }
-
-        container.notifySessionListeners((listener) -> listener.onJavaxWebSocketSessionClosed(session));
     }
 
     @Override
@@ -570,11 +591,6 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
         activeMessageSink.accept(frame, callback);
         if (frame.isFin())
             activeMessageSink = null;
-    }
-
-    public void onClose(Frame frame, Callback callback)
-    {
-        callback.succeeded();
     }
 
     public void onPing(Frame frame, Callback callback)

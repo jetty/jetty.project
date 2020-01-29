@@ -20,7 +20,9 @@ package org.eclipse.jetty.websocket.common;
 
 import java.lang.invoke.MethodHandle;
 import java.nio.ByteBuffer;
+import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -57,6 +59,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     private final WebSocketContainer container;
     private final Object endpointInstance;
     private final BatchMode batchMode;
+    private final AtomicBoolean closeNotified = new AtomicBoolean();
     private MethodHandle openHandle;
     private MethodHandle closeHandle;
     private MethodHandle errorHandle;
@@ -278,6 +281,11 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         }
     }
 
+    private void onCloseFrame(Frame frame, Callback callback)
+    {
+        notifyOnClose(CloseStatus.getCloseStatus(frame), callback);
+    }
+
     @Override
     public void onClosed(CloseStatus closeStatus, Callback callback)
     {
@@ -285,6 +293,19 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         {
             // We are now closed and cannot suspend or resume
             state = SuspendState.CLOSED;
+        }
+
+        notifyOnClose(closeStatus, callback);
+        container.notifySessionListeners((listener) -> listener.onWebSocketSessionClosed(session));
+    }
+
+    private void notifyOnClose(CloseStatus closeStatus, Callback callback)
+    {
+        // Make sure onClose is only notified once.
+        if (!closeNotified.compareAndSet(false, true))
+        {
+            callback.failed(new ClosedChannelException());
+            return;
         }
 
         try
@@ -298,8 +319,6 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         {
             callback.failed(new WebSocketException(endpointInstance.getClass().getSimpleName() + " CLOSE method error: " + cause.getMessage(), cause));
         }
-
-        container.notifySessionListeners((listener) -> listener.onWebSocketSessionClosed(session));
     }
 
     public String toString()
@@ -328,11 +347,6 @@ public class JettyWebSocketFrameHandler implements FrameHandler
             activeMessageSink = binarySink;
 
         acceptMessage(frame, callback);
-    }
-
-    private void onCloseFrame(Frame frame, Callback callback)
-    {
-        callback.succeeded();
     }
 
     private void onContinuationFrame(Frame frame, Callback callback)
