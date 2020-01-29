@@ -180,8 +180,9 @@ public class JavaxOnCloseTest
         assertTrue(serverEndpoint.openLatch.await(5, TimeUnit.SECONDS));
         serverEndpoint.setOnClose((session) ->
         {
-            assertThrows(ClosedChannelException.class,
+            IOException error = assertThrows(IOException.class,
                 () -> session.close(new CloseReason(CloseCodes.UNEXPECTED_CONDITION, "abnormal close 2")));
+            assertThat(error.getCause(), instanceOf(ClosedChannelException.class));
             clientEndpoint.unBlockClose();
         });
 
