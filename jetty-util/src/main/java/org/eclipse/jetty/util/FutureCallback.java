@@ -163,9 +163,7 @@ public class FutureCallback implements Future<Void>, Callback
         {
             Throwable cause = e.getCause();
             if (cause instanceof RuntimeException)
-                throw (RuntimeException)cause;
-            else if (cause instanceof IOException)
-                throw (IOException)cause;
+                throw new RuntimeException(cause);
             else
                 throw new IOException(cause);
         }
