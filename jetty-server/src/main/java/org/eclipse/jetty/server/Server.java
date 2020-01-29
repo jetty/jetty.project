@@ -466,18 +466,18 @@ public class Server extends HandlerWrapper implements Attributes
 
         if (getStopTimeout() > 0)
         {
+            long end = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(getStopTimeout());
             try
             {
-                long end = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(getStopTimeout());
                 Graceful.shutdown(this).get(getStopTimeout(), TimeUnit.MILLISECONDS);
-                QueuedThreadPool qtp = getBean(QueuedThreadPool.class);
-                if (qtp != null)
-                    qtp.setStopTimeout(Math.min(1000L, TimeUnit.NANOSECONDS.toMillis(end - System.nanoTime())));
             }
             catch (Throwable e)
             {
                 mex.add(e);
             }
+            QueuedThreadPool qtp = getBean(QueuedThreadPool.class);
+            if (qtp != null)
+                qtp.setStopTimeout(Math.max(1000L, TimeUnit.NANOSECONDS.toMillis(end - System.nanoTime())));
         }
 
         // Now stop the connectors (this will close existing connections)
