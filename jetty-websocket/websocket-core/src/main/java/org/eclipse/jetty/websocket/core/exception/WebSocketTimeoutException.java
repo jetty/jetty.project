@@ -16,33 +16,27 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core;
+package org.eclipse.jetty.websocket.core.exception;
 
-@SuppressWarnings("serial")
-public class CloseException extends WebSocketException
+/**
+ * Exception thrown to indicate a connection I/O timeout.
+ */
+public class WebSocketTimeoutException extends WebSocketException
 {
-    private int statusCode;
+    private static final long serialVersionUID = -6145098200250676673L;
 
-    public CloseException(int closeCode, String message)
+    public WebSocketTimeoutException(String message)
     {
         super(message);
-        this.statusCode = closeCode;
     }
 
-    public CloseException(int closeCode, String message, Throwable cause)
+    public WebSocketTimeoutException(String message, Throwable cause)
     {
         super(message, cause);
-        this.statusCode = closeCode;
     }
 
-    public CloseException(int closeCode, Throwable cause)
+    public WebSocketTimeoutException(Throwable cause)
     {
         super(cause);
-        this.statusCode = closeCode;
-    }
-
-    public int getStatusCode()
-    {
-        return statusCode;
     }
 }

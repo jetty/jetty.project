@@ -27,8 +27,8 @@ import javax.websocket.MessageHandler;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.javax.client.BasicClientEndpointConfig;
 import org.eclipse.jetty.websocket.javax.client.JavaxWebSocketClientContainer;
@@ -78,7 +78,7 @@ public class SessionAddMessageHandlerTest
 
         JavaxWebSocketFrameHandlerFactory frameHandlerFactory = new JavaxWebSocketClientFrameHandlerFactory(container);
         frameHandler = frameHandlerFactory.newJavaxWebSocketFrameHandler(ei, handshakeRequest);
-        frameHandler.onOpen(new FrameHandler.CoreSession.Empty(), Callback.NOOP);
+        frameHandler.onOpen(new CoreSession.Empty(), Callback.NOOP);
 
         // Session
         session = frameHandler.getSession();

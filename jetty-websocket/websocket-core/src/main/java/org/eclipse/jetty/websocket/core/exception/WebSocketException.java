@@ -16,29 +16,31 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core;
+package org.eclipse.jetty.websocket.core.exception;
 
 /**
- * Exception to terminate the connection because it has received data within a frame payload that was not consistent with the requirements of that frame
- * payload. (eg: not UTF-8 in a text frame, or a unexpected data seen by an extension)
- *
- * @see <a href="https://tools.ietf.org/html/rfc6455#section-7.4.1">RFC6455 : Section 7.4.1</a>
+ * A recoverable exception within the websocket framework.
  */
 @SuppressWarnings("serial")
-public class BadPayloadException extends CloseException
+public class WebSocketException extends RuntimeException
 {
-    public BadPayloadException(String message)
+    public WebSocketException()
     {
-        super(CloseStatus.BAD_PAYLOAD, message);
+        super();
     }
 
-    public BadPayloadException(String message, Throwable t)
+    public WebSocketException(String message)
     {
-        super(CloseStatus.BAD_PAYLOAD, message, t);
+        super(message);
     }
 
-    public BadPayloadException(Throwable t)
+    public WebSocketException(String message, Throwable cause)
     {
-        super(CloseStatus.BAD_PAYLOAD, t);
+        super(message, cause);
+    }
+
+    public WebSocketException(Throwable cause)
+    {
+        super(cause);
     }
 }

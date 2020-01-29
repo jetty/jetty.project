@@ -23,7 +23,7 @@ import java.nio.channels.ClosedChannelException;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
-import org.eclipse.jetty.websocket.core.ProtocolException;
+import org.eclipse.jetty.websocket.core.exception.ProtocolException;
 
 /**
  * Atomic Connection State

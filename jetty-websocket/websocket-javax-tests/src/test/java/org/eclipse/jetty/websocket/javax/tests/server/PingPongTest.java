@@ -31,8 +31,8 @@ import com.acme.websocket.PongSocket;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.webapp.WebAppContext;
+import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.javax.tests.Timeouts;
@@ -81,14 +81,14 @@ public class PingPongTest
         server.stop();
     }
 
-    private void assertEcho(String endpointPath, Consumer<FrameHandler.CoreSession> sendAction, String... expectedMsgs) throws Exception
+    private void assertEcho(String endpointPath, Consumer<CoreSession> sendAction, String... expectedMsgs) throws Exception
     {
         FrameHandlerTracker clientSocket = new FrameHandlerTracker();
         URI toUri = server.getWsUri().resolve(endpointPath);
 
         // Connect
-        Future<FrameHandler.CoreSession> futureSession = client.connect(clientSocket, toUri);
-        FrameHandler.CoreSession coreSession = futureSession.get(Timeouts.CONNECT_MS, TimeUnit.MILLISECONDS);
+        Future<CoreSession> futureSession = client.connect(clientSocket, toUri);
+        CoreSession coreSession = futureSession.get(Timeouts.CONNECT_MS, TimeUnit.MILLISECONDS);
         try
         {
             // Apply send action

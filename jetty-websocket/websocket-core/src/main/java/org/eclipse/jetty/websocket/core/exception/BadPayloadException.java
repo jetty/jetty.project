@@ -16,28 +16,31 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core;
+package org.eclipse.jetty.websocket.core.exception;
+
+import org.eclipse.jetty.websocket.core.CloseStatus;
 
 /**
- * Per spec, a protocol error should result in a Close frame of status code 1002 (PROTOCOL_ERROR)
+ * Exception to terminate the connection because it has received data within a frame payload that was not consistent with the requirements of that frame
+ * payload. (eg: not UTF-8 in a text frame, or a unexpected data seen by an extension)
  *
  * @see <a href="https://tools.ietf.org/html/rfc6455#section-7.4.1">RFC6455 : Section 7.4.1</a>
  */
 @SuppressWarnings("serial")
-public class ProtocolException extends CloseException
+public class BadPayloadException extends CloseException
 {
-    public ProtocolException(String message)
+    public BadPayloadException(String message)
     {
-        super(CloseStatus.PROTOCOL, message);
+        super(CloseStatus.BAD_PAYLOAD, message);
     }
 
-    public ProtocolException(String message, Throwable t)
+    public BadPayloadException(String message, Throwable t)
     {
-        super(CloseStatus.PROTOCOL, message, t);
+        super(CloseStatus.BAD_PAYLOAD, message, t);
     }
 
-    public ProtocolException(Throwable t)
+    public BadPayloadException(Throwable t)
     {
-        super(CloseStatus.PROTOCOL, t);
+        super(CloseStatus.BAD_PAYLOAD, t);
     }
 }

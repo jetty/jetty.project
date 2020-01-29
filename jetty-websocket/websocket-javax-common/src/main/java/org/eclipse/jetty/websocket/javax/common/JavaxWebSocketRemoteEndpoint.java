@@ -31,11 +31,11 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.OutgoingFrames;
-import org.eclipse.jetty.websocket.core.WebSocketException;
+import org.eclipse.jetty.websocket.core.exception.WebSocketException;
 import org.eclipse.jetty.websocket.javax.common.messages.MessageOutputStream;
 import org.eclipse.jetty.websocket.javax.common.messages.MessageWriter;
 
@@ -44,11 +44,11 @@ public class JavaxWebSocketRemoteEndpoint implements javax.websocket.RemoteEndpo
     private static final Logger LOG = Log.getLogger(JavaxWebSocketRemoteEndpoint.class);
 
     protected final JavaxWebSocketSession session;
-    private final FrameHandler.CoreSession coreSession;
+    private final CoreSession coreSession;
     protected boolean batch = false;
     protected byte messageType = -1;
 
-    protected JavaxWebSocketRemoteEndpoint(JavaxWebSocketSession session, FrameHandler.CoreSession coreSession)
+    protected JavaxWebSocketRemoteEndpoint(JavaxWebSocketSession session, CoreSession coreSession)
     {
         this.session = session;
         this.coreSession = coreSession;

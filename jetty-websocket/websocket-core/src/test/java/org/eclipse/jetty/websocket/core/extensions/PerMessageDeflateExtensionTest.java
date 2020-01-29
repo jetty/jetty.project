@@ -31,14 +31,14 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.websocket.core.Behavior;
+import org.eclipse.jetty.websocket.core.Configuration.ConfigurationCustomizer;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.FrameHandler.ConfigurationCustomizer;
 import org.eclipse.jetty.websocket.core.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.OutgoingFramesCapture;
-import org.eclipse.jetty.websocket.core.ProtocolException;
 import org.eclipse.jetty.websocket.core.TestMessageHandler;
+import org.eclipse.jetty.websocket.core.exception.ProtocolException;
 import org.eclipse.jetty.websocket.core.internal.ExtensionStack;
 import org.eclipse.jetty.websocket.core.internal.Negotiated;
 import org.eclipse.jetty.websocket.core.internal.PerMessageDeflateExtension;
@@ -376,7 +376,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
         PerMessageDeflateExtension ext = new PerMessageDeflateExtension();
         ExtensionConfig config = ExtensionConfig.parse("permessage-deflate");
         ext.init(config, components);
-        ext.setWebSocketCoreSession(newSession());
+        ext.setCoreSession(newSession());
 
         // Setup capture of incoming frames
         IncomingFramesCapture capture = new IncomingFramesCapture();
@@ -450,7 +450,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
     {
         PerMessageDeflateExtension ext = new PerMessageDeflateExtension();
         ext.init(ExtensionConfig.parse("permessage-deflate"), components);
-        ext.setWebSocketCoreSession(newSession());
+        ext.setCoreSession(newSession());
 
         // Setup capture of outgoing frames
         OutgoingFramesCapture capture = new OutgoingFramesCapture();
@@ -497,7 +497,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
         PerMessageDeflateExtension ext = new PerMessageDeflateExtension();
         ExtensionConfig config = ExtensionConfig.parse("permessage-deflate");
         ext.init(config, components);
-        ext.setWebSocketCoreSession(newSession());
+        ext.setCoreSession(newSession());
 
         // Setup capture of incoming frames
         OutgoingFramesCapture capture = new OutgoingFramesCapture();

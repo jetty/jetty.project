@@ -16,45 +16,30 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core;
+package org.eclipse.jetty.websocket.core.exception;
 
-import org.eclipse.jetty.util.Utf8Appendable;
+import org.eclipse.jetty.websocket.core.CloseStatus;
 
-public class NullAppendable extends Utf8Appendable
+/**
+ * Per spec, a protocol error should result in a Close frame of status code 1002 (PROTOCOL_ERROR)
+ *
+ * @see <a href="https://tools.ietf.org/html/rfc6455#section-7.4.1">RFC6455 : Section 7.4.1</a>
+ */
+@SuppressWarnings("serial")
+public class ProtocolException extends CloseException
 {
-    public NullAppendable()
+    public ProtocolException(String message)
     {
-        super(new Appendable()
-        {
-            @Override
-            public Appendable append(CharSequence csq)
-            {
-                return null;
-            }
-
-            @Override
-            public Appendable append(CharSequence csq, int start, int end)
-            {
-                return null;
-            }
-
-            @Override
-            public Appendable append(char c)
-            {
-                return null;
-            }
-        });
+        super(CloseStatus.PROTOCOL, message);
     }
 
-    @Override
-    public int length()
+    public ProtocolException(String message, Throwable t)
     {
-        return 0;
+        super(CloseStatus.PROTOCOL, message, t);
     }
 
-    @Override
-    public String getPartialString()
+    public ProtocolException(Throwable t)
     {
-        return null;
+        super(CloseStatus.PROTOCOL, t);
     }
 }

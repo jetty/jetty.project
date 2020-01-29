@@ -24,11 +24,11 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.AbstractExtension;
+import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.NullAppendable;
-import org.eclipse.jetty.websocket.core.ProtocolException;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
+import org.eclipse.jetty.websocket.core.exception.ProtocolException;
 
 import static org.eclipse.jetty.websocket.core.OpCode.CONTINUATION;
 import static org.eclipse.jetty.websocket.core.OpCode.TEXT;
@@ -38,6 +38,7 @@ public class ValidationExtension extends AbstractExtension
 {
     private static final Logger LOG = Log.getLogger(ValidationExtension.class);
 
+    private WebSocketCoreSession coreSession;
     private FrameSequence incomingSequence = null;
     private FrameSequence outgoingSequence = null;
     private boolean incomingFrameValidation = false;
@@ -54,6 +55,17 @@ public class ValidationExtension extends AbstractExtension
     }
 
     @Override
+    public void setCoreSession(CoreSession coreSession)
+    {
+        super.setCoreSession(coreSession);
+
+        // TODO: change validation to use static methods instead of down casting CoreSession.
+        if (!(coreSession instanceof WebSocketCoreSession))
+            throw new IllegalArgumentException("ValidationExtension needs a CoreSession Configuration");
+        this.coreSession = (WebSocketCoreSession)coreSession;
+    }
+
+    @Override
     public void onFrame(Frame frame, Callback callback)
     {
         try
@@ -62,7 +74,7 @@ public class ValidationExtension extends AbstractExtension
                 incomingSequence.check(frame.getOpCode(), frame.isFin());
 
             if (incomingFrameValidation)
-                getWebSocketCoreSession().assertValidIncoming(frame);
+                coreSession.assertValidIncoming(frame);
 
             if (incomingUtf8Validation != null)
                 validateUTF8(frame, incomingUtf8Validation, continuedInOpCode);
@@ -85,7 +97,7 @@ public class ValidationExtension extends AbstractExtension
                 outgoingSequence.check(frame.getOpCode(), frame.isFin());
 
             if (outgoingFrameValidation)
-                getWebSocketCoreSession().assertValidOutgoing(frame);
+                coreSession.assertValidOutgoing(frame);
 
             if (outgoingUtf8Validation != null)
                 validateUTF8(frame, outgoingUtf8Validation, continuedOutOpCode);

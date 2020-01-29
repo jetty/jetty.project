@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
-
 /**
  * Interface for WebSocket Extensions.
  * <p>
@@ -88,7 +86,8 @@ public interface Extension extends IncomingFrames, OutgoingFrames
     void setNextOutgoingFrames(OutgoingFrames nextOutgoing);
 
     /**
-     * Set the {@link WebSocketCoreSession} for this Extension
+     * Set the {@link CoreSession} for this Extension.
+     * @param coreSession
      */
-    void setWebSocketCoreSession(WebSocketCoreSession coreSession);
+    void setCoreSession(CoreSession coreSession);
 }

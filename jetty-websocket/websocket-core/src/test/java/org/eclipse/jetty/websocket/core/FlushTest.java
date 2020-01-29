@@ -67,7 +67,7 @@ public class FlushTest
     public void testStandardFlush() throws Exception
     {
         TestFrameHandler clientHandler = new TestFrameHandler();
-        CompletableFuture<FrameHandler.CoreSession> connect = client.connect(clientHandler, server.getUri());
+        CompletableFuture<CoreSession> connect = client.connect(clientHandler, server.getUri());
         connect.get(5, TimeUnit.SECONDS);
 
         // Send a batched frame.
@@ -94,7 +94,7 @@ public class FlushTest
     public void testFlushOnCloseFrame() throws Exception
     {
         TestFrameHandler clientHandler = new TestFrameHandler();
-        CompletableFuture<FrameHandler.CoreSession> connect = client.connect(clientHandler, server.getUri());
+        CompletableFuture<CoreSession> connect = client.connect(clientHandler, server.getUri());
         connect.get(5, TimeUnit.SECONDS);
 
         // Send a batched frame.
@@ -120,7 +120,7 @@ public class FlushTest
     public void testFlushAfterClose() throws Exception
     {
         TestFrameHandler clientHandler = new TestFrameHandler();
-        CompletableFuture<FrameHandler.CoreSession> connect = client.connect(clientHandler, server.getUri());
+        CompletableFuture<CoreSession> connect = client.connect(clientHandler, server.getUri());
         connect.get(5, TimeUnit.SECONDS);
 
         clientHandler.sendClose();

@@ -16,31 +16,30 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core;
+package org.eclipse.jetty.websocket.core.exception;
+
+import org.eclipse.jetty.websocket.core.CloseStatus;
 
 /**
- * A recoverable exception within the websocket framework.
+ * Exception when a message is too large for the internal buffers occurs and should trigger a connection close.
+ *
+ * @see <a href="https://tools.ietf.org/html/rfc6455#section-7.4.1">RFC6455 : Section 7.4.1</a>
  */
 @SuppressWarnings("serial")
-public class WebSocketException extends RuntimeException
+public class MessageTooLargeException extends CloseException
 {
-    public WebSocketException()
+    public MessageTooLargeException(String message)
     {
-        super();
+        super(CloseStatus.MESSAGE_TOO_LARGE, message);
     }
 
-    public WebSocketException(String message)
+    public MessageTooLargeException(String message, Throwable t)
     {
-        super(message);
+        super(CloseStatus.MESSAGE_TOO_LARGE, message, t);
     }
 
-    public WebSocketException(String message, Throwable cause)
+    public MessageTooLargeException(Throwable t)
     {
-        super(message, cause);
-    }
-
-    public WebSocketException(Throwable cause)
-    {
-        super(cause);
+        super(CloseStatus.MESSAGE_TOO_LARGE, t);
     }
 }

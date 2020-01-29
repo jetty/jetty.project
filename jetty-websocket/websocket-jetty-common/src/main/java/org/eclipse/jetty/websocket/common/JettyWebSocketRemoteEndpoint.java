@@ -32,10 +32,10 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WriteCallback;
+import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.OpCode;
-import org.eclipse.jetty.websocket.core.ProtocolException;
+import org.eclipse.jetty.websocket.core.exception.ProtocolException;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -43,11 +43,11 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
 {
     private static final Logger LOG = Log.getLogger(JettyWebSocketRemoteEndpoint.class);
 
-    private final FrameHandler.CoreSession coreSession;
+    private final CoreSession coreSession;
     private byte messageType = -1;
     private BatchMode batchMode;
 
-    public JettyWebSocketRemoteEndpoint(FrameHandler.CoreSession coreSession, BatchMode batchMode)
+    public JettyWebSocketRemoteEndpoint(CoreSession coreSession, BatchMode batchMode)
     {
         this.coreSession = Objects.requireNonNull(coreSession);
         this.batchMode = batchMode;

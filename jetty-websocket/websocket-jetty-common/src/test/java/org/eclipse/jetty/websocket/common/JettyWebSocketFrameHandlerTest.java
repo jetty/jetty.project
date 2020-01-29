@@ -38,8 +38,8 @@ import org.eclipse.jetty.websocket.common.endpoints.listeners.ListenerPartialSoc
 import org.eclipse.jetty.websocket.common.endpoints.listeners.ListenerPingPongSocket;
 import org.eclipse.jetty.websocket.core.Behavior;
 import org.eclipse.jetty.websocket.core.CloseStatus;
+import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -67,7 +67,7 @@ public class JettyWebSocketFrameHandlerTest
     }
 
     private JettyWebSocketFrameHandlerFactory endpointFactory = new JettyWebSocketFrameHandlerFactory(container);
-    private FrameHandler.CoreSession coreSession = new FrameHandler.CoreSession.Empty()
+    private CoreSession coreSession = new CoreSession.Empty()
     {
         @Override
         public Behavior getBehavior()

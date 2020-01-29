@@ -36,9 +36,11 @@ import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.core.Configuration;
+import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
-import org.eclipse.jetty.websocket.core.WebSocketException;
+import org.eclipse.jetty.websocket.core.exception.WebSocketException;
 import org.eclipse.jetty.websocket.core.server.Handshaker;
 import org.eclipse.jetty.websocket.core.server.Negotiation;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
@@ -47,13 +49,13 @@ import static javax.servlet.http.HttpServletResponse.SC_SERVICE_UNAVAILABLE;
 
 /**
  * Mapping of pathSpec to a tupple of {@link WebSocketCreator}, {@link FrameHandlerFactory} and
- * {@link org.eclipse.jetty.websocket.core.FrameHandler.Customizer}.
+ * {@link Configuration.Customizer}.
  * <p>
- * When the {@link #upgrade(HttpServletRequest, HttpServletResponse, FrameHandler.Customizer)}
+ * When the {@link #upgrade(HttpServletRequest, HttpServletResponse, Configuration.Customizer)}
  * method is called, a match for the pathSpec is looked for. If one is found then the
  * creator is used to create a POJO for the WebSocket endpoint, the factory is used to
  * wrap that POJO with a {@link FrameHandler} and the customizer is used to configure the resulting
- * {@link FrameHandler.CoreSession}.</p>
+ * {@link CoreSession}.</p>
  */
 public class WebSocketMapping implements Dumpable, LifeCycle.Listener
 {
@@ -187,7 +189,7 @@ public class WebSocketMapping implements Dumpable, LifeCycle.Listener
      * @param factory the factory to use to create a FrameHandler for the websocket
      * @param customizer the customizer to use to customize the WebSocket session.
      */
-    public void addMapping(PathSpec pathSpec, WebSocketCreator creator, FrameHandlerFactory factory, FrameHandler.Customizer customizer) throws WebSocketException
+    public void addMapping(PathSpec pathSpec, WebSocketCreator creator, FrameHandlerFactory factory, Configuration.Customizer customizer) throws WebSocketException
     {
         mappings.put(pathSpec, new Negotiator(creator, factory, customizer));
     }
@@ -214,7 +216,7 @@ public class WebSocketMapping implements Dumpable, LifeCycle.Listener
         return mapping.getResource();
     }
 
-    public boolean upgrade(HttpServletRequest request, HttpServletResponse response, FrameHandler.Customizer defaultCustomizer) throws IOException
+    public boolean upgrade(HttpServletRequest request, HttpServletResponse response, Configuration.Customizer defaultCustomizer) throws IOException
     {
         // Since this may be a filter, we need to be smart about determining the target path.
         // We should rely on the Container for stripping path parameters and its ilk before
@@ -245,7 +247,7 @@ public class WebSocketMapping implements Dumpable, LifeCycle.Listener
         private final WebSocketCreator creator;
         private final FrameHandlerFactory factory;
 
-        public Negotiator(WebSocketCreator creator, FrameHandlerFactory factory, FrameHandler.Customizer customizer)
+        public Negotiator(WebSocketCreator creator, FrameHandlerFactory factory, Configuration.Customizer customizer)
         {
             super(components, customizer);
             this.creator = creator;

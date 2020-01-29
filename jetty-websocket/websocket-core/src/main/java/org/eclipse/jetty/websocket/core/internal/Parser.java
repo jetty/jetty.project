@@ -27,13 +27,12 @@ import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.CloseStatus;
+import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.FrameHandler.Configuration;
-import org.eclipse.jetty.websocket.core.FrameHandler.ConfigurationHolder;
-import org.eclipse.jetty.websocket.core.MessageTooLargeException;
 import org.eclipse.jetty.websocket.core.OpCode;
-import org.eclipse.jetty.websocket.core.ProtocolException;
-import org.eclipse.jetty.websocket.core.WebSocketException;
+import org.eclipse.jetty.websocket.core.exception.MessageTooLargeException;
+import org.eclipse.jetty.websocket.core.exception.ProtocolException;
+import org.eclipse.jetty.websocket.core.exception.WebSocketException;
 
 /**
  * Parsing of a frames in WebSocket land.
@@ -65,7 +64,7 @@ public class Parser
 
     public Parser(ByteBufferPool bufferPool)
     {
-        this(bufferPool, new ConfigurationHolder());
+        this(bufferPool, new Configuration.ConfigurationCustomizer());
     }
 
     public Parser(ByteBufferPool bufferPool, Configuration configuration)
