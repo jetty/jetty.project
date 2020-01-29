@@ -211,7 +211,7 @@ public class Response implements HttpServletResponse
             return cookie;
 
         //sameSite is not set, use the default configured for the context, if one exists
-        SameSite contextDefault = HttpCookie.getSameSiteDefault(_channel.getRequest().getServletContext());
+        SameSite contextDefault = HttpCookie.getSameSiteDefault(_channel.getRequest().getContext());
         if (contextDefault == null)
             return cookie; //no default set
 

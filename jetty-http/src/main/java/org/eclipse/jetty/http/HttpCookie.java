@@ -22,8 +22,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
-import javax.servlet.ServletContext;
-
+import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -461,15 +460,15 @@ public class HttpCookie
      * Get the default value for SameSite cookie attribute, if one
      * has been set for the given context.
      * 
-     * @param context the context to check for default SameSite value
+     * @param contextAttributes the context to check for default SameSite value
      * @return the default SameSite value or null if one does not exist
      * @throws IllegalStateException if the default value is not a permitted value
      */
-    public static SameSite getSameSiteDefault(ServletContext context)
+    public static SameSite getSameSiteDefault(Attributes contextAttributes)
     {
-        if (context == null)
+        if (contextAttributes == null)
             return null;
-        Object o = context.getAttribute(SAME_SITE_DEFAULT_ATTRIBUTE);
+        Object o = contextAttributes.getAttribute(SAME_SITE_DEFAULT_ATTRIBUTE);
         if (o == null)
         {
             if (LOG.isDebugEnabled())
@@ -483,7 +482,7 @@ public class HttpCookie
         try
         {
             SameSite samesite = Enum.valueOf(SameSite.class, o.toString().trim().toUpperCase(Locale.ENGLISH));
-            context.setAttribute(SAME_SITE_DEFAULT_ATTRIBUTE, samesite);
+            contextAttributes.setAttribute(SAME_SITE_DEFAULT_ATTRIBUTE, samesite);
             return samesite;
         }
         catch (Exception e)
