@@ -47,6 +47,7 @@ public class WebSocketTester
     private static String NON_RANDOM_KEY = Base64.getEncoder().encodeToString("0123456701234567".getBytes());
     private static SslContextFactory.Client sslContextFactory;
     protected ByteBufferPool bufferPool;
+    protected ByteBuffer buffer;
     protected Parser parser;
 
     @BeforeAll
@@ -159,33 +160,34 @@ public class WebSocketTester
 
     protected Parser.ParsedFrame receiveFrame(InputStream in) throws IOException
     {
-        ByteBuffer buffer = bufferPool.acquire(4096, false);
+        if (buffer == null)
+            buffer = bufferPool.acquire(4096, false);
+
         while (true)
         {
+            Parser.ParsedFrame frame = parser.parse(buffer);
+            if (!buffer.hasRemaining())
+                BufferUtil.clear(buffer);
+            if (frame != null)
+                return frame;
+
             int p = BufferUtil.flipToFill(buffer);
             int len = in.read(buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.remaining());
             if (len < 0)
                 return null;
             buffer.position(buffer.position() + len);
             BufferUtil.flipToFlush(buffer, p);
-
-            Parser.ParsedFrame frame = parser.parse(buffer);
-            if (frame != null)
-                return frame;
         }
     }
 
     protected void receiveEof(InputStream in) throws IOException
     {
         ByteBuffer buffer = bufferPool.acquire(4096, false);
-        while (true)
-        {
-            BufferUtil.flipToFill(buffer);
-            int len = in.read(buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.remaining());
-            if (len < 0)
-                return;
+        BufferUtil.clearToFill(buffer);
+        int len = in.read(buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.remaining());
+        if (len < 0)
+            return;
 
-            throw new IllegalStateException("unexpected content");
-        }
+        throw new IllegalStateException("unexpected content");
     }
 }

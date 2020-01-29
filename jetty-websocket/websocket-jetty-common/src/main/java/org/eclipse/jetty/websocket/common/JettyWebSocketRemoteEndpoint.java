@@ -22,27 +22,32 @@ import java.io.IOException;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.SharedBlockingCallback;
+import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.BatchMode;
+import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WriteCallback;
-import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.OpCode;
-import org.eclipse.jetty.websocket.core.exception.ProtocolException;
+import org.eclipse.jetty.websocket.core.ProtocolException;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket.api.RemoteEndpoint
 {
-    private final CoreSession coreSession;
+    private static final Logger LOG = Log.getLogger(JettyWebSocketRemoteEndpoint.class);
+
+    private final FrameHandler.CoreSession coreSession;
     private byte messageType = -1;
-    private final SharedBlockingCallback blocker = new SharedBlockingCallback();
     private BatchMode batchMode;
 
-    public JettyWebSocketRemoteEndpoint(CoreSession coreSession, BatchMode batchMode)
+    public JettyWebSocketRemoteEndpoint(FrameHandler.CoreSession coreSession, BatchMode batchMode)
     {
         this.coreSession = Objects.requireNonNull(coreSession);
         this.batchMode = batchMode;
@@ -55,14 +60,7 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
      */
     public void close()
     {
-        try (SharedBlockingCallback.Blocker b = blocker.acquire())
-        {
-            coreSession.close(b);
-        }
-        catch (IOException e)
-        {
-            coreSession.close(Callback.NOOP);
-        }
+        close(StatusCode.NO_CODE, null);
     }
 
     /**
@@ -74,13 +72,15 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
      */
     public void close(int statusCode, String reason)
     {
-        try (SharedBlockingCallback.Blocker b = blocker.acquire())
+        try
         {
+            FutureCallback b = new FutureCallback();
             coreSession.close(statusCode, reason, b);
+            b.block(getBlockingTimeout(), TimeUnit.MILLISECONDS);
         }
         catch (IOException e)
         {
-            coreSession.close(Callback.NOOP);
+            LOG.ignore(e);
         }
     }
 
@@ -114,11 +114,9 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
     @Override
     public void sendPartialBytes(ByteBuffer fragment, boolean isLast) throws IOException
     {
-        try (SharedBlockingCallback.Blocker b = blocker.acquire())
-        {
-            sendPartialBytes(fragment, isLast, b);
-            b.block();
-        }
+        FutureCallback b = new FutureCallback();
+        sendPartialBytes(fragment, isLast, b);
+        b.block(getBlockingTimeout(), TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -158,11 +156,9 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
     @Override
     public void sendPartialString(String fragment, boolean isLast) throws IOException
     {
-        try (SharedBlockingCallback.Blocker b = blocker.acquire())
-        {
-            sendPartialText(fragment, isLast, b);
-            b.block();
-        }
+        FutureCallback b = new FutureCallback();
+        sendPartialText(fragment, isLast, b);
+        b.block(getBlockingTimeout(), TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -227,16 +223,9 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
 
     private void sendBlocking(Frame frame) throws IOException
     {
-        try (SharedBlockingCallback.Blocker b = blocker.acquire())
-        {
-            coreSession.sendFrame(frame, b, false);
-            b.block();
-        }
-    }
-
-    protected CoreSession getCoreSession()
-    {
-        return coreSession;
+        FutureCallback b = new FutureCallback();
+        coreSession.sendFrame(frame, b, false);
+        b.block(getBlockingTimeout(), TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -265,10 +254,14 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
     @Override
     public void flush() throws IOException
     {
-        try (SharedBlockingCallback.Blocker b = blocker.acquire())
-        {
-            coreSession.flush(b);
-            b.block();
-        }
+        FutureCallback b = new FutureCallback();
+        coreSession.flush(b);
+        b.block(getBlockingTimeout(), TimeUnit.MILLISECONDS);
+    }
+
+    private long getBlockingTimeout()
+    {
+        long idleTimeout = coreSession.getIdleTimeout().toMillis();
+        return (idleTimeout > 0) ? idleTimeout + 1000 : idleTimeout;
     }
 }

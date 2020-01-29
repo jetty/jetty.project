@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -1077,7 +1078,7 @@ public class ServletContextHandler extends ContextHandler
                 throw new IllegalStateException();
 
             if (StringUtil.isBlank(name))
-                throw new IllegalStateException("Missing name");
+                throw new IllegalArgumentException("Missing name");
 
             if (!_enabled)
                 throw new UnsupportedOperationException();
@@ -1288,8 +1289,19 @@ public class ServletContextHandler extends ContextHandler
         }
 
         @Override
+        public String getInitParameter(String name)
+        {
+            //since servlet spec 4.0
+            Objects.requireNonNull(name);
+            return super.getInitParameter(name);
+        }
+
+        @Override
         public boolean setInitParameter(String name, String value)
         {
+            //since servlet spec 4.0
+            Objects.requireNonNull(name);
+
             if (!isStarting())
                 throw new IllegalStateException();
 

@@ -19,6 +19,7 @@
 package org.eclipse.jetty.websocket.tests;
 
 import java.net.URI;
+import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.server.Server;
@@ -125,8 +126,7 @@ public class WebSocketStopTest
         assertThat(clientSocket.statusCode, is(StatusCode.NORMAL));
         assertThat(serverSocket.statusCode, is(StatusCode.NORMAL));
 
-        IllegalStateException failure = assertThrows(IllegalStateException.class,
+        assertThrows(ClosedChannelException.class,
             () -> session.getRemote().sendString("this should fail before ExtensionStack"));
-        assertThat(failure.getMessage(), is("CLOSED"));
     }
 }

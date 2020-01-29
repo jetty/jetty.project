@@ -22,11 +22,12 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.Writer;
 import java.nio.ByteBuffer;
+import java.util.concurrent.TimeUnit;
 import javax.websocket.EncodeException;
 import javax.websocket.RemoteEndpoint;
 
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.SharedBlockingCallback;
+import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.CoreSession;
@@ -65,10 +66,10 @@ public class JavaxWebSocketBasicRemote extends JavaxWebSocketRemoteEndpoint impl
         {
             LOG.debug("sendBinary({})", BufferUtil.toDetailString(data));
         }
-        try (SharedBlockingCallback.Blocker b = session.getBlocking().acquire())
-        {
-            sendFrame(new Frame(OpCode.BINARY).setPayload(data), b, false);
-        }
+
+        FutureCallback b = new FutureCallback();
+        sendFrame(new Frame(OpCode.BINARY).setPayload(data), b, false);
+        b.block(getBlockingTimeout(), TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -79,37 +80,36 @@ public class JavaxWebSocketBasicRemote extends JavaxWebSocketRemoteEndpoint impl
         {
             LOG.debug("sendBinary({},{})", BufferUtil.toDetailString(partialByte), isLast);
         }
-        try (SharedBlockingCallback.Blocker b = session.getBlocking().acquire())
-        {
-            Frame frame;
-            switch (messageType)
-            {
-                case -1:
-                    // New message!
-                    frame = new Frame(OpCode.BINARY);
-                    break;
-                case OpCode.TEXT:
-                    throw new IllegalStateException("Cannot send a partial BINARY message: TEXT message in progress");
-                case OpCode.BINARY:
-                    frame = new Frame(OpCode.CONTINUATION);
-                    break;
-                default:
-                    throw new IllegalStateException("Cannot send a partial BINARY message: unrecognized active message type " + OpCode.name(messageType));
-            }
 
-            frame.setPayload(partialByte);
-            frame.setFin(isLast);
-            sendFrame(frame, b, false);
+        Frame frame;
+        switch (messageType)
+        {
+            case -1:
+                // New message!
+                frame = new Frame(OpCode.BINARY);
+                break;
+            case OpCode.TEXT:
+                throw new IllegalStateException("Cannot send a partial BINARY message: TEXT message in progress");
+            case OpCode.BINARY:
+                frame = new Frame(OpCode.CONTINUATION);
+                break;
+            default:
+                throw new IllegalStateException("Cannot send a partial BINARY message: unrecognized active message type " + OpCode.name(messageType));
         }
+
+        frame.setPayload(partialByte);
+        frame.setFin(isLast);
+        FutureCallback b = new FutureCallback();
+        sendFrame(frame, b, false);
+        b.block(getBlockingTimeout(), TimeUnit.MILLISECONDS);
     }
 
     @Override
     public void sendObject(Object data) throws IOException, EncodeException
     {
-        try (SharedBlockingCallback.Blocker b = session.getBlocking().acquire())
-        {
-            super.sendObject(data, b);
-        }
+        FutureCallback b = new FutureCallback();
+        super.sendObject(data, b);
+        b.block(getBlockingTimeout(), TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -120,10 +120,11 @@ public class JavaxWebSocketBasicRemote extends JavaxWebSocketRemoteEndpoint impl
         {
             LOG.debug("sendText({})", TextUtil.hint(text));
         }
-        try (SharedBlockingCallback.Blocker b = session.getBlocking().acquire())
-        {
-            sendFrame(new Frame(OpCode.TEXT).setPayload(text), b, false);
-        }
+
+
+        FutureCallback b = new FutureCallback();
+        sendFrame(new Frame(OpCode.TEXT).setPayload(text), b, false);
+        b.block(getBlockingTimeout(), TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -134,27 +135,33 @@ public class JavaxWebSocketBasicRemote extends JavaxWebSocketRemoteEndpoint impl
         {
             LOG.debug("sendText({},{})", TextUtil.hint(partialMessage), isLast);
         }
-        try (SharedBlockingCallback.Blocker b = session.getBlocking().acquire())
-        {
-            Frame frame;
-            switch (messageType)
-            {
-                case -1:
-                    // New message!
-                    frame = new Frame(OpCode.TEXT);
-                    break;
-                case OpCode.TEXT:
-                    frame = new Frame(OpCode.CONTINUATION);
-                    break;
-                case OpCode.BINARY:
-                    throw new IllegalStateException("Cannot send a partial TEXT message: BINARY message in progress");
-                default:
-                    throw new IllegalStateException("Cannot send a partial TEXT message: unrecognized active message type " + OpCode.name(messageType));
-            }
 
-            frame.setPayload(BufferUtil.toBuffer(partialMessage, UTF_8));
-            frame.setFin(isLast);
-            sendFrame(frame, b, false);
+        Frame frame;
+        switch (messageType)
+        {
+            case -1:
+                // New message!
+                frame = new Frame(OpCode.TEXT);
+                break;
+            case OpCode.TEXT:
+                frame = new Frame(OpCode.CONTINUATION);
+                break;
+            case OpCode.BINARY:
+                throw new IllegalStateException("Cannot send a partial TEXT message: BINARY message in progress");
+            default:
+                throw new IllegalStateException("Cannot send a partial TEXT message: unrecognized active message type " + OpCode.name(messageType));
         }
+
+        frame.setPayload(BufferUtil.toBuffer(partialMessage, UTF_8));
+        frame.setFin(isLast);
+        FutureCallback b = new FutureCallback();
+        sendFrame(frame, b, false);
+        b.block(getBlockingTimeout(), TimeUnit.MILLISECONDS);
+    }
+
+    private long getBlockingTimeout()
+    {
+        long idleTimeout = getIdleTimeout();
+        return (idleTimeout > 0) ? idleTimeout + 1000 : idleTimeout;
     }
 }

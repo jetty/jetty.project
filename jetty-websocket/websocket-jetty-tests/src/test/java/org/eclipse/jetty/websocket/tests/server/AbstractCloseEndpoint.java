@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
 import org.hamcrest.Matcher;
 
@@ -34,6 +35,7 @@ import static org.hamcrest.Matchers.nullValue;
 public abstract class AbstractCloseEndpoint extends WebSocketAdapter
 {
     public final Logger log;
+    public CountDownLatch openLatch = new CountDownLatch(1);
     public CountDownLatch closeLatch = new CountDownLatch(1);
     public String closeReason = null;
     public int closeStatusCode = -1;
@@ -42,6 +44,14 @@ public abstract class AbstractCloseEndpoint extends WebSocketAdapter
     public AbstractCloseEndpoint()
     {
         this.log = Log.getLogger(this.getClass().getName());
+    }
+
+    @Override
+    public void onWebSocketConnect(Session sess)
+    {
+        super.onWebSocketConnect(sess);
+        log.debug("onWebSocketConnect({})", sess);
+        openLatch.countDown();
     }
 
     @Override
