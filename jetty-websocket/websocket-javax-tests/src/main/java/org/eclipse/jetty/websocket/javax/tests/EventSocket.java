@@ -52,6 +52,7 @@ public class EventSocket
 
     public CountDownLatch openLatch = new CountDownLatch(1);
     public CountDownLatch closeLatch = new CountDownLatch(1);
+    public CountDownLatch errorLatch = new CountDownLatch(1);
 
     @OnOpen
     public void onOpen(Session session, EndpointConfig endpointConfig)
@@ -95,5 +96,6 @@ public class EventSocket
         if (LOG.isDebugEnabled())
             LOG.debug("{}  onError(): {}", toString(), cause);
         error = cause;
+        errorLatch.countDown();
     }
 }

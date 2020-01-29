@@ -16,35 +16,12 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.javax.tests.server.sockets;
+package org.eclipse.jetty.websocket.core.exception;
 
-import javax.websocket.OnError;
-import javax.websocket.OnMessage;
-import javax.websocket.OnOpen;
-import javax.websocket.Session;
-import javax.websocket.server.ServerEndpoint;
-
-import org.eclipse.jetty.websocket.core.exception.WebSocketTimeoutException;
-
-@ServerEndpoint(value = "/idle-onopen-socket")
-public class IdleTimeoutOnOpenSocket
+public class WebSocketWriteTimeoutException extends WebSocketTimeoutException
 {
-    @OnOpen
-    public void onOpen(Session session)
+    public WebSocketWriteTimeoutException(String message)
     {
-        session.setMaxIdleTimeout(500);
-    }
-
-    @OnMessage
-    public String onMessage(String msg)
-    {
-        return msg;
-    }
-
-    @OnError
-    public void onError(Throwable cause)
-    {
-        if (!(cause instanceof WebSocketTimeoutException))
-            throw new RuntimeException(cause);
+        super(message);
     }
 }

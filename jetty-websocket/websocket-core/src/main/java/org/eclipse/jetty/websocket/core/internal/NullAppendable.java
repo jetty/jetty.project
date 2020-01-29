@@ -16,35 +16,45 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.javax.tests.server.sockets;
+package org.eclipse.jetty.websocket.core.internal;
 
-import javax.websocket.OnError;
-import javax.websocket.OnMessage;
-import javax.websocket.OnOpen;
-import javax.websocket.Session;
-import javax.websocket.server.ServerEndpoint;
+import org.eclipse.jetty.util.Utf8Appendable;
 
-import org.eclipse.jetty.websocket.core.exception.WebSocketTimeoutException;
-
-@ServerEndpoint(value = "/idle-onopen-socket")
-public class IdleTimeoutOnOpenSocket
+public class NullAppendable extends Utf8Appendable
 {
-    @OnOpen
-    public void onOpen(Session session)
+    public NullAppendable()
     {
-        session.setMaxIdleTimeout(500);
+        super(new Appendable()
+        {
+            @Override
+            public Appendable append(CharSequence csq)
+            {
+                return null;
+            }
+
+            @Override
+            public Appendable append(CharSequence csq, int start, int end)
+            {
+                return null;
+            }
+
+            @Override
+            public Appendable append(char c)
+            {
+                return null;
+            }
+        });
     }
 
-    @OnMessage
-    public String onMessage(String msg)
+    @Override
+    public int length()
     {
-        return msg;
+        return 0;
     }
 
-    @OnError
-    public void onError(Throwable cause)
+    @Override
+    public String getPartialString()
     {
-        if (!(cause instanceof WebSocketTimeoutException))
-            throw new RuntimeException(cause);
+        return null;
     }
 }

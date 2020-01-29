@@ -16,12 +16,30 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core;
+package org.eclipse.jetty.websocket.core.exception;
 
-public class WebSocketWriteTimeoutException extends WebSocketTimeoutException
+import org.eclipse.jetty.websocket.core.CloseStatus;
+
+/**
+ * Per spec, a protocol error should result in a Close frame of status code 1002 (PROTOCOL_ERROR)
+ *
+ * @see <a href="https://tools.ietf.org/html/rfc6455#section-7.4.1">RFC6455 : Section 7.4.1</a>
+ */
+@SuppressWarnings("serial")
+public class ProtocolException extends CloseException
 {
-    public WebSocketWriteTimeoutException(String message)
+    public ProtocolException(String message)
     {
-        super(message);
+        super(CloseStatus.PROTOCOL, message);
+    }
+
+    public ProtocolException(String message, Throwable t)
+    {
+        super(CloseStatus.PROTOCOL, message, t);
+    }
+
+    public ProtocolException(Throwable t)
+    {
+        super(CloseStatus.PROTOCOL, t);
     }
 }

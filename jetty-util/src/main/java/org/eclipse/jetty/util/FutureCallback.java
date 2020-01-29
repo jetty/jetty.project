@@ -19,6 +19,7 @@
 package org.eclipse.jetty.util;
 
 import java.io.IOException;
+import java.io.InterruptedIOException;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -136,6 +137,40 @@ public class FutureCallback implements Future<Void>, Callback
         if (_cause instanceof CancellationException)
             throw (CancellationException)new CancellationException().initCause(_cause);
         throw new ExecutionException(_cause);
+    }
+
+    public void block() throws IOException
+    {
+        block(-1, TimeUnit.SECONDS);
+    }
+
+    public void block(long timeout, TimeUnit unit) throws IOException
+    {
+        try
+        {
+            if (timeout > 0)
+                get(timeout, unit);
+            else
+                get();
+        }
+        catch (InterruptedException e)
+        {
+            InterruptedIOException exception = new InterruptedIOException();
+            exception.initCause(e);
+            throw exception;
+        }
+        catch (ExecutionException e)
+        {
+            Throwable cause = e.getCause();
+            if (cause instanceof RuntimeException)
+                throw new RuntimeException(cause);
+            else
+                throw new IOException(cause);
+        }
+        catch (TimeoutException e)
+        {
+            throw new IOException(e);
+        }
     }
 
     public static void rethrow(ExecutionException e) throws IOException

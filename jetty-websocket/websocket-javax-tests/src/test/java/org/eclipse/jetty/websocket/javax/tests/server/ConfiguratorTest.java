@@ -53,8 +53,8 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
@@ -432,9 +432,9 @@ public class ConfiguratorTest
         FrameHandlerTracker clientSocket = new FrameHandlerTracker();
         ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(client, wsUri, clientSocket);
         upgradeRequest.addExtensions("identity");
-        Future<FrameHandler.CoreSession> clientConnectFuture = client.connect(upgradeRequest);
+        Future<CoreSession> clientConnectFuture = client.connect(upgradeRequest);
 
-        FrameHandler.CoreSession coreSession = clientConnectFuture.get(Timeouts.CONNECT_MS, TimeUnit.MILLISECONDS);
+        CoreSession coreSession = clientConnectFuture.get(Timeouts.CONNECT_MS, TimeUnit.MILLISECONDS);
         try
         {
             coreSession.sendFrame(new Frame(OpCode.TEXT).setPayload(HttpHeader.SEC_WEBSOCKET_EXTENSIONS.asString()), Callback.NOOP, false);
@@ -456,9 +456,9 @@ public class ConfiguratorTest
         FrameHandlerTracker clientSocket = new FrameHandlerTracker();
         ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(client, wsUri, clientSocket);
         upgradeRequest.addExtensions("identity");
-        Future<FrameHandler.CoreSession> clientConnectFuture = client.connect(upgradeRequest);
+        Future<CoreSession> clientConnectFuture = client.connect(upgradeRequest);
 
-        FrameHandler.CoreSession coreSession = clientConnectFuture.get(Timeouts.CONNECT_MS, TimeUnit.MILLISECONDS);
+        CoreSession coreSession = clientConnectFuture.get(Timeouts.CONNECT_MS, TimeUnit.MILLISECONDS);
         try
         {
             coreSession.sendFrame(new Frame(OpCode.TEXT).setPayload("NegoExts"), Callback.NOOP, false);
@@ -480,9 +480,9 @@ public class ConfiguratorTest
         FrameHandlerTracker clientSocket = new FrameHandlerTracker();
         ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(client, wsUri, clientSocket);
         upgradeRequest.header("X-Dummy", "Bogus");
-        Future<FrameHandler.CoreSession> clientConnectFuture = client.connect(upgradeRequest);
+        Future<CoreSession> clientConnectFuture = client.connect(upgradeRequest);
 
-        FrameHandler.CoreSession coreSession = clientConnectFuture.get(Timeouts.CONNECT_MS, TimeUnit.MILLISECONDS);
+        CoreSession coreSession = clientConnectFuture.get(Timeouts.CONNECT_MS, TimeUnit.MILLISECONDS);
         try
         {
             coreSession.sendFrame(new Frame(OpCode.TEXT).setPayload("X-Dummy"), Callback.NOOP, false);
@@ -504,9 +504,9 @@ public class ConfiguratorTest
         // First Request
         FrameHandlerTracker clientSocket = new FrameHandlerTracker();
         ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(client, wsUri, clientSocket);
-        Future<FrameHandler.CoreSession> clientConnectFuture = client.connect(upgradeRequest);
+        Future<CoreSession> clientConnectFuture = client.connect(upgradeRequest);
 
-        FrameHandler.CoreSession coreSession = clientConnectFuture.get(Timeouts.CONNECT_MS, TimeUnit.MILLISECONDS);
+        CoreSession coreSession = clientConnectFuture.get(Timeouts.CONNECT_MS, TimeUnit.MILLISECONDS);
         try
         {
             // first request has this UserProperty
@@ -551,9 +551,9 @@ public class ConfiguratorTest
 
         FrameHandlerTracker clientSocket = new FrameHandlerTracker();
         ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(client, wsUri, clientSocket);
-        Future<FrameHandler.CoreSession> clientConnectFuture = client.connect(upgradeRequest);
+        Future<CoreSession> clientConnectFuture = client.connect(upgradeRequest);
 
-        FrameHandler.CoreSession coreSession = clientConnectFuture.get(Timeouts.CONNECT_MS, TimeUnit.MILLISECONDS);
+        CoreSession coreSession = clientConnectFuture.get(Timeouts.CONNECT_MS, TimeUnit.MILLISECONDS);
         try
         {
             SocketAddress expectedLocal = coreSession.getLocalAddress();
@@ -593,7 +593,7 @@ public class ConfiguratorTest
         FrameHandlerTracker clientSocket = new FrameHandlerTracker();
         ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(client, wsUri, clientSocket);
         upgradeRequest.setSubProtocols("status");
-        Future<FrameHandler.CoreSession> clientConnectFuture = client.connect(upgradeRequest);
+        Future<CoreSession> clientConnectFuture = client.connect(upgradeRequest);
 
         assertProtocols(clientSocket, clientConnectFuture, is("Requested Protocols: [status]"));
     }
@@ -612,7 +612,7 @@ public class ConfiguratorTest
         FrameHandlerTracker clientSocket = new FrameHandlerTracker();
         ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(client, wsUri, clientSocket);
         upgradeRequest.setSubProtocols("echo", "chat", "status");
-        Future<FrameHandler.CoreSession> clientConnectFuture = client.connect(upgradeRequest);
+        Future<CoreSession> clientConnectFuture = client.connect(upgradeRequest);
 
         assertProtocols(clientSocket, clientConnectFuture, is("Requested Protocols: [echo,chat,status]"));
     }
@@ -631,7 +631,7 @@ public class ConfiguratorTest
         FrameHandlerTracker clientSocket = new FrameHandlerTracker();
         ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(client, wsUri, clientSocket);
         upgradeRequest.setSubProtocols("echo", "chat", "status");
-        Future<FrameHandler.CoreSession> clientConnectFuture = client.connect(upgradeRequest);
+        Future<CoreSession> clientConnectFuture = client.connect(upgradeRequest);
 
         assertProtocols(clientSocket, clientConnectFuture, is("Requested Protocols: [echo,chat,status]"));
     }
@@ -650,15 +650,15 @@ public class ConfiguratorTest
         FrameHandlerTracker clientSocket = new FrameHandlerTracker();
         ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(client, wsUri, clientSocket);
         upgradeRequest.setSubProtocols("echo", "chat", "status");
-        Future<FrameHandler.CoreSession> clientConnectFuture = client.connect(upgradeRequest);
+        Future<CoreSession> clientConnectFuture = client.connect(upgradeRequest);
 
         assertProtocols(clientSocket, clientConnectFuture, is("Requested Protocols: [echo,chat,status]"));
     }
 
-    protected void assertProtocols(FrameHandlerTracker clientSocket, Future<FrameHandler.CoreSession> clientConnectFuture, Matcher<String> responseMatcher)
+    protected void assertProtocols(FrameHandlerTracker clientSocket, Future<CoreSession> clientConnectFuture, Matcher<String> responseMatcher)
         throws InterruptedException, java.util.concurrent.ExecutionException, java.util.concurrent.TimeoutException
     {
-        FrameHandler.CoreSession coreSession = clientConnectFuture.get(Timeouts.CONNECT_MS, TimeUnit.MILLISECONDS);
+        CoreSession coreSession = clientConnectFuture.get(Timeouts.CONNECT_MS, TimeUnit.MILLISECONDS);
         try
         {
             coreSession.sendFrame(new Frame(OpCode.TEXT).setPayload("getProtocols"), Callback.NOOP, false);
@@ -683,9 +683,9 @@ public class ConfiguratorTest
         FrameHandlerTracker clientSocket = new FrameHandlerTracker();
         ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(client, wsUri, clientSocket);
         upgradeRequest.setSubProtocols("gmt");
-        Future<FrameHandler.CoreSession> clientConnectFuture = client.connect(upgradeRequest);
+        Future<CoreSession> clientConnectFuture = client.connect(upgradeRequest);
 
-        FrameHandler.CoreSession coreSession = clientConnectFuture.get(Timeouts.CONNECT_MS, TimeUnit.MILLISECONDS);
+        CoreSession coreSession = clientConnectFuture.get(Timeouts.CONNECT_MS, TimeUnit.MILLISECONDS);
         try
         {
             coreSession.sendFrame(new Frame(OpCode.TEXT).setPayload("2016-06-20T14:27:44"), Callback.NOOP, false);

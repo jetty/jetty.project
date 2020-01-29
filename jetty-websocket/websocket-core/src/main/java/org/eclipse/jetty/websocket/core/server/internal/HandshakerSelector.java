@@ -22,7 +22,7 @@ import java.io.IOException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.server.Handshaker;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 
@@ -37,7 +37,7 @@ public class HandshakerSelector implements Handshaker
     private final RFC8441Handshaker rfc8441 = new RFC8441Handshaker();
 
     @Override
-    public boolean upgradeRequest(WebSocketNegotiator negotiator, HttpServletRequest request, HttpServletResponse response, FrameHandler.Customizer defaultCustomizer) throws IOException
+    public boolean upgradeRequest(WebSocketNegotiator negotiator, HttpServletRequest request, HttpServletResponse response, Configuration.Customizer defaultCustomizer) throws IOException
     {
         // Try HTTP/1.1 WS upgrade, if this fails try an HTTP/2 WS upgrade if no response was committed.
         return rfc6455.upgradeRequest(negotiator, request, response, defaultCustomizer) ||

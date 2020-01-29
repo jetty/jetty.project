@@ -21,20 +21,21 @@ package org.eclipse.jetty.websocket.javax.common;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.time.Duration;
+import java.util.concurrent.TimeUnit;
 import javax.websocket.EncodeException;
 import javax.websocket.Encoder;
 import javax.websocket.SendHandler;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.SharedBlockingCallback;
+import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.OutgoingFrames;
-import org.eclipse.jetty.websocket.core.WebSocketException;
+import org.eclipse.jetty.websocket.core.exception.WebSocketException;
 import org.eclipse.jetty.websocket.javax.common.messages.MessageOutputStream;
 import org.eclipse.jetty.websocket.javax.common.messages.MessageWriter;
 
@@ -43,11 +44,11 @@ public class JavaxWebSocketRemoteEndpoint implements javax.websocket.RemoteEndpo
     private static final Logger LOG = Log.getLogger(JavaxWebSocketRemoteEndpoint.class);
 
     protected final JavaxWebSocketSession session;
-    private final FrameHandler.CoreSession coreSession;
+    private final CoreSession coreSession;
     protected boolean batch = false;
     protected byte messageType = -1;
 
-    protected JavaxWebSocketRemoteEndpoint(JavaxWebSocketSession session, FrameHandler.CoreSession coreSession)
+    protected JavaxWebSocketRemoteEndpoint(JavaxWebSocketSession session, CoreSession coreSession)
     {
         this.session = session;
         this.coreSession = coreSession;
@@ -66,10 +67,9 @@ public class JavaxWebSocketRemoteEndpoint implements javax.websocket.RemoteEndpo
     @Override
     public void flushBatch() throws IOException
     {
-        try (SharedBlockingCallback.Blocker blocker = session.getBlocking().acquire())
-        {
-            coreSession.flush(blocker);
-        }
+        FutureCallback b = new FutureCallback();
+        coreSession.flush(b);
+        b.block(getBlockingTimeout(), TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -227,24 +227,22 @@ public class JavaxWebSocketRemoteEndpoint implements javax.websocket.RemoteEndpo
     public void sendPing(ByteBuffer data) throws IOException, IllegalArgumentException
     {
         if (LOG.isDebugEnabled())
-        {
             LOG.debug("sendPing({})", BufferUtil.toDetailString(data));
-        }
-        // TODO: is this supposed to be a blocking call?
-        // TODO: what to do on excessively large payloads (error and close connection per RFC6455, or truncate?)
-        sendFrame(new Frame(OpCode.PING).setPayload(data), Callback.NOOP, batch);
+
+        FutureCallback b = new FutureCallback();
+        sendFrame(new Frame(OpCode.PING).setPayload(data), b, batch);
+        b.block(getBlockingTimeout(), TimeUnit.MILLISECONDS);
     }
 
     @Override
     public void sendPong(ByteBuffer data) throws IOException, IllegalArgumentException
     {
         if (LOG.isDebugEnabled())
-        {
             LOG.debug("sendPong({})", BufferUtil.toDetailString(data));
-        }
-        // TODO: is this supposed to be a blocking call?
-        // TODO: what to do on excessively large payloads (error and close connection per RFC6455, or truncate?)
-        sendFrame(new Frame(OpCode.PONG).setPayload(data), Callback.NOOP, batch);
+
+        FutureCallback b = new FutureCallback();
+        sendFrame(new Frame(OpCode.PONG).setPayload(data), b, batch);
+        b.block(getBlockingTimeout(), TimeUnit.MILLISECONDS);
     }
 
     protected void assertMessageNotNull(Object data)
@@ -261,5 +259,11 @@ public class JavaxWebSocketRemoteEndpoint implements javax.websocket.RemoteEndpo
         {
             throw new IllegalArgumentException("SendHandler cannot be null");
         }
+    }
+
+    private long getBlockingTimeout()
+    {
+        long idleTimeout = getIdleTimeout();
+        return (idleTimeout > 0) ? idleTimeout + 1000 : idleTimeout;
     }
 }

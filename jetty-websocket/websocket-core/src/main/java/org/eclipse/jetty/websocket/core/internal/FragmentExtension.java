@@ -22,9 +22,9 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.AbstractExtension;
+import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 
 /**
@@ -35,7 +35,7 @@ public class FragmentExtension extends AbstractExtension
     private static final Logger LOG = Log.getLogger(FragmentExtension.class);
 
     private final FragmentingFlusher flusher;
-    private final FrameHandler.Configuration configuration = new FrameHandler.ConfigurationHolder();
+    private final Configuration configuration = new Configuration.ConfigurationCustomizer();
 
     public FragmentExtension()
     {

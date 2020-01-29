@@ -412,6 +412,34 @@ public class ForwardedRequestCustomizerTest
                     .requestURL("https://www.example.com:4333/")
                     .remoteAddr("8.5.4.3").remotePort(2222)
             ),
+            Arguments.of(new Request("X-Forwarded-* (Server before Host)")
+                    .headers(
+                        "GET / HTTP/1.1",
+                        "Host: myhost",
+                        "X-Forwarded-Proto: https",
+                        "X-Forwarded-Server: fw.example.com",
+                        "X-Forwarded-Host: www.example.com",
+                        "X-Forwarded-Port: 4333",
+                        "X-Forwarded-For: 8.5.4.3:2222"
+                    ),
+                new Expectations()
+                    .scheme("https").serverName("www.example.com").serverPort(4333)
+                    .requestURL("https://www.example.com:4333/")
+                    .remoteAddr("8.5.4.3").remotePort(2222)
+            ),
+            Arguments.of(new Request("X-Forwarded-* (Server and Port)")
+                    .headers(
+                        "GET / HTTP/1.1",
+                        "Host: myhost",
+                        "X-Forwarded-Server: fw.example.com",
+                        "X-Forwarded-Port: 4333",
+                        "X-Forwarded-For: 8.5.4.3:2222"
+                    ),
+                new Expectations()
+                    .scheme("http").serverName("fw.example.com").serverPort(4333)
+                    .requestURL("http://fw.example.com:4333/")
+                    .remoteAddr("8.5.4.3").remotePort(2222)
+            ),
 
             // =================================================================
             // Mixed Behavior

@@ -28,8 +28,8 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.SharedBlockingCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.OpCode;
 
 /**
@@ -39,7 +39,7 @@ public class MessageOutputStream extends OutputStream
 {
     private static final Logger LOG = Log.getLogger(MessageOutputStream.class);
 
-    private final FrameHandler.CoreSession coreSession;
+    private final CoreSession coreSession;
     private final ByteBufferPool bufferPool;
     private final SharedBlockingCallback blocker;
     private long frameCount;
@@ -49,7 +49,7 @@ public class MessageOutputStream extends OutputStream
     private Callback callback;
     private boolean closed;
 
-    public MessageOutputStream(FrameHandler.CoreSession coreSession, int bufferSize, ByteBufferPool bufferPool)
+    public MessageOutputStream(CoreSession coreSession, int bufferSize, ByteBufferPool bufferPool)
     {
         this.coreSession = coreSession;
         this.bufferPool = bufferPool;

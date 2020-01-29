@@ -29,13 +29,15 @@ import org.eclipse.jetty.util.Utf8Appendable;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.core.exception.BadPayloadException;
+import org.eclipse.jetty.websocket.core.exception.MessageTooLargeException;
 
 /**
  * A utility implementation of FrameHandler that defragments
  * text frames into a String message before calling {@link #onText(String, Callback)}.
  * Flow control is by default automatic, but an implementation
  * may extend {@link #isDemanding()} to return true and then explicityly control
- * demand with calls to {@link org.eclipse.jetty.websocket.core.FrameHandler.CoreSession#demand(long)}
+ * demand with calls to {@link CoreSession#demand(long)}
  */
 public class MessageHandler implements FrameHandler
 {

@@ -41,6 +41,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.MessageHandler;
@@ -379,7 +380,7 @@ public class MessageReceivingTest
         }
 
         @Override
-        public void customize(FrameHandler.Configuration configurable)
+        public void customize(Configuration configurable)
         {
             configurable.setMaxBinaryMessageSize(MAX_MESSAGE_SIZE);
             configurable.setMaxTextMessageSize(MAX_MESSAGE_SIZE);

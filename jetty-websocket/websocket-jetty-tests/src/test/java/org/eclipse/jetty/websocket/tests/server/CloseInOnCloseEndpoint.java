@@ -16,27 +16,16 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core;
+package org.eclipse.jetty.websocket.tests.server;
 
-/**
- * Exception thrown to indicate a connection I/O timeout.
- */
-public class WebSocketTimeoutException extends WebSocketException
+import org.eclipse.jetty.websocket.api.StatusCode;
+
+public class CloseInOnCloseEndpoint extends AbstractCloseEndpoint
 {
-    private static final long serialVersionUID = -6145098200250676673L;
-
-    public WebSocketTimeoutException(String message)
+    @Override
+    public void onWebSocketClose(int statusCode, String reason)
     {
-        super(message);
-    }
-
-    public WebSocketTimeoutException(String message, Throwable cause)
-    {
-        super(message, cause);
-    }
-
-    public WebSocketTimeoutException(Throwable cause)
-    {
-        super(cause);
+        getSession().close(StatusCode.SERVER_ERROR, "this should be a noop");
+        super.onWebSocketClose(statusCode, reason);
     }
 }

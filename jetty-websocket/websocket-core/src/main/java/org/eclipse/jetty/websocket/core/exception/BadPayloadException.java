@@ -16,28 +16,31 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core;
+package org.eclipse.jetty.websocket.core.exception;
+
+import org.eclipse.jetty.websocket.core.CloseStatus;
 
 /**
- * Exception when a message is too large for the internal buffers occurs and should trigger a connection close.
+ * Exception to terminate the connection because it has received data within a frame payload that was not consistent with the requirements of that frame
+ * payload. (eg: not UTF-8 in a text frame, or a unexpected data seen by an extension)
  *
  * @see <a href="https://tools.ietf.org/html/rfc6455#section-7.4.1">RFC6455 : Section 7.4.1</a>
  */
 @SuppressWarnings("serial")
-public class MessageTooLargeException extends CloseException
+public class BadPayloadException extends CloseException
 {
-    public MessageTooLargeException(String message)
+    public BadPayloadException(String message)
     {
-        super(CloseStatus.MESSAGE_TOO_LARGE, message);
+        super(CloseStatus.BAD_PAYLOAD, message);
     }
 
-    public MessageTooLargeException(String message, Throwable t)
+    public BadPayloadException(String message, Throwable t)
     {
-        super(CloseStatus.MESSAGE_TOO_LARGE, message, t);
+        super(CloseStatus.BAD_PAYLOAD, message, t);
     }
 
-    public MessageTooLargeException(Throwable t)
+    public BadPayloadException(Throwable t)
     {
-        super(CloseStatus.MESSAGE_TOO_LARGE, t);
+        super(CloseStatus.BAD_PAYLOAD, t);
     }
 }

@@ -33,7 +33,7 @@ import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
 
@@ -41,9 +41,9 @@ public abstract class JavaxWebSocketContainer extends ContainerLifeCycle impleme
 {
     private static final Logger LOG = Log.getLogger(JavaxWebSocketContainer.class);
     private final SessionTracker sessionTracker = new SessionTracker();
-    protected final FrameHandler.ConfigurationCustomizer defaultCustomizer = new FrameHandler.ConfigurationCustomizer();
+    private final List<JavaxWebSocketSessionListener> sessionListeners = new ArrayList<>();
+    protected final Configuration.ConfigurationCustomizer defaultCustomizer = new Configuration.ConfigurationCustomizer();
     protected final WebSocketComponents components;
-    private List<JavaxWebSocketSessionListener> sessionListeners = new ArrayList<>();
 
     public JavaxWebSocketContainer(WebSocketComponents components)
     {

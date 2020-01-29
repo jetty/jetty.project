@@ -22,9 +22,9 @@ import java.lang.invoke.MethodHandle;
 
 import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
-import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.Configuration;
 
-public class JettyWebSocketFrameHandlerMetadata extends FrameHandler.ConfigurationCustomizer
+public class JettyWebSocketFrameHandlerMetadata extends Configuration.ConfigurationCustomizer
 {
     private MethodHandle openHandle;
     private MethodHandle closeHandle;

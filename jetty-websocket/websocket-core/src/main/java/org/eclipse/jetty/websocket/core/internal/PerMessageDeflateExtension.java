@@ -30,13 +30,13 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.AbstractExtension;
-import org.eclipse.jetty.websocket.core.BadPayloadException;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.MessageTooLargeException;
 import org.eclipse.jetty.websocket.core.OpCode;
-import org.eclipse.jetty.websocket.core.ProtocolException;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
+import org.eclipse.jetty.websocket.core.exception.BadPayloadException;
+import org.eclipse.jetty.websocket.core.exception.MessageTooLargeException;
+import org.eclipse.jetty.websocket.core.exception.ProtocolException;
 
 /**
  * Per Message Deflate Compression extension for WebSocket.
@@ -269,7 +269,7 @@ public class PerMessageDeflateExtension extends AbstractExtension
         private boolean deflate(Callback callback)
         {
             // Get a buffer for the inflated payload.
-            long maxFrameSize = getWebSocketCoreSession().getMaxFrameSize();
+            long maxFrameSize = getConfiguration().getMaxFrameSize();
             int bufferSize = (maxFrameSize <= 0) ? deflateBufferSize : (int)Math.min(maxFrameSize, deflateBufferSize);
             final ByteBuffer buffer = getBufferPool().acquire(bufferSize, false);
             callback = Callback.from(callback, () -> getBufferPool().release(buffer));
@@ -289,7 +289,7 @@ public class PerMessageDeflateExtension extends AbstractExtension
                 if (buffer.limit() == bufferSize)
                 {
                     // We need to fragment. TODO: what if there was only bufferSize of content?
-                    if (!getWebSocketCoreSession().isAutoFragment())
+                    if (!getConfiguration().isAutoFragment())
                         throw new MessageTooLargeException("Deflated payload exceeded the compress buffer size");
                     break;
                 }
@@ -402,7 +402,7 @@ public class PerMessageDeflateExtension extends AbstractExtension
         private boolean inflate(Callback callback) throws DataFormatException
         {
             // Get a buffer for the inflated payload.
-            long maxFrameSize = getWebSocketCoreSession().getMaxFrameSize();
+            long maxFrameSize = getConfiguration().getMaxFrameSize();
             int bufferSize = (maxFrameSize <= 0) ? inflateBufferSize : (int)Math.min(maxFrameSize, inflateBufferSize);
             final ByteBuffer payload = getBufferPool().acquire(bufferSize, false);
             callback = Callback.from(callback, () -> getBufferPool().release(payload));
@@ -421,7 +421,7 @@ public class PerMessageDeflateExtension extends AbstractExtension
                 if (payload.limit() == bufferSize)
                 {
                     // We need to fragment. TODO: what if there was only bufferSize of content?
-                    if (!getWebSocketCoreSession().isAutoFragment())
+                    if (!getConfiguration().isAutoFragment())
                         throw new MessageTooLargeException("Inflated payload exceeded the decompress buffer size");
                     break;
                 }

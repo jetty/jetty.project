@@ -1299,14 +1299,14 @@ public class ServletContextHandler extends ContextHandler
         @Override
         public boolean setInitParameter(String name, String value)
         {
+            //since servlet spec 4.0
+            Objects.requireNonNull(name);
+
             if (!isStarting())
                 throw new IllegalStateException();
 
             if (!_enabled)
                 throw new UnsupportedOperationException();
-
-            //since servlet spec 4.0
-            Objects.requireNonNull(name);
 
             return super.setInitParameter(name, value);
         }

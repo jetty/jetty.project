@@ -23,7 +23,7 @@ import java.nio.channels.ClosedChannelException;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
-import org.eclipse.jetty.websocket.core.ProtocolException;
+import org.eclipse.jetty.websocket.core.exception.ProtocolException;
 
 /**
  * Atomic Connection State
@@ -142,7 +142,7 @@ public class WebSocketSessionState
         }
     }
 
-    public boolean onOutgoingFrame(Frame frame) throws ProtocolException
+    public boolean onOutgoingFrame(Frame frame) throws Exception
     {
         byte opcode = frame.getOpCode();
         boolean fin = frame.isFin();
@@ -150,7 +150,7 @@ public class WebSocketSessionState
         synchronized (this)
         {
             if (!isOutputOpen())
-                throw new IllegalStateException(_sessionState.toString());
+                throw new ClosedChannelException();
 
             if (opcode == OpCode.CLOSE)
             {

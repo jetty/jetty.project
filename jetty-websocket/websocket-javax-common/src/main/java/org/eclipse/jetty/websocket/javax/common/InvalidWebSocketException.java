@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.websocket.javax.common;
 
-import org.eclipse.jetty.websocket.core.WebSocketException;
+import org.eclipse.jetty.websocket.core.exception.WebSocketException;
 
 /**
  * Indicating that the provided Class is not a valid WebSocket per the chosen API.

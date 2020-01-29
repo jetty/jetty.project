@@ -25,6 +25,9 @@ import java.util.Arrays;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Utf8Appendable;
 import org.eclipse.jetty.util.Utf8StringBuilder;
+import org.eclipse.jetty.websocket.core.exception.BadPayloadException;
+import org.eclipse.jetty.websocket.core.exception.ProtocolException;
+import org.eclipse.jetty.websocket.core.internal.NullAppendable;
 
 /**
  * Representation of a WebSocket Close (status code &amp; reason)

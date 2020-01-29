@@ -16,45 +16,27 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core;
+package org.eclipse.jetty.websocket.core.exception;
 
-import org.eclipse.jetty.util.Utf8Appendable;
-
-public class NullAppendable extends Utf8Appendable
+/**
+ * Exception thrown to indicate a connection I/O timeout.
+ */
+public class WebSocketTimeoutException extends WebSocketException
 {
-    public NullAppendable()
+    private static final long serialVersionUID = -6145098200250676673L;
+
+    public WebSocketTimeoutException(String message)
     {
-        super(new Appendable()
-        {
-            @Override
-            public Appendable append(CharSequence csq)
-            {
-                return null;
-            }
-
-            @Override
-            public Appendable append(CharSequence csq, int start, int end)
-            {
-                return null;
-            }
-
-            @Override
-            public Appendable append(char c)
-            {
-                return null;
-            }
-        });
+        super(message);
     }
 
-    @Override
-    public int length()
+    public WebSocketTimeoutException(String message, Throwable cause)
     {
-        return 0;
+        super(message, cause);
     }
 
-    @Override
-    public String getPartialString()
+    public WebSocketTimeoutException(Throwable cause)
     {
-        return null;
+        super(cause);
     }
 }

@@ -39,7 +39,7 @@ import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.IncomingFrames;
 import org.eclipse.jetty.websocket.core.OutgoingFrames;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
-import org.eclipse.jetty.websocket.core.WebSocketException;
+import org.eclipse.jetty.websocket.core.exception.WebSocketException;
 
 /**
  * Represents the stack of Extensions.
@@ -254,7 +254,7 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
 
         for (Extension extension : extensions)
         {
-            extension.setWebSocketCoreSession(coreSession);
+            extension.setCoreSession(coreSession);
         }
     }
 

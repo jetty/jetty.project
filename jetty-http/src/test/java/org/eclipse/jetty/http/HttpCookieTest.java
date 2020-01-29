@@ -18,8 +18,19 @@
 
 package org.eclipse.jetty.http;
 
+import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.EventListener;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Stream;
 
+import org.eclipse.jetty.http.HttpCookie.SameSite;
+import org.eclipse.jetty.util.AttributesMap;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -41,6 +52,32 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class HttpCookieTest
 {
 
+    @Test
+    public void testDefaultSameSite()
+    {
+        AttributesMap context = new AttributesMap();
+        
+        //test null value for default
+        assertNull(HttpCookie.getSameSiteDefault(context));
+        
+        //test good value for default as SameSite enum
+        context.setAttribute(HttpCookie.SAME_SITE_DEFAULT_ATTRIBUTE, SameSite.LAX);
+        assertEquals(SameSite.LAX, HttpCookie.getSameSiteDefault(context));
+        
+        //test good value for default as String
+        context.setAttribute(HttpCookie.SAME_SITE_DEFAULT_ATTRIBUTE, "NONE");
+        assertEquals(SameSite.NONE, HttpCookie.getSameSiteDefault(context));
+        
+        //test case for default as String
+        context.setAttribute(HttpCookie.SAME_SITE_DEFAULT_ATTRIBUTE, "sTrIcT");
+        assertEquals(SameSite.STRICT, HttpCookie.getSameSiteDefault(context));
+        
+        //test bad value for default as String
+        context.setAttribute(HttpCookie.SAME_SITE_DEFAULT_ATTRIBUTE, "fooBAR");
+        assertThrows(IllegalStateException.class,
+            () -> HttpCookie.getSameSiteDefault(context));
+    }
+    
     @Test
     public void testConstructFromSetCookie()
     {

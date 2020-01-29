@@ -32,18 +32,18 @@ import org.eclipse.jetty.websocket.api.SuspendToken;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
-import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.CoreSession;
 
 public class WebSocketSession implements Session, SuspendToken, Dumpable
 {
     private static final Logger LOG = Log.getLogger(WebSocketSession.class);
-    private final FrameHandler.CoreSession coreSession;
+    private final CoreSession coreSession;
     private final JettyWebSocketFrameHandler frameHandler;
     private final JettyWebSocketRemoteEndpoint remoteEndpoint;
     private final UpgradeRequest upgradeRequest;
     private final UpgradeResponse upgradeResponse;
 
-    public WebSocketSession(FrameHandler.CoreSession coreSession, JettyWebSocketFrameHandler frameHandler)
+    public WebSocketSession(CoreSession coreSession, JettyWebSocketFrameHandler frameHandler)
     {
         this.frameHandler = Objects.requireNonNull(frameHandler);
         this.coreSession = Objects.requireNonNull(coreSession);
@@ -183,7 +183,7 @@ public class WebSocketSession implements Session, SuspendToken, Dumpable
     @Override
     public boolean isOpen()
     {
-        return remoteEndpoint.getCoreSession().isOutputOpen();
+        return coreSession.isOutputOpen();
     }
 
     @Override
@@ -235,7 +235,7 @@ public class WebSocketSession implements Session, SuspendToken, Dumpable
         frameHandler.resume();
     }
 
-    public FrameHandler.CoreSession getCoreSession()
+    public CoreSession getCoreSession()
     {
         return coreSession;
     }
