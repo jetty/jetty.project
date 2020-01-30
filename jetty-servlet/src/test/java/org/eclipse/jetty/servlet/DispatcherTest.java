@@ -18,7 +18,9 @@
 
 package org.eclipse.jetty.servlet;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -32,10 +34,12 @@ import javax.servlet.RequestDispatcher;
 import javax.servlet.Servlet;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
+import javax.servlet.ServletOutputStream;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletRequestWrapper;
 import javax.servlet.ServletResponse;
 import javax.servlet.ServletResponseWrapper;
+import javax.servlet.WriteListener;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
@@ -371,6 +375,98 @@ public class DispatcherTest
         assertThat(rogerResponse, containsString("Roger That!"));
         assertThat(echoResponse, containsString("echoText"));
         assertThat(rechoResponse, containsString("txeTohce"));
+    }
+
+    @Test
+    public void testForwardCloseIntercepted() throws Exception
+    {
+        _contextHandler.addFilter(WrappingFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
+        _contextHandler.addServlet(ForwardServlet.class, "/ForwardServlet/*");
+        _contextHandler.addServlet(AssertForwardServlet.class, "/AssertForwardServlet/*");
+
+        String expected =
+            "HTTP/1.1 200 OK\r\n" +
+                "Content-Type: text/html\r\n" +
+                "Content-Length: 0\r\n" +
+                "\r\n";
+
+        String responses = _connector.getResponse("GET /context/ForwardServlet?do=assertforward&do=more&test=1 HTTP/1.0\n\n");
+
+        assertEquals(expected, responses);
+    }
+
+    public static class WrappingFilter implements Filter
+    {
+        @Override
+        public void init(FilterConfig filterConfig) throws ServletException
+        {
+        }
+
+        @Override
+        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
+        {
+            ResponseWrapper wrapper = new ResponseWrapper((HttpServletResponse)response);
+            chain.doFilter(request, wrapper);
+            wrapper.sendResponse(response.getOutputStream());
+        }
+
+        @Override
+        public void destroy()
+        {
+        }
+    }
+
+    public static class ResponseWrapper extends HttpServletResponseWrapper
+    {
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+
+        public ResponseWrapper(HttpServletResponse response)
+        {
+            super(response);
+        }
+
+        @Override
+        public ServletOutputStream getOutputStream() throws IOException
+        {
+            return new ServletOutputStream()
+            {
+                @Override
+                public boolean isReady()
+                {
+                    return true;
+                }
+
+                @Override
+                public void setWriteListener(WriteListener writeListener)
+                {
+                    throw new UnsupportedOperationException();
+                }
+
+                @Override
+                public void write(int b) throws IOException
+                {
+                    buffer.write(b);
+                }
+
+                @Override
+                public void write(byte[] b, int off, int len) throws IOException
+                {
+                    buffer.write(b, off, len);
+                }
+
+                @Override
+                public void close() throws IOException
+                {
+                    buffer.close();
+                }
+            };
+        }
+
+        public void sendResponse(OutputStream out) throws IOException
+        {
+            out.write(buffer.toByteArray());
+            out.close();
+        }
     }
 
     public static class ForwardServlet extends HttpServlet implements Servlet

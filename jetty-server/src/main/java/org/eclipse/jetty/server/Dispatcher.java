@@ -219,8 +219,18 @@ public class Dispatcher implements RequestDispatcher
 
                 _contextHandler.handle(_pathInContext, baseRequest, (HttpServletRequest)request, (HttpServletResponse)response);
 
-                if (!baseRequest.getHttpChannelState().isAsync())
-                    baseRequest.getResponse().softClose();
+                // If we are not async and not closed already, then close via the possibly wrapped response.
+                if (!baseRequest.getHttpChannelState().isAsync() && !baseResponse.getHttpOutput().isClosed())
+                {
+                    try
+                    {
+                        response.getOutputStream().close();
+                    }
+                    catch (IllegalStateException e)
+                    {
+                        response.getWriter().close();
+                    }
+                }
             }
         }
         finally
