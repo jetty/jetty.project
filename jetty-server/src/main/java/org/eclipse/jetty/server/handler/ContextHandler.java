@@ -39,8 +39,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.Future;
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterRegistration;
@@ -77,7 +77,6 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.AttributesMap;
-import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.StringUtil;
@@ -181,19 +180,16 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     private String _defaultResponseCharacterEncoding;
     private String _contextPath = "/";
     private String _contextPathEncoded = "/";
-
     private String _displayName;
-
+    private long _stopTimeout;
     private Resource _baseResource;
     private MimeTypes _mimeTypes;
     private Map<String, String> _localeEncodingMap;
     private String[] _welcomeFiles;
     private ErrorHandler _errorHandler;
-
     private String[] _vhosts; // Host name portion, matching _vconnectors array
     private boolean[] _vhostswildcard;
     private String[] _vconnectors; // connector portion, matching _vhosts array
-
     private Logger _logger;
     private boolean _allowNullPathInfo;
     private int _maxFormKeys = Integer.getInteger(MAX_FORM_KEYS_KEY, DEFAULT_MAX_FORM_KEYS);
@@ -709,10 +705,12 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
      * requests can complete, but no new requests are accepted.
      */
     @Override
-    public Future<Void> shutdown()
+    public CompletableFuture<Void> shutdown()
     {
         _availability = isRunning() ? Availability.SHUTDOWN : Availability.UNAVAILABLE;
-        return new FutureCallback(true);
+        CompletableFuture<Void> shutdown = new CompletableFuture<Void>();
+        shutdown.complete(null);
+        return shutdown;
     }
 
     /**
@@ -914,18 +912,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     {
         // Should we attempt a graceful shutdown?
         MultiException mex = null;
-
-        if (getStopTimeout() > 0)
-        {
-            try
-            {
-                doShutdown(null);
-            }
-            catch (MultiException e)
-            {
-                mex = e;
-            }
-        }
 
         _availability = Availability.UNAVAILABLE;
 

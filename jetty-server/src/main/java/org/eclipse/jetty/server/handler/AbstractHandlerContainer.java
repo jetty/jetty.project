@@ -20,17 +20,11 @@ package org.eclipse.jetty.server.handler;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.List;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HandlerContainer;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.MultiException;
-import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -137,63 +131,5 @@ public abstract class AbstractHandlerContainer extends AbstractHandler implement
             {
                 h.setServer(server);
             }
-    }
-
-    /**
-     * Shutdown nested Gracefule handlers
-     *
-     * @param futures A list of Futures which must also be waited on for the shutdown (or null)
-     * returns A MultiException to which any failures are added or null
-     */
-    protected void doShutdown(List<Future<Void>> futures) throws MultiException
-    {
-        MultiException mex = null;
-
-        // tell the graceful handlers that we are shutting down
-        Handler[] gracefuls = getChildHandlersByClass(Graceful.class);
-        if (futures == null)
-            futures = new ArrayList<>(gracefuls.length);
-        for (Handler graceful : gracefuls)
-        {
-            futures.add(((Graceful)graceful).shutdown());
-        }
-
-        // Wait for all futures with a reducing time budget
-        long stopTimeout = getStopTimeout();
-        if (stopTimeout > 0)
-        {
-            long stopBy = System.currentTimeMillis() + stopTimeout;
-            if (LOG.isDebugEnabled())
-                LOG.debug("Graceful shutdown {} by ", this, new Date(stopBy));
-
-            // Wait for shutdowns
-            for (Future<Void> future : futures)
-            {
-                try
-                {
-                    if (!future.isDone())
-                        future.get(Math.max(1L, stopBy - System.currentTimeMillis()), TimeUnit.MILLISECONDS);
-                }
-                catch (Exception e)
-                {
-                    // If the future is also a callback, fail it here (rather than cancel) so we can capture the exception 
-                    if (future instanceof Callback && !future.isDone())
-                        ((Callback)future).failed(e);
-                    if (mex == null)
-                        mex = new MultiException();
-                    mex.add(e);
-                }
-            }
-        }
-
-        // Cancel any shutdowns not done
-        for (Future<Void> future : futures)
-        {
-            if (!future.isDone())
-                future.cancel(true);
-        }
-
-        if (mex != null)
-            mex.ifExceptionThrowMulti();
     }
 }

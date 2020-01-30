@@ -95,7 +95,6 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         Executor executor = selectorManager.getExecutor();
         _strategy = new EatWhatYouKill(producer, executor);
         addBean(_strategy, true);
-        setStopTimeout(5000);
     }
 
     public Selector getSelector()
