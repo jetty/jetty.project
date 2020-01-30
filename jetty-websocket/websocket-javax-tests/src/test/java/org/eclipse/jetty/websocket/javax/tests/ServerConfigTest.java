@@ -106,7 +106,7 @@ public class ServerConfigTest
         public void onOpen(Session session)
         {
             assertThat(session.getMaxTextMessageBufferSize(), is(111));
-            assertThat(session.getMaxBinaryMessageBufferSize(), is(-1));
+            assertThat(session.getMaxBinaryMessageBufferSize(), is(maxBinaryMessageSize));
         }
 
         @OnMessage(maxMessageSize = 111)
@@ -114,7 +114,7 @@ public class ServerConfigTest
         {
         }
 
-        @OnMessage(maxMessageSize = -1)
+        @OnMessage()
         public void onMessage(ByteBuffer message) throws IOException
         {
         }

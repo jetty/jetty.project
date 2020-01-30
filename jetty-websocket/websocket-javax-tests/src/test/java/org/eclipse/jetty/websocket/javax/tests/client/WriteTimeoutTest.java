@@ -19,23 +19,17 @@
 package org.eclipse.jetty.websocket.javax.tests.client;
 
 import java.util.concurrent.TimeUnit;
-import javax.websocket.ContainerProvider;
 import javax.websocket.EndpointConfig;
-import javax.websocket.MessageHandler;
-import javax.websocket.OnError;
-import javax.websocket.OnMessage;
 import javax.websocket.Session;
-import javax.websocket.WebSocketContainer;
 import javax.websocket.server.ServerEndpoint;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.exception.WebSocketWriteTimeoutException;
+import org.eclipse.jetty.websocket.javax.client.JavaxWebSocketClientContainer;
+import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketContainer;
+import org.eclipse.jetty.websocket.javax.tests.EventSocket;
 import org.eclipse.jetty.websocket.javax.tests.LocalServer;
-import org.eclipse.jetty.websocket.javax.tests.WSEndpointTracker;
-import org.hamcrest.Matchers;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -44,49 +38,48 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class WriteTimeoutTest
 {
-    private static LocalServer server;
+    @ServerEndpoint("/logSocket")
+    public static class ServerSocket extends EventSocket
+    {
+        @Override
+        public void onOpen(Session session, EndpointConfig endpointConfig)
+        {
+            session.setMaxIdleTimeout(-1);
+            session.setMaxTextMessageBufferSize(-1);
+            super.onOpen(session, endpointConfig);
+        }
+    }
 
-    @BeforeAll
-    public static void startServer() throws Exception
+    private LocalServer server;
+    private JavaxWebSocketContainer client;
+
+    @BeforeEach
+    public void start() throws Exception
     {
         server = new LocalServer();
         server.start();
-        server.getServerContainer().addEndpoint(LoggingSocket.class);
+        server.getServerContainer().addEndpoint(ServerSocket.class);
+
+        client = new JavaxWebSocketClientContainer();
+        client.start();
     }
 
-    @AfterAll
-    public static void stopServer() throws Exception
+    @AfterEach
+    public void stop() throws Exception
     {
+        client.stop();
         server.stop();
     }
 
-    public static class ClientEndpoint extends WSEndpointTracker implements MessageHandler.Whole<String>
-    {
-        @Override
-        public void onOpen(Session session, EndpointConfig config)
-        {
-            super.onOpen(session, config);
-            session.addMessageHandler(this);
-        }
-
-        @Override
-        public void onMessage(String message)
-        {
-            super.onWsText(message);
-        }
-    }
-
     @Test
-    public void testEchoInstance() throws Exception
+    public void testTimeoutOnLargeMessage() throws Exception
     {
-        WebSocketContainer container = ContainerProvider.getWebSocketContainer();
-        ClientEndpoint clientEndpoint = new ClientEndpoint();
-        assertThat(clientEndpoint, Matchers.instanceOf(javax.websocket.Endpoint.class));
-        Session session = container.connectToServer(clientEndpoint, null, server.getWsUri().resolve("/logSocket"));
+        EventSocket clientEndpoint = new EventSocket();
+        Session session = client.connectToServer(clientEndpoint, server.getWsUri().resolve("/logSocket"));
 
         session.getAsyncRemote().setSendTimeout(5);
+        session.setMaxTextMessageBufferSize(1024 * 1024 * 6);
 
-        session.setMaxTextMessageBufferSize(1000000);
         String string = "xxxxxxx";
         StringBuilder sb = new StringBuilder();
         while (sb.length() < session.getMaxTextMessageBufferSize() - string.length())
@@ -101,24 +94,7 @@ public class WriteTimeoutTest
         }
 
         assertTrue(clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
-        assertThat(clientEndpoint.error.get(), instanceOf(WebSocketWriteTimeoutException.class));
-    }
-
-    @ServerEndpoint("/logSocket")
-    public static class LoggingSocket
-    {
-        private final Logger log = Log.getLogger(LoggingSocket.class);
-
-        @OnMessage
-        public void onMessage(String msg)
-        {
-            log.debug("onMessage(): {}", msg);
-        }
-
-        @OnError
-        public void onError(Throwable t)
-        {
-            log.debug("onError(): {}", t);
-        }
+        assertTrue(clientEndpoint.errorLatch.await(5, TimeUnit.SECONDS));
+        assertThat(clientEndpoint.error, instanceOf(WebSocketWriteTimeoutException.class));
     }
 }
