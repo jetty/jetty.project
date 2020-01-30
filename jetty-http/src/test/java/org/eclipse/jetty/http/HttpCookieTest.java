@@ -51,7 +51,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpCookieTest
 {
-
     @Test
     public void testDefaultSameSite()
     {
@@ -77,7 +76,7 @@ public class HttpCookieTest
         assertThrows(IllegalStateException.class,
             () -> HttpCookie.getSameSiteDefault(context));
     }
-    
+
     @Test
     public void testConstructFromSetCookie()
     {

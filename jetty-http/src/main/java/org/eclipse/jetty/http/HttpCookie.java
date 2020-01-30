@@ -47,7 +47,7 @@ public class HttpCookie
     public static final String SAME_SITE_NONE_COMMENT = SAME_SITE_COMMENT + "NONE__";
     public static final String SAME_SITE_LAX_COMMENT = SAME_SITE_COMMENT + "LAX__";
     public static final String SAME_SITE_STRICT_COMMENT = SAME_SITE_COMMENT + "STRICT__";
-    
+
     /**
      * Name of context attribute with default SameSite cookie value
      */
@@ -81,7 +81,7 @@ public class HttpCookie
     private final boolean _httpOnly;
     private final long _expiration;
     private final SameSite _sameSite;
-    
+
     public HttpCookie(String name, String value)
     {
         this(name, value, -1);
@@ -289,7 +289,6 @@ public class HttpCookie
             return getRFC6265SetCookie();
         if (compliance == CookieCompliance.RFC2965)
             return getRFC2965SetCookie();
-
         throw new IllegalStateException();
     }
 
