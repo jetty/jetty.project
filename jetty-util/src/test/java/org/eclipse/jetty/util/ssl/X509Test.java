@@ -134,8 +134,7 @@ public class X509Test
         SslContextFactory serverSsl = new SslContextFactory.Server();
         Path keystorePath = MavenTestingUtils.getTestResourcePathFile("keystore_sni.p12");
         serverSsl.setKeyStoreResource(new PathResource(keystorePath));
-        serverSsl.setKeyStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
-        serverSsl.setKeyManagerPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");
+        serverSsl.setKeyStorePassword("storepwd");
         serverSsl.start();
     }
 
@@ -145,8 +144,7 @@ public class X509Test
         SslContextFactory clientSsl = new SslContextFactory.Client();
         Path keystorePath = MavenTestingUtils.getTestResourcePathFile("keystore_sni.p12");
         clientSsl.setKeyStoreResource(new PathResource(keystorePath));
-        clientSsl.setKeyStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
-        clientSsl.setKeyManagerPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");
+        clientSsl.setKeyStorePassword("storepwd");
         clientSsl.start();
     }
 
@@ -154,10 +152,9 @@ public class X509Test
     public void testServerClassWithoutSni() throws Exception
     {
         SslContextFactory serverSsl = new SslContextFactory.Server();
-        Resource keystoreResource = Resource.newSystemResource("keystore");
+        Resource keystoreResource = Resource.newSystemResource("keystore.p12");
         serverSsl.setKeyStoreResource(keystoreResource);
         serverSsl.setKeyStorePassword("storepwd");
-        serverSsl.setKeyManagerPassword("keypwd");
         serverSsl.start();
     }
 
@@ -165,10 +162,9 @@ public class X509Test
     public void testClientClassWithoutSni() throws Exception
     {
         SslContextFactory clientSsl = new SslContextFactory.Client();
-        Resource keystoreResource = Resource.newSystemResource("keystore");
+        Resource keystoreResource = Resource.newSystemResource("keystore.p12");
         clientSsl.setKeyStoreResource(keystoreResource);
         clientSsl.setKeyStorePassword("storepwd");
-        clientSsl.setKeyManagerPassword("keypwd");
         clientSsl.start();
     }
 }

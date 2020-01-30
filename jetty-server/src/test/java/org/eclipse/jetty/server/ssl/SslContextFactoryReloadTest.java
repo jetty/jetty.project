@@ -59,8 +59,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class SslContextFactoryReloadTest
 {
-    public static final String KEYSTORE_1 = "src/test/resources/reload_keystore_1.jks";
-    public static final String KEYSTORE_2 = "src/test/resources/reload_keystore_2.jks";
+    public static final String KEYSTORE_1 = "src/test/resources/reload_keystore_1.p12";
+    public static final String KEYSTORE_2 = "src/test/resources/reload_keystore_2.p12";
 
     private Server server;
     private SslContextFactory.Server sslContextFactory;
@@ -73,8 +73,6 @@ public class SslContextFactoryReloadTest
         sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setKeyStorePath(KEYSTORE_1);
         sslContextFactory.setKeyStorePassword("storepwd");
-        sslContextFactory.setKeyStoreType("JKS");
-        sslContextFactory.setKeyStoreProvider(null);
 
         HttpConfiguration httpsConfig = new HttpConfiguration();
         httpsConfig.addCustomizer(new SecureRequestCustomizer());

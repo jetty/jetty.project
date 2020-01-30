@@ -55,7 +55,7 @@ public class TryFilesFilterTest
         server.addConnector(connector);
 
         SslContextFactory.Server serverSslContextFactory = new SslContextFactory.Server();
-        serverSslContextFactory.setKeyStorePath("src/test/resources/keystore.jks");
+        serverSslContextFactory.setKeyStorePath("src/test/resources/keystore.p12");
         serverSslContextFactory.setKeyStorePassword("storepwd");
         sslConnector = new ServerConnector(server, serverSslContextFactory);
         server.addConnector(sslConnector);
@@ -71,10 +71,8 @@ public class TryFilesFilterTest
         ClientConnector clientConnector = new ClientConnector();
         SslContextFactory.Client clientSslContextFactory = new SslContextFactory.Client();
         clientSslContextFactory.setEndpointIdentificationAlgorithm(null);
-        clientSslContextFactory.setKeyStorePath("src/test/resources/keystore.jks");
+        clientSslContextFactory.setKeyStorePath("src/test/resources/keystore.p12");
         clientSslContextFactory.setKeyStorePassword("storepwd");
-        clientSslContextFactory.setTrustStorePath("src/test/resources/truststore.jks");
-        clientSslContextFactory.setTrustStorePassword("storepwd");
         clientConnector.setSslContextFactory(clientSslContextFactory);
         client = new HttpClient(new HttpClientTransportOverHTTP(clientConnector));
         server.addBean(client);

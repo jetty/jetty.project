@@ -66,13 +66,10 @@ public class SecuredRedirectHandlerTest
     public static void startServer() throws Exception
     {
         // Setup SSL
-        File keystore = MavenTestingUtils.getTestResourceFile("keystore");
+        File keystore = MavenTestingUtils.getTestResourceFile("keystore.p12");
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setKeyStorePath(keystore.getAbsolutePath());
         sslContextFactory.setKeyStorePassword("storepwd");
-        sslContextFactory.setKeyManagerPassword("keypwd");
-        sslContextFactory.setTrustStorePath(keystore.getAbsolutePath());
-        sslContextFactory.setTrustStorePassword("storepwd");
 
         server = new Server();
 

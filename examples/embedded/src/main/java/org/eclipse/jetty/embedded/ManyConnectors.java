@@ -42,7 +42,7 @@ public class ManyConnectors
     {
         // Since this example shows off SSL configuration, we need a keystore
         // with the appropriate key.
-        Path keystorePath = Paths.get("src/main/resources/etc/keystore").toAbsolutePath();
+        Path keystorePath = Paths.get("src/main/resources/etc/keystore.p12").toAbsolutePath();
         if (!Files.exists(keystorePath))
             throw new FileNotFoundException(keystorePath.toString());
 
@@ -81,8 +81,7 @@ public class ManyConnectors
 
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setKeyStorePath(keystorePath.toString());
-        sslContextFactory.setKeyStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
-        sslContextFactory.setKeyManagerPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");
+        sslContextFactory.setKeyStorePassword("storepwd");
 
         // OPTIONAL: Un-comment the following to use Conscrypt for SSL instead of
         // the native JSSE implementation.

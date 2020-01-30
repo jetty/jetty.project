@@ -58,7 +58,7 @@ public class ClientCertAuthenticator extends LoginAuthenticator
     /**
      * Truststore type
      */
-    private String _trustStoreType = "JKS";
+    private String _trustStoreType = "PKCS12";
     /**
      * Truststore password
      */
@@ -251,7 +251,7 @@ public class ClientCertAuthenticator extends LoginAuthenticator
     }
 
     /**
-     * @return The type of the trust store (default "JKS")
+     * @return The type of the trust store (default "PKCS12")
      */
     public String getTrustStoreType()
     {
@@ -259,7 +259,7 @@ public class ClientCertAuthenticator extends LoginAuthenticator
     }
 
     /**
-     * @param trustStoreType The type of the trust store (default "JKS")
+     * @param trustStoreType The type of the trust store
      */
     public void setTrustStoreType(String trustStoreType)
     {

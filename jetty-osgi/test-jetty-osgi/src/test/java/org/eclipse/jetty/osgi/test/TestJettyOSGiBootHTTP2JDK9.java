@@ -129,14 +129,12 @@ public class TestJettyOSGiBootHTTP2JDK9
             assertNotNull(port);
 
             Path path = Paths.get("src", "test", "config");
-            File keys = path.resolve("etc").resolve("keystore").toFile();
+            File keys = path.resolve("etc").resolve("keystore.p12").toFile();
 
             ClientConnector clientConnector = new ClientConnector();
             SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
-            sslContextFactory.setKeyManagerPassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
-            sslContextFactory.setTrustStorePath(keys.getAbsolutePath());
             sslContextFactory.setKeyStorePath(keys.getAbsolutePath());
-            sslContextFactory.setTrustStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
+            sslContextFactory.setKeyStorePassword("storepwd");
             sslContextFactory.setEndpointIdentificationAlgorithm(null);
             clientConnector.setSslContextFactory(sslContextFactory);
             http2Client = new HTTP2Client(clientConnector);

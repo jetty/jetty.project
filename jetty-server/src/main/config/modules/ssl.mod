@@ -79,7 +79,7 @@ etc/jetty-ssl-context.xml
 # jetty.sslContext.keyStorePassword=
 
 ## Keystore type and provider
-# jetty.sslContext.keyStoreType=JKS
+# jetty.sslContext.keyStoreType=PKCS12
 # jetty.sslContext.keyStoreProvider=
 
 ## KeyManager password
@@ -89,7 +89,7 @@ etc/jetty-ssl-context.xml
 # jetty.sslContext.trustStorePassword=
 
 ## Truststore type and provider
-# jetty.sslContext.trustStoreType=JKS
+# jetty.sslContext.trustStoreType=PKCS12
 # jetty.sslContext.trustStoreProvider=
 
 ## whether client certificate authentication is required

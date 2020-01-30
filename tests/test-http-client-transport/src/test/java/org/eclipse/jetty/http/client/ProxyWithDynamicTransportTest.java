@@ -116,7 +116,7 @@ public class ProxyWithDynamicTransportTest
     private void startServer(Handler handler) throws Exception
     {
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-        sslContextFactory.setKeyStorePath("src/test/resources/keystore.jks");
+        sslContextFactory.setKeyStorePath("src/test/resources/keystore.p12");
         sslContextFactory.setKeyStorePassword("storepwd");
         sslContextFactory.setUseCipherSuitesOrder(true);
         sslContextFactory.setCipherComparator(HTTP2Cipher.COMPARATOR);
@@ -147,7 +147,7 @@ public class ProxyWithDynamicTransportTest
     private void startProxy(ConnectHandler connectHandler) throws Exception
     {
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-        sslContextFactory.setKeyStorePath("src/test/resources/keystore.jks");
+        sslContextFactory.setKeyStorePath("src/test/resources/keystore.p12");
         sslContextFactory.setKeyStorePassword("storepwd");
         sslContextFactory.setUseCipherSuitesOrder(true);
         sslContextFactory.setCipherComparator(HTTP2Cipher.COMPARATOR);

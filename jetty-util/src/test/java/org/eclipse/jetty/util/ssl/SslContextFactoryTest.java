@@ -72,7 +72,6 @@ public class SslContextFactoryTest
     public void testSLOTH() throws Exception
     {
         cf.setKeyStorePassword("storepwd");
-        cf.setKeyManagerPassword("keypwd");
 
         cf.start();
 
@@ -93,7 +92,6 @@ public class SslContextFactoryTest
     public void testDumpIncludeTlsRsa() throws Exception
     {
         cf.setKeyStorePassword("storepwd");
-        cf.setKeyManagerPassword("keypwd");
         cf.setIncludeCipherSuites("TLS_RSA_.*");
         cf.setExcludeCipherSuites("BOGUS"); // just to not exclude anything
 
@@ -125,117 +123,92 @@ public class SslContextFactoryTest
     public void testNoTsFileKs() throws Exception
     {
         cf.setKeyStorePassword("storepwd");
-        cf.setKeyManagerPassword("keypwd");
 
         cf.start();
 
-        assertTrue(cf.getSslContext() != null);
+        assertNotNull(cf.getSslContext());
     }
 
     @Test
     public void testNoTsSetKs() throws Exception
     {
-        KeyStore ks = KeyStore.getInstance("JKS");
-        try (InputStream keystoreInputStream = this.getClass().getResourceAsStream("keystore"))
+        KeyStore ks = KeyStore.getInstance("PKCS12");
+        try (InputStream keystoreInputStream = this.getClass().getResourceAsStream("keystore.p12"))
         {
             ks.load(keystoreInputStream, "storepwd".toCharArray());
         }
         cf.setKeyStore(ks);
-        cf.setKeyManagerPassword("keypwd");
 
         cf.start();
 
-        assertTrue(cf.getSslContext() != null);
+        assertNotNull(cf.getSslContext());
     }
 
     @Test
     public void testNoTsNoKs() throws Exception
     {
         cf.start();
-        assertTrue(cf.getSslContext() != null);
+        assertNotNull(cf.getSslContext());
     }
 
     @Test
     public void testTrustAll() throws Exception
     {
         cf.start();
-        assertTrue(cf.getSslContext() != null);
+        assertNotNull(cf.getSslContext());
     }
 
     @Test
     public void testNoTsResourceKs() throws Exception
     {
-        Resource keystoreResource = Resource.newSystemResource("keystore");
+        Resource keystoreResource = Resource.newSystemResource("keystore.p12");
 
         cf.setKeyStoreResource(keystoreResource);
         cf.setKeyStorePassword("storepwd");
-        cf.setKeyManagerPassword("keypwd");
         cf.setTrustStoreResource(keystoreResource);
         cf.setTrustStorePassword(null);
 
         cf.start();
 
-        assertTrue(cf.getSslContext() != null);
+        assertNotNull(cf.getSslContext());
     }
 
     @Test
     public void testResourceTsResourceKs() throws Exception
     {
-        Resource keystoreResource = Resource.newSystemResource("keystore");
-        Resource truststoreResource = Resource.newSystemResource("keystore");
+        Resource keystoreResource = Resource.newSystemResource("keystore.p12");
+        Resource truststoreResource = Resource.newSystemResource("keystore.p12");
 
         cf.setKeyStoreResource(keystoreResource);
-        cf.setTrustStoreResource(truststoreResource);
         cf.setKeyStorePassword("storepwd");
-        cf.setKeyManagerPassword("keypwd");
+        cf.setTrustStoreResource(truststoreResource);
         cf.setTrustStorePassword("storepwd");
 
         cf.start();
 
-        assertTrue(cf.getSslContext() != null);
-    }
-
-    @Test
-    public void testResourceTsResourceKsWrongPW() throws Exception
-    {
-        Resource keystoreResource = Resource.newSystemResource("keystore");
-        Resource truststoreResource = Resource.newSystemResource("keystore");
-
-        cf.setKeyStoreResource(keystoreResource);
-        cf.setTrustStoreResource(truststoreResource);
-        cf.setKeyStorePassword("storepwd");
-        cf.setKeyManagerPassword("wrong_keypwd");
-        cf.setTrustStorePassword("storepwd");
-
-        try (StacklessLogging ignore = new StacklessLogging(AbstractLifeCycle.class))
-        {
-            java.security.UnrecoverableKeyException x = assertThrows(
-                java.security.UnrecoverableKeyException.class, () -> cf.start());
-            assertThat(x.getMessage(), containsString("Cannot recover key"));
-        }
+        assertNotNull(cf.getSslContext());
     }
 
     @Test
     public void testResourceTsWrongPWResourceKs() throws Exception
     {
-        Resource keystoreResource = Resource.newSystemResource("keystore");
-        Resource truststoreResource = Resource.newSystemResource("keystore");
+        Resource keystoreResource = Resource.newSystemResource("keystore.p12");
+        Resource truststoreResource = Resource.newSystemResource("keystore.p12");
 
         cf.setKeyStoreResource(keystoreResource);
-        cf.setTrustStoreResource(truststoreResource);
         cf.setKeyStorePassword("storepwd");
-        cf.setKeyManagerPassword("keypwd");
+        cf.setTrustStoreResource(truststoreResource);
         cf.setTrustStorePassword("wrong_storepwd");
 
         try (StacklessLogging ignore = new StacklessLogging(AbstractLifeCycle.class))
         {
             IOException x = assertThrows(IOException.class, () -> cf.start());
-            assertThat(x.getMessage(), containsString("Keystore was tampered with, or password was incorrect"));
+            assertThat(x.getMessage(), containsString("password was incorrect"));
         }
     }
 
     @Test
-    public void testNoKeyConfig() throws Exception
+    public void testNoKeyConfig()
     {
         try (StacklessLogging ignore = new StacklessLogging(AbstractLifeCycle.class))
         {
@@ -289,11 +262,10 @@ public class SslContextFactoryTest
     @Test
     public void testSNICertificates() throws Exception
     {
-        Resource keystoreResource = Resource.newSystemResource("snikeystore");
+        Resource keystoreResource = Resource.newSystemResource("snikeystore.p12");
 
         cf.setKeyStoreResource(keystoreResource);
         cf.setKeyStorePassword("storepwd");
-        cf.setKeyManagerPassword("keypwd");
 
         cf.start();
 
@@ -331,8 +303,8 @@ public class SslContextFactoryTest
     public void testNonDefaultKeyStoreTypeUsedForTrustStore() throws Exception
     {
         cf = new SslContextFactory.Server();
-        cf.setKeyStoreResource(Resource.newSystemResource("keystore.p12"));
-        cf.setKeyStoreType("pkcs12");
+        cf.setKeyStoreResource(Resource.newSystemResource("keystore.jks"));
+        cf.setKeyStoreType("jks");
         cf.setKeyStorePassword("storepwd");
         cf.start();
         cf.stop();

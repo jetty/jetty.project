@@ -70,7 +70,7 @@ public class SslConnectionFactoryTest
     @BeforeEach
     public void before() throws Exception
     {
-        String keystorePath = "src/test/resources/keystore";
+        String keystorePath = "src/test/resources/keystore.p12";
         File keystoreFile = new File(keystorePath);
         if (!keystoreFile.exists())
             throw new FileNotFoundException(keystoreFile.getAbsolutePath());
@@ -86,8 +86,7 @@ public class SslConnectionFactoryTest
 
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setKeyStorePath(keystoreFile.getAbsolutePath());
-        sslContextFactory.setKeyStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
-        sslContextFactory.setKeyManagerPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");
+        sslContextFactory.setKeyStorePassword("storepwd");
 
         ServerConnector https = _connector = new ServerConnector(_server,
             new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString()),
@@ -129,7 +128,7 @@ public class SslConnectionFactoryTest
     @Test
     public void testSNIConnect() throws Exception
     {
-        String response = getResponse("localhost", "localhost", "jetty.eclipse.org");
+        String response = getResponse("localhost", "localhost", "localhost");
         assertThat(response, Matchers.containsString("host=localhost"));
     }
 

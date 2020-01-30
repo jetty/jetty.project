@@ -44,11 +44,10 @@ public class SSLCloseTest
     @Test
     public void testClose() throws Exception
     {
-        File keystore = MavenTestingUtils.getTestResourceFile("keystore");
+        File keystore = MavenTestingUtils.getTestResourceFile("keystore.p12");
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setKeyStoreResource(Resource.newResource(keystore));
         sslContextFactory.setKeyStorePassword("storepwd");
-        sslContextFactory.setKeyManagerPassword("keypwd");
 
         Server server = new Server();
         ServerConnector connector = new ServerConnector(server, sslContextFactory);

@@ -48,7 +48,7 @@ public class HTTP2FromWebAppIT
         Server server = new Server();
 
         SslContextFactory.Server serverTLS = new SslContextFactory.Server();
-        serverTLS.setKeyStorePath("src/test/resources/keystore.jks");
+        serverTLS.setKeyStorePath("src/test/resources/keystore.p12");
         serverTLS.setKeyStorePassword("storepwd");
         serverTLS.setCipherComparator(new HTTP2Cipher.CipherComparator());
 
