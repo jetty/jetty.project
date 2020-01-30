@@ -140,7 +140,7 @@ public class JettySpecificConfigTest
 
         // Send and receive an echo.
         session.getBasicRemote().sendText("echo");
-        String resp = clientEndpoint.messageQueue.poll(1, TimeUnit.SECONDS);
+        String resp = clientEndpoint.textMessages.poll(1, TimeUnit.SECONDS);
         assertThat("Response echo", resp, is("echo"));
 
         // Close the Session.

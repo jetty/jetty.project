@@ -142,7 +142,7 @@ public class ServerDecoderTest
 
         EventSocket serverSocket = annotatedServerSocket.get(5, TimeUnit.SECONDS);
         assertTrue(serverSocket.openLatch.await(5, TimeUnit.SECONDS));
-        String msg = serverSocket.messageQueue.poll(5, TimeUnit.SECONDS);
+        String msg = serverSocket.textMessages.poll(5, TimeUnit.SECONDS);
         assertThat(msg, is("hello world="));
 
         clientSocket.session.close();
