@@ -81,7 +81,7 @@ public class ConscryptHTTP2ServerTest
         Path path = Paths.get("src", "test", "resources");
         File keys = path.resolve("keystore.p12").toFile();
         sslContextFactory.setKeyStorePath(keys.getAbsolutePath());
-        sslContextFactory.setKeyStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
+        sslContextFactory.setKeyStorePassword("storepwd");
         sslContextFactory.setProvider("Conscrypt");
         if (JavaVersion.VERSION.getPlatform() < 9)
         {

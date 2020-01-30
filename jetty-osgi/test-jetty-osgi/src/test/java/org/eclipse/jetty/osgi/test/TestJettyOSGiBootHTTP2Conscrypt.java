@@ -140,9 +140,7 @@ public class TestJettyOSGiBootHTTP2Conscrypt
             ClientConnector clientConnector = new ClientConnector();
             SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
             sslContextFactory.setKeyStorePath(keys.getAbsolutePath());
-            sslContextFactory.setKeyStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
-            sslContextFactory.setTrustStorePath(keys.getAbsolutePath());
-            sslContextFactory.setTrustStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
+            sslContextFactory.setKeyStorePassword("storepwd");
             sslContextFactory.setProvider("Conscrypt");
             sslContextFactory.setEndpointIdentificationAlgorithm(null);
             if (JavaVersion.VERSION.getPlatform() < 9)
