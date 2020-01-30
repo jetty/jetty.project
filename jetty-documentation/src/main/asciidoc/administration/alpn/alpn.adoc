@@ -266,6 +266,8 @@ The ALPN implementation, relying on modifications of OpenJDK classes, updates ev
 |1.8.0u222 |8.1.13.v20181017
 |1.8.0u231^[1]^ |8.1.13.v20181017
 |1.8.0u232 |8.1.13.v20181017
+|1.8.0u241^[1]^ |8.1.13.v20181017
+|1.8.0u242 |8.1.13.v20181017
 |=============================
 ^[1]^ These are Oracle releases for which the source code is not available,
 or it is unclear what exactly is because there is no correspondent tag in
