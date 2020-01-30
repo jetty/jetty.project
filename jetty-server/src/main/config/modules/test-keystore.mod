@@ -9,7 +9,7 @@ ssl
 ssl
 
 [files]
-basehome:modules/test-keystore/keystore.p12|etc/test-keystore.p12
+basehome:modules/test-keystore/test-keystore.p12|etc/test-keystore.p12
 
 [ini]
 jetty.sslContext.keyStorePath?=etc/test-keystore.p12
