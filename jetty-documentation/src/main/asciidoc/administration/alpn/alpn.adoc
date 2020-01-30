@@ -357,6 +357,8 @@ The ALPN implementation, relying on modifications of OpenJDK classes, updates ev
 |1.8.0u222 |8.1.13.v20181017
 |1.8.0u231^[1]^ |8.1.13.v20181017
 |1.8.0u232 |8.1.13.v20181017
+|1.8.0u241^[1]^ |8.1.13.v20181017
+|1.8.0u242 |8.1.13.v20181017
 |=============================
 ^[1]^ These are Oracle releases for which the source code is not available,
 or it is unclear what exactly is because there is no correspondent tag in
@@ -375,7 +377,7 @@ Clone the OpenJDK repository with the following command:
 
 [source, screen, subs="{sub-order}"]
 ....
-$ hg clone http://hg.openjdk.java.net/jdk8u/jdk8u jdk8u
+$ hg clone https://hg.openjdk.java.net/jdk8u/jdk8u jdk8u
 $ cd !$
 $ ./get_source.sh
 ....
@@ -389,6 +391,6 @@ $ ./make/scripts/hgforest.sh update <tag-name>
 ....
 
 The list of OpenJDK tags can be obtained from this page:
-http://hg.openjdk.java.net/jdk8u/jdk8u/tags[OpenJDK 8 Tags].
+https://hg.openjdk.java.net/jdk8u/jdk8u/tags[OpenJDK 8 Tags].
 
 You will then need to compare and incorporate the OpenJDK source changes into the modified OpenJDK classes at the https://github.com/jetty-project/jetty-alpn[ALPN GitHub Repository], branch `master`.
