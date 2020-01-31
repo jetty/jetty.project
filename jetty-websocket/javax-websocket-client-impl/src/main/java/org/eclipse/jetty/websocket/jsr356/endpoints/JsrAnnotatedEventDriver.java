@@ -116,27 +116,24 @@ public class JsrAnnotatedEventDriver extends AbstractJsrEventDriver
             if (activeMessage == null)
             {
                 if (LOG.isDebugEnabled())
-                {
                     LOG.debug("Binary Message InputStream");
-                }
-                final MessageInputStream stream = new MessageInputStream();
+
+                final MessageInputStream stream = new MessageInputStream(session);
                 activeMessage = stream;
 
                 // Always dispatch streaming read to another thread.
-                dispatch(new Runnable()
+                dispatch(() ->
                 {
-                    @Override
-                    public void run()
+                    try
                     {
-                        try
-                        {
-                            events.callBinaryStream(jsrsession.getAsyncRemote(), websocket, stream);
-                        }
-                        catch (Throwable e)
-                        {
-                            onFatalError(e);
-                        }
+                        events.callBinaryStream(jsrsession.getAsyncRemote(), websocket, stream);
                     }
+                    catch (Throwable e)
+                    {
+                        session.close(e);
+                    }
+
+                    stream.close();
                 });
             }
         }
@@ -330,28 +327,25 @@ public class JsrAnnotatedEventDriver extends AbstractJsrEventDriver
             if (activeMessage == null)
             {
                 if (LOG.isDebugEnabled())
-                {
                     LOG.debug("Text Message Writer");
-                }
 
-                final MessageReader stream = new MessageReader(new MessageInputStream());
-                activeMessage = stream;
+                MessageInputStream inputStream = new MessageInputStream(session);
+                final MessageReader reader = new MessageReader(inputStream);
+                activeMessage = inputStream;
 
                 // Always dispatch streaming read to another thread.
-                dispatch(new Runnable()
+                dispatch(() ->
                 {
-                    @Override
-                    public void run()
+                    try
                     {
-                        try
-                        {
-                            events.callTextStream(jsrsession.getAsyncRemote(), websocket, stream);
-                        }
-                        catch (Throwable e)
-                        {
-                            onFatalError(e);
-                        }
+                        events.callTextStream(jsrsession.getAsyncRemote(), websocket, reader);
                     }
+                    catch (Throwable e)
+                    {
+                        session.close(e);
+                    }
+
+                    inputStream.close();
                 });
             }
         }
