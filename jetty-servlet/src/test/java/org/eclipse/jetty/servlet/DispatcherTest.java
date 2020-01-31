@@ -118,8 +118,9 @@ public class DispatcherTest
         String expected =
             "HTTP/1.1 200 OK\r\n" +
                 "Content-Type: text/html\r\n" +
-                "Content-Length: 0\r\n" +
-                "\r\n";
+                "Content-Length: 7\r\n" +
+                "\r\n" +
+                "FORWARD";
 
         String responses = _connector.getResponse("GET /context/ForwardServlet?do=assertforward&do=more&test=1 HTTP/1.0\n\n");
 
@@ -135,8 +136,9 @@ public class DispatcherTest
         String expected =
             "HTTP/1.1 200 OK\r\n" +
                 "Content-Type: text/html\r\n" +
-                "Content-Length: 0\r\n" +
-                "\r\n";
+                "Content-Length: 7\r\n" +
+                "\r\n" +
+                "FORWARD";
         String responses = _connector.getResponse("GET /context/ForwardServlet?do=assertforward&foreign=%d2%e5%ec%ef%e5%f0%e0%f2%f3%f0%e0&test=1 HTTP/1.0\n\n");
 
         assertEquals(expected, responses);
@@ -205,7 +207,9 @@ public class DispatcherTest
 
         String expected =
             "HTTP/1.1 200 OK\r\n" +
-                "\r\n";
+                "Content-Length: 7\r\n" +
+                "\r\n" +
+                "INCLUDE";
 
         String responses = _connector.getResponse("GET /context/IncludeServlet?do=assertinclude&do=more&test=1 HTTP/1.0\n\n");
 
@@ -221,7 +225,9 @@ public class DispatcherTest
 
         String expected =
             "HTTP/1.1 200 OK\r\n" +
-                "\r\n";
+                "Content-Length: 7\r\n" +
+                "\r\n" +
+                "INCLUDE";
 
         String responses = _connector.getResponse("GET /context/ForwardServlet/forwardpath?do=include HTTP/1.0\n\n");
 
@@ -237,7 +243,9 @@ public class DispatcherTest
 
         String expected =
             "HTTP/1.1 200 OK\r\n" +
-                "\r\n";
+                "Content-Length: 7\r\n" +
+                "\r\n" +
+                "FORWARD";
 
         String responses = _connector.getResponse("GET /context/IncludeServlet/includepath?do=forward HTTP/1.0\n\n");
 
@@ -378,21 +386,11 @@ public class DispatcherTest
     }
 
     @Test
-    public void testForwardCloseIntercepted() throws Exception
+    public void testWrappedForwardCloseIntercepted() throws Exception
     {
+        // Add filter that wraps response, intercepts close and writes after doChain
         _contextHandler.addFilter(WrappingFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
-        _contextHandler.addServlet(ForwardServlet.class, "/ForwardServlet/*");
-        _contextHandler.addServlet(AssertForwardServlet.class, "/AssertForwardServlet/*");
-
-        String expected =
-            "HTTP/1.1 200 OK\r\n" +
-                "Content-Type: text/html\r\n" +
-                "Content-Length: 0\r\n" +
-                "\r\n";
-
-        String responses = _connector.getResponse("GET /context/ForwardServlet?do=assertforward&do=more&test=1 HTTP/1.0\n\n");
-
-        assertEquals(expected, responses);
+        testForward();
     }
 
     public static class WrappingFilter implements Filter
@@ -744,6 +742,7 @@ public class DispatcherTest
 
             response.setContentType("text/html");
             response.setStatus(HttpServletResponse.SC_OK);
+            response.getOutputStream().print(request.getDispatcherType().toString());
         }
     }
 
@@ -792,6 +791,7 @@ public class DispatcherTest
 
             response.setContentType("text/html");
             response.setStatus(HttpServletResponse.SC_OK);
+            response.getOutputStream().print(request.getDispatcherType().toString());
         }
     }
 
@@ -820,6 +820,7 @@ public class DispatcherTest
 
             response.setContentType("text/html");
             response.setStatus(HttpServletResponse.SC_OK);
+            response.getOutputStream().print(request.getDispatcherType().toString());
         }
     }
 
@@ -857,6 +858,7 @@ public class DispatcherTest
 
             response.setContentType("text/html");
             response.setStatus(HttpServletResponse.SC_OK);
+            response.getOutputStream().print(request.getDispatcherType().toString());
         }
     }
 
@@ -892,6 +894,7 @@ public class DispatcherTest
 
             response.setContentType("text/html");
             response.setStatus(HttpServletResponse.SC_OK);
+            response.getOutputStream().print(request.getDispatcherType().toString());
         }
     }
 }
