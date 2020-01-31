@@ -40,7 +40,7 @@ public class WebDescriptor extends Descriptor
     private static final Logger LOG = Log.getLogger(WebDescriptor.class);
 
     protected static XmlParser _nonValidatingStaticParser;
-    protected MetaDataComplete _metaDataComplete;
+    protected MetaData.Complete _metaDataComplete;
     protected int _majorVersion = 4; //default to container version
     protected int _minorVersion = 0;
     protected ArrayList<String> _classNames = new ArrayList<String>();
@@ -48,22 +48,28 @@ public class WebDescriptor extends Descriptor
 
     protected boolean _isOrdered = false;
     protected List<String> _ordering = new ArrayList<String>();
-
-    @Override
-    public XmlParser ensureParser() throws ClassNotFoundException
+     
+    /**
+     * Check if the descriptor is metadata-complete.
+     * 
+     * @param d the descriptor (web.xml, web-fragment.xml, 
+     * web-default.xml, web-override.xml) to check
+     * 
+     * @return true iff metadata-complete=true is declared in the
+     * descriptor
+     */
+    public static boolean isMetaDataComplete(WebDescriptor d)
     {
-        synchronized (WebDescriptor.class)
-        {
-            if (_nonValidatingStaticParser == null)
-                _nonValidatingStaticParser = newParser(false);
-        }
-
-        if (!isValidating())
-            return _nonValidatingStaticParser;
-        else
-            return newParser(true);
+        return (d != null && d.getMetaDataComplete() == MetaData.Complete.True);
     }
 
+    /**
+     * Create a new parser for parsing web descriptors.
+     * 
+     * @param validating if true, the parser will validate syntax
+     * @return an XmlParser
+     * @throws ClassNotFoundException
+     */
     public static XmlParser newParser(boolean validating) throws ClassNotFoundException
     {
         XmlParser xmlParser = new XmlParser(validating)
@@ -218,6 +224,21 @@ public class WebDescriptor extends Descriptor
     }
 
     @Override
+    public XmlParser ensureParser() throws ClassNotFoundException
+    {
+        synchronized (WebDescriptor.class)
+        {
+            if (_nonValidatingStaticParser == null)
+                _nonValidatingStaticParser = newParser(false);
+        }
+
+        if (!isValidating())
+            return _nonValidatingStaticParser;
+        else
+            return newParser(true);
+    }
+    
+    @Override
     public void parse()
         throws Exception
     {
@@ -226,7 +247,7 @@ public class WebDescriptor extends Descriptor
         processOrdering();
     }
 
-    public MetaDataComplete getMetaDataComplete()
+    public MetaData.Complete getMetaDataComplete()
     {
         return _metaDataComplete;
     }
@@ -266,14 +287,14 @@ public class WebDescriptor extends Descriptor
         }
 
         if (_majorVersion <= 2 && _minorVersion < 5)
-            _metaDataComplete = MetaDataComplete.True; // does not apply before 2.5
+            _metaDataComplete = MetaData.Complete.True; // does not apply before 2.5
         else
         {
             String s = (String)_root.getAttribute("metadata-complete");
             if (s == null)
-                _metaDataComplete = MetaDataComplete.NotSet;
+                _metaDataComplete = MetaData.Complete.NotSet;
             else
-                _metaDataComplete = Boolean.valueOf(s).booleanValue() ? MetaDataComplete.True : MetaDataComplete.False;
+                _metaDataComplete = Boolean.valueOf(s).booleanValue() ? MetaData.Complete.True : MetaData.Complete.False;
         }
 
         if (LOG.isDebugEnabled())

@@ -18,19 +18,33 @@
 
 package org.eclipse.jetty.annotations;
 
+import java.net.URI;
+
 import org.eclipse.jetty.util.Decorator;
+import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.webapp.FragmentDescriptor;
 import org.eclipse.jetty.webapp.WebAppContext;
+import org.eclipse.jetty.webapp.WebDescriptor;
 
 /**
  * AnnotationDecorator
  */
 public class AnnotationDecorator implements Decorator
 {
+    private static final Logger LOG = Log.getLogger(AnnotationDecorator.class);
     protected AnnotationIntrospector _introspector = new AnnotationIntrospector();
+    protected WebAppContext _context;
 
     public AnnotationDecorator(WebAppContext context)
     {
-        registerHandlers(context);
+        _context = context;
+        if (!_context.getMetaData().isMetaDataComplete())
+        {
+            registerHandlers(_context);
+        }
     }
 
     public void registerHandlers(WebAppContext context)
@@ -50,22 +64,55 @@ public class AnnotationDecorator implements Decorator
      * <ul>
      * <li> Resource </li>
      * <li> Resources </li>
+     * <li> RunAs </li>
      * <li> PostConstruct </li>
      * <li> PreDestroy </li>
-     * <li> ServletSecurity? </li>
+     * <li> DeclareRoles </li>
+     * <li> MultiPart </li>
+     * <li> ServletSecurity</li>
      * </ul>
      *
-     * @param o the object ot introspect
+     * @param o the object to introspect
      */
     protected void introspect(Object o)
     {
+        if (o == null)
+            return;
         _introspector.introspect(o.getClass());
     }
 
     @Override
     public Object decorate(Object o)
     {
-        introspect(o);
+        if (o == null)
+            return o;
+
+        boolean introspect = false;
+        URI location = TypeUtil.getLocationOfClass(o.getClass());
+        if (location == null)
+        {
+            //if can't get the location we introspect because there is no descriptor
+            introspect = true;
+        }
+        else
+        {
+            try
+            {
+                //Servlet 4:
+                //if the class came from a jar with a web-fragment.xml, we only
+                //introspect if that fragment is not metadata-complete
+                Resource resource = Resource.newResource(location);
+                FragmentDescriptor fragment = _context.getMetaData().getFragmentDescriptorForJar(resource);
+                if (fragment == null || !WebDescriptor.isMetaDataComplete(fragment))
+                    introspect = true;
+            }
+            catch (Exception e)
+            {
+                LOG.warn(e);
+            }
+        }
+        if (introspect)
+            introspect(o);
         return o;
     }
 

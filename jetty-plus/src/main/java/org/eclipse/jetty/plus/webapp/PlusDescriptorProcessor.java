@@ -754,8 +754,9 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
                 injections.add(injection);
 
                 //Record which was the first descriptor to declare an injection for this name
-                if (context.getMetaData().getOriginDescriptor(node.getTag() + "." + jndiName + ".injection") == null)
-                    context.getMetaData().setOrigin(node.getTag() + "." + jndiName + ".injection", descriptor);
+                String name = node.getTag() + "." + jndiName + ".injection";
+                if (context.getMetaData().getOriginDescriptor(name) == null)
+                    context.getMetaData().setOrigin(name, descriptor);
             }
             catch (ClassNotFoundException e)
             {

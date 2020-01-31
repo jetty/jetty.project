@@ -70,7 +70,7 @@ public class DecoratedObjectFactory implements Iterable<Decorator>
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("Creating Instance: " + clazz);
+            LOG.debug("Creating Instance: {}", clazz);
         }
         T o = clazz.getDeclaredConstructor().newInstance();
         return decorate(o);

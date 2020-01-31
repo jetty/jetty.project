@@ -517,11 +517,11 @@ public class OrderingTest
         final Resource jarResource = new TestResource("A");
 
         metadata.setOrdering(new RelativeOrdering(metadata));
-        metadata.addWebInfJar(jarResource);
+        metadata.addWebInfResource(jarResource);
         metadata.orderFragments();
-        assertEquals(1, metadata.getOrderedWebInfJars().size());
+        assertEquals(1, metadata.getWebInfResources(true).size());
         metadata.orderFragments();
-        assertEquals(1, metadata.getOrderedWebInfJars().size());
+        assertEquals(1, metadata.getWebInfResources(true).size());
     }
 
     @Test

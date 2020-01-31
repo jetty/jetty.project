@@ -57,16 +57,16 @@ public class WebXmlConfiguration extends AbstractConfiguration
                 if (dftResource == null)
                     dftResource = context.newResource(defaultsDescriptor);
             }
-            context.getMetaData().setDefaults(dftResource);
+            context.getMetaData().setDefaultsDescriptor(dftResource);
         }
 
         //parse, but don't process web.xml
         Resource webxml = findWebXml(context);
         if (webxml != null)
         {
-            context.getMetaData().setWebXml(webxml);
-            context.getServletContext().setEffectiveMajorVersion(context.getMetaData().getWebXml().getMajorVersion());
-            context.getServletContext().setEffectiveMinorVersion(context.getMetaData().getWebXml().getMinorVersion());
+            context.getMetaData().setWebDescriptor(webxml);
+            context.getServletContext().setEffectiveMajorVersion(context.getMetaData().getWebDescriptor().getMajorVersion());
+            context.getServletContext().setEffectiveMinorVersion(context.getMetaData().getWebDescriptor().getMinorVersion());
         }
 
         //parse but don't process override-web.xml
@@ -77,7 +77,7 @@ public class WebXmlConfiguration extends AbstractConfiguration
                 Resource orideResource = Resource.newSystemResource(overrideDescriptor);
                 if (orideResource == null)
                     orideResource = context.newResource(overrideDescriptor);
-                context.getMetaData().addOverride(orideResource);
+                context.getMetaData().addOverrideDescriptor(orideResource);
             }
         }
     }
