@@ -278,7 +278,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
                 _task.put(task);
                 return true;
             }
-            catch (InterruptedException e)
+            catch (Throwable e)
             {
                 LOG.ignore(e);
                 _size.getAndIncrement();
@@ -304,7 +304,9 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
 
                 try
                 {
-                    Runnable task = _idleTime == 0 ? _task.take() : _task.poll(_idleTime, _idleTimeUnit);
+                    Runnable task = _idleTime <= 0 ? _task.take() : _task.poll(_idleTime, _idleTimeUnit);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("{} task={}", this, task);
                     if (task != null)
                         return task;
 
