@@ -65,6 +65,7 @@ public class ErrorHandler extends AbstractHandler
     public static final String ERROR_PAGE = "org.eclipse.jetty.server.error_page";
     public static final String ERROR_CONTEXT = "org.eclipse.jetty.server.error_context";
 
+    boolean _showServlet = true;
     boolean _showStacks = true;
     boolean _disableStacks = false;
     boolean _showMessageInTitle = true;
@@ -448,13 +449,18 @@ public class ErrorHandler extends AbstractHandler
         writer.printf("URI: %s%n", request.getRequestURI());
         writer.printf("STATUS: %s%n", code);
         writer.printf("MESSAGE: %s%n", message);
-        writer.printf("SERVLET: %s%n", request.getAttribute(Dispatcher.ERROR_SERVLET_NAME));
+        if (isShowServlet())
+        {
+            writer.printf("SERVLET: %s%n", request.getAttribute(Dispatcher.ERROR_SERVLET_NAME));
+        }
         Throwable cause = (Throwable)request.getAttribute(Dispatcher.ERROR_EXCEPTION);
         while (cause != null)
         {
             writer.printf("CAUSED BY %s%n", cause);
             if (_showStacks && !_disableStacks)
+            {
                 cause.printStackTrace(writer);
+            }
             cause = cause.getCause();
         }
     }
@@ -468,7 +474,7 @@ public class ErrorHandler extends AbstractHandler
         json.put("url", request.getRequestURI());
         json.put("status", Integer.toString(code));
         json.put("message", message);
-        if (servlet != null)
+        if (isShowServlet() && servlet != null)
         {
             json.put("servlet", servlet.toString());
         }
@@ -544,6 +550,22 @@ public class ErrorHandler extends AbstractHandler
     public void setCacheControl(String cacheControl)
     {
         _cacheControl = cacheControl;
+    }
+
+    /**
+     * @return True if the error page will show the Servlet that generated the error
+     */
+    public boolean isShowServlet()
+    {
+        return _showServlet;
+    }
+
+    /**
+     * @param showServlet True if the error page will show the Servlet that generated the error
+     */
+    public void setShowServlet(boolean showServlet)
+    {
+        _showServlet = showServlet;
     }
 
     /**
