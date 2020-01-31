@@ -341,7 +341,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
     protected Session getAndEnter(String id, boolean enter) throws Exception
     {
         Session session = null;
-        final AtomicReference<Exception> exception = new AtomicReference<Exception>();
+        AtomicReference<Exception> exception = new AtomicReference<Exception>();
 
         session = doComputeIfAbsent(id, k ->
         {
@@ -367,7 +367,6 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
             }
             catch (Exception e)
             {
-                LOG.warn("Error loading session {}", id, e);
                 exception.set(e);
                 return null;
             }

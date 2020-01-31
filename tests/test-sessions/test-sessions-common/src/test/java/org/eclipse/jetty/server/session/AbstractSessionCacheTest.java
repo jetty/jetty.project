@@ -38,6 +38,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -50,7 +51,6 @@ public abstract class AbstractSessionCacheTest
 {
     public static class UnreadableSessionDataStore extends AbstractSessionDataStore
     {
-        public Set<String> _deletedIds = ConcurrentHashMap.newKeySet();
         int _count;
         int _calls;
         SessionData _data;
@@ -70,22 +70,19 @@ public abstract class AbstractSessionCacheTest
         @Override
         public boolean exists(String id) throws Exception
         {
-            if (!_deletedIds.contains(id))
-                return true;
-            return false;
+            return _data != null;
         }
 
         @Override
         public boolean delete(String id) throws Exception
         {
-            _deletedIds.add(id);
+            _data = null;
             return true;
         }
 
         @Override
         public void doStore(String id, SessionData data, long lastSaveTime) throws Exception
         {
-            System.err.println("DOSTORE: " + id + " lastsave=" + lastSaveTime);
         }
 
         @Override
@@ -160,21 +157,23 @@ public abstract class AbstractSessionCacheTest
             //that it is deleted in the datastore
             Session session = context.getSessionHandler().getSession("1234");
             assertNull(session);
-            assertTrue(store._deletedIds.contains("1234"));
+            assertFalse(store.exists("1234"));
 
             //now try to make a session with the same id as if from a request with
-            //a SESSION_ID cookie set
+            //a SESSION_ID cookie set - the id from the cookie should not be able to
+            //be re-used because we just deleted the session with that id. Ids cannot
+            //be re-used (unless another context is already using that same id (ie cross
+            //context dispatch), which is not the case in this test).
             Request request = new Request(null, null);
             request.setRequestedSessionId("1234");
             HttpSession newSession = context.getSessionHandler().newHttpSession(request);
-            assertFalse("1234".equals(newSession.getId()));
+            assertNotEquals("1234", newSession.getId());
         }
         finally
         {
             server.stop();
         }
     }
-
 
     /**
      * Test that a new Session object can be created from

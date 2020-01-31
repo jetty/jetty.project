@@ -928,7 +928,7 @@ public class SessionHandler extends ScopedHandler
         }
         catch (UnreadableSessionDataException e)
         {
-            LOG.warn(e);
+            LOG.warn("Error loading session {}", id, e);
             try
             {
                 //tell id mgr to remove session from all other contexts
