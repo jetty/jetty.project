@@ -747,7 +747,8 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
                 }
                 catch (Exception e)
                 {
-                    LOG.warn("Passivation of idle session {} failed", session.getId(), e);
+                    LOG.warn("Passivation of idle session {} failed", session.getId());
+                    LOG.warn(e);
                 }
             }
         }
@@ -844,7 +845,8 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
         }
         catch (Exception e)
         {
-            LOG.warn("Save of new session {} failed", id, e);
+            LOG.warn("Save of new session {} failed", id);
+            LOG.warn(e);
         }
         return session;
     }
