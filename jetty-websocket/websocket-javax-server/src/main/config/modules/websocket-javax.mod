@@ -1,16 +1,20 @@
 DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
 
 [description]
-Enable websockets for deployed web applications
+Enable javax.websocket for deployed web applications.
+
+[tags]
+websocket
 
 [depend]
-# websocket client needs jetty-client
 client
-# javax.websocket needs annotations
 annotations
 
 [lib]
-lib/websocket/*.jar
+lib/websocket/websocket-core-${jetty.version}.jar
+lib/websocket/websocket-servlet-${jetty.version}.jar
+lib/websocket/jetty-javax-websocket-api-${websocket.api.version}.jar
+lib/websocket/websocket-javax-*.jar
 
 [jpms]
 # The implementation needs to access method handles in
