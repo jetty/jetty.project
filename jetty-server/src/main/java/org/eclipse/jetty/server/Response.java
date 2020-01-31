@@ -141,12 +141,14 @@ public class Response implements HttpServletResponse
 
     public void reopen()
     {
+        // Make the response mutable and reopen output.
         setErrorSent(false);
         _out.reopen();
     }
 
-    public void softClose()
+    public void errorClose()
     {
+        // Make the response immutable and soft close the output.
         setErrorSent(true);
         _out.softClose();
     }
