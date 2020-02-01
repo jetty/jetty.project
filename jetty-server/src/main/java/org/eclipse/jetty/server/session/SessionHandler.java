@@ -900,7 +900,8 @@ public class SessionHandler extends ScopedHandler
                     }
                     catch (Exception e)
                     {
-                        LOG.warn("Invalidating session {} found to be expired when requested", id, e);
+                        LOG.warn("Invalidating session {} found to be expired when requested", id);
+                        LOG.warn(e);
                     }
 
                     return null;
@@ -912,6 +913,7 @@ public class SessionHandler extends ScopedHandler
         }
         catch (UnreadableSessionDataException e)
         {
+            LOG.warn("Error loading session {}", id);
             LOG.warn(e);
             try
             {
@@ -920,7 +922,8 @@ public class SessionHandler extends ScopedHandler
             }
             catch (Exception x)
             {
-                LOG.warn("Error cross-context invalidating unreadable session {}", id, x);
+                LOG.warn("Error cross-context invalidating unreadable session {}", id);
+                LOG.warn(x);
             }
             return null;
         }
@@ -1195,7 +1198,7 @@ public class SessionHandler extends ScopedHandler
                         }
                         catch (Exception e)
                         {
-                            LOG.warn("Session listener threw exception", e);
+                            LOG.warn(e);
                         }
                         //call the attribute removed listeners and finally mark it as invalid
                         session.finishInvalidate();
