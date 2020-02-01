@@ -20,19 +20,25 @@ package org.eclipse.jetty.server.session;
 
 import java.util.Collections;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
+import javax.servlet.http.HttpSession;
 import javax.servlet.http.HttpSessionActivationListener;
 import javax.servlet.http.HttpSessionEvent;
 
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.StacklessLogging;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -43,6 +49,58 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 public abstract class AbstractSessionCacheTest
 {
+    public static class UnreadableSessionDataStore extends AbstractSessionDataStore
+    {
+        int _count;
+        int _calls;
+        SessionData _data;
+
+        public UnreadableSessionDataStore(int count, SessionData data)
+        {
+            _count = count;
+            _data = data;
+        }
+
+        @Override
+        public boolean isPassivating()
+        {
+            return false;
+        }
+
+        @Override
+        public boolean exists(String id) throws Exception
+        {
+            return _data != null;
+        }
+
+        @Override
+        public boolean delete(String id) throws Exception
+        {
+            _data = null;
+            return true;
+        }
+
+        @Override
+        public void doStore(String id, SessionData data, long lastSaveTime) throws Exception
+        {
+        }
+
+        @Override
+        public SessionData doLoad(String id) throws Exception
+        {
+            ++_calls;
+            if (_calls <= _count)
+                throw new UnreadableSessionDataException(id, _context, new IllegalStateException("Throw for test"));
+            else
+                return _data;
+        }
+
+        @Override
+        public Set<String> doGetExpired(Set<String> candidates)
+        {
+            return null;
+        }
+    }
 
     public static class TestSessionActivationListener implements HttpSessionActivationListener
     {
@@ -65,7 +123,58 @@ public abstract class AbstractSessionCacheTest
     public abstract AbstractSessionCacheFactory newSessionCacheFactory(int evictionPolicy, boolean saveOnCreate, 
                                                                        boolean saveOnInactiveEvict, boolean removeUnloadableSessions,
                                                                        boolean flushOnResponseCommit);
-    
+
+    /**
+     * Test that a session that exists in the datastore, but that cannot be
+     * read will be invalidated and deleted, and thus a request to re-use that
+     * same id will not succeed.
+     * 
+     * @throws Exception
+     */
+    @Test
+    public void testUnreadableSession() throws Exception
+    {
+        Server server = new Server();
+        server.setSessionIdManager(new DefaultSessionIdManager(server));
+
+        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
+        context.setContextPath("/test");
+        context.setServer(server);
+        server.setHandler(context);
+
+        AbstractSessionCacheFactory cacheFactory = newSessionCacheFactory(SessionCache.NEVER_EVICT, false, false, false, false);
+        SessionCache cache = cacheFactory.getSessionCache(context.getSessionHandler());
+
+        //prefill the datastore with a session that will be treated as unreadable
+        UnreadableSessionDataStore store = new UnreadableSessionDataStore(1, new SessionData("1234", "/test", "0.0.0.0", System.currentTimeMillis(), 0,0, -1));
+        cache.setSessionDataStore(store);
+        context.getSessionHandler().setSessionCache(cache);
+        server.start();
+
+        try (StacklessLogging stackless = new StacklessLogging(Log.getLogger("org.eclipse.jetty.server.session")))
+        {
+            //check that session 1234 cannot be read, ie returns null AND
+            //that it is deleted in the datastore
+            Session session = context.getSessionHandler().getSession("1234");
+            assertNull(session);
+            assertFalse(store.exists("1234"));
+
+            //now try to make a session with the same id as if from a request with
+            //a SESSION_ID cookie set - the id from the cookie should not be able to
+            //be re-used because we just deleted the session with that id. Ids cannot
+            //be re-used (unless another context is already using that same id (ie cross
+            //context dispatch), which is not the case in this test).
+            Request request = new Request(null, null);
+            request.setRequestedSessionId("1234");
+            HttpSession newSession = context.getSessionHandler().newHttpSession(request);
+            assertNotEquals("1234", newSession.getId());
+        }
+        finally
+        {
+            server.stop();
+        }
+    }
+
     /**
      * Test that a new Session object can be created from
      * previously persisted data (SessionData).
