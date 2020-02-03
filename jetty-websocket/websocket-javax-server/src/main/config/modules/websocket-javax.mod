@@ -13,7 +13,7 @@ annotations
 [lib]
 lib/websocket/websocket-core-${jetty.version}.jar
 lib/websocket/websocket-servlet-${jetty.version}.jar
-lib/websocket/jetty-javax-websocket-api-${websocket.api.version}.jar
+lib/websocket/jetty-javax-websocket-api-1.1.2.jar
 lib/websocket/websocket-javax-*.jar
 
 [jpms]
