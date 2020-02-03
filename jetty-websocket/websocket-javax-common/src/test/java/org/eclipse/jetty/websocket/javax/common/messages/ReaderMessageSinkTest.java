@@ -28,10 +28,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 
+import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
-import org.eclipse.jetty.websocket.javax.common.CompletableFutureCallback;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -47,7 +47,7 @@ public class ReaderMessageSinkTest extends AbstractMessageSinkTest
         MethodHandle copyHandle = getAcceptHandle(copy, Reader.class);
         ReaderMessageSink sink = new ReaderMessageSink(session, copyHandle);
 
-        CompletableFutureCallback finCallback = new CompletableFutureCallback();
+        FutureCallback finCallback = new FutureCallback();
         sink.accept(new Frame(OpCode.TEXT).setPayload("Hello World"), finCallback);
 
         finCallback.get(1, TimeUnit.SECONDS); // wait for callback
@@ -64,9 +64,9 @@ public class ReaderMessageSinkTest extends AbstractMessageSinkTest
         MethodHandle copyHandle = getAcceptHandle(copy, Reader.class);
         ReaderMessageSink sink = new ReaderMessageSink(session, copyHandle);
 
-        CompletableFutureCallback callback1 = new CompletableFutureCallback();
-        CompletableFutureCallback callback2 = new CompletableFutureCallback();
-        CompletableFutureCallback finCallback = new CompletableFutureCallback();
+        FutureCallback callback1 = new FutureCallback();
+        FutureCallback callback2 = new FutureCallback();
+        FutureCallback finCallback = new FutureCallback();
 
         sink.accept(new Frame(OpCode.TEXT).setPayload("Hello").setFin(false), callback1);
         sink.accept(new Frame(OpCode.CONTINUATION).setPayload(", ").setFin(false), callback2);

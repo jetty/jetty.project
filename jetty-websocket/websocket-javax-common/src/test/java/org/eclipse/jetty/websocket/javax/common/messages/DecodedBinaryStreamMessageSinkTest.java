@@ -33,9 +33,9 @@ import javax.websocket.Decoder;
 import javax.websocket.EndpointConfig;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
-import org.eclipse.jetty.websocket.javax.common.CompletableFutureCallback;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -54,7 +54,7 @@ public class DecodedBinaryStreamMessageSinkTest extends AbstractMessageSinkTest
         Decoder.BinaryStream<Calendar> decoder = new GmtDecoder();
         DecodedBinaryStreamMessageSink sink = new DecodedBinaryStreamMessageSink(session, decoder, copyHandle);
 
-        CompletableFutureCallback finCallback = new CompletableFutureCallback();
+        FutureCallback finCallback = new FutureCallback();
         ByteBuffer data = ByteBuffer.allocate(16);
         data.putShort((short)1999);
         data.put((byte)12);
@@ -77,9 +77,9 @@ public class DecodedBinaryStreamMessageSinkTest extends AbstractMessageSinkTest
         Decoder.BinaryStream<Calendar> decoder = new GmtDecoder();
         DecodedBinaryStreamMessageSink sink = new DecodedBinaryStreamMessageSink(session, decoder, copyHandle);
 
-        CompletableFutureCallback callback1 = new CompletableFutureCallback();
-        CompletableFutureCallback callback2 = new CompletableFutureCallback();
-        CompletableFutureCallback finCallback = new CompletableFutureCallback();
+        FutureCallback callback1 = new FutureCallback();
+        FutureCallback callback2 = new FutureCallback();
+        FutureCallback finCallback = new FutureCallback();
 
         ByteBuffer data1 = ByteBuffer.allocate(16);
         data1.putShort((short)2000);
