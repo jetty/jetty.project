@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.javax.tests;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
@@ -33,7 +34,7 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.SharedBlockingCallback;
+import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.websocket.core.Behavior;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.CoreSession;
@@ -52,7 +53,6 @@ public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseab
     private final RawUpgradeRequest upgradeRequest;
     private final UnitGenerator generator;
     private final FrameCapture frameCapture;
-    private SharedBlockingCallback sharedBlockingCallback = new SharedBlockingCallback();
 
     public NetworkFuzzer(LocalServer server) throws Exception
     {
@@ -155,23 +155,16 @@ public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseab
     {
         for (Frame f : frames)
         {
-            try (SharedBlockingCallback.Blocker blocker = sharedBlockingCallback.acquire())
-            {
-                frameCapture.coreSession.sendFrame(f, blocker, false);
-            }
+            FutureCallback callback = new FutureCallback();
+            frameCapture.coreSession.sendFrame(f, callback, false);
+            callback.block();
         }
     }
 
     @Override
     public void sendFrames(Frame... frames) throws IOException
     {
-        for (Frame f : frames)
-        {
-            try (SharedBlockingCallback.Blocker blocker = sharedBlockingCallback.acquire())
-            {
-                frameCapture.coreSession.sendFrame(f, blocker, false);
-            }
-        }
+        sendFrames(Arrays.asList(frames));
     }
 
     @Override
@@ -227,7 +220,6 @@ public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseab
         private final BlockingQueue<Frame> receivedFrames = new LinkedBlockingQueue<>();
         private EndPoint endPoint;
         private CountDownLatch openLatch = new CountDownLatch(1);
-        private final SharedBlockingCallback blockingCallback = new SharedBlockingCallback();
         private CoreSession coreSession;
 
         public void setEndPoint(EndPoint endpoint)
@@ -275,10 +267,9 @@ public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseab
 
             synchronized (this)
             {
-                try (SharedBlockingCallback.Blocker blocker = blockingCallback.acquire())
-                {
-                    endPoint.write(blocker, buffer);
-                }
+                FutureCallback callback = new FutureCallback();
+                endPoint.write(callback, buffer);
+                callback.block();
             }
         }
     }
