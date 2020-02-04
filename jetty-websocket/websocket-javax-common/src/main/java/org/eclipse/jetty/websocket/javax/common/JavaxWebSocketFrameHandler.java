@@ -100,7 +100,6 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
     private MethodHandle pongHandle;
 
     private UpgradeRequest upgradeRequest;
-    private UpgradeResponse upgradeResponse;
 
     private EndpointConfig endpointConfig;
     private final Map<Byte, RegisteredMessageHandler> messageHandlerMap = new HashMap<>();
@@ -660,19 +659,9 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
         this.upgradeRequest = upgradeRequest;
     }
 
-    public void setUpgradeResponse(UpgradeResponse upgradeResponse)
-    {
-        this.upgradeResponse = upgradeResponse;
-    }
-
     public UpgradeRequest getUpgradeRequest()
     {
         return upgradeRequest;
-    }
-
-    public UpgradeResponse getUpgradeResponse()
-    {
-        return upgradeResponse;
     }
 
     private void configListener(String key, Object value)

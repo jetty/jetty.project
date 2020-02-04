@@ -46,7 +46,6 @@ public class JavaxClientUpgradeRequest extends ClientUpgradeRequest
     public void upgrade(HttpResponse response, EndPoint endPoint)
     {
         frameHandler.setUpgradeRequest(new DelegatedJavaxClientUpgradeRequest(this));
-        frameHandler.setUpgradeResponse(new DelegatedJavaxClientUpgradeResponse(response));
         super.upgrade(response, endPoint);
     }
 
