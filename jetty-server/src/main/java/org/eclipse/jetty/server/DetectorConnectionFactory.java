@@ -218,6 +218,13 @@ public class DetectorConnectionFactory extends AbstractConnectionFactory impleme
          */
         private boolean detectAndUpgrade()
         {
+            if (BufferUtil.isEmpty(_buffer))
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Detector {} skipping detection on an empty buffer", getProtocol());
+                return false;
+            }
+
             if (LOG.isDebugEnabled())
                 LOG.debug("Detector {} performing detection with {} bytes", getProtocol(), _buffer.remaining());
             boolean notRecognized = true;
