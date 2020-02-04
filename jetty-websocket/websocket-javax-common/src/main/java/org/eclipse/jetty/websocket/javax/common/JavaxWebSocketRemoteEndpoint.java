@@ -56,12 +56,12 @@ public class JavaxWebSocketRemoteEndpoint implements javax.websocket.RemoteEndpo
 
     protected MessageWriter newMessageWriter()
     {
-        return new MessageWriter(coreSession, coreSession.getOutputBufferSize());
+        return new MessageWriter(coreSession);
     }
 
     protected MessageOutputStream newMessageOutputStream()
     {
-        return new MessageOutputStream(coreSession, coreSession.getOutputBufferSize(), session.getContainerImpl().getBufferPool());
+        return new MessageOutputStream(coreSession, session.getContainerImpl().getBufferPool());
     }
 
     @Override

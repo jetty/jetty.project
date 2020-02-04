@@ -41,22 +41,28 @@ public class MessageOutputStream extends OutputStream
 
     private final CoreSession coreSession;
     private final ByteBufferPool bufferPool;
+    private final int bufferSize;
     private final SharedBlockingCallback blocker;
     private long frameCount;
     private long bytesSent;
-    private Frame frame;
     private ByteBuffer buffer;
     private Callback callback;
     private boolean closed;
+    private byte messageOpCode = OpCode.BINARY;
 
-    public MessageOutputStream(CoreSession coreSession, int bufferSize, ByteBufferPool bufferPool)
+    public MessageOutputStream(CoreSession coreSession, ByteBufferPool bufferPool)
     {
         this.coreSession = coreSession;
         this.bufferPool = bufferPool;
+        this.bufferSize = coreSession.getOutputBufferSize();
         this.blocker = new SharedBlockingCallback();
         this.buffer = bufferPool.acquire(bufferSize, true);
-        BufferUtil.flipToFill(buffer);
-        this.frame = new Frame(OpCode.BINARY);
+        BufferUtil.clear(buffer);
+    }
+
+    void setMessageType(byte opcode)
+    {
+        this.messageOpCode = opcode;
     }
 
     @Override
@@ -64,7 +70,7 @@ public class MessageOutputStream extends OutputStream
     {
         try
         {
-            send(bytes, off, len);
+            send(ByteBuffer.wrap(bytes, off, len));
         }
         catch (Throwable x)
         {
@@ -79,7 +85,7 @@ public class MessageOutputStream extends OutputStream
     {
         try
         {
-            send(new byte[]{(byte)b}, 0, 1);
+            send(ByteBuffer.wrap(new byte[]{(byte)b}));
         }
         catch (Throwable x)
         {
@@ -112,8 +118,7 @@ public class MessageOutputStream extends OutputStream
                 throw new IOException("Stream is closed");
 
             closed = fin;
-
-            BufferUtil.flipToFlush(buffer, 0);
+            Frame frame = new Frame(frameCount == 0 ? messageOpCode : OpCode.CONTINUATION);
             frame.setPayload(buffer);
             frame.setFin(fin);
 
@@ -124,43 +129,40 @@ public class MessageOutputStream extends OutputStream
                 b.block();
             }
 
-            ++frameCount;
             // Any flush after the first will be a CONTINUATION frame.
-            frame = new Frame(OpCode.CONTINUATION);
+            bytesSent += initialBufferSize;
+            ++frameCount;
 
             // Buffer has been sent, but buffer should not have been consumed.
-            assert buffer.remaining() == initialBufferSize;
-
-            BufferUtil.clearToFill(buffer);
+            try
+            {
+                assert buffer.remaining() == initialBufferSize;
+                BufferUtil.clear(buffer);
+            }
+            catch (Throwable t)
+            {
+                t.printStackTrace();
+            }
         }
     }
 
-    private void send(byte[] bytes, final int offset, final int length) throws IOException
+    private void send(ByteBuffer data) throws IOException
     {
         synchronized (this)
         {
             if (closed)
                 throw new IOException("Stream is closed");
 
-            int remaining = length;
-            int off = offset;
-            while (remaining > 0)
+            while (data.hasRemaining())
             {
-                // There may be no space available, we want
-                // to handle correctly when space == 0.
-                int space = buffer.remaining();
-                int size = Math.min(space, remaining);
-                buffer.put(bytes, off, size);
-                off += size;
-                remaining -= size;
-                if (remaining > 0)
-                {
-                    // If we could not write everything, it means
-                    // that the buffer was full, so flush it.
+                int bufferRemainingSpace = bufferSize - buffer.remaining();
+                int copied = Math.min(bufferRemainingSpace, data.remaining());
+                BufferUtil.append(buffer, data.array(), data.arrayOffset() + data.position(), copied);
+                data.position(data.position() + copied);
+
+                if (data.hasRemaining())
                     flush(false);
-                }
             }
-            bytesSent += length;
         }
     }
 
