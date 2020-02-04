@@ -30,8 +30,7 @@ import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.common.AbstractMessageSink;
-import org.eclipse.jetty.websocket.common.invoke.InvalidSignatureException;
+import org.eclipse.jetty.websocket.common.util.InvalidSignatureException;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.exception.MessageTooLargeException;
 

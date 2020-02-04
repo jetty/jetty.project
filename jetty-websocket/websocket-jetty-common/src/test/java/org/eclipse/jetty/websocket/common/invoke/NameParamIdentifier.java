@@ -22,9 +22,10 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 
 import org.eclipse.jetty.util.annotation.Name;
+import org.eclipse.jetty.websocket.common.util.InvokerUtils;
 
 /**
- * Simple {@link org.eclipse.jetty.websocket.common.invoke.InvokerUtils.ParamIdentifier}
+ * Simple {@link InvokerUtils.ParamIdentifier}
  * that observes {@link Name} tagged method parameters.
  */
 public class NameParamIdentifier implements InvokerUtils.ParamIdentifier

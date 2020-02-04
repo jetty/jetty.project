@@ -16,10 +16,12 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.common;
+package org.eclipse.jetty.websocket.common.message;
 
 import java.lang.invoke.MethodHandle;
 import java.util.concurrent.Executor;
+
+import org.eclipse.jetty.websocket.common.MessageSink;
 
 public abstract class AbstractMessageSink implements MessageSink
 {

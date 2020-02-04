@@ -23,6 +23,7 @@ import java.lang.invoke.MethodHandle;
 import java.lang.reflect.Method;
 
 import org.eclipse.jetty.util.annotation.Name;
+import org.eclipse.jetty.websocket.common.util.InvokerUtils;
 import org.eclipse.jetty.websocket.common.util.ReflectUtils;
 import org.junit.jupiter.api.Test;
 

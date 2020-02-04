@@ -23,7 +23,6 @@ import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Utf8StringBuilder;
-import org.eclipse.jetty.websocket.common.AbstractMessageSink;
 import org.eclipse.jetty.websocket.core.Frame;
 
 public class PartialTextMessageSink extends AbstractMessageSink
