@@ -79,7 +79,7 @@ public class DetectorConnectionFactory extends AbstractConnectionFactory impleme
     public Detecting.Detection detect(ByteBuffer buffer)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("Attempting detection from buffer {} using {}", buffer, _detectingConnectionFactories);
+            LOG.debug("Detector {} detecting from buffer {} using {}", getProtocol(), BufferUtil.toHexString(buffer), _detectingConnectionFactories);
         boolean needMoreBytes = true;
         for (Detecting detectingConnectionFactory : _detectingConnectionFactories)
         {
@@ -87,13 +87,13 @@ public class DetectorConnectionFactory extends AbstractConnectionFactory impleme
             if (detection == Detecting.Detection.RECOGNIZED)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Detection recognized bytes from buffer {} using {}", buffer, _detectingConnectionFactories);
+                    LOG.debug("Detector {} recognized bytes using {}", getProtocol(), detection);
                 return Detecting.Detection.RECOGNIZED;
             }
             needMoreBytes &= detection == Detection.NEED_MORE_BYTES;
         }
         if (LOG.isDebugEnabled())
-            LOG.debug("Detection {} from buffer {} using {}", (needMoreBytes ? "requires more bytes" : "not recognized"), buffer, _detectingConnectionFactories);
+            LOG.debug("Detector {} {}", getProtocol(), (needMoreBytes ? "requires more bytes" : "failed to recognize bytes"));
         return needMoreBytes ? Detection.NEED_MORE_BYTES : Detection.NOT_RECOGNIZED;
     }
 
