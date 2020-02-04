@@ -60,15 +60,16 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
         super(new ProxyV1ConnectionFactory(nextProtocol), new ProxyV2ConnectionFactory(nextProtocol));
     }
 
-    private static ConnectionFactory findNextConnectionFactory(String nextProtocol, Connector connector, AbstractConnectionFactory currentConnectionFactory, EndPoint endp)
+    private static ConnectionFactory findNextConnectionFactory(String nextProtocol, Connector connector, String currentProtocol, EndPoint endp)
     {
+        currentProtocol = "[" + currentProtocol + "]";
         if (LOG.isDebugEnabled())
-            LOG.debug("finding next connection factory for protocol {}", nextProtocol);
+            LOG.debug("finding connection factory following {} for protocol {}", currentProtocol, nextProtocol);
         String nextProtocolToFind = nextProtocol;
         if (nextProtocol == null)
-            nextProtocolToFind = currentConnectionFactory.findNextProtocol(connector);
+            nextProtocolToFind = AbstractConnectionFactory.findNextProtocol(connector, currentProtocol);
         if (nextProtocolToFind == null)
-            throw new IllegalStateException("Cannot find protocol following '" + currentConnectionFactory.getProtocol() + "' in connector's protocol list " + connector.getProtocols() + " for " + endp);
+            throw new IllegalStateException("Cannot find protocol following '" + currentProtocol + "' in connector's protocol list " + connector.getProtocols() + " for " + endp);
         ConnectionFactory connectionFactory = connector.getConnectionFactory(nextProtocolToFind);
         if (connectionFactory == null)
             throw new IllegalStateException("Cannot find protocol '" + nextProtocol + "' in connector's protocol list " + connector.getProtocols() + " for " + endp);
@@ -133,7 +134,7 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
         @Override
         public Connection newConnection(Connector connector, EndPoint endp)
         {
-            ConnectionFactory nextConnectionFactory = findNextConnectionFactory(_nextProtocol, connector, this, endp);
+            ConnectionFactory nextConnectionFactory = findNextConnectionFactory(_nextProtocol, connector, getProtocol(), endp);
             return configure(new ProxyProtocolV1Connection(endp, connector, nextConnectionFactory), connector, endp);
         }
 
@@ -414,7 +415,7 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
         @Override
         public Connection newConnection(Connector connector, EndPoint endp)
         {
-            ConnectionFactory nextConnectionFactory = findNextConnectionFactory(_nextProtocol, connector, this, endp);
+            ConnectionFactory nextConnectionFactory = findNextConnectionFactory(_nextProtocol, connector, getProtocol(), endp);
             return configure(new ProxyProtocolV2Connection(endp, connector, nextConnectionFactory), connector, endp);
         }
 

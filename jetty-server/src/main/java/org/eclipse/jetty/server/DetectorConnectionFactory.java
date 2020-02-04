@@ -64,7 +64,7 @@ public class DetectorConnectionFactory extends AbstractConnectionFactory impleme
         // remove protocol duplicates while keeping their ordering -> use LinkedHashSet
         LinkedHashSet<String> protocols = Arrays.stream(detectingConnectionFactories).map(ConnectionFactory::getProtocol).collect(Collectors.toCollection(LinkedHashSet::new));
 
-        String protocol = String.join("|", protocols);
+        String protocol = protocols.stream().collect(Collectors.joining("|", "[", "]"));
         if (LOG.isDebugEnabled())
             LOG.debug("Detector generated protocol name : {}", protocol);
         return protocol;

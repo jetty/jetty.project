@@ -630,8 +630,8 @@ public class DetectorConnectionTest
         ProxyConnectionFactory proxy = new ProxyConnectionFactory(HttpVersion.HTTP_1_1.asString());
         SslConnectionFactory ssl = new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString());
 
-        assertEquals("SSL|proxy", new DetectorConnectionFactory(ssl, proxy).getProtocol());
-        assertEquals("proxy|SSL", new DetectorConnectionFactory(proxy, ssl).getProtocol());
+        assertEquals("[SSL|[proxy]]", new DetectorConnectionFactory(ssl, proxy).getProtocol());
+        assertEquals("[[proxy]|SSL]", new DetectorConnectionFactory(proxy, ssl).getProtocol());
     }
 
     @Test

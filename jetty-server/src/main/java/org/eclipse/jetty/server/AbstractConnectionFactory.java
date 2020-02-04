@@ -90,11 +90,16 @@ public abstract class AbstractConnectionFactory extends ContainerLifeCycle imple
 
     protected String findNextProtocol(Connector connector)
     {
+        return findNextProtocol(connector, getProtocol());
+    }
+
+    protected static String findNextProtocol(Connector connector, String currentProtocol)
+    {
         String nextProtocol = null;
         for (Iterator<String> it = connector.getProtocols().iterator(); it.hasNext(); )
         {
             String protocol = it.next();
-            if (getProtocol().equalsIgnoreCase(protocol))
+            if (currentProtocol.equalsIgnoreCase(protocol))
             {
                 nextProtocol = it.hasNext() ? it.next() : null;
                 break;

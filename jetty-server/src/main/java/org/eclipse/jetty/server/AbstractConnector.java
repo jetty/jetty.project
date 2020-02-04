@@ -36,6 +36,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
+import java.util.stream.Collectors;
 
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -776,9 +777,9 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     @Override
     public String toString()
     {
-        return String.format("%s@%x{%s,%s}",
+        return String.format("%s@%x{%s, %s}",
             _name == null ? getClass().getSimpleName() : _name,
             hashCode(),
-            getDefaultProtocol(), getProtocols());
+            getDefaultProtocol(), getProtocols().stream().collect(Collectors.joining(", ", "(", ")")));
     }
 }

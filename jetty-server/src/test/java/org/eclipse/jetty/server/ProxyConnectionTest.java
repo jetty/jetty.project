@@ -247,7 +247,7 @@ public class ProxyConnectionTest
     {
         p.customize((connector) ->
         {
-            ProxyConnectionFactory factory = (ProxyConnectionFactory)connector.getConnectionFactory("proxy");
+            ProxyConnectionFactory factory = (ProxyConnectionFactory)connector.getConnectionFactory("[proxy]");
             factory.setMaxProxyHeader(11); // just one byte short
         });
         String proxy =
