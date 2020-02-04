@@ -27,7 +27,7 @@ import java.nio.charset.CodingErrorAction;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.SharedBlockingCallback;
+import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.CoreSession;
@@ -50,7 +50,6 @@ public class MessageWriter extends Writer
         .onMalformedInput(CodingErrorAction.REPORT);
 
     private final CoreSession coreSession;
-    private final SharedBlockingCallback blocker;
     private long frameCount;
     private Frame frame;
     private CharBuffer buffer;
@@ -60,7 +59,6 @@ public class MessageWriter extends Writer
     public MessageWriter(CoreSession coreSession, int bufferSize)
     {
         this.coreSession = coreSession;
-        this.blocker = new SharedBlockingCallback();
         this.buffer = CharBuffer.allocate(bufferSize);
         this.frame = new Frame(OpCode.TEXT);
     }
@@ -128,11 +126,9 @@ public class MessageWriter extends Writer
             frame.setPayload(payload);
             frame.setFin(fin);
 
-            try (SharedBlockingCallback.Blocker b = blocker.acquire())
-            {
-                coreSession.sendFrame(frame, b, false);
-                b.block();
-            }
+            FutureCallback b = new FutureCallback();
+            coreSession.sendFrame(frame, b, false);
+            b.block();
 
             ++frameCount;
             // Any flush after the first will be a CONTINUATION frame.

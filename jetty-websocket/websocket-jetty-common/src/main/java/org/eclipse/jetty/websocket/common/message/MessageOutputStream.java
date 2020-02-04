@@ -25,7 +25,7 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.SharedBlockingCallback;
+import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.CoreSession;
@@ -41,7 +41,6 @@ public class MessageOutputStream extends OutputStream
 
     private final CoreSession coreSession;
     private final ByteBufferPool bufferPool;
-    private final SharedBlockingCallback blocker;
     private long frameCount;
     private long bytesSent;
     private Frame frame;
@@ -53,7 +52,6 @@ public class MessageOutputStream extends OutputStream
     {
         this.coreSession = coreSession;
         this.bufferPool = bufferPool;
-        this.blocker = new SharedBlockingCallback();
         this.buffer = bufferPool.acquire(bufferSize, true);
         BufferUtil.flipToFill(buffer);
         this.frame = new Frame(OpCode.BINARY);
@@ -116,8 +114,10 @@ public class MessageOutputStream extends OutputStream
             BufferUtil.flipToFlush(buffer, 0);
             frame.setPayload(buffer);
             frame.setFin(fin);
-            try (SharedBlockingCallback.Blocker b = blocker.acquire())
+
+            try
             {
+                FutureCallback b = new FutureCallback();
                 coreSession.sendFrame(frame, b, false);
                 b.block();
                 assert buffer.remaining() == 0;
