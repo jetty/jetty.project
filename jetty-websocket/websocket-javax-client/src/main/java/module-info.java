@@ -25,8 +25,9 @@ module org.eclipse.jetty.websocket.javax.client
     exports org.eclipse.jetty.websocket.javax.client;
 
     requires transitive org.eclipse.jetty.client;
-    requires org.eclipse.jetty.websocket.core;
     requires transitive org.eclipse.jetty.websocket.javax.common;
+    requires org.eclipse.jetty.websocket.core;
+    requires org.eclipse.jetty.websocket.common;
 
     provides ContainerProvider with JavaxWebSocketClientContainerProvider;
 }

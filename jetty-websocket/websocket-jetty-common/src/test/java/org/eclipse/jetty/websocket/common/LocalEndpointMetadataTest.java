@@ -34,10 +34,10 @@ import org.eclipse.jetty.websocket.common.endpoints.annotated.MyStatelessEchoSoc
 import org.eclipse.jetty.websocket.common.endpoints.annotated.NoopSocket;
 import org.eclipse.jetty.websocket.common.endpoints.listeners.ListenerBasicSocket;
 import org.eclipse.jetty.websocket.common.endpoints.listeners.ListenerFrameSocket;
-import org.eclipse.jetty.websocket.common.message.ByteArrayMessageSink;
-import org.eclipse.jetty.websocket.common.message.InputStreamMessageSink;
-import org.eclipse.jetty.websocket.common.message.ReaderMessageSink;
-import org.eclipse.jetty.websocket.common.message.StringMessageSink;
+import org.eclipse.jetty.websocket.util.messages.ByteArrayMessageSink;
+import org.eclipse.jetty.websocket.util.messages.InputStreamMessageSink;
+import org.eclipse.jetty.websocket.util.messages.ReaderMessageSink;
+import org.eclipse.jetty.websocket.util.messages.StringMessageSink;
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;

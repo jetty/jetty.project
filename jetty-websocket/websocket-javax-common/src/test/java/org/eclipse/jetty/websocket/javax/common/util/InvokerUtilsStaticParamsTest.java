@@ -26,7 +26,8 @@ import javax.websocket.Session;
 
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketFrameHandlerFactory;
-import org.eclipse.jetty.websocket.javax.common.util.InvokerUtils.Arg;
+import org.eclipse.jetty.websocket.util.InvokerUtils;
+import org.eclipse.jetty.websocket.util.ReflectUtils;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -128,7 +129,7 @@ public class InvokerUtilsStaticParamsTest
             "count"
         };
 
-        final Arg ARG_LABEL = new Arg(String.class).required();
+        final InvokerUtils.Arg ARG_LABEL = new InvokerUtils.Arg(String.class).required();
 
         // Get basic method handle (without a instance to call against) - this is what the metadata stores
         MethodHandle methodHandle = InvokerUtils.mutatedInvoker(Foo.class, method, new NameParamIdentifier(), namedVariables, ARG_LABEL);

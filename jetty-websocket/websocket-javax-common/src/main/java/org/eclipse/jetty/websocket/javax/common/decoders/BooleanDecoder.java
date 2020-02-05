@@ -39,10 +39,6 @@ public class BooleanDecoder extends AbstractDecoder implements Decoder.Text<Bool
     @Override
     public boolean willDecode(String s)
     {
-        if (s == null)
-        {
-            return false;
-        }
-        return true;
+        return (s != null);
     }
 }

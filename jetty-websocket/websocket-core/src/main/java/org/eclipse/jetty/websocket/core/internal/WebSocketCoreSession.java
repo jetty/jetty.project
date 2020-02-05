@@ -45,6 +45,7 @@ import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.IncomingFrames;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.OutgoingFrames;
+import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.WebSocketConstants;
 import org.eclipse.jetty.websocket.core.exception.CloseException;
 import org.eclipse.jetty.websocket.core.exception.MessageTooLargeException;
@@ -792,6 +793,12 @@ public class WebSocketCoreSession implements IncomingFrames, CoreSession, Dumpab
     public Behavior getBehavior()
     {
         return behavior;
+    }
+
+    @Override
+    public WebSocketComponents getWebSocketComponents()
+    {
+        return null;
     }
 
     @Override

@@ -24,11 +24,14 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
+import org.eclipse.jetty.websocket.util.messages.MessageWriter;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -36,12 +39,14 @@ import static org.hamcrest.Matchers.is;
 
 public class MessageWriterTest
 {
+    private ByteBufferPool bufferPool = new MappedByteBufferPool();
+
     @Test
     public void testSingleByteArray512b() throws IOException, InterruptedException
     {
         FrameCapture capture = new FrameCapture();
         capture.setOutputBufferSize(1024);
-        try (MessageWriter writer = new MessageWriter(capture))
+        try (MessageWriter writer = new MessageWriter(capture, bufferPool))
         {
             char[] cbuf = new char[512];
             Arrays.fill(cbuf, 'x');
@@ -59,7 +64,7 @@ public class MessageWriterTest
     {
         FrameCapture capture = new FrameCapture();
         capture.setOutputBufferSize(1024);
-        try (MessageWriter writer = new MessageWriter(capture))
+        try (MessageWriter writer = new MessageWriter(capture, bufferPool))
         {
             char[] cbuf = new char[1024 * 2];
             Arrays.fill(cbuf, 'x');
@@ -86,7 +91,7 @@ public class MessageWriterTest
 
         FrameCapture capture = new FrameCapture();
         capture.setOutputBufferSize(writerBufferSize);
-        try (MessageWriter writer = new MessageWriter(capture))
+        try (MessageWriter writer = new MessageWriter(capture, bufferPool))
         {
             char[] cbuf = new char[testSize];
             Arrays.fill(cbuf, 'x');
@@ -129,7 +134,7 @@ public class MessageWriterTest
 
         WholeMessageCapture capture = new WholeMessageCapture();
         capture.setOutputBufferSize(writerBufferSize);
-        try (MessageWriter writer = new MessageWriter(capture))
+        try (MessageWriter writer = new MessageWriter(capture, bufferPool))
         {
             char[] cbuf = new char[testSize];
             Arrays.fill(cbuf, 'x');

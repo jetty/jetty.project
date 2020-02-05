@@ -32,6 +32,7 @@ import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
+import org.eclipse.jetty.websocket.util.messages.ReaderMessageSink;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -45,7 +46,7 @@ public class ReaderMessageSinkTest extends AbstractMessageSinkTest
         CompletableFuture<StringWriter> copyFuture = new CompletableFuture<>();
         ReaderCopy copy = new ReaderCopy(copyFuture);
         MethodHandle copyHandle = getAcceptHandle(copy, Reader.class);
-        ReaderMessageSink sink = new ReaderMessageSink(session, copyHandle);
+        ReaderMessageSink sink = new ReaderMessageSink(session.getCoreSession(), copyHandle);
 
         FutureCallback finCallback = new FutureCallback();
         sink.accept(new Frame(OpCode.TEXT).setPayload("Hello World"), finCallback);
@@ -62,7 +63,7 @@ public class ReaderMessageSinkTest extends AbstractMessageSinkTest
         CompletableFuture<StringWriter> copyFuture = new CompletableFuture<>();
         ReaderCopy copy = new ReaderCopy(copyFuture);
         MethodHandle copyHandle = getAcceptHandle(copy, Reader.class);
-        ReaderMessageSink sink = new ReaderMessageSink(session, copyHandle);
+        ReaderMessageSink sink = new ReaderMessageSink(session.getCoreSession(), copyHandle);
 
         FutureCallback callback1 = new FutureCallback();
         FutureCallback callback2 = new FutureCallback();

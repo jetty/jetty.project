@@ -23,8 +23,8 @@ import java.lang.invoke.MethodHandle;
 import java.lang.reflect.Method;
 
 import org.eclipse.jetty.util.annotation.Name;
-import org.eclipse.jetty.websocket.common.util.InvokerUtils;
-import org.eclipse.jetty.websocket.common.util.ReflectUtils;
+import org.eclipse.jetty.websocket.util.InvokerUtils;
+import org.eclipse.jetty.websocket.util.ReflectUtils;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -280,7 +280,7 @@ public class InvokerUtilsTest
             new InvokerUtils.Arg(int.class, "cost")
         };
 
-        MethodHandle methodHandle = InvokerUtils.mutatedInvoker(NamedParams.class, method, new NameParamIdentifier(), callingArgs);
+        MethodHandle methodHandle = InvokerUtils.mutatedInvoker(NamedParams.class, method, new NameParamIdentifier(), null, callingArgs);
 
         NamedParams obj = new NamedParams();
         String result = (String)methodHandle.invoke(obj, "Apple", "Red", 10);
@@ -298,7 +298,7 @@ public class InvokerUtilsTest
             new InvokerUtils.Arg(String.class, "color")
         };
 
-        MethodHandle methodHandle = InvokerUtils.mutatedInvoker(NamedParams.class, method, new NameParamIdentifier(), callingArgs);
+        MethodHandle methodHandle = InvokerUtils.mutatedInvoker(NamedParams.class, method, new NameParamIdentifier(), null, callingArgs);
 
         NamedParams obj = new NamedParams();
         String result = (String)methodHandle.invoke(obj, 20, "Banana", "Yellow");
@@ -471,7 +471,7 @@ public class InvokerUtilsTest
             new InvokerUtils.Arg(boolean.class, "fin")
         };
 
-        MethodHandle methodHandle = InvokerUtils.mutatedInvoker(SampleSignatures.class, method, new NameParamIdentifier(), callingArgs);
+        MethodHandle methodHandle = InvokerUtils.mutatedInvoker(SampleSignatures.class, method, new NameParamIdentifier(), null, callingArgs);
         String result = (String)methodHandle.invoke(samples, new File("foo"), "bar", true);
         assertThat("Result", result, is("sigFileStrFin<foo,bar,true>"));
     }
@@ -505,7 +505,7 @@ public class InvokerUtilsTest
             new InvokerUtils.Arg(String.class)
         };
 
-        MethodHandle methodHandle = InvokerUtils.mutatedInvoker(SampleSignatures.class, method, new NameParamIdentifier(), callingArgs);
+        MethodHandle methodHandle = InvokerUtils.mutatedInvoker(SampleSignatures.class, method, new NameParamIdentifier(), null, callingArgs);
         String result = (String)methodHandle.invoke(samples, false, new File("foo"), "bar");
         assertThat("Result", result, is("sigFileStrFin<foo,bar,false>"));
     }
@@ -539,7 +539,7 @@ public class InvokerUtilsTest
             new InvokerUtils.Arg(String.class)
         };
 
-        MethodHandle methodHandle = InvokerUtils.mutatedInvoker(SampleSignatures.class, method, new NameParamIdentifier(), callingArgs);
+        MethodHandle methodHandle = InvokerUtils.mutatedInvoker(SampleSignatures.class, method, new NameParamIdentifier(), null, callingArgs);
         String result = (String)methodHandle.invoke(samples, true, null, "bar");
         assertThat("Result", result, is("sigFileStrFin<<null>,bar,true>"));
     }

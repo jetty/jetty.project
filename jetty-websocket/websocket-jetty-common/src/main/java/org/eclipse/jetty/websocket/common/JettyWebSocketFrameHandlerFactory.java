@@ -24,7 +24,7 @@ import java.io.Reader;
 import java.lang.annotation.Annotation;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
-import java.lang.reflect.Constructor;
+import java.lang.invoke.MethodType;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -50,16 +50,18 @@ import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketFrame;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
-import org.eclipse.jetty.websocket.common.message.ByteArrayMessageSink;
-import org.eclipse.jetty.websocket.common.message.ByteBufferMessageSink;
-import org.eclipse.jetty.websocket.common.message.InputStreamMessageSink;
-import org.eclipse.jetty.websocket.common.message.PartialBinaryMessageSink;
-import org.eclipse.jetty.websocket.common.message.PartialTextMessageSink;
-import org.eclipse.jetty.websocket.common.message.ReaderMessageSink;
-import org.eclipse.jetty.websocket.common.message.StringMessageSink;
-import org.eclipse.jetty.websocket.common.util.InvalidSignatureException;
-import org.eclipse.jetty.websocket.common.util.InvokerUtils;
-import org.eclipse.jetty.websocket.common.util.ReflectUtils;
+import org.eclipse.jetty.websocket.core.CoreSession;
+import org.eclipse.jetty.websocket.util.InvalidSignatureException;
+import org.eclipse.jetty.websocket.util.InvokerUtils;
+import org.eclipse.jetty.websocket.util.MessageSink;
+import org.eclipse.jetty.websocket.util.ReflectUtils;
+import org.eclipse.jetty.websocket.util.messages.ByteArrayMessageSink;
+import org.eclipse.jetty.websocket.util.messages.ByteBufferMessageSink;
+import org.eclipse.jetty.websocket.util.messages.InputStreamMessageSink;
+import org.eclipse.jetty.websocket.util.messages.PartialByteBufferMessageSink;
+import org.eclipse.jetty.websocket.util.messages.PartialStringMessageSink;
+import org.eclipse.jetty.websocket.util.messages.ReaderMessageSink;
+import org.eclipse.jetty.websocket.util.messages.StringMessageSink;
 
 /**
  * Factory to create {@link JettyWebSocketFrameHandler} instances suitable for
@@ -154,30 +156,25 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
 
         try
         {
-            try
-            {
-                Constructor sinkConstructor = sinkClass.getConstructor(Executor.class, MethodHandle.class, Session.class);
-                MessageSink messageSink = (MessageSink)sinkConstructor.newInstance(executor, msgHandle, session);
-                return messageSink;
-            }
-            catch (NoSuchMethodException e)
-            {
-                try
-                {
-                    Constructor sinkConstructor = sinkClass.getConstructor(Executor.class, MethodHandle.class);
-                    MessageSink messageSink = (MessageSink)sinkConstructor.newInstance(executor, msgHandle);
-                    return messageSink;
-                }
-                catch (NoSuchMethodException e2)
-                {
-                    e.addSuppressed(e2);
-                    throw new RuntimeException("Missing expected MessageSink constructor found at: " + sinkClass.getName(), e);
-                }
-            }
+            MethodHandle ctorHandle = MethodHandles.lookup().findConstructor(sinkClass,
+                MethodType.methodType(void.class, CoreSession.class, MethodHandle.class));
+            return (MessageSink)ctorHandle.invoke(session.getCoreSession(), msgHandle);
+        }
+        catch (NoSuchMethodException e)
+        {
+            throw new RuntimeException("Missing expected MessageSink constructor found at: " + sinkClass.getName(), e);
         }
         catch (IllegalAccessException | InstantiationException | InvocationTargetException e)
         {
             throw new RuntimeException("Unable to create MessageSink: " + sinkClass.getName(), e);
+        }
+        catch (RuntimeException e)
+        {
+            throw e;
+        }
+        catch (Throwable t)
+        {
+            throw new RuntimeException(t);
         }
     }
 
@@ -255,11 +252,11 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
         {
             Method textMethod = ReflectUtils.findMethod(endpointClass, "onWebSocketPartialText", String.class, boolean.class);
             MethodHandle text = toMethodHandle(lookup, textMethod);
-            metadata.setTextHandler(PartialTextMessageSink.class, text, textMethod);
+            metadata.setTextHandler(PartialStringMessageSink.class, text, textMethod);
 
             Method binaryMethod = ReflectUtils.findMethod(endpointClass, "onWebSocketPartialBinary", ByteBuffer.class, boolean.class);
             MethodHandle binary = toMethodHandle(lookup, binaryMethod);
-            metadata.setBinaryHandle(PartialBinaryMessageSink.class, binary, binaryMethod);
+            metadata.setBinaryHandle(PartialByteBufferMessageSink.class, binary, binaryMethod);
         }
 
         // Frame Listener
@@ -381,7 +378,7 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
             {
                 assertSignatureValid(endpointClass, onMsg, OnWebSocketMessage.class);
 
-                MethodHandle methodHandle = InvokerUtils.optionalMutatedInvoker(endpointClass, onMsg, InvokerUtils.PARAM_IDENTITY, textCallingArgs);
+                MethodHandle methodHandle = InvokerUtils.optionalMutatedInvoker(endpointClass, onMsg, textCallingArgs);
                 if (methodHandle != null)
                 {
                     // Normal Text Message
@@ -390,7 +387,7 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
                     continue onmessageloop;
                 }
 
-                methodHandle = InvokerUtils.optionalMutatedInvoker(endpointClass, onMsg, InvokerUtils.PARAM_IDENTITY, binaryBufferCallingArgs);
+                methodHandle = InvokerUtils.optionalMutatedInvoker(endpointClass, onMsg, binaryBufferCallingArgs);
                 if (methodHandle != null)
                 {
                     // ByteBuffer Binary Message
@@ -399,7 +396,7 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
                     continue onmessageloop;
                 }
 
-                methodHandle = InvokerUtils.optionalMutatedInvoker(endpointClass, onMsg, InvokerUtils.PARAM_IDENTITY, binaryArrayCallingArgs);
+                methodHandle = InvokerUtils.optionalMutatedInvoker(endpointClass, onMsg, binaryArrayCallingArgs);
                 if (methodHandle != null)
                 {
                     // byte[] Binary Message
@@ -408,7 +405,7 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
                     continue onmessageloop;
                 }
 
-                methodHandle = InvokerUtils.optionalMutatedInvoker(endpointClass, onMsg, InvokerUtils.PARAM_IDENTITY, inputStreamCallingArgs);
+                methodHandle = InvokerUtils.optionalMutatedInvoker(endpointClass, onMsg, inputStreamCallingArgs);
                 if (methodHandle != null)
                 {
                     // InputStream Binary Message
@@ -417,7 +414,7 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
                     continue onmessageloop;
                 }
 
-                methodHandle = InvokerUtils.optionalMutatedInvoker(endpointClass, onMsg, InvokerUtils.PARAM_IDENTITY, readerCallingArgs);
+                methodHandle = InvokerUtils.optionalMutatedInvoker(endpointClass, onMsg, readerCallingArgs);
                 if (methodHandle != null)
                 {
                     // Reader Text Message

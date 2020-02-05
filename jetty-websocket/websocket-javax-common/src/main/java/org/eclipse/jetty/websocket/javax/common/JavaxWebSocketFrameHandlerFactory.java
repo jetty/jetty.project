@@ -43,23 +43,26 @@ import javax.websocket.PongMessage;
 import javax.websocket.Session;
 
 import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
+import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.javax.common.decoders.AvailableDecoders;
-import org.eclipse.jetty.websocket.javax.common.messages.ByteArrayMessageSink;
-import org.eclipse.jetty.websocket.javax.common.messages.ByteBufferMessageSink;
 import org.eclipse.jetty.websocket.javax.common.messages.DecodedBinaryMessageSink;
 import org.eclipse.jetty.websocket.javax.common.messages.DecodedBinaryStreamMessageSink;
 import org.eclipse.jetty.websocket.javax.common.messages.DecodedMessageSink;
 import org.eclipse.jetty.websocket.javax.common.messages.DecodedTextMessageSink;
 import org.eclipse.jetty.websocket.javax.common.messages.DecodedTextStreamMessageSink;
-import org.eclipse.jetty.websocket.javax.common.messages.InputStreamMessageSink;
-import org.eclipse.jetty.websocket.javax.common.messages.PartialByteArrayMessageSink;
-import org.eclipse.jetty.websocket.javax.common.messages.PartialByteBufferMessageSink;
-import org.eclipse.jetty.websocket.javax.common.messages.PartialStringMessageSink;
-import org.eclipse.jetty.websocket.javax.common.messages.ReaderMessageSink;
-import org.eclipse.jetty.websocket.javax.common.messages.StringMessageSink;
-import org.eclipse.jetty.websocket.javax.common.util.InvalidSignatureException;
-import org.eclipse.jetty.websocket.javax.common.util.InvokerUtils;
-import org.eclipse.jetty.websocket.javax.common.util.ReflectUtils;
+import org.eclipse.jetty.websocket.util.InvalidSignatureException;
+import org.eclipse.jetty.websocket.util.InvalidWebSocketException;
+import org.eclipse.jetty.websocket.util.InvokerUtils;
+import org.eclipse.jetty.websocket.util.MessageSink;
+import org.eclipse.jetty.websocket.util.ReflectUtils;
+import org.eclipse.jetty.websocket.util.messages.ByteArrayMessageSink;
+import org.eclipse.jetty.websocket.util.messages.ByteBufferMessageSink;
+import org.eclipse.jetty.websocket.util.messages.InputStreamMessageSink;
+import org.eclipse.jetty.websocket.util.messages.PartialByteArrayMessageSink;
+import org.eclipse.jetty.websocket.util.messages.PartialByteBufferMessageSink;
+import org.eclipse.jetty.websocket.util.messages.PartialStringMessageSink;
+import org.eclipse.jetty.websocket.util.messages.ReaderMessageSink;
+import org.eclipse.jetty.websocket.util.messages.StringMessageSink;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.eclipse.jetty.websocket.javax.common.JavaxWebSocketFrameHandlerMetadata.MessageMetadata;
@@ -322,15 +325,15 @@ public abstract class JavaxWebSocketFrameHandlerFactory
             if (DecodedMessageSink.class.isAssignableFrom(msgMetadata.sinkClass))
             {
                 MethodHandle ctorHandle = MethodHandles.lookup().findConstructor(msgMetadata.sinkClass,
-                    MethodType.methodType(void.class, JavaxWebSocketSession.class, msgMetadata.registeredDecoder.interfaceType, MethodHandle.class));
+                    MethodType.methodType(void.class, CoreSession.class, msgMetadata.registeredDecoder.interfaceType, MethodHandle.class));
                 Decoder decoder = session.getDecoders().getInstanceOf(msgMetadata.registeredDecoder);
-                return (MessageSink)ctorHandle.invoke(session, decoder, msgMetadata.handle);
+                return (MessageSink)ctorHandle.invoke(session.getCoreSession(), decoder, msgMetadata.handle);
             }
             else
             {
                 MethodHandle ctorHandle = MethodHandles.lookup().findConstructor(msgMetadata.sinkClass,
-                    MethodType.methodType(void.class, JavaxWebSocketSession.class, MethodHandle.class));
-                return (MessageSink)ctorHandle.invoke(session, msgMetadata.handle);
+                    MethodType.methodType(void.class, CoreSession.class, MethodHandle.class));
+                return (MessageSink)ctorHandle.invoke(session.getCoreSession(), msgMetadata.handle);
             }
         }
         catch (NoSuchMethodException e)

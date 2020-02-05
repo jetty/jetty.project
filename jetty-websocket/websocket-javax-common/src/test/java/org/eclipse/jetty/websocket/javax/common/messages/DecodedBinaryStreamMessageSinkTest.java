@@ -52,7 +52,7 @@ public class DecodedBinaryStreamMessageSinkTest extends AbstractMessageSinkTest
         DecodedCalendarCopy copy = new DecodedCalendarCopy(copyFuture);
         MethodHandle copyHandle = getAcceptHandle(copy, Calendar.class);
         Decoder.BinaryStream<Calendar> decoder = new GmtDecoder();
-        DecodedBinaryStreamMessageSink sink = new DecodedBinaryStreamMessageSink(session, decoder, copyHandle);
+        DecodedBinaryStreamMessageSink sink = new DecodedBinaryStreamMessageSink(session.getCoreSession(), decoder, copyHandle);
 
         FutureCallback finCallback = new FutureCallback();
         ByteBuffer data = ByteBuffer.allocate(16);
@@ -75,7 +75,7 @@ public class DecodedBinaryStreamMessageSinkTest extends AbstractMessageSinkTest
         DecodedCalendarCopy copy = new DecodedCalendarCopy(copyFuture);
         MethodHandle copyHandle = getAcceptHandle(copy, Calendar.class);
         Decoder.BinaryStream<Calendar> decoder = new GmtDecoder();
-        DecodedBinaryStreamMessageSink sink = new DecodedBinaryStreamMessageSink(session, decoder, copyHandle);
+        DecodedBinaryStreamMessageSink sink = new DecodedBinaryStreamMessageSink(session.getCoreSession(), decoder, copyHandle);
 
         FutureCallback callback1 = new FutureCallback();
         FutureCallback callback2 = new FutureCallback();

@@ -36,8 +36,8 @@ import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.OutgoingFrames;
 import org.eclipse.jetty.websocket.core.exception.WebSocketException;
-import org.eclipse.jetty.websocket.javax.common.messages.MessageOutputStream;
-import org.eclipse.jetty.websocket.javax.common.messages.MessageWriter;
+import org.eclipse.jetty.websocket.util.messages.MessageOutputStream;
+import org.eclipse.jetty.websocket.util.messages.MessageWriter;
 
 public class JavaxWebSocketRemoteEndpoint implements javax.websocket.RemoteEndpoint, OutgoingFrames
 {
@@ -56,7 +56,7 @@ public class JavaxWebSocketRemoteEndpoint implements javax.websocket.RemoteEndpo
 
     protected MessageWriter newMessageWriter()
     {
-        return new MessageWriter(coreSession);
+        return new MessageWriter(coreSession, session.getContainerImpl().getBufferPool());
     }
 
     protected MessageOutputStream newMessageOutputStream()

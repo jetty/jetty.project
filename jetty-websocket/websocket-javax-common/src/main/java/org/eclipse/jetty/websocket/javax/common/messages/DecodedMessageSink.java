@@ -24,9 +24,10 @@ import javax.websocket.Decoder;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketSession;
-import org.eclipse.jetty.websocket.javax.common.MessageSink;
+import org.eclipse.jetty.websocket.util.MessageSink;
+import org.eclipse.jetty.websocket.util.messages.AbstractMessageSink;
 
 public abstract class DecodedMessageSink<T extends Decoder> extends AbstractMessageSink
 {
@@ -35,7 +36,7 @@ public abstract class DecodedMessageSink<T extends Decoder> extends AbstractMess
     private final MethodHandle rawMethodHandle;
     private final MessageSink rawMessageSink;
 
-    public DecodedMessageSink(JavaxWebSocketSession session, T decoder, MethodHandle methodHandle)
+    public DecodedMessageSink(CoreSession session, T decoder, MethodHandle methodHandle)
         throws NoSuchMethodException, IllegalAccessException
     {
         super(session, methodHandle);
@@ -48,7 +49,7 @@ public abstract class DecodedMessageSink<T extends Decoder> extends AbstractMess
     protected abstract MethodHandle newRawMethodHandle()
         throws NoSuchMethodException, IllegalAccessException;
 
-    protected abstract MessageSink newRawMessageSink(JavaxWebSocketSession session, MethodHandle rawMethodHandle);
+    protected abstract MessageSink newRawMessageSink(CoreSession session, MethodHandle rawMethodHandle);
 
     public T getDecoder()
     {

@@ -30,9 +30,9 @@ import javax.websocket.Encoder;
 import javax.websocket.EndpointConfig;
 
 import org.eclipse.jetty.websocket.javax.common.InitException;
-import org.eclipse.jetty.websocket.javax.common.InvalidWebSocketException;
-import org.eclipse.jetty.websocket.javax.common.util.InvalidSignatureException;
-import org.eclipse.jetty.websocket.javax.common.util.ReflectUtils;
+import org.eclipse.jetty.websocket.util.InvalidSignatureException;
+import org.eclipse.jetty.websocket.util.InvalidWebSocketException;
+import org.eclipse.jetty.websocket.util.ReflectUtils;
 
 public class AvailableEncoders implements Predicate<Class<?>>
 {
@@ -289,9 +289,6 @@ public class AvailableEncoders implements Predicate<Class<?>>
     @Override
     public boolean test(Class<?> type)
     {
-        return registeredEncoders.stream()
-            .filter(registered -> registered.isType(type))
-            .findFirst()
-            .isPresent();
+        return registeredEncoders.stream().anyMatch(registered -> registered.isType(type));
     }
 }

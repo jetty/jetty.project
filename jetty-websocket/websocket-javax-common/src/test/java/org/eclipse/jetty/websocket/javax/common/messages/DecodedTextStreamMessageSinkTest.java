@@ -52,7 +52,7 @@ public class DecodedTextStreamMessageSinkTest extends AbstractMessageSinkTest
         DecodedDateCopy copy = new DecodedDateCopy(copyFuture);
         MethodHandle copyHandle = getAcceptHandle(copy, Date.class);
         Decoder.TextStream<Date> decoder = new GmtDecoder();
-        DecodedTextStreamMessageSink sink = new DecodedTextStreamMessageSink(session, decoder, copyHandle);
+        DecodedTextStreamMessageSink sink = new DecodedTextStreamMessageSink(session.getCoreSession(), decoder, copyHandle);
 
         FutureCallback finCallback = new FutureCallback();
         sink.accept(new Frame(OpCode.TEXT).setPayload("2018.02.13").setFin(true), finCallback);
@@ -70,7 +70,7 @@ public class DecodedTextStreamMessageSinkTest extends AbstractMessageSinkTest
         DecodedDateCopy copy = new DecodedDateCopy(copyFuture);
         MethodHandle copyHandle = getAcceptHandle(copy, Date.class);
         Decoder.TextStream<Date> decoder = new GmtDecoder();
-        DecodedTextStreamMessageSink sink = new DecodedTextStreamMessageSink(session, decoder, copyHandle);
+        DecodedTextStreamMessageSink sink = new DecodedTextStreamMessageSink(session.getCoreSession(), decoder, copyHandle);
 
         FutureCallback callback1 = new FutureCallback();
         FutureCallback callback2 = new FutureCallback();

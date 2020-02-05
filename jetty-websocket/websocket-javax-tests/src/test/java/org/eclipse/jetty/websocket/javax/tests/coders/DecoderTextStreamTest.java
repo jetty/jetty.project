@@ -80,7 +80,7 @@ public class DecoderTextStreamTest extends AbstractClientSessionTest
             return null;
         });
 
-        DecodedTextStreamMessageSink sink = new DecodedTextStreamMessageSink(session, decoder, quoteHandle);
+        DecodedTextStreamMessageSink sink = new DecodedTextStreamMessageSink(session.getCoreSession(), decoder, quoteHandle);
 
         List<FutureCallback> callbacks = new ArrayList<>();
         FutureCallback finCallback = null;
