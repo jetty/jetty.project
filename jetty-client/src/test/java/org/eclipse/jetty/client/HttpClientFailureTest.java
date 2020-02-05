@@ -18,13 +18,14 @@
 
 package org.eclipse.jetty.client;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.client.http.HttpConnectionOverHTTP;
 import org.eclipse.jetty.client.util.DeferredContentProvider;
@@ -33,7 +34,6 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -77,9 +77,9 @@ public class HttpClientFailureTest
         client = new HttpClient(new HttpClientTransportOverHTTP(1)
         {
             @Override
-            protected HttpConnectionOverHTTP newHttpConnection(EndPoint endPoint, HttpDestination destination, Promise<Connection> promise)
+            public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
             {
-                HttpConnectionOverHTTP connection = super.newHttpConnection(endPoint, destination, promise);
+                HttpConnectionOverHTTP connection = (HttpConnectionOverHTTP)super.newConnection(endPoint, context);
                 connectionRef.set(connection);
                 return connection;
             }
@@ -107,9 +107,9 @@ public class HttpClientFailureTest
         client = new HttpClient(new HttpClientTransportOverHTTP(1)
         {
             @Override
-            protected HttpConnectionOverHTTP newHttpConnection(EndPoint endPoint, HttpDestination destination, Promise<Connection> promise)
+            public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
             {
-                HttpConnectionOverHTTP connection = super.newHttpConnection(endPoint, destination, promise);
+                HttpConnectionOverHTTP connection = (HttpConnectionOverHTTP)super.newConnection(endPoint, context);
                 connectionRef.set(connection);
                 return connection;
             }

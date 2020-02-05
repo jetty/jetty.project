@@ -21,20 +21,33 @@ package org.eclipse.jetty.http2.parser;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http2.frames.PriorityFrame;
+import org.eclipse.jetty.io.ByteBufferPool;
 
 public class HeaderBlockFragments
 {
+    private final ByteBufferPool byteBufferPool;
     private PriorityFrame priorityFrame;
     private boolean endStream;
     private int streamId;
     private ByteBuffer storage;
+
+    public HeaderBlockFragments(ByteBufferPool byteBufferPool)
+    {
+        this.byteBufferPool = byteBufferPool;
+    }
+
+    public ByteBufferPool getByteBufferPool()
+    {
+        return byteBufferPool;
+    }
 
     public void storeFragment(ByteBuffer fragment, int length, boolean last)
     {
         if (storage == null)
         {
             int space = last ? length : length * 2;
-            storage = ByteBuffer.allocate(space);
+            storage = byteBufferPool.acquire(space, fragment.isDirect());
+            storage.clear();
         }
 
         // Grow the storage if necessary.
@@ -42,9 +55,11 @@ public class HeaderBlockFragments
         {
             int space = last ? length : length * 2;
             int capacity = storage.position() + space;
-            ByteBuffer newStorage = ByteBuffer.allocate(capacity);
+            ByteBuffer newStorage = byteBufferPool.acquire(capacity, storage.isDirect());
+            newStorage.clear();
             storage.flip();
             newStorage.put(storage);
+            byteBufferPool.release(storage);
             storage = newStorage;
         }
 

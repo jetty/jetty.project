@@ -47,6 +47,8 @@ public class ServerFCGIConnection extends AbstractConnection
     private final Flusher flusher;
     private final HttpConfiguration configuration;
     private final ServerParser parser;
+    private boolean useInputDirectByteBuffers;
+    private boolean useOutputDirectByteBuffers;
 
     public ServerFCGIConnection(Connector connector, EndPoint endPoint, HttpConfiguration configuration, boolean sendStatus200)
     {
@@ -56,6 +58,26 @@ public class ServerFCGIConnection extends AbstractConnection
         this.configuration = configuration;
         this.sendStatus200 = sendStatus200;
         this.parser = new ServerParser(new ServerListener());
+    }
+
+    public boolean isUseInputDirectByteBuffers()
+    {
+        return useInputDirectByteBuffers;
+    }
+
+    public void setUseInputDirectByteBuffers(boolean useInputDirectByteBuffers)
+    {
+        this.useInputDirectByteBuffers = useInputDirectByteBuffers;
+    }
+
+    public boolean isUseOutputDirectByteBuffers()
+    {
+        return useOutputDirectByteBuffers;
+    }
+
+    public void setUseOutputDirectByteBuffers(boolean useOutputDirectByteBuffers)
+    {
+        this.useOutputDirectByteBuffers = useOutputDirectByteBuffers;
     }
 
     @Override
@@ -70,7 +92,7 @@ public class ServerFCGIConnection extends AbstractConnection
     {
         EndPoint endPoint = getEndPoint();
         ByteBufferPool bufferPool = connector.getByteBufferPool();
-        ByteBuffer buffer = bufferPool.acquire(configuration.getResponseHeaderSize(), true);
+        ByteBuffer buffer = bufferPool.acquire(configuration.getResponseHeaderSize(), isUseInputDirectByteBuffers());
         try
         {
             while (true)
@@ -133,7 +155,7 @@ public class ServerFCGIConnection extends AbstractConnection
         {
             // TODO: handle flags
             HttpChannelOverFCGI channel = new HttpChannelOverFCGI(connector, configuration, getEndPoint(),
-                new HttpTransportOverFCGI(connector.getByteBufferPool(), flusher, request, sendStatus200));
+                new HttpTransportOverFCGI(connector.getByteBufferPool(), isUseOutputDirectByteBuffers(), sendStatus200, flusher, request));
             HttpChannelOverFCGI existing = channels.putIfAbsent(request, channel);
             if (existing != null)
                 throw new IllegalStateException();

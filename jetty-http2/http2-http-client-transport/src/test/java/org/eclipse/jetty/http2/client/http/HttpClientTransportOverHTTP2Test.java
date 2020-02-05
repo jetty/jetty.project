@@ -100,6 +100,8 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
         httpClient.setExecutor(executor);
         httpClient.setConnectTimeout(13);
         httpClient.setIdleTimeout(17);
+        httpClient.setUseInputDirectByteBuffers(false);
+        httpClient.setUseOutputDirectByteBuffers(false);
 
         httpClient.start();
 
@@ -109,6 +111,8 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
         assertSame(httpClient.getByteBufferPool(), http2Client.getByteBufferPool());
         assertEquals(httpClient.getConnectTimeout(), http2Client.getConnectTimeout());
         assertEquals(httpClient.getIdleTimeout(), http2Client.getIdleTimeout());
+        assertEquals(httpClient.isUseInputDirectByteBuffers(), http2Client.isUseInputDirectByteBuffers());
+        assertEquals(httpClient.isUseOutputDirectByteBuffers(), http2Client.isUseOutputDirectByteBuffers());
 
         httpClient.stop();
 

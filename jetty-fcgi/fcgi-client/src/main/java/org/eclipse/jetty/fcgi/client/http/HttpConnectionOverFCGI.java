@@ -135,8 +135,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
     {
         HttpClient client = destination.getHttpClient();
         ByteBufferPool bufferPool = client.getByteBufferPool();
-        // TODO: configure directness.
-        return new RetainableByteBuffer(bufferPool, client.getResponseBufferSize(), true);
+        return new RetainableByteBuffer(bufferPool, client.getResponseBufferSize(), client.isUseInputDirectByteBuffers());
     }
 
     private void releaseNetworkBuffer()

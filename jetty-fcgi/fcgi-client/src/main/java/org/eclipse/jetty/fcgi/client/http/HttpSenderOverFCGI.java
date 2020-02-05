@@ -22,6 +22,7 @@ import java.net.URI;
 import java.util.Locale;
 
 import org.eclipse.jetty.client.HttpChannel;
+import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpContent;
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.client.HttpSender;
@@ -44,7 +45,8 @@ public class HttpSenderOverFCGI extends HttpSender
     public HttpSenderOverFCGI(HttpChannel channel)
     {
         super(channel);
-        this.generator = new ClientGenerator(channel.getHttpDestination().getHttpClient().getByteBufferPool());
+        HttpClient httpClient = channel.getHttpDestination().getHttpClient();
+        this.generator = new ClientGenerator(httpClient.getByteBufferPool(), httpClient.isUseOutputDirectByteBuffers());
     }
 
     @Override

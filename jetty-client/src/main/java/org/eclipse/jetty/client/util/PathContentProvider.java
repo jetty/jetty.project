@@ -32,6 +32,7 @@ import java.util.NoSuchElementException;
 
 import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -51,6 +52,7 @@ public class PathContentProvider extends AbstractTypedContentProvider
     private final long fileSize;
     private final int bufferSize;
     private ByteBufferPool bufferPool;
+    private boolean useDirectByteBuffers = true;
 
     public PathContentProvider(Path filePath) throws IOException
     {
@@ -101,6 +103,16 @@ public class PathContentProvider extends AbstractTypedContentProvider
         this.bufferPool = byteBufferPool;
     }
 
+    public boolean isUseDirectByteBuffers()
+    {
+        return useDirectByteBuffers;
+    }
+
+    public void setUseDirectByteBuffers(boolean useDirectByteBuffers)
+    {
+        this.useDirectByteBuffers = useDirectByteBuffers;
+    }
+
     @Override
     public Iterator<ByteBuffer> iterator()
     {
@@ -127,8 +139,8 @@ public class PathContentProvider extends AbstractTypedContentProvider
                 if (channel == null)
                 {
                     buffer = bufferPool == null
-                        ? ByteBuffer.allocateDirect(bufferSize)
-                        : bufferPool.acquire(bufferSize, true);
+                        ? BufferUtil.allocate(bufferSize, isUseDirectByteBuffers())
+                        : bufferPool.acquire(bufferSize, isUseDirectByteBuffers());
                     channel = Files.newByteChannel(filePath, StandardOpenOption.READ);
                     if (LOG.isDebugEnabled())
                         LOG.debug("Opened file {}", filePath);
