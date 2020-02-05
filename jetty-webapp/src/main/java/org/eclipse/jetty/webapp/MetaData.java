@@ -19,6 +19,7 @@
 package org.eclipse.jetty.webapp;
 
 import java.lang.annotation.Annotation;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -28,6 +29,7 @@ import java.util.Objects;
 
 import javax.servlet.ServletContext;
 
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.EmptyResource;
@@ -343,8 +345,8 @@ public class MetaData
     }
 
     /**
-     * Annotations not associated with a WEB-INF/lib fragment jar.
-     * These are from WEB-INF/classes or the ??container path??
+     * Annotations such as WebServlet, WebFilter, WebListener that
+     * can be discovered by scanning unloaded classes.
      *
      * @param annotations the list of discovered annotations to add
      */
@@ -360,7 +362,8 @@ public class MetaData
 
     /**
      * Add an annotation that has been discovered on a class, method or field within a resource
-     * eg a jar or dir.
+     * eg a jar or dir. The annotation may also have no associated resource, or that resource
+     * may be a system or container resource. 
      *
      * This method is synchronized as it is anticipated that it may be called by many threads
      * during the annotation scanning phase.
@@ -373,15 +376,15 @@ public class MetaData
             return;
 
         //if no resource associated with an annotation or the resource is not one of the WEB-INF/lib jars,
-        //map it to empty resource
+        //map it to empty resource - these annotations will always be processed first
         Resource resource = annotation.getResource();
-        if (resource == null || !_webInfJars.contains(resource))
+        if (resource == null)
             resource = EmptyResource.INSTANCE;
 
         List<DiscoveredAnnotation> list = _annotations.get(resource);
         if (list == null)
         {
-            list = new ArrayList<DiscoveredAnnotation>();
+            list = new ArrayList<>();
             _annotations.put(resource, list);
         }
         list.add(annotation);
@@ -442,6 +445,7 @@ public class MetaData
             context.getServletContext().setEffectiveMinorVersion(_webXmlRoot.getMinorVersion());
         }
 
+        //process web-defaults.xml, web.xml and override-web.xmls
         for (DescriptorProcessor p : _descriptorProcessors)
         {
             p.process(context, getDefaultsDescriptor());
@@ -453,29 +457,17 @@ public class MetaData
             }
         }
 
-        //get an apply the annotations that are not associated with a fragment (and hence for
-        //which no ordering applies
-        List<DiscoveredAnnotation> nonFragAnnotations = _annotations.get(NON_FRAG_RESOURCE);
-        if (nonFragAnnotations != null)
-        {
-            for (DiscoveredAnnotation a : nonFragAnnotations)
-            {
-                LOG.debug("apply {}", a);
-                a.apply();
-            }
-        }
-
-        //apply the annotations that are associated with a fragment, according to the 
-        //established ordering
-        List<Resource> resources = null;
-
-        if (isOrdered())
-            resources = orderedWebInfJars;
-        else
-            resources = getWebInfResources(false);
+        List<Resource> resources = new ArrayList<>();
+        resources.add(EmptyResource.INSTANCE); //always apply annotations with no resource first
+        resources.addAll(_orderedContainerResources); //next all annotations from container path
+        resources.addAll(_webInfClasses);//next everything from web-inf classes
+        resources.addAll(getWebInfResources(isOrdered())); //finally annotations (in order) from webinf path 
 
         for (Resource r : resources)
         {
+            //Process the web-fragment.xml before applying annotations from a fragment.
+            //Note that some fragments, or resources that aren't fragments won't have
+            //a descriptor.
             FragmentDescriptor fd = _webFragmentResourceMap.get(r);
             if (fd != null)
             {
@@ -486,10 +478,13 @@ public class MetaData
                 }
             }
 
-            List<DiscoveredAnnotation> fragAnnotations = _annotations.get(r);
-            if (fragAnnotations != null)
+            //Then apply the annotations - note that if metadata is complete
+            //either overall or for a fragment, those annotations won't have
+            //been discovered.
+            List<DiscoveredAnnotation> annotations = _annotations.get(r);
+            if (annotations != null)
             {
-                for (DiscoveredAnnotation a : fragAnnotations)
+                for (DiscoveredAnnotation a : annotations)
                 {
                     LOG.debug("apply {}", a);
                     a.apply();
@@ -498,6 +493,13 @@ public class MetaData
         }
     }
 
+    /**
+     * A webapp is distributable if web.xml is metadata-complete and
+     * distributable=true, or if metadata-complete is false, but all
+     * web-fragments.xml are distributable=true.
+     * 
+     * @return true if the webapp is distributable, false otherwise
+     */
     public boolean isDistributable()
     {
         boolean distributable = (
@@ -554,21 +556,21 @@ public class MetaData
     }
 
     /**
-     * @param jar the jar for which to find the associated web-fragment.xml
-     * @return the web-fragment.xml or null if the jar doesn't have one
-     */
-    public FragmentDescriptor getFragmentDescriptor(Resource jar)
-    {
-        return _webFragmentResourceMap.get(jar);
-    }
-
-    /**
      * @param name the name specified in a web-fragment.xml
      * @return the web-fragment.xml that defines that name or null
      */
     public FragmentDescriptor getFragmentDescriptor(String name)
     {
         return _webFragmentNameMap.get(name);
+    }
+    
+    /**
+     * @param descriptorResource the web-fragment.xml location as a Resource
+     * @return the FrgmentDescriptor for the web-fragment.xml, or null if none exists
+     */
+    public FragmentDescriptor getFragmentDescriptor(Resource descriptorResource)
+    {
+        return _webFragmentRoots.stream().filter(d -> d.getResource().equals(descriptorResource)).findFirst().orElse(null);
     }
 
     /**
@@ -598,10 +600,7 @@ public class MetaData
      * @return the FragmentDescriptor or null if no web-fragment.xml is associated with the jar
      */
     public FragmentDescriptor getFragmentDescriptorForJar(Resource jar)
-    {
-        if (jar == null)
-            return null;
-        
+    {        
         return _webFragmentResourceMap.get(jar);
     }
 
@@ -722,7 +721,7 @@ public class MetaData
     {
         return _validateXml;
     }
-
+    
     /**
      * @param validateXml if true xml syntax is validated by the parser, false otherwise
      */

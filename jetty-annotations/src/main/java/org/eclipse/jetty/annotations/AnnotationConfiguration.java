@@ -338,20 +338,18 @@ public class AnnotationConfiguration extends AbstractConfiguration
     @Override
     public void configure(WebAppContext context) throws Exception
     {
+        //handle introspectable annotations (postconstruct,predestroy, multipart etc etc)
+        context.getObjectFactory().addDecorator(new AnnotationDecorator(context));
+        
         if (!context.getMetaData().isMetaDataComplete())
         {
-            //If metadata isn't complete, if this is a servlet 3 webapp or isConfigDiscovered is true, we need to search for annotations
+            //If web.xml not metadata-complete, if this is a servlet 3 webapp or above
+            //or configDiscovered is true, we need to search for annotations
             if (context.getServletContext().getEffectiveMajorVersion() >= 3 || context.isConfigurationDiscovered())
             {
                 _discoverableAnnotationHandlers.add(new WebServletAnnotationHandler(context));
                 _discoverableAnnotationHandlers.add(new WebFilterAnnotationHandler(context));
                 _discoverableAnnotationHandlers.add(new WebListenerAnnotationHandler(context));
-                
-                //servlet 4: only introspect for annotations that have analogues in web.xml/web-fragment.xml
-                //if metadata-complete is false
-                //TODO: also implies that if metadata-complete is true for a given fragment, we shouldn't
-                //introspect either
-                context.getObjectFactory().addDecorator(new AnnotationDecorator(context));
             }
         }
 
@@ -418,7 +416,8 @@ public class AnnotationConfiguration extends AbstractConfiguration
     }
 
     /**
-     * Perform scanning of classes for annotations
+     * Perform scanning of classes for discoverable
+     *  annotations such as WebServlet/WebFilter/WebListener
      *
      * @param context the context for the scan
      * @throws Exception if unable to scan
@@ -441,6 +440,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
                 isUseMultiThreading(context),
                 getMaxScanWait(context));
 
+        //scan selected jars on the container classpath first
         parseContainerPath(context, parser);
         //email from Rajiv Mordani jsrs 315 7 April 2010
         //    If there is a <others/> then the ordering should be
@@ -448,6 +448,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
         //    In case there is no others then it is
         //          WEB-INF/classes + order of the elements.
         parseWebInfClasses(context, parser);
+        //scan non-excluded, non medatadata-complete jars in web-inf lib
         parseWebInfLib(context, parser);
 
         long start = System.nanoTime();
@@ -1015,6 +1016,8 @@ public class AnnotationConfiguration extends AbstractConfiguration
         if (LOG.isDebugEnabled())
             _containerPathStats = new CounterStatistic();
 
+        //scan the container classpath jars that were selected by
+        //filtering in MetaInfConfiguration
         for (Resource r : context.getMetaData().getContainerResources())
         {
             if (_parserTasks != null)
@@ -1031,7 +1034,10 @@ public class AnnotationConfiguration extends AbstractConfiguration
     }
 
     /**
-     * Scan jars in WEB-INF/lib
+     * Scan jars in WEB-INF/lib.
+     * 
+     * Only jars selected by MetaInfConfiguration, and that are not excluded
+     * by an ordering will be considered.
      *
      * @param context the context for the scan
      * @param parser the annotation parser to use
@@ -1092,7 +1098,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
     }
 
     /**
-     * Scan classes in WEB-INF/classes
+     * Scan classes in WEB-INF/classes.
      *
      * @param context the context for the scan
      * @param parser the annotation parser to use

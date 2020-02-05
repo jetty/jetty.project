@@ -51,6 +51,11 @@ public abstract class DiscoveredAnnotation
         _className = className;
         _resource = resource;
     }
+    
+    public String getClassName()
+    {
+        return _className;
+    }
 
     public Resource getResource()
     {

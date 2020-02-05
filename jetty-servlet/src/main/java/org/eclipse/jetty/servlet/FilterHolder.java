@@ -19,11 +19,13 @@
 package org.eclipse.jetty.servlet;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
+
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterConfig;
@@ -113,10 +115,7 @@ public class FilterHolder extends Holder<Filter>
             {
                 try
                 {
-                    ServletContext context = getServletHandler().getServletContext();
-                    _filter = (context != null)
-                        ? context.createFilter(getHeldClass())
-                        : getHeldClass().getDeclaredConstructor().newInstance();
+                    _filter = createInstance();
                 }
                 catch (ServletException ex)
                 {
@@ -133,6 +132,20 @@ public class FilterHolder extends Holder<Filter>
                 LOG.debug("Filter.init {}", _filter);
             _filter.init(_config);
         }
+    }
+
+    @Override
+    protected synchronized Filter createInstance() throws ServletException, IllegalAccessException,
+        InstantiationException, NoSuchMethodException, InvocationTargetException
+    {
+        Filter filter = super.createInstance();
+        if (filter == null)
+        {
+            ServletContext context = getServletContext();
+            if (context != null)
+                filter = context.createFilter(getHeldClass());
+        }
+        return filter;
     }
 
     @Override

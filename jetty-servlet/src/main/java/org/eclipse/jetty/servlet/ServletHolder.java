@@ -1121,11 +1121,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     {
         try
         {
-            ServletContext ctx = getServletHandler().getServletContext();
-            if (ctx != null)
-                return ctx.createServlet(getHeldClass());
-            return getHeldClass().getDeclaredConstructor().newInstance();
-
+            return createInstance();
         }
         catch (ServletException ex)
         {
@@ -1140,6 +1136,20 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
                 throw (InvocationTargetException)cause;
             throw ex;
         }
+    }
+
+    @Override
+    protected synchronized Servlet createInstance() throws ServletException, IllegalAccessException,
+        InstantiationException, NoSuchMethodException, InvocationTargetException
+    {
+        Servlet servlet = super.createInstance();
+        if (servlet == null)
+        {
+            ServletContext ctx = getServletContext();
+            if (ctx != null)
+                servlet = ctx.createServlet(getHeldClass());
+        }
+        return servlet;
     }
 
     @Override

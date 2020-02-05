@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.servlet;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.EventListener;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
@@ -88,10 +89,7 @@ public class ListenerHolder extends BaseHolder<EventListener>
                 //create an instance of the listener and decorate it
                 try
                 {
-                    ServletContext context = contextHandler.getServletContext();
-                    _listener = (context != null)
-                        ? context.createListener(getHeldClass())
-                        : getHeldClass().getDeclaredConstructor().newInstance();
+                    _listener = createInstance();
                 }
                 catch (ServletException ex)
                 {
@@ -105,6 +103,24 @@ public class ListenerHolder extends BaseHolder<EventListener>
             }
             contextHandler.addEventListener(_listener);
         }
+    }
+
+    /**
+     * The ListenerHolder does not know about the ServletHandler at the point in
+     * time when the instance is created, so use the current ContextHandler instead.
+     */
+    @Override
+    protected synchronized EventListener createInstance() throws ServletException, IllegalAccessException,
+        InstantiationException, NoSuchMethodException, InvocationTargetException
+    {
+        ContextHandler contextHandler = ContextHandler.getCurrentContext().getContextHandler();
+        if (contextHandler == null)
+            return null;
+        
+        ServletContext context = contextHandler.getServletContext();
+        if (context == null)
+            return getHeldClass().getDeclaredConstructor().newInstance();
+        return context.createListener(getHeldClass());
     }
 
     @Override

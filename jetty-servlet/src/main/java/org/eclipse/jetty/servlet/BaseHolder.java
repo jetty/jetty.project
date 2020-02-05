@@ -19,7 +19,10 @@
 package org.eclipse.jetty.servlet;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+
 import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
 import javax.servlet.UnavailableException;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -175,6 +178,47 @@ public abstract class BaseHolder<T> extends AbstractLifeCycle implements Dumpabl
     protected synchronized T getInstance()
     {
         return _instance;
+    }
+
+    protected synchronized T createInstance() throws ServletException, IllegalAccessException, InstantiationException,
+        NoSuchMethodException, InvocationTargetException
+    {
+        try
+        {
+            ServletContext ctx = getServletContext();
+            if (ctx == null)
+                return getHeldClass().getDeclaredConstructor().newInstance();
+
+            if (ServletContextHandler.Context.class.isAssignableFrom(ctx.getClass()))
+                return ((ServletContextHandler.Context)ctx).createInstance(this);
+
+            return null;
+        }
+        catch (ServletException ex)
+        {
+            Throwable cause = ex.getRootCause();
+            if (cause instanceof InstantiationException)
+                throw (InstantiationException)cause;
+            if (cause instanceof IllegalAccessException)
+                throw (IllegalAccessException)cause;
+            if (cause instanceof NoSuchMethodException)
+                throw (NoSuchMethodException)cause;
+            if (cause instanceof InvocationTargetException)
+                throw (InvocationTargetException)cause;
+            throw ex;
+        }
+    }
+
+    public ServletContext getServletContext()
+    {
+        //try the ServletHandler first
+        if (_servletHandler != null)
+            return _servletHandler.getServletContext();
+        //try the ContextHandler next
+        ContextHandler contextHandler = ContextHandler.getCurrentContext().getContextHandler();
+        if (contextHandler != null)
+            return contextHandler.getServletContext();
+        return null;
     }
 
     /**
