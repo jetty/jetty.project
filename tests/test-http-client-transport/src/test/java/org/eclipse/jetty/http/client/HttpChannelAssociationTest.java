@@ -19,6 +19,7 @@
 package org.eclipse.jetty.http.client;
 
 import java.io.IOException;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
@@ -127,9 +128,9 @@ public class HttpChannelAssociationTest extends AbstractTest<TransportScenario>
                 return new HttpClientTransportOverHTTP(clientConnector)
                 {
                     @Override
-                    protected HttpConnectionOverHTTP newHttpConnection(EndPoint endPoint, HttpDestination destination, Promise<Connection> promise)
+                    public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
                     {
-                        return new HttpConnectionOverHTTP(endPoint, destination, promise)
+                        return new HttpConnectionOverHTTP(endPoint, context)
                         {
                             @Override
                             protected HttpChannelOverHTTP newHttpChannel()
@@ -210,9 +211,9 @@ public class HttpChannelAssociationTest extends AbstractTest<TransportScenario>
                 return new HttpClientTransportOverUnixSockets(scenario.sockFile.toString())
                 {
                     @Override
-                    protected HttpConnectionOverHTTP newHttpConnection(EndPoint endPoint, HttpDestination destination, Promise<Connection> promise)
+                    public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context)
                     {
-                        return new HttpConnectionOverHTTP(endPoint, destination, promise)
+                        return new HttpConnectionOverHTTP(endPoint, context)
                         {
                             @Override
                             protected HttpChannelOverHTTP newHttpChannel()

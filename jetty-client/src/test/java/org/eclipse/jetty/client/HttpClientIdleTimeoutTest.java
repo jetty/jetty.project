@@ -18,13 +18,13 @@
 
 package org.eclipse.jetty.client;
 
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.client.http.HttpConnectionOverHTTP;
@@ -34,7 +34,6 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -115,9 +114,9 @@ public class HttpClientIdleTimeoutTest
             }
 
             @Override
-            protected HttpConnectionOverHTTP newHttpConnection(EndPoint endPoint, HttpDestination destination, Promise<Connection> promise)
+            public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context)
             {
-                return new HttpConnectionOverHTTP(endPoint, destination, promise)
+                return new HttpConnectionOverHTTP(endPoint, context)
                 {
                     @Override
                     protected boolean onIdleTimeout(long idleTimeout)

@@ -64,8 +64,8 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
     private RateControl.Factory rateControlFactory = new WindowRateControl.Factory(20);
     private FlowControlStrategy.Factory flowControlStrategyFactory = () -> new BufferingFlowControlStrategy(0.5F);
     private long streamIdleTimeout;
-    private boolean _useInputDirectByteBuffers;
-    private boolean _useOutputDirectByteBuffers;
+    private boolean useInputDirectByteBuffers;
+    private boolean useOutputDirectByteBuffers;
 
     public AbstractHTTP2ServerConnectionFactory(@Name("config") HttpConfiguration httpConfiguration)
     {
@@ -215,24 +215,26 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         this.rateControlFactory = Objects.requireNonNull(rateControlFactory);
     }
 
+    @ManagedAttribute("Whether to use direct ByteBuffers for reading")
     public boolean isUseInputDirectByteBuffers()
     {
-        return _useInputDirectByteBuffers;
+        return useInputDirectByteBuffers;
     }
 
     public void setUseInputDirectByteBuffers(boolean useInputDirectByteBuffers)
     {
-        _useInputDirectByteBuffers = useInputDirectByteBuffers;
+        this.useInputDirectByteBuffers = useInputDirectByteBuffers;
     }
 
+    @ManagedAttribute("Whether to use direct ByteBuffers for writing")
     public boolean isUseOutputDirectByteBuffers()
     {
-        return _useOutputDirectByteBuffers;
+        return useOutputDirectByteBuffers;
     }
 
     public void setUseOutputDirectByteBuffers(boolean useOutputDirectByteBuffers)
     {
-        _useOutputDirectByteBuffers = useOutputDirectByteBuffers;
+        this.useOutputDirectByteBuffers = useOutputDirectByteBuffers;
     }
 
     public HttpConfiguration getHttpConfiguration()

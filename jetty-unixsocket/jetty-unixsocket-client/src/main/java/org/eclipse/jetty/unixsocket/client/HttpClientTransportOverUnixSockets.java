@@ -40,14 +40,13 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.Origin;
-import org.eclipse.jetty.client.api.Connection;
-import org.eclipse.jetty.client.http.HttpConnectionOverHTTP;
+import org.eclipse.jetty.client.http.HttpClientConnectionFactory;
+import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ManagedSelector;
 import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.unixsocket.common.UnixSocketEndPoint;
-import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -56,6 +55,8 @@ import org.eclipse.jetty.util.thread.Scheduler;
 public class HttpClientTransportOverUnixSockets extends AbstractConnectorHttpClientTransport
 {
     private static final Logger LOG = Log.getLogger(HttpClientTransportOverUnixSockets.class);
+
+    private final ClientConnectionFactory factory = new HttpClientConnectionFactory();
 
     public HttpClientTransportOverUnixSockets(String unixSocket)
     {
@@ -86,20 +87,12 @@ public class HttpClientTransportOverUnixSockets extends AbstractConnectorHttpCli
     }
 
     @Override
-    public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context)
+    public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
     {
-        HttpDestination destination = (HttpDestination)context.get(HTTP_DESTINATION_CONTEXT_KEY);
-        @SuppressWarnings("unchecked")
-        Promise<Connection> promise = (Promise<Connection>)context.get(HTTP_CONNECTION_PROMISE_CONTEXT_KEY);
-        org.eclipse.jetty.io.Connection connection = newHttpConnection(endPoint, destination, promise);
+        var connection = factory.newConnection(endPoint, context);
         if (LOG.isDebugEnabled())
             LOG.debug("Created {}", connection);
-        return customize(connection, context);
-    }
-
-    protected HttpConnectionOverHTTP newHttpConnection(EndPoint endPoint, HttpDestination destination, Promise<org.eclipse.jetty.client.api.Connection> promise)
-    {
-        return new HttpConnectionOverHTTP(endPoint, destination, promise);
+        return connection;
     }
 
     private static class UnixSocketClientConnector extends ClientConnector

@@ -78,7 +78,7 @@ public class Parser
         Listener listener = wrapper.apply(this.listener);
         unknownBodyParser = new UnknownBodyParser(headerParser, listener);
         HeaderBlockParser headerBlockParser = new HeaderBlockParser(headerParser, byteBufferPool, hpackDecoder, unknownBodyParser);
-        HeaderBlockFragments headerBlockFragments = new HeaderBlockFragments();
+        HeaderBlockFragments headerBlockFragments = new HeaderBlockFragments(byteBufferPool);
         bodyParsers[FrameType.DATA.getType()] = new DataBodyParser(headerParser, listener);
         bodyParsers[FrameType.HEADERS.getType()] = new HeadersBodyParser(headerParser, listener, headerBlockParser, headerBlockFragments);
         bodyParsers[FrameType.PRIORITY.getType()] = new PriorityBodyParser(headerParser, listener);

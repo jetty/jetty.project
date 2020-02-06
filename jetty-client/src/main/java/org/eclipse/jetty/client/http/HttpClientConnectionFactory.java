@@ -21,12 +21,8 @@ package org.eclipse.jetty.client.http;
 import java.util.List;
 import java.util.Map;
 
-import org.eclipse.jetty.client.HttpClientTransport;
-import org.eclipse.jetty.client.HttpDestination;
-import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.util.Promise;
 
 public class HttpClientConnectionFactory implements ClientConnectionFactory
 {
@@ -35,9 +31,7 @@ public class HttpClientConnectionFactory implements ClientConnectionFactory
     @Override
     public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context)
     {
-        HttpDestination destination = (HttpDestination)context.get(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY);
-        @SuppressWarnings("unchecked")
-        Promise<Connection> promise = (Promise<Connection>)context.get(HttpClientTransport.HTTP_CONNECTION_PROMISE_CONTEXT_KEY);
-        return customize(new HttpConnectionOverHTTP(endPoint, destination, promise), context);
+        HttpConnectionOverHTTP connection = new HttpConnectionOverHTTP(endPoint, context);
+        return customize(connection, context);
     }
 }
