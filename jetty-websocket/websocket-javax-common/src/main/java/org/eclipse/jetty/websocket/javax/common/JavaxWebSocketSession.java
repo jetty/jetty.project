@@ -177,7 +177,7 @@ public class JavaxWebSocketSession implements javax.websocket.Session
      * @since JSR356 v1.0
      */
     @Override
-    public void close() throws IOException
+    public void close()
     {
         close(new CloseReason(CloseReason.CloseCodes.NO_STATUS_CODE, null));
     }
@@ -189,11 +189,18 @@ public class JavaxWebSocketSession implements javax.websocket.Session
      * @since JSR356 v1.0
      */
     @Override
-    public void close(CloseReason closeReason) throws IOException
+    public void close(CloseReason closeReason)
     {
-        FutureCallback b = new FutureCallback();
-        coreSession.close(closeReason.getCloseCode().getCode(), closeReason.getReasonPhrase(), b);
-        b.block(getBlockingTimeout(), TimeUnit.MILLISECONDS);
+        try
+        {
+            FutureCallback b = new FutureCallback();
+            coreSession.close(closeReason.getCloseCode().getCode(), closeReason.getReasonPhrase(), b);
+            b.block(getBlockingTimeout(), TimeUnit.MILLISECONDS);
+        }
+        catch (IOException e)
+        {
+            LOG.ignore(e);
+        }
     }
 
     private long getBlockingTimeout()

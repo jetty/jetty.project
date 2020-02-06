@@ -60,7 +60,7 @@ public class MultiException extends Exception
 
         for (Throwable t : nested)
         {
-            if (t != this)
+            if (t != this && t != getCause())
                 addSuppressed(t);
         }
     }

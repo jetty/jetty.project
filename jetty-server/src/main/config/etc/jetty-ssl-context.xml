@@ -12,12 +12,12 @@
 
 <Configure id="sslContextFactory" class="org.eclipse.jetty.util.ssl.SslContextFactory$Server">
   <Set name="Provider" property="jetty.sslContext.provider"/>
-  <Set name="KeyStorePath"><Property name="jetty.base" default="." />/<Property name="jetty.sslContext.keyStorePath" default="etc/keystore"/></Set>
+  <Set name="KeyStorePath"><Property name="jetty.base" default="." />/<Property name="jetty.sslContext.keyStorePath" default="etc/keystore.p12"/></Set>
   <Set name="KeyStorePassword"><Property name="jetty.sslContext.keyStorePassword"/></Set>
   <Set name="KeyStoreType" property="jetty.sslContext.keyStoreType"/>
   <Set name="KeyStoreProvider" property="jetty.sslContext.keyStoreProvider"/>
   <Set name="KeyManagerPassword"><Property name="jetty.sslContext.keyManagerPassword"/></Set>
-  <Set name="TrustStorePath"><Property name="jetty.base" default="." />/<Property name="jetty.sslContext.trustStorePath" default="etc/keystore"/></Set>
+  <Set name="TrustStorePath"><Property name="jetty.base" default="." />/<Property name="jetty.sslContext.trustStorePath" default="etc/keystore.p12"/></Set>
   <Set name="TrustStorePassword" property="jetty.sslContext.trustStorePassword"/>
   <Set name="TrustStoreType" property="jetty.sslContext.trustStoreType"/>
   <Set name="TrustStoreProvider" property="jetty.sslContext.trustStoreProvider"/>

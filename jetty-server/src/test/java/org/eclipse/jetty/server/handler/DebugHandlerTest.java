@@ -74,13 +74,10 @@ public class DebugHandlerTest
         httpConnector.setPort(0);
         server.addConnector(httpConnector);
 
-        File keystorePath = MavenTestingUtils.getTestResourceFile("keystore");
+        File keystorePath = MavenTestingUtils.getTestResourceFile("keystore.p12");
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setKeyStorePath(keystorePath.getAbsolutePath());
         sslContextFactory.setKeyStorePassword("storepwd");
-        sslContextFactory.setKeyManagerPassword("keypwd");
-        sslContextFactory.setTrustStorePath(keystorePath.getAbsolutePath());
-        sslContextFactory.setTrustStorePassword("storepwd");
         ByteBufferPool pool = new LeakTrackingByteBufferPool(new MappedByteBufferPool.Tagged());
         ServerConnector sslConnector = new ServerConnector(server, null, null, pool, 1, 1,
             AbstractConnectionFactory.getFactories(sslContextFactory, new HttpConnectionFactory()));

@@ -150,7 +150,7 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
     private String[] _selectedCipherSuites;
     private Resource _keyStoreResource;
     private String _keyStoreProvider;
-    private String _keyStoreType = "JKS";
+    private String _keyStoreType = "PKCS12";
     private String _certAlias;
     private Resource _trustStoreResource;
     private String _trustStoreProvider;
@@ -640,7 +640,7 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
     }
 
     /**
-     * @return The type of the key store (default "JKS")
+     * @return The type of the key store (default "PKCS12")
      */
     @ManagedAttribute("The keyStore type")
     public String getKeyStoreType()
@@ -649,7 +649,7 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
     }
 
     /**
-     * @param keyStoreType The type of the key store (default "JKS")
+     * @param keyStoreType The type of the key store
      */
     public void setKeyStoreType(String keyStoreType)
     {
@@ -1049,7 +1049,7 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
 
     /**
      * When set to "HTTPS" hostname verification will be enabled.
-     * Deployments can be vulnerable to a man-in-the-middle attack if a EndpointIndentificationAlgorithm
+     * Deployments can be vulnerable to a man-in-the-middle attack if a EndpointIdentificationAlgorithm
      * is not set.
      *
      * @param endpointIdentificationAlgorithm Set the endpointIdentificationAlgorithm

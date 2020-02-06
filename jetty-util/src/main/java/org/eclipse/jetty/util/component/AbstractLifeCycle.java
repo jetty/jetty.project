@@ -55,7 +55,6 @@ public abstract class AbstractLifeCycle implements LifeCycle
     private final List<EventListener> _eventListener = new CopyOnWriteArrayList<>();
     private final Object _lock = new Object();
     private volatile State _state = State.STOPPED;
-    private long _stopTimeout = 30000;
 
     /**
      * Method to override to start the lifecycle
@@ -301,17 +300,6 @@ public abstract class AbstractLifeCycle implements LifeCycle
             if (listener instanceof Listener)
                 ((Listener)listener).lifeCycleFailure(this, th);
         }
-    }
-
-    @ManagedAttribute(value = "The stop timeout in milliseconds")
-    public long getStopTimeout()
-    {
-        return _stopTimeout;
-    }
-
-    public void setStopTimeout(long stopTimeout)
-    {
-        this._stopTimeout = stopTimeout;
     }
 
     public abstract static class AbstractLifeCycleListener implements LifeCycle.Listener

@@ -22,7 +22,6 @@ import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.nio.ByteBuffer;
-import java.nio.channels.ClosedChannelException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -300,7 +299,7 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
         // Make sure onClose is only notified once.
         if (!closeNotified.compareAndSet(false, true))
         {
-            callback.failed(new ClosedChannelException());
+            callback.succeeded();
             return;
         }
 

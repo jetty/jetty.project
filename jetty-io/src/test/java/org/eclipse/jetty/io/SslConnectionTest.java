@@ -141,10 +141,9 @@ public class SslConnectionTest
     @BeforeEach
     public void initSSL() throws Exception
     {
-        File keystore = MavenTestingUtils.getTestResourceFile("keystore");
+        File keystore = MavenTestingUtils.getTestResourceFile("keystore.p12");
         _sslCtxFactory.setKeyStorePath(keystore.getAbsolutePath());
         _sslCtxFactory.setKeyStorePassword("storepwd");
-        _sslCtxFactory.setKeyManagerPassword("keypwd");
         _sslCtxFactory.setRenegotiationAllowed(true);
         _sslCtxFactory.setRenegotiationLimit(-1);
         startManager();

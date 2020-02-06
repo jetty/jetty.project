@@ -123,7 +123,7 @@ public class ObjectMBeanTest
 
         assertEquals("com.acme.Derived", derivedInfo.getClassName(), "name does not match");
         assertEquals("Test the mbean stuff", derivedInfo.getDescription(), "description does not match");
-        assertEquals(6, derivedInfo.getAttributes().length, "attribute count does not match");
+        assertEquals(5, derivedInfo.getAttributes().length, "attribute count does not match");
         assertEquals("Full Name", derivedMBean.getAttribute("fname"), "attribute values does not match");
 
         derivedMBean.setAttribute(new Attribute("fname", "Fuller Name"));

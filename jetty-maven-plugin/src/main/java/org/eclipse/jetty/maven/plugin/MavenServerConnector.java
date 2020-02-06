@@ -20,8 +20,8 @@ package org.eclipse.jetty.maven.plugin;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
-import java.util.concurrent.Future;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
@@ -121,7 +121,7 @@ public class MavenServerConnector extends ContainerLifeCycle implements Connecto
     }
 
     @Override
-    public Future<Void> shutdown()
+    public CompletableFuture<Void> shutdown()
     {
         return checkDelegate().shutdown();
     }

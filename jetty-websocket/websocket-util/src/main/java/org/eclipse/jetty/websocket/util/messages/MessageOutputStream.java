@@ -25,7 +25,7 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.SharedBlockingCallback;
+import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.CoreSession;
@@ -42,7 +42,6 @@ public class MessageOutputStream extends OutputStream
     private final CoreSession coreSession;
     private final ByteBufferPool bufferPool;
     private final int bufferSize;
-    private final SharedBlockingCallback blocker;
     private long frameCount;
     private long bytesSent;
     private ByteBuffer buffer;
@@ -55,7 +54,6 @@ public class MessageOutputStream extends OutputStream
         this.coreSession = coreSession;
         this.bufferPool = bufferPool;
         this.bufferSize = coreSession.getOutputBufferSize();
-        this.blocker = new SharedBlockingCallback();
         this.buffer = bufferPool.acquire(bufferSize, true);
         BufferUtil.clear(buffer);
     }
@@ -123,11 +121,9 @@ public class MessageOutputStream extends OutputStream
             frame.setFin(fin);
 
             int initialBufferSize = buffer.remaining();
-            try (SharedBlockingCallback.Blocker b = blocker.acquire())
-            {
-                coreSession.sendFrame(frame, b, false);
-                b.block();
-            }
+            FutureCallback b = new FutureCallback();
+            coreSession.sendFrame(frame, b, false);
+            b.block();
 
             // Any flush after the first will be a CONTINUATION frame.
             bytesSent += initialBufferSize;

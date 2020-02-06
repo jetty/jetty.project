@@ -258,7 +258,8 @@ public class FileSessionDataStore extends AbstractSessionDataStore
         }
         catch (NumberFormatException e)
         {
-            LOG.warn("Not valid session filename {}", p.getFileName(), e);
+            LOG.warn("Not valid session filename {}", p.getFileName());
+            LOG.warn(e);
         }
     }
 
@@ -299,7 +300,8 @@ public class FileSessionDataStore extends AbstractSessionDataStore
                 }
                 catch (Exception x)
                 {
-                    LOG.warn("Unable to delete unrestorable file {} for session {}", filename, id, x);
+                    LOG.warn("Unable to delete unrestorable file {} for session {}", filename, id);
+                    LOG.warn(x);
                 }
             }
             throw e;

@@ -89,7 +89,6 @@ public class FailedSelectorTest
         HttpClientTransport transport = new HttpClientTransportOverHTTP(1);
         QueuedThreadPool qtp = new QueuedThreadPool();
         qtp.setName("Client");
-        qtp.setStopTimeout(1000);
         client = new HttpClient(transport);
         client.setExecutor(qtp);
 

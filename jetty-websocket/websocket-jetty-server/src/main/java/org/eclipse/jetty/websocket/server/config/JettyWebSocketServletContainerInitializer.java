@@ -87,7 +87,7 @@ public class JettyWebSocketServletContainerInitializer implements ServletContain
      * @param context the context to work with
      * @return the default {@link JettyWebSocketServerContainer}
      */
-    public static JettyWebSocketServerContainer initialize(ServletContextHandler context)
+    private static JettyWebSocketServerContainer initialize(ServletContextHandler context)
     {
         WebSocketComponents components = WebSocketComponents.ensureWebSocketComponents(context.getServletContext());
         FilterHolder filterHolder = WebSocketUpgradeFilter.ensureFilter(context.getServletContext());

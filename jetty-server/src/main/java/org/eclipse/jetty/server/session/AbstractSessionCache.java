@@ -21,6 +21,7 @@ package org.eclipse.jetty.server.session;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import javax.servlet.http.HttpServletRequest;
 
@@ -334,12 +335,13 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
      * 
      * @param id The session to retrieve
      * @param enter if true, the usage count of the session will be incremented
-     * @return
-     * @throws Exception
+     * @return the session if it exists, null otherwise
+     * @throws Exception if the session cannot be loaded
      */
     protected Session getAndEnter(String id, boolean enter) throws Exception
     {
         Session session = null;
+        AtomicReference<Exception> exception = new AtomicReference<Exception>();
 
         session = doComputeIfAbsent(id, k ->
         {
@@ -365,11 +367,15 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
             }
             catch (Exception e)
             {
-                LOG.warn("Error loading session {}", id, e);
+                exception.set(e);
                 return null;
             }
         });
 
+        Exception ex = exception.get();
+        if (ex != null)
+            throw ex;
+            
         if (session != null)
         {
             try (AutoLock lock = session.lock())
@@ -741,7 +747,8 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
                 }
                 catch (Exception e)
                 {
-                    LOG.warn("Passivation of idle session {} failed", session.getId(), e);
+                    LOG.warn("Passivation of idle session {} failed", session.getId());
+                    LOG.warn(e);
                 }
             }
         }
@@ -838,7 +845,8 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
         }
         catch (Exception e)
         {
-            LOG.warn("Save of new session {} failed", id, e);
+            LOG.warn("Save of new session {} failed", id);
+            LOG.warn(e);
         }
         return session;
     }

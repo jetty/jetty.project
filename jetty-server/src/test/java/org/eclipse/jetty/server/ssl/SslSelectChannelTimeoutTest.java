@@ -43,13 +43,10 @@ public class SslSelectChannelTimeoutTest extends ConnectorTimeoutTest
     @BeforeEach
     public void init() throws Exception
     {
-        String keystorePath = System.getProperty("basedir", ".") + "/src/test/resources/keystore";
+        String keystorePath = System.getProperty("basedir", ".") + "/src/test/resources/keystore.p12";
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setKeyStorePath(keystorePath);
         sslContextFactory.setKeyStorePassword("storepwd");
-        sslContextFactory.setKeyManagerPassword("keypwd");
-        sslContextFactory.setTrustStorePath(keystorePath);
-        sslContextFactory.setTrustStorePassword("storepwd");
         ServerConnector connector = new ServerConnector(_server, 1, 1, sslContextFactory);
         connector.setIdleTimeout(MAX_IDLE_TIME); //250 msec max idle
         startServer(connector);

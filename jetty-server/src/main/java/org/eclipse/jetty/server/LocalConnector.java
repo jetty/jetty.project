@@ -98,6 +98,8 @@ public class LocalConnector extends AbstractConnector
     {
         if (!isStarted())
             throw new IllegalStateException("!STARTED");
+        if (isShutdown())
+            throw new IllegalStateException("Shutdown");
         LocalEndPoint endp = new LocalEndPoint();
         endp.addInput(rawRequest);
         _connects.add(endp);
@@ -412,7 +414,7 @@ public class LocalConnector extends AbstractConnector
                     else
                     {
                         chunk = waitForOutput(time, unit);
-                        if (BufferUtil.isEmpty(chunk) && (!isOpen() || isOutputShutdown()))
+                        if (BufferUtil.isEmpty(chunk) && (!isOpen() || isOutputShutdown() || isShutdown()))
                         {
                             parser.atEOF();
                             parser.parseNext(BufferUtil.EMPTY_BUFFER);

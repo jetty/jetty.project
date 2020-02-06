@@ -19,8 +19,8 @@
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
-import java.util.concurrent.Future;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -99,7 +99,7 @@ public abstract class AbstractNetworkConnector extends AbstractConnector impleme
     }
 
     @Override
-    public Future<Void> shutdown()
+    public CompletableFuture<Void> shutdown()
     {
         close();
         return super.shutdown();

@@ -59,11 +59,10 @@ public class SlowClientsTest
     @Test
     public void testSlowClientsWithSmallThreadPool() throws Exception
     {
-        File keystore = MavenTestingUtils.getTestResourceFile("keystore");
+        File keystore = MavenTestingUtils.getTestResourceFile("keystore.p12");
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setKeyStorePath(keystore.getAbsolutePath());
         sslContextFactory.setKeyStorePassword("storepwd");
-        sslContextFactory.setKeyManagerPassword("keypwd");
 
         int maxThreads = 6;
         int contentLength = 8 * 1024 * 1024;

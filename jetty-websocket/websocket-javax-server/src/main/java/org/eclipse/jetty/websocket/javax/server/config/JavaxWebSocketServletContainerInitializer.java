@@ -148,7 +148,7 @@ public class JavaxWebSocketServletContainerInitializer implements ServletContain
      * @param context the context to work with
      * @return the default {@link ServerContainer} for this context
      */
-    public static ServerContainer initialize(ServletContextHandler context)
+    private static ServerContainer initialize(ServletContextHandler context)
     {
         JavaxWebSocketServerContainer serverContainer = JavaxWebSocketServerContainer.getContainer(context.getServletContext());
         if (serverContainer == null)

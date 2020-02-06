@@ -386,9 +386,9 @@ ____
 [source%nowrap,plain,linenums]
 ----
 $ cd $JETTY_BASE
-$ keytool -list -keystore etc/keystore -storetype jks -storepass '' -v
+$ keytool -v -list -keystore etc/keystore
 
-Keystore type: JKS
+Keystore type: PKCS12
 Keystore provider: SUN
 
 Your keystore contains 3 entries

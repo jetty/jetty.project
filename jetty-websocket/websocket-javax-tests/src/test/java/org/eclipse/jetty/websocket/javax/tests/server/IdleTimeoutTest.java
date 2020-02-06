@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.websocket.javax.tests.server;
 
+import java.io.IOException;
+import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
@@ -38,7 +40,9 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class IdleTimeoutTest
 {
@@ -76,7 +80,9 @@ public class IdleTimeoutTest
             // wait 1 second to allow timeout to fire off
             TimeUnit.SECONDS.sleep(1);
 
-            session.sendFrames(new Frame(OpCode.TEXT).setPayload("You shouldn't be there"));
+            IOException error = assertThrows(IOException.class,
+                () -> session.sendFrames(new Frame(OpCode.TEXT).setPayload("You shouldn't be there")));
+            assertThat(error.getCause(), instanceOf(ClosedChannelException.class));
 
             BlockingQueue<Frame> framesQueue = session.getOutputFrames();
             Frame frame = framesQueue.poll(1, TimeUnit.SECONDS);

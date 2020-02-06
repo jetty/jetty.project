@@ -27,7 +27,7 @@ import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -44,7 +44,6 @@ import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
-import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.MultiException;
@@ -54,6 +53,7 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.AttributeContainerMap;
+import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -86,6 +86,7 @@ public class Server extends HandlerWrapper implements Attributes
     private boolean _dryRun;
     private final AutoLock _dateLock = new AutoLock();
     private volatile DateField _dateField;
+    private long _stopTimeout;
 
     public Server()
     {
@@ -173,22 +174,19 @@ public class Server extends HandlerWrapper implements Attributes
         return Jetty.VERSION;
     }
 
+    public void setStopTimeout(long stopTimeout)
+    {
+        _stopTimeout = stopTimeout;
+    }
+
+    public long getStopTimeout()
+    {
+        return _stopTimeout;
+    }
+
     public boolean getStopAtShutdown()
     {
         return _stopAtShutdown;
-    }
-
-    /**
-     * Set a graceful stop time.
-     * The {@link StatisticsHandler} must be configured so that open connections can
-     * be tracked for a graceful shutdown.
-     *
-     * @see org.eclipse.jetty.util.component.ContainerLifeCycle#setStopTimeout(long)
-     */
-    @Override
-    public void setStopTimeout(long stopTimeout)
-    {
-        super.setStopTimeout(stopTimeout);
     }
 
     /**
@@ -466,21 +464,20 @@ public class Server extends HandlerWrapper implements Attributes
 
         MultiException mex = new MultiException();
 
-        try
+        if (getStopTimeout() > 0)
         {
-            // list if graceful futures
-            List<Future<Void>> futures = new ArrayList<>();
-            // First shutdown the network connectors to stop accepting new connections
-            for (Connector connector : _connectors)
+            long end = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(getStopTimeout());
+            try
             {
-                futures.add(connector.shutdown());
+                Graceful.shutdown(this).get(getStopTimeout(), TimeUnit.MILLISECONDS);
             }
-            // then shutdown all graceful handlers 
-            doShutdown(futures);
-        }
-        catch (Throwable e)
-        {
-            mex.add(e);
+            catch (Throwable e)
+            {
+                mex.add(e);
+            }
+            QueuedThreadPool qtp = getBean(QueuedThreadPool.class);
+            if (qtp != null)
+                qtp.setStopTimeout(Math.max(1000L, TimeUnit.NANOSECONDS.toMillis(end - System.nanoTime())));
         }
 
         // Now stop the connectors (this will close existing connections)
@@ -708,7 +705,7 @@ public class Server extends HandlerWrapper implements Attributes
     @Override
     public String toString()
     {
-        return String.format("%s[%s]", super.toString(), getVersion());
+        return String.format("%s[%s,sto=%d]", super.toString(), getVersion(), getStopTimeout());
     }
 
     @Override

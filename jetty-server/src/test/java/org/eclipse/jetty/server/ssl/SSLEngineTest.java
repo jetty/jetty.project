@@ -110,11 +110,10 @@ public class SSLEngineTest
     @BeforeEach
     public void startServer() throws Exception
     {
-        String keystore = MavenTestingUtils.getTestResourceFile("keystore").getAbsolutePath();
+        String keystore = MavenTestingUtils.getTestResourceFile("keystore.p12").getAbsolutePath();
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setKeyStorePath(keystore);
         sslContextFactory.setKeyStorePassword("storepwd");
-        sslContextFactory.setKeyManagerPassword("keypwd");
 
         server = new Server();
         HttpConnectionFactory http = new HttpConnectionFactory();

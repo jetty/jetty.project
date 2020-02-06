@@ -21,9 +21,9 @@ package org.eclipse.jetty.util.thread;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.Condition;
 
 import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -217,7 +217,8 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
         }
 
         int size = _size.decrementAndGet();
-        thread.offer(task);
+        if (!thread.offer(task))
+            return false;
 
         if (size == 0 && task != STOP)
             startReservedThread();
@@ -264,20 +265,25 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
 
     private class ReservedThread implements Runnable
     {
-        private final AutoLock _lock = new AutoLock();
-        private final Condition _wakeup = _lock.newCondition();
+        private final SynchronousQueue<Runnable> _task = new SynchronousQueue<>();
         private boolean _starting = true;
-        private Runnable _task = null;
 
-        public void offer(Runnable task)
+        public boolean offer(Runnable task)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("{} offer {}", this, task);
 
-            try (AutoLock lock = _lock.lock())
+            try
             {
-                _task = task;
-                _wakeup.signal();
+                _task.put(task);
+                return true;
+            }
+            catch (Throwable e)
+            {
+                LOG.ignore(e);
+                _size.getAndIncrement();
+                _stack.addFirst(this);
+                return false;
             }
         }
 
@@ -296,37 +302,14 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
                 if (!isRunning())
                     return STOP;
 
-                boolean idle = false;
-                try (AutoLock lock = _lock.lock())
+                try
                 {
-                    if (_task == null)
-                    {
-                        try
-                        {
-                            if (_idleTime == 0)
-                                _wakeup.await();
-                            else
-                                idle = !_wakeup.await(_idleTime, _idleTimeUnit);
-                        }
-                        catch (InterruptedException e)
-                        {
-                            LOG.ignore(e);
-                        }
-                    }
-                    else
-                    {
-                        Runnable task = _task;
-                        _task = null;
-
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("{} task={}", this, task);
-
+                    Runnable task = _idleTime <= 0 ? _task.take() : _task.poll(_idleTime, _idleTimeUnit);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("{} task={}", this, task);
+                    if (task != null)
                         return task;
-                    }
-                }
 
-                if (idle)
-                {
                     // Because threads are held in a stack, excess threads will be
                     // idle.  However, we cannot remove threads from the bottom of
                     // the stack, so we submit a poison pill job to stop the thread
@@ -335,6 +318,10 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
                     if (LOG.isDebugEnabled())
                         LOG.debug("{} IDLE", this);
                     tryExecute(STOP);
+                }
+                catch (InterruptedException e)
+                {
+                    LOG.ignore(e);
                 }
             }
         }

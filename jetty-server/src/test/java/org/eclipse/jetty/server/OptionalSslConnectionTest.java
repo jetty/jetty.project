@@ -50,11 +50,10 @@ public class OptionalSslConnectionTest
         serverThreads.setName("server");
         server = new Server(serverThreads);
 
-        String keystore = MavenTestingUtils.getTestResourceFile("keystore").getAbsolutePath();
+        String keystore = MavenTestingUtils.getTestResourceFile("keystore.p12").getAbsolutePath();
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setKeyStorePath(keystore);
         sslContextFactory.setKeyStorePassword("storepwd");
-        sslContextFactory.setKeyManagerPassword("keypwd");
 
         HttpConfiguration httpConfig = new HttpConfiguration();
         HttpConnectionFactory http = new HttpConnectionFactory(httpConfig);

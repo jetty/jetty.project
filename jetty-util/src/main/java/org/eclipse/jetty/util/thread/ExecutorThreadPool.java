@@ -302,7 +302,7 @@ public class ExecutorThreadPool extends ContainerLifeCycle implements ThreadPool
     @Override
     public void join() throws InterruptedException
     {
-        _executor.awaitTermination(getStopTimeout(), TimeUnit.MILLISECONDS);
+        _executor.awaitTermination(Long.MAX_VALUE, TimeUnit.MILLISECONDS);
     }
 
     @Override

@@ -1,8 +1,8 @@
 <Configure id="sslContextFactory" class="org.eclipse.jetty.util.ssl.SslContextFactory$Server">
-  <Set name="KeyStorePath"><Property name="jetty.home" default="." />/<Property name="jetty.sslContext.keyStorePath" default="keystore"/></Set>
+  <Set name="KeyStorePath"><Property name="jetty.home" default="." />/<Property name="jetty.sslContext.keyStorePath" default="keystore.p12"/></Set>
   <Set name="KeyStorePassword"><Property name="jetty.sslContext.keyStorePassword"/></Set>
   <Set name="KeyManagerPassword"><Property name="jetty.sslContext.keyManagerPassword"/></Set>
-  <Set name="TrustStorePath"><Property name="jetty.home" default="." />/<Property name="jetty.sslContext.trustStorePath" default="keystore"/></Set>
+  <Set name="TrustStorePath"><Property name="jetty.home" default="." />/<Property name="jetty.sslContext.trustStorePath" default="keystore.p12"/></Set>
   <Set name="TrustStorePassword"><Property name="jetty.sslContext.trustStorePassword"/></Set>
   <Set name="ExcludeCipherSuites">
     <Array type="String">
