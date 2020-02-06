@@ -414,7 +414,7 @@ public class XmlConfiguration
             {
                 try
                 {
-                    obj = construct(oClass, new NamedArgs(null, XmlConfiguration.getNodes(_root, "Arg")));
+                    obj = construct(oClass, new NamedArgs(null, oClass, XmlConfiguration.getNodes(_root, "Arg")));
                 }
                 catch (NoSuchMethodException x)
                 {
@@ -910,7 +910,7 @@ public class XmlConfiguration
 
             try
             {
-                Object nobj = call(oClass, name, obj, new NamedArgs(obj, aoeNode.getNodes("Arg")));
+                Object nobj = call(oClass, name, obj, new NamedArgs(obj, oClass, aoeNode.getNodes("Arg")));
                 if (id != null)
                     _configuration.getIdMap().put(id, nobj);
                 configure(nobj, node, aoeNode.getNext());
@@ -976,7 +976,7 @@ public class XmlConfiguration
             Object nobj;
             try
             {
-                nobj = construct(oClass, new NamedArgs(obj, aoeNode.getNodes("Arg")));
+                nobj = construct(oClass, new NamedArgs(obj, oClass, aoeNode.getNodes("Arg")));
             }
             catch (NoSuchMethodException e)
             {
@@ -1652,11 +1652,13 @@ public class XmlConfiguration
 
         private class NamedArgs
         {
+            final Class<?> _class;
             final List<Object> _arguments;
             final List<String> _names;
 
-            NamedArgs(Object obj, List<XmlParser.Node> args) throws Exception
+            NamedArgs(Object obj, Class<?> oClass, List<XmlParser.Node> args) throws Exception
             {
+                _class = oClass;
                 _arguments = new ArrayList<>();
                 _names = new ArrayList<>();
                 for (XmlParser.Node child : args)
@@ -1666,8 +1668,9 @@ public class XmlConfiguration
                 }
             }
 
-            NamedArgs(List<Object> arguments, List<String> names)
+            private NamedArgs(List<Object> arguments, List<String> names)
             {
+                _class = null;
                 _arguments = arguments;
                 _names = names;
             }
@@ -1675,12 +1678,31 @@ public class XmlConfiguration
             Object[] applyTo(Executable executable)
             {
                 Object[] args = matchArgsToParameters(executable);
-                if (args == null)
+                if (args == null && _class != null)
                 {
                     // Could this be an empty varargs match?
                     int count = executable.getParameterCount();
                     if (count > 0 && executable.getParameterTypes()[count - 1].isArray())
-                        args = asEmptyVarArgs(executable.getParameterTypes()[count - 1]).matchArgsToParameters(executable);
+                    {
+                        try
+                        {
+                            // Does a non varargs method exist?
+                            Class<?>[] types = Arrays.copyOf(executable.getParameterTypes(), count - 1);
+                            if (executable instanceof Constructor)
+                                _class.getConstructor(types);
+                            else
+                                _class.getMethod(((Method)executable).getName(), types);
+                        }
+                        catch (NoSuchMethodException e)
+                        {
+                            // There is not a no varArgs alternative so let's try a null varArgs match
+                            args = asEmptyVarArgs(executable.getParameterTypes()[count - 1]).matchArgsToParameters(executable);
+                        }
+                        catch (Exception e)
+                        {
+                            LOG.ignore(e);
+                        }
+                    }
                 }
                 return args;
             }
