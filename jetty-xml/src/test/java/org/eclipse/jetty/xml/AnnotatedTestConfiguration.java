@@ -41,11 +41,55 @@ public class AnnotatedTestConfiguration
     {
     }
 
+    public AnnotatedTestConfiguration(Integer test)
+    {
+        // exists to make constructor matching harder
+        throw new UnsupportedOperationException("Should not be called");
+    }
+
+    public AnnotatedTestConfiguration(Integer one, Integer two, Integer three)
+    {
+        // exists to make constructor matching harder
+        throw new UnsupportedOperationException("Should not be called");
+    }
+
     public AnnotatedTestConfiguration(@Name("first") String first, @Name("second") String second, @Name("third") String third)
     {
         this.first = first;
         this.second = second;
         this.third = third;
+    }
+
+    public AnnotatedTestConfiguration(Long one, Long two, Long three)
+    {
+        // exists to make constructor matching harder
+        throw new UnsupportedOperationException("Should not be called");
+    }
+
+    public void setAll(Integer one, Integer two, Integer three)
+    {
+        // exists to make method matching harder
+        throw new UnsupportedOperationException("Should not be called");
+    }
+
+    public void setAll(@Name("first") String first, @Name("second") String second, @Name("third") String third)
+    {
+        this.first = first;
+        this.second = second;
+        this.third = third;
+    }
+
+    public void setAll(long one, long two, long three)
+    {
+        // exists to make method matching harder
+        throw new UnsupportedOperationException("Should not be called");
+    }
+
+    public void setVarArgs(String first, String... theRest)
+    {
+        this.first = first;
+        this.second = theRest.length > 0 ? theRest[0] : null;
+        this.third = theRest.length > 1 ? theRest[1] : null;
     }
 
     public String getFirst()
