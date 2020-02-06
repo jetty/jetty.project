@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
@@ -77,6 +78,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     private static final Logger LOG = Log.getLogger(HTTP2Session.class);
 
     private final ConcurrentMap<Integer, IStream> streams = new ConcurrentHashMap<>();
+    private final AtomicBiInteger streamCount = new AtomicBiInteger(); // Hi = closed, Lo = stream count
     private final AtomicInteger localStreamIds = new AtomicInteger();
     private final AtomicInteger lastRemoteStreamId = new AtomicInteger();
     private final AtomicInteger localStreamCount = new AtomicInteger();
@@ -100,6 +102,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     private boolean connectProtocolEnabled;
     private long idleTime;
     private GoAwayFrame closeFrame;
+    private Callback.Completable closeCallback;
 
     public HTTP2Session(Scheduler scheduler, EndPoint endPoint, Generator generator, Session.Listener listener, FlowControlStrategy flowControl, int initialStreamId)
     {
@@ -439,26 +442,22 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         while (true)
         {
             CloseState current = closed.get();
-            switch (current)
+            if (current == CloseState.NOT_CLOSED)
             {
-                case NOT_CLOSED:
+                if (closed.compareAndSet(current, CloseState.REMOTELY_CLOSED))
                 {
-                    if (closed.compareAndSet(current, CloseState.REMOTELY_CLOSED))
-                    {
-                        // We received a GO_AWAY, so try to write
-                        // what's in the queue and then disconnect.
-                        closeFrame = frame;
-                        notifyClose(this, frame, new DisconnectCallback());
-                        return;
-                    }
-                    break;
-                }
-                default:
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Ignored {}, already closed", frame);
+                    // We received a GO_AWAY, so try to write
+                    // what's in the queue and then disconnect.
+                    closeFrame = frame;
+                    notifyClose(this, frame, new DisconnectCallback());
                     return;
                 }
+            }
+            else
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Ignored {}, already closed", frame);
+                return;
             }
         }
     }
@@ -537,7 +536,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
 
     protected void onConnectionFailure(int error, String reason, Callback callback)
     {
-        notifyFailure(this, new IOException(String.format("%d/%s", error, reason)), new CloseCallback(error, reason, callback));
+        notifyFailure(this, new IOException(String.format("%d/%s", error, reason)), new FailureCallback(error, reason, callback));
     }
 
     @Override
@@ -675,25 +674,53 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         while (true)
         {
             CloseState current = closed.get();
-            switch (current)
+            if (current == CloseState.NOT_CLOSED)
             {
-                case NOT_CLOSED:
-                {
-                    if (closed.compareAndSet(current, CloseState.LOCALLY_CLOSED))
-                    {
-                        closeFrame = newGoAwayFrame(CloseState.LOCALLY_CLOSED, error, reason);
-                        control(null, callback, closeFrame);
-                        return true;
-                    }
-                    break;
-                }
-                default:
+                if (closed.compareAndSet(current, CloseState.LOCALLY_CLOSED))
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Ignoring close {}/{}, already closed", error, reason);
-                    callback.succeeded();
-                    return false;
+                        LOG.debug("Closing {}/{}", error, reason);
+                    closeFrame = newGoAwayFrame(CloseState.LOCALLY_CLOSED, error, reason);
+                    control(null, callback, closeFrame);
+                    return true;
                 }
+            }
+            else
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Ignoring close {}/{}, already closed", error, reason);
+                callback.succeeded();
+                return false;
+            }
+        }
+    }
+
+    @Override
+    public CompletableFuture<Void> shutdown()
+    {
+        while (true)
+        {
+            CloseState current = closed.get();
+            if (current == CloseState.NOT_CLOSED)
+            {
+                if (closed.compareAndSet(current, CloseState.LOCALLY_CLOSED))
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Shutting down {}", this);
+                    closeFrame = newGoAwayFrame(CloseState.LOCALLY_CLOSED, ErrorCode.NO_ERROR.code, "shutdown");
+                    closeCallback = new Callback.Completable();
+                    // Only send the close frame when we can flip Hi and Lo = 0, see onStreamClosed().
+                    if (streamCount.compareAndSet(0, 1, 0, 0))
+                        control(null, closeCallback, closeFrame);
+                    return closeCallback;
+                }
+            }
+            else
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Ignoring shutdown, already closed");
+                Callback.Completable result = closeCallback;
+                return result != null ? result : CompletableFuture.completedFuture(null);
             }
         }
     }
@@ -1041,10 +1068,18 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
 
     protected void onStreamOpened(IStream stream)
     {
+        streamCount.addAndGetLo(1);
     }
 
     protected void onStreamClosed(IStream stream)
     {
+        if (streamCount.addAndGetLo(-1) == 0)
+        {
+            Callback.Completable callback = closeCallback;
+            // Only send the close frame if we can flip Hi, see shutdown().
+            if (callback != null && streamCount.compareAndSetHi(0, 1))
+                control(null, callback, closeFrame);
+        }
     }
 
     @Override
@@ -1321,8 +1356,9 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
             {
                 case HEADERS:
                 {
-                    onStreamOpened(stream);
                     HeadersFrame headersFrame = (HeadersFrame)frame;
+                    if (headersFrame.getMetaData().isRequest())
+                        onStreamOpened(stream);
                     if (stream.updateClose(headersFrame.isEndStream(), CloseState.Event.AFTER_SEND))
                         removeStream(stream);
                     break;
@@ -1598,12 +1634,12 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         }
     }
 
-    private class CloseCallback extends Callback.Nested
+    private class FailureCallback extends Callback.Nested
     {
         private final int error;
         private final String reason;
 
-        private CloseCallback(int error, String reason, Callback callback)
+        private FailureCallback(int error, String reason, Callback callback)
         {
             super(callback);
             this.error = error;
