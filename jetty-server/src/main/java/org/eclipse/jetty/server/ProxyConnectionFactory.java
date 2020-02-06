@@ -143,6 +143,8 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
             // 0     1 2       3       4 5 6
             // 98765432109876543210987654321
             // PROXY P R.R.R.R L.L.L.L R Lrn
+            private static final int CR_INDEX = 6;
+            private static final int LF_INDEX = 7;
 
             private final Connector _connector;
             private final ConnectionFactory _next;
@@ -167,7 +169,7 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                     LOG.debug("Proxy v1 onFillable current index = ", _index);
                 try
                 {
-                    while (_index < 7)
+                    while (_index < LF_INDEX)
                     {
                         // Read data
                         int fill = getEndPoint().fill(_buffer);
@@ -207,7 +209,7 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
 
                 try
                 {
-                    while (_index < 7)
+                    while (_index < LF_INDEX)
                     {
                         if (!parse())
                         {
@@ -239,7 +241,7 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
             public void onUpgradeTo(ByteBuffer prefilled)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Proxy v1 copying prefilled buffer {}", prefilled);
+                    LOG.debug("Proxy v1 copying prefilled buffer {}", BufferUtil.toDetailString(prefilled));
                 if (BufferUtil.hasContent(prefilled))
                     BufferUtil.append(_buffer, prefilled);
             }
@@ -257,14 +259,14 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                 while (_buffer.hasRemaining())
                 {
                     byte b = _buffer.get();
-                    if (_index < 6)
+                    if (_index < CR_INDEX)
                     {
                         if (b == ' ' || b == '\r')
                         {
                             _fields[_index++] = _builder.toString();
                             _builder.setLength(0);
                             if (b == '\r')
-                                _index = 6;
+                                _index = CR_INDEX;
                         }
                         else if (b < ' ')
                         {
@@ -279,7 +281,7 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                     {
                         if (b == '\n')
                         {
-                            _index = 7;
+                            _index = LF_INDEX;
                             if (LOG.isDebugEnabled())
                                 LOG.debug("Proxy v1 parsing is done");
                             return true;
@@ -443,7 +445,7 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
             public void onUpgradeTo(ByteBuffer prefilled)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Proxy v2 copying prefilled buffer {}", prefilled);
+                    LOG.debug("Proxy v2 copying prefilled buffer {}", BufferUtil.toDetailString(prefilled));
                 if (BufferUtil.hasContent(prefilled))
                     BufferUtil.append(_buffer, prefilled);
             }
