@@ -865,7 +865,8 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
                         }
                         catch (Exception e)
                         {
-                            LOG.warn("{} Problem checking if potentially expired session {} exists in db", _context.getWorkerName(), k, e);
+                            LOG.warn("{} Problem checking if potentially expired session {} exists in db", _context.getWorkerName(), k);
+                            LOG.warn(e);
                         }
                     }
                 }

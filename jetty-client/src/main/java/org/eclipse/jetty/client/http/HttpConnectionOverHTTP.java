@@ -20,12 +20,14 @@ package org.eclipse.jetty.client.http;
 
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousCloseException;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
 
+import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.client.HttpConnection;
 import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.HttpExchange;
@@ -54,10 +56,25 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements IConne
     private final Promise<Connection> promise;
     private final Delegate delegate;
     private final HttpChannelOverHTTP channel;
-    private long idleTimeout;
-
     private final LongAdder bytesIn = new LongAdder();
     private final LongAdder bytesOut = new LongAdder();
+    private long idleTimeout;
+
+    public HttpConnectionOverHTTP(EndPoint endPoint, Map<String, Object> context)
+    {
+        this(endPoint, destinationFrom(context), promiseFrom(context));
+    }
+
+    private static HttpDestination destinationFrom(Map<String, Object> context)
+    {
+        return (HttpDestination)context.get(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Promise<Connection> promiseFrom(Map<String, Object> context)
+    {
+        return (Promise<Connection>)context.get(HttpClientTransport.HTTP_CONNECTION_PROMISE_CONTEXT_KEY);
+    }
 
     public HttpConnectionOverHTTP(EndPoint endPoint, HttpDestination destination, Promise<Connection> promise)
     {

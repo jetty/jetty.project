@@ -31,11 +31,23 @@ public class Generator
 {
     public static final int MAX_CONTENT_LENGTH = 0xFF_FF;
 
-    protected final ByteBufferPool byteBufferPool;
+    private final ByteBufferPool byteBufferPool;
+    private final boolean useDirectByteBuffers;
 
-    public Generator(ByteBufferPool byteBufferPool)
+    public Generator(ByteBufferPool byteBufferPool, boolean useDirectByteBuffers)
     {
         this.byteBufferPool = byteBufferPool;
+        this.useDirectByteBuffers = useDirectByteBuffers;
+    }
+
+    ByteBufferPool getByteBufferPool()
+    {
+        return byteBufferPool;
+    }
+
+    ByteBuffer acquire(int capacity)
+    {
+        return byteBufferPool.acquire(capacity, useDirectByteBuffers);
     }
 
     protected Result generateContent(int id, ByteBuffer content, boolean recycle, boolean lastContent, Callback callback, FCGI.FrameType frameType)
@@ -47,7 +59,7 @@ public class Generator
 
         while (contentLength > 0 || lastContent)
         {
-            ByteBuffer buffer = byteBufferPool.acquire(8, false);
+            ByteBuffer buffer = acquire(8);
             BufferUtil.clearToFill(buffer);
             result = result.append(buffer, true);
 

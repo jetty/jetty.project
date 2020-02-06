@@ -107,6 +107,7 @@ public class ContinuationBodyParser extends BodyParser
     {
         ByteBuffer headerBlock = headerBlockFragments.complete();
         MetaData metaData = headerBlockParser.parse(headerBlock, headerBlock.remaining());
+        headerBlockFragments.getByteBufferPool().release(headerBlock);
         if (metaData == null)
             return true;
         if (metaData == HeaderBlockParser.SESSION_FAILURE)

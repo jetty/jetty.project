@@ -40,7 +40,12 @@ public class ClientGenerator extends Generator
 
     public ClientGenerator(ByteBufferPool byteBufferPool)
     {
-        super(byteBufferPool);
+        this(byteBufferPool, true);
+    }
+
+    public ClientGenerator(ByteBufferPool byteBufferPool, boolean useDirectByteBuffers)
+    {
+        super(byteBufferPool, useDirectByteBuffers);
     }
 
     public Result generateRequestHeaders(int request, HttpFields fields, Callback callback)
@@ -79,9 +84,9 @@ public class ClientGenerator extends Generator
 
         // One FCGI_BEGIN_REQUEST + N FCGI_PARAMS + one last FCGI_PARAMS
 
-        ByteBuffer beginRequestBuffer = byteBufferPool.acquire(16, false);
+        ByteBuffer beginRequestBuffer = acquire(16);
         BufferUtil.clearToFill(beginRequestBuffer);
-        Result result = new Result(byteBufferPool, callback);
+        Result result = new Result(getByteBufferPool(), callback);
         result = result.append(beginRequestBuffer, true);
 
         // Generate the FCGI_BEGIN_REQUEST frame
@@ -95,7 +100,7 @@ public class ClientGenerator extends Generator
         while (fieldsLength > 0)
         {
             int capacity = 8 + Math.min(maxCapacity, fieldsLength);
-            ByteBuffer buffer = byteBufferPool.acquire(capacity, true);
+            ByteBuffer buffer = acquire(capacity);
             BufferUtil.clearToFill(buffer);
             result = result.append(buffer, true);
 
@@ -132,7 +137,7 @@ public class ClientGenerator extends Generator
             BufferUtil.flipToFlush(buffer, 0);
         }
 
-        ByteBuffer lastParamsBuffer = byteBufferPool.acquire(8, false);
+        ByteBuffer lastParamsBuffer = acquire(8);
         BufferUtil.clearToFill(lastParamsBuffer);
         result = result.append(lastParamsBuffer, true);
 

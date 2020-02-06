@@ -110,7 +110,8 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     {
         HttpClient client = getHttpDestination().getHttpClient();
         ByteBufferPool bufferPool = client.getByteBufferPool();
-        return new RetainableByteBuffer(bufferPool, client.getResponseBufferSize(), true);
+        boolean direct = client.isUseInputDirectByteBuffers();
+        return new RetainableByteBuffer(bufferPool, client.getResponseBufferSize(), direct);
     }
 
     private void releaseNetworkBuffer()
@@ -129,7 +130,8 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     {
         if (networkBuffer.hasRemaining())
         {
-            ByteBuffer upgradeBuffer = BufferUtil.allocate(networkBuffer.remaining());
+            HttpClient client = getHttpDestination().getHttpClient();
+            ByteBuffer upgradeBuffer = BufferUtil.allocate(networkBuffer.remaining(), client.isUseInputDirectByteBuffers());
             BufferUtil.clearToFill(upgradeBuffer);
             BufferUtil.put(networkBuffer.getBuffer(), upgradeBuffer);
             BufferUtil.flipToFlush(upgradeBuffer, 0);

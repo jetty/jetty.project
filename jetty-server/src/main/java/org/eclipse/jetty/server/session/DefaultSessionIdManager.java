@@ -301,12 +301,13 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
             }
 
             if (LOG.isDebugEnabled())
-                LOG.debug("Checked {}, in use:", id, inUse);
+                LOG.debug("Checked {}, in use: {}", id, inUse);
             return inUse;
         }
         catch (Exception e)
         {
-            LOG.warn("Problem checking if id {} is in use", id, e);
+            LOG.warn("Problem checking if id {} is in use", id);
+            LOG.warn(e);
             return false;
         }
     }

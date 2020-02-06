@@ -42,12 +42,12 @@ public class ServerGenerator extends Generator
 
     public ServerGenerator(ByteBufferPool byteBufferPool)
     {
-        this(byteBufferPool, true);
+        this(byteBufferPool, true, true);
     }
 
-    public ServerGenerator(ByteBufferPool byteBufferPool, boolean sendStatus200)
+    public ServerGenerator(ByteBufferPool byteBufferPool, boolean useDirectByteBuffers, boolean sendStatus200)
     {
-        super(byteBufferPool);
+        super(byteBufferPool, useDirectByteBuffers);
         this.sendStatus200 = sendStatus200;
     }
 
@@ -55,7 +55,7 @@ public class ServerGenerator extends Generator
     {
         request &= 0xFF_FF;
 
-        final Charset utf8 = StandardCharsets.UTF_8;
+        Charset utf8 = StandardCharsets.UTF_8;
         List<byte[]> bytes = new ArrayList<>(fields.size() * 2);
         int length = 0;
 
@@ -88,7 +88,7 @@ public class ServerGenerator extends Generator
         // End of headers
         length += EOL.length;
 
-        final ByteBuffer buffer = byteBufferPool.acquire(length, true);
+        ByteBuffer buffer = acquire(length);
         BufferUtil.clearToFill(buffer);
 
         for (int i = 0; i < bytes.size(); i += 2)
@@ -106,7 +106,7 @@ public class ServerGenerator extends Generator
     {
         if (aborted)
         {
-            Result result = new Result(byteBufferPool, callback);
+            Result result = new Result(getByteBufferPool(), callback);
             if (lastContent)
                 result.append(generateEndRequest(request, true), true);
             else
@@ -125,7 +125,7 @@ public class ServerGenerator extends Generator
     private ByteBuffer generateEndRequest(int request, boolean aborted)
     {
         request &= 0xFF_FF;
-        ByteBuffer endRequestBuffer = byteBufferPool.acquire(8, false);
+        ByteBuffer endRequestBuffer = acquire(8);
         BufferUtil.clearToFill(endRequestBuffer);
         endRequestBuffer.putInt(0x01_03_00_00 + request);
         endRequestBuffer.putInt(0x00_08_00_00);

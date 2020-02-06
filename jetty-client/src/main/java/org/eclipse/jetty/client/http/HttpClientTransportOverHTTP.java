@@ -28,11 +28,10 @@ import org.eclipse.jetty.client.DuplexHttpDestination;
 import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.Origin;
-import org.eclipse.jetty.client.api.Connection;
+import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.ProcessorUtils;
-import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 
@@ -41,6 +40,7 @@ public class HttpClientTransportOverHTTP extends AbstractConnectorHttpClientTran
 {
     public static final Origin.Protocol HTTP11 = new Origin.Protocol(List.of("http/1.1"), false);
 
+    private final ClientConnectionFactory factory = new HttpClientConnectionFactory();
     private int headerCacheSize = 1024;
     private boolean headerCacheCaseSensitive;
 
@@ -76,18 +76,10 @@ public class HttpClientTransportOverHTTP extends AbstractConnectorHttpClientTran
     @Override
     public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
     {
-        HttpDestination destination = (HttpDestination)context.get(HTTP_DESTINATION_CONTEXT_KEY);
-        @SuppressWarnings("unchecked")
-        Promise<Connection> promise = (Promise<Connection>)context.get(HTTP_CONNECTION_PROMISE_CONTEXT_KEY);
-        var connection = newHttpConnection(endPoint, destination, promise);
+        var connection = factory.newConnection(endPoint, context);
         if (LOG.isDebugEnabled())
             LOG.debug("Created {}", connection);
-        return customize(connection, context);
-    }
-
-    protected HttpConnectionOverHTTP newHttpConnection(EndPoint endPoint, HttpDestination destination, Promise<Connection> promise)
-    {
-        return new HttpConnectionOverHTTP(endPoint, destination, promise);
+        return connection;
     }
 
     @ManagedAttribute("The maximum allowed size in bytes for an HTTP header field cache")
