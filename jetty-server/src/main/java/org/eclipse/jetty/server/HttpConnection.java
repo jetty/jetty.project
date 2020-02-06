@@ -757,19 +757,16 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
 
                     case NEED_HEADER:
                     {
-                        int size;
-                        if (_header == null)
-                        {
-                            size = Math.min(_config.getResponseHeaderSize(), _config.getOutputBufferSize());
-                        }
-                        else
-                        {
-                            if (_header.capacity() >= _config.getResponseHeaderSize())
-                                throw new BadMessageException(INTERNAL_SERVER_ERROR_500, "Response header too large");
-                            size = _config.getResponseHeaderSize();
-                            _bufferPool.release(_header);
-                        }
-                        _header = _bufferPool.acquire(size, HEADER_BUFFER_DIRECT);
+                        _header = _bufferPool.acquire(Math.min(_config.getResponseHeaderSize(), _config.getOutputBufferSize()), HEADER_BUFFER_DIRECT);
+                        continue;
+                    }
+
+                    case HEADER_OVERFLOW:
+                    {
+                        if (_header.capacity() >= _config.getResponseHeaderSize())
+                            throw new BadMessageException(INTERNAL_SERVER_ERROR_500, "Response header too large");
+                        _bufferPool.release(_header);
+                        _header = _bufferPool.acquire(_config.getResponseHeaderSize(), HEADER_BUFFER_DIRECT);
                         continue;
                     }
                     case NEED_CHUNK:
