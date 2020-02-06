@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 import org.eclipse.jetty.servlet.BaseHolder;
@@ -62,12 +63,14 @@ public class AnnotationIntrospector
      */
     public abstract static class AbstractIntrospectableAnnotationHandler implements IntrospectableAnnotationHandler
     {
-        private boolean _introspectAncestors;
+        protected boolean _introspectAncestors;
+        protected WebAppContext _context;
 
         public abstract void doHandle(Class<?> clazz);
 
-        public AbstractIntrospectableAnnotationHandler(boolean introspectAncestors)
+        public AbstractIntrospectableAnnotationHandler(boolean introspectAncestors, WebAppContext context)
         {
+            _context = Objects.requireNonNull(context);
             _introspectAncestors = introspectAncestors;
         }
 
@@ -86,11 +89,16 @@ public class AnnotationIntrospector
                 c = c.getSuperclass();
             }
         }
+        
+        public WebAppContext getContext()
+        {
+            return _context;
+        }
     }
     
     public AnnotationIntrospector(WebAppContext context)
     {
-        _context = context;
+        _context = Objects.requireNonNull(context);
     }
 
     public void registerHandler(IntrospectableAnnotationHandler handler)

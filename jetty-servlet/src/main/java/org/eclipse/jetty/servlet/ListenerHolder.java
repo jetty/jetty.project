@@ -24,6 +24,7 @@ import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.server.handler.ContextHandler.Context;
 
 /**
  * ListenerHolder
@@ -105,24 +106,21 @@ public class ListenerHolder extends BaseHolder<EventListener>
         }
     }
 
-    /**
-     * The ListenerHolder does not know about the ServletHandler at the point in
-     * time when the instance is created, so use the current ContextHandler instead.
-     */
     @Override
     protected synchronized EventListener createInstance() throws ServletException, IllegalAccessException,
         InstantiationException, NoSuchMethodException, InvocationTargetException
     {
-        ContextHandler contextHandler = ContextHandler.getCurrentContext().getContextHandler();
-        if (contextHandler == null)
-            return null;
-        
-        ServletContext context = contextHandler.getServletContext();
-        if (context == null)
-            return getHeldClass().getDeclaredConstructor().newInstance();
-        return context.createListener(getHeldClass());
-    }
 
+        EventListener listener = super.createInstance();
+        if (listener == null)
+        {
+            ServletContext ctx = getServletContext();
+            if (ctx != null)
+                listener = ctx.createListener(getHeldClass());
+        }
+        return listener;
+    }
+    
     @Override
     public void doStop() throws Exception
     {

@@ -34,6 +34,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.EmptyResource;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.xml.XmlParser;
 
 /**
  * MetaData
@@ -194,15 +195,14 @@ public class MetaData
     /**
      * Set the web-default.xml.
      * 
-     * @param webDefaults the Resource for web-default.xml
+     * @param descriptor the web-default.xml
      * @throws Exception
      */
-    public void setDefaultsDescriptor(Resource webDefaults)
+    public void setDefaultsDescriptor(DefaultsDescriptor descriptor)
         throws Exception
     {
-        _webDefaultsRoot = new DefaultsDescriptor(webDefaults);
-        _webDefaultsRoot.setValidating(isValidateXml());
-        _webDefaultsRoot.parse();
+        _webDefaultsRoot = descriptor;
+        _webDefaultsRoot.parse(WebDescriptor.getParser(isValidateXml()));
         if (_webDefaultsRoot.isOrdered())
         {
             Ordering ordering = getOrdering();
@@ -223,12 +223,15 @@ public class MetaData
         }
     }
 
-    public void setWebDescriptor(Resource webXml)
+    /**
+     * @param descriptor the web.xml descriptor
+     * @throws Exception
+     */
+    public void setWebDescriptor(WebDescriptor descriptor)
         throws Exception
     {
-        _webXmlRoot = new WebDescriptor(webXml);
-        _webXmlRoot.setValidating(isValidateXml());
-        _webXmlRoot.parse();
+        _webXmlRoot = descriptor;
+        _webXmlRoot.parse(WebDescriptor.getParser(isValidateXml()));
         _metaDataComplete = WebDescriptor.isMetaDataComplete(_webXmlRoot);
 
         if (_webXmlRoot.isOrdered())
@@ -254,17 +257,15 @@ public class MetaData
     /**
      * Add a override-web.xml descriptor.
      * 
-     * @param override the override-web.xml resource
+     * @param override the override-web.xml
      * @throws Exception
      */
-    public void addOverrideDescriptor(Resource override)
+    public void addOverrideDescriptor(OverrideDescriptor descriptor)
         throws Exception
     {
-        OverrideDescriptor webOverrideRoot = new OverrideDescriptor(override);
-        webOverrideRoot.setValidating(false);
-        webOverrideRoot.parse();
+        descriptor.parse(WebDescriptor.getParser(isValidateXml()));
 
-        switch (webOverrideRoot.getMetaDataComplete())
+        switch (descriptor.getMetaDataComplete())
         {
             case True:
                 _metaDataComplete = true;
@@ -276,14 +277,14 @@ public class MetaData
                 break;
         }
 
-        if (webOverrideRoot.isOrdered())
+        if (descriptor.isOrdered())
         {
             Ordering ordering = getOrdering();
 
             if (ordering == null)
                 ordering = new AbsoluteOrdering(this);
 
-            List<String> order = webOverrideRoot.getOrdering();
+            List<String> order = descriptor.getOrdering();
             for (String s : order)
             {
                 if (s.equalsIgnoreCase("others"))
@@ -295,32 +296,29 @@ public class MetaData
             //set or reset the ordering to cause the webinf jar ordering to be recomputed
             setOrdering(ordering);
         }
-        _webOverrideRoots.add(webOverrideRoot);
+        _webOverrideRoots.add(descriptor);
     }
 
     /**
      * Add a web-fragment.xml, and the jar it is contained in.
      *
      * @param jarResource the jar of the fragment
-     * @param xmlResource web-fragment.xml file in the jar as a Resource
+     * @param descriptor web-fragment.xml
      * @throws Exception if unable to add fragment
      */
-    public void addFragmentDescriptor(Resource jarResource, Resource xmlResource)
+    public void addFragmentDescriptor(Resource jarResource, FragmentDescriptor descriptor)
         throws Exception
     {
         if (_metaDataComplete)
             return; //do not process anything else if web.xml/web-override.xml set metadata-complete
 
         Objects.requireNonNull(jarResource);
-        Objects.requireNonNull(xmlResource);
+        Objects.requireNonNull(descriptor);
         
         //Metadata-complete is not set, or there is no web.xml
-        FragmentDescriptor descriptor = new FragmentDescriptor(xmlResource);
         _webFragmentResourceMap.put(jarResource, descriptor);
         _webFragmentRoots.add(descriptor);
-
-        descriptor.setValidating(isValidateXml());
-        descriptor.parse();
+        descriptor.parse(WebDescriptor.getParser(isValidateXml()));
 
         if (descriptor.getName() != null)
         {

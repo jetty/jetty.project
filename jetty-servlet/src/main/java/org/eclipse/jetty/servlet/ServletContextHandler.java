@@ -1322,13 +1322,13 @@ public class ServletContextHandler extends ContextHandler
             try
             {
                 //set a thread local
-                _objFactory.associateInfo(holder);
+                DecoratedObjectFactory.associateInfo(holder);
                 return createInstance(holder.getHeldClass());
             }
             finally
             {
                 //unset the thread local
-                _objFactory.disassociateInfo();
+                DecoratedObjectFactory.disassociateInfo();
             }
         }
 

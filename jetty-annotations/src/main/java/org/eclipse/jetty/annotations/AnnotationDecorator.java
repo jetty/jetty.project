@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.annotations;
 
+import java.util.Objects;
+
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.Decorator;
 import org.eclipse.jetty.webapp.WebAppContext;
@@ -32,21 +34,21 @@ public class AnnotationDecorator implements Decorator
 
     public AnnotationDecorator(WebAppContext context)
     {
-        _context = context;
+        _context = Objects.requireNonNull(context);
         _introspector = new AnnotationIntrospector(_context);
-        registerHandlers(_context);
+        registerHandlers();
     }
 
-    private void registerHandlers(WebAppContext context)
+    private void registerHandlers()
     {
-        _introspector.registerHandler(new ResourceAnnotationHandler(context));
-        _introspector.registerHandler(new ResourcesAnnotationHandler(context));
-        _introspector.registerHandler(new RunAsAnnotationHandler(context));
-        _introspector.registerHandler(new PostConstructAnnotationHandler(context));
-        _introspector.registerHandler(new PreDestroyAnnotationHandler(context));
-        _introspector.registerHandler(new DeclareRolesAnnotationHandler(context));
-        _introspector.registerHandler(new MultiPartConfigAnnotationHandler(context));
-        _introspector.registerHandler(new ServletSecurityAnnotationHandler(context));
+        _introspector.registerHandler(new ResourceAnnotationHandler(_context));
+        _introspector.registerHandler(new ResourcesAnnotationHandler(_context));
+        _introspector.registerHandler(new RunAsAnnotationHandler(_context));
+        _introspector.registerHandler(new PostConstructAnnotationHandler(_context));
+        _introspector.registerHandler(new PreDestroyAnnotationHandler(_context));
+        _introspector.registerHandler(new DeclareRolesAnnotationHandler(_context));
+        _introspector.registerHandler(new MultiPartConfigAnnotationHandler(_context));
+        _introspector.registerHandler(new ServletSecurityAnnotationHandler(_context));
     }
 
     /**

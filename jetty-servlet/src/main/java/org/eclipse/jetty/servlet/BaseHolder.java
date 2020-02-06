@@ -26,6 +26,7 @@ import javax.servlet.ServletException;
 import javax.servlet.UnavailableException;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.server.handler.ContextHandler.Context;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
@@ -191,7 +192,7 @@ public abstract class BaseHolder<T> extends AbstractLifeCycle implements Dumpabl
 
             if (ServletContextHandler.Context.class.isAssignableFrom(ctx.getClass()))
                 return ((ServletContextHandler.Context)ctx).createInstance(this);
-
+            
             return null;
         }
         catch (ServletException ex)
@@ -211,13 +212,23 @@ public abstract class BaseHolder<T> extends AbstractLifeCycle implements Dumpabl
 
     public ServletContext getServletContext()
     {
+        ServletContext scontext = null;
+
         //try the ServletHandler first
-        if (_servletHandler != null)
-            return _servletHandler.getServletContext();
+        if (getServletHandler() != null)
+            scontext = getServletHandler().getServletContext();
+
+        if (scontext != null)
+            return scontext;
+
         //try the ContextHandler next
-        ContextHandler contextHandler = ContextHandler.getCurrentContext().getContextHandler();
-        if (contextHandler != null)
-            return contextHandler.getServletContext();
+        Context ctx = ContextHandler.getCurrentContext();
+        if (ctx != null)
+        {
+            ContextHandler contextHandler = ctx.getContextHandler();
+            if (contextHandler != null)
+                return contextHandler.getServletContext();
+        }
         return null;
     }
 

@@ -664,7 +664,7 @@ public class OrderingTest
         TestResource jar4 = new TestResource("D");
         resources.add(jar4);
         TestResource r4 = new TestResource("D/web-fragment.xml");
-        FragmentDescriptor f4 = new FragmentDescriptor((Resource)null);
+        FragmentDescriptor f4 = new FragmentDescriptor(r4);
         f4._name = "D";
         metaData._webFragmentNameMap.put(f4._name, f4);
         metaData._webFragmentResourceMap.put(jar4, f4);
@@ -672,7 +672,7 @@ public class OrderingTest
         TestResource jar5 = new TestResource("E");
         resources.add(jar5);
         TestResource r5 = new TestResource("E/web-fragment.xml");
-        FragmentDescriptor f5 = new FragmentDescriptor((Resource)null);
+        FragmentDescriptor f5 = new FragmentDescriptor(r5);
         f5._name = "E";
         metaData._webFragmentNameMap.put(f5._name, f5);
         metaData._webFragmentResourceMap.put(jar5, f5);
@@ -680,7 +680,7 @@ public class OrderingTest
         TestResource jar6 = new TestResource("plain");
         resources.add(jar6);
         TestResource r6 = new TestResource("plain/web-fragment.xml");
-        FragmentDescriptor f6 = new FragmentDescriptor((Resource)null);
+        FragmentDescriptor f6 = new FragmentDescriptor(r6);
         f6._name = FragmentDescriptor.NAMELESS + "1";
         metaData._webFragmentNameMap.put(f6._name, f6);
         metaData._webFragmentResourceMap.put(jar6, f6);
@@ -936,7 +936,7 @@ public class OrderingTest
         TestResource jar4 = new TestResource("D");
         resources.add(jar4);
         TestResource r4 = new TestResource("D/web-fragment.xml");
-        FragmentDescriptor f4 = new FragmentDescriptor((Resource)null);
+        FragmentDescriptor f4 = new FragmentDescriptor(r4);
         f4._name = "D";
         metaData._webFragmentNameMap.put(f4._name, f4);
         metaData._webFragmentResourceMap.put(jar4, f4);
@@ -944,7 +944,7 @@ public class OrderingTest
         TestResource jar5 = new TestResource("E");
         resources.add(jar5);
         TestResource r5 = new TestResource("E/web-fragment.xml");
-        FragmentDescriptor f5 = new FragmentDescriptor((Resource)null);
+        FragmentDescriptor f5 = new FragmentDescriptor(r5);
         f5._name = "E";
         metaData._webFragmentNameMap.put(f5._name, f5);
         metaData._webFragmentResourceMap.put(jar5, f5);
@@ -952,7 +952,7 @@ public class OrderingTest
         TestResource jar6 = new TestResource("plain");
         resources.add(jar6);
         TestResource r6 = new TestResource("plain/web-fragment.xml");
-        FragmentDescriptor f6 = new FragmentDescriptor((Resource)null);
+        FragmentDescriptor f6 = new FragmentDescriptor(r6);
         f6._name = FragmentDescriptor.NAMELESS + "1";
         metaData._webFragmentNameMap.put(f6._name, f6);
         metaData._webFragmentResourceMap.put(jar6, f6);

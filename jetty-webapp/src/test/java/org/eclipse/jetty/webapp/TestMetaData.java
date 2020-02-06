@@ -93,7 +93,7 @@ public class TestMetaData
     {
         wac.getMetaData().addWebInfResource(fragResource);
         wac.getMetaData().addWebInfResource(nonFragResource);
-        wac.getMetaData().addFragmentDescriptor(fragResource, webfragxml);
+        wac.getMetaData().addFragmentDescriptor(fragResource, new FragmentDescriptor(webfragxml));
         assertThrows(NullPointerException.class, () ->
         {
             wac.getMetaData().addFragmentDescriptor(nonFragResource, null);
@@ -105,11 +105,31 @@ public class TestMetaData
     }
     
     @Test
-    public void testGetResourceForFragmentName() throws Exception
+    public void testGetFragmentDescriptorByName() throws Exception
     {
         wac.getMetaData().addWebInfResource(fragResource);
         wac.getMetaData().addWebInfResource(nonFragResource);
-        wac.getMetaData().addFragmentDescriptor(fragResource, webfragxml);
+        FragmentDescriptor fragDescriptor = new FragmentDescriptor(webfragxml);
+        wac.getMetaData().addFragmentDescriptor(fragResource, fragDescriptor);
+        assertNotNull(wac.getMetaData().getFragmentDescriptor(fragDescriptor.getName()));
+    }
+    
+    @Test
+    public void testGetFragmentDescriptorByLocation() throws Exception
+    {
+        wac.getMetaData().addWebInfResource(fragResource);
+        wac.getMetaData().addWebInfResource(nonFragResource);
+        FragmentDescriptor fragDescriptor = new FragmentDescriptor(webfragxml);
+        wac.getMetaData().addFragmentDescriptor(fragResource, fragDescriptor);
+        assertNotNull(wac.getMetaData().getFragmentDescriptor(webfragxml));
+    }
+    
+    @Test
+    public void testGetJarForFragmentName() throws Exception
+    {
+        wac.getMetaData().addWebInfResource(fragResource);
+        wac.getMetaData().addWebInfResource(nonFragResource);
+        wac.getMetaData().addFragmentDescriptor(fragResource, new FragmentDescriptor(webfragxml));
         FragmentDescriptor descriptor = wac.getMetaData().getFragmentDescriptorForJar(fragResource);
         assertNotNull(descriptor);
         
@@ -125,7 +145,7 @@ public class TestMetaData
     {
         wac.getMetaData().addWebInfResource(fragResource);
         wac.getMetaData().addWebInfResource(nonFragResource);
-        wac.getMetaData().addFragmentDescriptor(fragResource, webfragxml);
+        wac.getMetaData().addFragmentDescriptor(fragResource, new FragmentDescriptor(webfragxml));
         wac.getMetaData().addContainerResource(containerDir);
         wac.getMetaData().setWebInfClassesResources(Collections.singletonList(webInfClassesDir));
 
@@ -166,7 +186,7 @@ public class TestMetaData
     {
         wac.getMetaData().addWebInfResource(fragResource);
         wac.getMetaData().addWebInfResource(nonFragResource);
-        wac.getMetaData().addFragmentDescriptor(fragResource, webfragxml);
+        wac.getMetaData().addFragmentDescriptor(fragResource, new FragmentDescriptor(webfragxml));
         wac.getMetaData().addContainerResource(containerDir);
         wac.getMetaData().setWebInfClassesResources(Collections.singletonList(webInfClassesDir));
         

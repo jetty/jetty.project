@@ -36,6 +36,7 @@ import org.eclipse.jetty.webapp.AbstractConfiguration;
 import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.webapp.StandardDescriptorProcessor;
 import org.eclipse.jetty.webapp.WebAppContext;
+import org.eclipse.jetty.webapp.WebDescriptor;
 import org.eclipse.jetty.webapp.WebInfConfiguration;
 import org.eclipse.jetty.webapp.WebXmlConfiguration;
 
@@ -211,7 +212,7 @@ public class QuickStartConfiguration extends AbstractConfiguration
         context.setConfigurations(context.getConfigurations().stream()
             .filter(c -> !__replacedConfigurations.contains(c.replaces()) && !__replacedConfigurations.contains(c.getClass()))
             .collect(Collectors.toList()).toArray(new Configuration[]{}));
-        context.getMetaData().setWebDescriptor((Resource)context.getAttribute(QUICKSTART_WEB_XML));
+        context.getMetaData().setWebDescriptor(new WebDescriptor((Resource)context.getAttribute(QUICKSTART_WEB_XML)));
         context.getServletContext().setEffectiveMajorVersion(context.getMetaData().getWebDescriptor().getMajorVersion());
         context.getServletContext().setEffectiveMinorVersion(context.getMetaData().getWebDescriptor().getMinorVersion());
     }

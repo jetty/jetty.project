@@ -39,15 +39,14 @@ public class WebDescriptor extends Descriptor
 {
     private static final Logger LOG = Log.getLogger(WebDescriptor.class);
 
-    protected static XmlParser _nonValidatingStaticParser;
+    public static XmlParser __nonValidatingStaticParser = newParser(false);
     protected MetaData.Complete _metaDataComplete;
     protected int _majorVersion = 4; //default to container version
     protected int _minorVersion = 0;
-    protected ArrayList<String> _classNames = new ArrayList<String>();
+    protected ArrayList<String> _classNames = new ArrayList<>();
     protected boolean _distributable;
-
     protected boolean _isOrdered = false;
-    protected List<String> _ordering = new ArrayList<String>();
+    protected List<String> _ordering = new ArrayList<>();
      
     /**
      * Check if the descriptor is metadata-complete.
@@ -64,13 +63,26 @@ public class WebDescriptor extends Descriptor
     }
 
     /**
+     * Get a parser for parsing web descriptor content.
+     * 
+     * @param validating true if the parser should validate syntax, false otherwise
+     * @return an XmlParser for web descriptors
+     */
+    public static XmlParser getParser(boolean validating)
+    {
+        if (!validating)
+            return __nonValidatingStaticParser;
+        else
+            return newParser(true);
+    }
+    
+    /**
      * Create a new parser for parsing web descriptors.
      * 
      * @param validating if true, the parser will validate syntax
      * @return an XmlParser
-     * @throws ClassNotFoundException
      */
-    public static XmlParser newParser(boolean validating) throws ClassNotFoundException
+    public static XmlParser newParser(boolean validating)
     {
         XmlParser xmlParser = new XmlParser(validating)
         {
@@ -222,29 +234,15 @@ public class WebDescriptor extends Descriptor
     {
         super(xml);
     }
-
-    @Override
-    public XmlParser ensureParser() throws ClassNotFoundException
-    {
-        synchronized (WebDescriptor.class)
-        {
-            if (_nonValidatingStaticParser == null)
-                _nonValidatingStaticParser = newParser(false);
-        }
-
-        if (!isValidating())
-            return _nonValidatingStaticParser;
-        else
-            return newParser(true);
-    }
     
     @Override
-    public void parse()
+    public void parse(XmlParser parser)
         throws Exception
     {
-        super.parse();
+        super.parse(parser);
         processVersion();
         processOrdering();
+        processDistributable();
     }
 
     public MetaData.Complete getMetaDataComplete()
@@ -329,6 +327,14 @@ public class WebDescriptor extends Descriptor
                 _ordering.add(node.toString(false, true));
         }
     }
+    
+    public void processDistributable()
+    {
+        XmlParser.Node distributable = _root.get("distributable");
+        if (distributable == null)
+            return; //no <distributable> element
+        _distributable = true;
+    }
 
     public void addClassName(String className)
     {
@@ -341,25 +347,9 @@ public class WebDescriptor extends Descriptor
         return _classNames;
     }
 
-    public void setDistributable(boolean distributable)
-    {
-        _distributable = distributable;
-    }
-
     public boolean isDistributable()
     {
         return _distributable;
-    }
-
-    @Override
-    public void setValidating(boolean validating)
-    {
-        _validating = validating;
-    }
-
-    public boolean isValidating()
-    {
-        return _validating;
     }
 
     public boolean isOrdered()
