@@ -64,6 +64,7 @@ public class WebSocketCoreSession implements IncomingFrames, CoreSession, Dumpab
     private static final Logger LOG = Log.getLogger(WebSocketCoreSession.class);
     private static final CloseStatus NO_CODE = new CloseStatus(CloseStatus.NO_CODE);
 
+    private final WebSocketComponents components;
     private final Behavior behavior;
     private final WebSocketSessionState sessionState = new WebSocketSessionState();
     private final FrameHandler handler;
@@ -82,8 +83,9 @@ public class WebSocketCoreSession implements IncomingFrames, CoreSession, Dumpab
     private Duration writeTimeout = WebSocketConstants.DEFAULT_WRITE_TIMEOUT;
     private final ContextHandler contextHandler;
 
-    public WebSocketCoreSession(FrameHandler handler, Behavior behavior, Negotiated negotiated)
+    public WebSocketCoreSession(FrameHandler handler, Behavior behavior, Negotiated negotiated, WebSocketComponents components)
     {
+        this.components = components;
         this.handler = handler;
         this.behavior = behavior;
         this.negotiated = negotiated;
@@ -798,7 +800,7 @@ public class WebSocketCoreSession implements IncomingFrames, CoreSession, Dumpab
     @Override
     public WebSocketComponents getWebSocketComponents()
     {
-        return null;
+        return components;
     }
 
     @Override
