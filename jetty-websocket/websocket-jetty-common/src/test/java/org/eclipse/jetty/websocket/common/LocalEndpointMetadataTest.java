@@ -34,6 +34,8 @@ import org.eclipse.jetty.websocket.common.endpoints.annotated.MyStatelessEchoSoc
 import org.eclipse.jetty.websocket.common.endpoints.annotated.NoopSocket;
 import org.eclipse.jetty.websocket.common.endpoints.listeners.ListenerBasicSocket;
 import org.eclipse.jetty.websocket.common.endpoints.listeners.ListenerFrameSocket;
+import org.eclipse.jetty.websocket.util.DuplicateAnnotationException;
+import org.eclipse.jetty.websocket.util.InvalidSignatureException;
 import org.eclipse.jetty.websocket.util.messages.ByteArrayMessageSink;
 import org.eclipse.jetty.websocket.util.messages.InputStreamMessageSink;
 import org.eclipse.jetty.websocket.util.messages.ReaderMessageSink;
@@ -94,7 +96,7 @@ public class LocalEndpointMetadataTest
     public void testAnnotatedBadDuplicateFrameSocket() throws Exception
     {
         // Should toss exception
-        Exception e = assertThrows(InvalidWebSocketException.class, () -> createMetadata(BadDuplicateFrameSocket.class));
+        Exception e = assertThrows(DuplicateAnnotationException.class, () -> createMetadata(BadDuplicateFrameSocket.class));
         assertThat(e.getMessage(), containsString("Duplicate @OnWebSocketFrame"));
     }
 
@@ -105,7 +107,7 @@ public class LocalEndpointMetadataTest
     public void testAnnotatedBadSignatureNonVoidReturn() throws Exception
     {
         // Should toss exception
-        Exception e = assertThrows(InvalidWebSocketException.class, () -> createMetadata(BadBinarySignatureSocket.class));
+        Exception e = assertThrows(InvalidSignatureException.class, () -> createMetadata(BadBinarySignatureSocket.class));
         assertThat(e.getMessage(), containsString("must be void"));
     }
 
@@ -116,7 +118,7 @@ public class LocalEndpointMetadataTest
     public void testAnnotatedBadSignatureStatic() throws Exception
     {
         // Should toss exception
-        Exception e = assertThrows(InvalidWebSocketException.class, () -> createMetadata(BadTextSignatureSocket.class));
+        Exception e = assertThrows(InvalidSignatureException.class, () -> createMetadata(BadTextSignatureSocket.class));
         assertThat(e.getMessage(), containsString("must not be static"));
     }
 

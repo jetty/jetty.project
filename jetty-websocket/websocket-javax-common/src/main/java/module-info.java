@@ -27,5 +27,5 @@ module org.eclipse.jetty.websocket.javax.common
     requires transitive org.eclipse.jetty.http;
     requires transitive org.eclipse.jetty.io;
     requires transitive org.eclipse.jetty.websocket.core;
-    requires transitive org.eclipse.jetty.websocket.common;
+    requires transitive org.eclipse.jetty.websocket.util;
 }

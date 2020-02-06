@@ -16,7 +16,7 @@
 // ========================================================================
 //
 
-module org.eclipse.jetty.websocket.common
+module org.eclipse.jetty.websocket.util
 {
     exports org.eclipse.jetty.websocket.util;
     exports org.eclipse.jetty.websocket.util.messages;
