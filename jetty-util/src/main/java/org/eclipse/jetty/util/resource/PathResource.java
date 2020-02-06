@@ -462,8 +462,18 @@ public class PathResource extends Resource
     @Override
     public boolean isContainedIn(Resource r) throws MalformedURLException
     {
-        // not applicable for FileSystem / path
-        return false;
+        try
+        {
+            PathResource pr = PathResource.class.cast(r);
+            if (path.startsWith(pr.getPath()))
+                return true;
+
+            return false;
+        }
+        catch (ClassCastException e)
+        {
+            return false;
+        }
     }
 
     @Override

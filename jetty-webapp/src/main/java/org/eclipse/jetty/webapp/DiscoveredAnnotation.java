@@ -89,4 +89,10 @@ public abstract class DiscoveredAnnotation
             LOG.warn(e);
         }
     }
+    
+    @Override
+    public String toString()
+    {
+        return getClass().getName() + "[" + getClassName() + "," + getResource() + "]";
+    }
 }

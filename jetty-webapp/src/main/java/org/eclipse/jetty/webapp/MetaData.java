@@ -49,20 +49,20 @@ public class MetaData
     public static final String ORDERED_LIBS = "javax.servlet.context.orderedLibs";
     public static final Resource NON_FRAG_RESOURCE = EmptyResource.INSTANCE;
 
-    protected Map<String, OriginInfo> _origins = new HashMap<String, OriginInfo>();
+    protected Map<String, OriginInfo> _origins = new HashMap<>();
     protected WebDescriptor _webDefaultsRoot;
     protected WebDescriptor _webXmlRoot;
-    protected final List<WebDescriptor> _webOverrideRoots = new ArrayList<WebDescriptor>();
+    protected final List<WebDescriptor> _webOverrideRoots = new ArrayList<>();
     protected boolean _metaDataComplete;
-    protected final List<DescriptorProcessor> _descriptorProcessors = new ArrayList<DescriptorProcessor>();
-    protected final List<FragmentDescriptor> _webFragmentRoots = new ArrayList<FragmentDescriptor>();
-    protected final Map<String, FragmentDescriptor> _webFragmentNameMap = new HashMap<String, FragmentDescriptor>();
-    protected final Map<Resource, FragmentDescriptor> _webFragmentResourceMap = new HashMap<Resource, FragmentDescriptor>();
-    protected final Map<Resource, List<DiscoveredAnnotation>> _annotations = new HashMap<Resource, List<DiscoveredAnnotation>>();
-    protected final List<Resource> _webInfClasses = new ArrayList<Resource>();
-    protected final List<Resource> _webInfJars = new ArrayList<Resource>();
-    protected final List<Resource> _orderedContainerResources = new ArrayList<Resource>();
-    protected final List<Resource> _orderedWebInfResources = new ArrayList<Resource>();
+    protected final List<DescriptorProcessor> _descriptorProcessors = new ArrayList<>();
+    protected final List<FragmentDescriptor> _webFragmentRoots = new ArrayList<>();
+    protected final Map<String, FragmentDescriptor> _webFragmentNameMap = new HashMap<>();
+    protected final Map<Resource, FragmentDescriptor> _webFragmentResourceMap = new HashMap<>();
+    protected final Map<Resource, List<DiscoveredAnnotation>> _annotations = new HashMap<>();
+    protected final List<Resource> _webInfClasses = new ArrayList<>();
+    protected final List<Resource> _webInfJars = new ArrayList<>();
+    protected final List<Resource> _orderedContainerResources = new ArrayList<>();
+    protected final List<Resource> _orderedWebInfResources = new ArrayList<>();
     protected Ordering _ordering;//can be set to RelativeOrdering by web-default.xml, web.xml, web-override.xml
     protected boolean _allowDuplicateFragmentNames = false;
     protected boolean _validateXml = false;
@@ -378,6 +378,14 @@ public class MetaData
         Resource resource = annotation.getResource();
         if (resource == null)
             resource = EmptyResource.INSTANCE;
+        else
+        {
+            Resource enclosingResource = getEnclosingResource(resource);
+            if (enclosingResource == null)
+                resource = EmptyResource.INSTANCE;
+            else
+                resource = enclosingResource;
+        }
 
         List<DiscoveredAnnotation> list = _annotations.get(resource);
         if (list == null)
@@ -385,7 +393,45 @@ public class MetaData
             list = new ArrayList<>();
             _annotations.put(resource, list);
         }
+
         list.add(annotation);
+    }
+
+    private Resource getEnclosingResource(Resource resource)
+    {
+        if (resource == null)
+            return null;
+        Resource enclosingResource = null;
+        try
+        {
+            //check if any of the web-inf classes dirs is a parent 
+            for (Resource r : _webInfClasses)
+            {
+                if (Resource.isContainedIn(resource, r))
+                {
+                    enclosingResource = r;
+                    break;
+                }
+            }
+
+            if (enclosingResource == null)
+            {
+                //check if any of the web-inf jars is a parent
+                for (Resource r : _webInfJars)
+                {
+                    if (Resource.isContainedIn(resource, r))
+                    {
+                        enclosingResource = r;
+                        break;
+                    }
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            LOG.warn(e);
+        }
+        return enclosingResource;
     }
 
     public void addDescriptorProcessor(DescriptorProcessor p)
