@@ -17,6 +17,15 @@
   <build>
     <plugins>
       <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <!-- module org.eclipse.jetty.websocket.javax.common does not open org.eclipse.jetty.websocket.javax.common.util to module org.eclipse.jetty.websocket.util -->
+          <argLine>
+            @{argLine} ${jetty.surefire.argLine} --add-reads org.eclipse.jetty.websocket.util=org.eclipse.jetty.websocket.javax.common --add-opens org.eclipse.jetty.websocket.javax.common/org.eclipse.jetty.websocket.javax.common.util=org.eclipse.jetty.websocket.util
+          </argLine>
+        </configuration>
+      </plugin>
+      <plugin>
         <groupId>org.apache.felix</groupId>
         <artifactId>maven-bundle-plugin</artifactId>
         <extensions>true</extensions>
