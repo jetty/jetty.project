@@ -720,6 +720,8 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                 if (LOG.isDebugEnabled())
                     LOG.debug("Ignoring shutdown, already closed");
                 Callback.Completable result = closeCallback;
+                // Result may be null if the shutdown is in progress,
+                // don't wait and return a completed CompletableFuture.
                 return result != null ? result : CompletableFuture.completedFuture(null);
             }
         }
@@ -1077,7 +1079,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         {
             Callback.Completable callback = closeCallback;
             // Only send the close frame if we can flip Hi, see shutdown().
-            if (callback != null && streamCount.compareAndSetHi(0, 1))
+            if (callback != null && streamCount.compareAndSet(0, 1, 0, 0))
                 control(null, callback, closeFrame);
         }
     }

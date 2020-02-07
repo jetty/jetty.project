@@ -156,6 +156,8 @@ public interface ISession extends Session
     /**
      * <p>Gracefully closes the session, returning a {@code CompletableFuture} that
      * is completed when all the streams currently being processed are completed.</p>
+     * <p>Implementation is idempotent, i.e. calling this method a second time
+     * or concurrently results in a no-operation.</p>
      *
      * @return a {@code CompletableFuture} that is completed when all the streams are completed
      */
