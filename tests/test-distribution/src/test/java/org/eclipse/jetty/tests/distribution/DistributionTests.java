@@ -452,9 +452,7 @@ public class DistributionTests extends AbstractDistributionTest
                 assertEquals(HttpStatus.OK_200, response.getStatus());
                 assertThat(response.getContentAsString(), containsString("Hello"));
                 assertThat(response.getContentAsString(), not(containsString("<%")));
-
             }
         }
     }
-
 }
