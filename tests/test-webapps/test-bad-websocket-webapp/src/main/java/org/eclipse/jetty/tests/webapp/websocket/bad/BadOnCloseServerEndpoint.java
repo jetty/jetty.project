@@ -16,31 +16,31 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.tests.webapp.websocket;
+package org.eclipse.jetty.tests.webapp.websocket.bad;
 
 import java.io.IOException;
+import javax.websocket.OnClose;
 import javax.websocket.OnError;
 import javax.websocket.OnMessage;
-import javax.websocket.OnOpen;
 import javax.websocket.Session;
 import javax.websocket.server.PathParam;
 import javax.websocket.server.ServerEndpoint;
 
-@ServerEndpoint("/badonopen/{arg}")
-public class BadOnOpenServerEndpoint
+@ServerEndpoint("/badonclose/{arg}")
+public class BadOnCloseServerEndpoint
 {
-    private static String open = "";
+    private static String close = "";
 
     @OnMessage
     public String echo(String echo)
     {
-        return open + echo;
+        return close + echo;
     }
 
-    @OnOpen
-    public void onOpen(Session session, @PathParam("arg") StringSequence sb)
+    @OnClose
+    public void onClose(Session session, @PathParam("arg") StringSequence sb)
     {
-        open = sb.toString();
+        close = sb.toString();
     }
 
     @OnError

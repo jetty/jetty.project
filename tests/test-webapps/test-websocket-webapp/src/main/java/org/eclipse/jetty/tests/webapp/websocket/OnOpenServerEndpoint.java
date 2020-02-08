@@ -19,15 +19,20 @@
 package org.eclipse.jetty.tests.webapp.websocket;
 
 import java.io.IOException;
+
 import javax.websocket.OnError;
 import javax.websocket.OnMessage;
 import javax.websocket.OnOpen;
 import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
 
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+
 @ServerEndpoint("/onopen/{arg}")
 public class OnOpenServerEndpoint
 {
+    private static final Logger LOGGER = Log.getLogger(OnOpenServerEndpoint.class);
     private static String open = "";
 
     @OnMessage
@@ -39,7 +44,7 @@ public class OnOpenServerEndpoint
     @OnOpen
     public void onOpen(Session session)
     {
-        //
+        LOGGER.info("Session opened");
     }
 
     @OnError

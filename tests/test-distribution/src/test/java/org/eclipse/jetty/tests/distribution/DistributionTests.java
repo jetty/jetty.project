@@ -427,7 +427,7 @@ public class DistributionTests extends AbstractDistributionTest
             assertTrue(run1.awaitFor(5, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
 
-            File war = distribution.resolveArtifact("org.eclipse.jetty.tests:test-websocket-webapp:war:" + jettyVersion);
+            File war = distribution.resolveArtifact("org.eclipse.jetty.tests:test-bad-websocket-webapp:war:" + jettyVersion);
             distribution.installWarFile(war, "test1");
             distribution.installWarFile(war, "test2");
 

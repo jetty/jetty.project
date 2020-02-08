@@ -16,7 +16,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.tests.webapp.websocket;
+package org.eclipse.jetty.tests.webapp.websocket.bad;
 
 public class StringSequence
     implements CharSequence
