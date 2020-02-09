@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.websocket.common.message;
 
-import java.io.ByteArrayOutputStream;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodType;
 import java.nio.ByteBuffer;
@@ -26,6 +25,7 @@ import java.util.Objects;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.ByteArrayOutputStream2;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.common.AbstractMessageSink;
@@ -38,7 +38,7 @@ public class ByteArrayMessageSink extends AbstractMessageSink
     private static final byte[] EMPTY_BUFFER = new byte[0];
     private static final int BUFFER_SIZE = 65535;
     private final Session session;
-    private ByteArrayOutputStream out;
+    private ByteArrayOutputStream2 out;
     private int size;
 
     public ByteArrayMessageSink(Executor executor, MethodHandle methodHandle, Session session)
@@ -70,7 +70,7 @@ public class ByteArrayMessageSink extends AbstractMessageSink
                     throw new MessageTooLargeException("Message size [" + size + "] exceeds maximum size [" + maxMessageSize + "]");
 
                 if (out == null)
-                    out = new ByteArrayOutputStream(BUFFER_SIZE);
+                    out = frame.isFin() ? new ByteArrayOutputStream2(size) : new ByteArrayOutputStream2(BUFFER_SIZE);
 
                 BufferUtil.writeTo(payload, out);
             }
@@ -79,7 +79,11 @@ public class ByteArrayMessageSink extends AbstractMessageSink
             {
                 if (out != null)
                 {
-                    byte[] buf = out.toByteArray();
+                    byte[] buf;
+                    if (out.getCount() == out.getBuf().length)
+                        buf = out.getBuf();
+                    else
+                        buf = out.toByteArray();
                     methodHandle.invoke(buf, 0, buf.length);
                 }
                 else
