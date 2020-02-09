@@ -289,13 +289,13 @@ public class InvokerUtils
                 cTypes.add(arg.getType());
             }
         }
-        MethodType callingType = MethodType.methodType(method.getReturnType(), cTypes);
-
-        // Create low level MethodHandle
-        MethodHandles.Lookup lookup = MethodHandles.lookup();
 
         try
         {
+            MethodType callingType = MethodType.methodType(method.getReturnType(), cTypes);
+
+            // Create low level MethodHandle
+            MethodHandles.Lookup lookup = MethodHandles.privateLookupIn(targetClass, MethodHandles.lookup());
             // Low level invoker.
             // We intentionally do not use lookup#unreflect() as that will incorrectly preserve
             // the calling 'refc' type of where the method is declared, not the targetClass.

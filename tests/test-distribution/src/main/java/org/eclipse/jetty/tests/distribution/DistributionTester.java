@@ -551,6 +551,11 @@ public class DistributionTester
                 IO.close(reader);
             }
         }
+
+        public Queue<String> getLogs()
+        {
+            return logs;
+        }
     }
 
     public static class Builder
