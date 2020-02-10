@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.websocket.common.message;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
@@ -28,7 +27,6 @@ import org.eclipse.jetty.websocket.common.events.EventDriver;
 
 public class SimpleBinaryMessage implements MessageAppender
 {
-    private static final ByteArrayOutputStream2 EMPTY_BUF = new ByteArrayOutputStream2(0);
     private static final int BUFFER_SIZE = 65535;
     private final EventDriver onEvent;
     protected ByteArrayOutputStream2 out;
@@ -38,7 +36,6 @@ public class SimpleBinaryMessage implements MessageAppender
     public SimpleBinaryMessage(EventDriver onEvent)
     {
         this.onEvent = onEvent;
-        this.out = EMPTY_BUF;
         finished = false;
     }
 
@@ -59,7 +56,7 @@ public class SimpleBinaryMessage implements MessageAppender
         onEvent.getPolicy().assertValidBinaryMessageSize(size + payload.remaining());
         size += payload.remaining();
 
-        if (out == EMPTY_BUF)
+        if (out == null)
             out = isLast ? new ByteArrayOutputStream2(size) : new ByteArrayOutputStream2(BUFFER_SIZE);
         BufferUtil.writeTo(payload, out);
     }
@@ -69,7 +66,9 @@ public class SimpleBinaryMessage implements MessageAppender
     {
         finished = true;
         byte[] data;
-        if (out.getCount() == out.getBuf().length)
+        if (out == null)
+            data = new byte[]{};
+        else if (out.getCount() == out.getBuf().length)
             data = out.getBuf();
         else
             data = out.toByteArray();
