@@ -411,6 +411,7 @@ public abstract class JavaxWebSocketFrameHandlerFactory
 
     protected JavaxWebSocketFrameHandlerMetadata discoverJavaxFrameHandlerMetadata(Class<?> endpointClass, JavaxWebSocketFrameHandlerMetadata metadata)
     {
+        MethodHandles.Lookup lookup = MethodHandles.lookup();
         Method onmethod;
 
         // OnOpen [0..1]
@@ -421,7 +422,7 @@ public abstract class JavaxWebSocketFrameHandlerFactory
             final InvokerUtils.Arg SESSION = new InvokerUtils.Arg(Session.class);
             final InvokerUtils.Arg ENDPOINT_CONFIG = new InvokerUtils.Arg(EndpointConfig.class);
             MethodHandle methodHandle = InvokerUtils
-                .mutatedInvoker(endpointClass, onmethod, paramIdentifier, metadata.getNamedTemplateVariables(), SESSION, ENDPOINT_CONFIG);
+                .mutatedInvoker(lookup, endpointClass, onmethod, paramIdentifier, metadata.getNamedTemplateVariables(), SESSION, ENDPOINT_CONFIG);
             metadata.setOpenHandler(methodHandle, onmethod);
         }
 
@@ -433,7 +434,7 @@ public abstract class JavaxWebSocketFrameHandlerFactory
             final InvokerUtils.Arg SESSION = new InvokerUtils.Arg(Session.class);
             final InvokerUtils.Arg CLOSE_REASON = new InvokerUtils.Arg(CloseReason.class);
             MethodHandle methodHandle = InvokerUtils
-                .mutatedInvoker(endpointClass, onmethod, paramIdentifier, metadata.getNamedTemplateVariables(), SESSION, CLOSE_REASON);
+                .mutatedInvoker(lookup, endpointClass, onmethod, paramIdentifier, metadata.getNamedTemplateVariables(), SESSION, CLOSE_REASON);
             metadata.setCloseHandler(methodHandle, onmethod);
         }
 
@@ -445,7 +446,7 @@ public abstract class JavaxWebSocketFrameHandlerFactory
             final InvokerUtils.Arg SESSION = new InvokerUtils.Arg(Session.class);
             final InvokerUtils.Arg CAUSE = new InvokerUtils.Arg(Throwable.class).required();
             MethodHandle methodHandle = InvokerUtils
-                .mutatedInvoker(endpointClass, onmethod, paramIdentifier, metadata.getNamedTemplateVariables(), SESSION, CAUSE);
+                .mutatedInvoker(lookup, endpointClass, onmethod, paramIdentifier, metadata.getNamedTemplateVariables(), SESSION, CAUSE);
             metadata.setErrorHandler(methodHandle, onmethod);
         }
 
@@ -468,7 +469,7 @@ public abstract class JavaxWebSocketFrameHandlerFactory
 
                 // Function to search for matching MethodHandle for the endpointClass given a signature.
                 Function<InvokerUtils.Arg[], MethodHandle> getMethodHandle = (signature) ->
-                    InvokerUtils.optionalMutatedInvoker(endpointClass, onMsg, paramIdentifier, metadata.getNamedTemplateVariables(), signature);
+                    InvokerUtils.optionalMutatedInvoker(lookup, endpointClass, onMsg, paramIdentifier, metadata.getNamedTemplateVariables(), signature);
 
                 // Try to match from available decoders.
                 if (matchDecoders(onMsg, metadata, msgMetadata, getMethodHandle))

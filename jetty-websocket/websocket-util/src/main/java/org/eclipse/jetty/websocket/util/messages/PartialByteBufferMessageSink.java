@@ -19,14 +19,12 @@
 package org.eclipse.jetty.websocket.util.messages;
 
 import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodType;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.util.InvalidSignatureException;
 
 public class PartialByteBufferMessageSink extends AbstractMessageSink
 {
@@ -34,11 +32,13 @@ public class PartialByteBufferMessageSink extends AbstractMessageSink
     {
         super(session, methodHandle);
 
+        /* TODO: Review
         MethodType onMessageType = MethodType.methodType(Void.TYPE, ByteBuffer.class, boolean.class);
         if (methodHandle.type() != onMessageType)
         {
             throw InvalidSignatureException.build(onMessageType, methodHandle.type());
         }
+        */
     }
 
     @SuppressWarnings("Duplicates")

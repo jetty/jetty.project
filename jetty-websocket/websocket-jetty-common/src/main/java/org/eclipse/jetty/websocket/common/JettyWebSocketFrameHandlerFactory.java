@@ -122,16 +122,16 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
     {
         JettyWebSocketFrameHandlerMetadata metadata = getMetadata(endpointInstance.getClass());
 
-        final MethodHandle openHandle = bindTo(metadata.getOpenHandle(), endpointInstance);
-        final MethodHandle closeHandle = bindTo(metadata.getCloseHandle(), endpointInstance);
-        final MethodHandle errorHandle = bindTo(metadata.getErrorHandle(), endpointInstance);
-        final MethodHandle textHandle = bindTo(metadata.getTextHandle(), endpointInstance);
-        final MethodHandle binaryHandle = bindTo(metadata.getBinaryHandle(), endpointInstance);
+        final MethodHandle openHandle = InvokerUtils.bindTo(metadata.getOpenHandle(), endpointInstance);
+        final MethodHandle closeHandle = InvokerUtils.bindTo(metadata.getCloseHandle(), endpointInstance);
+        final MethodHandle errorHandle = InvokerUtils.bindTo(metadata.getErrorHandle(), endpointInstance);
+        final MethodHandle textHandle = InvokerUtils.bindTo(metadata.getTextHandle(), endpointInstance);
+        final MethodHandle binaryHandle = InvokerUtils.bindTo(metadata.getBinaryHandle(), endpointInstance);
         final Class<? extends MessageSink> textSinkClass = metadata.getTextSink();
         final Class<? extends MessageSink> binarySinkClass = metadata.getBinarySink();
-        final MethodHandle frameHandle = bindTo(metadata.getFrameHandle(), endpointInstance);
-        final MethodHandle pingHandle = bindTo(metadata.getPingHandle(), endpointInstance);
-        final MethodHandle pongHandle = bindTo(metadata.getPongHandle(), endpointInstance);
+        final MethodHandle frameHandle = InvokerUtils.bindTo(metadata.getFrameHandle(), endpointInstance);
+        final MethodHandle pingHandle = InvokerUtils.bindTo(metadata.getPingHandle(), endpointInstance);
+        final MethodHandle pongHandle = InvokerUtils.bindTo(metadata.getPongHandle(), endpointInstance);
         BatchMode batchMode = metadata.getBatchMode();
 
         JettyWebSocketFrameHandler frameHandler = new JettyWebSocketFrameHandler(
@@ -176,21 +176,6 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
         {
             throw new RuntimeException(t);
         }
-    }
-
-    public static MethodHandle bindTo(MethodHandle methodHandle, Object... objs)
-    {
-        if (methodHandle == null)
-            return null;
-        MethodHandle ret = methodHandle;
-        for (Object obj : objs)
-        {
-            if (ret.type().parameterType(0).isAssignableFrom(obj.getClass()))
-            {
-                ret = ret.bindTo(obj);
-            }
-        }
-        return ret;
     }
 
     private MethodHandle toMethodHandle(MethodHandles.Lookup lookup, Method method)
@@ -288,6 +273,7 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
             metadata.setIdleTimeout(Duration.ofMillis(max));
         metadata.setBatchMode(anno.batchMode());
 
+        MethodHandles.Lookup lookup = MethodHandles.lookup();
         Method onmethod;
 
         // OnWebSocketConnect [0..1]
@@ -296,7 +282,7 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
         {
             assertSignatureValid(endpointClass, onmethod, OnWebSocketConnect.class);
             final InvokerUtils.Arg SESSION = new InvokerUtils.Arg(Session.class).required();
-            MethodHandle methodHandle = InvokerUtils.mutatedInvoker(endpointClass, onmethod, SESSION);
+            MethodHandle methodHandle = InvokerUtils.mutatedInvoker(lookup, endpointClass, onmethod, SESSION);
             metadata.setOpenHandler(methodHandle, onmethod);
         }
 
@@ -308,7 +294,7 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
             final InvokerUtils.Arg SESSION = new InvokerUtils.Arg(Session.class);
             final InvokerUtils.Arg STATUS_CODE = new InvokerUtils.Arg(int.class);
             final InvokerUtils.Arg REASON = new InvokerUtils.Arg(String.class);
-            MethodHandle methodHandle = InvokerUtils.mutatedInvoker(endpointClass, onmethod, SESSION, STATUS_CODE, REASON);
+            MethodHandle methodHandle = InvokerUtils.mutatedInvoker(lookup, endpointClass, onmethod, SESSION, STATUS_CODE, REASON);
             // TODO: need mutation of args? ...
             // Session + CloseInfo ->
             // setOnClose((closeInfo) ->{
@@ -325,7 +311,7 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
             assertSignatureValid(endpointClass, onmethod, OnWebSocketError.class);
             final InvokerUtils.Arg SESSION = new InvokerUtils.Arg(Session.class);
             final InvokerUtils.Arg CAUSE = new InvokerUtils.Arg(Throwable.class).required();
-            MethodHandle methodHandle = InvokerUtils.mutatedInvoker(endpointClass, onmethod, SESSION, CAUSE);
+            MethodHandle methodHandle = InvokerUtils.mutatedInvoker(lookup, endpointClass, onmethod, SESSION, CAUSE);
             metadata.setErrorHandler(methodHandle, onmethod);
         }
 
@@ -336,7 +322,7 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
             assertSignatureValid(endpointClass, onmethod, OnWebSocketFrame.class);
             final InvokerUtils.Arg SESSION = new InvokerUtils.Arg(Session.class);
             final InvokerUtils.Arg FRAME = new InvokerUtils.Arg(Frame.class).required();
-            MethodHandle methodHandle = InvokerUtils.mutatedInvoker(endpointClass, onmethod, SESSION, FRAME);
+            MethodHandle methodHandle = InvokerUtils.mutatedInvoker(lookup, endpointClass, onmethod, SESSION, FRAME);
             metadata.setFrameHandler(methodHandle, onmethod);
         }
 
@@ -378,7 +364,7 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
             {
                 assertSignatureValid(endpointClass, onMsg, OnWebSocketMessage.class);
 
-                MethodHandle methodHandle = InvokerUtils.optionalMutatedInvoker(endpointClass, onMsg, textCallingArgs);
+                MethodHandle methodHandle = InvokerUtils.optionalMutatedInvoker(lookup, endpointClass, onMsg, textCallingArgs);
                 if (methodHandle != null)
                 {
                     // Normal Text Message
@@ -387,7 +373,7 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
                     continue onmessageloop;
                 }
 
-                methodHandle = InvokerUtils.optionalMutatedInvoker(endpointClass, onMsg, binaryBufferCallingArgs);
+                methodHandle = InvokerUtils.optionalMutatedInvoker(lookup, endpointClass, onMsg, binaryBufferCallingArgs);
                 if (methodHandle != null)
                 {
                     // ByteBuffer Binary Message
@@ -396,7 +382,7 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
                     continue onmessageloop;
                 }
 
-                methodHandle = InvokerUtils.optionalMutatedInvoker(endpointClass, onMsg, binaryArrayCallingArgs);
+                methodHandle = InvokerUtils.optionalMutatedInvoker(lookup, endpointClass, onMsg, binaryArrayCallingArgs);
                 if (methodHandle != null)
                 {
                     // byte[] Binary Message
@@ -405,7 +391,7 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
                     continue onmessageloop;
                 }
 
-                methodHandle = InvokerUtils.optionalMutatedInvoker(endpointClass, onMsg, inputStreamCallingArgs);
+                methodHandle = InvokerUtils.optionalMutatedInvoker(lookup, endpointClass, onMsg, inputStreamCallingArgs);
                 if (methodHandle != null)
                 {
                     // InputStream Binary Message
@@ -414,7 +400,7 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
                     continue onmessageloop;
                 }
 
-                methodHandle = InvokerUtils.optionalMutatedInvoker(endpointClass, onMsg, readerCallingArgs);
+                methodHandle = InvokerUtils.optionalMutatedInvoker(lookup, endpointClass, onMsg, readerCallingArgs);
                 if (methodHandle != null)
                 {
                     // Reader Text Message

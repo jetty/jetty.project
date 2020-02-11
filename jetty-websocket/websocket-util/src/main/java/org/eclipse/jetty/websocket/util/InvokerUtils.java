@@ -165,14 +165,15 @@ public class InvokerUtils
      * the actual method being called.
      * </p>
      *
+     * @param lookup the {@link java.lang.invoke.MethodHandles.Lookup} instance to use.
      * @param targetClass the target class for invocations of the resulting MethodHandle (also known as parameter 0)
      * @param method the method to invoke
      * @param callingArgs the calling arguments.  This is the array of arguments that will always be passed into the returned MethodHandle.
      * They will be present in the {@link MethodHandle#type()} in the order specified in this array.
      */
-    public static MethodHandle mutatedInvoker(Class<?> targetClass, Method method, Arg... callingArgs)
+    public static MethodHandle mutatedInvoker(MethodHandles.Lookup lookup, Class<?> targetClass, Method method, Arg... callingArgs)
     {
-        return mutatedInvoker(targetClass, method, PARAM_IDENTITY, null, callingArgs);
+        return mutatedInvoker(lookup, targetClass, true, method, PARAM_IDENTITY, null, callingArgs);
     }
 
     /**
@@ -193,6 +194,7 @@ public class InvokerUtils
      * <li>The next parameters are all of the provided {@code callingArg} types</li>
      * </ol>
      *
+     * @param lookup the {@link java.lang.invoke.MethodHandles.Lookup} instance to use.
      * @param targetClass the target class for invocations of the resulting MethodHandle (also known as parameter 0)
      * @param method the method to invoke
      * @param paramIdentifier the mechanism to identify parameters in method
@@ -204,13 +206,13 @@ public class InvokerUtils
      * @return the MethodHandle for this set of CallingArgs
      * @throws RuntimeException when unable to fit Calling Args to Parameter Types
      */
-    public static MethodHandle mutatedInvoker(Class<?> targetClass, Method method, ParamIdentifier paramIdentifier, String[] namedVariables, Arg... callingArgs)
+    public static MethodHandle mutatedInvoker(MethodHandles.Lookup lookup, Class<?> targetClass, Method method, ParamIdentifier paramIdentifier, String[] namedVariables, Arg... callingArgs)
     {
-        return mutatedInvoker(targetClass, true, method, paramIdentifier, namedVariables, callingArgs);
+        return mutatedInvoker(lookup, targetClass, true, method, paramIdentifier, namedVariables, callingArgs);
     }
 
-    @SuppressWarnings("Duplicates")
-    private static MethodHandle mutatedInvoker(Class<?> targetClass, boolean throwOnFailure, Method method, ParamIdentifier paramIdentifier,
+    private static MethodHandle mutatedInvoker(MethodHandles.Lookup lookup, Class<?> targetClass, boolean throwOnFailure,
+                                               Method method, ParamIdentifier paramIdentifier,
                                                String[] namedVariables, Arg... rawCallingArgs)
     {
         Class<?>[] parameterTypes = method.getParameterTypes();
@@ -287,10 +289,6 @@ public class InvokerUtils
                 cTypes.add(arg.getType());
             }
         }
-        MethodType callingType = MethodType.methodType(method.getReturnType(), cTypes);
-
-        // Create low level MethodHandle
-        MethodHandles.Lookup lookup = MethodHandles.lookup();
 
         try
         {
@@ -299,6 +297,7 @@ public class InvokerUtils
             // the calling 'refc' type of where the method is declared, not the targetClass.
             // That behavior of #unreflect() results in a MethodType referring to the
             // base/abstract/interface where the method is declared, and not the targetClass
+            MethodType callingType = MethodType.methodType(method.getReturnType(), cTypes);
             MethodType rawType = MethodType.methodType(method.getReturnType(), method.getParameterTypes());
             MethodHandle methodHandle = lookup.findVirtual(targetClass, method.getName(), rawType);
 
@@ -442,6 +441,7 @@ public class InvokerUtils
      * <li>{@link MethodHandle#invoke(Object...)} - to call the specific method</li>
      * </ol>
      *
+     * @param lookup the {@link java.lang.invoke.MethodHandles.Lookup} instance to use.
      * @param targetClass the target class for invocations of the resulting MethodHandle (also known as parameter 0)
      * @param method the method to invoke
      * @param paramIdentifier the mechanism to identify parameters in method
@@ -452,15 +452,15 @@ public class InvokerUtils
      * They will be present in the {@link MethodHandle#type()} in the order specified in this array.
      * @return the MethodHandle for this set of CallingArgs, or null if not possible to create MethodHandle with CallingArgs to provided method
      */
-    public static MethodHandle optionalMutatedInvoker(Class<?> targetClass, Method method, ParamIdentifier paramIdentifier, String[] namedVariables,
-                                                      Arg... callingArgs)
+    public static MethodHandle optionalMutatedInvoker(MethodHandles.Lookup lookup, Class<?> targetClass, Method method, ParamIdentifier paramIdentifier,
+                                                      String[] namedVariables, Arg... callingArgs)
     {
-        return mutatedInvoker(targetClass, false, method, paramIdentifier, namedVariables, callingArgs);
+        return mutatedInvoker(lookup, targetClass, false, method, paramIdentifier, namedVariables, callingArgs);
     }
 
-    public static MethodHandle optionalMutatedInvoker(Class<?> targetClass, Method method, Arg... callingArgs)
+    public static MethodHandle optionalMutatedInvoker(MethodHandles.Lookup lookup, Class<?> targetClass, Method method, Arg... callingArgs)
     {
-        return mutatedInvoker(targetClass, false, method, PARAM_IDENTITY, null, callingArgs);
+        return mutatedInvoker(lookup, targetClass, false, method, PARAM_IDENTITY, null, callingArgs);
     }
 
     private static void appendTypeList(StringBuilder str, Arg[] args)

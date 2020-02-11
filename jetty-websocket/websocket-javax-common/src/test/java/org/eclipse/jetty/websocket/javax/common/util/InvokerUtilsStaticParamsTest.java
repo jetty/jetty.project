@@ -19,6 +19,7 @@
 package org.eclipse.jetty.websocket.javax.common.util;
 
 import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
@@ -58,6 +59,8 @@ public class InvokerUtilsStaticParamsTest
             return String.format("onColorMessage(%s, '%s', '%s')", color);
         }
     }
+    
+    private static MethodHandles.Lookup lookup = MethodHandles.lookup();
 
     @Test
     public void testOnlyParamString() throws Throwable
@@ -72,7 +75,7 @@ public class InvokerUtilsStaticParamsTest
         // Raw Calling Args - none specified
 
         // Get basic method handle (without a instance to call against) - this is what the metadata stores
-        MethodHandle methodHandle = InvokerUtils.mutatedInvoker(Foo.class, method, new NameParamIdentifier(), namedVariables);
+        MethodHandle methodHandle = InvokerUtils.mutatedInvoker(lookup, Foo.class, method, new NameParamIdentifier(), namedVariables);
 
         // Some point later an actual instance is needed, which has static named parameters
         Map<String, String> templateValues = new HashMap<>();
@@ -101,7 +104,7 @@ public class InvokerUtilsStaticParamsTest
         };
 
         // Get basic method handle (without a instance to call against) - this is what the metadata stores
-        MethodHandle methodHandle = InvokerUtils.mutatedInvoker(Foo.class, method, new NameParamIdentifier(), namedVariables);
+        MethodHandle methodHandle = InvokerUtils.mutatedInvoker(lookup, Foo.class, method, new NameParamIdentifier(), namedVariables);
 
         // Some point later an actual instance is needed, which has static named parameters
         Map<String, String> templateValues = new HashMap<>();
@@ -132,7 +135,7 @@ public class InvokerUtilsStaticParamsTest
         final InvokerUtils.Arg ARG_LABEL = new InvokerUtils.Arg(String.class).required();
 
         // Get basic method handle (without a instance to call against) - this is what the metadata stores
-        MethodHandle methodHandle = InvokerUtils.mutatedInvoker(Foo.class, method, new NameParamIdentifier(), namedVariables, ARG_LABEL);
+        MethodHandle methodHandle = InvokerUtils.mutatedInvoker(lookup, Foo.class, method, new NameParamIdentifier(), namedVariables, ARG_LABEL);
 
         // Some point later an actual instance is needed, which has static named parameters
         Map<String, String> templateValues = new HashMap<>();
