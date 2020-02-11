@@ -37,7 +37,6 @@ import java.util.concurrent.Executor;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.Frame;
-import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketConnectionListener;
 import org.eclipse.jetty.websocket.api.WebSocketFrameListener;
@@ -52,6 +51,7 @@ import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.util.InvalidSignatureException;
+import org.eclipse.jetty.websocket.util.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.util.InvokerUtils;
 import org.eclipse.jetty.websocket.util.MessageSink;
 import org.eclipse.jetty.websocket.util.ReflectUtils;
@@ -193,8 +193,7 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
     private JettyWebSocketFrameHandlerMetadata createListenerMetadata(Class<?> endpointClass)
     {
         JettyWebSocketFrameHandlerMetadata metadata = new JettyWebSocketFrameHandlerMetadata();
-
-        MethodHandles.Lookup lookup = MethodHandles.lookup();
+        MethodHandles.Lookup lookup = getMethodHandleLookup(endpointClass);
 
         Method openMethod = ReflectUtils.findMethod(endpointClass, "onWebSocketConnect", Session.class);
         MethodHandle open = toMethodHandle(lookup, openMethod);
@@ -273,7 +272,7 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
             metadata.setIdleTimeout(Duration.ofMillis(max));
         metadata.setBatchMode(anno.batchMode());
 
-        MethodHandles.Lookup lookup = MethodHandles.lookup();
+        MethodHandles.Lookup lookup = getMethodHandleLookup(endpointClass);
         Method onmethod;
 
         // OnWebSocketConnect [0..1]
@@ -454,6 +453,20 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
         err.append(" return must be void: ");
         ReflectUtils.append(err, endpointClass, method);
         throw new InvalidSignatureException(err.toString());
+    }
+
+    private MethodHandles.Lookup getMethodHandleLookup(Class<?> endpointClass) throws InvalidWebSocketException
+    {
+        MethodHandles.Lookup lookup;
+        try
+        {
+            lookup = MethodHandles.privateLookupIn(endpointClass, MethodHandles.lookup());
+        }
+        catch (IllegalAccessException e)
+        {
+            throw new InvalidWebSocketException("Unable to obtain MethodHandle lookup for " + endpointClass, e);
+        }
+        return lookup;
     }
 
     @Override

@@ -388,8 +388,7 @@ public abstract class JavaxWebSocketFrameHandlerFactory
     protected JavaxWebSocketFrameHandlerMetadata createEndpointMetadata(Class<? extends javax.websocket.Endpoint> endpointClass, EndpointConfig endpointConfig)
     {
         JavaxWebSocketFrameHandlerMetadata metadata = new JavaxWebSocketFrameHandlerMetadata(endpointConfig);
-
-        MethodHandles.Lookup lookup = MethodHandles.lookup();
+        MethodHandles.Lookup lookup = getMethodHandleLookup(endpointClass);
 
         Method openMethod = ReflectUtils.findMethod(endpointClass, "onOpen",
             javax.websocket.Session.class, javax.websocket.EndpointConfig.class);
@@ -411,7 +410,7 @@ public abstract class JavaxWebSocketFrameHandlerFactory
 
     protected JavaxWebSocketFrameHandlerMetadata discoverJavaxFrameHandlerMetadata(Class<?> endpointClass, JavaxWebSocketFrameHandlerMetadata metadata)
     {
-        MethodHandles.Lookup lookup = MethodHandles.lookup();
+        MethodHandles.Lookup lookup = getMethodHandleLookup(endpointClass);
         Method onmethod;
 
         // OnOpen [0..1]
@@ -703,6 +702,20 @@ public abstract class JavaxWebSocketFrameHandlerFactory
             ReflectUtils.append(err, endpointClass, method);
             throw new InvalidSignatureException(err.toString());
         }
+    }
+
+    private MethodHandles.Lookup getMethodHandleLookup(Class<?> endpointClass) throws InvalidWebSocketException
+    {
+        MethodHandles.Lookup lookup;
+        try
+        {
+            lookup = MethodHandles.privateLookupIn(endpointClass, MethodHandles.lookup());
+        }
+        catch (IllegalAccessException e)
+        {
+            throw new InvalidWebSocketException("Unable to obtain MethodHandle lookup for " + endpointClass, e);
+        }
+        return lookup;
     }
 
     private static class DecodedArgs
