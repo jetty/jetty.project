@@ -53,7 +53,7 @@ import org.eclipse.jetty.websocket.javax.common.messages.DecodedBinaryStreamMess
 import org.eclipse.jetty.websocket.javax.common.messages.DecodedTextMessageSink;
 import org.eclipse.jetty.websocket.javax.common.messages.DecodedTextStreamMessageSink;
 import org.eclipse.jetty.websocket.util.InvokerUtils;
-import org.eclipse.jetty.websocket.util.MessageSink;
+import org.eclipse.jetty.websocket.util.messages.MessageSink;
 import org.eclipse.jetty.websocket.util.messages.PartialByteArrayMessageSink;
 import org.eclipse.jetty.websocket.util.messages.PartialByteBufferMessageSink;
 import org.eclipse.jetty.websocket.util.messages.PartialStringMessageSink;

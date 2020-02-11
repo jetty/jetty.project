@@ -47,7 +47,7 @@ import org.eclipse.jetty.websocket.core.exception.WebSocketException;
 import org.eclipse.jetty.websocket.core.exception.WebSocketTimeoutException;
 import org.eclipse.jetty.websocket.util.InvalidSignatureException;
 import org.eclipse.jetty.websocket.util.InvokerUtils;
-import org.eclipse.jetty.websocket.util.MessageSink;
+import org.eclipse.jetty.websocket.util.messages.MessageSink;
 
 public class JettyWebSocketFrameHandler implements FrameHandler
 {

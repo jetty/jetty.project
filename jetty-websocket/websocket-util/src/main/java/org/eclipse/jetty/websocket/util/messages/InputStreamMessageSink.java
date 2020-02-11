@@ -23,7 +23,6 @@ import java.lang.invoke.MethodHandle;
 
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.util.MessageSink;
 
 public class InputStreamMessageSink extends DispatchedMessageSink<InputStream>
 {

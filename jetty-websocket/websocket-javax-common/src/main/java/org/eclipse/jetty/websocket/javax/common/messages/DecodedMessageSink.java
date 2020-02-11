@@ -26,8 +26,8 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.util.MessageSink;
 import org.eclipse.jetty.websocket.util.messages.AbstractMessageSink;
+import org.eclipse.jetty.websocket.util.messages.MessageSink;
 
 public abstract class DecodedMessageSink<T extends Decoder> extends AbstractMessageSink
 {

@@ -33,8 +33,8 @@ import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
-import org.eclipse.jetty.websocket.util.MessageSink;
 import org.eclipse.jetty.websocket.util.messages.ByteBufferMessageSink;
+import org.eclipse.jetty.websocket.util.messages.MessageSink;
 import org.eclipse.jetty.websocket.util.messages.StringMessageSink;
 
 public class OutgoingMessageCapture extends CoreSession.Empty implements CoreSession

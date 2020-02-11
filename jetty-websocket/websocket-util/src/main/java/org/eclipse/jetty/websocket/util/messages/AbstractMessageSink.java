@@ -22,7 +22,6 @@ import java.lang.invoke.MethodHandle;
 import java.util.Objects;
 
 import org.eclipse.jetty.websocket.core.CoreSession;
-import org.eclipse.jetty.websocket.util.MessageSink;
 
 public abstract class AbstractMessageSink implements MessageSink
 {

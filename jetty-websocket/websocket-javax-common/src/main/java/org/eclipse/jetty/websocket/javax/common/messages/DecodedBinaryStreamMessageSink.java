@@ -28,8 +28,8 @@ import javax.websocket.Decoder;
 
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.exception.CloseException;
-import org.eclipse.jetty.websocket.util.MessageSink;
 import org.eclipse.jetty.websocket.util.messages.InputStreamMessageSink;
+import org.eclipse.jetty.websocket.util.messages.MessageSink;
 
 public class DecodedBinaryStreamMessageSink<T> extends DecodedMessageSink<Decoder.BinaryStream<T>>
 {

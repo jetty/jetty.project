@@ -24,7 +24,6 @@ import java.util.concurrent.CompletableFuture;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.util.MessageSink;
 
 /**
  * Centralized logic for Dispatched Message Handling.

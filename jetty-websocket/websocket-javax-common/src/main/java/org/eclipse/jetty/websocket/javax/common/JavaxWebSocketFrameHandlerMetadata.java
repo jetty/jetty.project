@@ -27,7 +27,7 @@ import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
 import org.eclipse.jetty.websocket.javax.common.decoders.AvailableDecoders;
 import org.eclipse.jetty.websocket.javax.common.encoders.AvailableEncoders;
 import org.eclipse.jetty.websocket.util.InvalidWebSocketException;
-import org.eclipse.jetty.websocket.util.MessageSink;
+import org.eclipse.jetty.websocket.util.messages.MessageSink;
 
 public class JavaxWebSocketFrameHandlerMetadata
 {
