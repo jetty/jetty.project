@@ -43,6 +43,7 @@ import org.slf4j.LoggerFactory;
 public abstract class HTTP2StreamEndPoint implements EndPoint
 {
     private static final Logger LOG = LoggerFactory.getLogger(HTTP2StreamEndPoint.class);
+    private static final Throwable EOF = new Throwable();
 
     private final AutoLock lock = new AutoLock();
     private final Deque<Entry> dataQueue = new ArrayDeque<>();
@@ -530,7 +531,7 @@ public abstract class HTTP2StreamEndPoint implements EndPoint
         {
             if (buffer.hasRemaining())
                 offer(buffer, Callback.from(Callback.NOOP::succeeded, callback::failed), null);
-            offer(BufferUtil.EMPTY_BUFFER, callback, Entry.EOF);
+            offer(BufferUtil.EMPTY_BUFFER, callback, EOF);
         }
         else
         {
@@ -581,10 +582,8 @@ public abstract class HTTP2StreamEndPoint implements EndPoint
             writeState);
     }
 
-    private static class Entry
+    private class Entry
     {
-        private static final Throwable EOF = new Throwable();
-
         private final ByteBuffer buffer;
         private final Callback callback;
         private final Throwable failure;
@@ -611,6 +610,7 @@ public abstract class HTTP2StreamEndPoint implements EndPoint
         private void succeed()
         {
             callback.succeeded();
+            stream.demand(1);
         }
 
         private void fail(Throwable failure)

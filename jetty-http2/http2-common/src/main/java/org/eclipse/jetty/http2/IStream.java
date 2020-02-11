@@ -126,6 +126,8 @@ public interface IStream extends Stream, Attachable, Closeable
      */
     boolean isResetOrFailed();
 
+    void fail(Throwable x);
+
     /**
      * <p>An ordered list of frames belonging to the same stream.</p>
      */

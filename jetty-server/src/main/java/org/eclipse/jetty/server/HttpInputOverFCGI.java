@@ -22,16 +22,18 @@ import java.io.IOException;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import javax.servlet.ReadListener;
 
+import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.EofException;
+import org.eclipse.jetty.server.AbstractHttpInput.Eof;
 import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.AutoLock;
-
-import static org.eclipse.jetty.server.HttpInputOverHTTP.Eof;
 
 public class HttpInputOverFCGI extends HttpInput
 {
@@ -47,6 +49,7 @@ public class HttpInputOverFCGI extends HttpInput
     private Eof _eof = Eof.NOT_YET;
     private Throwable _error;
     private ReadListener _readListener;
+    private long _firstByteTimeStamp = Long.MIN_VALUE;
 
     public HttpInputOverFCGI(HttpChannelState state)
     {
@@ -67,6 +70,7 @@ public class HttpInputOverFCGI extends HttpInput
             _eof = Eof.NOT_YET;
             _error = null;
             _readListener = null;
+            _firstByteTimeStamp = Long.MIN_VALUE;
         }
     }
 
@@ -115,6 +119,12 @@ public class HttpInputOverFCGI extends HttpInput
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("addContent {} {}", content, _contentProducer);
+            if (_firstByteTimeStamp == Long.MIN_VALUE)
+            {
+                _firstByteTimeStamp = System.nanoTime();
+                if (_firstByteTimeStamp == Long.MIN_VALUE)
+                    _firstByteTimeStamp++;
+            }
             long contentArrived = _contentProducer.addContent(content);
             long requestContentLength = _channelState.getHttpChannel().getRequest().getContentLengthLong();
             // return false to make the parser go on, true to make it stop
@@ -225,8 +235,20 @@ public class HttpInputOverFCGI extends HttpInput
     @Override
     public boolean onIdleTimeout(Throwable x)
     {
-        //TODO implement me!
-        return false;
+        try (AutoLock lock = _contentLock.lock())
+        {
+            boolean neverDispatched = _channelState.isIdle();
+            boolean waitingForContent = !_contentProducer.hasTransformedContent() && !_eof.isEof();
+            if ((waitingForContent || neverDispatched) && !isError())
+            {
+                x.addSuppressed(new Throwable("HttpInput idle timeout"));
+                _error = x;
+                if (isAsync())
+                    return _channelState.onContentAdded();
+                unblock();
+            }
+            return false;
+        }
     }
 
     @Override
@@ -341,6 +363,25 @@ public class HttpInputOverFCGI extends HttpInput
     {
         try (AutoLock lock = _contentLock.lock())
         {
+            // Calculate minimum request rate for DOS protection
+            long minRequestDataRate = _channelState.getHttpChannel().getHttpConfiguration().getMinRequestDataRate();
+            if (minRequestDataRate > 0 && _firstByteTimeStamp != Long.MIN_VALUE)
+            {
+                long period = System.nanoTime() - _firstByteTimeStamp;
+                if (period > 0)
+                {
+                    long minimumData = minRequestDataRate * TimeUnit.NANOSECONDS.toMillis(period) / TimeUnit.SECONDS.toMillis(1);
+                    if (_contentProducer.getRawContentArrived() < minimumData)
+                    {
+                        BadMessageException bad = new BadMessageException(HttpStatus.REQUEST_TIMEOUT_408,
+                            String.format("Request content data rate < %d B/s", minRequestDataRate));
+                        if (_channelState.isResponseCommitted())
+                            _channelState.getHttpChannel().abort(bad);
+                        throw bad;
+                    }
+                }
+            }
+
             while (true)
             {
                 int read = _contentProducer.read(b, off, len);
@@ -439,10 +480,10 @@ public class HttpInputOverFCGI extends HttpInput
     {
         try (AutoLock lock = _contentLock.lock())
         {
-            if (LOG.isDebugEnabled())
-                LOG.debug("running");
             if (!_contentProducer.hasRawContent())
             {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("running has no raw content; error: {}, EOF = {}", _error, _eof);
                 if (_error != null || _eof.isEarly())
                 {
                     // TODO is this necessary to add here?
@@ -460,6 +501,8 @@ public class HttpInputOverFCGI extends HttpInput
                     }
                     catch (Throwable x)
                     {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("running failed onAllDataRead", x);
                         _readListener.onError(x);
                     }
                 }
@@ -467,12 +510,16 @@ public class HttpInputOverFCGI extends HttpInput
             }
             else
             {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("running has raw content");
                 try
                 {
                     _readListener.onDataAvailable();
                 }
                 catch (Throwable x)
                 {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("running failed onDataAvailable", x);
                     _readListener.onError(x);
                 }
             }
@@ -500,6 +547,7 @@ public class HttpInputOverFCGI extends HttpInput
             if (_currentRawContent != null && !_currentRawContent.isEmpty())
                 _currentRawContent.failed(null);
             _currentRawContent = null;
+            _rawContentQueue.forEach(c -> c.failed(null));
             _rawContentQueue.clear();
             _rawContentArrived = 0L;
             if (_interceptor instanceof Destroyable)
@@ -507,11 +555,15 @@ public class HttpInputOverFCGI extends HttpInput
             _interceptor = null;
         }
 
+        //TODO: factor out similarities with read and hasTransformedContent
         int available()
         {
+            if (_transformedContent != null)
+                return _transformedContent.remaining();
             if (_currentRawContent == null)
                 produceRawContent();
-            return _currentRawContent == null ? 0 : _currentRawContent.remaining();
+            produceTransformedContent();
+            return _transformedContent == null ? 0 : _transformedContent.remaining();
         }
 
         long getRawContentArrived()
@@ -521,6 +573,8 @@ public class HttpInputOverFCGI extends HttpInput
 
         boolean hasRawContent()
         {
+            if (_currentRawContent == null)
+                produceRawContent();
             return _currentRawContent != null;
         }
 

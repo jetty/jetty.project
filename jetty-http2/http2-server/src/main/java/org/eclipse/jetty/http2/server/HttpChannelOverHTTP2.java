@@ -41,6 +41,7 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.WriteFlusher;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpChannel;
+import org.eclipse.jetty.server.HttpChannelState;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpInput;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -103,6 +104,12 @@ public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable, Writ
         getResponse().getHttpOutput().onFlushed(bytes);
     }
 
+    @Override
+    protected HttpInput newHttpInput(HttpChannelState state)
+    {
+        return new HttpInputOverHTTP2(state);
+    }
+
     public Runnable onRequest(HeadersFrame frame)
     {
         try
@@ -131,9 +138,17 @@ public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable, Writ
             _delayedUntilContent = getHttpConfiguration().isDelayDispatchUntilContent() &&
                     !endStream && !_expect100Continue && !connect;
 
-            // Delay the demand of DATA frames for CONNECT with :protocol.
-            if (!connect || request.getProtocol() == null)
+            // Delay the demand of DATA frames for CONNECT with :protocol
+            // or for normal requests expecting 100 continue.
+            if (!connect)
+            {
+                if (!_expect100Continue)
+                    getStream().demand(1);
+            }
+            else if (request.getProtocol() == null)
+            {
                 getStream().demand(1);
+            }
 
             if (LOG.isDebugEnabled())
             {

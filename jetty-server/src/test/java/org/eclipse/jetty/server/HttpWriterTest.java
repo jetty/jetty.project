@@ -49,6 +49,12 @@ public class HttpWriterTest
         HttpChannel channel = new HttpChannel(new MockConnector(), new HttpConfiguration(), null, null)
         {
             @Override
+            protected HttpInput newHttpInput(HttpChannelState state)
+            {
+                return null;
+            }
+
+            @Override
             public ByteBufferPool getByteBufferPool()
             {
                 return pool;

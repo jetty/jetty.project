@@ -16,39 +16,55 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.server;
+package org.eclipse.jetty.http2.server;
 
-// tests used: RequestTest, PartialRFC2616Test, AsyncRequestReadTest, AsyncIOServletTest, GzipHandlerTest
-public class HttpInputOverHTTP extends AbstractHttpInput
+import org.eclipse.jetty.server.AbstractLockedHttpInput;
+import org.eclipse.jetty.server.HttpChannelState;
+import org.eclipse.jetty.util.thread.AutoLock;
+
+public class HttpInputOverHTTP2 extends AbstractLockedHttpInput
 {
-    public HttpInputOverHTTP(HttpChannelState state)
+    private boolean _producing;
+
+    public HttpInputOverHTTP2(HttpChannelState state)
     {
         super(state);
     }
 
     @Override
+    public void recycle()
+    {
+        try (AutoLock lock = _contentLock.lock())
+        {
+            super.recycle();
+            _producing = false;
+        }
+    }
+
+    @Override
     public boolean addContent(Content content)
     {
-        super.addContent(content);
-        return true;
+        try (AutoLock lock = _contentLock.lock())
+        {
+            boolean b = super.addContent(content);
+            _producing = false;
+            return b;
+        }
     }
 
     @Override
     protected void produceRawContent()
     {
-        ((HttpConnection)_channelState.getHttpChannel().getEndPoint().getConnection()).parseAndFillForContent();
+        if (!_producing)
+        {
+            _producing = true;
+            ((HttpChannelOverHTTP2)_channelState.getHttpChannel()).getStream().demand(1);
+        }
     }
 
     @Override
     protected void failRawContent(Throwable failure)
     {
-        while (true)
-        {
-            if (!_contentProducer.hasRawContent())
-                _contentProducer.produceRawContent();
-            if (!_contentProducer.hasRawContent())
-                break;
-            _contentProducer.consumeRawContent();
-        }
+        ((HttpChannelOverHTTP2)_channelState.getHttpChannel()).getStream().fail(failure);
     }
 }

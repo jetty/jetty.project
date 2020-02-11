@@ -175,7 +175,14 @@ public class ResponseTest
             {
                 _channelError = failure;
             }
-        });
+        })
+        {
+            @Override
+            protected HttpInput newHttpInput(HttpChannelState state)
+            {
+                return new HttpInputOverHTTP(state);
+            }
+        };
     }
 
     @AfterEach

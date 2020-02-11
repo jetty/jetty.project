@@ -235,6 +235,22 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
         return state == CloseState.REMOTELY_CLOSED || state == CloseState.CLOSING || state == CloseState.CLOSED;
     }
 
+    @Override
+    public void fail(Throwable x)
+    {
+        try (AutoLock l = lock.lock())
+        {
+            dataDemand = Long.MIN_VALUE;
+            while (true)
+            {
+                DataEntry dataEntry = dataQueue.poll();
+                if (dataEntry == null)
+                    break;
+                dataEntry.callback.failed(x);
+            }
+        }
+    }
+
     public boolean isLocallyClosed()
     {
         return closeState.get() == CloseState.LOCALLY_CLOSED;
@@ -400,6 +416,12 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
         DataEntry entry = new DataEntry(frame, callback);
         try (AutoLock l = lock.lock())
         {
+            if (dataDemand == Long.MIN_VALUE)
+            {
+                // stream has been failed
+                callback.failed(null);
+                return;
+            }
             dataQueue.offer(entry);
             initial = dataInitial;
             if (initial)
@@ -439,6 +461,8 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
         boolean proceed = false;
         try (AutoLock l = lock.lock())
         {
+            if (dataDemand == Long.MIN_VALUE)
+                return; // stream has been failed
             demand = dataDemand = MathUtils.cappedAdd(dataDemand, n);
             if (!dataProcess)
                 dataProcess = proceed = !dataQueue.isEmpty();
