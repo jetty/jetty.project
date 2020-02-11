@@ -136,6 +136,20 @@ public class BufferUtil
     }
 
     /**
+     * Allocates a ByteBuffer in flush mode.
+     * The position and limit will both be zero, indicating that the buffer is
+     * empty and must be flipped before any data is put to it.
+     *
+     * @param capacity capacity of the allocated ByteBuffer
+     * @param direct whether the ByteBuffer is direct
+     * @return the newly allocated ByteBuffer
+     */
+    public static ByteBuffer allocate(int capacity, boolean direct)
+    {
+        return direct ? allocateDirect(capacity) : allocate(capacity);
+    }
+
+    /**
      * Deep copy of a buffer
      *
      * @param buffer The buffer to copy

@@ -42,11 +42,14 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnJre;
 import org.junit.jupiter.api.condition.JRE;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
@@ -398,6 +401,57 @@ public class DistributionTests extends AbstractDistributionTest
                 startHttpClient(() -> new HttpClient(new HttpClientTransportOverHTTP(1)));
                 ContentResponse response = client.GET("http://localhost:" + port + "/proxy/current/");
                 assertEquals(HttpStatus.OK_200, response.getStatus());
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "",
+        "--jpms",
+    })
+    public void testSimpleWebAppWithWebsocket(String arg) throws Exception
+    {
+        String jettyVersion = System.getProperty("jettyVersion");
+        DistributionTester distribution = DistributionTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
+            .build();
+        String[] args1 = {
+            "--create-startd",
+            "--approve-all-licenses",
+            "--add-to-start=resources,server,http,webapp,deploy,jsp,jmx,servlet,servlets,websocket"
+        };
+        try (DistributionTester.Run run1 = distribution.start(args1))
+        {
+            assertTrue(run1.awaitFor(5, TimeUnit.SECONDS));
+            assertEquals(0, run1.getExitValue());
+
+            File war = distribution.resolveArtifact("org.eclipse.jetty.tests:test-bad-websocket-webapp:war:" + jettyVersion);
+            distribution.installWarFile(war, "test1");
+            distribution.installWarFile(war, "test2");
+
+            int port = distribution.freePort();
+            String[] args2 = {
+                arg,
+                "jetty.http.port=" + port//,
+                //"jetty.server.dumpAfterStart=true"
+            };
+            try (DistributionTester.Run run2 = distribution.start(args2))
+            {
+                assertTrue(run2.awaitConsoleLogsFor("Started Server@", 10, TimeUnit.SECONDS));
+                assertFalse(run2.getLogs().stream().anyMatch(s -> s.contains("LinkageError")));
+
+                startHttpClient();
+                ContentResponse response = client.GET("http://localhost:" + port + "/test1/index.jsp");
+                assertEquals(HttpStatus.OK_200, response.getStatus());
+                assertThat(response.getContentAsString(), containsString("Hello"));
+                assertThat(response.getContentAsString(), not(containsString("<%")));
+
+                client.GET("http://localhost:" + port + "/test2/index.jsp");
+                assertEquals(HttpStatus.OK_200, response.getStatus());
+                assertThat(response.getContentAsString(), containsString("Hello"));
+                assertThat(response.getContentAsString(), not(containsString("<%")));
             }
         }
     }

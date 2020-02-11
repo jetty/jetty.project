@@ -450,7 +450,9 @@ public abstract class HTTP2StreamEndPoint implements EndPoint
     {
         long total = 0;
         for (ByteBuffer buffer : buffers)
+        {
             total += buffer.remaining();
+        }
         return total;
     }
 
@@ -463,7 +465,9 @@ public abstract class HTTP2StreamEndPoint implements EndPoint
             throw new BufferOverflowException();
         ByteBuffer result = BufferUtil.allocateDirect((int)capacity);
         for (ByteBuffer buffer : buffers)
+        {
             BufferUtil.append(result, buffer);
+        }
         return result;
     }
 
@@ -523,7 +527,7 @@ public abstract class HTTP2StreamEndPoint implements EndPoint
         if (frame.isEndStream())
         {
             if (buffer.hasRemaining())
-                offer(buffer, Callback.from(() -> {}, callback::failed), null);
+                offer(buffer, Callback.from(Callback.NOOP::succeeded, callback::failed), null);
             offer(BufferUtil.EMPTY_BUFFER, callback, Entry.EOF);
         }
         else
@@ -571,8 +575,8 @@ public abstract class HTTP2StreamEndPoint implements EndPoint
         // Do not call Stream.toString() because it stringifies the attachment,
         // which could be this instance, therefore causing a StackOverflowError.
         return String.format("%s@%x[%s@%x#%d][w=%s]", getClass().getSimpleName(), hashCode(),
-                stream.getClass().getSimpleName(), stream.hashCode(), stream.getId(),
-                writeState);
+            stream.getClass().getSimpleName(), stream.hashCode(), stream.getId(),
+            writeState);
     }
 
     private static class Entry

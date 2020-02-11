@@ -292,6 +292,7 @@ public class MultiPartContentProviderTest extends AbstractHttpClientServerTest
         MultiPartContentProvider multiPart = new MultiPartContentProvider();
         PathContentProvider content = new PathContentProvider(contentType, tmpPath);
         content.setByteBufferPool(client.getByteBufferPool());
+        content.setUseDirectByteBuffers(client.isUseOutputDirectByteBuffers());
         multiPart.addFilePart(name, tmpPath.getFileName().toString(), content, null);
         multiPart.close();
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())

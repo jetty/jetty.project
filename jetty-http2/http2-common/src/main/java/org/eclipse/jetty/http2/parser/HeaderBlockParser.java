@@ -73,7 +73,7 @@ public class HeaderBlockParser
         {
             if (blockBuffer == null)
             {
-                blockBuffer = byteBufferPool.acquire(blockLength, false);
+                blockBuffer = byteBufferPool.acquire(blockLength, buffer.isDirect());
                 BufferUtil.clearToFill(blockBuffer);
             }
             blockBuffer.put(buffer);

@@ -40,6 +40,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
@@ -1529,9 +1530,9 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         client = new HttpClient(new HttpClientTransportOverHTTP(clientConnector)
         {
             @Override
-            protected HttpConnectionOverHTTP newHttpConnection(EndPoint endPoint, HttpDestination destination, Promise<Connection> promise)
+            public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
             {
-                return new HttpConnectionOverHTTP(endPoint, destination, promise)
+                return new HttpConnectionOverHTTP(endPoint, context)
                 {
                     @Override
                     public void onOpen()

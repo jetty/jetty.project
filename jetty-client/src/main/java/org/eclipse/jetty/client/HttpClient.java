@@ -150,6 +150,8 @@ public class HttpClient extends ContainerLifeCycle
     private String name = getClass().getSimpleName() + "@" + Integer.toHexString(hashCode());
     private HttpCompliance httpCompliance = HttpCompliance.RFC7230;
     private String defaultRequestContentType = "application/octet-stream";
+    private boolean useInputDirectByteBuffers = true;
+    private boolean useOutputDirectByteBuffers = true;
 
     /**
      * Creates a HttpClient instance that can perform HTTP/1.1 requests to non-TLS and TLS destinations.
@@ -1061,6 +1063,40 @@ public class HttpClient extends ContainerLifeCycle
     public void setDefaultRequestContentType(String contentType)
     {
         this.defaultRequestContentType = contentType;
+    }
+
+    /**
+     * @return whether to use direct ByteBuffers for reading
+     */
+    @ManagedAttribute("Whether to use direct ByteBuffers for reading")
+    public boolean isUseInputDirectByteBuffers()
+    {
+        return useInputDirectByteBuffers;
+    }
+
+    /**
+     * @param useInputDirectByteBuffers whether to use direct ByteBuffers for reading
+     */
+    public void setUseInputDirectByteBuffers(boolean useInputDirectByteBuffers)
+    {
+        this.useInputDirectByteBuffers = useInputDirectByteBuffers;
+    }
+
+    /**
+     * @return whether to use direct ByteBuffers for writing
+     */
+    @ManagedAttribute("Whether to use direct ByteBuffers for writing")
+    public boolean isUseOutputDirectByteBuffers()
+    {
+        return useOutputDirectByteBuffers;
+    }
+
+    /**
+     * @param useOutputDirectByteBuffers whether to use direct ByteBuffers for writing
+     */
+    public void setUseOutputDirectByteBuffers(boolean useOutputDirectByteBuffers)
+    {
+        this.useOutputDirectByteBuffers = useOutputDirectByteBuffers;
     }
 
     /**

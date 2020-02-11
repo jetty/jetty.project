@@ -39,13 +39,11 @@ import org.eclipse.jetty.util.IteratingCallback;
 public class HttpSenderOverHTTP extends HttpSender
 {
     private final HttpGenerator generator = new HttpGenerator();
-    private final HttpClient httpClient;
     private boolean shutdown;
 
     public HttpSenderOverHTTP(HttpChannelOverHTTP channel)
     {
         super(channel);
-        httpClient = channel.getHttpDestination().getHttpClient();
     }
 
     @Override
@@ -74,7 +72,9 @@ public class HttpSenderOverHTTP extends HttpSender
     {
         try
         {
+            HttpClient httpClient = getHttpChannel().getHttpDestination().getHttpClient();
             ByteBufferPool bufferPool = httpClient.getByteBufferPool();
+            boolean useDirectByteBuffers = httpClient.isUseOutputDirectByteBuffers();
             ByteBuffer chunk = null;
             while (true)
             {
@@ -89,12 +89,12 @@ public class HttpSenderOverHTTP extends HttpSender
                 {
                     case NEED_CHUNK:
                     {
-                        chunk = bufferPool.acquire(HttpGenerator.CHUNK_SIZE, false);
+                        chunk = bufferPool.acquire(HttpGenerator.CHUNK_SIZE, useDirectByteBuffers);
                         break;
                     }
                     case NEED_CHUNK_TRAILER:
                     {
-                        chunk = bufferPool.acquire(httpClient.getRequestBufferSize(), false);
+                        chunk = bufferPool.acquire(httpClient.getRequestBufferSize(), useDirectByteBuffers);
                         break;
                     }
                     case FLUSH:
@@ -218,21 +218,24 @@ public class HttpSenderOverHTTP extends HttpSender
                         chunkBuffer == null ? -1 : chunkBuffer.remaining(),
                         contentBuffer == null ? -1 : contentBuffer.remaining(),
                         result, generator);
+                HttpClient httpClient = getHttpChannel().getHttpDestination().getHttpClient();
+                ByteBufferPool byteBufferPool = httpClient.getByteBufferPool();
+                boolean useDirectByteBuffers = httpClient.isUseOutputDirectByteBuffers();
                 switch (result)
                 {
                     case NEED_HEADER:
                     {
-                        headerBuffer = httpClient.getByteBufferPool().acquire(httpClient.getRequestBufferSize(), false);
+                        headerBuffer = byteBufferPool.acquire(httpClient.getRequestBufferSize(), useDirectByteBuffers);
                         break;
                     }
                     case NEED_CHUNK:
                     {
-                        chunkBuffer = httpClient.getByteBufferPool().acquire(HttpGenerator.CHUNK_SIZE, false);
+                        chunkBuffer = byteBufferPool.acquire(HttpGenerator.CHUNK_SIZE, useDirectByteBuffers);
                         break;
                     }
                     case NEED_CHUNK_TRAILER:
                     {
-                        chunkBuffer = httpClient.getByteBufferPool().acquire(httpClient.getRequestBufferSize(), false);
+                        chunkBuffer = byteBufferPool.acquire(httpClient.getRequestBufferSize(), useDirectByteBuffers);
                         break;
                     }
                     case FLUSH:
@@ -307,6 +310,7 @@ public class HttpSenderOverHTTP extends HttpSender
 
         private void release()
         {
+            HttpClient httpClient = getHttpChannel().getHttpDestination().getHttpClient();
             ByteBufferPool bufferPool = httpClient.getByteBufferPool();
             if (!BufferUtil.isTheEmptyBuffer(headerBuffer))
                 bufferPool.release(headerBuffer);
