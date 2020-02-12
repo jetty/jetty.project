@@ -559,7 +559,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-javadoc-plugin</artifactId>
-          <version>3.1.1</version>
+          <version>3.2.0</version>
           <configuration>
             <verbose>true</verbose>
             <debug>true</debug>
@@ -576,6 +576,7 @@
             <attach>true</attach>
             <isOffline>true</isOffline>
             <excludePackageNames>com.*:org.slf4j*:org.mortbay*:*.jmh*:org.eclipse.jetty.embedded*:org.eclipse.jetty.example.asyncrest*:org.eclipse.jetty.test*</excludePackageNames>
+            <skippedModules>apache-jstl,jetty-osgi-alpn,infinispan-common,infinispan-embedded,infinispan-embedded-query,infinispan-remote,infinispan-remote-query,jetty-plus,jetty-jndi,jetty-documentation,jetty-distribution,jetty-home,jetty-bom,jetty-all,jetty-runner</skippedModules>
           </configuration>
         </plugin>
         <plugin>
