@@ -214,7 +214,7 @@ At this point the server has been configured with connectors for both HTTP and H
 ....
 [mybase] java -jar $JETTY_HOME/start.jar
 2017-08-31 10:19:58.855:INFO::main: Logging initialized @372ms to org.eclipse.jetty.util.log.StdErrLog
-2017-08-31 10:19:59.076:INFO:oejs.Server:main: jetty-9.4.6.v20170531
+2017-08-31 10:19:59.076:INFO:oejs.Server:main: jetty-{VERSION}
 2017-08-31 10:19:59.125:INFO:oejs.AbstractConnector:main: Started ServerConnector@421e98e0{HTTP/1.1,[http/1.1]}{0.0.0.0:8080}
 2017-08-31 10:19:59.150:INFO:oejus.SslContextFactory:main: x509=X509@5315b42e(jetty,h=[jetty.eclipse.org],w=[]) for SslContextFactory@2ef9b8bc(file:///Users/staff/installs/repository/jetty-distribution-{VERSION}/mybase/etc/keystore,file:///Users/staff/installs/repository/jetty-distribution-{VERSION}/mybase/etc/keystore)
 2017-08-31 10:19:59.151:INFO:oejus.SslContextFactory:main: x509=X509@5d624da6(mykey,h=[],w=[]) for SslContextFactory@2ef9b8bc(file:///Users/staff/installs/repository/jetty-distribution-{VERSION}/mybase/etc/keystore,file:///Users/staff/installs/repository/jetty-distribution-{VERSION}/mybase/etc/keystore)
@@ -280,7 +280,7 @@ Now when the server is started, HTTP connections will enter on port 5231:
 ....
 [mybase] java -jar ../start.jar
 2017-08-31 10:31:32.955:INFO::main: Logging initialized @366ms to org.eclipse.jetty.util.log.StdErrLog
-2017-08-31 10:31:33.109:INFO:oejs.Server:main: jetty-9.4.6.v20170531
+2017-08-31 10:31:33.109:INFO:oejs.Server:main: jetty-{VERSION}
 2017-08-31 10:31:33.146:INFO:oejs.AbstractConnector:main: Started ServerConnector@2ef9b8bc{HTTP/1.1,[http/1.1]}{0.0.0.0:5231}
 ...
 2017-08-31 10:31:33.263:INFO:oejs.Server:main: Started @675ms

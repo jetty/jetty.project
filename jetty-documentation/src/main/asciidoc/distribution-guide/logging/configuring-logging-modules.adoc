@@ -479,7 +479,7 @@ As an example, here is the output from Logback before using the `console-capture
 ....
 [my-base]$ java -jar ../start.jar
 419  [main] INFO  org.eclipse.jetty.util.log - Logging initialized @508ms to org.eclipse.jetty.util.log.Slf4jLog
-540  [main] INFO  org.eclipse.jetty.server.Server - jetty-9.4.0-SNAPSHOT
+540  [main] INFO  org.eclipse.jetty.server.Server - jetty-{VERSION}
 575  [main] INFO  o.e.jetty.server.AbstractConnector - Started ServerConnector@3c0ecd4b{HTTP/1.1,[http/1.1]}{0.0.0.0:8080}
 575  [main] INFO  org.eclipse.jetty.server.Server - Started @668ms
 ....
