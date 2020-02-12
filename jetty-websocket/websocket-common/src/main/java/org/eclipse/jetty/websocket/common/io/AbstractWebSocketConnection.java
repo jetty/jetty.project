@@ -497,7 +497,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
                 case DISCARD:
                     if (LOG.isDebugEnabled())
                         LOG.debug("Discarded buffer - {}", BufferUtil.toDetailString(buffer));
-                    buffer.clear();
+                    BufferUtil.clear(buffer);
                     break;
 
                 case SUSPEND:
