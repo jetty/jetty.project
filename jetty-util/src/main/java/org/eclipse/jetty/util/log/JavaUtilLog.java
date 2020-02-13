@@ -65,8 +65,8 @@ public class JavaUtilLog extends AbstractLogger
 {
     private static final String THIS_CLASS = JavaUtilLog.class.getName();
     private static final boolean __source =
-        Boolean.parseBoolean(Log.__props.getProperty("org.eclipse.jetty.util.log.SOURCE",
-            Log.__props.getProperty("org.eclipse.jetty.util.log.javautil.SOURCE", "true")));
+        Boolean.parseBoolean(Log.getProperty("org.eclipse.jetty.util.log.SOURCE",
+            Log.getProperty("org.eclipse.jetty.util.log.javautil.SOURCE", "true")));
 
     private static boolean _initialized = false;
 
@@ -86,7 +86,7 @@ public class JavaUtilLog extends AbstractLogger
             {
                 _initialized = true;
 
-                final String properties = Log.__props.getProperty("org.eclipse.jetty.util.log.javautil.PROPERTIES", null);
+                final String properties = Log.getProperty("org.eclipse.jetty.util.log.javautil.PROPERTIES", null);
                 if (properties != null)
                 {
                     AccessController.doPrivileged(new PrivilegedAction<Object>()
@@ -115,7 +115,7 @@ public class JavaUtilLog extends AbstractLogger
 
         _logger = java.util.logging.Logger.getLogger(name);
 
-        switch (lookupLoggingLevel(Log.__props, name))
+        switch (lookupLoggingLevel(Log.getProperties(), name))
         {
             case LEVEL_ALL:
                 _logger.setLevel(Level.ALL);

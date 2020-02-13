@@ -149,6 +149,12 @@ public class StdErrLogTest
         log.warn("ex", th);
         output.assertContains(ths);
 
+        Throwable thr = new Throwable("Reasons Explained");
+
+        log.warn("Ex {}", "Reasons", thr);
+        output.assertContains("Reasons");
+        output.assertContains(thr.toString());
+
         th = new Throwable("Message with \033 escape");
 
         log.warn("ex", th);
