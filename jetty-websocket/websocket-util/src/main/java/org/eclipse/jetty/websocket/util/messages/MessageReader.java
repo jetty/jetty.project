@@ -33,10 +33,15 @@ public class MessageReader extends InputStreamReader implements MessageSink
 {
     private final MessageInputStream stream;
 
-    public MessageReader(MessageInputStream stream)
+    public MessageReader()
     {
-        super(stream, StandardCharsets.UTF_8);
-        this.stream = stream;
+        this(new MessageInputStream());
+    }
+
+    private MessageReader(MessageInputStream inputStream)
+    {
+        super(inputStream, StandardCharsets.UTF_8);
+        this.stream = inputStream;
     }
 
     @Override

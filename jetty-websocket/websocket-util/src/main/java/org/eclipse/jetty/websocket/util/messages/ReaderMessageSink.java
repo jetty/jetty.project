@@ -18,13 +18,12 @@
 
 package org.eclipse.jetty.websocket.util.messages;
 
-import java.io.Reader;
 import java.lang.invoke.MethodHandle;
 
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 
-public class ReaderMessageSink extends DispatchedMessageSink<Reader>
+public class ReaderMessageSink extends DispatchedMessageSink
 {
     public ReaderMessageSink(CoreSession session, MethodHandle methodHandle)
     {
@@ -34,6 +33,6 @@ public class ReaderMessageSink extends DispatchedMessageSink<Reader>
     @Override
     public MessageReader newSink(Frame frame)
     {
-        return new MessageReader(new MessageInputStream());
+        return new MessageReader();
     }
 }
