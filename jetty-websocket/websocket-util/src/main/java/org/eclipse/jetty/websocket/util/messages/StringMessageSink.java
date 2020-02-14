@@ -73,7 +73,6 @@ public class StringMessageSink extends AbstractMessageSink
             {
                 // reset
                 size = 0;
-                out.reset();
                 out = null;
             }
         }

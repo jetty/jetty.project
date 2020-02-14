@@ -47,23 +47,11 @@ public class PartialByteBufferMessageSink extends AbstractMessageSink
     {
         try
         {
-            ByteBuffer buffer;
-
-            if (frame.hasPayload())
+            if (frame.hasPayload() || frame.isFin())
             {
-                ByteBuffer payload = frame.getPayload();
-                // copy buffer here
-                buffer = ByteBuffer.allocate(payload.remaining());
-                BufferUtil.clearToFill(buffer);
-                BufferUtil.put(payload, buffer);
-                BufferUtil.flipToFlush(buffer, 0);
+                ByteBuffer buffer = frame.hasPayload() ? frame.getPayload() : BufferUtil.EMPTY_BUFFER;
+                methodHandle.invoke(buffer, frame.isFin());
             }
-            else
-            {
-                buffer = BufferUtil.EMPTY_BUFFER;
-            }
-
-            methodHandle.invoke(buffer, frame.isFin());
 
             callback.succeeded();
         }
