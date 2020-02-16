@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.server;
 
+import java.nio.ByteBuffer;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSession;
 
@@ -31,8 +32,12 @@ import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
-public class SslConnectionFactory extends AbstractConnectionFactory
+public class SslConnectionFactory extends AbstractConnectionFactory implements ConnectionFactory.Detecting
 {
+    private static final int TLS_ALERT_FRAME_TYPE = 0x15;
+    private static final int TLS_HANDSHAKE_FRAME_TYPE = 0x16;
+    private static final int TLS_MAJOR_VERSION = 3;
+
     private final SslContextFactory.Server _sslContextFactory;
     private final String _nextProtocol;
     private boolean _directBuffersForEncryption = false;
@@ -97,6 +102,17 @@ public class SslConnectionFactory extends AbstractConnectionFactory
 
         if (session.getPacketBufferSize() > getInputBufferSize())
             setInputBufferSize(session.getPacketBufferSize());
+    }
+
+    @Override
+    public Detection detect(ByteBuffer buffer)
+    {
+        if (buffer.remaining() < 2)
+            return Detection.NEED_MORE_BYTES;
+        int tlsFrameType = buffer.get(0) & 0xFF;
+        int tlsMajorVersion = buffer.get(1) & 0xFF;
+        boolean seemsSsl = (tlsFrameType == TLS_HANDSHAKE_FRAME_TYPE || tlsFrameType == TLS_ALERT_FRAME_TYPE) && tlsMajorVersion == TLS_MAJOR_VERSION;
+        return seemsSsl ? Detection.RECOGNIZED : Detection.NOT_RECOGNIZED;
     }
 
     @Override
