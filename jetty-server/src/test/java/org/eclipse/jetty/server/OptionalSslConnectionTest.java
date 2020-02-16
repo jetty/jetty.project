@@ -205,7 +205,7 @@ public class OptionalSslConnectionTest
     }
 
     @Test
-    void testNextProtocolIsNotNullButNotConfiguredEither() throws Exception
+    public void testNextProtocolIsNotNullButNotConfiguredEither() throws Exception
     {
         QueuedThreadPool serverThreads = new QueuedThreadPool();
         serverThreads.setName("server");

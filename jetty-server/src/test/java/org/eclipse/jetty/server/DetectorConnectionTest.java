@@ -321,7 +321,7 @@ public class DetectorConnectionTest
     }
 
     @Test
-    void testDetectorToNextDetector() throws Exception
+    public void testDetectorToNextDetector() throws Exception
     {
         String keystore = MavenTestingUtils.getTestResourceFile("keystore.p12").getAbsolutePath();
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
@@ -351,7 +351,7 @@ public class DetectorConnectionTest
     }
 
     @Test
-    void testDetectorWithDetectionUnsuccessful() throws Exception
+    public void testDetectorWithDetectionUnsuccessful() throws Exception
     {
         AtomicBoolean detectionSuccessful = new AtomicBoolean(true);
         ProxyConnectionFactory proxy = new ProxyConnectionFactory(HttpVersion.HTTP_1_1.asString());
@@ -386,7 +386,7 @@ public class DetectorConnectionTest
     }
 
     @Test
-    void testDetectorWithProxyThatHasNoNextProto() throws Exception
+    public void testDetectorWithProxyThatHasNoNextProto() throws Exception
     {
         String keystore = MavenTestingUtils.getTestResourceFile("keystore.p12").getAbsolutePath();
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
@@ -412,7 +412,7 @@ public class DetectorConnectionTest
     }
 
     @Test
-    void testOptionalSsl() throws Exception
+    public void testOptionalSsl() throws Exception
     {
         String keystore = MavenTestingUtils.getTestResourceFile("keystore.p12").getAbsolutePath();
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
@@ -439,7 +439,7 @@ public class DetectorConnectionTest
     }
 
     @Test
-    void testDetectorThatHasNoConfiguredNextProto() throws Exception
+    public void testDetectorThatHasNoConfiguredNextProto() throws Exception
     {
         String keystore = MavenTestingUtils.getTestResourceFile("keystore.p12").getAbsolutePath();
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
@@ -462,7 +462,7 @@ public class DetectorConnectionTest
     }
 
     @Test
-    void testDetectorWithNextProtocolThatDoesNotExist() throws Exception
+    public void testDetectorWithNextProtocolThatDoesNotExist() throws Exception
     {
         HttpConnectionFactory http = new HttpConnectionFactory();
         ProxyConnectionFactory proxy = new ProxyConnectionFactory("does-not-exist");
@@ -497,7 +497,7 @@ public class DetectorConnectionTest
     }
 
     @Test
-    void testDetectingWithNextProtocolThatDoesNotImplementUpgradeTo() throws Exception
+    public void testDetectingWithNextProtocolThatDoesNotImplementUpgradeTo() throws Exception
     {
         ConnectionFactory.Detecting noUpgradeTo = new ConnectionFactory.Detecting()
         {
@@ -564,7 +564,7 @@ public class DetectorConnectionTest
     }
 
     @Test
-    void testDetectorWithNextProtocolThatDoesNotImplementUpgradeTo() throws Exception
+    public void testDetectorWithNextProtocolThatDoesNotImplementUpgradeTo() throws Exception
     {
         ConnectionFactory noUpgradeTo = new ConnectionFactory()
         {
@@ -610,7 +610,7 @@ public class DetectorConnectionTest
     }
 
     @Test
-    void testGeneratedProtocolNames()
+    public void testGeneratedProtocolNames()
     {
         String keystore = MavenTestingUtils.getTestResourceFile("keystore.p12").getAbsolutePath();
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
@@ -625,13 +625,13 @@ public class DetectorConnectionTest
     }
 
     @Test
-    void testDetectorWithNoDetectingFails()
+    public void testDetectorWithNoDetectingFails()
     {
         assertThrows(IllegalArgumentException.class, DetectorConnectionFactory::new);
     }
 
     @Test
-    void testExerciseDetectorNotEnoughBytes() throws Exception
+    public void testExerciseDetectorNotEnoughBytes() throws Exception
     {
         ConnectionFactory.Detecting detectingNeverRecognizes = new ConnectionFactory.Detecting()
         {

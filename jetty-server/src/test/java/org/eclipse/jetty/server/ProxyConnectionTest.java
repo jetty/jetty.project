@@ -189,7 +189,7 @@ public class ProxyConnectionTest
 
     @ParameterizedTest
     @MethodSource("requestProcessors")
-    void testSimple(RequestProcessor p) throws Exception
+    public void testSimple(RequestProcessor p) throws Exception
     {
         String request = "PROXY TCP 1.2.3.4 5.6.7.8 111 222\r\n" +
             "GET /path HTTP/1.1\n" +
@@ -207,7 +207,7 @@ public class ProxyConnectionTest
 
     @ParameterizedTest
     @MethodSource("requestProcessors")
-    void testSimpleV2(RequestProcessor p) throws Exception
+    public void testSimpleV2(RequestProcessor p) throws Exception
     {
         String proxy =
             // Preamble
@@ -243,7 +243,7 @@ public class ProxyConnectionTest
 
     @ParameterizedTest
     @MethodSource("requestProcessors")
-    void testMaxHeaderLengthV2(RequestProcessor p) throws Exception
+    public void testMaxHeaderLengthV2(RequestProcessor p) throws Exception
     {
         p.customize((connector) ->
         {
