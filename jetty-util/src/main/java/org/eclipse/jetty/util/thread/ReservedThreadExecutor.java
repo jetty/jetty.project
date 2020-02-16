@@ -299,9 +299,6 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
 
             while (true)
             {
-                if (!isRunning())
-                    return STOP;
-
                 try
                 {
                     Runnable task = _idleTime <= 0 ? _task.take() : _task.poll(_idleTime, _idleTimeUnit);
@@ -333,22 +330,25 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
             {
                 // test and increment size BEFORE decrementing pending,
                 // so that we don't have a race starting new pending.
-                while (true)
+                int size = _size.get();
+
+                // Are we stopped?
+                if (size < 0)
+                    return;
+
+                // Are we surplus to capacity?
+                if (size >= _capacity)
                 {
-                    int size = _size.get();
-                    if (size < 0)
-                        return;
-                    if (size >= _capacity)
-                    {
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("{} size {} > capacity", this, size, _capacity);
-                        if (_starting)
-                            _pending.decrementAndGet();
-                        return;
-                    }
-                    if (_size.compareAndSet(size, size + 1))
-                        break;
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("{} size {} > capacity", this, size, _capacity);
+                    if (_starting)
+                        _pending.decrementAndGet();
+                    return;
                 }
+
+                // If we cannot update size then recalculate
+                if (!_size.compareAndSet(size, size + 1))
+                    continue;
 
                 if (_starting)
                 {
@@ -362,7 +362,8 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
                 // that only effects the decision to keep other threads reserved.
                 _stack.offerFirst(this);
 
-                // Wait for a task
+                // Once added to the stack, we must always wait for a job on the _task Queue
+                // and never return early, else we may leave a thread blocked offering a _task.
                 Runnable task = reservedWait();
 
                 if (task == STOP)
