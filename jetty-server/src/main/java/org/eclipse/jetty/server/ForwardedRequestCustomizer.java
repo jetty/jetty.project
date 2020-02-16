@@ -589,13 +589,14 @@ public class ForwardedRequestCustomizer implements Customizer
             }
         }
 
+        @SuppressWarnings("unused")
         public void handleHost(HttpField field)
         {
             if (getForwardedPortAsAuthority() && !StringUtil.isEmpty(getForwardedPortHeader()))
             {
                 if (_host == null)
                     _host = new PossiblyPartialHostPort(getLeftMost(field.getValue()));
-                else if (_for instanceof PortSetHostPort)
+                else if (_host instanceof PortSetHostPort)
                     _host = new HostPort(HostPort.normalizeHost(getLeftMost(field.getValue())), _host.getPort());
             }
             else if (_host == null)
