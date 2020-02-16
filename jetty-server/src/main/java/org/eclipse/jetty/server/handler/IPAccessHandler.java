@@ -201,7 +201,7 @@ public class IPAccessHandler extends HandlerWrapper
             if (endp != null)
             {
                 InetSocketAddress address = endp.getRemoteAddress();
-                if (address != null && !isAddrUriAllowed(address.getHostString(), baseRequest.getPathInfo()))
+                if (address != null && !isAddrUriAllowed(address.getHostString(), baseRequest.getContextPath()))
                 {
                     response.sendError(HttpStatus.FORBIDDEN_403);
                     baseRequest.setHandled(true);
