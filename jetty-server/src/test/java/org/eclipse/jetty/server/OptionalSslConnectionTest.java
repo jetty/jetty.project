@@ -38,6 +38,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class OptionalSslConnectionTest
 {
@@ -60,7 +61,7 @@ public class OptionalSslConnectionTest
         HttpConnectionFactory http = new HttpConnectionFactory(httpConfig);
         SslConnectionFactory ssl = new SslConnectionFactory(sslContextFactory, http.getProtocol());
         OptionalSslConnectionFactory sslOrOther = configFn.apply(ssl);
-        connector = new ServerConnector(server, 1, 1, sslOrOther, ssl, http);
+        connector = new ServerConnector(server, 1, 1, sslOrOther, http);
         server.addConnector(connector);
 
         server.setHandler(handler);
@@ -201,6 +202,47 @@ public class OptionalSslConnectionTest
             HttpTester.Response response = HttpTester.parseResponse(input);
             assertNotNull(response);
             assertEquals(HttpStatus.BAD_REQUEST_400, response.getStatus());
+        }
+    }
+
+    @Test
+    void testNextProtocolIsNotNullButNotConfiguredEither() throws Exception
+    {
+        QueuedThreadPool serverThreads = new QueuedThreadPool();
+        serverThreads.setName("server");
+        server = new Server(serverThreads);
+
+        String keystore = MavenTestingUtils.getTestResourceFile("keystore").getAbsolutePath();
+        SslContextFactory sslContextFactory = new SslContextFactory.Server();
+        sslContextFactory.setKeyStorePath(keystore);
+        sslContextFactory.setKeyStorePassword("storepwd");
+        sslContextFactory.setKeyManagerPassword("keypwd");
+
+        HttpConfiguration httpConfig = new HttpConfiguration();
+        HttpConnectionFactory http = new HttpConnectionFactory(httpConfig);
+        SslConnectionFactory ssl = new SslConnectionFactory(sslContextFactory, http.getProtocol());
+        OptionalSslConnectionFactory optSsl = new OptionalSslConnectionFactory(ssl, "no-such-protocol");
+        connector = new ServerConnector(server, 1, 1, optSsl, http);
+        server.addConnector(connector);
+        server.setHandler(new EmptyServerHandler());
+        server.start();
+
+        try (Socket socket = new Socket(server.getURI().getHost(), server.getURI().getPort()))
+        {
+            OutputStream sslOutput = socket.getOutputStream();
+            String request =
+                "GET / HTTP/1.1\r\n" +
+                    "Host: localhost\r\n" +
+                    "\r\n";
+            byte[] requestBytes = request.getBytes(StandardCharsets.US_ASCII);
+
+            sslOutput.write(requestBytes);
+            sslOutput.flush();
+
+            socket.setSoTimeout(5000);
+            InputStream sslInput = socket.getInputStream();
+            HttpTester.Response response = HttpTester.parseResponse(sslInput);
+            assertNull(response);
         }
     }
 
