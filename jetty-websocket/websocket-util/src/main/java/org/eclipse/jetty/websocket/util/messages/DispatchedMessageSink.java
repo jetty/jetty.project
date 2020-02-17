@@ -22,7 +22,6 @@ import java.lang.invoke.MethodHandle;
 import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 
@@ -114,7 +113,7 @@ public abstract class DispatchedMessageSink extends AbstractMessageSink
             typeSink = newSink(frame);
             dispatchComplete = new CompletableFuture<>();
 
-            // Dispatch to end user function (will likely start with blocking for data/accept)
+            // Dispatch to end user function (will likely start with blocking for data/accept).
             new Thread(() ->
             {
                 try

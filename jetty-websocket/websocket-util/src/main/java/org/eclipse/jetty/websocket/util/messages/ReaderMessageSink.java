@@ -33,6 +33,6 @@ public class ReaderMessageSink extends DispatchedMessageSink
     @Override
     public MessageReader newSink(Frame frame)
     {
-        return new MessageReader();
+        return new MessageReader(session.getInputBufferSize());
     }
 }
