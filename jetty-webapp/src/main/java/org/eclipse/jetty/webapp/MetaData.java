@@ -373,39 +373,53 @@ public class MetaData
         if (annotation == null)
             return;
 
-        //if no resource associated with an annotation or the resource is not one of the WEB-INF/lib jars,
-        //map it to empty resource - these annotations will always be processed first
+        //if no resource associated with an annotation map it to empty resource - these
+        //annotations will always be processed first
+        Resource enclosingResource = EmptyResource.INSTANCE;
         Resource resource = annotation.getResource();
-        if (resource == null)
-            resource = EmptyResource.INSTANCE;
-        else
+        if (resource != null)
         {
-            Resource enclosingResource = getEnclosingResource(resource);
+            //check if any of the web-inf classes dirs is a parent 
+             enclosingResource = getEnclosingResource(_webInfClasses, resource);
+
+            //check if any of the web-inf jars is a parent
             if (enclosingResource == null)
-                resource = EmptyResource.INSTANCE;
-            else
-                resource = enclosingResource;
+                enclosingResource = getEnclosingResource(_webInfJars, resource);
+
+            //check if any of the container resources is a parent
+            if (enclosingResource == null)
+                enclosingResource = getEnclosingResource(_orderedContainerResources, resource);
+
+            //Couldn't find a parent resource in any of the known resources, map it to the empty resource
+            if (enclosingResource == null)
+                enclosingResource = EmptyResource.INSTANCE;
         }
 
-        List<DiscoveredAnnotation> list = _annotations.get(resource);
+        List<DiscoveredAnnotation> list = _annotations.get(enclosingResource);
         if (list == null)
         {
             list = new ArrayList<>();
-            _annotations.put(resource, list);
+            _annotations.put(enclosingResource, list);
         }
 
         list.add(annotation);
     }
-
-    private Resource getEnclosingResource(Resource resource)
+    
+    /**
+     * Check if the resource is contained within one of the list of resources.
+     * In other words, check if the given resource is a sub-resource of one
+     * of the list of resources.
+     * 
+     * @param resources the list of resources to check against
+     * @param resource the resource for which to find the parent resource
+     * @return the resource from the list that contains the given resource.
+     */
+    private Resource getEnclosingResource (List<Resource> resources, Resource resource)
     {
-        if (resource == null)
-            return null;
         Resource enclosingResource = null;
         try
         {
-            //check if any of the web-inf classes dirs is a parent 
-            for (Resource r : _webInfClasses)
+            for (Resource r : resources)
             {
                 if (Resource.isContainedIn(resource, r))
                 {
@@ -413,25 +427,13 @@ public class MetaData
                     break;
                 }
             }
-
-            if (enclosingResource == null)
-            {
-                //check if any of the web-inf jars is a parent
-                for (Resource r : _webInfJars)
-                {
-                    if (Resource.isContainedIn(resource, r))
-                    {
-                        enclosingResource = r;
-                        break;
-                    }
-                }
-            }
+            return enclosingResource;
         }
         catch (Exception e)
         {
             LOG.warn(e);
+            return null;
         }
-        return enclosingResource;
     }
 
     public void addDescriptorProcessor(DescriptorProcessor p)

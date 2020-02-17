@@ -393,7 +393,7 @@ public class FileSystemResourceTest
         try (Resource base = newResource(resourceClass, dir.toFile()))
         {
             Resource res = base.addPath("foo");
-            assertThat("is contained in", res.isContainedIn(base), is(false));
+            assertThat("is contained in", res.isContainedIn(base), is(true));
         }
     }
 
