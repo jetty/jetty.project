@@ -23,8 +23,10 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Collection;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -34,6 +36,7 @@ import javax.servlet.ServletInputStream;
 import javax.servlet.http.Part;
 
 import org.eclipse.jetty.server.MultiPartFormInputStream.MultiPart;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
 import org.junit.jupiter.api.Test;
 
@@ -53,17 +56,14 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-/**
- * MultiPartInputStreamTest
- */
 public class MultiPartFormInputStreamTest
 {
+    private static final AtomicInteger testCounter = new AtomicInteger();
     private static final String FILENAME = "stuff.txt";
     protected String _contentType = "multipart/form-data, boundary=AaB03x";
     protected String _multi = createMultipartRequestString(FILENAME);
-    // TODO: move to testing dir concept
-    protected String _dirname = System.getProperty("java.io.tmpdir") + File.separator + "myfiles-" + TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
-    protected File _tmpDir = new File(_dirname);
+    protected File _tmpDir = MavenTestingUtils.getTargetTestingDir(String.valueOf(testCounter.incrementAndGet()));
+    protected String _dirname = _tmpDir.getAbsolutePath();
 
     public MultiPartFormInputStreamTest()
     {
@@ -72,7 +72,6 @@ public class MultiPartFormInputStreamTest
 
     @Test
     public void testBadMultiPartRequest()
-        throws Exception
     {
         String boundary = "X0Y0";
         String str = "--" + boundary + "\r\n" +
@@ -91,14 +90,13 @@ public class MultiPartFormInputStreamTest
         mpis.setDeleteOnExit(true);
 
         IOException x = assertThrows(IOException.class,
-            () -> mpis.getParts(),
+            mpis::getParts,
             "Incomplete Multipart");
         assertThat(x.getMessage(), startsWith("Incomplete"));
     }
 
     @Test
-    public void testFinalBoundaryOnly()
-        throws Exception
+    public void testFinalBoundaryOnly() throws Exception
     {
         String delimiter = "\r\n";
         final String boundary = "MockMultiPartTestBoundary";
@@ -121,8 +119,7 @@ public class MultiPartFormInputStreamTest
     }
 
     @Test
-    public void testEmpty()
-        throws Exception
+    public void testEmpty() throws Exception
     {
         String delimiter = "\r\n";
         final String boundary = "MockMultiPartTestBoundary";
@@ -141,8 +138,7 @@ public class MultiPartFormInputStreamTest
     }
 
     @Test
-    public void testNoBoundaryRequest()
-        throws Exception
+    public void testNoBoundaryRequest() throws Exception
     {
         String str = "--\r\n" +
             "Content-Disposition: form-data; name=\"fileName\"\r\n" +
@@ -184,26 +180,25 @@ public class MultiPartFormInputStreamTest
         assertThat(fileName, notNullValue());
         assertThat(fileName.getSize(), is(3L));
         IO.copy(fileName.getInputStream(), baos);
-        assertThat(baos.toString("US-ASCII"), is("abc"));
+        assertThat(baos.toString(StandardCharsets.US_ASCII), is("abc"));
 
         baos = new ByteArrayOutputStream();
         Part desc = mpis.getPart("desc");
         assertThat(desc, notNullValue());
         assertThat(desc.getSize(), is(3L));
         IO.copy(desc.getInputStream(), baos);
-        assertThat(baos.toString("US-ASCII"), is("123"));
+        assertThat(baos.toString(StandardCharsets.US_ASCII), is("123"));
 
         baos = new ByteArrayOutputStream();
         Part title = mpis.getPart("title");
         assertThat(title, notNullValue());
         assertThat(title.getSize(), is(3L));
         IO.copy(title.getInputStream(), baos);
-        assertThat(baos.toString("US-ASCII"), is("ttt"));
+        assertThat(baos.toString(StandardCharsets.US_ASCII), is("ttt"));
     }
 
     @Test
     public void testNonMultiPartRequest()
-        throws Exception
     {
         MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 50);
         Throwable t = assertThrows(IllegalArgumentException.class, () ->
@@ -214,7 +209,6 @@ public class MultiPartFormInputStreamTest
 
     @Test
     public void testNoBody()
-        throws Exception
     {
         String body = "";
 
@@ -225,13 +219,12 @@ public class MultiPartFormInputStreamTest
             _tmpDir);
         mpis.setDeleteOnExit(true);
 
-        IOException x = assertThrows(IOException.class, () -> mpis.getParts());
+        IOException x = assertThrows(IOException.class, mpis::getParts);
         assertThat(x.getMessage(), containsString("Missing initial multi part boundary"));
     }
 
     @Test
-    public void testBodyAlreadyConsumed()
-        throws Exception
+    public void testBodyAlreadyConsumed() throws Exception
     {
         ServletInputStream is = new ServletInputStream()
         {
@@ -272,7 +265,6 @@ public class MultiPartFormInputStreamTest
 
     @Test
     public void testWhitespaceBodyWithCRLF()
-        throws Exception
     {
         String whitespace = "              \n\n\n\r\n\r\n\r\n\r\n";
 
@@ -282,13 +274,12 @@ public class MultiPartFormInputStreamTest
             config,
             _tmpDir);
         mpis.setDeleteOnExit(true);
-        IOException x = assertThrows(IOException.class, () -> mpis.getParts());
+        IOException x = assertThrows(IOException.class, mpis::getParts);
         assertThat(x.getMessage(), containsString("Missing initial multi part boundary"));
     }
 
     @Test
     public void testWhitespaceBody()
-        throws Exception
     {
         String whitespace = " ";
 
@@ -298,13 +289,12 @@ public class MultiPartFormInputStreamTest
             config,
             _tmpDir);
         mpis.setDeleteOnExit(true);
-        IOException x = assertThrows(IOException.class, () -> mpis.getParts());
+        IOException x = assertThrows(IOException.class, mpis::getParts);
         assertThat(x.getMessage(), containsString("Missing initial"));
     }
 
     @Test
-    public void testLeadingWhitespaceBodyWithCRLF()
-        throws Exception
+    public void testLeadingWhitespaceBodyWithCRLF() throws Exception
     {
         String body = "              \n\n\n\r\n\r\n\r\n\r\n" +
             "--AaB03x\r\n" +
@@ -334,7 +324,7 @@ public class MultiPartFormInputStreamTest
             Part field1 = mpis.getPart("field1");
             assertThat(field1, notNullValue());
             IO.copy(field1.getInputStream(), baos);
-            assertThat(baos.toString("US-ASCII"), is("Joe Blow"));
+            assertThat(baos.toString(StandardCharsets.US_ASCII), is("Joe Blow"));
         }
 
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream())
@@ -342,7 +332,7 @@ public class MultiPartFormInputStreamTest
             Part stuff = mpis.getPart("stuff");
             assertThat(stuff, notNullValue());
             IO.copy(stuff.getInputStream(), baos);
-            assertThat(baos.toString("US-ASCII"), containsString("aaaa"));
+            assertThat(baos.toString(StandardCharsets.US_ASCII), containsString("aaaa"));
         }
     }
 
@@ -376,12 +366,11 @@ public class MultiPartFormInputStreamTest
         assertThat(stuff, notNullValue());
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         IO.copy(stuff.getInputStream(), baos);
-        assertThat(baos.toString("US-ASCII"), containsString("bbbbb"));
+        assertThat(baos.toString(StandardCharsets.US_ASCII), containsString("bbbbb"));
     }
 
     @Test
-    public void testNoLimits()
-        throws Exception
+    public void testNoLimits() throws Exception
     {
         MultipartConfigElement config = new MultipartConfigElement(_dirname);
         MultiPartFormInputStream mpis = new MultiPartFormInputStream(new ByteArrayInputStream(_multi.getBytes()),
@@ -395,7 +384,6 @@ public class MultiPartFormInputStreamTest
 
     @Test
     public void testRequestTooBig()
-        throws Exception
     {
         MultipartConfigElement config = new MultipartConfigElement(_dirname, 60, 100, 50);
         MultiPartFormInputStream mpis = new MultiPartFormInputStream(new ByteArrayInputStream(_multi.getBytes()),
@@ -404,13 +392,12 @@ public class MultiPartFormInputStreamTest
             _tmpDir);
         mpis.setDeleteOnExit(true);
 
-        IllegalStateException x = assertThrows(IllegalStateException.class, () -> mpis.getParts());
+        IllegalStateException x = assertThrows(IllegalStateException.class, mpis::getParts);
         assertThat(x.getMessage(), containsString("Request exceeds maxRequestSize"));
     }
 
     @Test
     public void testRequestTooBigThrowsErrorOnGetParts()
-        throws Exception
     {
         MultipartConfigElement config = new MultipartConfigElement(_dirname, 60, 100, 50);
         MultiPartFormInputStream mpis = new MultiPartFormInputStream(new ByteArrayInputStream(_multi.getBytes()),
@@ -420,17 +407,16 @@ public class MultiPartFormInputStreamTest
         mpis.setDeleteOnExit(true);
 
         //cause parsing
-        IllegalStateException x = assertThrows(IllegalStateException.class, () -> mpis.getParts());
+        IllegalStateException x = assertThrows(IllegalStateException.class, mpis::getParts);
         assertThat(x.getMessage(), containsString("Request exceeds maxRequestSize"));
 
         //try again
-        x = assertThrows(IllegalStateException.class, () -> mpis.getParts());
+        x = assertThrows(IllegalStateException.class, mpis::getParts);
         assertThat(x.getMessage(), containsString("Request exceeds maxRequestSize"));
     }
 
     @Test
     public void testFileTooBig()
-        throws Exception
     {
         MultipartConfigElement config = new MultipartConfigElement(_dirname, 40, 1024, 30);
         MultiPartFormInputStream mpis = new MultiPartFormInputStream(new ByteArrayInputStream(_multi.getBytes()),
@@ -439,14 +425,13 @@ public class MultiPartFormInputStreamTest
             _tmpDir);
         mpis.setDeleteOnExit(true);
         IllegalStateException x = assertThrows(IllegalStateException.class,
-            () -> mpis.getParts(),
+            mpis::getParts,
             "stuff.txt should have been larger than maxFileSize");
         assertThat(x.getMessage(), startsWith("Multipart Mime part"));
     }
 
     @Test
     public void testFileTooBigThrowsErrorOnGetParts()
-        throws Exception
     {
         MultipartConfigElement config = new MultipartConfigElement(_dirname, 40, 1024, 30);
         MultiPartFormInputStream mpis = new MultiPartFormInputStream(new ByteArrayInputStream(_multi.getBytes()),
@@ -456,13 +441,13 @@ public class MultiPartFormInputStreamTest
         mpis.setDeleteOnExit(true);
         // Caused parsing
         IllegalStateException x = assertThrows(IllegalStateException.class,
-            () -> mpis.getParts(),
+            mpis::getParts,
             "stuff.txt should have been larger than maxFileSize");
         assertThat(x.getMessage(), startsWith("Multipart Mime part"));
 
         //test again after the parsing
         x = assertThrows(IllegalStateException.class,
-            () -> mpis.getParts(),
+            mpis::getParts,
             "stuff.txt should have been larger than maxFileSize");
         assertThat(x.getMessage(), startsWith("Multipart Mime part"));
     }
@@ -575,7 +560,7 @@ public class MultiPartFormInputStreamTest
     }
 
     @Test
-    public void testParseAfterCleanUp() throws Exception
+    public void testParseAfterCleanUp()
     {
         final InputStream input = new ByteArrayInputStream(createMultipartRequestString("myFile").getBytes());
         MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 1024, 50);
@@ -592,8 +577,7 @@ public class MultiPartFormInputStreamTest
     }
 
     @Test
-    public void testLFOnlyRequest()
-        throws Exception
+    public void testLFOnlyRequest() throws Exception
     {
         String str = "--AaB03x\n" +
             "content-disposition: form-data; name=\"field1\"\n" +
@@ -617,18 +601,17 @@ public class MultiPartFormInputStreamTest
         assertThat(p1, notNullValue());
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         IO.copy(p1.getInputStream(), baos);
-        assertThat(baos.toString("UTF-8"), is("Joe Blow"));
+        assertThat(baos.toString(StandardCharsets.UTF_8), is("Joe Blow"));
 
         Part p2 = mpis.getPart("field2");
         assertThat(p2, notNullValue());
         baos = new ByteArrayOutputStream();
         IO.copy(p2.getInputStream(), baos);
-        assertThat(baos.toString("UTF-8"), is("Other"));
+        assertThat(baos.toString(StandardCharsets.UTF_8), is("Other"));
     }
 
     @Test
     public void testCROnlyRequest()
-        throws Exception
     {
         String str = "--AaB03x\r" +
             "content-disposition: form-data; name=\"field1\"\r" +
@@ -648,14 +631,13 @@ public class MultiPartFormInputStreamTest
         mpis.setDeleteOnExit(true);
 
         IllegalStateException x = assertThrows(IllegalStateException.class,
-            () -> mpis.getParts(),
+            mpis::getParts,
             "Improper EOL");
         assertThat(x.getMessage(), containsString("Bad EOL"));
     }
 
     @Test
     public void testCRandLFMixRequest()
-        throws Exception
     {
         String str = "--AaB03x\r" +
             "content-disposition: form-data; name=\"field1\"\r" +
@@ -676,7 +658,7 @@ public class MultiPartFormInputStreamTest
         mpis.setDeleteOnExit(true);
 
         IllegalStateException x = assertThrows(IllegalStateException.class,
-            () -> mpis.getParts(),
+            mpis::getParts,
             "Improper EOL");
         assertThat(x.getMessage(), containsString("Bad EOL"));
     }
@@ -698,7 +680,7 @@ public class MultiPartFormInputStreamTest
             _tmpDir);
         mpis.setDeleteOnExit(true);
         IllegalStateException x = assertThrows(IllegalStateException.class,
-            () -> mpis.getParts(),
+            mpis::getParts,
             "Header Line Exceeded Max Length");
         assertThat(x.getMessage(), containsString("Header Line Exceeded Max Length"));
     }
@@ -796,8 +778,7 @@ public class MultiPartFormInputStreamTest
     }
 
     @Test
-    public void testWriteFilesIfContentDispositionFilename()
-        throws Exception
+    public void testWriteFilesIfContentDispositionFilename() throws Exception
     {
         String s = "--AaB03x\r\n" +
             "content-disposition: form-data; name=\"field1\"; filename=\"frooble.txt\"\r\n" +
@@ -895,8 +876,7 @@ public class MultiPartFormInputStreamTest
     }
 
     @Test
-    public void testMultiSameNames()
-        throws Exception
+    public void testMultiSameNames() throws Exception
     {
         String sameNames = "--AaB03x\r\n" +
             "content-disposition: form-data; name=\"stuff\"; filename=\"stuff1.txt\"\r\n" +
@@ -964,19 +944,19 @@ public class MultiPartFormInputStreamTest
         assertNotNull(p1);
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         IO.copy(p1.getInputStream(), baos);
-        assertEquals("other", baos.toString("US-ASCII"));
+        assertEquals("other", baos.toString(StandardCharsets.US_ASCII));
 
         Part p2 = mpis.getPart("stuff");
         assertNotNull(p2);
         baos = new ByteArrayOutputStream();
         IO.copy(p2.getInputStream(), baos);
-        assertEquals(Base64.getEncoder().encodeToString("hello jetty".getBytes(ISO_8859_1)), baos.toString("US-ASCII"));
+        assertEquals(Base64.getEncoder().encodeToString("hello jetty".getBytes(ISO_8859_1)), baos.toString(StandardCharsets.US_ASCII));
 
         Part p3 = mpis.getPart("final");
         assertNotNull(p3);
         baos = new ByteArrayOutputStream();
         IO.copy(p3.getInputStream(), baos);
-        assertEquals("the end", baos.toString("US-ASCII"));
+        assertEquals("the end", baos.toString(StandardCharsets.US_ASCII));
     }
 
     @Test
@@ -1008,18 +988,17 @@ public class MultiPartFormInputStreamTest
         assertNotNull(p1);
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         IO.copy(p1.getInputStream(), baos);
-        assertEquals("other", baos.toString("US-ASCII"));
+        assertEquals("other", baos.toString(StandardCharsets.US_ASCII));
 
         Part p2 = mpis.getPart("stuff");
         assertNotNull(p2);
         baos = new ByteArrayOutputStream();
         IO.copy(p2.getInputStream(), baos);
-        assertEquals("truth=3Dbeauty", baos.toString("US-ASCII"));
+        assertEquals("truth=3Dbeauty", baos.toString(StandardCharsets.US_ASCII));
     }
 
     @Test
-    public void testGeneratedForm()
-        throws Exception
+    public void testGeneratedForm() throws Exception
     {
         String contentType = "multipart/form-data, boundary=WebKitFormBoundary7MA4YWf7OaKlSxkTrZu0gW";
         String body = "Content-Type: multipart/form-data; boundary=WebKitFormBoundary7MA4YWf7OaKlSxkTrZu0gW\r\n" +
