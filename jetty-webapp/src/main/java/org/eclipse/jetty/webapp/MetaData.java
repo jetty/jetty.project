@@ -380,7 +380,7 @@ public class MetaData
         if (resource != null)
         {
             //check if any of the web-inf classes dirs is a parent 
-             enclosingResource = getEnclosingResource(_webInfClasses, resource);
+            enclosingResource = getEnclosingResource(_webInfClasses, resource);
 
             //check if any of the web-inf jars is a parent
             if (enclosingResource == null)
@@ -414,7 +414,7 @@ public class MetaData
      * @param resource the resource for which to find the parent resource
      * @return the resource from the list that contains the given resource.
      */
-    private Resource getEnclosingResource (List<Resource> resources, Resource resource)
+    private Resource getEnclosingResource(List<Resource> resources, Resource resource)
     {
         Resource enclosingResource = null;
         try
