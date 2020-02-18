@@ -36,6 +36,9 @@ module org.eclipse.jetty.util
     // Required by SSL code (for X509).
     requires transitive java.naming;
 
+    // Standard Jetty Logging now.
+    requires org.slf4j;
+
     // Only required if using AppContextLeakPreventer/AWTLeakPreventer.
     requires static java.desktop;
     // Only required if using JavaUtilLog.
@@ -44,8 +47,6 @@ module org.eclipse.jetty.util
     requires static java.sql;
     // Only required if using DOMLeakPreventer.
     requires static java.xml;
-    // Only required if using Slf4jLog.
-    requires static org.slf4j;
 
     uses CredentialProvider;
 }

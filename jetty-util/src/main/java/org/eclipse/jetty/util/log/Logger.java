@@ -19,116 +19,77 @@
 package org.eclipse.jetty.util.log;
 
 /**
- * A simple logging facade that is intended simply to capture the style of logging as used by Jetty.
+ * Legacy Bridge API to Slf4j
+ *
+ * @deprecated
  */
-public interface Logger
+@Deprecated
+public class Logger
 {
-    /**
-     * @return the name of this logger
-     */
-    public String getName();
+    private final org.slf4j.Logger logger;
 
-    /**
-     * Formats and logs at warn level.
-     *
-     * @param msg the formatting string
-     * @param args the optional arguments
-     */
-    public void warn(String msg, Object... args);
+    public Logger(org.slf4j.Logger logger)
+    {
+        this.logger = logger;
+    }
 
-    /**
-     * Logs the given Throwable information at warn level
-     *
-     * @param thrown the Throwable to log
-     */
-    public void warn(Throwable thrown);
+    public void debug(String msg)
+    {
+        logger.debug(msg);
+    }
 
-    /**
-     * Logs the given message at warn level, with Throwable information.
-     *
-     * @param msg the message to log
-     * @param thrown the Throwable to log
-     */
-    public void warn(String msg, Throwable thrown);
+    public void debug(String format, Object... args)
+    {
+        logger.debug(format, args);
+    }
 
-    /**
-     * Formats and logs at info level.
-     *
-     * @param msg the formatting string
-     * @param args the optional arguments
-     */
-    public void info(String msg, Object... args);
+    public void debug(Throwable cause)
+    {
+        logger.debug(cause.getMessage(), cause);
+    }
 
-    /**
-     * Logs the given Throwable information at info level
-     *
-     * @param thrown the Throwable to log
-     */
-    public void info(Throwable thrown);
+    public void ignore(Throwable cause)
+    {
+        logger.trace("IGNORED", cause);
+    }
 
-    /**
-     * Logs the given message at info level, with Throwable information.
-     *
-     * @param msg the message to log
-     * @param thrown the Throwable to log
-     */
-    public void info(String msg, Throwable thrown);
+    public void info(String msg)
+    {
+        logger.info(msg);
+    }
 
-    /**
-     * @return whether the debug level is enabled
-     */
-    public boolean isDebugEnabled();
+    public void info(String format, Object... args)
+    {
+        logger.info(format, args);
+    }
 
-    /**
-     * Mutator used to turn debug on programmatically.
-     *
-     * @param enabled whether to enable the debug level
-     */
-    public void setDebugEnabled(boolean enabled);
+    public void info(Throwable cause)
+    {
+        logger.info(cause.getMessage(), cause);
+    }
 
-    /**
-     * Formats and logs at debug level.
-     *
-     * @param msg the formatting string
-     * @param args the optional arguments
-     */
-    public void debug(String msg, Object... args);
+    public boolean isDebugEnabled()
+    {
+        return logger.isDebugEnabled();
+    }
 
-    /**
-     * Formats and logs at debug level.
-     * avoids autoboxing of integers
-     *
-     * @param msg the formatting string
-     * @param value long value
-     */
-    public void debug(String msg, long value);
+    public void warn(String msg)
+    {
+        logger.warn(msg);
+    }
 
-    /**
-     * Logs the given Throwable information at debug level
-     *
-     * @param thrown the Throwable to log
-     */
-    public void debug(Throwable thrown);
+    public void warn(Throwable cause)
+    {
+        logger.warn(cause.getMessage(), cause);
+    }
 
-    /**
-     * Logs the given message at debug level, with Throwable information.
-     *
-     * @param msg the message to log
-     * @param thrown the Throwable to log
-     */
-    public void debug(String msg, Throwable thrown);
+    public void warn(String msg, Throwable cause)
+    {
+        logger.warn(msg, cause);
+    }
 
-    /**
-     * @param name the name of the logger
-     * @return a logger with the given name
-     */
-    public Logger getLogger(String name);
-
-    /**
-     * Ignore an exception.
-     * <p>This should be used rather than an empty catch block.
-     *
-     * @param ignored the throwable to log as ignored
-     */
-    public void ignore(Throwable ignored);
+    public void warn(String format, Object... args)
+    {
+        logger.warn(format, args);
+    }
 }
