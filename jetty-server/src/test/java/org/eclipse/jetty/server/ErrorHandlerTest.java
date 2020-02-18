@@ -68,21 +68,19 @@ public class ErrorHandlerTest
         server.setHandler(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 if (baseRequest.getDispatcherType() == DispatcherType.ERROR)
                 {
-                    baseRequest.setHandled(true);
                     response.sendError((Integer)request.getAttribute(RequestDispatcher.ERROR_STATUS_CODE));
-                    return;
+                    return true;
                 }
 
                 if (target.startsWith("/charencoding/"))
                 {
-                    baseRequest.setHandled(true);
                     response.setCharacterEncoding("utf-8");
                     response.sendError(404);
-                    return;
+                    return true;
                 }
 
                 if (target.startsWith("/badmessage/"))
@@ -124,6 +122,7 @@ public class ErrorHandlerTest
                     // @checkstyle-enable-check : AvoidEscapedUnicodeCharacters
                     throw new ServletException(new RuntimeException(message));
                 }
+                return false;
             }
         });
         server.start();

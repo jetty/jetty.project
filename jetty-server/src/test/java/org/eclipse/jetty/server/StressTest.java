@@ -464,7 +464,7 @@ public class StressTest
     private static class TestHandler extends HandlerWrapper
     {
         @Override
-        public void handle(String target, final Request baseRequest, final HttpServletRequest request, final HttpServletResponse response) throws IOException, ServletException
+        public boolean handle(String target, final Request baseRequest, final HttpServletRequest request, final HttpServletResponse response) throws IOException, ServletException
         {
             long now = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
             long start = Long.parseLong(baseRequest.getHeader("start"));
@@ -479,11 +479,10 @@ public class StressTest
 
             response.setStatus(200);
             response.getOutputStream().print("DATA " + request.getPathInfo() + "\n\n");
-            baseRequest.setHandled(true);
 
             _latencies[4].add((TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start));
 
-            return;
+            return true;
         }
     }
 }

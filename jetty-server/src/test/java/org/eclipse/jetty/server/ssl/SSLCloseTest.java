@@ -90,11 +90,10 @@ public class SSLCloseTest
 
     private static class WriteHandler extends AbstractHandler
     {
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             try
             {
-                baseRequest.setHandled(true);
                 response.setStatus(200);
                 response.setHeader("test", "value");
 
@@ -113,6 +112,7 @@ public class SSLCloseTest
                     // System.err.println("Write "+i+" "+bytes.length);
                     out.write(bytes);
                 }
+                return true;
             }
             catch (Throwable e)
             {

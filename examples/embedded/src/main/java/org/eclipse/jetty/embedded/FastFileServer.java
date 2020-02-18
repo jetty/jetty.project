@@ -91,10 +91,10 @@ public class FastFileServer
         }
 
         @Override
-        public void handle(String target,
-                           Request baseRequest,
-                           HttpServletRequest request,
-                           HttpServletResponse response) throws IOException,
+        public boolean handle(String target,
+                              Request baseRequest,
+                              HttpServletRequest request,
+                              HttpServletResponse response) throws IOException,
             ServletException
         {
             // define small medium and large.
@@ -108,10 +108,9 @@ public class FastFileServer
 
             // Only handle existing files
             if (!file.exists())
-                return;
+                return false;
 
             // we will handle this request
-            baseRequest.setHandled(true);
 
             // Handle directories
             if (file.isDirectory())
@@ -119,7 +118,7 @@ public class FastFileServer
                 if (!request.getPathInfo().endsWith(URIUtil.SLASH))
                 {
                     response.sendRedirect(response.encodeRedirectURL(request.getRequestURI() + URIUtil.SLASH));
-                    return;
+                    return true;
                 }
                 String listing = Resource.newResource(file).getListHTML(
                     request.getRequestURI(),
@@ -127,7 +126,7 @@ public class FastFileServer
                     request.getQueryString());
                 response.setContentType("text/html; charset=utf-8");
                 response.getWriter().println(listing);
-                return;
+                return true;
             }
 
             // Set some content headers.
@@ -145,7 +144,7 @@ public class FastFileServer
                 ((HttpOutput)response.getOutputStream())
                     .sendContent(FileChannel.open(file.toPath(),
                         StandardOpenOption.READ));
-                return;
+                return true;
             }
 
             // send not "small" files asynchronously so we don't hold threads if
@@ -176,7 +175,7 @@ public class FastFileServer
                 ((HttpOutput)response.getOutputStream())
                     .sendContent(FileChannel.open(file.toPath(),
                         StandardOpenOption.READ), completionCB);
-                return;
+                return true;
             }
 
             // for "large" files get the file mapped buffer to send Typically
@@ -198,6 +197,7 @@ public class FastFileServer
             // async request need to caste to Jetty output stream for best API
             ((HttpOutput)response.getOutputStream()).sendContent(buffer,
                 completionCB);
+            return true;
         }
     }
 }

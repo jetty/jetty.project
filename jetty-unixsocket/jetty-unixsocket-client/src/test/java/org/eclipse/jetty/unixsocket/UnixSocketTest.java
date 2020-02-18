@@ -106,7 +106,7 @@ public class UnixSocketTest
         server.setHandler(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 int l = 0;
                 if (request.getContentLength() != 0)
@@ -121,7 +121,6 @@ public class UnixSocketTest
                     }
                 }
                 log.info("UnixSocketTest: request received");
-                baseRequest.setHandled(true);
                 response.setStatus(200);
                 response.getWriter().write("Hello World " + new Date() + "\r\n");
                 response.getWriter().write(
@@ -129,6 +128,7 @@ public class UnixSocketTest
                 response.getWriter().write(
                     "local =" + request.getLocalAddr() + ":" + request.getLocalPort() + "\r\n");
                 response.getWriter().write("read =" + l + "\r\n");
+                return true;
             }
         });
 

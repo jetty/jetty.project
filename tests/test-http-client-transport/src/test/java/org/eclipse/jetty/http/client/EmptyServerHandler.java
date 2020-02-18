@@ -29,10 +29,10 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 public class EmptyServerHandler extends AbstractHandler
 {
     @Override
-    public void handle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    public boolean handle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
-        jettyRequest.setHandled(true);
         service(target, jettyRequest, request, response);
+        return true;
     }
 
     protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException

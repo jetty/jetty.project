@@ -171,11 +171,11 @@ public class ContextHandlerCollection extends HandlerCollection
     }
 
     @Override
-    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
         Handlers handlers = _handlers.get();
         if (handlers == null)
-            return;
+            return false;
 
         Mapping mapping = (Mapping)handlers;
         HttpChannelState async = baseRequest.getHttpChannelState();
@@ -187,10 +187,9 @@ public class ContextHandlerCollection extends HandlerCollection
                 Handler branch = mapping._contextBranches.get(context);
 
                 if (branch == null)
-                    context.handle(target, baseRequest, request, response);
-                else
-                    branch.handle(target, baseRequest, request, response);
-                return;
+                    return context.handle(target, baseRequest, request, response);
+
+                return branch.handle(target, baseRequest, request, response);
             }
         }
 
@@ -198,7 +197,7 @@ public class ContextHandlerCollection extends HandlerCollection
         {
             Trie<Map.Entry<String, Branch[]>> pathBranches = mapping._pathBranches;
             if (pathBranches == null)
-                return;
+                return false;
 
             int limit = target.length() - 1;
 
@@ -215,9 +214,8 @@ public class ContextHandlerCollection extends HandlerCollection
                 {
                     for (Branch branch : branches.getValue())
                     {
-                        branch.getHandler().handle(target, baseRequest, request, response);
-                        if (baseRequest.isHandled())
-                            return;
+                        if (branch.getHandler().handle(target, baseRequest, request, response))
+                            return true;
                     }
                 }
 
@@ -227,14 +225,14 @@ public class ContextHandlerCollection extends HandlerCollection
         else
         {
             if (mapping.getHandlers() == null)
-                return;
+                return false;
             for (int i = 0; i < mapping.getHandlers().length; i++)
             {
-                mapping.getHandlers()[i].handle(target, baseRequest, request, response);
-                if (baseRequest.isHandled())
-                    return;
+                if (mapping.getHandlers()[i].handle(target, baseRequest, request, response))
+                    return true;
             }
         }
+        return false;
     }
 
     /**

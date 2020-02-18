@@ -51,15 +51,15 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public boolean handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
-                baseRequest.setHandled(true);
                 if (!URI.create(baseRequest.getHttpURI().toString()).isAbsolute())
                     response.setStatus(HttpServletResponse.SC_USE_PROXY);
                 else if (serverHost.equals(request.getServerName()))
                     response.setStatus(status);
                 else
                     response.setStatus(HttpServletResponse.SC_NOT_ACCEPTABLE);
+                return true;
             }
         });
 
@@ -88,9 +88,8 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public boolean handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
-                baseRequest.setHandled(true);
                 String authorization = request.getHeader(HttpHeader.PROXY_AUTHORIZATION.asString());
                 if (authorization == null)
                 {
@@ -107,6 +106,7 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
                             response.setStatus(status);
                     }
                 }
+                return true;
             }
         });
 
@@ -170,9 +170,8 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public boolean handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
-                baseRequest.setHandled(true);
                 if (target.startsWith("/proxy"))
                 {
                     String authorization = request.getHeader(HttpHeader.PROXY_AUTHORIZATION.asString());
@@ -203,6 +202,7 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
                 {
                     response.sendError(HttpStatus.INTERNAL_SERVER_ERROR_500);
                 }
+                return true;
             }
         });
 
@@ -262,9 +262,8 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public boolean handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
-                baseRequest.setHandled(true);
                 String authorization = request.getHeader(HttpHeader.PROXY_AUTHORIZATION.asString());
                 if (authorization == null)
                 {
@@ -284,6 +283,7 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
                         response.setStatus(status);
                     }
                 }
+                return true;
             }
         });
 
@@ -335,9 +335,8 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public boolean handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
-                baseRequest.setHandled(true);
                 String authorization = request.getHeader(HttpHeader.PROXY_AUTHORIZATION.asString());
                 if (authorization == null)
                 {
@@ -357,6 +356,7 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
                         response.setStatus(status);
                     }
                 }
+                return true;
             }
         });
 

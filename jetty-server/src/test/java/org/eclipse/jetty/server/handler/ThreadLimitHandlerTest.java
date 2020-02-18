@@ -82,10 +82,10 @@ public class ThreadLimitHandlerTest
         handler.setHandler(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
-                baseRequest.setHandled(true);
                 response.setStatus(HttpStatus.OK_200);
+                return true;
             }
         });
         _server.setHandler(handler);
@@ -183,12 +183,11 @@ public class ThreadLimitHandlerTest
         handler.setHandler(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
-                baseRequest.setHandled(true);
                 response.setStatus(HttpStatus.OK_200);
                 if ("/other".equals(target))
-                    return;
+                    return true;
 
                 try
                 {
@@ -204,6 +203,7 @@ public class ThreadLimitHandlerTest
                 {
                     count.decrementAndGet();
                 }
+                return true;
             }
         });
         _server.setHandler(handler);

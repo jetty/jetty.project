@@ -75,7 +75,7 @@ public class IdleTimeoutHandler extends HandlerWrapper
     }
 
     @Override
-    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
         final HttpChannel channel = baseRequest.getHttpChannel();
         final long idle_timeout = baseRequest.getHttpChannel().getIdleTimeout();
@@ -83,7 +83,7 @@ public class IdleTimeoutHandler extends HandlerWrapper
 
         try
         {
-            super.handle(target, baseRequest, request, response);
+            return super.handle(target, baseRequest, request, response);
         }
         finally
         {

@@ -65,11 +65,9 @@ public class ProxyProtocolTest
         start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
-                if (remoteAddr.equals(request.getRemoteAddr()) &&
-                    remotePort == request.getRemotePort())
-                    baseRequest.setHandled(true);
+                return remoteAddr.equals(request.getRemoteAddr()) && remotePort == request.getRemotePort();
             }
         });
 
@@ -121,11 +119,9 @@ public class ProxyProtocolTest
         start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
-                if (remoteAddr.equals(request.getRemoteAddr()) &&
-                    remotePort == request.getRemotePort())
-                    baseRequest.setHandled(true);
+                return remoteAddr.equals(request.getRemoteAddr()) && remotePort == request.getRemotePort();
             }
         });
 

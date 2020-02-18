@@ -203,14 +203,14 @@ public class FastCGIProxyServletTest
         context.insertHandler(new HandlerWrapper()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public boolean handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 if (target.startsWith("/remote/"))
                 {
                     request.setAttribute(pathAttribute, originalPath);
                     request.setAttribute(queryAttribute, originalQuery);
                 }
-                super.handle(target, baseRequest, request, response);
+                return super.handle(target, baseRequest, request, response);
             }
         });
         context.start();

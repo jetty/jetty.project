@@ -241,13 +241,13 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public boolean handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 try
                 {
-                    baseRequest.setHandled(true);
                     if (request.getDispatcherType() != DispatcherType.ERROR)
                         IO.copy(request.getInputStream(), response.getOutputStream());
+                    return true;
                 }
                 catch (IOException x)
                 {
@@ -354,13 +354,13 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws ServletException
+            public boolean handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws ServletException
             {
                 try
                 {
-                    baseRequest.setHandled(true);
                     if (request.getDispatcherType() != DispatcherType.ERROR)
                         TimeUnit.MILLISECONDS.sleep(2 * delay);
+                    return true;
                 }
                 catch (InterruptedException x)
                 {
@@ -398,13 +398,13 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws ServletException
+            public boolean handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws ServletException
             {
                 try
                 {
-                    baseRequest.setHandled(true);
                     if (request.getDispatcherType() != DispatcherType.ERROR)
                         TimeUnit.MILLISECONDS.sleep(2 * delay);
+                    return true;
                 }
                 catch (InterruptedException x)
                 {
@@ -460,13 +460,13 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws ServletException
+            public boolean handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws ServletException
             {
                 try
                 {
-                    baseRequest.setHandled(true);
                     if (request.getDispatcherType() != DispatcherType.ERROR)
                         TimeUnit.MILLISECONDS.sleep(2 * delay);
+                    return true;
                 }
                 catch (InterruptedException x)
                 {
@@ -501,11 +501,11 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public boolean handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                baseRequest.setHandled(true);
                 if (!"/done".equals(request.getRequestURI()))
                     response.sendRedirect("/done");
+                return true;
             }
         });
 

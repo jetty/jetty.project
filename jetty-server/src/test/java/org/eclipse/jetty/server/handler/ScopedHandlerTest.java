@@ -23,6 +23,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.server.Handle;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
@@ -150,12 +151,12 @@ public class ScopedHandlerTest
         }
 
         @Override
-        public void doScope(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public boolean doScope(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response, Handle next) throws IOException, ServletException
         {
             try
             {
                 _history.append(">S").append(_name);
-                super.nextScope(target, baseRequest, request, response);
+                return next.handle(target, baseRequest, request, response);
             }
             finally
             {
@@ -164,12 +165,12 @@ public class ScopedHandlerTest
         }
 
         @Override
-        public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public boolean doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response, Handle next) throws IOException, ServletException
         {
             try
             {
                 _history.append(">W").append(_name);
-                super.nextHandle(target, baseRequest, request, response);
+                return next.handle(target, baseRequest, request, response);
             }
             finally
             {
@@ -188,12 +189,12 @@ public class ScopedHandlerTest
         }
 
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             try
             {
                 _history.append(">H").append(_name);
-                super.handle(target, baseRequest, request, response);
+                return super.handle(target, baseRequest, request, response);
             }
             finally
             {

@@ -483,12 +483,12 @@ public class MultiPartContentProviderTest extends AbstractHttpClientServerTest
     private abstract static class AbstractMultiPartHandler extends AbstractHandler
     {
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
-            baseRequest.setHandled(true);
             File tmpDir = MavenTestingUtils.getTargetTestingDir();
             request.setAttribute(Request.__MULTIPART_CONFIG_ELEMENT, new MultipartConfigElement(tmpDir.getAbsolutePath()));
             handle(request, response);
+            return true;
         }
 
         protected abstract void handle(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException;

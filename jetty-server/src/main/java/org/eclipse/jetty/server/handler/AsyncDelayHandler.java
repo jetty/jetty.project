@@ -39,10 +39,10 @@ public class AsyncDelayHandler extends HandlerWrapper
     public static final String AHW_ATTR = "o.e.j.s.h.AsyncHandlerWrapper";
 
     @Override
-    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
         if (!isStarted() || _handler == null)
-            return;
+            return false;
 
         // Get the dispatcher types
         DispatcherType ctype = baseRequest.getDispatcherType();
@@ -82,13 +82,13 @@ public class AsyncDelayHandler extends HandlerWrapper
             baseRequest.setAttribute(AHW_ATTR, ctype);
 
             delayHandling(baseRequest, context);
-            return;
+            return false;
         }
 
         // Handle the request
         try
         {
-            _handler.handle(target, baseRequest, request, response);
+            return _handler.handle(target, baseRequest, request, response);
         }
         finally
         {

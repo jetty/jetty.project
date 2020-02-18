@@ -46,6 +46,7 @@ import javax.servlet.http.HttpSessionListener;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpCookie;
+import org.eclipse.jetty.server.Handle;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.SessionIdManager;
@@ -1476,11 +1477,8 @@ public class SessionHandler extends ScopedHandler
         }
     }
 
-    /*
-     * @see org.eclipse.jetty.server.Handler#handle(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, int)
-     */
     @Override
-    public void doScope(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+    public boolean doScope(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response, Handle next)
         throws IOException, ServletException
     {
         SessionHandler oldSessionHandler = null;
@@ -1550,12 +1548,7 @@ public class SessionHandler extends ScopedHandler
             if (LOG.isDebugEnabled())
                 LOG.debug("sessionHandler={} session={}", this, existingSession);
 
-            if (_nextScope != null)
-                _nextScope.doScope(target, baseRequest, request, response);
-            else if (_outerScope != null)
-                _outerScope.doHandle(target, baseRequest, request, response);
-            else
-                doHandle(target, baseRequest, request, response);
+            return next.handle(target, baseRequest, request, response);
         }
         finally
         {
@@ -1572,16 +1565,6 @@ public class SessionHandler extends ScopedHandler
                 baseRequest.setSession(oldSession);
             }
         }
-    }
-
-    /*
-     * @see org.eclipse.jetty.server.Handler#handle(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, int)
-     */
-    @Override
-    public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
-        throws IOException, ServletException
-    {
-        nextHandle(target, baseRequest, request, response);
     }
 
     /**

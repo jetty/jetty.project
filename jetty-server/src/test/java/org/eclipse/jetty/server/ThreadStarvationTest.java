@@ -250,10 +250,8 @@ public class ThreadStarvationTest
     protected static class ReadHandler extends AbstractHandler
     {
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
-            baseRequest.setHandled(true);
-
             if (request.getDispatcherType() == DispatcherType.REQUEST)
             {
                 response.setStatus(200);
@@ -272,6 +270,7 @@ public class ThreadStarvationTest
             {
                 response.sendError(HttpStatus.INTERNAL_SERVER_ERROR_500);
             }
+            return true;
         }
     }
 
@@ -361,9 +360,8 @@ public class ThreadStarvationTest
         }
 
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
-            baseRequest.setHandled(true);
             response.setStatus(200);
 
             response.setContentLength(BUFFERS * BUFFER_SIZE);
@@ -373,6 +371,7 @@ public class ThreadStarvationTest
                 out.write(content);
                 out.flush();
             }
+            return true;
         }
     }
 

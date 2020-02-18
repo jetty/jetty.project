@@ -30,10 +30,10 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 public class HelloWorld extends AbstractHandler
 {
     @Override
-    public void handle(String target,
-                       Request baseRequest,
-                       HttpServletRequest request,
-                       HttpServletResponse response) throws IOException,
+    public boolean handle(String target,
+                          Request baseRequest,
+                          HttpServletRequest request,
+                          HttpServletResponse response) throws IOException,
         ServletException
     {
         // Declare response encoding and types
@@ -46,7 +46,7 @@ public class HelloWorld extends AbstractHandler
         response.getWriter().println("<h1>Hello World</h1>");
 
         // Inform jetty that this request has now been handled
-        baseRequest.setHandled(true);
+        return true;
     }
 
     public static void main(String[] args) throws Exception

@@ -38,21 +38,18 @@ import org.eclipse.jetty.util.URIUtil;
 public class SecuredRedirectHandler extends AbstractHandler
 {
     @Override
-    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
         HttpChannel channel = baseRequest.getHttpChannel();
         if (baseRequest.isSecure() || (channel == null))
-        {
-            // nothing to do
-            return;
-        }
+            return false;
 
         HttpConfiguration httpConfig = channel.getHttpConfiguration();
         if (httpConfig == null)
         {
             // no config, show error
             response.sendError(HttpStatus.FORBIDDEN_403, "No http configuration available");
-            return;
+            return true;
         }
 
         if (httpConfig.getSecurePort() > 0)
@@ -69,6 +66,6 @@ public class SecuredRedirectHandler extends AbstractHandler
             response.sendError(HttpStatus.FORBIDDEN_403, "Not Secure");
         }
 
-        baseRequest.setHandled(true);
+        return true;
     }
 }

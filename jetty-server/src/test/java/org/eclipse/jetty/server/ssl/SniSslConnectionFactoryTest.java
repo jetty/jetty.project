@@ -141,12 +141,12 @@ public class SniSslConnectionFactoryTest
         _server.setHandler(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             {
-                baseRequest.setHandled(true);
                 response.setStatus(200);
                 response.setHeader("X-URL", request.getRequestURI());
                 response.setHeader("X-HOST", request.getServerName());
+                return true;
             }
         });
 

@@ -166,78 +166,70 @@ public class ThreadLimitHandler extends HandlerWrapper
     }
 
     @Override
-    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
         // Allow ThreadLimit to be enabled dynamically without restarting server
         if (!_enabled)
-        {
             // if disabled, handle normally
-            super.handle(target, baseRequest, request, response);
-        }
-        else
+            return super.handle(target, baseRequest, request, response);
+
+        // Get the remote address of the request
+        Remote remote = getRemote(baseRequest);
+        if (remote == null)
+            // if remote is not known, handle normally
+            return super.handle(target, baseRequest, request, response);
+
+        // Do we already have a future permit from a previous invocation?
+        Closeable permit = (Closeable)baseRequest.getAttribute(PERMIT);
+        try
         {
-            // Get the remote address of the request
-            Remote remote = getRemote(baseRequest);
-            if (remote == null)
+            if (permit != null)
             {
-                // if remote is not known, handle normally
-                super.handle(target, baseRequest, request, response);
+                // Yes, remove it from any future async cycles.
+                baseRequest.removeAttribute(PERMIT);
             }
             else
             {
-                // Do we already have a future permit from a previous invocation?
-                Closeable permit = (Closeable)baseRequest.getAttribute(PERMIT);
-                try
+                // No, then lets try to acquire one
+                CompletableFuture<Closeable> futurePermit = remote.acquire();
+
+                // Did we get a permit?
+                if (futurePermit.isDone())
                 {
-                    if (permit != null)
-                    {
-                        // Yes, remove it from any future async cycles.
-                        baseRequest.removeAttribute(PERMIT);
-                    }
-                    else
-                    {
-                        // No, then lets try to acquire one
-                        CompletableFuture<Closeable> futurePermit = remote.acquire();
-
-                        // Did we get a permit?
-                        if (futurePermit.isDone())
-                        {
-                            // yes
-                            permit = futurePermit.get();
-                        }
-                        else
-                        {
-                            if (LOG.isDebugEnabled())
-                                LOG.debug("Threadlimited {} {}", remote, target);
-                            // No, lets asynchronously suspend the request
-                            AsyncContext async = baseRequest.startAsync();
-                            // let's never timeout the async.  If this is a DOS, then good to make them wait, if this is not
-                            // then give them maximum time to get a thread.
-                            async.setTimeout(0);
-
-                            // dispatch the request when we do eventually get a pass
-                            futurePermit.thenAccept(c ->
-                            {
-                                baseRequest.setAttribute(PERMIT, c);
-                                async.dispatch();
-                            });
-                            return;
-                        }
-                    }
-
-                    // Use the permit
-                    super.handle(target, baseRequest, request, response);
+                    // yes
+                    permit = futurePermit.get();
                 }
-                catch (InterruptedException | ExecutionException e)
+                else
                 {
-                    throw new ServletException(e);
-                }
-                finally
-                {
-                    if (permit != null)
-                        permit.close();
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Threadlimited {} {}", remote, target);
+                    // No, lets asynchronously suspend the request
+                    AsyncContext async = baseRequest.startAsync();
+                    // let's never timeout the async.  If this is a DOS, then good to make them wait, if this is not
+                    // then give them maximum time to get a thread.
+                    async.setTimeout(0);
+
+                    // dispatch the request when we do eventually get a pass
+                    futurePermit.thenAccept(c ->
+                    {
+                        baseRequest.setAttribute(PERMIT, c);
+                        async.dispatch();
+                    });
+                    return true;
                 }
             }
+
+            // Use the permit
+            return super.handle(target, baseRequest, request, response);
+        }
+        catch (InterruptedException | ExecutionException e)
+        {
+            throw new ServletException(e);
+        }
+        finally
+        {
+            if (permit != null)
+                permit.close();
         }
     }
 

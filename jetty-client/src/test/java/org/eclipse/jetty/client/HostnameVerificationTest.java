@@ -69,10 +69,10 @@ public class HostnameVerificationTest
         server.setHandler(new DefaultHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                baseRequest.setHandled(true);
                 response.getWriter().write("foobar");
+                return true;
             }
         });
         server.start();

@@ -240,10 +240,8 @@ public class BufferedResponseHandlerTest
         boolean _reset;
 
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
-            baseRequest.setHandled(true);
-
             if (_bufferSize > 0)
                 response.setBufferSize(_bufferSize);
             if (_mimeType != null)
@@ -267,6 +265,7 @@ public class BufferedResponseHandlerTest
             if (_close)
                 response.getOutputStream().close();
             response.addHeader("Written", "true");
+            return true;
         }
     }
 }

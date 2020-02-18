@@ -274,10 +274,10 @@ public class HttpChannelEventTest
     private static class TestHandler extends AbstractHandler
     {
         @Override
-        public final void handle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public final boolean handle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
-            jettyRequest.setHandled(true);
             handle(request, response);
+            return true;
         }
 
         protected void handle(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException

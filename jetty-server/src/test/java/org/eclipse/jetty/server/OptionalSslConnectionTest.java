@@ -206,9 +206,9 @@ public class OptionalSslConnectionTest
     private static class EmptyServerHandler extends AbstractHandler
     {
         @Override
-        public void handle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
+        public boolean handle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
         {
-            jettyRequest.setHandled(true);
+            return true;
         }
     }
 }

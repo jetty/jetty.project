@@ -196,13 +196,13 @@ public class JaspiTest
     {
 
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
-            baseRequest.setHandled(true);
             response.setStatus(200);
             response.setContentType("text/plain");
             response.getWriter().println("All OK");
             response.getWriter().println("requestURI=" + request.getRequestURI());
+            return true;
         }
     }
 }

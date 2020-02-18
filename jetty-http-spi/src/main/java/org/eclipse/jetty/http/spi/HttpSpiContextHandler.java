@@ -32,6 +32,7 @@ import com.sun.net.httpserver.HttpContext;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpPrincipal;
+import org.eclipse.jetty.server.Handle;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.StringUtil;
@@ -56,11 +57,11 @@ public class HttpSpiContextHandler extends ContextHandler
     }
 
     @Override
-    public void doScope(String target, Request baseRequest, HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException
+    public boolean doScope(String target, Request baseRequest, HttpServletRequest req, HttpServletResponse resp, Handle next) throws IOException, ServletException
     {
         if (!target.startsWith(getContextPath()))
         {
-            return;
+            return false;
         }
 
         HttpExchange jettyHttpExchange;
@@ -73,6 +74,7 @@ public class HttpSpiContextHandler extends ContextHandler
             jettyHttpExchange = new JettyHttpExchange(_httpContext, req, resp);
         }
 
+        // TODO: move to doHandle
         // TODO: add filters processing
 
         try
@@ -108,10 +110,7 @@ public class HttpSpiContextHandler extends ContextHandler
 
             writer.close();
         }
-        finally
-        {
-            baseRequest.setHandled(true);
-        }
+        return true;
     }
 
     private void handleAuthentication(HttpServletResponse resp, HttpExchange httpExchange, Authenticator auth) throws IOException

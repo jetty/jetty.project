@@ -253,13 +253,13 @@ public class SslContextFactoryReloadTest
     private static class EchoHandler extends AbstractHandler
     {
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
-            baseRequest.setHandled(true);
             if (HttpMethod.POST.is(request.getMethod()))
                 IO.copy(request.getInputStream(), response.getOutputStream());
             else
                 response.setContentLength(0);
+            return true;
         }
     }
 }

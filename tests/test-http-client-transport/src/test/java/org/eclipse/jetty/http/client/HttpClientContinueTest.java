@@ -94,11 +94,11 @@ public class HttpClientContinueTest extends AbstractTest<TransportScenario>
         scenario.start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                baseRequest.setHandled(true);
                 // Send 100-Continue and copy the content back
                 IO.copy(request.getInputStream(), response.getOutputStream());
+                return true;
             }
         });
 
@@ -130,14 +130,14 @@ public class HttpClientContinueTest extends AbstractTest<TransportScenario>
         scenario.start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                baseRequest.setHandled(true);
                 // Send 100-Continue and copy the content back
                 ServletInputStream input = request.getInputStream();
                 // Make sure we chunk the response too
                 response.flushBuffer();
                 IO.copy(input, response.getOutputStream());
+                return true;
             }
         });
 
@@ -191,10 +191,10 @@ public class HttpClientContinueTest extends AbstractTest<TransportScenario>
         scenario.start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                baseRequest.setHandled(true);
                 response.sendError(error);
+                return true;
             }
         });
 
@@ -232,9 +232,8 @@ public class HttpClientContinueTest extends AbstractTest<TransportScenario>
         scenario.start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                baseRequest.setHandled(true);
                 if (request.getRequestURI().endsWith("/done"))
                 {
                     response.getOutputStream().print(data);
@@ -246,6 +245,7 @@ public class HttpClientContinueTest extends AbstractTest<TransportScenario>
                     // Send a redirect
                     response.sendRedirect("/done");
                 }
+                return true;
             }
         });
 
@@ -282,9 +282,8 @@ public class HttpClientContinueTest extends AbstractTest<TransportScenario>
         scenario.start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                baseRequest.setHandled(true);
                 if (request.getRequestURI().endsWith("/done"))
                 {
                     // Send 100-Continue and consume the content
@@ -296,6 +295,7 @@ public class HttpClientContinueTest extends AbstractTest<TransportScenario>
                     // Send a redirect
                     response.sendRedirect("/done");
                 }
+                return true;
             }
         });
 
@@ -333,9 +333,8 @@ public class HttpClientContinueTest extends AbstractTest<TransportScenario>
         scenario.startServer(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws ServletException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws ServletException
             {
-                baseRequest.setHandled(true);
                 try
                 {
                     TimeUnit.MILLISECONDS.sleep(2 * idleTimeout);
@@ -344,6 +343,7 @@ public class HttpClientContinueTest extends AbstractTest<TransportScenario>
                 {
                     throw new ServletException(x);
                 }
+                return true;
             }
         });
         scenario.startClient(httpClient -> httpClient.setIdleTimeout(2 * idleTimeout));
@@ -380,9 +380,8 @@ public class HttpClientContinueTest extends AbstractTest<TransportScenario>
         scenario.startServer(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
-                baseRequest.setHandled(true);
                 // Send 100-Continue and consume the content
                 IO.copy(request.getInputStream(), new ByteArrayOutputStream());
                 try
@@ -393,6 +392,7 @@ public class HttpClientContinueTest extends AbstractTest<TransportScenario>
                 {
                     throw new ServletException(x);
                 }
+                return true;
             }
         });
         scenario.startClient(httpClient -> httpClient.setIdleTimeout(idleTimeout));
@@ -425,11 +425,11 @@ public class HttpClientContinueTest extends AbstractTest<TransportScenario>
         scenario.start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                baseRequest.setHandled(true);
                 // Send 100-Continue and consume the content
                 IO.copy(request.getInputStream(), new ByteArrayOutputStream());
+                return true;
             }
         });
 
@@ -487,11 +487,11 @@ public class HttpClientContinueTest extends AbstractTest<TransportScenario>
         scenario.start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                baseRequest.setHandled(true);
                 // Send 100-Continue and echo the content
                 IO.copy(request.getInputStream(), response.getOutputStream());
+                return true;
             }
         });
 
@@ -538,11 +538,11 @@ public class HttpClientContinueTest extends AbstractTest<TransportScenario>
         scenario.start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                baseRequest.setHandled(true);
                 // Send 100-Continue and echo the content
                 IO.copy(request.getInputStream(), response.getOutputStream());
+                return true;
             }
         });
 
@@ -583,11 +583,11 @@ public class HttpClientContinueTest extends AbstractTest<TransportScenario>
         scenario.start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                baseRequest.setHandled(true);
                 // Send 100-Continue and echo the content
                 IO.copy(request.getInputStream(), response.getOutputStream());
+                return true;
             }
         });
 
@@ -624,11 +624,11 @@ public class HttpClientContinueTest extends AbstractTest<TransportScenario>
         scenario.start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                baseRequest.setHandled(true);
                 // Send 100-Continue and echo the content
                 IO.copy(request.getInputStream(), response.getOutputStream());
+                return true;
             }
         });
 
@@ -743,13 +743,13 @@ public class HttpClientContinueTest extends AbstractTest<TransportScenario>
         scenario.start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public boolean handle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                jettyRequest.setHandled(true);
                 // Force a 100 Continue response.
                 jettyRequest.getHttpChannel().sendResponse(HttpGenerator.CONTINUE_100_INFO, null, false);
                 // Echo the content.
                 IO.copy(request.getInputStream(), response.getOutputStream());
+                return true;
             }
         });
 

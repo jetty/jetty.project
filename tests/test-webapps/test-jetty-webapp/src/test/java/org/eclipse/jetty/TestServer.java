@@ -164,33 +164,40 @@ public class TestServer
 
         /**
          * @see org.eclipse.jetty.server.handler.HandlerWrapper#handle(java.lang.String, org.eclipse.jetty.server.Request, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
+         * @return
          */
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
-            super.handle(target, baseRequest, request, response);
-            if (Boolean.valueOf(request.getParameter("restart")))
+            try
             {
-                final Server server = getServer();
-
-                new Thread()
+                return super.handle(target, baseRequest, request, response);
+            }
+            finally
+            {
+                if (Boolean.valueOf(request.getParameter("restart")))
                 {
-                    @Override
-                    public void run()
+                    final Server server = getServer();
+
+                    new Thread()
                     {
-                        try
+                        @Override
+                        public void run()
                         {
-                            Thread.sleep(100);
-                            server.stop();
-                            Thread.sleep(100);
-                            server.start();
+                            try
+                            {
+                                Thread.sleep(100);
+                                server.stop();
+                                Thread.sleep(100);
+                                server.start();
+                            }
+                            catch (Exception e)
+                            {
+                                LOG.warn(e);
+                            }
                         }
-                        catch (Exception e)
-                        {
-                            LOG.warn(e);
-                        }
-                    }
-                }.start();
+                    }.start();
+                }
             }
         }
     }

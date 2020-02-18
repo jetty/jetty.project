@@ -153,34 +153,32 @@ public class ShutdownHandler extends HandlerWrapper
     }
 
     @Override
-    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
         if (!target.equals("/shutdown"))
-        {
-            super.handle(target, baseRequest, request, response);
-            return;
-        }
+            return super.handle(target, baseRequest, request, response);
 
         if (!request.getMethod().equals("POST"))
         {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST);
-            return;
+            return true;
         }
         if (!hasCorrectSecurityToken(request))
         {
             LOG.warn("Unauthorized tokenless shutdown attempt from " + request.getRemoteAddr());
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
-            return;
+            return true;
         }
         if (!requestFromLocalhost(baseRequest))
         {
             LOG.warn("Unauthorized non-loopback shutdown attempt from " + request.getRemoteAddr());
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
-            return;
+            return true;
         }
 
         LOG.info("Shutting down by request from " + request.getRemoteAddr());
         doShutdown(baseRequest, response);
+        return true;
     }
 
     protected void doShutdown(Request baseRequest, HttpServletResponse response) throws IOException
@@ -190,7 +188,6 @@ public class ShutdownHandler extends HandlerWrapper
             connector.shutdown();
         }
 
-        baseRequest.setHandled(true);
         response.setStatus(200);
         response.flushBuffer();
 

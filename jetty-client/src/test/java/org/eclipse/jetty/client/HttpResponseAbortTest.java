@@ -104,11 +104,10 @@ public class HttpResponseAbortTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 try
                 {
-                    baseRequest.setHandled(true);
                     OutputStream output = response.getOutputStream();
                     output.write(1);
                     output.flush();
@@ -119,6 +118,7 @@ public class HttpResponseAbortTest extends AbstractHttpClientServerTest
                 {
                     // The client may have already closed, and we'll get an exception here, but it's expected
                 }
+                return true;
             }
         });
 
@@ -141,11 +141,10 @@ public class HttpResponseAbortTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 try
                 {
-                    baseRequest.setHandled(true);
                     OutputStream output = response.getOutputStream();
                     output.write(1);
                     output.flush();
@@ -156,6 +155,7 @@ public class HttpResponseAbortTest extends AbstractHttpClientServerTest
                 {
                     // The client may have already closed, and we'll get an exception here, but it's expected
                 }
+                return true;
             }
         });
 

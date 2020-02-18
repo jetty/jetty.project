@@ -36,7 +36,6 @@ import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.MultipartConfigElement;
 import javax.servlet.ServletException;
@@ -1077,18 +1076,15 @@ public class RequestTest
         Handler handler = new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException,
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException,
                 ServletException
             {
                 if (baseRequest.getDispatcherType() != DispatcherType.REQUEST)
-                    return;
+                    return false;
 
                 // Fake a @MultiPartConfig'd servlet endpoint
                 MultipartConfigElement multipartConfig = new MultipartConfigElement(tmpdir.getAbsolutePath());
                 request.setAttribute(Request.__MULTIPART_CONFIG_ELEMENT, multipartConfig);
-
-                // Normal processing
-                baseRequest.setHandled(true);
 
                 // Fake the commons-fileupload behavior
                 int length = request.getContentLength();
@@ -1103,6 +1099,7 @@ public class RequestTest
                 String bar = request.getParameter("bar"); // form-data content parameter
                 response.setHeader("x-foo", foo == null ? "null" : foo);
                 response.setHeader("x-bar", bar == null ? "null" : bar);
+                return true;
             }
         };
 
@@ -1143,15 +1140,15 @@ public class RequestTest
         Handler handler = new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException,
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException,
                 ServletException
             {
-                baseRequest.setHandled(true);
                 Reader reader = request.getReader();
                 byte[] b = ("read=" + reader.read() + "\n").getBytes(StandardCharsets.UTF_8);
                 response.setContentLength(b.length);
                 response.getOutputStream().write(b);
                 response.flushBuffer();
+                return true;
             }
         };
         _server.stop();
@@ -1189,10 +1186,9 @@ public class RequestTest
         Handler handler = new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException,
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException,
                 ServletException
             {
-                baseRequest.setHandled(true);
                 Reader reader = request.getReader();
                 String in = IO.toString(reader);
                 String param = request.getParameter("param");
@@ -1201,6 +1197,7 @@ public class RequestTest
                 response.setContentLength(b.length);
                 response.getOutputStream().write(b);
                 response.flushBuffer();
+                return true;
             }
         };
         _server.stop();
@@ -1226,10 +1223,9 @@ public class RequestTest
         Handler handler = new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException,
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException,
                 ServletException
             {
-                baseRequest.setHandled(true);
                 response.sendRedirect("/foo");
                 try
                 {
@@ -1244,6 +1240,7 @@ public class RequestTest
                 {
                     fail("Session creation after response commit should throw IllegalStateException");
                 }
+                return true;
             }
         };
         _server.stop();
@@ -1263,15 +1260,15 @@ public class RequestTest
         Handler handler = new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException,
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException,
                 ServletException
             {
-                baseRequest.setHandled(true);
                 InputStream in = request.getInputStream();
                 byte[] b = ("read=" + in.read() + "\n").getBytes(StandardCharsets.UTF_8);
                 response.setContentLength(b.length);
                 response.getOutputStream().write(b);
                 response.flushBuffer();
+                return true;
             }
         };
         _server.stop();
@@ -1806,10 +1803,8 @@ public class RequestTest
         private String _content;
 
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
-            ((Request)request).setHandled(true);
-
             if (request.getContentLength() > 0 &&
                 !request.getContentType().startsWith(MimeTypes.Type.FORM_ENCODED.asString()) &&
                 !request.getContentType().startsWith("multipart/form-data"))
@@ -1819,6 +1814,8 @@ public class RequestTest
                 response.setStatus(200);
             else
                 response.sendError(500);
+
+            return true;
         }
     }
 
@@ -1834,13 +1831,12 @@ public class RequestTest
         }
 
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
-            ((Request)request).setHandled(true);
             if ("/cleanup".equals(target))
             {
                 response.setStatus(200);
-                return;
+                return true;
             }
 
             try
@@ -1877,6 +1873,7 @@ public class RequestTest
             {
                 response.sendError(500);
             }
+            return true;
         }
     }
 
@@ -1890,13 +1887,12 @@ public class RequestTest
         }
 
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
-            ((Request)request).setHandled(true);
             if ("/cleanup".equals(target))
             {
                 response.setStatus(200);
-                return;
+                return true;
             }
 
             try
@@ -1913,6 +1909,7 @@ public class RequestTest
             {
                 response.sendError(500);
             }
+            return true;
         }
     }
 }

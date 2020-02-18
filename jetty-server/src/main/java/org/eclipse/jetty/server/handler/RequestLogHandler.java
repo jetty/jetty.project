@@ -45,13 +45,12 @@ public class RequestLogHandler extends HandlerWrapper
      * @see org.eclipse.jetty.server.server.Handler#handle(java.lang.String, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, int)
      */
     @Override
-    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+    public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
         throws IOException, ServletException
     {
         if (baseRequest.getDispatcherType() == DispatcherType.REQUEST)
             baseRequest.getHttpChannel().addRequestLog(_requestLog);
-        if (_handler != null)
-            _handler.handle(target, baseRequest, request, response);
+        return _handler != null && _handler.handle(target, baseRequest, request, response);
     }
 
     public void setRequestLog(RequestLog requestLog)

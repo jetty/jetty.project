@@ -190,11 +190,11 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
         start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             {
-                baseRequest.setHandled(true);
                 HttpVersion version = HttpVersion.fromString(request.getProtocol());
                 response.setStatus(version == HttpVersion.HTTP_2 ? HttpStatus.OK_200 : HttpStatus.INTERNAL_SERVER_ERROR_500);
+                return true;
             }
         });
 
@@ -316,11 +316,11 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
         start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             {
-                baseRequest.setHandled(true);
                 assertEquals(path, request.getRequestURI());
                 assertEquals(query, request.getQueryString());
+                return true;
             }
         });
 
@@ -340,11 +340,11 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
         start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             {
-                baseRequest.setHandled(true);
                 assertEquals(path, request.getRequestURI());
                 assertEquals(query, request.getQueryString());
+                return true;
             }
         });
 

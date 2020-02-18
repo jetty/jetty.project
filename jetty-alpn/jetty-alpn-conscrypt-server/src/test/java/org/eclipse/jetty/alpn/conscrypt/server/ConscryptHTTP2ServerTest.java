@@ -113,10 +113,10 @@ public class ConscryptHTTP2ServerTest
         server.setHandler(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             {
                 response.setStatus(200);
-                baseRequest.setHandled(true);
+                return true;
             }
         });
 

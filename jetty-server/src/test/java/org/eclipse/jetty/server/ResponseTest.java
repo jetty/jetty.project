@@ -38,7 +38,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Stream;
-
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.Cookie;
@@ -950,7 +949,7 @@ public class ResponseTest
             server.setHandler(new AbstractHandler()
             {
                 @Override
-                public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+                public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
                 {
                     response.setStatus(200);
                     response.setContentType("text/plain");
@@ -960,7 +959,7 @@ public class ResponseTest
                     w.flush();
                     w.println("Doch");
                     w.flush();
-                    ((Request)request).setHandled(true);
+                    return true;
                 }
             });
             server.start();

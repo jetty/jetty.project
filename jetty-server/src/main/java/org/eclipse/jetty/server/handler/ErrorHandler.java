@@ -88,7 +88,7 @@ public class ErrorHandler extends AbstractHandler
         }
     }
 
-    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
         String cacheControl = getCacheControl();
         if (cacheControl != null)
@@ -102,32 +102,26 @@ public class ErrorHandler extends AbstractHandler
         Dispatcher errorDispatcher = (errorPage != null && context != null)
             ? (Dispatcher)context.getRequestDispatcher(errorPage) : null;
 
-        try
+        if (errorDispatcher != null)
         {
-            if (errorDispatcher != null)
+            try
             {
-                try
-                {
-                    errorDispatcher.error(request, response);
-                    return;
-                }
-                catch (ServletException e)
-                {
-                    LOG.debug(e);
-                    if (response.isCommitted())
-                        return;
-                }
+                errorDispatcher.error(request, response);
+                return true;
             }
+            catch (ServletException e)
+            {
+                LOG.debug(e);
+                if (response.isCommitted())
+                    return true;
+            }
+        }
 
-            String message = (String)request.getAttribute(Dispatcher.ERROR_MESSAGE);
-            if (message == null)
-                message = baseRequest.getResponse().getReason();
-            generateAcceptableResponse(baseRequest, request, response, response.getStatus(), message);
-        }
-        finally
-        {
-            baseRequest.setHandled(true);
-        }
+        String message = (String)request.getAttribute(Dispatcher.ERROR_MESSAGE);
+        if (message == null)
+            message = baseRequest.getResponse().getReason();
+        generateAcceptableResponse(baseRequest, request, response, response.getStatus(), message);
+        return true;
     }
 
     /**
@@ -215,7 +209,7 @@ public class ErrorHandler extends AbstractHandler
     /**
      * Generate an acceptable error response for a mime type.
      * <p>This method is called for each mime type in the users agent's
-     * <code>Accept</code> header, until {@link Request#isHandled()} is true and a
+     * <code>Accept</code> header, until a
      * response of the appropriate type is generated.
      * </p>
      * <p>The default implementation handles "text/html", "text/*" and "*&#47;*".

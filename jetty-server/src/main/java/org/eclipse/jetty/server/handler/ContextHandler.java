@@ -71,6 +71,7 @@ import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.ClassLoaderDump;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Dispatcher;
+import org.eclipse.jetty.server.Handle;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HandlerContainer;
 import org.eclipse.jetty.server.Request;
@@ -1038,54 +1039,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         return true;
     }
 
-    /*
-     * @see org.eclipse.jetty.server.Handler#handle(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
-     */
-    public boolean checkContext(final String target, final Request baseRequest, final HttpServletResponse response) throws IOException
-    {
-        DispatcherType dispatch = baseRequest.getDispatcherType();
-
-        // Check the vhosts
-        if (!checkVirtualHost(baseRequest))
-            return false;
-
-        if (!checkContextPath(target))
-            return false;
-
-        // Are we not the root context?
-        // redirect null path infos
-        if (!_allowNullPathInfo && _contextPath.length() == target.length() && _contextPath.length() > 1)
-        {
-            // context request must end with /
-            baseRequest.setHandled(true);
-            if (baseRequest.getQueryString() != null)
-                response.sendRedirect(baseRequest.getRequestURI() + "/?" + baseRequest.getQueryString());
-            else
-                response.sendRedirect(baseRequest.getRequestURI() + "/");
-            return false;
-        }
-
-        switch (_availability)
-        {
-            case SHUTDOWN:
-            case UNAVAILABLE:
-                baseRequest.setHandled(true);
-                response.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
-                return false;
-            default:
-                if ((DispatcherType.REQUEST.equals(dispatch) && baseRequest.isHandled()))
-                    return false;
-        }
-
-        return true;
-    }
-
-    /**
-     * @see org.eclipse.jetty.server.handler.ScopedHandler#doScope(java.lang.String, org.eclipse.jetty.server.Request, javax.servlet.http.HttpServletRequest,
-     * javax.servlet.http.HttpServletResponse)
-     */
     @Override
-    public void doScope(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    public boolean doScope(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response, Handle next) throws IOException, ServletException
     {
         if (LOG.isDebugEnabled())
             LOG.debug("scope {}|{}|{} @ {}", baseRequest.getContextPath(), baseRequest.getServletPath(), baseRequest.getPathInfo(), this);
@@ -1102,35 +1057,65 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
         oldContext = baseRequest.getContext();
 
-        // Are we already in this context?
-        if (oldContext != _scontext)
-        {
-            // check the target.
-            if (DispatcherType.REQUEST.equals(dispatch) || DispatcherType.ASYNC.equals(dispatch))
-            {
-                if (isCompactPath())
-                    target = URIUtil.compactPath(target);
-                if (!checkContext(target, baseRequest, response))
-                    return;
+        // If we are already in this context, just handle next
+        if (oldContext == _scontext)
+            return next.handle(target, baseRequest, request, response);
 
-                if (target.length() > _contextPath.length())
-                {
-                    if (_contextPath.length() > 1)
-                        target = target.substring(_contextPath.length());
-                    pathInfo = target;
-                }
-                else if (_contextPath.length() == 1)
-                {
-                    target = URIUtil.SLASH;
-                    pathInfo = URIUtil.SLASH;
-                }
+        // check the target.
+        if (DispatcherType.REQUEST.equals(dispatch) || DispatcherType.ASYNC.equals(dispatch))
+        {
+            if (isCompactPath())
+                target = URIUtil.compactPath(target);
+
+            // Check the vhosts and path
+            if (!checkVirtualHost(baseRequest) || !checkContextPath(target))
+                return false;
+
+            // Are we not the root context?
+            // redirect null path infos
+            if (!_allowNullPathInfo && _contextPath.length() == target.length() && _contextPath.length() > 1)
+            {
+                // context request must end with /
+                if (baseRequest.getQueryString() != null)
+                    response.sendRedirect(baseRequest.getRequestURI() + "/?" + baseRequest.getQueryString());
                 else
-                {
-                    target = URIUtil.SLASH;
-                    pathInfo = null;
-                }
+                    response.sendRedirect(baseRequest.getRequestURI() + "/");
+                return true;
             }
 
+            if (target.length() > _contextPath.length())
+            {
+                if (_contextPath.length() > 1)
+                    target = target.substring(_contextPath.length());
+                pathInfo = target;
+            }
+            else if (_contextPath.length() == 1)
+            {
+                target = URIUtil.SLASH;
+                pathInfo = URIUtil.SLASH;
+            }
+            else
+            {
+                target = URIUtil.SLASH;
+                pathInfo = null;
+            }
+        }
+
+        // Are we available
+        switch (_availability)
+        {
+            case SHUTDOWN:
+            case UNAVAILABLE:
+                response.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
+                return true;
+            default:
+                // TODO is this still needed?
+                if ((DispatcherType.REQUEST.equals(dispatch) && baseRequest.getHttpChannel().isResponseCompleted()))
+                    return true;
+        }
+
+        try
+        {
             // Set the classloader
             if (_classLoader != null)
             {
@@ -1138,10 +1123,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 oldClassloader = currentThread.getContextClassLoader();
                 currentThread.setContextClassLoader(_classLoader);
             }
-        }
 
-        try
-        {
+
             oldContextPath = baseRequest.getContextPath();
             oldServletPath = baseRequest.getServletPath();
             oldPathInfo = baseRequest.getPathInfo();
@@ -1165,27 +1148,22 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             if (LOG.isDebugEnabled())
                 LOG.debug("context={}|{}|{} @ {}", baseRequest.getContextPath(), baseRequest.getServletPath(), baseRequest.getPathInfo(), this);
 
-            nextScope(target, baseRequest, request, response);
+            return next.handle(target, baseRequest, request, response);
         }
         finally
         {
-            if (oldContext != _scontext)
-            {
-                exitScope(baseRequest);
+            exitScope(baseRequest);
 
-                // reset the classloader
-                if (_classLoader != null && currentThread != null)
-                {
-                    currentThread.setContextClassLoader(oldClassloader);
-                }
+            // reset the classloader
+            if (_classLoader != null && currentThread != null)
+                currentThread.setContextClassLoader(oldClassloader);
 
-                // reset the context and servlet path.
-                baseRequest.setContext(oldContext);
-                __context.set(oldContext);
-                baseRequest.setContextPath(oldContextPath);
-                baseRequest.setServletPath(oldServletPath);
-                baseRequest.setPathInfo(oldPathInfo);
-            }
+            // reset the context and servlet path.
+            baseRequest.setContext(oldContext);
+            __context.set(oldContext);
+            baseRequest.setContextPath(oldContextPath);
+            baseRequest.setServletPath(oldServletPath);
+            baseRequest.setPathInfo(oldPathInfo);
         }
     }
 
@@ -1229,12 +1207,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         }
     }
 
-    /**
-     * @see org.eclipse.jetty.server.handler.ScopedHandler#doHandle(java.lang.String, org.eclipse.jetty.server.Request, javax.servlet.http.HttpServletRequest,
-     * javax.servlet.http.HttpServletResponse)
-     */
     @Override
-    public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    public boolean doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response, Handle next) throws IOException, ServletException
     {
         final DispatcherType dispatch = baseRequest.getDispatcherType();
         final boolean new_context = baseRequest.takeNewContext();
@@ -1245,12 +1219,11 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
             if (dispatch == DispatcherType.REQUEST && isProtectedTarget(target))
             {
-                baseRequest.setHandled(true);
                 response.sendError(HttpServletResponse.SC_NOT_FOUND);
-                return;
+                return true;
             }
 
-            nextHandle(target, baseRequest, request, response);
+            return next.handle(target, baseRequest, request, response);
         }
         finally
         {

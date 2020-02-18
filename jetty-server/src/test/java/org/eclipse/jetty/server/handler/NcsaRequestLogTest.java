@@ -468,10 +468,10 @@ public class NcsaRequestLogTest
         AbstractHandler wrapper = new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
                 throws IOException, ServletException
             {
-                testHandler.handle(target, baseRequest, request, response);
+                return testHandler.handle(target, baseRequest, request, response);
             }
         };
 
@@ -481,11 +481,11 @@ public class NcsaRequestLogTest
         ErrorHandler errorHandler = new ErrorHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
                 throws IOException, ServletException
             {
                 errors.add(baseRequest.getRequestURI());
-                super.handle(target, baseRequest, request, response);
+                return super.handle(target, baseRequest, request, response);
             }
         };
         _server.addBean(errorHandler);
@@ -503,10 +503,10 @@ public class NcsaRequestLogTest
         AbstractHandler wrapper = new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
                 throws IOException, ServletException
             {
-                testHandler.handle(target, baseRequest, request, response);
+                return testHandler.handle(target, baseRequest, request, response);
             }
         };
 
@@ -532,19 +532,17 @@ public class NcsaRequestLogTest
         _server.setHandler(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
                 throws IOException, ServletException
             {
                 if (Boolean.TRUE.equals(request.getAttribute("ASYNC")))
-                    testHandler.handle(target, baseRequest, request, response);
-                else
-                {
-                    request.setAttribute("ASYNC", Boolean.TRUE);
-                    AsyncContext ac = request.startAsync();
-                    ac.setTimeout(1000);
-                    ac.dispatch();
-                    baseRequest.setHandled(true);
-                }
+                    return testHandler.handle(target, baseRequest, request, response);
+
+                request.setAttribute("ASYNC", Boolean.TRUE);
+                AsyncContext ac = request.startAsync();
+                ac.setTimeout(1000);
+                ac.dispatch();
+                return true;
             }
         });
         startServer();
@@ -562,51 +560,48 @@ public class NcsaRequestLogTest
         _server.setHandler(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
                 throws IOException, ServletException
             {
                 if (Boolean.TRUE.equals(request.getAttribute("ASYNC")))
-                    testHandler.handle(target, baseRequest, request, response);
-                else
+                    return testHandler.handle(target, baseRequest, request, response);
+
+                request.setAttribute("ASYNC", Boolean.TRUE);
+                AsyncContext ac = request.startAsync();
+                ac.setTimeout(1000);
+                _server.getThreadPool().execute(() ->
                 {
-                    request.setAttribute("ASYNC", Boolean.TRUE);
-                    AsyncContext ac = request.startAsync();
-                    ac.setTimeout(1000);
-                    baseRequest.setHandled(true);
-                    _server.getThreadPool().execute(() ->
+                    try
                     {
                         try
                         {
-                            try
+                            while (baseRequest.getHttpChannel().getState().getState() != HttpChannelState.State.WAITING)
                             {
-                                while (baseRequest.getHttpChannel().getState().getState() != HttpChannelState.State.WAITING)
-                                {
-                                    Thread.sleep(10);
-                                }
-                                baseRequest.setHandled(false);
-                                testHandler.handle(target, baseRequest, request, response);
-                                if (!baseRequest.isHandled())
-                                    response.sendError(404);
+                                Thread.sleep(10);
                             }
-                            catch (BadMessageException bad)
-                            {
-                                response.sendError(bad.getCode(), bad.getReason());
-                            }
-                            catch (Exception e)
-                            {
-                                response.sendError(500, e.toString());
-                            }
+                            if (!testHandler.handle(target, baseRequest, request, response))
+                                response.sendError(404);
                         }
-                        catch (IOException | IllegalStateException th)
+                        catch (BadMessageException bad)
                         {
-                            Log.getLog().ignore(th);
+                            response.sendError(bad.getCode(), bad.getReason());
                         }
-                        finally
+                        catch (Exception e)
                         {
-                            ac.complete();
+                            response.sendError(500, e.toString());
                         }
-                    });
-                }
+                    }
+                    catch (IOException | IllegalStateException th)
+                    {
+                        Log.getLog().ignore(th);
+                    }
+                    finally
+                    {
+                        ac.complete();
+                    }
+                });
+
+                return true;
             }
         });
         startServer();
@@ -646,38 +641,37 @@ public class NcsaRequestLogTest
     private static class NoopHandler extends AbstractTestHandler
     {
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
+            return false;
         }
     }
 
     private static class HelloHandler extends AbstractTestHandler
     {
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             response.setContentType("text/plain");
             response.getWriter().print("Hello World");
-            if (baseRequest != null)
-                baseRequest.setHandled(true);
+            return baseRequest != null;
         }
     }
 
     private static class ResponseSendErrorHandler extends AbstractTestHandler
     {
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             response.sendError(599, "expected");
-            if (baseRequest != null)
-                baseRequest.setHandled(true);
+            return baseRequest != null;
         }
     }
 
     private static class ServletExceptionHandler extends AbstractTestHandler
     {
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             throw new ServletException("expected");
         }
@@ -686,7 +680,7 @@ public class NcsaRequestLogTest
     private static class IOExceptionHandler extends AbstractTestHandler
     {
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             throw new IOException("expected");
         }
@@ -695,9 +689,8 @@ public class NcsaRequestLogTest
     private static class IOExceptionPartialHandler extends AbstractTestHandler
     {
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
-            baseRequest.setHandled(true);
             response.setContentType("text/plain");
             response.setContentLength(100);
             response.getOutputStream().println("You were expecting maybe a ");
@@ -709,7 +702,7 @@ public class NcsaRequestLogTest
     private static class RuntimeExceptionHandler extends AbstractTestHandler
     {
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             throw new RuntimeException("expected");
         }
@@ -718,7 +711,7 @@ public class NcsaRequestLogTest
     private static class BadMessageHandler extends AbstractTestHandler
     {
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             throw new BadMessageException(499);
         }
@@ -727,7 +720,7 @@ public class NcsaRequestLogTest
     private static class AbortHandler extends AbstractTestHandler
     {
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             BadMessageException bad = new BadMessageException(488);
             baseRequest.getHttpChannel().abort(bad);
@@ -738,26 +731,24 @@ public class NcsaRequestLogTest
     private static class AbortPartialHandler extends AbstractTestHandler
     {
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
-            baseRequest.setHandled(true);
             response.setContentType("text/plain");
             response.setContentLength(100);
             response.getOutputStream().println("You were expecting maybe a ");
             response.flushBuffer();
             baseRequest.getHttpChannel().abort(new Throwable("bomb"));
+            return true;
         }
     }
 
     public static class OKErrorHandler extends ErrorHandler
     {
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+        public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
         {
-            if (baseRequest.isHandled() || response.isCommitted())
-            {
-                return;
-            }
+            if (response.isCommitted())
+                return true;
 
             // collect error details
             String reason = (response instanceof Response) ? ((Response)response).getReason() : null;
@@ -768,7 +759,7 @@ public class NcsaRequestLogTest
             response.setContentType("text/plain");
             PrintWriter out = response.getWriter();
             out.printf("Error %d: %s%n", status, reason);
-            baseRequest.setHandled(true);
+            return true;
         }
     }
 
@@ -791,13 +782,12 @@ public class NcsaRequestLogTest
     private class TestHandler extends AbstractHandler
     {
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             String q = request.getQueryString();
             if (q == null)
-                return;
+                return false;
 
-            baseRequest.setHandled(true);
             for (String action : q.split("\\&"))
             {
                 String[] param = action.split("=");
@@ -865,6 +855,7 @@ public class NcsaRequestLogTest
                     }
                 }
             }
+            return true;
         }
     }
 }

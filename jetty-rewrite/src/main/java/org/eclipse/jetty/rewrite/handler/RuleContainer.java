@@ -209,7 +209,7 @@ public class RuleContainer extends Rule implements Dumpable
                 if (rule.isHandling())
                 {
                     LOG.debug("handling {}", rule);
-                    baseRequest.setHandled(true);
+                    baseRequest.getResponse().completeOutput();
                 }
 
                 if (rule.isTerminating())

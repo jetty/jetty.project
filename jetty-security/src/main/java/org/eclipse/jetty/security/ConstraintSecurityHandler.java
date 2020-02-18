@@ -662,7 +662,6 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
             else
                 response.sendError(HttpStatus.FORBIDDEN_403, "!Secure");
 
-            request.setHandled(true);
             return false;
         }
         else

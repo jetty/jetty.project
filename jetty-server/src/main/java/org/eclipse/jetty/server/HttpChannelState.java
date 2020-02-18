@@ -324,7 +324,7 @@ public class HttpChannelState
             switch (_outputState)
             {
                 case OPEN:
-                    return false;
+                    return _sendError;
                 default:
                     return true;
             }
@@ -892,6 +892,9 @@ public class HttpChannelState
 
             if (_outputState != OutputState.OPEN)
                 throw new IllegalStateException(_outputState.toString());
+
+            if (_sendError)
+                throw new IllegalStateException("sendError already called");
 
             switch (_state)
             {

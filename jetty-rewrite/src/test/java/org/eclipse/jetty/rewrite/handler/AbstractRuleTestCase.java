@@ -65,7 +65,7 @@ public abstract class AbstractRuleTestCase
         _server.setHandler(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 _request = baseRequest;
                 _response = _request.getResponse();
@@ -77,6 +77,7 @@ public abstract class AbstractRuleTestCase
                 {
                     throw new ServletException(e);
                 }
+                return true;
             }
         });
 

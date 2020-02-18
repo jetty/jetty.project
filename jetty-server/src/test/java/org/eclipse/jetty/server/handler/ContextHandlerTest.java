@@ -101,7 +101,7 @@ public class ContextHandlerTest
 
             assertTrue(handlerA.isHandled());
             assertFalse(handlerB.isHandled());
-            assertFalse(handlerC.isHandled());
+            assertTrue(handlerC.isHandled());
 
             handlerA.reset();
             handlerB.reset();
@@ -111,7 +111,7 @@ public class ContextHandlerTest
 
             assertFalse(handlerA.isHandled());
             assertTrue(handlerB.isHandled());
-            assertFalse(handlerC.isHandled());
+            assertTrue(handlerC.isHandled());
         }
         finally
         {
@@ -193,9 +193,9 @@ public class ContextHandlerTest
             connector.getResponse("GET / HTTP/1.0\n" + "Host: www.example.com.\n\n");
             assertTrue(handlerA.isHandled());
             assertFalse(handlerB.isHandled());
-            assertFalse(handlerC.isHandled());
+            assertTrue(handlerC.isHandled());
             assertFalse(handlerD.isHandled());
-            assertFalse(handlerE.isHandled());
+            assertTrue(handlerE.isHandled());
             assertFalse(handlerF.isHandled());
             assertFalse(handlerG.isHandled());
             assertFalse(handlerH.isHandled());
@@ -228,11 +228,11 @@ public class ContextHandlerTest
 
             connectorN.getResponse("GET / HTTP/1.0\n" + "Host: www.example.com.\n\n");
             assertTrue(handlerA.isHandled());
-            assertFalse(handlerB.isHandled());
-            assertFalse(handlerC.isHandled());
-            assertFalse(handlerD.isHandled());
-            assertFalse(handlerE.isHandled());
-            assertFalse(handlerF.isHandled());
+            assertTrue(handlerB.isHandled());
+            assertTrue(handlerC.isHandled());
+            assertTrue(handlerD.isHandled());
+            assertTrue(handlerE.isHandled());
+            assertTrue(handlerF.isHandled());
             assertFalse(handlerG.isHandled());
             assertFalse(handlerH.isHandled());
             handlerA.reset();
@@ -247,7 +247,7 @@ public class ContextHandlerTest
             connectorN.getResponse("GET / HTTP/1.0\n" + "Host: localhost\n\n");
             assertFalse(handlerA.isHandled());
             assertTrue(handlerB.isHandled());
-            assertFalse(handlerC.isHandled());
+            assertTrue(handlerC.isHandled());
             assertFalse(handlerD.isHandled());
             assertFalse(handlerE.isHandled());
             assertFalse(handlerF.isHandled());
@@ -284,9 +284,9 @@ public class ContextHandlerTest
         try
         {
             connector.getResponse("GET / HTTP/1.0\n" + "Host: www.example.com.\n\n");
-            assertFalse(handlerA.isHandled());
+            assertTrue(handlerA.isHandled());
             assertFalse(handlerB.isHandled());
-            assertFalse(handlerC.isHandled());
+            assertTrue(handlerC.isHandled());
             assertFalse(handlerD.isHandled());
             assertTrue(handlerE.isHandled());
             assertFalse(handlerF.isHandled());
@@ -320,11 +320,11 @@ public class ContextHandlerTest
             handlerH.reset();
 
             connectorN.getResponse("GET / HTTP/1.0\n" + "Host: www.example.com.\n\n");
-            assertFalse(handlerA.isHandled());
-            assertFalse(handlerB.isHandled());
-            assertFalse(handlerC.isHandled());
-            assertFalse(handlerD.isHandled());
-            assertFalse(handlerE.isHandled());
+            assertTrue(handlerA.isHandled());
+            assertTrue(handlerB.isHandled());
+            assertTrue(handlerC.isHandled());
+            assertTrue(handlerD.isHandled());
+            assertTrue(handlerE.isHandled());
             assertTrue(handlerF.isHandled());
             assertFalse(handlerG.isHandled());
             assertFalse(handlerH.isHandled());
@@ -339,7 +339,7 @@ public class ContextHandlerTest
 
             connectorN.getResponse("GET / HTTP/1.0\n" + "Host: localhost\n\n");
             assertFalse(handlerA.isHandled());
-            assertFalse(handlerB.isHandled());
+            assertTrue(handlerB.isHandled());
             assertTrue(handlerC.isHandled());
             assertFalse(handlerD.isHandled());
             assertFalse(handlerE.isHandled());
@@ -814,10 +814,10 @@ public class ContextHandlerTest
         }
 
         @Override
-        public void handle(String s, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+        public boolean handle(String s, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
         {
-            baseRequest.setHandled(true);
             this.handled = true;
+            return true;
         }
 
         public void reset()
@@ -829,15 +829,14 @@ public class ContextHandlerTest
     private static final class ContextPathHandler extends AbstractHandler
     {
         @Override
-        public void handle(String s, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+        public boolean handle(String s, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
         {
-            baseRequest.setHandled(true);
-
             response.setStatus(200);
             response.setContentType("text/plain; charset=utf-8");
             response.setHeader("Connection", "close");
             PrintWriter writer = response.getWriter();
             writer.println("ctx='" + request.getContextPath() + "'");
+            return true;
         }
     }
 }

@@ -87,13 +87,13 @@ public class StatisticsHandlerTest
         _statsHandler.setHandler(new AbstractHandler()
         {
             @Override
-            public void handle(String path, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException
+            public boolean handle(String path, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException
             {
-                request.setHandled(true);
                 try
                 {
                     barrier[0].await();
                     barrier[1].await();
+                    return true;
                 }
                 catch (Exception x)
                 {
@@ -180,13 +180,13 @@ public class StatisticsHandlerTest
         _statsHandler.setHandler(new AbstractHandler()
         {
             @Override
-            public void handle(String path, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException
+            public boolean handle(String path, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException
             {
-                request.setHandled(true);
                 try
                 {
                     barrier[0].await();
                     barrier[1].await();
+                    return true;
                 }
                 catch (Exception x)
                 {
@@ -243,9 +243,8 @@ public class StatisticsHandlerTest
         _statsHandler.setHandler(new AbstractHandler()
         {
             @Override
-            public void handle(String path, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws ServletException
+            public boolean handle(String path, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws ServletException
             {
-                request.setHandled(true);
                 try
                 {
                     barrier[0].await();
@@ -254,6 +253,7 @@ public class StatisticsHandlerTest
 
                     if (asyncHolder.get() == null)
                         asyncHolder.set(request.startAsync());
+                    return true;
                 }
                 catch (Exception x)
                 {
@@ -373,9 +373,8 @@ public class StatisticsHandlerTest
         _statsHandler.setHandler(new AbstractHandler()
         {
             @Override
-            public void handle(String path, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws ServletException
+            public boolean handle(String path, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws ServletException
             {
-                request.setHandled(true);
                 try
                 {
                     barrier[0].await();
@@ -388,6 +387,7 @@ public class StatisticsHandlerTest
                         asyncHolder.set(async);
                         async.setTimeout(timeout);
                     }
+                    return true;
                 }
                 catch (Exception x)
                 {
@@ -489,9 +489,8 @@ public class StatisticsHandlerTest
         _statsHandler.setHandler(new AbstractHandler()
         {
             @Override
-            public void handle(String path, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws ServletException
+            public boolean handle(String path, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws ServletException
             {
-                request.setHandled(true);
                 try
                 {
                     barrier[0].await();
@@ -503,6 +502,7 @@ public class StatisticsHandlerTest
                         AsyncContext async = request.startAsync();
                         asyncHolder.set(async);
                     }
+                    return true;
                 }
                 catch (Exception x)
                 {
@@ -606,7 +606,7 @@ public class StatisticsHandlerTest
         _statsHandler.setHandler(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             {
                 AsyncContext asyncContext = request.startAsync();
                 asyncContext.setTimeout(0);
@@ -624,6 +624,7 @@ public class StatisticsHandlerTest
                     }
                 }).start();
                 serverLatch.countDown();
+                return true;
             }
         });
         _server.start();
@@ -655,12 +656,12 @@ public class StatisticsHandlerTest
         private volatile CountDownLatch _latch = new CountDownLatch(1);
 
         @Override
-        public void handle(String path, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException, ServletException
+        public boolean handle(String path, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException, ServletException
         {
             final CountDownLatch latch = _latch;
             try
             {
-                super.handle(path, request, httpRequest, httpResponse);
+                return super.handle(path, request, httpRequest, httpResponse);
             }
             finally
             {

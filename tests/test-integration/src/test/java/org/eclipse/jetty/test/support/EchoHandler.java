@@ -31,10 +31,8 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 public class EchoHandler extends AbstractHandler
 {
     @Override
-    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
-        baseRequest.setHandled(true);
-
         if (request.getContentType() != null)
             response.setContentType(request.getContentType());
         if (request.getParameter("charset") != null)
@@ -60,5 +58,6 @@ public class EchoHandler extends AbstractHandler
 
         if (reader.read() >= 0)
             throw new IllegalStateException("Not closed");
+        return true;
     }
 }

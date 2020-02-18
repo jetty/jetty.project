@@ -194,7 +194,7 @@ public class ConnectHandler extends HandlerWrapper
     }
 
     @Override
-    public void handle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+    public boolean handle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
         String tunnelProtocol = jettyRequest.getMetaData().getProtocol();
         if (HttpMethod.CONNECT.is(request.getMethod()) && tunnelProtocol == null)
@@ -208,10 +208,11 @@ public class ConnectHandler extends HandlerWrapper
             if (LOG.isDebugEnabled())
                 LOG.debug("CONNECT request for {}", serverAddress);
             handleConnect(jettyRequest, request, response, serverAddress);
+            return true;
         }
         else
         {
-            super.handle(target, jettyRequest, request, response);
+            return super.handle(target, jettyRequest, request, response);
         }
     }
 
@@ -227,7 +228,6 @@ public class ConnectHandler extends HandlerWrapper
      */
     protected void handleConnect(Request baseRequest, HttpServletRequest request, HttpServletResponse response, String serverAddress)
     {
-        baseRequest.setHandled(true);
         try
         {
             boolean proceed = handleAuthentication(request, response, serverAddress);

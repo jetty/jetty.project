@@ -241,11 +241,11 @@ public class SecuredRedirectHandlerTest
         }
 
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             response.setContentType("text/plain");
             response.getWriter().printf("%s%n", msg);
-            baseRequest.setHandled(true);
+            return true;
         }
     }
 
@@ -259,13 +259,12 @@ public class SecuredRedirectHandlerTest
         }
 
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             if (!"/".equals(target))
             {
-                baseRequest.setHandled(true);
                 response.sendError(404);
-                return;
+                return true;
             }
 
             response.setContentType("text/html");
@@ -281,7 +280,7 @@ public class SecuredRedirectHandlerTest
             }
             out.println("</ul>");
             out.println("</body></html>");
-            baseRequest.setHandled(true);
+            return true;
         }
     }
 }

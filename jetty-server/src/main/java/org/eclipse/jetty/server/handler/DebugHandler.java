@@ -51,7 +51,7 @@ public class DebugHandler extends HandlerWrapper implements Connection.Listener
      * @see org.eclipse.jetty.server.Handler#handle(java.lang.String, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, int)
      */
     @Override
-    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+    public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
         throws IOException, ServletException
     {
         final Response base_response = baseRequest.getResponse();
@@ -75,9 +75,9 @@ public class DebugHandler extends HandlerWrapper implements Connection.Listener
                 print(name, "REQUEST " + baseRequest.getRemoteAddr() + " " + request.getMethod() + " " + baseRequest.getHeader("Cookie") + "; " + baseRequest.getHeader("User-Agent"));
             thread.setName(name);
 
-            getHandler().handle(target, baseRequest, request, response);
+            return getHandler().handle(target, baseRequest, request, response);
         }
-        catch (IOException ioe)
+        catch (IOException | RuntimeException | Error ioe)
         {
             ex = ioe.toString();
             throw ioe;
@@ -86,16 +86,6 @@ public class DebugHandler extends HandlerWrapper implements Connection.Listener
         {
             ex = servletEx.toString() + ":" + servletEx.getCause();
             throw servletEx;
-        }
-        catch (RuntimeException rte)
-        {
-            ex = rte.toString();
-            throw rte;
-        }
-        catch (Error e)
-        {
-            ex = e.toString();
-            throw e;
         }
         finally
         {

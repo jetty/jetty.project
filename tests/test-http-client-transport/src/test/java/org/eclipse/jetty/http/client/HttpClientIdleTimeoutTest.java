@@ -54,14 +54,14 @@ public class HttpClientIdleTimeoutTest extends AbstractTest<TransportScenario>
         scenario.startServer(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
-                baseRequest.setHandled(true);
                 if (target.equals("/timeout"))
                 {
                     AsyncContext asyncContext = request.startAsync();
                     asyncContext.setTimeout(0);
                 }
+                return true;
             }
         });
         scenario.startClient(httpClient -> httpClient.setIdleTimeout(idleTimeout));
@@ -90,14 +90,14 @@ public class HttpClientIdleTimeoutTest extends AbstractTest<TransportScenario>
         scenario.start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
-                baseRequest.setHandled(true);
                 if (target.equals("/timeout"))
                 {
                     AsyncContext asyncContext = request.startAsync();
                     asyncContext.setTimeout(0);
                 }
+                return true;
             }
         });
 

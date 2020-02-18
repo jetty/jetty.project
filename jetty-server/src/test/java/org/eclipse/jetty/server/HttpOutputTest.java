@@ -707,9 +707,8 @@ public class HttpOutputTest
         ByteArrayOutputStream expected = new ByteArrayOutputStream();
 
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
-            baseRequest.setHandled(true);
             HttpOutput out = (HttpOutput)response.getOutputStream();
 
             // Add interceptor to check aggregation is done
@@ -727,6 +726,7 @@ public class HttpOutputTest
                 expected.write(data);
                 out.write(data);
             }
+            return true;
         }
     }
 
@@ -746,9 +746,8 @@ public class HttpOutputTest
         ByteArrayOutputStream expected = new ByteArrayOutputStream();
 
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
-            baseRequest.setHandled(true);
             HttpOutput out = (HttpOutput)response.getOutputStream();
 
             // Add interceptor to check aggregation is done
@@ -786,6 +785,7 @@ public class HttpOutputTest
                 {
                 }
             });
+            return true;
         }
     }
 
@@ -830,9 +830,8 @@ public class HttpOutputTest
         ByteArrayOutputStream expected = new ByteArrayOutputStream();
 
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
-            baseRequest.setHandled(true);
             HttpOutput out = (HttpOutput)response.getOutputStream();
 
             int bufferSize = baseRequest.getHttpChannel().getHttpConfiguration().getOutputBufferSize();
@@ -861,6 +860,7 @@ public class HttpOutputTest
             Arrays.fill(data, (byte)(fill++));
             expected.write(data);
             out.write(data);
+            return true;
         }
     }
 
@@ -872,9 +872,8 @@ public class HttpOutputTest
         _swap.setHandler(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
-                baseRequest.setHandled(true);
                 response.setCharacterEncoding("UTF8");
                 HttpOutput out = (HttpOutput)response.getOutputStream();
 
@@ -909,6 +908,7 @@ public class HttpOutputTest
                 out.println(-5.0D);
                 exp.println(false);
                 out.println(false);
+                return true;
             }
         });
         _swap.getHandler().start();
@@ -924,9 +924,8 @@ public class HttpOutputTest
         _swap.setHandler(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
-                baseRequest.setHandled(true);
                 HttpOutput out = (HttpOutput)response.getOutputStream();
                 Interceptor interceptor = out.getInterceptor();
                 out.setInterceptor(new Interceptor()
@@ -964,6 +963,7 @@ public class HttpOutputTest
                 {
                     out.write(data);
                 }
+                return true;
             }
         });
         _swap.getHandler().start();
@@ -978,9 +978,8 @@ public class HttpOutputTest
         _swap.setHandler(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
-                baseRequest.setHandled(true);
                 response.setContentLength(0);
                 AsyncContext async = request.startAsync();
                 response.getOutputStream().setWriteListener(new WriteListener()
@@ -997,6 +996,7 @@ public class HttpOutputTest
                     {
                     }
                 });
+                return true;
             }
         });
         _swap.getHandler().start();
@@ -1032,9 +1032,8 @@ public class HttpOutputTest
         ChainedInterceptor _interceptor;
 
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
-            baseRequest.setHandled(true);
             if (_interceptor != null)
             {
                 _interceptor.init(baseRequest);
@@ -1050,14 +1049,14 @@ public class HttpOutputTest
             {
                 out.sendContent(_contentInputStream);
                 _contentInputStream = null;
-                return;
+                return true;
             }
 
             if (_contentChannel != null)
             {
                 out.sendContent(_contentChannel);
                 _contentChannel = null;
-                return;
+                return true;
             }
 
             if (_content != null && _writeLengthIfKnown)
@@ -1104,7 +1103,7 @@ public class HttpOutputTest
                         }
                     });
 
-                    return;
+                    return true;
                 }
 
                 while (BufferUtil.hasContent(_content))
@@ -1119,7 +1118,7 @@ public class HttpOutputTest
                         out.write(_arrayBuffer, 0, len);
                 }
 
-                return;
+                return true;
             }
 
             if (_byteBuffer != null)
@@ -1162,7 +1161,7 @@ public class HttpOutputTest
                         }
                     });
 
-                    return;
+                    return true;
                 }
 
                 while (BufferUtil.hasContent(_content))
@@ -1173,7 +1172,7 @@ public class HttpOutputTest
                     out.write(_byteBuffer);
                 }
 
-                return;
+                return true;
             }
 
             if (_content != null)
@@ -1183,8 +1182,10 @@ public class HttpOutputTest
                 else
                     out.sendContent(_content);
                 _content = null;
-                return;
+                return true;
             }
+
+            return true;
         }
     }
 }

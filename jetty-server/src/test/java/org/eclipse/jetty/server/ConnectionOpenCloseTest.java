@@ -58,7 +58,7 @@ public class ConnectionOpenCloseTest extends AbstractHttpTest
         server.setHandler(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             {
                 throw new IllegalStateException();
             }
@@ -109,9 +109,9 @@ public class ConnectionOpenCloseTest extends AbstractHttpTest
         server.setHandler(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             {
-                baseRequest.setHandled(true);
+                return true;
             }
         });
         server.start();
@@ -182,9 +182,9 @@ public class ConnectionOpenCloseTest extends AbstractHttpTest
         server.setHandler(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             {
-                baseRequest.setHandled(true);
+                return true;
             }
         });
         server.start();

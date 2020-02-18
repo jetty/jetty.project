@@ -816,10 +816,8 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
     private static class ServerHandler extends AbstractHandler
     {
         @Override
-        public void handle(String target, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException, ServletException
+        public boolean handle(String target, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException, ServletException
         {
-            request.setHandled(true);
-
             String uri = httpRequest.getRequestURI();
             switch (uri)
             {
@@ -858,6 +856,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
                     throw new ServletException();
                 }
             }
+            return true;
         }
     }
 }

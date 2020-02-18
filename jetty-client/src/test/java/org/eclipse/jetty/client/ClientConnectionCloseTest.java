@@ -54,10 +54,8 @@ public class ClientConnectionCloseTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                baseRequest.setHandled(true);
-
                 ServletInputStream input = request.getInputStream();
                 while (true)
                 {
@@ -78,6 +76,7 @@ public class ClientConnectionCloseTest extends AbstractHttpClientServerTest
                 {
                     throw new InterruptedIOException();
                 }
+                return true;
             }
         });
 
@@ -111,10 +110,10 @@ public class ClientConnectionCloseTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             {
-                baseRequest.setHandled(true);
                 request.startAsync();
+                return true;
                 // Do not respond.
             }
         });
@@ -155,10 +154,8 @@ public class ClientConnectionCloseTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                baseRequest.setHandled(true);
-
                 ServletInputStream input = request.getInputStream();
                 while (true)
                 {
@@ -178,6 +175,7 @@ public class ClientConnectionCloseTest extends AbstractHttpClientServerTest
                 {
                     throw new InterruptedIOException();
                 }
+                return true;
             }
         });
 
@@ -219,9 +217,8 @@ public class ClientConnectionCloseTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                baseRequest.setHandled(true);
                 response.setContentLength(0);
                 response.flushBuffer();
 
@@ -234,6 +231,7 @@ public class ClientConnectionCloseTest extends AbstractHttpClientServerTest
                 {
                     throw new InterruptedIOException();
                 }
+                return true;
             }
         });
 

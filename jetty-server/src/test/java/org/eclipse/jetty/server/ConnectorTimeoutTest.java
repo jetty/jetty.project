@@ -165,7 +165,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         configureServer(new HelloWorldHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException,
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException,
                 ServletException
             {
                 try
@@ -176,7 +176,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
                 {
                     e.printStackTrace();
                 }
-                super.handle(target, baseRequest, request, response);
+                return super.handle(target, baseRequest, request, response);
             }
         });
         Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort());
@@ -224,7 +224,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         configureServer(new EchoHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException,
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException,
                 ServletException
             {
                 try
@@ -235,7 +235,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
                 {
                     e.printStackTrace();
                 }
-                super.handle(target, baseRequest, request, response);
+                return super.handle(target, baseRequest, request, response);
             }
         });
         Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort());
@@ -732,9 +732,8 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
     protected static class SlowResponseHandler extends AbstractHandler
     {
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
-            baseRequest.setHandled(true);
             response.setStatus(200);
             OutputStream out = response.getOutputStream();
 
@@ -752,15 +751,15 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
                 }
             }
             out.close();
+            return true;
         }
     }
 
     protected static class HugeResponseHandler extends AbstractHandler
     {
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
-            baseRequest.setHandled(true);
             response.setStatus(200);
             OutputStream out = response.getOutputStream();
             byte[] buffer = new byte[128 * 1024 * 1024];
@@ -773,15 +772,15 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
             ByteBuffer bb = ByteBuffer.wrap(buffer);
             ((HttpOutput)out).sendContent(bb);
             out.close();
+            return true;
         }
     }
 
     protected static class WaitHandler extends AbstractHandler
     {
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
-            baseRequest.setHandled(true);
             response.setStatus(200);
             OutputStream out = response.getOutputStream();
             try
@@ -794,6 +793,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
             }
             out.write("Hello World\r\n".getBytes());
             out.flush();
+            return true;
         }
     }
 }

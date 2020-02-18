@@ -59,9 +59,8 @@ public class HTTP2CServer extends Server
     private static class SimpleHandler extends AbstractHandler
     {
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
-            baseRequest.setHandled(true);
             String code = request.getParameter("code");
             if (code != null)
                 response.setStatus(Integer.parseInt(code));
@@ -73,6 +72,7 @@ public class HTTP2CServer extends Server
             content += "date=" + new Date() + "\n";
             response.setContentLength(content.length());
             response.getOutputStream().print(content);
+            return true;
         }
     }
 }

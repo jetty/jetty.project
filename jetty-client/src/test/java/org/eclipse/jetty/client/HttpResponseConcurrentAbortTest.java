@@ -123,12 +123,12 @@ public class HttpResponseConcurrentAbortTest extends AbstractHttpClientServerTes
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
-                baseRequest.setHandled(true);
                 OutputStream output = response.getOutputStream();
                 output.write(1);
                 output.flush();
+                return true;
             }
         });
 

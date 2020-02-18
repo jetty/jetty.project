@@ -82,7 +82,7 @@ class SuspendHandler extends HandlerWrapper implements AsyncListener
     }
 
     @Override
-    public void handle(String target, final Request baseRequest, final HttpServletRequest request, final HttpServletResponse response) throws IOException, ServletException
+    public boolean handle(String target, final Request baseRequest, final HttpServletRequest request, final HttpServletResponse response) throws IOException, ServletException
     {
         if (DispatcherType.REQUEST.equals(baseRequest.getDispatcherType()))
         {
@@ -118,7 +118,6 @@ class SuspendHandler extends HandlerWrapper implements AsyncListener
                             Thread.sleep(_completeAfter);
                             response.getOutputStream().println("COMPLETED");
                             response.setStatus(200);
-                            baseRequest.setHandled(true);
                             asyncContext.complete();
                         }
                         catch (Exception e)
@@ -132,7 +131,6 @@ class SuspendHandler extends HandlerWrapper implements AsyncListener
             {
                 response.getOutputStream().println("COMPLETED");
                 response.setStatus(200);
-                baseRequest.setHandled(true);
                 asyncContext.complete();
             }
 
@@ -164,14 +162,13 @@ class SuspendHandler extends HandlerWrapper implements AsyncListener
         {
             response.setStatus(200);
             response.getOutputStream().print("TIMEOUT");
-            baseRequest.setHandled(true);
         }
         else
         {
             response.setStatus(200);
             response.getOutputStream().print("RESUMED");
-            baseRequest.setHandled(true);
         }
+        return true;
     }
 
     @Override

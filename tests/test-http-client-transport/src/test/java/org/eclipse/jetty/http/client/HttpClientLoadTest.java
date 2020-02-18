@@ -313,10 +313,8 @@ public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTran
     private class LoadHandler extends AbstractHandler
     {
         @Override
-        public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+        public boolean handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
         {
-            baseRequest.setHandled(true);
-
             String timeout = request.getHeader("X-Timeout");
             if (timeout != null)
                 sleep(2 * Integer.parseInt(timeout));
@@ -344,6 +342,7 @@ public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTran
 
             if (Boolean.parseBoolean(request.getHeader("X-Close")))
                 response.setHeader("Connection", "close");
+            return true;
         }
 
         private void sleep(long time) throws InterruptedIOException

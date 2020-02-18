@@ -42,6 +42,7 @@ import org.eclipse.jetty.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
@@ -106,21 +107,17 @@ public class DatabaseLoginServiceTestServer
         }
 
         @Override
-        public void handle(String target, org.eclipse.jetty.server.Request baseRequest,
-                           HttpServletRequest request, HttpServletResponse response)
+        public boolean handle(String target, Request baseRequest,
+                              HttpServletRequest request, HttpServletResponse response)
             throws IOException, ServletException
         {
-            if (baseRequest.isHandled())
-            {
-                return;
-            }
+            if (baseRequest.getHttpChannel().isCommitted())
+                return true;
 
             OutputStream out = null;
 
             if (baseRequest.getMethod().equals("PUT"))
             {
-                baseRequest.setHandled(true);
-
                 File file = new File(_resourcePath, URLDecoder.decode(request.getPathInfo(), "utf-8"));
                 FS.ensureDirExists(file.getParentFile());
 
@@ -131,7 +128,6 @@ public class DatabaseLoginServiceTestServer
 
             if (baseRequest.getMethod().equals("POST"))
             {
-                baseRequest.setHandled(true);
                 out = new ByteArrayOutputStream();
 
                 response.setStatus(HttpServletResponse.SC_OK);
@@ -151,6 +147,7 @@ public class DatabaseLoginServiceTestServer
                 if (!(out instanceof FileOutputStream))
                     _requestContent = out.toString();
             }
+            return true;
         }
 
         public String getRequestContent()

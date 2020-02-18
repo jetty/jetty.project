@@ -102,12 +102,12 @@ public class ErrorPageTest
         HandlerWrapper noopHandler = new HandlerWrapper()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 if (target.startsWith("/noop"))
-                    return;
-                else
-                    super.handle(target, baseRequest, request, response);
+                    return false;
+
+                return super.handle(target, baseRequest, request, response);
             }
         };
         _context.insertHandler(noopHandler);

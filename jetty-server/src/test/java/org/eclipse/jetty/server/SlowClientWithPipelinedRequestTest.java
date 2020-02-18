@@ -90,10 +90,9 @@ public class SlowClientWithPipelinedRequestTest
         startServer(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
                 throws IOException, ServletException
             {
-                baseRequest.setHandled(true);
                 if ("/content".equals(target))
                 {
                     // We simulate what the DefaultServlet does, bypassing the blocking
@@ -107,6 +106,7 @@ public class SlowClientWithPipelinedRequestTest
                     // Do a non blocking write
                     output.sendContent(buffer);
                 }
+                return true;
             }
         });
 

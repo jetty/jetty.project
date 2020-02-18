@@ -482,17 +482,16 @@ public class ForwardProxyTLSServerTest
         testProxyAuthentication(proxyTLS, new ConnectHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
             {
                 String proxyAuth = request.getHeader(HttpHeader.PROXY_AUTHORIZATION.asString());
                 if (proxyAuth == null)
                 {
-                    baseRequest.setHandled(true);
                     response.setStatus(HttpStatus.PROXY_AUTHENTICATION_REQUIRED_407);
                     response.setHeader(HttpHeader.PROXY_AUTHENTICATE.asString(), "Basic realm=\"" + realm + "\"");
-                    return;
+                    return true;
                 }
-                super.handle(target, baseRequest, request, response);
+                return super.handle(target, baseRequest, request, response);
             }
         }, realm);
     }
@@ -505,18 +504,17 @@ public class ForwardProxyTLSServerTest
         testProxyAuthentication(proxyTLS, new ConnectHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
             {
                 String proxyAuth = request.getHeader(HttpHeader.PROXY_AUTHORIZATION.asString());
                 if (proxyAuth == null)
                 {
-                    baseRequest.setHandled(true);
                     response.setStatus(HttpStatus.PROXY_AUTHENTICATION_REQUIRED_407);
                     response.setHeader(HttpHeader.PROXY_AUTHENTICATE.asString(), "Basic realm=\"" + realm + "\"");
                     response.getOutputStream().write(new byte[4096]);
-                    return;
+                    return true;
                 }
-                super.handle(target, baseRequest, request, response);
+                return super.handle(target, baseRequest, request, response);
             }
         }, realm);
     }
@@ -529,18 +527,17 @@ public class ForwardProxyTLSServerTest
         testProxyAuthentication(proxyTLS, new ConnectHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
             {
                 String proxyAuth = request.getHeader(HttpHeader.PROXY_AUTHORIZATION.asString());
                 if (proxyAuth == null)
                 {
-                    baseRequest.setHandled(true);
                     response.setStatus(HttpStatus.PROXY_AUTHENTICATION_REQUIRED_407);
                     response.setHeader(HttpHeader.PROXY_AUTHENTICATE.asString(), "Basic realm=\"" + realm + "\"");
                     response.getOutputStream().write(new byte[1024]);
-                    return;
+                    return true;
                 }
-                super.handle(target, baseRequest, request, response);
+                return super.handle(target, baseRequest, request, response);
             }
         }, realm, true);
     }
@@ -812,10 +809,8 @@ public class ForwardProxyTLSServerTest
     private static class ServerHandler extends AbstractHandler
     {
         @Override
-        public void handle(String target, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException, ServletException
+        public boolean handle(String target, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException, ServletException
         {
-            request.setHandled(true);
-
             String uri = httpRequest.getRequestURI();
             if ("/echo".equals(uri))
             {
@@ -827,6 +822,7 @@ public class ForwardProxyTLSServerTest
             {
                 throw new ServletException();
             }
+            return true;
         }
     }
 }

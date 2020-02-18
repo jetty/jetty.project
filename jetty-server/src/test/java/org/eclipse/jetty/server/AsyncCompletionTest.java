@@ -338,9 +338,8 @@ public class AsyncCompletionTest extends HttpServerTestFixture
         }
 
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
-            baseRequest.setHandled(true);
             AsyncContext context = request.startAsync();
             ServletOutputStream out = response.getOutputStream();
             response.setContentType("text/plain");
@@ -451,6 +450,8 @@ public class AsyncCompletionTest extends HttpServerTestFixture
                     t.printStackTrace();
                 }
             });
+
+            return true;
         }
 
         @Override
@@ -564,9 +565,8 @@ public class AsyncCompletionTest extends HttpServerTestFixture
         }
 
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
-            baseRequest.setHandled(true);
             AsyncContext context = request.startAsync();
             ServletOutputStream out = response.getOutputStream();
 
@@ -621,6 +621,7 @@ public class AsyncCompletionTest extends HttpServerTestFixture
                     throw new RuntimeException(e);
                 }
             });
+            return true;
         }
 
         @Override
@@ -734,9 +735,8 @@ public class AsyncCompletionTest extends HttpServerTestFixture
         }
 
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
-            baseRequest.setHandled(true);
             AsyncContext context = request.startAsync();
             HttpOutput out = (HttpOutput)response.getOutputStream();
 
@@ -755,6 +755,7 @@ public class AsyncCompletionTest extends HttpServerTestFixture
             }
 
             _wait.countDown();
+            return true;
         }
 
         @Override

@@ -472,104 +472,102 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
      *      javax.servlet.http.HttpServletResponse, int)
      */
     @Override
-    public void handle(String pathInContext, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    public boolean handle(String pathInContext, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
         final Response base_response = baseRequest.getResponse();
         final Handler handler = getHandler();
 
         if (handler == null)
-            return;
+            return false;
 
         final Authenticator authenticator = _authenticator;
 
-        if (checkSecurity(baseRequest))
+        if (!checkSecurity(baseRequest))
+            return handler.handle(pathInContext, baseRequest, request, response);
+
+        //See Servlet Spec 3.1 sec 13.6.3
+        if (authenticator != null)
+            authenticator.prepareRequest(baseRequest);
+
+        RoleInfo roleInfo = prepareConstraintInfo(pathInContext, baseRequest);
+
+        // Check data constraints
+        if (!checkUserDataPermissions(pathInContext, baseRequest, base_response, roleInfo))
         {
-            //See Servlet Spec 3.1 sec 13.6.3
-            if (authenticator != null)
-                authenticator.prepareRequest(baseRequest);
+            if (!baseRequest.getHttpChannel().isCommitted())
+                response.sendError(HttpServletResponse.SC_FORBIDDEN);
+            return true;
+        }
 
-            RoleInfo roleInfo = prepareConstraintInfo(pathInContext, baseRequest);
+        // is Auth mandatory?
+        boolean isAuthMandatory =
+            isAuthMandatory(baseRequest, base_response, roleInfo);
 
-            // Check data constraints
-            if (!checkUserDataPermissions(pathInContext, baseRequest, base_response, roleInfo))
+        if (isAuthMandatory && authenticator == null)
+        {
+            LOG.warn("No authenticator for: " + roleInfo);
+            if (!baseRequest.getResponse().isCommitted())
+                response.sendError(HttpServletResponse.SC_FORBIDDEN);
+            return true;
+        }
+
+        // check authentication
+        Object previousIdentity = null;
+        try
+        {
+            Authentication authentication = baseRequest.getAuthentication();
+            if (authentication == null || authentication == Authentication.NOT_CHECKED)
+                authentication = authenticator == null ? Authentication.UNAUTHENTICATED : authenticator.validateRequest(request, response, isAuthMandatory);
+
+            if (authentication instanceof Authentication.Wrapped)
             {
-                if (!baseRequest.isHandled())
-                {
-                    response.sendError(HttpServletResponse.SC_FORBIDDEN);
-                    baseRequest.setHandled(true);
-                }
-                return;
+                request = ((Authentication.Wrapped)authentication).getHttpServletRequest();
+                response = ((Authentication.Wrapped)authentication).getHttpServletResponse();
             }
 
-            // is Auth mandatory?
-            boolean isAuthMandatory =
-                isAuthMandatory(baseRequest, base_response, roleInfo);
+            if (authentication instanceof Authentication.ResponseSent)
+                return true;
 
-            if (isAuthMandatory && authenticator == null)
+            if (authentication instanceof Authentication.User)
             {
-                LOG.warn("No authenticator for: " + roleInfo);
-                if (!baseRequest.isHandled())
-                {
-                    response.sendError(HttpServletResponse.SC_FORBIDDEN);
-                    baseRequest.setHandled(true);
-                }
-                return;
-            }
+                Authentication.User userAuth = (Authentication.User)authentication;
+                baseRequest.setAuthentication(authentication);
+                if (_identityService != null)
+                    previousIdentity = _identityService.associate(userAuth.getUserIdentity());
 
-            // check authentication
-            Object previousIdentity = null;
-            try
-            {
-                Authentication authentication = baseRequest.getAuthentication();
-                if (authentication == null || authentication == Authentication.NOT_CHECKED)
-                    authentication = authenticator == null ? Authentication.UNAUTHENTICATED : authenticator.validateRequest(request, response, isAuthMandatory);
-
-                if (authentication instanceof Authentication.Wrapped)
+                if (isAuthMandatory)
                 {
-                    request = ((Authentication.Wrapped)authentication).getHttpServletRequest();
-                    response = ((Authentication.Wrapped)authentication).getHttpServletResponse();
-                }
-
-                if (authentication instanceof Authentication.ResponseSent)
-                {
-                    baseRequest.setHandled(true);
-                }
-                else if (authentication instanceof Authentication.User)
-                {
-                    Authentication.User userAuth = (Authentication.User)authentication;
-                    baseRequest.setAuthentication(authentication);
-                    if (_identityService != null)
-                        previousIdentity = _identityService.associate(userAuth.getUserIdentity());
-
-                    if (isAuthMandatory)
+                    boolean authorized = checkWebResourcePermissions(pathInContext, baseRequest, base_response, roleInfo, userAuth.getUserIdentity());
+                    if (!authorized)
                     {
-                        boolean authorized = checkWebResourcePermissions(pathInContext, baseRequest, base_response, roleInfo, userAuth.getUserIdentity());
-                        if (!authorized)
-                        {
-                            response.sendError(HttpServletResponse.SC_FORBIDDEN, "!role");
-                            baseRequest.setHandled(true);
-                            return;
-                        }
+                        response.sendError(HttpServletResponse.SC_FORBIDDEN, "!role");
+                        return true;
                     }
+                }
 
-                    handler.handle(pathInContext, baseRequest, request, response);
+                try
+                {
+                    return handler.handle(pathInContext, baseRequest, request, response);
+                }
+                finally
+                {
                     if (authenticator != null)
                         authenticator.secureResponse(request, response, isAuthMandatory, userAuth);
                 }
-                else if (authentication instanceof Authentication.Deferred)
+            }
+
+            if (authentication instanceof Authentication.Deferred)
+            {
+                DeferredAuthentication deferred = (DeferredAuthentication)authentication;
+                baseRequest.setAuthentication(authentication);
+
+                try
                 {
-                    DeferredAuthentication deferred = (DeferredAuthentication)authentication;
-                    baseRequest.setAuthentication(authentication);
-
-                    try
-                    {
-                        handler.handle(pathInContext, baseRequest, request, response);
-                    }
-                    finally
-                    {
-                        previousIdentity = deferred.getPreviousAssociation();
-                    }
-
+                    return handler.handle(pathInContext, baseRequest, request, response);
+                }
+                finally
+                {
+                    previousIdentity = deferred.getPreviousAssociation();
                     if (authenticator != null)
                     {
                         Authentication auth = baseRequest.getAuthentication();
@@ -582,30 +580,33 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
                             authenticator.secureResponse(request, response, isAuthMandatory, null);
                     }
                 }
-                else
-                {
-                    baseRequest.setAuthentication(authentication);
-                    if (_identityService != null)
-                        previousIdentity = _identityService.associate(null);
-                    handler.handle(pathInContext, baseRequest, request, response);
-                    if (authenticator != null)
-                        authenticator.secureResponse(request, response, isAuthMandatory, null);
-                }
             }
-            catch (ServerAuthException e)
+
+            baseRequest.setAuthentication(authentication);
+            if (_identityService != null)
+                previousIdentity = _identityService.associate(null);
+            try
             {
-                // jaspi 3.8.3 send HTTP 500 internal server error, with message
-                // from AuthException
-                response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
+                return handler.handle(pathInContext, baseRequest, request, response);
             }
             finally
             {
-                if (_identityService != null)
-                    _identityService.disassociate(previousIdentity);
+                if (authenticator != null)
+                    authenticator.secureResponse(request, response, isAuthMandatory, null);
             }
         }
-        else
-            handler.handle(pathInContext, baseRequest, request, response);
+        catch (ServerAuthException e)
+        {
+            // jaspi 3.8.3 send HTTP 500 internal server error, with message
+            // from AuthException
+            response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
+            return true;
+        }
+        finally
+        {
+            if (_identityService != null)
+                _identityService.disassociate(previousIdentity);
+        }
     }
 
     public static SecurityHandler getCurrentSecurityHandler()

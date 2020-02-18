@@ -73,14 +73,14 @@ public class ServletRequestWrapperTest
     private class RequestHandler extends AbstractHandler
     {
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request,
-                            HttpServletResponse response)
+        public boolean handle(String target, Request baseRequest, HttpServletRequest request,
+                              HttpServletResponse response)
             throws IOException, ServletException
         {
             RequestWrapper requestWrapper = new RequestWrapper(request);
             AsyncContext context = request.startAsync(requestWrapper, response);
             context.complete();
-            baseRequest.setHandled(true);
+            return true;
         }
     }
 }

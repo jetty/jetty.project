@@ -49,12 +49,13 @@ public class HttpClientAsyncContentTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 ServletOutputStream output = response.getOutputStream();
                 output.write(65);
                 output.flush();
                 output.write(66);
+                return true;
             }
         });
 

@@ -29,8 +29,8 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 public class EmptyServerHandler extends AbstractHandler
 {
     @Override
-    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
-        baseRequest.setHandled(true);
+        return true;
     }
 }

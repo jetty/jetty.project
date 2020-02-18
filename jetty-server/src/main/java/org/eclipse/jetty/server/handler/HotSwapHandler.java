@@ -103,13 +103,10 @@ public class HotSwapHandler extends AbstractHandlerContainer
      * @see org.eclipse.jetty.server.server.EventHandler#handle(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
      */
     @Override
-    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
         Handler handler = _handler;
-        if (handler != null && isStarted() && handler.isStarted())
-        {
-            handler.handle(target, baseRequest, request, response);
-        }
+        return handler != null && isStarted() && handler.isStarted() && handler.handle(target, baseRequest, request, response);
     }
 
     @Override

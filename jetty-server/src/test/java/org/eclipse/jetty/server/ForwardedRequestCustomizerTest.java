@@ -764,15 +764,14 @@ public class ForwardedRequestCustomizerTest
         private RequestTester requestTester;
 
         @Override
-        public void handle(String target, org.eclipse.jetty.server.Request baseRequest,
-                           HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public boolean handle(String target, org.eclipse.jetty.server.Request baseRequest,
+                              HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
-            baseRequest.setHandled(true);
-
             if (requestTester != null && requestTester.check(request, response))
                 response.setStatus(200);
             else
                 response.sendError(500);
+            return true;
         }
     }
 }

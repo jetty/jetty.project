@@ -75,10 +75,9 @@ public class ServletWriterTest
         start(chars.length, new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public boolean handle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 serverThreadRef.set(Thread.currentThread());
-                jettyRequest.setHandled(true);
                 response.setContentType("text/plain; charset=utf-8");
                 PrintWriter writer = response.getWriter();
                 Arrays.fill(chars, '0');
@@ -87,6 +86,7 @@ public class ServletWriterTest
                 latch.countDown();
                 // Closing will trigger the write over the network.
                 writer.close();
+                return true;
             }
         });
 

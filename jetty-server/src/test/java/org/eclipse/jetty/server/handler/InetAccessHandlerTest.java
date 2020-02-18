@@ -66,11 +66,11 @@ public class InetAccessHandlerTest
         _handler.setHandler(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
                 throws IOException, ServletException
             {
-                baseRequest.setHandled(true);
                 response.setStatus(HttpStatus.OK_200);
+                return true;
             }
         });
         _server.setHandler(_handler);

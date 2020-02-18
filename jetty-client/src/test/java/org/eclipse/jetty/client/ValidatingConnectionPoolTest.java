@@ -77,9 +77,8 @@ public class ValidatingConnectionPoolTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public boolean handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
-                baseRequest.setHandled(true);
                 if (target.endsWith("/redirect"))
                 {
                     response.setStatus(HttpStatus.TEMPORARY_REDIRECT_307);
@@ -94,6 +93,7 @@ public class ValidatingConnectionPoolTest extends AbstractHttpClientServerTest
                     response.setContentLength(0);
                     response.setHeader(HttpHeader.CONNECTION.asString(), HttpHeaderValue.CLOSE.asString());
                 }
+                return true;
             }
         });
 
@@ -111,12 +111,12 @@ public class ValidatingConnectionPoolTest extends AbstractHttpClientServerTest
         testServerClosesConnectionAfterResponseWithQueuedRequestWithMaxConnections(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public boolean handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
-                baseRequest.setHandled(true);
                 response.setStatus(HttpStatus.OK_200);
                 response.setContentLength(0);
                 response.setHeader(HttpHeader.CONNECTION.asString(), HttpHeaderValue.CLOSE.asString());
+                return true;
             }
         });
     }
@@ -128,13 +128,13 @@ public class ValidatingConnectionPoolTest extends AbstractHttpClientServerTest
         testServerClosesConnectionAfterResponseWithQueuedRequestWithMaxConnections(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public boolean handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
-                baseRequest.setHandled(true);
                 response.setStatus(HttpStatus.OK_200);
                 response.setContentLength(0);
                 response.flushBuffer();
                 baseRequest.getHttpChannel().getEndPoint().shutdownOutput();
+                return true;
             }
         });
     }

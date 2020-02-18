@@ -45,13 +45,14 @@ public class TerminatingPatternRuleTest extends AbstractRuleTestCase
         rewriteHandler.setHandler(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException,
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException,
                 ServletException
             {
                 response.setStatus(HttpStatus.CREATED_201);
                 request.setAttribute("target", target);
                 request.setAttribute("URI", request.getRequestURI());
                 request.setAttribute("info", request.getPathInfo());
+                return true;
             }
         });
         rewriteHandler.start();

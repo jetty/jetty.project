@@ -281,7 +281,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         configureServer(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 throw new QuietServletException("TEST handler exception");
             }
@@ -310,7 +310,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         configureServer(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 throw new QuietServletException("TEST handler exception");
             }
@@ -341,9 +341,8 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         configureServer(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
-                baseRequest.setHandled(true);
                 int contentLength = request.getContentLength();
                 ServletInputStream inputStream = request.getInputStream();
                 for (int i = 0; i < contentLength; i++)
@@ -360,6 +359,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                     if (i == 3)
                         fourBytesRead.set(true);
                 }
+                return true;
             }
         });
 
@@ -987,7 +987,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     protected static class BigBlockHandler extends AbstractHandler
     {
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             byte[] buf = new byte[128 * 1024];
             for (int i = 0; i < buf.length; i++)
@@ -995,7 +995,6 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                 buf[i] = (byte)("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_".charAt(i % 63));
             }
 
-            baseRequest.setHandled(true);
             response.setStatus(200);
             response.setContentType("text/plain");
             ServletOutputStream out = response.getOutputStream();
@@ -1016,6 +1015,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                 out.print(",");
             }
             out.close();
+            return true;
         }
     }
 
@@ -1026,10 +1026,10 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         configureServer(new HelloWorldHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 served.incrementAndGet();
-                super.handle(target, baseRequest, request, response);
+                return super.handle(target, baseRequest, request, response);
             }
         });
 
@@ -1341,7 +1341,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         public EndPoint _endp;
 
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             _endp = baseRequest.getHttpChannel().getEndPoint();
             response.setHeader("test", "value");
@@ -1360,9 +1360,8 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         public Exchanger<Object> _ex = new Exchanger<>();
 
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
-            baseRequest.setHandled(true);
             response.setStatus(200);
             response.setContentType("text/plain");
             InputStream in = request.getInputStream();
@@ -1433,6 +1432,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             }
             out.println(buf);
             out.close();
+            return true;
         }
     }
 
@@ -1680,25 +1680,25 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     private class WriteBodyAfterNoBodyResponseHandler extends AbstractHandler
     {
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
-            baseRequest.setHandled(true);
             response.setStatus(304);
             response.getOutputStream().print("yuck");
             response.flushBuffer();
+            return true;
         }
     }
 
     public class NoopHandler extends AbstractHandler
     {
         @Override
-        public void handle(String target, Request baseRequest,
-                           HttpServletRequest request, HttpServletResponse response) throws IOException,
+        public boolean handle(String target, Request baseRequest,
+                              HttpServletRequest request, HttpServletResponse response) throws IOException,
             ServletException
         {
             //don't read the input, just send something back
-            ((Request)request).setHandled(true);
             response.setStatus(200);
+            return true;
         }
     }
 
@@ -1871,14 +1871,14 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         }
 
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
-            baseRequest.setHandled(true);
             response.setStatus(200);
             response.setContentType("application/unknown");
             response.setContentLength(content.remaining());
             AsyncContext async = request.startAsync();
             ((HttpOutput)response.getOutputStream()).sendContent(content.slice(), Callback.from(async::complete));
+            return true;
         }
     }
 }

@@ -165,7 +165,7 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
         scenario.start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public boolean handle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 try
                 {
@@ -175,6 +175,7 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
                 {
                     handlerLatch.countDown();
                 }
+                return true;
             }
         });
         long idleTimeout = 1000;
@@ -207,9 +208,8 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
         scenario.start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                baseRequest.setHandled(true);
                 AsyncContext asyncContext = request.startAsync();
                 asyncContext.setTimeout(0);
                 ServletInputStream input = request.getInputStream();
@@ -239,6 +239,7 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
                         asyncContext.complete();
                     }
                 });
+                return true;
             }
         });
         long idleTimeout = 2500;
@@ -273,9 +274,8 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
         scenario.start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                baseRequest.setHandled(true);
                 AsyncContext asyncContext = request.startAsync();
                 asyncContext.setTimeout(0);
                 ServletOutputStream output = response.getOutputStream();
@@ -297,6 +297,7 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
                         asyncContext.complete();
                     }
                 });
+                return true;
             }
         });
         long idleTimeout = 2500;
@@ -341,11 +342,10 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
         scenario.start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 try
                 {
-                    baseRequest.setHandled(true);
                     ServletInputStream input = request.getInputStream();
                     while (true)
                     {
@@ -359,6 +359,7 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
                     handlerLatch.countDown();
                     throw x;
                 }
+                return true;
             }
         });
 
@@ -405,9 +406,8 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
         scenario.start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                baseRequest.setHandled(true);
                 ServletInputStream input = request.getInputStream();
                 while (true)
                 {
@@ -416,6 +416,7 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
                         break;
                 }
                 handlerLatch.countDown();
+                return true;
             }
         });
 
@@ -484,9 +485,8 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
         scenario.start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                baseRequest.setHandled(true);
                 AsyncContext asyncContext = request.startAsync();
                 asyncContext.setTimeout(0);
                 ServletInputStream input = request.getInputStream();
@@ -516,6 +516,7 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
                         asyncContext.complete();
                     }
                 });
+                return true;
             }
         });
         scenario.setServerIdleTimeout(idleTimeout);
@@ -675,9 +676,8 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
         }
 
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+        public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
         {
-            baseRequest.setHandled(true);
             ServletInputStream input = request.getInputStream();
             assertEquals(0, input.read());
             try
@@ -689,6 +689,7 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
                 handlerLatch.countDown();
                 throw x;
             }
+            return true;
         }
     }
 
@@ -702,9 +703,8 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
         }
 
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+        public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
         {
-            baseRequest.setHandled(true);
             ServletOutputStream output = response.getOutputStream();
             try
             {
@@ -715,6 +715,7 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
                 handlerLatch.countDown();
                 throw x;
             }
+            return true;
         }
     }
 }

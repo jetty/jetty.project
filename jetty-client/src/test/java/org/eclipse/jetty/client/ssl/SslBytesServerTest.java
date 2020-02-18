@@ -203,11 +203,10 @@ public class SslBytesServerTest extends SslBytesTest
         server.setHandler(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException
+            public boolean handle(String target, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException
             {
                 try
                 {
-                    request.setHandled(true);
                     String contentLength = request.getHeader("Content-Length");
                     if (contentLength != null)
                     {
@@ -231,6 +230,7 @@ public class SslBytesServerTest extends SslBytesTest
                     if (!(target.endsWith("suppress_exception")))
                         throw x;
                 }
+                return true;
             }
         });
         server.start();

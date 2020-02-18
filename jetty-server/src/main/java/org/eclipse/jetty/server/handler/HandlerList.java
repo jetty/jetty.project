@@ -43,11 +43,8 @@ public class HandlerList extends HandlerCollection
         super(handlers);
     }
 
-    /**
-     * @see Handler#handle(String, Request, HttpServletRequest, HttpServletResponse)
-     */
     @Override
-    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+    public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
         throws IOException, ServletException
     {
         Handler[] handlers = getHandlers();
@@ -56,10 +53,10 @@ public class HandlerList extends HandlerCollection
         {
             for (int i = 0; i < handlers.length; i++)
             {
-                handlers[i].handle(target, baseRequest, request, response);
-                if (baseRequest.isHandled())
-                    return;
+                if (handlers[i].handle(target, baseRequest, request, response))
+                    return true;
             }
         }
+        return false;
     }
 }

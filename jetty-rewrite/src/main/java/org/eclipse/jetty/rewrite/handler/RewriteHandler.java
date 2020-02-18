@@ -297,7 +297,7 @@ public class RewriteHandler extends HandlerWrapper
      * @see org.eclipse.jetty.server.handler.HandlerWrapper#handle(java.lang.String, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, int)
      */
     @Override
-    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
         if (isStarted())
         {
@@ -307,8 +307,8 @@ public class RewriteHandler extends HandlerWrapper
                 target = (returned == null) ? target : returned;
             }
 
-            if (!baseRequest.isHandled())
-                super.handle(target, baseRequest, request, response);
+            return baseRequest.getResponse().isCommitted() || super.handle(target, baseRequest, request, response);
         }
+        return false;
     }
 }

@@ -336,10 +336,10 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            public boolean handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             {
                 response.setHeader("Connection", "close");
-                baseRequest.setHandled(true);
+                return true;
             }
         });
 
@@ -383,10 +383,10 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
             start(scenario, new AbstractHandler()
             {
                 @Override
-                public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+                public boolean handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response)
                 {
                     response.setHeader("Connection", "close");
-                    baseRequest.setHandled(true);
+                    return true;
                     // Don't read request content; this causes the server parser to be closed
                 }
             });

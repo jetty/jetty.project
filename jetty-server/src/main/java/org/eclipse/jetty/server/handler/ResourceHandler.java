@@ -218,23 +218,23 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
      * @see org.eclipse.jetty.server.Handler#handle(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, int)
      */
     @Override
-    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
-        if (baseRequest.isHandled())
-            return;
+        if (baseRequest.getHttpChannel().isCommitted())
+            return true;
 
         if (!HttpMethod.GET.is(request.getMethod()) && !HttpMethod.HEAD.is(request.getMethod()))
         {
             // try another handler
             super.handle(target, baseRequest, request, response);
-            return;
+            return false;
         }
 
         if (_resourceService.doGet(request, response))
-            baseRequest.setHandled(true);
-        else
-            // no resource - try other handlers
-            super.handle(target, baseRequest, request, response);
+            return true;
+
+        // no resource - try other handlers
+        return super.handle(target, baseRequest, request, response);
     }
 
     /**

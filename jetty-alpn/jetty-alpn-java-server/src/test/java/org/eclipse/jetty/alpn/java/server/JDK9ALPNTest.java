@@ -96,9 +96,9 @@ public class JDK9ALPNTest
         startServer(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             {
-                baseRequest.setHandled(true);
+                return true;
             }
         });
 
@@ -138,9 +138,9 @@ public class JDK9ALPNTest
         startServer(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             {
-                baseRequest.setHandled(true);
+                return true;
             }
         });
 
@@ -183,9 +183,9 @@ public class JDK9ALPNTest
         startServer(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
+            public boolean handle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
             {
-                jettyRequest.setHandled(true);
+                return true;
             }
         });
 

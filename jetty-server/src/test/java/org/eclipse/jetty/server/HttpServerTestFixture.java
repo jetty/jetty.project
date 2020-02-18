@@ -113,10 +113,9 @@ public class HttpServerTestFixture
         }
 
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             Log.getRootLogger().debug("handle " + target);
-            baseRequest.setHandled(true);
 
             if (request.getContentType() != null)
                 response.setContentType(request.getContentType());
@@ -158,32 +157,35 @@ public class HttpServerTestFixture
                 throw new IllegalStateException("Not closed");
 
             Log.getRootLogger().debug("handled " + target);
+
+            return true;
         }
     }
 
     protected static class OptionsHandler extends AbstractHandler
     {
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
-            baseRequest.setHandled(true);
             if (request.getMethod().equals("OPTIONS"))
                 response.setStatus(200);
             else
                 response.setStatus(500);
 
             response.setHeader("Allow", "GET");
+
+            return true;
         }
     }
 
     protected static class HelloWorldHandler extends AbstractHandler
     {
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
-            baseRequest.setHandled(true);
             response.setStatus(200);
             response.getOutputStream().print("Hello world\r\n");
+            return true;
         }
     }
 
@@ -204,10 +206,10 @@ public class HttpServerTestFixture
         }
 
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
-            baseRequest.setHandled(true);
             response.sendError(code, message);
+            return true;
         }
     }
 
@@ -226,9 +228,8 @@ public class HttpServerTestFixture
         }
 
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
-            baseRequest.setHandled(true);
             int len = expected < 0 ? request.getContentLength() : expected;
             if (len < 0)
                 throw new IllegalStateException();
@@ -245,15 +246,15 @@ public class HttpServerTestFixture
             String reply = "Read " + offset + "\r\n";
             response.setContentLength(reply.length());
             response.getOutputStream().write(reply.getBytes(StandardCharsets.ISO_8859_1));
+            return true;
         }
     }
 
     protected static class ReadHandler extends AbstractHandler
     {
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
-            baseRequest.setHandled(true);
             response.setStatus(200);
 
             try
@@ -266,15 +267,15 @@ public class HttpServerTestFixture
             {
                 response.getWriter().printf("caught %s%n", e);
             }
+            return true;
         }
     }
 
     protected static class DataHandler extends AbstractHandler
     {
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
-            baseRequest.setHandled(true);
             response.setStatus(200);
 
             InputStream in = request.getInputStream();
@@ -327,6 +328,7 @@ public class HttpServerTestFixture
                         break;
                 }
             }
+            return true;
         }
     }
 }

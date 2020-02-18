@@ -527,31 +527,34 @@ public class Server extends HandlerWrapper implements Attributes
         if (LOG.isDebugEnabled())
             LOG.debug("{} {} {} on {}", request.getDispatcherType(), request.getMethod(), target, channel);
 
+        boolean handled;
         if (HttpMethod.OPTIONS.is(request.getMethod()) || "*".equals(target))
         {
             if (!HttpMethod.OPTIONS.is(request.getMethod()))
             {
-                request.setHandled(true);
                 response.sendError(HttpStatus.BAD_REQUEST_400);
+                handled = true;
             }
             else
             {
-                handleOptions(request, response);
-                if (!request.isHandled())
-                    handle(target, request, request, response);
+                handled = handleOptions(request, response) || handle(target, request, request, response);
             }
         }
         else
-            handle(target, request, request, response);
+            handled = handle(target, request, request, response);
 
         if (LOG.isDebugEnabled())
-            LOG.debug("handled={} async={} committed={} on {}", request.isHandled(), request.isAsyncStarted(), response.isCommitted(), channel);
+            LOG.debug("handled={} async={} committed={} on {}", handled, request.isAsyncStarted(), response.isCommitted(), channel);
+
+        if (!handled && !request.getHttpChannel().isCommitted())
+            response.sendError(HttpStatus.NOT_FOUND_404);
     }
 
     /* Handle Options request to server
      */
-    protected void handleOptions(Request request, Response response) throws IOException
+    protected boolean handleOptions(Request request, Response response) throws IOException
     {
+        return false;
     }
 
     /* Handle a request from a connection.
@@ -585,9 +588,11 @@ public class Server extends HandlerWrapper implements Attributes
 
         if (LOG.isDebugEnabled())
             LOG.debug("{} {} {} on {}", request.getDispatcherType(), request.getMethod(), target, channel);
-        handle(target, baseRequest, request, response);
+        boolean handled = handle(target, baseRequest, request, response);
         if (LOG.isDebugEnabled())
-            LOG.debug("handledAsync={} async={} committed={} on {}", channel.getRequest().isHandled(), request.isAsyncStarted(), response.isCommitted(), channel);
+            LOG.debug("handledAsync={} async={} committed={} on {}", handled, request.isAsyncStarted(), response.isCommitted(), channel);
+        if (!handled && !request.isAsyncStarted())
+            response.sendError(HttpStatus.NOT_FOUND_404);
     }
 
     public void join() throws InterruptedException

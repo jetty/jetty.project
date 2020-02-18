@@ -49,13 +49,13 @@ public class HttpVersionCustomizerTest
         server.setHandler(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
-                baseRequest.setHandled(true);
                 response.setStatus(500);
                 assertEquals(HttpVersion.HTTP_1_1.asString(), request.getProtocol());
                 response.setStatus(200);
                 response.getWriter().println("OK");
+                return true;
             }
         });
         server.start();

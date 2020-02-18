@@ -181,7 +181,7 @@ public class CheckReverseProxyHeadersTest
         }
 
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             try
             {
@@ -195,6 +195,8 @@ public class CheckReverseProxyHeadersTest
             {
                 _error = new Error(e);
             }
+
+            return true;
         }
     }
 }

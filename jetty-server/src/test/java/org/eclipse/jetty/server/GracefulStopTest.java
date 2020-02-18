@@ -389,12 +389,11 @@ public class GracefulStopTest
         volatile CountDownLatch latch;
 
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+        public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             throws IOException, ServletException
         {
             // Log.getRootLogger().info("Handle {} / {} ? {}", request.getContextPath(), request.getPathInfo(), request.getQueryString());
             handling.set(true);
-            baseRequest.setHandled(true);
             response.setStatus(200);
             if ("true".equals(request.getParameter("commit")))
                 response.flushBuffer();
@@ -425,6 +424,7 @@ public class GracefulStopTest
             {
                 handling.set(false);
             }
+            return true;
         }
     }
 }

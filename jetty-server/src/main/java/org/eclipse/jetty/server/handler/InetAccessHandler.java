@@ -152,9 +152,10 @@ public class InetAccessHandler extends HandlerWrapper
 
     /**
      * Checks the incoming request against the whitelist and blacklist
+     * @return
      */
     @Override
-    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+    public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
         throws IOException, ServletException
     {
         // Get the real remote IP (not the one set by the forwarded headers (which may be forged))
@@ -168,13 +169,12 @@ public class InetAccessHandler extends HandlerWrapper
                 if (address != null && !isAllowed(address.getAddress(), baseRequest, request))
                 {
                     response.sendError(HttpStatus.FORBIDDEN_403);
-                    baseRequest.setHandled(true);
-                    return;
+                    return true;
                 }
             }
         }
 
-        getHandler().handle(target, baseRequest, request, response);
+        return getHandler().handle(target, baseRequest, request, response);
     }
 
     /**

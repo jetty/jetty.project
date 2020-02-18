@@ -192,10 +192,10 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public boolean handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 response.getOutputStream().write(data);
-                baseRequest.setHandled(true);
+                return true;
             }
         });
 
@@ -217,7 +217,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public boolean handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 response.setCharacterEncoding("UTF-8");
                 ServletOutputStream output = response.getOutputStream();
@@ -226,7 +226,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 String paramValue2 = request.getParameter(paramName2);
                 assertEquals("", paramValue2);
                 output.write("empty".getBytes(StandardCharsets.UTF_8));
-                baseRequest.setHandled(true);
+                return true;
             }
         });
 
@@ -250,7 +250,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public boolean handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 response.setCharacterEncoding("UTF-8");
                 ServletOutputStream output = response.getOutputStream();
@@ -261,7 +261,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 }
                 String paramValue2 = request.getParameter(paramName2);
                 output.write(paramValue2.getBytes(StandardCharsets.UTF_8));
-                baseRequest.setHandled(true);
+                return true;
             }
         });
 
@@ -289,9 +289,8 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public boolean handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                baseRequest.setHandled(true);
                 String value = request.getParameter(paramName);
                 if (paramValue.equals(value))
                 {
@@ -299,6 +298,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                     response.setContentType("text/plain");
                     response.getOutputStream().print(value);
                 }
+                return true;
             }
         });
 
@@ -322,9 +322,8 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public boolean handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                baseRequest.setHandled(true);
                 String value = request.getParameter(paramName);
                 if (paramValue.equals(value))
                 {
@@ -332,6 +331,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                     response.setContentType("text/plain");
                     response.getOutputStream().print(value);
                 }
+                return true;
             }
         });
 
@@ -356,9 +356,8 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public boolean handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                baseRequest.setHandled(true);
                 consume(request.getInputStream(), true);
                 String value = request.getParameter(paramName);
                 if (paramValue.equals(value))
@@ -367,6 +366,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                     response.setContentType("text/plain");
                     response.getOutputStream().write(content);
                 }
+                return true;
             }
         });
 
@@ -388,10 +388,10 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public boolean handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                baseRequest.setHandled(true);
                 consume(request.getInputStream(), true);
+                return true;
             }
         });
 
@@ -419,10 +419,10 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public boolean handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                baseRequest.setHandled(true);
                 consume(request.getInputStream(), true);
+                return true;
             }
         });
 
@@ -500,12 +500,11 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            public boolean handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             {
                 if (target.endsWith("/one"))
                     baseRequest.getHttpChannel().getEndPoint().close();
-                else
-                    baseRequest.setHandled(true);
+                return true;
             }
         });
 
@@ -541,9 +540,8 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public boolean handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                baseRequest.setHandled(true);
                 response.setContentLength(0);
                 response.setStatus(200);
                 response.flushBuffer();
@@ -556,6 +554,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                     if (read < 0)
                         break;
                 }
+                return true;
             }
         });
 
@@ -620,10 +619,11 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public boolean handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 // Echo back
                 IO.copy(request.getInputStream(), response.getOutputStream());
+                return true;
             }
         });
 
@@ -714,12 +714,12 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws ServletException
+            public boolean handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws ServletException
             {
                 try
                 {
-                    baseRequest.setHandled(true);
                     TimeUnit.MILLISECONDS.sleep(2 * idleTimeout);
+                    return true;
                 }
                 catch (InterruptedException x)
                 {
@@ -771,10 +771,10 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            public boolean handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             {
-                baseRequest.setHandled(true);
                 response.setHeader(headerName, "X");
+                return true;
             }
         });
 
@@ -829,10 +829,10 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public boolean handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                baseRequest.setHandled(true);
                 response.getOutputStream().write(new byte[length]);
+                return true;
             }
         });
 
@@ -934,12 +934,12 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            public boolean handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             {
-                baseRequest.setHandled(true);
                 ArrayList<String> userAgents = Collections.list(request.getHeaders("User-Agent"));
                 assertEquals(1, userAgents.size());
                 assertEquals(userAgent, userAgents.get(0));
+                return true;
             }
         });
 
@@ -968,14 +968,14 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            public boolean handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             {
-                baseRequest.setHandled(true);
                 ArrayList<String> userAgents = Collections.list(request.getHeaders("User-Agent"));
                 if ("/ua".equals(target))
                     assertEquals(1, userAgents.size());
                 else
                     assertEquals(0, userAgents.size());
+                return true;
             }
         });
 
@@ -1177,10 +1177,10 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public boolean handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                baseRequest.setHandled(true);
                 response.getOutputStream().write(content);
+                return true;
             }
         });
 
@@ -1219,10 +1219,10 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            public boolean handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             {
-                baseRequest.setHandled(true);
                 assertEquals(host, request.getServerName());
+                return true;
             }
         });
 
@@ -1241,13 +1241,14 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public boolean handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 // Send the headers at this point, then write the content
                 byte[] content = "TEST".getBytes("UTF-8");
                 response.setContentLength(content.length);
                 response.flushBuffer();
                 response.getOutputStream().write(content);
+                return true;
             }
         });
 
@@ -1269,11 +1270,12 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public boolean handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 // Send the headers at this point, then write the content
                 response.flushBuffer();
                 response.getOutputStream().print("TEST");
+                return true;
             }
         });
 
@@ -1326,11 +1328,11 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            public boolean handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             {
-                baseRequest.setHandled(true);
                 request.startAsync();
                 latch.countDown();
+                return true;
             }
         });
 
@@ -1403,13 +1405,13 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public boolean handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                baseRequest.setHandled(true);
                 // Send Connection: close to avoid that the server chunks the content with HTTP 1.1.
                 if (version.compareTo(HttpVersion.HTTP_1_0) > 0)
                     response.setHeader("Connection", "close");
                 response.getOutputStream().write(data);
+                return true;
             }
         });
 
@@ -1439,12 +1441,11 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public boolean handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 int count = requests.incrementAndGet();
-                if (count == maxRetries)
-                    baseRequest.setHandled(true);
                 consume(request.getInputStream(), true);
+                return count == maxRetries;
             }
         });
 
@@ -1468,11 +1469,11 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public boolean handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                baseRequest.setHandled(true);
                 ServletOutputStream output = response.getOutputStream();
                 output.write(new byte[1024]);
+                return true;
             }
         });
 
@@ -1518,9 +1519,9 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         startServer(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            public boolean handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             {
-                baseRequest.setHandled(true);
+                return true;
             }
         });
 
@@ -1630,11 +1631,11 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public boolean handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                baseRequest.setHandled(true);
                 response.setContentType("text/plain");
                 response.getOutputStream().print(request.getHeader("Host"));
+                return true;
             }
         });
 
@@ -1705,10 +1706,10 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            public boolean handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             {
-                baseRequest.setHandled(true);
                 assertThat(request.getHeader("Host"), Matchers.notNullValue());
+                return true;
             }
         });
 
@@ -1797,11 +1798,11 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public boolean handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
-                baseRequest.setHandled(true);
                 ServletOutputStream output = response.getOutputStream();
                 output.write(bytes);
+                return true;
             }
         });
 

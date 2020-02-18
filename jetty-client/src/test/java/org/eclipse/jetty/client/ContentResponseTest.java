@@ -47,10 +47,10 @@ public class ContentResponseTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
-                baseRequest.setHandled(true);
                 response.getOutputStream().write(content);
+                return true;
             }
         });
 
@@ -74,11 +74,11 @@ public class ContentResponseTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
-                baseRequest.setHandled(true);
                 response.setHeader(HttpHeader.CONTENT_TYPE.asString(), mediaType);
                 response.getOutputStream().write(content.getBytes("UTF-8"));
+                return true;
             }
         });
 
@@ -104,11 +104,11 @@ public class ContentResponseTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
-                baseRequest.setHandled(true);
                 response.setHeader(HttpHeader.CONTENT_TYPE.asString(), contentType);
                 response.getOutputStream().write(content.getBytes(encoding));
+                return true;
             }
         });
 
@@ -134,11 +134,11 @@ public class ContentResponseTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
-                baseRequest.setHandled(true);
                 response.setHeader(HttpHeader.CONTENT_TYPE.asString(), contentType);
                 response.getOutputStream().write(content.getBytes(encoding));
+                return true;
             }
         });
 

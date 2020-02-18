@@ -99,11 +99,12 @@ public class SslConnectionFactoryTest
         _server.setHandler(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 response.setStatus(200);
                 response.getWriter().write("url=" + request.getRequestURI() + "\nhost=" + request.getServerName());
                 response.flushBuffer();
+                return true;
             }
         });
 

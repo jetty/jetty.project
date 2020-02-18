@@ -887,12 +887,13 @@ public class HttpConnectionTest
         {
             @SuppressWarnings("unused")
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 response.setStatus(200);
                 OutputStream out = response.getOutputStream();
                 out.flush();
                 out.flush();
+                return false;
             }
         });
         server.start();
@@ -1230,9 +1231,8 @@ public class HttpConnectionTest
         {
             @SuppressWarnings("unused")
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
-                baseRequest.setHandled(true);
                 response.setHeader(HttpHeader.CONTENT_TYPE.toString(), MimeTypes.Type.TEXT_HTML.toString());
                 response.setHeader("LongStr", longstr);
                 PrintWriter writer = response.getWriter();
@@ -1241,6 +1241,7 @@ public class HttpConnectionTest
                 if (writer.checkError())
                     checkError.countDown();
                 response.flushBuffer();
+                return true;
             }
         });
         server.start();

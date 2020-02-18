@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InterruptedIOException;
 import java.util.List;
-import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -83,10 +82,10 @@ public class HttpClientTest extends AbstractTest<TransportScenario>
         scenario.start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             {
-                baseRequest.setHandled(true);
                 response.setStatus(status);
+                return true;
             }
         });
 
@@ -121,11 +120,11 @@ public class HttpClientTest extends AbstractTest<TransportScenario>
         scenario.start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                baseRequest.setHandled(true);
                 response.setContentLength(length);
                 response.getOutputStream().write(bytes);
+                return true;
             }
         });
 
@@ -167,13 +166,13 @@ public class HttpClientTest extends AbstractTest<TransportScenario>
         scenario.start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                baseRequest.setHandled(true);
                 ServletOutputStream output = response.getOutputStream();
                 output.write(chunk1);
                 output.flush();
                 output.write(chunk2);
+                return true;
             }
         });
 
@@ -217,15 +216,15 @@ public class HttpClientTest extends AbstractTest<TransportScenario>
         scenario.start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                baseRequest.setHandled(true);
                 ServletInputStream input = request.getInputStream();
                 for (byte b : bytes)
                 {
                     assertEquals(b & 0xFF, input.read());
                 }
                 assertEquals(-1, input.read());
+                return true;
             }
         });
 
@@ -247,10 +246,8 @@ public class HttpClientTest extends AbstractTest<TransportScenario>
         scenario.start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                baseRequest.setHandled(true);
-
                 long sleep = 1024;
                 long total = 0;
                 ServletInputStream input = request.getInputStream();
@@ -269,6 +266,7 @@ public class HttpClientTest extends AbstractTest<TransportScenario>
                 }
 
                 response.getOutputStream().print(total);
+                return true;
             }
         });
 
@@ -295,16 +293,16 @@ public class HttpClientTest extends AbstractTest<TransportScenario>
         scenario.start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             {
                 try
                 {
-                    baseRequest.setHandled(true);
                     response.getOutputStream().write(new byte[length]);
                 }
                 catch (IOException ignored)
                 {
                 }
+                return true;
             }
         });
 
@@ -374,12 +372,12 @@ public class HttpClientTest extends AbstractTest<TransportScenario>
         scenario.start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             {
-                baseRequest.setHandled(true);
                 assertTrue(HttpMethod.OPTIONS.is(request.getMethod()));
                 assertEquals("*", target);
                 assertEquals("*", request.getPathInfo());
+                return true;
             }
         });
 
@@ -401,9 +399,8 @@ public class HttpClientTest extends AbstractTest<TransportScenario>
         scenario.start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             {
-                baseRequest.setHandled(true);
                 if ("*".equals(target))
                 {
                     // Be nasty and send a relative redirect.
@@ -411,6 +408,7 @@ public class HttpClientTest extends AbstractTest<TransportScenario>
                     response.setStatus(HttpStatus.SEE_OTHER_303);
                     response.setHeader("Location", "/");
                 }
+                return true;
             }
         });
 
@@ -433,10 +431,10 @@ public class HttpClientTest extends AbstractTest<TransportScenario>
         scenario.start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                baseRequest.setHandled(true);
                 response.getOutputStream().print(content);
+                return true;
             }
         });
 
@@ -504,11 +502,11 @@ public class HttpClientTest extends AbstractTest<TransportScenario>
         scenario.start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                baseRequest.setHandled(true);
                 // Large write to generate multiple DATA frames.
                 response.getOutputStream().write(new byte[256 * 1024]);
+                return true;
             }
         });
 

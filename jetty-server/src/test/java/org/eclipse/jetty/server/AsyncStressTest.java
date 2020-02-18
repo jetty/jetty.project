@@ -186,7 +186,7 @@ public class AsyncStressTest
         }
 
         @Override
-        public void handle(String target, final Request baseRequest, final HttpServletRequest request, final HttpServletResponse response) throws IOException, ServletException
+        public boolean handle(String target, final Request baseRequest, final HttpServletRequest request, final HttpServletResponse response) throws IOException, ServletException
         {
             int readBefore = 0;
             long sleepFor = -1;
@@ -241,7 +241,6 @@ public class AsyncStressTest
                                 {
                                     response.setStatus(200);
                                     response.getOutputStream().println("COMPLETED " + request.getHeader("result"));
-                                    baseRequest.setHandled(true);
                                     asyncContext.complete();
                                 }
                                 catch (Exception e)
@@ -266,7 +265,6 @@ public class AsyncStressTest
                     {
                         response.setStatus(200);
                         response.getOutputStream().println("COMPLETED " + request.getHeader("result"));
-                        baseRequest.setHandled(true);
                         asyncContext.complete();
                     }
                     else if (resumeAfter > 0)
@@ -301,27 +299,24 @@ public class AsyncStressTest
                     }
                     response.setStatus(200);
                     response.getOutputStream().println("SLEPT " + request.getHeader("result"));
-                    baseRequest.setHandled(true);
                 }
                 else
                 {
                     response.setStatus(200);
                     response.getOutputStream().println("NORMAL " + request.getHeader("result"));
-                    baseRequest.setHandled(true);
                 }
             }
             else if (request.getAttribute("TIMEOUT") != null)
             {
                 response.setStatus(200);
                 response.getOutputStream().println("TIMEOUT " + request.getHeader("result"));
-                baseRequest.setHandled(true);
             }
             else
             {
                 response.setStatus(200);
                 response.getOutputStream().println("RESUMED " + request.getHeader("result"));
-                baseRequest.setHandled(true);
             }
+            return true;
         }
     }
 

@@ -365,7 +365,7 @@ public class SSLEngineTest
     private static class HelloWorldHandler extends AbstractHandler
     {
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             // System.err.println("HANDLE "+request.getRequestURI());
             String sslId = (String)request.getAttribute("javax.servlet.request.ssl_session_id");
@@ -389,6 +389,7 @@ public class SSLEngineTest
                 out.print(HELLO_WORLD);
                 out.close();
             }
+            return true;
         }
     }
 
@@ -397,7 +398,7 @@ public class SSLEngineTest
         private int bytes = 0;
 
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             response.setContentType("text/plain");
             response.setBufferSize(128);
@@ -416,6 +417,7 @@ public class SSLEngineTest
             }
             os.write(b);
             response.flushBuffer();
+            return true;
         }
     }
 }

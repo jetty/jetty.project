@@ -173,10 +173,9 @@ public class AsyncRequestReadTest
     private static class AsyncStreamHandler extends AbstractHandler
     {
         @Override
-        public void handle(String path, final Request request, HttpServletRequest httpRequest, final HttpServletResponse httpResponse) throws IOException, ServletException
+        public boolean handle(String path, final Request request, HttpServletRequest httpRequest, final HttpServletResponse httpResponse) throws IOException, ServletException
         {
             httpResponse.setStatus(500);
-            request.setHandled(true);
 
             final AsyncContext async = request.startAsync();
             // System.err.println("handle "+request.getContentLength());
@@ -212,6 +211,7 @@ public class AsyncRequestReadTest
                     }
                 }
             }.start();
+            return true;
         }
     }
 
@@ -340,10 +340,9 @@ public class AsyncRequestReadTest
     private static class PartialReaderHandler extends AbstractHandler
     {
         @Override
-        public void handle(String path, final Request request, HttpServletRequest httpRequest, final HttpServletResponse httpResponse) throws IOException, ServletException
+        public boolean handle(String path, final Request request, HttpServletRequest httpRequest, final HttpServletResponse httpResponse) throws IOException, ServletException
         {
             httpResponse.setStatus(200);
-            request.setHandled(true);
 
             BufferedReader in = request.getReader();
             PrintWriter out = httpResponse.getWriter();
@@ -358,6 +357,7 @@ public class AsyncRequestReadTest
                 out.write(c);
             }
             out.write('\n');
+            return true;
         }
     }
 }

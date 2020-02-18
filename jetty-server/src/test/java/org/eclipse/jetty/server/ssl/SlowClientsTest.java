@@ -78,13 +78,13 @@ public class SlowClientsTest
             server.setHandler(new AbstractHandler()
             {
                 @Override
-                public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+                public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
                 {
-                    baseRequest.setHandled(true);
                     logger.info("SERVING {}", target);
                     // Write some big content.
                     response.getOutputStream().write(new byte[contentLength]);
                     logger.info("SERVED {}", target);
+                    return true;
                 }
             });
             server.start();

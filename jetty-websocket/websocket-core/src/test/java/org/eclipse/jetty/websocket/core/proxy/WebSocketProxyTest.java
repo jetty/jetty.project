@@ -84,16 +84,17 @@ public class WebSocketProxyTest
         public boolean blockServerUpgradeRequests = false;
 
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             if (baseRequest.getHeader("Upgrade") != null)
             {
                 if (blockServerUpgradeRequests && target.startsWith("/server/"))
                 {
                     response.sendError(HttpStatus.INTERNAL_SERVER_ERROR_500);
-                    baseRequest.setHandled(true);
+                    return true;
                 }
             }
+            return false;
         }
     }
 

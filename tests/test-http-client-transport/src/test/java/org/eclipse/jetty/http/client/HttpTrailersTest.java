@@ -84,10 +84,8 @@ public class HttpTrailersTest extends AbstractTest<TransportScenario>
         scenario.start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public boolean handle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                jettyRequest.setHandled(true);
-
                 // Read the content first.
                 ServletInputStream input = jettyRequest.getInputStream();
                 while (true)
@@ -101,6 +99,7 @@ public class HttpTrailersTest extends AbstractTest<TransportScenario>
                 HttpFields trailers = jettyRequest.getTrailerHttpFields();
                 assertNotNull(trailers);
                 assertEquals(trailerValue, trailers.get(trailerName));
+                return true;
             }
         });
 
@@ -123,10 +122,8 @@ public class HttpTrailersTest extends AbstractTest<TransportScenario>
         scenario.start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public boolean handle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                jettyRequest.setHandled(true);
-
                 // Read the content first.
                 ServletInputStream input = jettyRequest.getInputStream();
                 while (true)
@@ -139,6 +136,7 @@ public class HttpTrailersTest extends AbstractTest<TransportScenario>
                 // Now the trailers can be accessed.
                 HttpFields trailers = jettyRequest.getTrailerHttpFields();
                 assertNull(trailers);
+                return true;
             }
         });
 
@@ -172,10 +170,8 @@ public class HttpTrailersTest extends AbstractTest<TransportScenario>
         scenario.start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public boolean handle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                jettyRequest.setHandled(true);
-
                 HttpFields trailers = new HttpFields();
                 trailers.put(trailerName, trailerValue);
 
@@ -185,6 +181,7 @@ public class HttpTrailersTest extends AbstractTest<TransportScenario>
 
                 if (content != null)
                     response.getOutputStream().write(content);
+                return true;
             }
         });
 
@@ -219,15 +216,14 @@ public class HttpTrailersTest extends AbstractTest<TransportScenario>
         scenario.start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
+            public boolean handle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
             {
-                jettyRequest.setHandled(true);
-
                 HttpFields trailers = new HttpFields();
 
                 Response jettyResponse = (Response)response;
                 jettyResponse.setTrailerFields(() ->
                     trailers.stream().collect(Collectors.toMap(HttpField::getName, HttpField::getValue)));
+                return true;
             }
         });
 
@@ -265,10 +261,8 @@ public class HttpTrailersTest extends AbstractTest<TransportScenario>
         scenario.start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public boolean handle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                jettyRequest.setHandled(true);
-
                 HttpFields trailers = new HttpFields();
                 trailers.put(trailerName, trailerValue);
 
@@ -278,6 +272,7 @@ public class HttpTrailersTest extends AbstractTest<TransportScenario>
 
                 // Write a large content
                 response.getOutputStream().write(content);
+                return true;
             }
         });
 

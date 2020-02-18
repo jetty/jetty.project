@@ -112,9 +112,9 @@ public class NetworkTrafficListenerTest
         initConnector(new AbstractHandler()
         {
             @Override
-            public void handle(String uri, Request request, HttpServletRequest servletRequest, HttpServletResponse servletResponse) throws IOException, ServletException
+            public boolean handle(String uri, Request request, HttpServletRequest servletRequest, HttpServletResponse servletResponse) throws IOException, ServletException
             {
-                request.setHandled(true);
+                return true;
             }
         });
 
@@ -175,12 +175,12 @@ public class NetworkTrafficListenerTest
         initConnector(new AbstractHandler()
         {
             @Override
-            public void handle(String uri, Request request, HttpServletRequest servletRequest, HttpServletResponse servletResponse) throws IOException, ServletException
+            public boolean handle(String uri, Request request, HttpServletRequest servletRequest, HttpServletResponse servletResponse) throws IOException, ServletException
             {
-                request.setHandled(true);
                 ServletOutputStream output = servletResponse.getOutputStream();
                 output.write(responseContent.getBytes(StandardCharsets.UTF_8));
                 output.write(END_OF_CONTENT);
+                return true;
             }
         });
 
@@ -243,14 +243,14 @@ public class NetworkTrafficListenerTest
         initConnector(new AbstractHandler()
         {
             @Override
-            public void handle(String uri, Request request, HttpServletRequest servletRequest, HttpServletResponse servletResponse) throws IOException, ServletException
+            public boolean handle(String uri, Request request, HttpServletRequest servletRequest, HttpServletResponse servletResponse) throws IOException, ServletException
             {
-                request.setHandled(true);
                 ServletOutputStream output = servletResponse.getOutputStream();
                 output.write(responseChunk1.getBytes(StandardCharsets.UTF_8));
                 output.flush();
                 output.write(responseChunk2.getBytes(StandardCharsets.UTF_8));
                 output.flush();
+                return true;
             }
         });
 
@@ -317,10 +317,10 @@ public class NetworkTrafficListenerTest
         initConnector(new AbstractHandler()
         {
             @Override
-            public void handle(String uri, Request request, HttpServletRequest servletRequest, HttpServletResponse servletResponse) throws IOException, ServletException
+            public boolean handle(String uri, Request request, HttpServletRequest servletRequest, HttpServletResponse servletResponse) throws IOException, ServletException
             {
-                request.setHandled(true);
                 servletResponse.sendRedirect(location);
+                return true;
             }
         });
 
@@ -384,7 +384,7 @@ public class NetworkTrafficListenerTest
         initConnector(new AbstractHandler()
         {
             @Override
-            public void handle(String uri, Request request, HttpServletRequest servletRequest, HttpServletResponse servletResponse) throws IOException, ServletException
+            public boolean handle(String uri, Request request, HttpServletRequest servletRequest, HttpServletResponse servletResponse) throws IOException, ServletException
             {
                 // Read and discard the request body to make the test more
                 // reliable, otherwise there is a race between request body
@@ -397,7 +397,7 @@ public class NetworkTrafficListenerTest
                     if (read < 0)
                         break;
                 }
-                request.setHandled(true);
+                return true;
             }
         });
 

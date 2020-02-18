@@ -531,9 +531,8 @@ public class HttpClientTimeoutTest extends AbstractTest<TransportScenario>
         }
 
         @Override
-        public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public boolean handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
-            baseRequest.setHandled(true);
             try
             {
                 TimeUnit.MILLISECONDS.sleep(timeout);
@@ -543,6 +542,7 @@ public class HttpClientTimeoutTest extends AbstractTest<TransportScenario>
             {
                 throw new ServletException(x);
             }
+            return true;
         }
     }
 }

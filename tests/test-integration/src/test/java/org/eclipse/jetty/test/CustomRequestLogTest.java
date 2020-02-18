@@ -653,7 +653,6 @@ public class CustomRequestLogTest
             }
 
             requestTimes.offer(baseRequest.getTimeStamp());
-            baseRequest.setHandled(true);
 
             if (request.getContentLength() > 0)
             {

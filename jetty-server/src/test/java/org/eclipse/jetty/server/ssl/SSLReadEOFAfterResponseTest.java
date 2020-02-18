@@ -68,7 +68,7 @@ public class SSLReadEOFAfterResponseTest
         server.setHandler(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 // First: read the whole content.
                 InputStream input = request.getInputStream();
@@ -92,6 +92,7 @@ public class SSLReadEOFAfterResponseTest
                 int read = input.read();
                 if (read >= 0)
                     throw new IllegalStateException();
+                return false;
             }
         });
         server.start();

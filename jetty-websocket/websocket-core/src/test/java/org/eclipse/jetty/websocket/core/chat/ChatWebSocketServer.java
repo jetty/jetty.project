@@ -119,13 +119,13 @@ public class ChatWebSocketServer
         upgradeHandler.setHandler(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
                     throws IOException, ServletException
             {
                 response.setStatus(200);
                 response.setContentType("text/plain");
                 response.getOutputStream().println("WebSocket Chat Server");
-                baseRequest.setHandled(true);
+                return true;
             }
         });
 

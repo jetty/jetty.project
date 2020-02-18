@@ -64,7 +64,7 @@ public class ServerConnectorTest
     public static class ReuseInfoHandler extends AbstractHandler
     {
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             response.setContentType("text/plain");
 
@@ -92,7 +92,7 @@ public class ServerConnectorTest
 
             out.printf("socket.getReuseAddress() = %b%n", socket.getReuseAddress());
 
-            baseRequest.setHandled(true);
+            return true;
         }
     }
 

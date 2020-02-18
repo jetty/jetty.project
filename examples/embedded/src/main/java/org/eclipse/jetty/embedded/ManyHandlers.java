@@ -73,10 +73,10 @@ public class ManyHandlers
     public static class ParamHandler extends AbstractHandler
     {
         @Override
-        public void handle(String target,
-                           Request baseRequest,
-                           HttpServletRequest request,
-                           HttpServletResponse response) throws IOException,
+        public boolean handle(String target,
+                              Request baseRequest,
+                              HttpServletRequest request,
+                              HttpServletResponse response) throws IOException,
             ServletException
         {
             Map<String, String[]> params = request.getParameterMap();
@@ -84,8 +84,8 @@ public class ManyHandlers
             {
                 response.setContentType("text/plain");
                 response.getWriter().println(new JSON().toJSON(params));
-                baseRequest.setHandled(true);
             }
+            return true;
         }
     }
 
@@ -95,14 +95,14 @@ public class ManyHandlers
     public static class WelcomeWrapHandler extends HandlerWrapper
     {
         @Override
-        public void handle(String target,
-                           Request baseRequest,
-                           HttpServletRequest request,
-                           HttpServletResponse response) throws IOException,
+        public boolean handle(String target,
+                              Request baseRequest,
+                              HttpServletRequest request,
+                              HttpServletResponse response) throws IOException,
             ServletException
         {
             response.setHeader("X-Welcome", "Greetings from WelcomeWrapHandler");
-            super.handle(target, baseRequest, request, response);
+            return super.handle(target, baseRequest, request, response);
         }
     }
 

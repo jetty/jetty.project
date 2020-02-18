@@ -57,9 +57,8 @@ public class TypedContentProviderTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
-                baseRequest.setHandled(true);
                 assertEquals("POST", request.getMethod());
                 assertEquals(MimeTypes.Type.FORM_ENCODED.asString(), request.getContentType());
                 assertEquals(value1, request.getParameter(name1));
@@ -67,6 +66,7 @@ public class TypedContentProviderTest extends AbstractHttpClientServerTest
                 assertNotNull(values);
                 assertEquals(2, values.length);
                 assertThat(values, Matchers.arrayContainingInAnyOrder(value2, value3));
+                return true;
             }
         });
 
@@ -96,12 +96,12 @@ public class TypedContentProviderTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
-                baseRequest.setHandled(true);
                 assertEquals("POST", request.getMethod());
                 assertEquals(contentType, request.getContentType());
                 assertEquals(content, IO.toString(request.getInputStream()));
+                return true;
             }
         });
 
@@ -124,12 +124,12 @@ public class TypedContentProviderTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
-                baseRequest.setHandled(true);
                 assertEquals("GET", request.getMethod());
                 assertNotNull(request.getContentType());
                 assertEquals(content, IO.toString(request.getInputStream()));
+                return true;
             }
         });
 

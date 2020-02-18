@@ -101,10 +101,10 @@ public class MovedContextHandler extends ContextHandler
     private class Redirector extends AbstractHandler
     {
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             if (_newContextURL == null)
-                return;
+                return false;
 
             String path = _newContextURL;
             if (!_discardPathInfo && request.getPathInfo() != null)
@@ -128,7 +128,7 @@ public class MovedContextHandler extends ContextHandler
 
             response.setStatus(_permanent ? HttpServletResponse.SC_MOVED_PERMANENTLY : HttpServletResponse.SC_FOUND);
             response.setContentLength(0);
-            baseRequest.setHandled(true);
+            return true;
         }
     }
 

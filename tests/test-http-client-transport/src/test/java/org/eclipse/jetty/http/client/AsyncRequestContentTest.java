@@ -189,9 +189,8 @@ public class AsyncRequestContentTest extends AbstractTest<TransportScenario>
     private static class ConsumeInputHandler extends AbstractHandler
     {
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
-            baseRequest.setHandled(true);
             ServletInputStream input = request.getInputStream();
             while (true)
             {
@@ -200,6 +199,7 @@ public class AsyncRequestContentTest extends AbstractTest<TransportScenario>
                     break;
             }
             response.setStatus(HttpStatus.OK_200);
+            return true;
         }
     }
 }

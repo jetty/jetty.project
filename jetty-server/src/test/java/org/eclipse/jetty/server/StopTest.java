@@ -293,7 +293,7 @@ public class StopTest
         context.setHandler(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
                 throws IOException, ServletException
             {
                 try
@@ -306,10 +306,10 @@ public class StopTest
                     throw new ServletException(x);
                 }
 
-                baseRequest.setHandled(true);
                 response.setStatus(200);
                 response.getWriter().println("The Response");
                 response.getWriter().close();
+                return true;
             }
         });
 
@@ -383,7 +383,7 @@ public class StopTest
         stats.setHandler(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
                 throws IOException, ServletException
             {
                 try
@@ -396,10 +396,10 @@ public class StopTest
                     throw new ServletException(x);
                 }
 
-                baseRequest.setHandled(true);
                 response.setStatus(200);
                 response.getWriter().println("The Response");
                 response.getWriter().close();
+                return true;
             }
         });
 
@@ -514,11 +514,11 @@ public class StopTest
         }
 
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+        public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             throws IOException, ServletException
         {
-            baseRequest.setHandled(true);
             latch.countDown();
+            return true;
         }
     }
 
@@ -528,7 +528,7 @@ public class StopTest
         final CountDownLatch latchB = new CountDownLatch(1);
 
         @Override
-        public void handle(String s, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+        public boolean handle(String s, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
         {
             response.setContentLength(2);
             response.getOutputStream().write("a".getBytes());
@@ -543,6 +543,8 @@ public class StopTest
             }
             response.flushBuffer();
             response.getOutputStream().write("b".getBytes());
+
+            return true;
         }
     }
 }

@@ -99,7 +99,7 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
             final long d = _requestStats.decrement();
             _requestTimeStats.record(elapsed);
 
-            updateResponse(request);
+            updateResponse(request, true);
 
             _asyncWaitStats.decrement();
 
@@ -138,7 +138,7 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
     }
 
     @Override
-    public void handle(String path, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    public boolean handle(String path, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
         _dispatchedStats.increment();
 
@@ -157,20 +157,23 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
             _asyncDispatches.increment();
         }
 
+        boolean handled = false;
         try
         {
             Handler handler = getHandler();
-            if (handler != null && !_shutdown.isShutdown() && isStarted())
-                handler.handle(path, baseRequest, request, response);
-            else
+            if (handler == null)
             {
-                if (!baseRequest.isHandled())
-                    baseRequest.setHandled(true);
-                else if (_wrapWarning.compareAndSet(false, true))
+                if (_wrapWarning.compareAndSet(false, true))
                     LOG.warn("Bad statistics configuration. Latencies will be incorrect in {}", this);
-                if (!baseRequest.getResponse().isCommitted())
-                    response.sendError(HttpStatus.SERVICE_UNAVAILABLE_503);
             }
+            else if (!_shutdown.isShutdown() && isStarted())
+            {
+                return handled = handler.handle(path, baseRequest, request, response);
+            }
+
+            if (!baseRequest.getResponse().isCommitted())
+                response.sendError(HttpStatus.SERVICE_UNAVAILABLE_503);
+            return true;
         }
         finally
         {
@@ -192,7 +195,7 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
             {
                 long d = _requestStats.decrement();
                 _requestTimeStats.record(dispatched);
-                updateResponse(baseRequest);
+                updateResponse(baseRequest, handled);
 
                 // If we have no more dispatches, should we signal shutdown?
                 Shutdown shutdown = _shutdown;
@@ -207,10 +210,10 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
         }
     }
 
-    protected void updateResponse(Request request)
+    protected void updateResponse(Request request, boolean handled)
     {
         Response response = request.getResponse();
-        if (request.isHandled())
+        if (handled)
         {
             switch (response.getStatus() / 100)
             {

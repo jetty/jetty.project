@@ -115,10 +115,11 @@ public abstract class AbstractHttpTest
         }
 
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             if (throwException)
                 throw new TestCommitException();
+            return false;
         }
 
         protected void markFailed(Throwable x)

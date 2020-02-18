@@ -23,6 +23,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.server.Handle;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
@@ -36,9 +37,9 @@ import org.eclipse.jetty.server.Response;
  *
  * <p>When {@link #handle(String, Request, HttpServletRequest, HttpServletResponse)}
  * is called on the first ScopedHandler in a chain of HandlerWrappers,
- * the {@link #doScope(String, Request, HttpServletRequest, HttpServletResponse)} method is
+ * the {@link #doScope(String, Request, HttpServletRequest, HttpServletResponse, Handle)} method is
  * called on all contained ScopedHandlers, before the
- * {@link #doHandle(String, Request, HttpServletRequest, HttpServletResponse)} method
+ * {@link #doHandle(String, Request, HttpServletRequest, HttpServletResponse, Handle)} method
  * is called on all contained handlers.</p>
  *
  * <p>For example if Scoped handlers A, B &amp; C were chained together, then
@@ -71,12 +72,12 @@ import org.eclipse.jetty.server.Response;
  * <pre>
  *     private static class MyHandler extends ScopedHandler
  *     {
- *         public void doScope(String target, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+ *         public void doScope(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response, Handle next) throws IOException, ServletException
  *         {
  *             try
  *             {
  *                 setUpMyScope();
- *                 super.doScope(target,request,response);
+ *                 next.handle(target,baseRequest,request,response);
  *             }
  *             finally
  *             {
@@ -84,12 +85,12 @@ import org.eclipse.jetty.server.Response;
  *             }
  *         }
  *
- *         public void doHandle(String target, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+ *         public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response, Handle next) throws IOException, ServletException
  *         {
  *             try
  *             {
  *                 doMyHandling();
- *                 super.doHandle(target,request,response);
+ *                 next.handle(target,baseRequest,request,response);
  *             }
  *             finally
  *             {
@@ -99,11 +100,12 @@ import org.eclipse.jetty.server.Response;
  *     }
  * </pre>
  */
-public abstract class ScopedHandler extends HandlerWrapper
+public class ScopedHandler extends HandlerWrapper
 {
     private static final ThreadLocal<ScopedHandler> __outerScope = new ThreadLocal<ScopedHandler>();
-    protected ScopedHandler _outerScope;
-    protected ScopedHandler _nextScope;
+    private Handle _handle;
+    private Handle _nextScope;
+    private Handle _nextHandle;
 
     /**
      * @see org.eclipse.jetty.server.handler.HandlerWrapper#doStart()
@@ -111,54 +113,61 @@ public abstract class ScopedHandler extends HandlerWrapper
     @Override
     protected void doStart() throws Exception
     {
+        // use ThreadLocal to find or set the outer scope.
+        ScopedHandler outerScopedHandler = __outerScope.get();
+        if (outerScopedHandler == null)
+            __outerScope.set(this);
         try
         {
-            _outerScope = __outerScope.get();
-            if (_outerScope == null)
-                __outerScope.set(this);
-
             super.doStart();
 
-            _nextScope = getChildHandlerByClass(ScopedHandler.class);
+            ScopedHandler nextScopedHandler = getChildHandlerByClass(ScopedHandler.class);
+
+            // TODO Some MethodHandle magic might work better here, or at least give prettier stacks?
+
+            // What do we do if handle is called?
+            if (outerScopedHandler == null)
+                // We are the outer scope so we start scoping the request
+                _handle = (t,r,rq,rs) -> doScope(t, r, rq, rs, _nextScope);
+            else
+                // We are not the outerscope, so we must already be scoped, so we handle
+                _handle = (t,r,rq,rs) -> doHandle(t, r, rq, rs, _nextHandle);
+
+            // What to do after scoping to ourselves?
+            if (nextScopedHandler != null)
+                // Scope to next ScoppedHandler
+                _nextScope = (t,r,rq,rs) -> nextScopedHandler.doScope(t, r, rq, rs, nextScopedHandler._nextScope);
+            else if (outerScopedHandler != null)
+                // No more scopped handlers so go back to the outer handler and start handling
+                _nextScope = (t,r,rq,rs) -> outerScopedHandler.doHandle(t, r, rq, rs, outerScopedHandler._nextHandle);
+            else
+                // We must be the outer scope with no inner scopes, so start handling
+                _nextScope = (t,r,rq,rs) -> this.doHandle(t, r, rq, rs, _nextHandle);
+
+            // What to do after handling
+            if (nextScopedHandler != null && nextScopedHandler == _handler)
+                // The next handler is a scoped handler, so directly call its doHandler
+                _nextHandle = (t,r,rq,rs) ->  nextScopedHandler.doHandle(t, r, rq, rs, nextScopedHandler._nextHandle);
+            else if (_handler != null)
+                // The next handler is a normal handler, so handle normally
+                _nextHandle = _handler;
+            else
+                // There is no next handler
+                _nextHandle = (t,r,rq,rs) -> false;
         }
         finally
         {
-            if (_outerScope == null)
+            if (outerScopedHandler == null)
                 __outerScope.set(null);
         }
     }
 
     @Override
-    public final void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    public final boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
         if (isStarted())
-        {
-            if (_outerScope == null)
-                doScope(target, baseRequest, request, response);
-            else
-                doHandle(target, baseRequest, request, response);
-        }
-    }
-
-    /**
-     * Scope the handler
-     * <p>Derived implementations should call {@link #nextScope(String, Request, HttpServletRequest, HttpServletResponse)}
-     *
-     * @param target The target of the request - either a URI or a name.
-     * @param baseRequest The original unwrapped request object.
-     * @param request The request either as the {@link Request} object or a wrapper of that request. The
-     * <code>{@link HttpConnection#getCurrentConnection()}.{@link HttpConnection#getHttpChannel() getHttpChannel()}.{@link HttpChannel#getRequest() getRequest()}</code>
-     * method can be used access the Request object if required.
-     * @param response The response as the {@link Response} object or a wrapper of that request. The
-     * <code>{@link HttpConnection#getCurrentConnection()}.{@link HttpConnection#getHttpChannel() getHttpChannel()}.{@link HttpChannel#getResponse() getResponse()}</code>
-     * method can be used access the Response object if required.
-     * @throws IOException if unable to handle the request or response processing
-     * @throws ServletException if unable to handle the request or response due to underlying servlet issue
-     */
-    public void doScope(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
-        throws IOException, ServletException
-    {
-        nextScope(target, baseRequest, request, response);
+            return _handle.handle(target, baseRequest, request, response);
+        return false;
     }
 
     /**
@@ -172,23 +181,19 @@ public abstract class ScopedHandler extends HandlerWrapper
      * @param response The response as the {@link Response} object or a wrapper of that request. The
      * <code>{@link HttpConnection#getCurrentConnection()}.{@link HttpConnection#getHttpChannel() getHttpChannel()}.{@link HttpChannel#getResponse() getResponse()}</code>
      * method can be used access the Response object if required.
+     * @param next The next scope or handler to call within this scope.
      * @throws IOException if unable to handle the request or response processing
      * @throws ServletException if unable to handle the request or response due to underlying servlet issue
+     * @return True if the request has been completely handled.
      */
-    public final void nextScope(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+    public boolean doScope(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response, Handle next)
         throws IOException, ServletException
     {
-        if (_nextScope != null)
-            _nextScope.doScope(target, baseRequest, request, response);
-        else if (_outerScope != null)
-            _outerScope.doHandle(target, baseRequest, request, response);
-        else
-            doHandle(target, baseRequest, request, response);
+        return next.handle(target, baseRequest, request, response);
     }
 
     /**
      * Do the handler work within the scope.
-     * <p>Derived implementations should call {@link #nextHandle(String, Request, HttpServletRequest, HttpServletResponse)}
      *
      * @param target The target of the request - either a URI or a name.
      * @param baseRequest The original unwrapped request object.
@@ -198,36 +203,15 @@ public abstract class ScopedHandler extends HandlerWrapper
      * @param response The response as the {@link Response} object or a wrapper of that request. The
      * <code>{@link HttpConnection#getCurrentConnection()}.{@link HttpConnection#getHttpChannel() getHttpChannel()}.{@link HttpChannel#getResponse() getResponse()}</code>
      * method can be used access the Response object if required.
+     * @param next The next handler to call within this scope.
      * @throws IOException if unable to handle the request or response processing
      * @throws ServletException if unable to handle the request or response due to underlying servlet issue
+     * @return True if the request has been completely handled.
      */
-    public abstract void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
-        throws IOException, ServletException;
-
-    /*
-     * Do the handler work within the scope.
-     * @param target
-     *          The target of the request - either a URI or a name.
-     * @param baseRequest
-     *          The original unwrapped request object.
-     * @param request
-     *            The request either as the {@link Request} object or a wrapper of that request. The
-     *            <code>{@link HttpConnection#getCurrentConnection()}.{@link HttpConnection#getHttpChannel() getHttpChannel()}.{@link HttpChannel#getRequest() getRequest()}</code>
-     *            method can be used access the Request object if required.
-     * @param response
-     *            The response as the {@link Response} object or a wrapper of that request. The
-     *            <code>{@link HttpConnection#getCurrentConnection()}.{@link HttpConnection#getHttpChannel() getHttpChannel()}.{@link HttpChannel#getResponse() getResponse()}</code>
-     *            method can be used access the Response object if required.
-     * @throws IOException
-     *             if unable to handle the request or response processing
-     * @throws ServletException
-     *             if unable to handle the request or response due to underlying servlet issue
-     */
-    public final void nextHandle(String target, final Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    public boolean doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response, Handle next)
+        throws IOException, ServletException
     {
-        if (_nextScope != null && _nextScope == _handler)
-            _nextScope.doHandle(target, baseRequest, request, response);
-        else if (_handler != null)
-            super.handle(target, baseRequest, request, response);
+        return next.handle(target, baseRequest, request, response);
     }
+
 }

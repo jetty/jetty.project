@@ -155,10 +155,10 @@ public class ServerConnectorTimeoutTest extends ConnectorTimeoutTest
         configureServer(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
-                baseRequest.setHandled(true);
                 IO.copy(request.getInputStream(), response.getOutputStream());
+                return true;
             }
         });
         Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort());

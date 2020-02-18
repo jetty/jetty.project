@@ -92,7 +92,7 @@ public class ProxyProtocolTest
         startServer(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 try
                 {
@@ -106,7 +106,7 @@ public class ProxyProtocolTest
                     th.printStackTrace();
                     response.setStatus(500);
                 }
-                baseRequest.setHandled(true);
+                return true;
             }
         });
 
@@ -144,7 +144,7 @@ public class ProxyProtocolTest
         startServer(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 try
                 {
@@ -162,7 +162,7 @@ public class ProxyProtocolTest
                     th.printStackTrace();
                     response.setStatus(500);
                 }
-                baseRequest.setHandled(true);
+                return true;
             }
         });
 

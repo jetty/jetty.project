@@ -407,13 +407,13 @@ public class ContextHandlerCollectionTest
         }
 
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             if (response.containsHeader("Wrapped"))
                 response.setHeader("Wrapped", "ASYNC");
             else
                 response.setHeader("Wrapped", "TRUE");
-            super.handle(target, baseRequest, request, response);
+            return super.handle(target, baseRequest, request, response);
         }
     }
 
@@ -433,11 +433,11 @@ public class ContextHandlerCollectionTest
         }
 
         @Override
-        public void handle(String s, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public boolean handle(String s, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
-            baseRequest.setHandled(true);
             this.handled = true;
             response.getWriter().print(name);
+            return true;
         }
 
         public void reset()
@@ -462,10 +462,8 @@ public class ContextHandlerCollectionTest
         }
 
         @Override
-        public void handle(String s, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public boolean handle(String s, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
-            baseRequest.setHandled(true);
-
             String n = (String)baseRequest.getAttribute("async");
             if (n == null)
             {
@@ -478,6 +476,7 @@ public class ContextHandlerCollectionTest
             {
                 response.getWriter().print(n);
             }
+            return true;
         }
 
         @Override

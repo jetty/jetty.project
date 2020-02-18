@@ -307,7 +307,7 @@ public class LocalAsyncContextTest
         }
 
         @Override
-        public void handle(String target, final Request baseRequest, final HttpServletRequest request, final HttpServletResponse response) throws IOException, ServletException
+        public boolean handle(String target, final Request baseRequest, final HttpServletRequest request, final HttpServletResponse response) throws IOException, ServletException
         {
             LOG.debug("handle {} {}", baseRequest.getDispatcherType(), baseRequest);
             if (DispatcherType.REQUEST.equals(baseRequest.getDispatcherType()))
@@ -349,7 +349,6 @@ public class LocalAsyncContextTest
                                 Thread.sleep(_completeAfter);
                                 response.getOutputStream().println("COMPLETED");
                                 response.setStatus(200);
-                                baseRequest.setHandled(true);
                                 asyncContext.complete();
                             }
                             catch (Exception e)
@@ -363,7 +362,6 @@ public class LocalAsyncContextTest
                 {
                     response.getOutputStream().println("COMPLETED");
                     response.setStatus(200);
-                    baseRequest.setHandled(true);
                     asyncContext.complete();
                 }
 
@@ -419,7 +417,6 @@ public class LocalAsyncContextTest
                                     Thread.sleep(_completeAfter2);
                                     response.getOutputStream().println("COMPLETED2");
                                     response.setStatus(200);
-                                    baseRequest.setHandled(true);
                                     asyncContext.complete();
                                 }
                                 catch (Exception e)
@@ -433,7 +430,6 @@ public class LocalAsyncContextTest
                     {
                         response.getOutputStream().println("COMPLETED2");
                         response.setStatus(200);
-                        baseRequest.setHandled(true);
                         asyncContext.complete();
                     }
 
@@ -464,9 +460,9 @@ public class LocalAsyncContextTest
                 else
                 {
                     response.setStatus(200);
-                    baseRequest.setHandled(true);
                 }
             }
+            return true;
         }
     }
 

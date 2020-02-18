@@ -369,7 +369,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                             for (HttpConfiguration.Customizer customizer : _configuration.getCustomizers())
                             {
                                 customizer.customize(getConnector(), _configuration, _request);
-                                if (_request.isHandled())
+                                if (_request.getHttpChannel().isCommitted())
                                     return;
                             }
                             getServer().handle(HttpChannel.this);
@@ -413,7 +413,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                             dispatch(DispatcherType.ERROR,() ->
                             {
                                 errorHandler.handle(null, _request, _request, _response);
-                                _request.setHandled(true);
                             });
                         }
                         catch (Throwable x)
@@ -475,12 +474,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
                     case COMPLETE:
                     {
-                        if (!_response.isCommitted() && !_request.isHandled() && !_response.getHttpOutput().isClosed())
-                        {
-                            _response.sendError(HttpStatus.NOT_FOUND_404);
-                            break;
-                        }
-
                         // RFC 7230, section 3.3.
                         if (!_request.isHead() &&
                             _response.getStatus() != HttpStatus.NOT_MODIFIED_304 &&
@@ -552,7 +545,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     {
         try
         {
-            _request.setHandled(false);
             _response.reopen();
             _request.setDispatcherType(type);
             _combinedListener.onBeforeDispatch(_request);
@@ -634,7 +626,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     {
         try
         {
-            _request.setHandled(true);
             _state.completing();
             sendResponse(null, _response.getHttpOutput().getBuffer(), true, Callback.from(_state::completed));
         }

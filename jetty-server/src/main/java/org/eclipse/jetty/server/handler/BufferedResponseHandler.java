@@ -102,9 +102,10 @@ public class BufferedResponseHandler extends HandlerWrapper
 
     /**
      * @see org.eclipse.jetty.server.handler.HandlerWrapper#handle(java.lang.String, org.eclipse.jetty.server.Request, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
+     * @return
      */
     @Override
-    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
         final ServletContext context = baseRequest.getServletContext();
         final String path = context == null ? baseRequest.getRequestURI() : URIUtil.addPaths(baseRequest.getServletPath(), baseRequest.getPathInfo());
@@ -119,8 +120,7 @@ public class BufferedResponseHandler extends HandlerWrapper
             if (interceptor instanceof BufferedInterceptor)
             {
                 LOG.debug("{} already intercepting {}", this, request);
-                _handler.handle(target, baseRequest, request, response);
-                return;
+                return _handler.handle(target, baseRequest, request, response);
             }
             interceptor = interceptor.getNextInterceptor();
         }
@@ -129,8 +129,7 @@ public class BufferedResponseHandler extends HandlerWrapper
         if (!_methods.test(baseRequest.getMethod()))
         {
             LOG.debug("{} excluded by method {}", this, request);
-            _handler.handle(target, baseRequest, request, response);
-            return;
+            return _handler.handle(target, baseRequest, request, response);
         }
 
         // If not a supported URI- no Vary because no matter what client, this URI is always excluded
@@ -138,8 +137,7 @@ public class BufferedResponseHandler extends HandlerWrapper
         if (!isPathBufferable(path))
         {
             LOG.debug("{} excluded by path {}", this, request);
-            _handler.handle(target, baseRequest, request, response);
-            return;
+            return _handler.handle(target, baseRequest, request, response);
         }
 
         // If the mime type is known from the path, then apply mime type filtering 
@@ -151,16 +149,14 @@ public class BufferedResponseHandler extends HandlerWrapper
             {
                 LOG.debug("{} excluded by path suffix mime type {}", this, request);
                 // handle normally without setting vary header
-                _handler.handle(target, baseRequest, request, response);
-                return;
+                return _handler.handle(target, baseRequest, request, response);
             }
         }
 
         // install interceptor and handle
         out.setInterceptor(new BufferedInterceptor(baseRequest.getHttpChannel(), out.getInterceptor()));
 
-        if (_handler != null)
-            _handler.handle(target, baseRequest, request, response);
+        return _handler != null && _handler.handle(target, baseRequest, request, response);
     }
 
     protected boolean isMimeTypeBufferable(String mimetype)

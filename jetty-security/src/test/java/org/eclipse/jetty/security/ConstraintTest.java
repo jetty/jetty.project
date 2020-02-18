@@ -1659,9 +1659,8 @@ public class ConstraintTest
     private class RequestHandler extends AbstractHandler
     {
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
-            baseRequest.setHandled(true);
             if (request.getAuthType() == null || "user".equals(request.getRemoteUser()) || request.isUserInRole("user") || request.isUserInRole("foo"))
             {
                 response.setStatus(200);
@@ -1674,33 +1673,29 @@ public class ConstraintTest
             }
             else
                 response.sendError(500);
+            return true;
         }
     }
 
     private class ProgrammaticLoginRequestHandler extends AbstractHandler
     {
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
-            baseRequest.setHandled(true);
-
             String action = request.getParameter("action");
             if (StringUtil.isBlank(action))
             {
                 response.setStatus(200);
                 response.setContentType("text/plain; charset=UTF-8");
                 response.getWriter().println("user=" + request.getRemoteUser());
-                return;
             }
             else if ("login".equals(action))
             {
                 request.login("admin", "password");
-                return;
             }
             else if ("loginfail".equals(action))
             {
                 request.login("admin", "fail");
-                return;
             }
             else if ("loginfaillogin".equals(action))
             {
@@ -1712,7 +1707,6 @@ public class ConstraintTest
                 {
                     request.login("admin", "password");
                 }
-                return;
             }
             else if ("loginlogin".equals(action))
             {
@@ -1741,6 +1735,8 @@ public class ConstraintTest
             }
             else
                 response.sendError(500);
+
+            return true;
         }
     }
 
@@ -1749,9 +1745,10 @@ public class ConstraintTest
 
         /**
          * @see org.eclipse.jetty.server.handler.HandlerWrapper#handle(java.lang.String, Request, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
+         * @return
          */
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             UserIdentity.Scope old = ((Request)request).getUserIdentityScope();
 
@@ -1788,7 +1785,7 @@ public class ConstraintTest
 
             try
             {
-                super.handle(target, baseRequest, request, response);
+                return super.handle(target, baseRequest, request, response);
             }
             finally
             {
@@ -1800,13 +1797,13 @@ public class ConstraintTest
     private class RoleCheckHandler extends AbstractHandler
     {
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
-            ((Request)request).setHandled(true);
             if (request.getAuthType() == null || "user".equals(request.getRemoteUser()) || request.isUserInRole("untranslated"))
                 response.setStatus(200);
             else
                 response.sendError(500);
+            return true;
         }
     }
 

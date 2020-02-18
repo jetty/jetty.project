@@ -278,7 +278,7 @@ public class ThreadStarvationTest
             _server.setHandler(new AbstractHandler()
             {
                 @Override
-                public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+                public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
                 {
                     int c = count.getAndIncrement();
                     try
@@ -292,11 +292,11 @@ public class ThreadStarvationTest
                     {
                         throw new ServletException(e);
                     }
-                    baseRequest.setHandled(true);
                     response.setStatus(200);
                     response.setContentLength(13);
                     response.getWriter().print("Hello World!\n");
                     response.getWriter().flush();
+                    return true;
                 }
             });
 

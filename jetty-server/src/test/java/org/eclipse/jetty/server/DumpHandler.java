@@ -58,19 +58,18 @@ public class DumpHandler extends AbstractHandler
     }
 
     @Override
-    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
         if (!isStarted())
-            return;
+            return false;
 
         if (Boolean.parseBoolean(request.getParameter("flush")))
             response.flushBuffer();
 
         if (Boolean.parseBoolean(request.getParameter("empty")))
         {
-            baseRequest.setHandled(true);
             response.setStatus(200);
-            return;
+            return true;
         }
 
         StringBuilder read = null;
@@ -96,10 +95,9 @@ public class DumpHandler extends AbstractHandler
         if (request.getParameter("error") != null)
         {
             response.sendError(Integer.parseInt(request.getParameter("error")));
-            return;
+            return true;
         }
 
-        baseRequest.setHandled(true);
         response.setHeader(HttpHeader.CONTENT_TYPE.asString(), MimeTypes.Type.TEXT_HTML.asString());
 
         OutputStream out = response.getOutputStream();
@@ -261,5 +259,6 @@ public class DumpHandler extends AbstractHandler
         {
             LOG.ignore(e);
         }
+        return true;
     }
 }

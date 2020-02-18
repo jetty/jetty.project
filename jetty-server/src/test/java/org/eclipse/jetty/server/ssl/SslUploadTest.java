@@ -151,9 +151,8 @@ public class SslUploadTest
     private static class EmptyHandler extends AbstractHandler
     {
         @Override
-        public void handle(String path, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException, ServletException
+        public boolean handle(String path, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException, ServletException
         {
-            request.setHandled(true);
             InputStream in = request.getInputStream();
             byte[] b = new byte[4096 * 4];
             int read;
@@ -162,6 +161,7 @@ public class SslUploadTest
                 total += read;
             }
             System.err.println("Read " + total);
+            return true;
         }
     }
 }

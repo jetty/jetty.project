@@ -110,9 +110,8 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
         scenario.start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                baseRequest.setHandled(true);
                 response.setStatus(200);
                 response.setContentLength(0);
                 response.flushBuffer();
@@ -125,6 +124,7 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
                     if (read < 0)
                         break;
                 }
+                return true;
             }
         });
 
@@ -156,10 +156,10 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
         scenario.start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                baseRequest.setHandled(true);
                 response.getOutputStream().write(data);
+                return true;
             }
         });
 
@@ -199,10 +199,10 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
         scenario.start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                baseRequest.setHandled(true);
                 response.getOutputStream().write(data);
+                return true;
             }
         });
 
@@ -243,15 +243,15 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
         scenario.start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                baseRequest.setHandled(true);
                 // Say we want to send this much...
                 response.setContentLength(2 * data.length);
                 // ...but write only half...
                 response.getOutputStream().write(data);
                 // ...then shutdown output
                 baseRequest.getHttpChannel().getEndPoint().shutdownOutput();
+                return true;
             }
         });
 
@@ -292,10 +292,10 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
         scenario.start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                baseRequest.setHandled(true);
                 IO.copy(request.getInputStream(), response.getOutputStream());
+                return true;
             }
         });
 
@@ -323,11 +323,11 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
         scenario.start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                baseRequest.setHandled(true);
                 contextRef.set(request.startAsync());
                 response.flushBuffer();
+                return true;
             }
         });
 
@@ -377,14 +377,14 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
         scenario.start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                baseRequest.setHandled(true);
                 response.setContentLength(chunk1.length + chunk2.length);
                 ServletOutputStream output = response.getOutputStream();
                 output.write(chunk1);
                 output.flush();
                 output.write(chunk2);
+                return true;
             }
         });
 
@@ -432,13 +432,13 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
         scenario.start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                baseRequest.setHandled(true);
                 byte[] data = new byte[1024];
                 response.setContentLength(data.length);
                 ServletOutputStream output = response.getOutputStream();
                 output.write(data);
+                return true;
             }
         });
 
@@ -503,10 +503,10 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
         scenario.start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                baseRequest.setHandled(true);
                 IO.copy(request.getInputStream(), response.getOutputStream());
+                return true;
             }
         });
 
@@ -542,9 +542,8 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
         scenario.start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                baseRequest.setHandled(true);
                 response.flushBuffer();
 
                 try
@@ -557,6 +556,7 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
                 }
 
                 response.getOutputStream().write(data);
+                return true;
             }
         });
 
@@ -588,9 +588,8 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
         scenario.start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                baseRequest.setHandled(true);
                 response.getOutputStream().write(data1);
                 response.flushBuffer();
 
@@ -604,6 +603,7 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
                 }
 
                 response.getOutputStream().write(data2);
+                return true;
             }
         });
 
@@ -639,11 +639,11 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
         scenario.start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                baseRequest.setHandled(true);
                 response.getOutputStream().write(data);
                 response.flushBuffer();
+                return true;
             }
         });
 
@@ -681,10 +681,10 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
         scenario.start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                baseRequest.setHandled(true);
                 IO.copy(request.getInputStream(), new ByteArrayOutputStream());
+                return true;
             }
         });
 
@@ -724,10 +724,10 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
         scenario.start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                baseRequest.setHandled(true);
                 IO.copy(request.getInputStream(), new ByteArrayOutputStream());
+                return true;
             }
         });
 
@@ -766,10 +766,10 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
         scenario.start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                baseRequest.setHandled(true);
                 IO.copy(request.getInputStream(), response.getOutputStream());
+                return true;
             }
         });
 
@@ -813,10 +813,10 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
         scenario.start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                baseRequest.setHandled(true);
                 IO.copy(request.getInputStream(), response.getOutputStream());
+                return true;
             }
         });
 
@@ -897,10 +897,10 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
         scenario.start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                baseRequest.setHandled(true);
                 IO.copy(request.getInputStream(), response.getOutputStream());
+                return true;
             }
         });
 
@@ -941,10 +941,10 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
         scenario.start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                baseRequest.setHandled(true);
                 IO.copy(request.getInputStream(), response.getOutputStream());
+                return true;
             }
         });
 
@@ -1117,12 +1117,12 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
         scenario.start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             {
-                baseRequest.setHandled(true);
                 AsyncContext asyncContext = request.startAsync();
                 asyncContext.setTimeout(0);
                 serverLatch.countDown();
+                return true;
             }
         });
 
@@ -1193,11 +1193,11 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
         scenario.start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             {
-                baseRequest.setHandled(true);
                 asyncContextRef.set(request.startAsync());
                 latch.countDown();
+                return true;
             }
         });
 
@@ -1246,11 +1246,11 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
         scenario.start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                baseRequest.setHandled(true);
                 if (target.startsWith("/303"))
                     response.sendRedirect("/200");
+                return true;
             }
         });
 

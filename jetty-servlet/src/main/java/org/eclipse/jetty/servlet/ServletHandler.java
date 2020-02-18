@@ -55,6 +55,8 @@ import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.SecurityHandler;
+import org.eclipse.jetty.server.Handle;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.ServletRequestHttpWrapper;
 import org.eclipse.jetty.server.ServletResponseHttpWrapper;
@@ -422,7 +424,7 @@ public class ServletHandler extends ScopedHandler
     }
 
     @Override
-    public void doScope(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    public boolean doScope(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response, Handle next) throws IOException, ServletException
     {
         // Get the base requests
         final String old_servlet_path = baseRequest.getServletPath();
@@ -468,7 +470,7 @@ public class ServletHandler extends ScopedHandler
             oldScope = baseRequest.getUserIdentityScope();
             baseRequest.setUserIdentityScope(servletHolder);
 
-            nextScope(target, baseRequest, request, response);
+            return next.handle(target, baseRequest, request, response);
         }
         finally
         {
@@ -485,7 +487,7 @@ public class ServletHandler extends ScopedHandler
     }
 
     @Override
-    public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+    public boolean doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response, Handle next)
         throws IOException, ServletException
     {
         ServletHolder servletHolder = (ServletHolder)baseRequest.getUserIdentityScope();
@@ -511,34 +513,26 @@ public class ServletHandler extends ScopedHandler
         if (LOG.isDebugEnabled())
             LOG.debug("chain={}", chain);
 
-        try
-        {
-            if (servletHolder == null)
-                notFound(baseRequest, request, response);
-            else
-            {
-                // unwrap any tunnelling of base Servlet request/responses
-                ServletRequest req = request;
-                if (req instanceof ServletRequestHttpWrapper)
-                    req = ((ServletRequestHttpWrapper)req).getRequest();
-                ServletResponse res = response;
-                if (res instanceof ServletResponseHttpWrapper)
-                    res = ((ServletResponseHttpWrapper)res).getResponse();
+        if (servletHolder == null)
+            return notFound(baseRequest, request, response);
 
-                // Do the filter/handling thang
-                servletHolder.prepare(baseRequest, req, res);
+        // unwrap any tunnelling of base Servlet request/responses
+        ServletRequest req = request;
+        if (req instanceof ServletRequestHttpWrapper)
+            req = ((ServletRequestHttpWrapper)req).getRequest();
+        ServletResponse res = response;
+        if (res instanceof ServletResponseHttpWrapper)
+            res = ((ServletResponseHttpWrapper)res).getResponse();
 
-                if (chain != null)
-                    chain.doFilter(req, res);
-                else
-                    servletHolder.handle(baseRequest, req, res);
-            }
-        }
-        finally
-        {
-            if (servletHolder != null)
-                baseRequest.setHandled(true);
-        }
+        // Do the filter/handling thang
+        servletHolder.prepare(baseRequest, req, res);
+
+        if (chain != null)
+            chain.doFilter(req, res);
+        else
+            servletHolder.handle(baseRequest, req, res);
+
+        return true;
     }
 
     /**
@@ -1423,12 +1417,15 @@ public class ServletHandler extends ScopedHandler
         }
     }
 
-    protected void notFound(Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    protected boolean notFound(Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Not Found {}", request.getRequestURI());
-        if (getHandler() != null)
-            nextHandle(URIUtil.addPaths(request.getServletPath(), request.getPathInfo()), baseRequest, request, response);
+        Handler handler = getHandler();
+        if (handler != null)
+            return handler.handle(URIUtil.addPaths(request.getServletPath(), request.getPathInfo()), baseRequest, request, response);
+
+        return false;
     }
 
     protected synchronized boolean containsFilterHolder(FilterHolder holder)

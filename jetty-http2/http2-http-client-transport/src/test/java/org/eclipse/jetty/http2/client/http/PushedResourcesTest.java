@@ -111,9 +111,8 @@ public class PushedResourcesTest extends AbstractTest
         start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                baseRequest.setHandled(true);
                 if (target.equals(path1))
                 {
                     response.getOutputStream().write(pushBytes1);
@@ -132,6 +131,7 @@ public class PushedResourcesTest extends AbstractTest
                         .push();
                     response.getOutputStream().write(bytes);
                 }
+                return true;
             }
         });
 
@@ -178,15 +178,15 @@ public class PushedResourcesTest extends AbstractTest
         start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                baseRequest.setHandled(true);
                 if (target.equals(oldPath))
                     response.sendRedirect(newPath);
                 else if (target.equals(newPath))
                     response.getOutputStream().write(pushBytes);
                 else
                     baseRequest.newPushBuilder().path(oldPath).push();
+                return true;
             }
         });
 

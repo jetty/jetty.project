@@ -47,8 +47,8 @@ public class HttpServiceErrorPageErrorHandler extends ErrorPageErrorHandler
     }
 
     @Override
-    public void handle(String target, Request baseRequest,
-                       HttpServletRequest request, HttpServletResponse response)
+    public boolean handle(String target, Request baseRequest,
+                          HttpServletRequest request, HttpServletResponse response)
         throws IOException, ServletException
     {
         if (HttpServiceErrorHandlerHelper.getCustomErrorHandler() != null)
@@ -62,10 +62,7 @@ public class HttpServiceErrorPageErrorHandler extends ErrorPageErrorHandler
                 //well
             }
         }
-        if (!response.isCommitted())
-        {
-            super.handle(target, baseRequest, request, response);
-        }
+        return response.isCommitted() || super.handle(target, baseRequest, request, response);
     }
 
     @Override

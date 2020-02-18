@@ -146,11 +146,11 @@ public class ExtendedServerTest extends HttpServerTestBase
     protected static class DispatchedAtHandler extends AbstractHandler
     {
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
-            baseRequest.setHandled(true);
             response.setStatus(200);
             response.getOutputStream().print("DispatchedAt=" + request.getAttribute("DispatchedAt") + "\r\n");
+            return true;
         }
     }
 }

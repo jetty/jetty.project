@@ -129,21 +129,32 @@ public class HandlerCollection extends AbstractHandlerContainer
     }
 
     @Override
-    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+    public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
         throws IOException, ServletException
     {
+        boolean handled = false;
         if (isStarted())
         {
             Handlers handlers = _handlers.get();
             if (handlers == null)
-                return;
+                return false;
 
             MultiException mex = null;
             for (Handler handler : handlers._handlers)
             {
                 try
                 {
-                    handler.handle(target, baseRequest, request, response);
+                    // TODO This is a special case for DefaultHandler
+                    // TODO Previously the DefaultHandler was protected with an isHandled check, which allowed it
+                    // TODO to be into a HandlerCollection, but acted like it was a HandlerList.
+                    // TODO The real solution would be to change to using a HandlerList for the DefaultHandler, but
+                    // TODO we have many examples and embedded usages that will use a HandlerCollection, so this is
+                    // TODO a special case to make that work.  A better solution is needed
+                    if (handled && handler instanceof DefaultHandler)
+                        continue;
+
+                    if (handler.handle(target, baseRequest, request, response))
+                        handled = true;
                 }
                 catch (IOException | RuntimeException e)
                 {
@@ -164,6 +175,7 @@ public class HandlerCollection extends AbstractHandlerContainer
                     throw new ServletException(mex);
             }
         }
+        return handled;
     }
 
     /**

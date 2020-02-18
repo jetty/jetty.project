@@ -85,12 +85,14 @@ public class DefaultHandler extends AbstractHandler
      * @see org.eclipse.jetty.server.server.Handler#handle(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, int)
      */
     @Override
-    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
-        if (response.isCommitted() || baseRequest.isHandled())
-            return;
-
-        baseRequest.setHandled(true);
+        // TODO This test used to be an isHandled test, which essentially allows the DefaultHandler to be
+        // TODO put into a HandlerCollection, but acted like it was a HandlerList.  We have too many examples that
+        // TODO show using a DefaultHandler in a HandlerCollection, so we need to make this work... at least for now.
+        // TODO For now, we will make this work correctly with a hack in HandlerCollection.
+        if (response.isCommitted() || baseRequest.getResponse().isWritingOrStreaming())
+            return false;
 
         String method = request.getMethod();
 
@@ -108,13 +110,13 @@ public class DefaultHandler extends AbstractHandler
                 response.setHeader(HttpHeader.CACHE_CONTROL.toString(), "max-age=360000,public");
                 response.getOutputStream().write(_favicon);
             }
-            return;
+            return true;
         }
 
         if (!_showContexts || !HttpMethod.GET.is(method) || !request.getRequestURI().equals("/"))
         {
             response.sendError(HttpServletResponse.SC_NOT_FOUND);
-            return;
+            return true;
         }
 
         response.setStatus(HttpServletResponse.SC_NOT_FOUND);
@@ -201,6 +203,7 @@ public class DefaultHandler extends AbstractHandler
                 out.write(content);
             }
         }
+        return true;
     }
 
     /**

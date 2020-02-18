@@ -126,7 +126,7 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
         }
 
         @Override
-        public void handle(String target, Request baseRequest, final HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public boolean handle(String target, Request baseRequest, final HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             if (request.getAttribute(contextAttribute) == null)
             {
@@ -141,6 +141,7 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
                 });
             }
             super.handle(target, baseRequest, request, response);
+            return false;
         }
     }
 
@@ -200,7 +201,7 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
         }
 
         @Override
-        public void handle(String target, Request baseRequest, final HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public boolean handle(String target, Request baseRequest, final HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             if (request.getAttribute(contextAttribute) == null)
             {
@@ -214,8 +215,8 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
                         asyncContext.complete();
                 });
             }
-            baseRequest.setHandled(true);
             super.handle(target, baseRequest, request, response);
+            return true;
         }
     }
 
@@ -273,7 +274,7 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
         }
 
         @Override
-        public void handle(String target, Request baseRequest, final HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public boolean handle(String target, Request baseRequest, final HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             if (request.getAttribute(contextAttribute) == null)
             {
@@ -295,8 +296,8 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
                     }
                 });
             }
-            baseRequest.setHandled(true);
             super.handle(target, baseRequest, request, response);
+            return true;
         }
     }
 
@@ -354,7 +355,7 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
         }
 
         @Override
-        public void handle(String target, Request baseRequest, final HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public boolean handle(String target, Request baseRequest, final HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             if (request.getAttribute(contextAttribute) == null)
             {
@@ -378,8 +379,8 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
                     }
                 });
             }
-            baseRequest.setHandled(true);
             super.handle(target, baseRequest, request, response);
+            return true;
         }
     }
 
@@ -437,7 +438,7 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
         }
 
         @Override
-        public void handle(String target, Request baseRequest, final HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public boolean handle(String target, Request baseRequest, final HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             if (request.getAttribute(contextAttribute) == null)
             {
@@ -459,8 +460,8 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
                     }
                 });
             }
-            baseRequest.setHandled(true);
             super.handle(target, baseRequest, request, response);
+            return true;
         }
     }
 
@@ -520,7 +521,7 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
         }
 
         @Override
-        public void handle(String target, Request baseRequest, final HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public boolean handle(String target, Request baseRequest, final HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             if (request.getAttribute(contextAttribute) == null)
             {
@@ -545,8 +546,8 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
                     }
                 });
             }
-            baseRequest.setHandled(true);
             super.handle(target, baseRequest, request, response);
+            return true;
         }
     }
 
@@ -607,7 +608,7 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
         }
 
         @Override
-        public void handle(String target, Request baseRequest, final HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public boolean handle(String target, Request baseRequest, final HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             if (request.getAttribute(contextAttribute) == null)
             {
@@ -631,8 +632,8 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
                     }
                 });
             }
-            baseRequest.setHandled(true);
             super.handle(target, baseRequest, request, response);
+            return true;
         }
     }
 
@@ -689,7 +690,7 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
         }
 
         @Override
-        public void handle(String target, Request baseRequest, final HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public boolean handle(String target, Request baseRequest, final HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             if (request.getAttribute(contextAttribute) == null)
             {
@@ -713,8 +714,8 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
                     }
                 });
             }
-            baseRequest.setHandled(true);
             super.handle(target, baseRequest, request, response);
+            return true;
         }
     }
 
@@ -772,7 +773,7 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
         }
 
         @Override
-        public void handle(String target, Request baseRequest, final HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public boolean handle(String target, Request baseRequest, final HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             if (request.getAttribute(contextAttribute) == null)
             {
@@ -796,8 +797,8 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
                     }
                 });
             }
-            baseRequest.setHandled(true);
             super.handle(target, baseRequest, request, response);
+            return true;
         }
     }
 
@@ -850,7 +851,7 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
         }
 
         @Override
-        public void handle(String target, Request baseRequest, final HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public boolean handle(String target, Request baseRequest, final HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             if (request.getAttribute(contextAttribute) == null)
             {
@@ -874,8 +875,8 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
                     }
                 });
             }
-            baseRequest.setHandled(true);
             super.handle(target, baseRequest, request, response);
+            return true;
         }
     }
 
@@ -930,7 +931,7 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
         }
 
         @Override
-        public void handle(String target, Request baseRequest, final HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public boolean handle(String target, Request baseRequest, final HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             if (request.getAttribute(contextAttribute) == null)
             {
@@ -954,8 +955,8 @@ public class HttpManyWaysToAsyncCommitTest extends AbstractHttpTest
                     }
                 });
             }
-            baseRequest.setHandled(true);
             super.handle(target, baseRequest, request, response);
+            return true;
         }
     }
 

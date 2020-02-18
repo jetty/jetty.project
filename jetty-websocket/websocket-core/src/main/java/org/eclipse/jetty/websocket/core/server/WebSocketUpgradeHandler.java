@@ -69,18 +69,14 @@ public class WebSocketUpgradeHandler extends HandlerWrapper
     }
 
     @Override
-    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
         if (!paths.isEmpty() && !paths.test(target))
-        {
-            super.handle(target, baseRequest, request, response);
-            return;
-        }
+            return super.handle(target, baseRequest, request, response);
 
         if (handshaker.upgradeRequest(negotiator, request, response, null))
-            return;
+            return true;
 
-        if (!baseRequest.isHandled())
-            super.handle(target, baseRequest, request, response);
+        return baseRequest.getHttpChannel().isCommitted() || super.handle(target, baseRequest, request, response);
     }
 }

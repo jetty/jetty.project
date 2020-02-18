@@ -63,7 +63,7 @@ public class CookiePatternRuleTest
         Handler dummyHandler = new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 response.setContentType("text/plain");
                 response.setCharacterEncoding("utf-8");
@@ -72,7 +72,7 @@ public class CookiePatternRuleTest
                 out.printf("baseRequest.requestUri=%s%n", baseRequest.getRequestURI());
                 out.printf("baseRequest.originalUri=%s%n", baseRequest.getOriginalURI());
                 out.printf("request.requestUri=%s%n", request.getRequestURI());
-                baseRequest.setHandled(true);
+                return true;
             }
         };
 

@@ -83,7 +83,6 @@ public abstract class AbstractHandshaker implements Handshaker
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("not upgraded: response committed {}", request);
-            baseRequest.setHandled(true);
             return false;
         }
         int httpStatus = response.getStatus();
@@ -92,7 +91,6 @@ public abstract class AbstractHandshaker implements Handshaker
             if (LOG.isDebugEnabled())
                 LOG.debug("not upgraded: invalid http code {} {}", httpStatus, request);
             response.flushBuffer();
-            baseRequest.setHandled(true);
             return false;
         }
 
@@ -165,7 +163,6 @@ public abstract class AbstractHandshaker implements Handshaker
         if (httpConfig.getSendServerVersion())
             baseResponse.getHttpFields().put(SERVER_VERSION);
         baseResponse.flushBuffer();
-        baseRequest.setHandled(true);
 
         baseRequest.setAttribute(HttpTransport.UPGRADE_CONNECTION_ATTRIBUTE, connection);
 

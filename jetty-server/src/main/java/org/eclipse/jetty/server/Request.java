@@ -1693,11 +1693,6 @@ public class Request implements HttpServletRequest
         return null;
     }
 
-    public boolean isHandled()
-    {
-        return _handled;
-    }
-
     @Override
     public boolean isAsyncStarted()
     {
@@ -1873,7 +1868,6 @@ public class Request implements HttpServletRequest
             _async.reset();
         _async = null;
         _asyncNotSupportedSource = null;
-        _handled = false;
         if (_attributes != null)
             _attributes.clearAttributes();
         _contentType = null;
@@ -2083,11 +2077,6 @@ public class Request implements HttpServletRequest
         _dispatcherType = type;
     }
 
-    public void setHandled(boolean h)
-    {
-        _handled = h;
-    }
-
     /**
      * @param method The method to set.
      */
@@ -2284,12 +2273,10 @@ public class Request implements HttpServletRequest
     @Override
     public String toString()
     {
-        return String.format("%s%s%s %s%s@%x",
+        return String.format("%s(%s %s)@%x",
             getClass().getSimpleName(),
-            _handled ? "[" : "(",
             getMethod(),
             getHttpURI(),
-            _handled ? "]" : ")",
             hashCode());
     }
 

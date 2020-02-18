@@ -62,9 +62,8 @@ public class HttpClientUploadDuringServerShutdownTest
             server.setHandler(new AbstractHandler()
             {
                 @Override
-                public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+                public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
                 {
-                    baseRequest.setHandled(true);
                     byte[] buffer = new byte[1024];
                     InputStream input = request.getInputStream();
                     while (true)
@@ -79,6 +78,7 @@ public class HttpClientUploadDuringServerShutdownTest
                             // Wait.
                         }
                     }
+                    return true;
                 }
             });
             server.start();
@@ -139,11 +139,11 @@ public class HttpClientUploadDuringServerShutdownTest
         server.setHandler(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             {
-                baseRequest.setHandled(true);
                 endPointRef.set(baseRequest.getHttpChannel().getEndPoint());
                 serverLatch.countDown();
+                return true;
             }
         });
         server.start();
