@@ -45,7 +45,7 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.server.handler.HandlerCollection;
+import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
@@ -111,9 +111,6 @@ public class DatabaseLoginServiceTestServer
                               HttpServletRequest request, HttpServletResponse response)
             throws IOException, ServletException
         {
-            if (baseRequest.getHttpChannel().isCommitted())
-                return true;
-
             OutputStream out = null;
 
             if (baseRequest.getMethod().equals("PUT"))
@@ -146,8 +143,9 @@ public class DatabaseLoginServiceTestServer
 
                 if (!(out instanceof FileOutputStream))
                     _requestContent = out.toString();
+                return true;
             }
-            return true;
+            return false;
         }
 
         public String getRequestContent()
@@ -233,7 +231,7 @@ public class DatabaseLoginServiceTestServer
 
         _handler = new TestHandler(_resourceBase);
 
-        HandlerCollection handlers = new HandlerCollection();
+        HandlerList handlers = new HandlerList();
         handlers.setHandlers(new Handler[]{_handler, root});
         security.setHandler(handlers);
     }

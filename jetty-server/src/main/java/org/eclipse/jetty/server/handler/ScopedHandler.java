@@ -107,9 +107,18 @@ public class ScopedHandler extends HandlerWrapper
     private Handle _nextScope;
     private Handle _nextHandle;
 
-    /**
-     * @see org.eclipse.jetty.server.handler.HandlerWrapper#doStart()
-     */
+    protected ScopedHandler()
+    {
+        reset();
+    }
+
+    protected void reset()
+    {
+        _nextHandle = (t,r,rq,rs) -> false;
+        _nextScope = (t,r,rq,rs) -> this.doHandle(t, r, rq, rs, _nextHandle);
+        _handle = (t,r,rq,rs) -> doScope(t, r, rq, rs, _nextScope);
+    }
+
     @Override
     protected void doStart() throws Exception
     {
@@ -120,20 +129,27 @@ public class ScopedHandler extends HandlerWrapper
         try
         {
             super.doStart();
-
-            ScopedHandler nextScopedHandler = getChildHandlerByClass(ScopedHandler.class);
+        }
+        finally
+        {
+            if (outerScopedHandler == null)
+                __outerScope.set(null);
 
             // TODO Some MethodHandle magic might work better here, or at least give prettier stacks?
+            ScopedHandler nextScopedHandler = getChildHandlerByClass(ScopedHandler.class);
 
-            // What do we do if handle is called?
-            if (outerScopedHandler == null)
-                // We are the outer scope so we start scoping the request
-                _handle = (t,r,rq,rs) -> doScope(t, r, rq, rs, _nextScope);
+            // What to do after doHandle
+            if (nextScopedHandler != null && nextScopedHandler == _handler)
+                // The next handler is a scoped handler, so directly call its doHandler
+                _nextHandle = (t,r,rq,rs) ->  nextScopedHandler.doHandle(t, r, rq, rs, nextScopedHandler._nextHandle);
+            else if (_handler != null)
+                // The next handler is a normal handler, so handle normally
+                _nextHandle = _handler;
             else
-                // We are not the outerscope, so we must already be scoped, so we handle
-                _handle = (t,r,rq,rs) -> doHandle(t, r, rq, rs, _nextHandle);
+                // There is no next handler
+                _nextHandle = (t,r,rq,rs) -> false;
 
-            // What to do after scoping to ourselves?
+            // What to do after doScope?
             if (nextScopedHandler != null)
                 // Scope to next ScoppedHandler
                 _nextScope = (t,r,rq,rs) -> nextScopedHandler.doScope(t, r, rq, rs, nextScopedHandler._nextScope);
@@ -144,30 +160,27 @@ public class ScopedHandler extends HandlerWrapper
                 // We must be the outer scope with no inner scopes, so start handling
                 _nextScope = (t,r,rq,rs) -> this.doHandle(t, r, rq, rs, _nextHandle);
 
-            // What to do after handling
-            if (nextScopedHandler != null && nextScopedHandler == _handler)
-                // The next handler is a scoped handler, so directly call its doHandler
-                _nextHandle = (t,r,rq,rs) ->  nextScopedHandler.doHandle(t, r, rq, rs, nextScopedHandler._nextHandle);
-            else if (_handler != null)
-                // The next handler is a normal handler, so handle normally
-                _nextHandle = _handler;
-            else
-                // There is no next handler
-                _nextHandle = (t,r,rq,rs) -> false;
-        }
-        finally
-        {
+            // What do we do if handle is called?
             if (outerScopedHandler == null)
-                __outerScope.set(null);
+                // We are the outer scope so we start scoping the request
+                _handle = (t,r,rq,rs) -> doScope(t, r, rq, rs, _nextScope);
+            else
+                // We are not the outerscope, so we must already be scoped, so we handle
+                _handle = (t,r,rq,rs) -> doHandle(t, r, rq, rs, _nextHandle);
         }
+    }
+
+    @Override
+    protected void doStop() throws Exception
+    {
+        reset();
+        super.doStop();
     }
 
     @Override
     public final boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
-        if (isStarted())
-            return _handle.handle(target, baseRequest, request, response);
-        return false;
+        return isStarted() && _handle != null && _handle.handle(target, baseRequest, request, response);
     }
 
     /**
