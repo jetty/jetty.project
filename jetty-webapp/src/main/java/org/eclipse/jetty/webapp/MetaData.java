@@ -257,7 +257,7 @@ public class MetaData
     /**
      * Add a override-web.xml descriptor.
      * 
-     * @param override the override-web.xml
+     * @param descriptor the override-web.xml
      * @throws Exception
      */
     public void addOverrideDescriptor(OverrideDescriptor descriptor)
