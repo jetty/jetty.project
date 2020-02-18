@@ -43,56 +43,36 @@ public class HttpMethodsServlet extends HttpServlet
         super();
     }
 
-    /**
-     * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse
-     * response)
-     */
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
         /* do nothing */
     }
 
-    /**
-     * @see HttpServlet#doPost(HttpServletRequest request, HttpServletResponse
-     * response)
-     */
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
         /* do nothing */
     }
 
-    /**
-     * @see HttpServlet#doPut(HttpServletRequest, HttpServletResponse)
-     */
     @Override
     protected void doPut(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
         /* do nothing */
     }
 
-    /**
-     * @see HttpServlet#doDelete(HttpServletRequest, HttpServletResponse)
-     */
     @Override
     protected void doDelete(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
         /* do nothing */
     }
 
-    /**
-     * @see HttpServlet#doHead(HttpServletRequest, HttpServletResponse)
-     */
     @Override
     protected void doHead(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
         /* do nothing */
     }
 
-    /**
-     * @see HttpServlet#doTrace(HttpServletRequest, HttpServletResponse)
-     */
     @Override
     protected void doTrace(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {

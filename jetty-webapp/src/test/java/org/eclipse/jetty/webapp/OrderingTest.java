@@ -51,45 +51,30 @@ public class OrderingTest
             _name = name;
         }
 
-        /**
-         * @see org.eclipse.jetty.util.resource.Resource#addPath(java.lang.String)
-         */
         @Override
         public Resource addPath(String path) throws IOException, MalformedURLException
         {
             return null;
         }
 
-        /**
-         * @see org.eclipse.jetty.util.resource.Resource#delete()
-         */
         @Override
         public boolean delete() throws SecurityException
         {
             return false;
         }
 
-        /**
-         * @see org.eclipse.jetty.util.resource.Resource#exists()
-         */
         @Override
         public boolean exists()
         {
             return false;
         }
 
-        /**
-         * @see org.eclipse.jetty.util.resource.Resource#getFile()
-         */
         @Override
         public File getFile() throws IOException
         {
             return null;
         }
 
-        /**
-         * @see org.eclipse.jetty.util.resource.Resource#getInputStream()
-         */
         @Override
         public InputStream getInputStream() throws IOException
         {
@@ -102,9 +87,6 @@ public class OrderingTest
             return null;
         }
 
-        /**
-         * @see org.eclipse.jetty.util.resource.Resource#getName()
-         */
         @Override
         public String getName()
         {
@@ -117,62 +99,41 @@ public class OrderingTest
             return null;
         }
 
-        /**
-         * @see org.eclipse.jetty.util.resource.Resource#isContainedIn(org.eclipse.jetty.util.resource.Resource)
-         */
         @Override
         public boolean isContainedIn(Resource r) throws MalformedURLException
         {
             return false;
         }
 
-        /**
-         * @see org.eclipse.jetty.util.resource.Resource#isDirectory()
-         */
         @Override
         public boolean isDirectory()
         {
             return false;
         }
 
-        /**
-         * @see org.eclipse.jetty.util.resource.Resource#lastModified()
-         */
         @Override
         public long lastModified()
         {
             return 0;
         }
 
-        /**
-         * @see org.eclipse.jetty.util.resource.Resource#length()
-         */
         @Override
         public long length()
         {
             return 0;
         }
 
-        /**
-         * @see org.eclipse.jetty.util.resource.Resource#list()
-         */
         @Override
         public String[] list()
         {
             return null;
         }
 
-        /**
-         * @see org.eclipse.jetty.util.resource.Resource#close()
-         */
         @Override
         public void close()
         {
         }
 
-        /**
-         * @see org.eclipse.jetty.util.resource.Resource#renameTo(org.eclipse.jetty.util.resource.Resource)
-         */
         @Override
         public boolean renameTo(Resource dest) throws SecurityException
         {

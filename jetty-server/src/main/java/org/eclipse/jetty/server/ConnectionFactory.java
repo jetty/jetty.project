@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.server;
 
+import java.nio.ByteBuffer;
 import java.util.List;
 
 import org.eclipse.jetty.http.BadMessageException;
@@ -84,5 +85,44 @@ public interface ConnectionFactory
          * @throws BadMessageException Thrown to indicate the upgrade attempt was illegal and that a bad message response should be sent.
          */
         public Connection upgradeConnection(Connector connector, EndPoint endPoint, MetaData.Request upgradeRequest, HttpFields responseFields) throws BadMessageException;
+    }
+
+    /**
+     * <p>Connections created by this factory MUST implement {@link Connection.UpgradeTo}.</p>
+     */
+    interface Detecting extends ConnectionFactory
+    {
+        /**
+         * The possible outcomes of the {@link #detect(ByteBuffer)} method.
+         */
+        enum Detection
+        {
+            /**
+             * A {@link Detecting} can work with the given bytes.
+             */
+            RECOGNIZED,
+            /**
+             * A {@link Detecting} cannot work with the given bytes.
+             */
+            NOT_RECOGNIZED,
+            /**
+             * A {@link Detecting} requires more bytes to make a decision.
+             */
+            NEED_MORE_BYTES
+        }
+
+        /**
+         * <p>Check the bytes in the given {@code buffer} to figure out if this {@link Detecting} instance
+         * can work with them or not.</p>
+         * <p>The {@code buffer} MUST be left untouched by this method: bytes MUST NOT be consumed and MUST NOT be modified.</p>
+         * @param buffer the buffer.
+         * @return One of:
+         * <ul>
+         * <li>{@link Detection#RECOGNIZED} if this {@link Detecting} instance can work with the bytes in the buffer</li>
+         * <li>{@link Detection#NOT_RECOGNIZED} if this {@link Detecting} instance cannot work with the bytes in the buffer</li>
+         * <li>{@link Detection#NEED_MORE_BYTES} if this {@link Detecting} instance requires more bytes to make a decision</li>
+         * </ul>
+         */
+        Detection detect(ByteBuffer buffer);
     }
 }

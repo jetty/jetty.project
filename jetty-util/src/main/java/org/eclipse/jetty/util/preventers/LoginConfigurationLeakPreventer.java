@@ -30,9 +30,6 @@ package org.eclipse.jetty.util.preventers;
 public class LoginConfigurationLeakPreventer extends AbstractLeakPreventer
 {
 
-    /**
-     * @see org.eclipse.jetty.util.preventers.AbstractLeakPreventer#prevent(java.lang.ClassLoader)
-     */
     @Override
     public void prevent(ClassLoader loader)
     {

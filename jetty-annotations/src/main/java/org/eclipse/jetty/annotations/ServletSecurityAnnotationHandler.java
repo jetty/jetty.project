@@ -62,9 +62,6 @@ public class ServletSecurityAnnotationHandler extends AbstractIntrospectableAnno
         super(false, wac);
     }
 
-    /**
-     * @see org.eclipse.jetty.annotations.AnnotationIntrospector.IntrospectableAnnotationHandler#handle(java.lang.Class)
-     */
     @Override
     public void doHandle(Class clazz)
     {

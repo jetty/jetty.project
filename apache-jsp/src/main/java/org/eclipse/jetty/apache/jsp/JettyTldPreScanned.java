@@ -48,9 +48,6 @@ public class JettyTldPreScanned extends TldPreScanned
         _jettyPreScannedURLs = preScannedTlds;
     }
 
-    /**
-     * @see org.apache.jasper.servlet.TldPreScanned#scanJars()
-     */
     @Override
     public void scanJars()
     {

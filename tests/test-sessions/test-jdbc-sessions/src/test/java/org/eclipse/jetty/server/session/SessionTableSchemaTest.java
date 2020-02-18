@@ -50,9 +50,6 @@ public class SessionTableSchemaTest
         _da = new DatabaseAdaptor()
         {
 
-            /**
-             * @see org.eclipse.jetty.server.session.DatabaseAdaptor#isEmptyStringNull()
-             */
             @Override
             public boolean isEmptyStringNull()
             {

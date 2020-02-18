@@ -49,13 +49,14 @@ public class GeneratorTest
 
     private static Generator generator = new Generator();
     private static WebSocketCoreSession coreSession = newWebSocketCoreSession(Behavior.SERVER);
+    private static WebSocketComponents components = new WebSocketComponents();
 
     private static WebSocketCoreSession newWebSocketCoreSession(Behavior behavior)
     {
         WebSocketComponents components = new WebSocketComponents();
         ExtensionStack exStack = new ExtensionStack(components, Behavior.SERVER);
         exStack.negotiate(new LinkedList<>(), new LinkedList<>());
-        return new WebSocketCoreSession(new TestMessageHandler(), behavior, Negotiated.from(exStack));
+        return new WebSocketCoreSession(new TestMessageHandler(), behavior, Negotiated.from(exStack), components);
     }
 
     /**

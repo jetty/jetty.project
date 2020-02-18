@@ -47,9 +47,6 @@ public class DebugHandler extends HandlerWrapper implements Connection.Listener
     private OutputStream _out;
     private PrintStream _print;
 
-    /*
-     * @see org.eclipse.jetty.server.Handler#handle(java.lang.String, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, int)
-     */
     @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
         throws IOException, ServletException
@@ -120,9 +117,6 @@ public class DebugHandler extends HandlerWrapper implements Connection.Listener
         _print.println(d + (ms > 99 ? "." : (ms > 9 ? ".0" : ".00")) + ms + ":" + name + " " + message);
     }
 
-    /* (non-Javadoc)
-     * @see org.eclipse.jetty.server.handler.HandlerWrapper#doStart()
-     */
     @Override
     protected void doStart() throws Exception
     {
@@ -139,9 +133,6 @@ public class DebugHandler extends HandlerWrapper implements Connection.Listener
         super.doStart();
     }
 
-    /* (non-Javadoc)
-     * @see org.eclipse.jetty.server.handler.HandlerWrapper#doStop()
-     */
     @Override
     protected void doStop() throws Exception
     {

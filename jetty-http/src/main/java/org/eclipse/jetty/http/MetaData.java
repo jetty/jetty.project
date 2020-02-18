@@ -109,10 +109,6 @@ public class MetaData implements Iterable<HttpField>
         return _contentLength;
     }
 
-    /**
-     * @return an iterator over the HTTP fields
-     * @see #getFields()
-     */
     @Override
     public Iterator<HttpField> iterator()
     {

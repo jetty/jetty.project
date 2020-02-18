@@ -132,7 +132,6 @@
     <module>examples</module>
     <module>jetty-quickstart</module>
     <module>jetty-distribution</module>
-    <module>jetty-runner</module>
     <module>jetty-http-spi</module>
     <module>jetty-osgi</module>
     <module>jetty-alpn</module>
@@ -591,7 +590,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-pmd-plugin</artifactId>
-          <version>3.11.0</version>
+          <version>3.13.0</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>

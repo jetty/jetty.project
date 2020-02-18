@@ -254,9 +254,6 @@ public class ServerProxyImpl implements ServerProxy
         this.tempDirectory = tempDirectory;
     }
 
-    /**
-     * @see org.eclipse.jetty.ant.utils.ServerProxy#start()
-     */
     @Override
     public void start()
     {
@@ -299,9 +296,6 @@ public class ServerProxyImpl implements ServerProxy
         }
     }
 
-    /**
-     * @see org.eclipse.jetty.ant.utils.ServerProxy#getProxiedObject()
-     */
     @Override
     public Object getProxiedObject()
     {

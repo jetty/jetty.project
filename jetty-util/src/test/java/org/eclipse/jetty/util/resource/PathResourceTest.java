@@ -112,32 +112,6 @@ public class PathResourceTest
     }
 
     @Test
-    public void testNonDefaultFileSystemWriteTo() throws URISyntaxException, IOException
-    {
-        Path exampleJar = MavenTestingUtils.getTestResourcePathFile("example.jar");
-
-        URI uri = new URI("jar", exampleJar.toUri().toASCIIString(), null);
-
-        Map<String, Object> env = new HashMap<>();
-        env.put("multi-release", "runtime");
-
-        try (FileSystem zipfs = FileSystems.newFileSystem(uri, env))
-        {
-            Path manifestPath = zipfs.getPath("/META-INF/MANIFEST.MF");
-            assertThat(manifestPath, is(not(nullValue())));
-
-            PathResource resource = new PathResource(manifestPath);
-            try (ByteArrayOutputStream out = new ByteArrayOutputStream())
-            {
-                resource.writeTo(out, 2, 10);
-                String actual = new String(out.toByteArray(), UTF_8);
-                String expected = "nifest-Ver";
-                assertThat("writeTo(out, 2, 10)", actual, is(expected));
-            }
-        }
-    }
-
-    @Test
     public void testDefaultFileSystemGetFile() throws Exception
     {
         Path exampleJar = MavenTestingUtils.getTestResourcePathFile("example.jar");

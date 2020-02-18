@@ -137,7 +137,7 @@ public abstract class AbstractHandshaker implements Handshaker
         Negotiated negotiated = new Negotiated(baseRequest.getHttpURI().toURI(), protocol, baseRequest.isSecure(), extensionStack, WebSocketConstants.SPEC_VERSION_STRING);
 
         // Create the Session
-        WebSocketCoreSession coreSession = newWebSocketCoreSession(handler, negotiated);
+        WebSocketCoreSession coreSession = newWebSocketCoreSession(handler, negotiated, components);
         if (defaultCustomizer != null)
             defaultCustomizer.customize(coreSession);
         negotiator.customize(coreSession);
@@ -200,9 +200,9 @@ public abstract class AbstractHandshaker implements Handshaker
         return true;
     }
 
-    protected WebSocketCoreSession newWebSocketCoreSession(FrameHandler handler, Negotiated negotiated)
+    protected WebSocketCoreSession newWebSocketCoreSession(FrameHandler handler, Negotiated negotiated, WebSocketComponents components)
     {
-        return new WebSocketCoreSession(handler, Behavior.SERVER, negotiated);
+        return new WebSocketCoreSession(handler, Behavior.SERVER, negotiated, components);
     }
 
     protected abstract WebSocketConnection createWebSocketConnection(Request baseRequest, WebSocketCoreSession coreSession);

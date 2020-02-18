@@ -165,9 +165,6 @@ public class JettyDistroForker extends AbstractForker
         this.baseDir = baseDir;
     }
 
-    /**
-     * @see org.eclipse.jetty.maven.plugin.AbstractForker#createCommand()
-     */
     @Override
     protected ProcessBuilder createCommand()
     {
@@ -324,9 +321,6 @@ public class JettyDistroForker extends AbstractForker
                         return FileVisitResult.CONTINUE;
                     }
 
-                    /**
-                     * @see java.nio.file.SimpleFileVisitor#visitFile(java.lang.Object, java.nio.file.attribute.BasicFileAttributes)
-                     */
                     @Override
                     public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException
                     {

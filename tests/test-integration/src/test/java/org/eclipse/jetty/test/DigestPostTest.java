@@ -100,18 +100,12 @@ public class DigestPostTest
             roles.put(username, rolenames);
         }
 
-        /**
-         * @see org.eclipse.jetty.security.AbstractLoginService#loadRoleInfo(org.eclipse.jetty.security.AbstractLoginService.UserPrincipal)
-         */
         @Override
         protected String[] loadRoleInfo(UserPrincipal user)
         {
             return roles.get(user.getName());
         }
 
-        /**
-         * @see org.eclipse.jetty.security.AbstractLoginService#loadUserInfo(java.lang.String)
-         */
         @Override
         protected UserPrincipal loadUserInfo(String username)
         {

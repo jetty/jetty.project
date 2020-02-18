@@ -332,9 +332,6 @@ public class AnnotationConfiguration extends AbstractConfiguration
         _discoverableAnnotationHandlers.add(handler);
     }
 
-    /**
-     * @see org.eclipse.jetty.webapp.AbstractConfiguration#configure(org.eclipse.jetty.webapp.WebAppContext)
-     */
     @Override
     public void configure(WebAppContext context) throws Exception
     {
@@ -373,9 +370,6 @@ public class AnnotationConfiguration extends AbstractConfiguration
         }
     }
 
-    /**
-     * @see org.eclipse.jetty.webapp.AbstractConfiguration#postConfigure(org.eclipse.jetty.webapp.WebAppContext)
-     */
     @Override
     public void postConfigure(WebAppContext context) throws Exception
     {
@@ -568,9 +562,6 @@ public class AnnotationConfiguration extends AbstractConfiguration
         return Integer.getInteger(MAX_SCAN_WAIT, DEFAULT_MAX_SCAN_WAIT).intValue();
     }
 
-    /**
-     * @see org.eclipse.jetty.webapp.AbstractConfiguration#cloneConfigure(org.eclipse.jetty.webapp.WebAppContext, org.eclipse.jetty.webapp.WebAppContext)
-     */
     @Override
     public void cloneConfigure(WebAppContext template, WebAppContext context) throws Exception
     {

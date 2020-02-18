@@ -183,9 +183,6 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
         return _handler;
     }
 
-    /**
-     * @see org.eclipse.jetty.server.session.SessionCache#initialize(org.eclipse.jetty.server.session.SessionContext)
-     */
     @Override
     public void initialize(SessionContext context)
     {
@@ -194,9 +191,6 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
         _context = context;
     }
 
-    /**
-     * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStart()
-     */
     @Override
     protected void doStart() throws Exception
     {
@@ -213,9 +207,6 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
         super.doStart();
     }
 
-    /**
-     * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStop()
-     */
     @Override
     protected void doStop() throws Exception
     {
@@ -232,9 +223,6 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
         return _sessionDataStore;
     }
 
-    /**
-     * @see org.eclipse.jetty.server.session.SessionCache#setSessionDataStore(org.eclipse.jetty.server.session.SessionDataStore)
-     */
     @Override
     public void setSessionDataStore(SessionDataStore sessionStore)
     {
@@ -669,9 +657,6 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
         return doDelete(id);
     }
 
-    /**
-     * @see org.eclipse.jetty.server.session.SessionCache#checkExpiration(Set)
-     */
     @Override
     public Set<String> checkExpiration(Set<String> candidates)
     {
@@ -806,9 +791,6 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
         }
     }
 
-    /**
-     * @see org.eclipse.jetty.server.session.SessionCache#setSaveOnInactiveEviction(boolean)
-     */
     @Override
     public void setSaveOnInactiveEviction(boolean saveOnEvict)
     {
@@ -828,9 +810,6 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
         return _saveOnInactiveEviction;
     }
 
-    /**
-     * @see org.eclipse.jetty.server.session.SessionCache#newSession(javax.servlet.http.HttpServletRequest, java.lang.String, long, long)
-     */
     @Override
     public Session newSession(HttpServletRequest request, String id, long time, long maxInactiveMs)
     {

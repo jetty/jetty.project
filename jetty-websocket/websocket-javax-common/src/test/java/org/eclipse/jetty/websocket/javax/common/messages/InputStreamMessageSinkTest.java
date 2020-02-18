@@ -31,11 +31,12 @@ import java.util.function.Consumer;
 
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.javax.common.AbstractSessionTest;
-import org.eclipse.jetty.websocket.javax.common.CompletableFutureCallback;
+import org.eclipse.jetty.websocket.util.messages.InputStreamMessageSink;
 import org.junit.jupiter.api.Test;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -49,9 +50,9 @@ public class InputStreamMessageSinkTest extends AbstractMessageSinkTest
     {
         InputStreamCopy copy = new InputStreamCopy();
         MethodHandle copyHandle = getAcceptHandle(copy, InputStream.class);
-        InputStreamMessageSink sink = new InputStreamMessageSink(AbstractSessionTest.session, copyHandle);
+        InputStreamMessageSink sink = new InputStreamMessageSink(AbstractSessionTest.session.getCoreSession(), copyHandle);
 
-        CompletableFutureCallback finCallback = new CompletableFutureCallback();
+        FutureCallback finCallback = new FutureCallback();
         ByteBuffer data = BufferUtil.toBuffer("Hello World", UTF_8);
         sink.accept(new Frame(OpCode.BINARY).setPayload(data), finCallback);
 
@@ -66,9 +67,9 @@ public class InputStreamMessageSinkTest extends AbstractMessageSinkTest
     {
         InputStreamCopy copy = new InputStreamCopy();
         MethodHandle copyHandle = getAcceptHandle(copy, InputStream.class);
-        InputStreamMessageSink sink = new InputStreamMessageSink(AbstractSessionTest.session, copyHandle);
+        InputStreamMessageSink sink = new InputStreamMessageSink(AbstractSessionTest.session.getCoreSession(), copyHandle);
 
-        CompletableFutureCallback fin1Callback = new CompletableFutureCallback();
+        FutureCallback fin1Callback = new FutureCallback();
         ByteBuffer data1 = BufferUtil.toBuffer("Hello World", UTF_8);
         sink.accept(new Frame(OpCode.BINARY).setPayload(data1).setFin(true), fin1Callback);
 
@@ -77,7 +78,7 @@ public class InputStreamMessageSinkTest extends AbstractMessageSinkTest
         assertThat("FinCallback.done", fin1Callback.isDone(), is(true));
         assertThat("Writer.contents", new String(byteStream.toByteArray(), UTF_8), is("Hello World"));
 
-        CompletableFutureCallback fin2Callback = new CompletableFutureCallback();
+        FutureCallback fin2Callback = new FutureCallback();
         ByteBuffer data2 = BufferUtil.toBuffer("Greetings Earthling", UTF_8);
         sink.accept(new Frame(OpCode.BINARY).setPayload(data2).setFin(true), fin2Callback);
 
@@ -92,11 +93,11 @@ public class InputStreamMessageSinkTest extends AbstractMessageSinkTest
     {
         InputStreamCopy copy = new InputStreamCopy();
         MethodHandle copyHandle = getAcceptHandle(copy, InputStream.class);
-        InputStreamMessageSink sink = new InputStreamMessageSink(AbstractSessionTest.session, copyHandle);
+        InputStreamMessageSink sink = new InputStreamMessageSink(AbstractSessionTest.session.getCoreSession(), copyHandle);
 
-        CompletableFutureCallback callback1 = new CompletableFutureCallback();
-        CompletableFutureCallback callback2 = new CompletableFutureCallback();
-        CompletableFutureCallback finCallback = new CompletableFutureCallback();
+        FutureCallback callback1 = new FutureCallback();
+        FutureCallback callback2 = new FutureCallback();
+        FutureCallback finCallback = new FutureCallback();
 
         sink.accept(new Frame(OpCode.BINARY).setPayload("Hello").setFin(false), callback1);
         sink.accept(new Frame(OpCode.CONTINUATION).setPayload(", ").setFin(false), callback2);
@@ -116,12 +117,12 @@ public class InputStreamMessageSinkTest extends AbstractMessageSinkTest
     {
         InputStreamCopy copy = new InputStreamCopy();
         MethodHandle copyHandle = getAcceptHandle(copy, InputStream.class);
-        InputStreamMessageSink sink = new InputStreamMessageSink(AbstractSessionTest.session, copyHandle);
+        InputStreamMessageSink sink = new InputStreamMessageSink(AbstractSessionTest.session.getCoreSession(), copyHandle);
 
-        CompletableFutureCallback callback1 = new CompletableFutureCallback();
-        CompletableFutureCallback callback2 = new CompletableFutureCallback();
-        CompletableFutureCallback callback3 = new CompletableFutureCallback();
-        CompletableFutureCallback finCallback = new CompletableFutureCallback();
+        FutureCallback callback1 = new FutureCallback();
+        FutureCallback callback2 = new FutureCallback();
+        FutureCallback callback3 = new FutureCallback();
+        FutureCallback finCallback = new FutureCallback();
 
         sink.accept(new Frame(OpCode.BINARY).setPayload("Greetings").setFin(false), callback1);
         sink.accept(new Frame(OpCode.CONTINUATION).setPayload(", ").setFin(false), callback2);

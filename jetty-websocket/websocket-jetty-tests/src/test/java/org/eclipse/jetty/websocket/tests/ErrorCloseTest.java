@@ -37,16 +37,17 @@ import org.eclipse.jetty.websocket.api.WebSocketSessionListener;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
+import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
 import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -134,16 +135,18 @@ public class ErrorCloseTest
     }
 
     @Test
-    @Disabled("Merge from 9.4.x broke this")
     public void testOnOpenThrows() throws Exception
     {
         serverSocket.methodsToThrow.add("onOpen");
         EventSocket clientSocket = new EventSocket();
-        client.connect(clientSocket, serverUri).get(5, TimeUnit.SECONDS);
 
-        assertTrue(serverSocket.closeLatch.await(5, TimeUnit.SECONDS));
-        assertTrue(clientSocket.closeLatch.await(5, TimeUnit.SECONDS));
-        assertThat(serverSocket.error.getMessage(), is("throwing from onOpen"));
+        try (StacklessLogging stacklessLogging = new StacklessLogging(WebSocketCoreSession.class))
+        {
+            client.connect(clientSocket, serverUri).get(5, TimeUnit.SECONDS);
+            assertTrue(serverSocket.closeLatch.await(5, TimeUnit.SECONDS));
+            assertTrue(clientSocket.closeLatch.await(5, TimeUnit.SECONDS));
+            assertThat(serverSocket.error.getMessage(), containsString("throwing from onOpen"));
+        }
 
         // Check we have stopped the WebSocketSession properly.
         assertFalse(serverSocket.session.isOpen());

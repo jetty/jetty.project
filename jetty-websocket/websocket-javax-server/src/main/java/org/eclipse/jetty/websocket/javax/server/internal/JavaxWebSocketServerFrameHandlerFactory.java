@@ -61,6 +61,6 @@ public class JavaxWebSocketServerFrameHandlerFactory extends JavaxWebSocketClien
     @Override
     public FrameHandler newFrameHandler(Object websocketPojo, ServletUpgradeRequest upgradeRequest, ServletUpgradeResponse upgradeResponse)
     {
-        return newJavaxWebSocketFrameHandler(websocketPojo, new DelegatedJavaxServletUpgradeRequest(upgradeRequest));
+        return newJavaxWebSocketFrameHandler(websocketPojo, new JavaxServerUpgradeRequest(upgradeRequest));
     }
 }

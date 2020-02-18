@@ -32,9 +32,9 @@ import javax.websocket.Decoder;
 import javax.websocket.EndpointConfig;
 
 import org.eclipse.jetty.websocket.javax.common.InitException;
-import org.eclipse.jetty.websocket.javax.common.InvalidWebSocketException;
-import org.eclipse.jetty.websocket.javax.common.util.InvalidSignatureException;
-import org.eclipse.jetty.websocket.javax.common.util.ReflectUtils;
+import org.eclipse.jetty.websocket.util.InvalidSignatureException;
+import org.eclipse.jetty.websocket.util.InvalidWebSocketException;
+import org.eclipse.jetty.websocket.util.ReflectUtils;
 
 public class AvailableDecoders implements Iterable<AvailableDecoders.RegisteredDecoder>
 {

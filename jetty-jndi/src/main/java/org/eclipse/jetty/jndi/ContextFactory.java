@@ -259,7 +259,7 @@ public class ContextFactory implements ObjectFactory
     {
         synchronized (__contextMap)
         {
-            Dumpable.dumpObjects(out, indent, String.format("o.e.j.jndi.ContextFactory@", __contextMap.hashCode()), __contextMap);
+            Dumpable.dumpObjects(out, indent, String.format("o.e.j.jndi.ContextFactory@%x", __contextMap.hashCode()), __contextMap);
         }
     }
 }

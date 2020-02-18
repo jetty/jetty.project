@@ -195,54 +195,36 @@ public class ServletRequestHttpWrapper extends ServletRequestWrapper implements 
         return false;
     }
 
-    /**
-     * @see javax.servlet.http.HttpServletRequest#authenticate(javax.servlet.http.HttpServletResponse)
-     */
     @Override
     public boolean authenticate(HttpServletResponse response) throws IOException, ServletException
     {
         return false;
     }
 
-    /**
-     * @see javax.servlet.http.HttpServletRequest#getPart(java.lang.String)
-     */
     @Override
     public Part getPart(String name) throws IOException, ServletException
     {
         return null;
     }
 
-    /**
-     * @see javax.servlet.http.HttpServletRequest#getParts()
-     */
     @Override
     public Collection<Part> getParts() throws IOException, ServletException
     {
         return null;
     }
 
-    /**
-     * @see javax.servlet.http.HttpServletRequest#login(java.lang.String, java.lang.String)
-     */
     @Override
     public void login(String username, String password) throws ServletException
     {
 
     }
 
-    /**
-     * @see javax.servlet.http.HttpServletRequest#logout()
-     */
     @Override
     public void logout() throws ServletException
     {
 
     }
 
-    /**
-     * @see javax.servlet.http.HttpServletRequest#changeSessionId()
-     */
     @Override
     public String changeSessionId()
     {
@@ -250,9 +232,6 @@ public class ServletRequestHttpWrapper extends ServletRequestWrapper implements 
         return null;
     }
 
-    /**
-     * @see javax.servlet.http.HttpServletRequest#upgrade(java.lang.Class)
-     */
     @Override
     public <T extends HttpUpgradeHandler> T upgrade(Class<T> handlerClass) throws IOException, ServletException
     {

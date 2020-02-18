@@ -22,10 +22,10 @@ module org.eclipse.jetty.websocket.javax.common
     exports org.eclipse.jetty.websocket.javax.common.decoders;
     exports org.eclipse.jetty.websocket.javax.common.encoders;
     exports org.eclipse.jetty.websocket.javax.common.messages;
-    exports org.eclipse.jetty.websocket.javax.common.util;
 
     requires transitive jetty.websocket.api;
     requires transitive org.eclipse.jetty.http;
     requires transitive org.eclipse.jetty.io;
     requires transitive org.eclipse.jetty.websocket.core;
+    requires transitive org.eclipse.jetty.websocket.util;
 }

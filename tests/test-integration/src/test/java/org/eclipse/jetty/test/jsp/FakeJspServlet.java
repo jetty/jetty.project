@@ -29,9 +29,6 @@ import javax.servlet.http.HttpServletResponse;
 public class FakeJspServlet extends HttpServlet
 {
 
-    /*
-     * @see javax.servlet.http.HttpServlet#doGet(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
-     */
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse response) throws ServletException, IOException
     {

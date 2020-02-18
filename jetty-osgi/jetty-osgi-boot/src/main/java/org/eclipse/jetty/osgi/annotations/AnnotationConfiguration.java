@@ -194,9 +194,6 @@ public class AnnotationConfiguration extends org.eclipse.jetty.annotations.Annot
         parseBundle(context, parser, webbundle, webbundle);
     }
 
-    /**
-     * @see org.eclipse.jetty.annotations.AnnotationConfiguration#parseWebInfClasses(org.eclipse.jetty.webapp.WebAppContext, org.eclipse.jetty.annotations.AnnotationParser)
-     */
     @Override
     public void parseWebInfClasses(WebAppContext context, org.eclipse.jetty.annotations.AnnotationParser parser)
         throws Exception

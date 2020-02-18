@@ -82,9 +82,6 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
         _queryManager = queryManager;
     }
 
-    /**
-     * @see org.eclipse.jetty.server.session.SessionDataStore#load(String)
-     */
     @Override
     protected void doStart() throws Exception
     {

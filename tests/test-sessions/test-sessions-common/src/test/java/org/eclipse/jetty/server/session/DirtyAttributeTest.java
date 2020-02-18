@@ -58,9 +58,6 @@ public class DirtyAttributeTest
     public class TestPassivatingSessionDataStore extends TestSessionDataStore
     {
 
-        /**
-         * @see org.eclipse.jetty.server.session.TestSessionDataStore#isPassivating()
-         */
         @Override
         public boolean isPassivating()
         {
@@ -71,9 +68,6 @@ public class DirtyAttributeTest
     public class TestPassivatingSessionDataStoreFactory extends AbstractSessionDataStoreFactory
     {
 
-        /**
-         * @see org.eclipse.jetty.server.session.SessionDataStoreFactory#getSessionDataStore(org.eclipse.jetty.server.session.SessionHandler)
-         */
         @Override
         public SessionDataStore getSessionDataStore(SessionHandler handler) throws Exception
         {
@@ -177,18 +171,12 @@ public class DirtyAttributeTest
         int binds = 0;
         int unbinds = 0;
 
-        /**
-         * @see javax.servlet.http.HttpSessionActivationListener#sessionWillPassivate(javax.servlet.http.HttpSessionEvent)
-         */
         @Override
         public void sessionWillPassivate(HttpSessionEvent se)
         {
             ++passivates;
         }
 
-        /**
-         * @see javax.servlet.http.HttpSessionActivationListener#sessionDidActivate(javax.servlet.http.HttpSessionEvent)
-         */
         @Override
         public void sessionDidActivate(HttpSessionEvent se)
         {
@@ -215,18 +203,12 @@ public class DirtyAttributeTest
             assertEquals(expected, unbinds);
         }
 
-        /**
-         * @see javax.servlet.http.HttpSessionBindingListener#valueBound(javax.servlet.http.HttpSessionBindingEvent)
-         */
         @Override
         public void valueBound(HttpSessionBindingEvent event)
         {
             ++binds;
         }
 
-        /**
-         * @see javax.servlet.http.HttpSessionBindingListener#valueUnbound(javax.servlet.http.HttpSessionBindingEvent)
-         */
         @Override
         public void valueUnbound(HttpSessionBindingEvent event)
         {
