@@ -21,7 +21,6 @@ package org.eclipse.jetty.util.log;
 import java.io.PrintStream;
 import java.security.AccessControlException;
 import java.util.Properties;
-import java.util.function.Function;
 
 import org.eclipse.jetty.util.DateCache;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -96,7 +95,7 @@ public class StdErrLog extends AbstractLogger
     private static final String EOL = System.lineSeparator();
     private static final Object[] EMPTY_ARGS = new Object[0];
     // Do not change output format lightly, people rely on this output format now.
-    private static int THREADNAME_PADDING = Integer.parseInt(Log.getProperty("org.eclipse.jetty.util.log.StdErrLog.TAG_PAD", "0"));
+    private static int __threadNamePadding = Integer.parseInt(Log.getProperty("org.eclipse.jetty.util.log.StdErrLog.TAG_PAD", "0"));
     private static DateCache _dateCache;
 
     private static final boolean SOURCE = Boolean.parseBoolean(
@@ -119,7 +118,7 @@ public class StdErrLog extends AbstractLogger
 
     public static void setTagPad(int pad)
     {
-        THREADNAME_PADDING = pad;
+        __threadNamePadding = pad;
     }
 
     private int _level = LEVEL_INFO;
@@ -341,18 +340,8 @@ public class StdErrLog extends AbstractLogger
     @Override
     public void setDebugEnabled(boolean enabled)
     {
-        Function<StdErrLog, Integer> lvlFunc;
-
-        if (enabled)
-        {
-            lvlFunc = (logger) -> LEVEL_DEBUG;
-        }
-        else
-        {
-            lvlFunc = (logger) -> logger.getConfiguredLevel();
-        }
-
-        this.setLevel(lvlFunc.apply(this));
+        int level = enabled ? LEVEL_DEBUG : this.getConfiguredLevel();
+        this.setLevel(level);
 
         String name = getName();
         for (Logger log : Log.getLoggers().values())
@@ -360,7 +349,8 @@ public class StdErrLog extends AbstractLogger
             if (log.getName().startsWith(name) && log instanceof StdErrLog)
             {
                 StdErrLog logger = (StdErrLog)log;
-                logger.setLevel(lvlFunc.apply(logger));
+                level = enabled ? LEVEL_DEBUG : logger.getConfiguredLevel();
+                logger.setLevel(level);
             }
         }
     }
@@ -459,13 +449,10 @@ public class StdErrLog extends AbstractLogger
         {
             msgArgs = inArgs;
             msgArgsLen = inArgs.length;
-            if (msgArgsLen > 0)
+            if (msgArgsLen > 0 && inArgs[msgArgsLen - 1] instanceof Throwable)
             {
-                if (inArgs[msgArgsLen - 1] instanceof Throwable)
-                {
-                    cause = (Throwable)inArgs[msgArgsLen - 1];
-                    msgArgsLen--;
-                }
+                cause = (Throwable)inArgs[msgArgsLen - 1];
+                msgArgsLen--;
             }
         }
 
@@ -590,7 +577,7 @@ public class StdErrLog extends AbstractLogger
         String name = _printLongNames ? _name : _abbrevname;
         String tname = Thread.currentThread().getName();
 
-        int p = THREADNAME_PADDING > 0 ? (name.length() + tname.length() - THREADNAME_PADDING) : 0;
+        int p = __threadNamePadding > 0 ? (name.length() + tname.length() - __threadNamePadding) : 0;
 
         if (p < 0)
         {
