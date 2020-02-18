@@ -35,12 +35,12 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.PathWatcher;
 import org.eclipse.jetty.util.PathWatcher.PathWatchEvent;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.JarFileResource;
 import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.security.Credential;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>This class monitors a property file of the format mentioned below
@@ -59,7 +59,7 @@ import org.eclipse.jetty.util.security.Credential;
  */
 public class PropertyUserStore extends UserStore implements PathWatcher.Listener
 {
-    private static final Logger LOG = Log.getLogger(PropertyUserStore.class);
+    private static final Logger LOG = LoggerFactory.getLogger(PropertyUserStore.class);
 
     protected Path _configPath;
     protected PathWatcher _pathWatcher;
@@ -305,7 +305,7 @@ public class PropertyUserStore extends UserStore implements PathWatcher.Listener
         }
         catch (IOException e)
         {
-            LOG.warn(e);
+            LOG.warn("Unable to load users", e);
         }
     }
 

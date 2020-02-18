@@ -31,8 +31,6 @@ import javax.websocket.server.ServerEndpointConfig;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
 import org.eclipse.jetty.websocket.javax.common.ConfiguredEndpoint;
@@ -42,13 +40,15 @@ import org.eclipse.jetty.websocket.javax.common.ServerEndpointConfigWrapper;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class JavaxWebSocketCreator implements WebSocketCreator
 {
     public static final String PROP_REMOTE_ADDRESS = "javax.websocket.endpoint.remoteAddress";
     public static final String PROP_LOCAL_ADDRESS = "javax.websocket.endpoint.localAddress";
     public static final String PROP_LOCALES = "javax.websocket.upgrade.locales";
-    private static final Logger LOG = Log.getLogger(JavaxWebSocketCreator.class);
+    private static final Logger LOG = LoggerFactory.getLogger(JavaxWebSocketCreator.class);
     private final JavaxWebSocketContainer containerScope;
     private final ServerEndpointConfig baseConfig;
     private final WebSocketExtensionRegistry extensionRegistry;

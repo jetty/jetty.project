@@ -27,15 +27,15 @@ import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
 
 import org.eclipse.jetty.toolchain.test.StackUtils;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.javax.tests.coders.DateDecoder;
 import org.eclipse.jetty.websocket.javax.tests.coders.DateEncoder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @ServerEndpoint(value = "/echo/beans/date", decoders = {DateDecoder.class}, encoders = {DateEncoder.class})
 public class DateTextSocket
 {
-    private static final Logger LOG = Log.getLogger(DateTextSocket.class);
+    private static final Logger LOG = LoggerFactory.getLogger(DateTextSocket.class);
 
     private Session session;
 

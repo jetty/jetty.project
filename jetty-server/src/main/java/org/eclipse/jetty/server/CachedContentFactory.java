@@ -44,14 +44,14 @@ import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.PrecompressedHttpContent;
 import org.eclipse.jetty.http.ResourceHttpContent;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class CachedContentFactory implements HttpContent.ContentFactory
 {
-    private static final Logger LOG = Log.getLogger(CachedContentFactory.class);
+    private static final Logger LOG = LoggerFactory.getLogger(CachedContentFactory.class);
     private static final Map<CompressedContentFormat, CachedPrecompressedHttpContent> NO_PRECOMPRESSED = Collections.unmodifiableMap(Collections.emptyMap());
 
     private final ConcurrentMap<String, CachedHttpContent> _cache;
@@ -334,7 +334,7 @@ public class CachedContentFactory implements HttpContent.ContentFactory
         catch (IOException | IllegalArgumentException e)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug(e);
+                LOG.debug("Unable to get Indirect Buffer for {}", resource, e);
         }
         return null;
     }
@@ -351,7 +351,7 @@ public class CachedContentFactory implements HttpContent.ContentFactory
         catch (IOException | IllegalArgumentException e)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug(e);
+                LOG.debug("Unable to get Mapped Buffer for {}", resource, e);
         }
         return null;
     }
@@ -365,7 +365,7 @@ public class CachedContentFactory implements HttpContent.ContentFactory
         catch (IOException | IllegalArgumentException e)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug(e);
+                LOG.debug("Unable to get Direct Buffer for {}", resource, e);
         }
         return null;
     }

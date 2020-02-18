@@ -42,8 +42,8 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.util.component.DumpableCollection;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Abstract SecurityHandler.
@@ -61,7 +61,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public abstract class SecurityHandler extends HandlerWrapper implements Authenticator.AuthConfiguration
 {
-    private static final Logger LOG = Log.getLogger(SecurityHandler.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SecurityHandler.class);
     private static final List<Authenticator.Factory> __knownAuthenticatorFactories = new ArrayList<>();
 
     private boolean _checkWelcomeFiles = false;

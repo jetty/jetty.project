@@ -34,8 +34,8 @@ import java.util.function.ToIntFunction;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.QuotedStringTokenizer;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * HTTP Fields. A collection of HTTP header and or Trailer fields.
@@ -47,7 +47,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class HttpFields implements Iterable<HttpField>
 {
-    private static final Logger LOG = Log.getLogger(HttpFields.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HttpFields.class);
 
     private HttpField[] _fields;
     private int _size;
@@ -896,7 +896,7 @@ public class HttpFields implements Iterable<HttpField>
         }
         catch (Exception e)
         {
-            LOG.warn(e);
+            LOG.warn("Unable to get fields as String", e);
             return e.toString();
         }
     }

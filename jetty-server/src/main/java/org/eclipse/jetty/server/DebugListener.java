@@ -42,8 +42,8 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A Context Listener that produces additional debug.
@@ -55,7 +55,7 @@ import org.eclipse.jetty.util.log.Logger;
 @ManagedObject("Debug Listener")
 public class DebugListener extends AbstractLifeCycle implements ServletContextListener
 {
-    private static final Logger LOG = Log.getLogger(DebugListener.class);
+    private static final Logger LOG = LoggerFactory.getLogger(DebugListener.class);
     private static final DateCache __date = new DateCache("yyyy-MM-dd HH:mm:ss", Locale.ENGLISH);
 
     private final String _attr = String.format("__R%s@%x", this.getClass().getSimpleName(), System.identityHashCode(this));
@@ -140,7 +140,7 @@ public class DebugListener extends AbstractLifeCycle implements ServletContextLi
                 }
                 catch (Exception e)
                 {
-                    LOG.warn(e);
+                    LOG.warn("Unable to dump {}", handler, e);
                 }
             }
         }
@@ -192,7 +192,7 @@ public class DebugListener extends AbstractLifeCycle implements ServletContextLi
         if (_out != null)
             _out.printf("%s.%03d:%s%n", __date.formatNow(now), ms, s);
         if (LOG.isDebugEnabled())
-            LOG.info(s);
+            LOG.debug(s);
     }
 
     final AsyncListener _asyncListener = new AsyncListener()

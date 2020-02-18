@@ -18,12 +18,12 @@
 
 package org.eclipse.jetty.util;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class DeprecationWarning implements Decorator
 {
-    private static final Logger LOG = Log.getLogger(DeprecationWarning.class);
+    private static final Logger LOG = LoggerFactory.getLogger(DeprecationWarning.class);
 
     @Override
     public <T> T decorate(T o)
@@ -45,7 +45,7 @@ public class DeprecationWarning implements Decorator
         }
         catch (Throwable t)
         {
-            LOG.ignore(t);
+            LOG.trace("IGNORED", t);
         }
 
         verifyIndirectTypes(clazz.getSuperclass(), clazz, "Class");
@@ -75,7 +75,7 @@ public class DeprecationWarning implements Decorator
         }
         catch (Throwable t)
         {
-            LOG.ignore(t);
+            LOG.trace("IGNORED", t);
         }
     }
 

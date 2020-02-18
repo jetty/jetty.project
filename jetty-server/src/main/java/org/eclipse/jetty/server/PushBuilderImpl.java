@@ -28,15 +28,15 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.util.URIUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  */
 public class PushBuilderImpl implements PushBuilder
 {
-    private static final Logger LOG = Log.getLogger(PushBuilderImpl.class);
+    private static final Logger LOG = LoggerFactory.getLogger(PushBuilderImpl.class);
 
     private static final HttpField JettyPush = new HttpField("x-http2-push", "PushBuilder");
 

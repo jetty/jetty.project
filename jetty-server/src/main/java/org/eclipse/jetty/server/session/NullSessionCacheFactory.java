@@ -18,8 +18,8 @@
 
 package org.eclipse.jetty.server.session;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * NullSessionCacheFactory
@@ -28,7 +28,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class NullSessionCacheFactory extends AbstractSessionCacheFactory
 {
-    private static final Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
+    private static final Logger LOG = LoggerFactory.getLogger(NullSessionCacheFactory.class);
     
     @Override
     public int getEvictionPolicy()

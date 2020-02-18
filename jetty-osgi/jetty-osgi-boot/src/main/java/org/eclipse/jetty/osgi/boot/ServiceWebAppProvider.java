@@ -29,8 +29,6 @@ import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.osgi.boot.internal.serverfactory.ServerInstanceWrapper;
 import org.eclipse.jetty.osgi.boot.utils.Util;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -39,6 +37,8 @@ import org.osgi.framework.FrameworkUtil;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.ServiceRegistration;
 import org.osgi.util.tracker.ServiceTracker;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * ServiceWebAppProvider
@@ -47,7 +47,7 @@ import org.osgi.util.tracker.ServiceTracker;
  */
 public class ServiceWebAppProvider extends AbstractWebAppProvider implements ServiceProvider
 {
-    private static final Logger LOG = Log.getLogger(AbstractWebAppProvider.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AbstractWebAppProvider.class);
 
     /**
      * Map of ServiceRef to App. Used when it is an osgi service that is a WebAppContext.
@@ -253,7 +253,7 @@ public class ServiceWebAppProvider extends AbstractWebAppProvider implements Ser
             }
             catch (Exception e)
             {
-                LOG.warn(e);
+                LOG.warn("Unable to unregister {}", _serviceRegForServices, e);
             }
         }
         super.doStop();

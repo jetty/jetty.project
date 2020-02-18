@@ -24,8 +24,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.eclipse.jetty.annotations.AnnotationParser.AbstractHandler;
 import org.eclipse.jetty.annotations.AnnotationParser.ClassInfo;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * ClassInheritanceHandler
@@ -34,7 +34,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class ClassInheritanceHandler extends AbstractHandler
 {
-    private static final Logger LOG = Log.getLogger(ClassInheritanceHandler.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ClassInheritanceHandler.class);
 
     Map<String, Set<String>> _inheritanceMap;
 
@@ -64,7 +64,7 @@ public class ClassInheritanceHandler extends AbstractHandler
         }
         catch (Exception e)
         {
-            LOG.warn(e);
+            LOG.warn("Failed to handle {}", classInfo, e);
         }
     }
 

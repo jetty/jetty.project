@@ -29,11 +29,11 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ExecutionStrategy;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.TryExecutor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>A strategy where the thread that produces will run the resulting task if it
@@ -56,7 +56,7 @@ import org.eclipse.jetty.util.thread.TryExecutor;
 @ManagedObject("eat what you kill execution strategy")
 public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrategy, Runnable
 {
-    private static final Logger LOG = Log.getLogger(EatWhatYouKill.class);
+    private static final Logger LOG = LoggerFactory.getLogger(EatWhatYouKill.class);
 
     private enum State
     {
@@ -174,7 +174,7 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
             }
             catch (Throwable th)
             {
-                LOG.warn(th);
+                LOG.warn("Unable to produce", th);
             }
         }
     }
@@ -337,7 +337,7 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
         }
         catch (Throwable x)
         {
-            LOG.warn(x);
+            LOG.warn("Task run failed", x);
         }
     }
 
@@ -349,7 +349,7 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
         }
         catch (Throwable x)
         {
-            LOG.warn(x);
+            LOG.warn("Task invoke failed", x);
         }
     }
 
@@ -361,7 +361,7 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
         }
         catch (Throwable e)
         {
-            LOG.warn(e);
+            LOG.warn("Task produce failed", e);
             return null;
         }
     }
@@ -375,9 +375,9 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
         catch (RejectedExecutionException e)
         {
             if (isRunning())
-                LOG.warn(e);
+                LOG.warn("Execute failed", e);
             else
-                LOG.ignore(e);
+                LOG.trace("IGNORED", e);
 
             if (task instanceof Closeable)
             {
@@ -387,7 +387,7 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
                 }
                 catch (Throwable e2)
                 {
-                    LOG.ignore(e2);
+                    LOG.trace("IGNORED", e2);
                 }
             }
         }

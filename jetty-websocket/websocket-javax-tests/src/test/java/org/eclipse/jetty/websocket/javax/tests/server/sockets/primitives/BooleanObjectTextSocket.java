@@ -26,13 +26,13 @@ import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
 
 import org.eclipse.jetty.toolchain.test.StackUtils;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @ServerEndpoint("/echo/primitives/booleanobject")
 public class BooleanObjectTextSocket
 {
-    private static final Logger LOG = Log.getLogger(BooleanObjectTextSocket.class);
+    private static final Logger LOG = LoggerFactory.getLogger(BooleanObjectTextSocket.class);
 
     private Session session;
 

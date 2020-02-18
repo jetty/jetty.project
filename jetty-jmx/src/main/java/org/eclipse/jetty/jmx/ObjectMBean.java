@@ -27,8 +27,8 @@ import javax.management.MBeanInfo;
 import javax.management.ObjectName;
 import javax.management.ReflectionException;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>A dynamic MBean that can wrap an arbitrary Object instance.</p>
@@ -44,7 +44,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class ObjectMBean implements DynamicMBean
 {
-    private static final Logger LOG = Log.getLogger(ObjectMBean.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ObjectMBean.class);
 
     protected final Object _managed;
     private MetaData _metaData;
@@ -154,7 +154,7 @@ public class ObjectMBean implements DynamicMBean
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug(x);
+                    LOG.debug("Unable to get attribute {}", name, x);
             }
         }
         return results;
@@ -188,7 +188,7 @@ public class ObjectMBean implements DynamicMBean
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug(x);
+                    LOG.debug("Unable to get Attribute {}", attribute, x);
             }
         }
         return results;

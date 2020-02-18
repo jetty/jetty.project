@@ -23,7 +23,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.function.ToIntFunction;
 
-import org.eclipse.jetty.util.log.Log;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static java.lang.Integer.MIN_VALUE;
 
@@ -39,6 +40,8 @@ import static java.lang.Integer.MIN_VALUE;
  */
 public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
 {
+    private static final Logger LOG = LoggerFactory.getLogger(QuotedQualityCSV.class);
+
     /**
      * Lambda to apply a most specific MIME encoding secondary ordering.
      *
@@ -129,7 +132,7 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
             }
             catch (Exception e)
             {
-                Log.getLogger(QuotedQualityCSV.class).ignore(e);
+                LOG.trace("IGNORED", e);
                 q = 0.0D;
             }
             buffer.setLength(Math.max(0, paramName - 1));

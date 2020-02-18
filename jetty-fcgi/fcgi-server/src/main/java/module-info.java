@@ -21,9 +21,9 @@ module org.eclipse.jetty.fcgi.server
     exports org.eclipse.jetty.fcgi.server;
     exports org.eclipse.jetty.fcgi.server.proxy;
 
-    requires org.slf4j;
     requires transitive org.eclipse.jetty.fcgi.client;
     requires transitive org.eclipse.jetty.proxy;
+    requires org.slf4j;
 
     // Only required if using the proxy features.
     requires static jetty.servlet.api;

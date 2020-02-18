@@ -25,10 +25,10 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.concurrent.ThreadLocalRandom;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -233,7 +233,7 @@ public class BufferUtilTest
         assertEquals(length, count, "Count of bytes");
     }
 
-    private static final Logger LOG = Log.getLogger(BufferUtilTest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(BufferUtilTest.class);
 
     @Test
     @Disabled("Very simple microbenchmark to compare different writeTo implementations. Only for development thus " +

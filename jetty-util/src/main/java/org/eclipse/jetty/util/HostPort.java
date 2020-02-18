@@ -165,7 +165,6 @@ public class HostPort
      *
      * @param rawPort the port string.
      * @return the integer value for the port.
-     * @throws IllegalArgumentException
      */
     public static int parsePort(String rawPort) throws IllegalArgumentException
     {

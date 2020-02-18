@@ -29,8 +29,8 @@ import javax.naming.StringRefAddr;
 
 import org.eclipse.jetty.jndi.ContextFactory;
 import org.eclipse.jetty.jndi.NamingContext;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 // This is a required name for JNDI
 // @checkstyle-disable-check : TypeNameCheck
@@ -44,7 +44,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class javaRootURLContext implements Context
 {
-    private static final Logger LOG = Log.getLogger(javaRootURLContext.class);
+    private static final Logger LOG = LoggerFactory.getLogger(javaRootURLContext.class);
 
     public static final String URL_PREFIX = "java:";
 
@@ -73,7 +73,7 @@ public class javaRootURLContext implements Context
         }
         catch (Exception e)
         {
-            LOG.warn(e);
+            LOG.warn("Unable to bind default NamingContext to: comp", e);
         }
     }
 

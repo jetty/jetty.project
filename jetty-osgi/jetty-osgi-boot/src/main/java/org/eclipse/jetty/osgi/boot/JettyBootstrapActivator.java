@@ -22,13 +22,13 @@ import org.eclipse.jetty.osgi.boot.internal.serverfactory.DefaultJettyAtJettyHom
 import org.eclipse.jetty.osgi.boot.internal.serverfactory.JettyServerServiceTracker;
 import org.eclipse.jetty.osgi.boot.utils.internal.PackageAdminServiceTracker;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.ServiceRegistration;
 import org.osgi.util.tracker.ServiceTracker;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * JettyBootstrapActivator
@@ -41,7 +41,7 @@ import org.osgi.util.tracker.ServiceTracker;
  */
 public class JettyBootstrapActivator implements BundleActivator
 {
-    private static final Logger LOG = Log.getLogger(JettyBootstrapActivator.class);
+    private static final Logger LOG = LoggerFactory.getLogger(JettyBootstrapActivator.class);
 
     private static JettyBootstrapActivator INSTANCE = null;
 

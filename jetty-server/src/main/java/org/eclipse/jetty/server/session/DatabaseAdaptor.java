@@ -33,8 +33,8 @@ import javax.naming.InitialContext;
 import javax.naming.NamingException;
 import javax.sql.DataSource;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * DatabaseAdaptor
@@ -47,7 +47,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class DatabaseAdaptor
 {
-    static final Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
+    static final Logger LOG = LoggerFactory.getLogger(DatabaseAdaptor.class);
 
     String _dbName;
     boolean _isLower;

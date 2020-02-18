@@ -30,7 +30,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.MultipartConfigElement;
 import javax.servlet.SessionTrackingMode;
@@ -51,11 +50,11 @@ import org.eclipse.jetty.servlet.ServletMapping;
 import org.eclipse.jetty.servlet.Source;
 import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.Loader;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.xml.XmlParser;
 import org.eclipse.jetty.xml.XmlParser.Node;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * StandardDescriptorProcessor.
@@ -64,7 +63,7 @@ import org.eclipse.jetty.xml.XmlParser.Node;
  */
 public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
 {
-    private static final Logger LOG = Log.getLogger(StandardDescriptorProcessor.class);
+    private static final Logger LOG = LoggerFactory.getLogger(StandardDescriptorProcessor.class);
 
     public static final String STANDARD_PROCESSOR = "org.eclipse.jetty.standardDescriptorProcessor";
 
@@ -153,7 +152,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
     {
         String name = node.getString("param-name", false, true);
         String value = node.getString("param-value", false, true);
-        switch (context.getMetaData().getOrigin("context-param." + name))
+        Origin origin = context.getMetaData().getOrigin("context-param." + name);
+        switch (origin)
         {
             case NotSet:
             {
@@ -185,7 +185,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                 break;
             }
             default:
-                LOG.warn(new Throwable()); // TODO throw ISE?
+                unknownOrigin(origin);
         }
         if (LOG.isDebugEnabled())
             LOG.debug("ContextParam: " + name + "=" + value);
@@ -226,7 +226,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             String originName = name + ".servlet.init-param." + pname;
 
             Descriptor originDescriptor = context.getMetaData().getOriginDescriptor(originName);
-            switch (context.getMetaData().getOrigin(originName))
+            Origin origin = context.getMetaData().getOrigin(originName);
+            switch (origin)
             {
                 case NotSet:
                 {
@@ -257,7 +258,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     break;
                 }
                 default:
-                    LOG.warn(new Throwable()); // TODO throw ISE?
+                    unknownOrigin(origin);
             }
         }
 
@@ -283,7 +284,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         if (servletClass != null)
         {
             ((WebDescriptor)descriptor).addClassName(servletClass);
-            switch (context.getMetaData().getOrigin(name + ".servlet.servlet-class"))
+            Origin origin = context.getMetaData().getOrigin(name + ".servlet.servlet-class");
+            switch (origin)
             {
                 case NotSet:
                 {
@@ -312,7 +314,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     break;
                 }
                 default:
-                    LOG.warn(new Throwable()); // TODO throw ISE?
+                    unknownOrigin(origin);
             }
         }
 
@@ -342,11 +344,12 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                 catch (Exception e)
                 {
                     LOG.warn("Cannot parse load-on-startup " + s + ". Please use integer");
-                    LOG.ignore(e);
+                    LOG.trace("IGNORED", e);
                 }
             }
 
-            switch (context.getMetaData().getOrigin(name + ".servlet.load-on-startup"))
+            Origin origin = context.getMetaData().getOrigin(name + ".servlet.load-on-startup");
+            switch (origin)
             {
                 case NotSet:
                 {
@@ -375,7 +378,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     break;
                 }
                 default:
-                    LOG.warn(new Throwable()); // TODO throw ISE?
+                    unknownOrigin(origin);
             }
         }
 
@@ -389,7 +392,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("link role " + roleName + " to " + roleLink + " for " + this);
-                switch (context.getMetaData().getOrigin(name + ".servlet.role-name." + roleName))
+                Origin origin = context.getMetaData().getOrigin(name + ".servlet.role-name." + roleName);
+                switch (origin)
                 {
                     case NotSet:
                     {
@@ -417,7 +421,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                         break;
                     }
                     default:
-                        LOG.warn(new Throwable()); // TODO throw ISE?
+                        unknownOrigin(origin);
                 }
             }
             else
@@ -433,7 +437,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
 
             if (roleName != null)
             {
-                switch (context.getMetaData().getOrigin(name + ".servlet.run-as"))
+                Origin origin = context.getMetaData().getOrigin(name + ".servlet.run-as");
+                switch (origin)
                 {
                     case NotSet:
                     {
@@ -462,7 +467,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                         break;
                     }
                     default:
-                        LOG.warn(new Throwable()); // TODO throw ISE?
+                        unknownOrigin(origin);
                 }
             }
         }
@@ -471,7 +476,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         if (async != null)
         {
             boolean val = async.length() == 0 || Boolean.parseBoolean(async);
-            switch (context.getMetaData().getOrigin(name + ".servlet.async-supported"))
+            Origin origin = context.getMetaData().getOrigin(name + ".servlet.async-supported");
+            switch (origin)
             {
                 case NotSet:
                 {
@@ -500,7 +506,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     break;
                 }
                 default:
-                    LOG.warn(new Throwable()); // TODO throw ISE?
+                    unknownOrigin(origin);
             }
         }
 
@@ -508,7 +514,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         if (enabled != null)
         {
             boolean isEnabled = enabled.length() == 0 || Boolean.parseBoolean(enabled);
-            switch (context.getMetaData().getOrigin(name + ".servlet.enabled"))
+            Origin origin = context.getMetaData().getOrigin(name + ".servlet.enabled");
+            switch (origin)
             {
                 case NotSet:
                 {
@@ -537,7 +544,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     break;
                 }
                 default:
-                    LOG.warn(new Throwable()); // TODO throw ISE?
+                    unknownOrigin(origin);
             }
         }
 
@@ -558,7 +565,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                 (maxRequest == null || "".equals(maxRequest) ? -1L : Long.parseLong(maxRequest)),
                 (threshold == null || "".equals(threshold) ? 0 : Integer.parseInt(threshold)));
 
-            switch (context.getMetaData().getOrigin(name + ".servlet.multipart-config"))
+            Origin origin = context.getMetaData().getOrigin(name + ".servlet.multipart-config");
+            switch (origin)
             {
                 case NotSet:
                 {
@@ -596,7 +604,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     break;
                 }
                 default:
-                    LOG.warn(new Throwable()); // TODO throw ISE?
+                    unknownOrigin(origin);
             }
         }
     }
@@ -610,7 +618,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         //  <servlet-mapping> declared in web.xml overrides the mapping for the servlet specified in the web-fragment.xml
 
         String servletName = node.getString("servlet-name", false, true);
-        switch (context.getMetaData().getOrigin(servletName + ".servlet.mappings"))
+        Origin origin = context.getMetaData().getOrigin(servletName + ".servlet.mappings");
+        switch (origin)
         {
             case NotSet:
             {
@@ -638,7 +647,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                 break;
             }
             default:
-                LOG.warn(new Throwable()); // TODO throw ISE?
+                unknownOrigin(origin);
         }
     }
 
@@ -688,7 +697,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     break;
                 }
                 default:
-                    LOG.warn(new Throwable()); // TODO throw ISE?   
+                    unknownOrigin(o);
             }
 
             while (iter.hasNext())
@@ -709,7 +718,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             String name = cookieConfig.getString("name", false, true);
             if (name != null)
             {
-                switch (context.getMetaData().getOrigin("cookie-config.name"))
+                Origin origin = context.getMetaData().getOrigin("cookie-config.name");
+                switch (origin)
                 {
                     case NotSet:
                     {
@@ -738,7 +748,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                         break;
                     }
                     default:
-                        LOG.warn(new Throwable()); // TODO throw ISE?
+                        unknownOrigin(origin);
                 }
             }
 
@@ -746,7 +756,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             String domain = cookieConfig.getString("domain", false, true);
             if (domain != null)
             {
-                switch (context.getMetaData().getOrigin("cookie-config.domain"))
+                Origin origin = context.getMetaData().getOrigin("cookie-config.domain");
+                switch (origin)
                 {
                     case NotSet:
                     {
@@ -775,7 +786,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                         break;
                     }
                     default:
-                        LOG.warn(new Throwable()); // TODO throw ISE?
+                        unknownOrigin(origin);
                 }
             }
 
@@ -783,7 +794,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             String path = cookieConfig.getString("path", false, true);
             if (path != null)
             {
-                switch (context.getMetaData().getOrigin("cookie-config.path"))
+                Origin origin = context.getMetaData().getOrigin("cookie-config.path");
+                switch (origin)
                 {
                     case NotSet:
                     {
@@ -812,7 +824,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                         break;
                     }
                     default:
-                        LOG.warn(new Throwable()); // TODO throw ISE?
+                        unknownOrigin(origin);
                 }
             }
 
@@ -820,7 +832,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             String comment = cookieConfig.getString("comment", false, true);
             if (comment != null)
             {
-                switch (context.getMetaData().getOrigin("cookie-config.comment"))
+                Origin origin = context.getMetaData().getOrigin("cookie-config.comment");
+                switch (origin)
                 {
                     case NotSet:
                     {
@@ -849,7 +862,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                         break;
                     }
                     default:
-                        LOG.warn(new Throwable()); // TODO throw ISE?
+                        unknownOrigin(origin);
                 }
             }
 
@@ -858,7 +871,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             if (tNode != null)
             {
                 boolean httpOnly = Boolean.parseBoolean(tNode.toString(false, true));
-                switch (context.getMetaData().getOrigin("cookie-config.http-only"))
+                Origin origin = context.getMetaData().getOrigin("cookie-config.http-only");
+                switch (origin)
                 {
                     case NotSet:
                     {
@@ -887,7 +901,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                         break;
                     }
                     default:
-                        LOG.warn(new Throwable()); // TODO throw ISE?
+                        unknownOrigin(origin);
                 }
             }
 
@@ -896,7 +910,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             if (tNode != null)
             {
                 boolean secure = Boolean.parseBoolean(tNode.toString(false, true));
-                switch (context.getMetaData().getOrigin("cookie-config.secure"))
+                Origin origin = context.getMetaData().getOrigin("cookie-config.secure");
+                switch (origin)
                 {
                     case NotSet:
                     {
@@ -925,7 +940,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                         break;
                     }
                     default:
-                        LOG.warn(new Throwable()); // TODO throw ISE?
+                        unknownOrigin(origin);
                 }
             }
 
@@ -934,7 +949,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             if (tNode != null)
             {
                 int maxAge = Integer.parseInt(tNode.toString(false, true));
-                switch (context.getMetaData().getOrigin("cookie-config.max-age"))
+                Origin origin = context.getMetaData().getOrigin("cookie-config.max-age");
+                switch (origin)
                 {
                     case NotSet:
                     {
@@ -963,7 +979,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                         break;
                     }
                     default:
-                        LOG.warn(new Throwable()); // TODO throw ISE?
+                        unknownOrigin(origin);
                 }
             }
         }
@@ -977,7 +993,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         String mimeType = node.getString("mime-type", false, true);
         if (extension != null)
         {
-            switch (context.getMetaData().getOrigin("extension." + extension))
+            Origin origin = context.getMetaData().getOrigin("extension." + extension);
+            switch (origin)
             {
                 case NotSet:
                 {
@@ -1006,14 +1023,15 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     break;
                 }
                 default:
-                    LOG.warn(new Throwable()); // TODO throw ISE?
+                    unknownOrigin(origin);
             }
         }
     }
 
     public void visitWelcomeFileList(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
     {
-        switch (context.getMetaData().getOrigin("welcome-file-list"))
+        Origin origin = context.getMetaData().getOrigin("welcome-file-list");
+        switch (origin)
         {
             case NotSet:
             {
@@ -1051,7 +1069,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                 break;
             }
             default:
-                LOG.warn(new Throwable()); // TODO throw ISE?
+                unknownOrigin(origin);
         }
     }
 
@@ -1066,7 +1084,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
 
             if (encoding != null)
             {
-                switch (context.getMetaData().getOrigin("locale-encoding." + locale))
+                Origin origin = context.getMetaData().getOrigin("locale-encoding." + locale);
+                switch (origin)
                 {
                     case NotSet:
                     {
@@ -1095,7 +1114,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                         break;
                     }
                     default:
-                        LOG.warn(new Throwable()); // TODO throw ISE?
+                        unknownOrigin(origin);
                 }
             }
         }
@@ -1119,7 +1138,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             throw new IllegalStateException("Missing leading '/' for location: " + location);
         ErrorPageErrorHandler handler = (ErrorPageErrorHandler)context.getErrorHandler();
         String originName = "error." + error;
-        switch (context.getMetaData().getOrigin(originName))
+        Origin origin = context.getMetaData().getOrigin(originName);
+        switch (origin)
         {
             case NotSet:
             {
@@ -1159,7 +1179,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                 break;
             }
             default:
-                LOG.warn(new Throwable()); // TODO throw ISE?
+                unknownOrigin(origin);
         }
     }
 
@@ -1539,7 +1559,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         }
         catch (CloneNotSupportedException e)
         {
-            LOG.warn(e);
+            LOG.warn("Unable to clone {}", scBase, e);
         }
     }
 
@@ -1552,7 +1572,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         if (method != null)
         {
             //handle auth-method merge
-            switch (context.getMetaData().getOrigin("auth-method"))
+            Origin origin = context.getMetaData().getOrigin("auth-method");
+            switch (origin)
             {
                 case NotSet:
                 {
@@ -1581,13 +1602,14 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     break;
                 }
                 default:
-                    LOG.warn(new Throwable()); // TODO throw ISE?
+                    unknownOrigin(origin);
             }
 
             //handle realm-name merge
             XmlParser.Node name = node.get("realm-name");
             String nameStr = (name == null ? "default" : name.toString(false, true));
-            switch (context.getMetaData().getOrigin("realm-name"))
+            Origin originRealmName = context.getMetaData().getOrigin("realm-name");
+            switch (originRealmName)
             {
                 case NotSet:
                 {
@@ -1616,7 +1638,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     break;
                 }
                 default:
-                    LOG.warn(new Throwable()); // TODO throw ISE?
+                    unknownOrigin(originRealmName);
             }
 
             if (Constraint.__FORM_AUTH.equalsIgnoreCase(context.getSecurityHandler().getAuthMethod()))
@@ -1634,7 +1656,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                         errorPageName = errorPage.toString(false, true);
 
                     //handle form-login-page
-                    switch (context.getMetaData().getOrigin("form-login-page"))
+                    Origin originFormLoginPage = context.getMetaData().getOrigin("form-login-page");
+                    switch (originFormLoginPage)
                     {
                         case NotSet:
                         {
@@ -1663,11 +1686,12 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                             break;
                         }
                         default:
-                            LOG.warn(new Throwable()); // TODO throw ISE?
+                            unknownOrigin(originFormLoginPage);
                     }
 
                     //handle form-error-page
-                    switch (context.getMetaData().getOrigin("form-error-page"))
+                    Origin originFormErrorPage = context.getMetaData().getOrigin("form-error-page");
+                    switch (originFormErrorPage)
                     {
                         case NotSet:
                         {
@@ -1696,7 +1720,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                             break;
                         }
                         default:
-                            LOG.warn(new Throwable()); // TODO throw ISE?
+                            unknownOrigin(originFormErrorPage);
                     }
                 }
                 else
@@ -1737,7 +1761,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         {
             ((WebDescriptor)descriptor).addClassName(filterClass);
 
-            switch (context.getMetaData().getOrigin(name + ".filter.filter-class"))
+            Origin origin = context.getMetaData().getOrigin(name + ".filter.filter-class");
+            switch (origin)
             {
                 case NotSet:
                 {
@@ -1766,7 +1791,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     break;
                 }
                 default:
-                    LOG.warn(new Throwable()); // TODO throw ISE?
+                    unknownOrigin(origin);
             }
         }
 
@@ -1777,7 +1802,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             String pname = paramNode.getString("param-name", false, true);
             String pvalue = paramNode.getString("param-value", false, true);
 
-            switch (context.getMetaData().getOrigin(name + ".filter.init-param." + pname))
+            Origin origin = context.getMetaData().getOrigin(name + ".filter.init-param." + pname);
+            switch (origin)
             {
                 case NotSet:
                 {
@@ -1807,7 +1833,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     break;
                 }
                 default:
-                    LOG.warn(new Throwable()); // TODO throw ISE?
+                    unknownOrigin(origin);
             }
         }
 
@@ -1817,7 +1843,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         if (async != null)
         {
             boolean val = async.length() == 0 || Boolean.parseBoolean(async);
-            switch (context.getMetaData().getOrigin(name + ".filter.async-supported"))
+            Origin origin = context.getMetaData().getOrigin(name + ".filter.async-supported");
+            switch (origin)
             {
                 case NotSet:
                 {
@@ -1846,7 +1873,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     break;
                 }
                 default:
-                    LOG.warn(new Throwable()); // TODO throw ISE?
+                    unknownOrigin(origin);
             }
         }
     }
@@ -1858,7 +1885,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         //Maintenance update 3.0a to spec:
         //  Updated 8.2.3.g.v to say <servlet-mapping> elements are additive across web-fragments.
         String filterName = node.getString("filter-name", false, true);
-        switch (context.getMetaData().getOrigin(filterName + ".filter.mappings"))
+        Origin origin = context.getMetaData().getOrigin(filterName + ".filter.mappings");
+        switch (origin)
         {
             case NotSet:
             {
@@ -1885,7 +1913,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                 break;
             }
             default:
-                LOG.warn(new Throwable()); // TODO throw ISE?
+                unknownOrigin(origin);
         }
     }
 
@@ -2007,5 +2035,10 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             context.setDefaultResponseCharacterEncoding(encoding);
             context.getMetaData().setOrigin("response-character-encoding", descriptor);
         }
+    }
+
+    private void unknownOrigin(Origin origin)
+    {
+        LOG.warn("Unknown descriptor origin {}", origin, new Throwable()); // TODO throw ISE?
     }
 }

@@ -22,9 +22,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Scheduler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * An Abstract implementation of an Idle Timeout.
@@ -36,7 +36,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
  */
 public abstract class IdleTimeout
 {
-    private static final Logger LOG = Log.getLogger(IdleTimeout.class);
+    private static final Logger LOG = LoggerFactory.getLogger(IdleTimeout.class);
     private final Scheduler _scheduler;
     private final AtomicReference<Scheduler.Task> _timeout = new AtomicReference<>();
     private volatile long _idleTimeout;

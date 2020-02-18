@@ -31,12 +31,12 @@ import javax.naming.ldap.Rdn;
 import javax.security.auth.x500.X500Principal;
 
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class X509
 {
-    private static final Logger LOG = Log.getLogger(X509.class);
+    private static final Logger LOG = LoggerFactory.getLogger(X509.class);
 
     /*
      * @see {@link X509Certificate#getKeyUsage()}

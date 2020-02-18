@@ -38,9 +38,9 @@ import org.eclipse.jetty.server.Authentication;
 import org.eclipse.jetty.server.Authentication.User;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.UserIdentity;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.security.Constraint;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>A LoginAuthenticator that uses SPNEGO and the GSS API to authenticate requests.</p>
@@ -52,7 +52,7 @@ import org.eclipse.jetty.util.security.Constraint;
  */
 public class ConfigurableSpnegoAuthenticator extends LoginAuthenticator
 {
-    private static final Logger LOG = Log.getLogger(ConfigurableSpnegoAuthenticator.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ConfigurableSpnegoAuthenticator.class);
 
     private final String _authMethod;
     private Duration _authenticationDuration = Duration.ofNanos(-1);

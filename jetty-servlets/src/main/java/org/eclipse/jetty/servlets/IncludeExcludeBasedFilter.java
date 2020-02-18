@@ -31,8 +31,8 @@ import org.eclipse.jetty.util.IncludeExclude;
 import org.eclipse.jetty.util.IncludeExcludeSet;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Include Exclude Based Filter
@@ -72,7 +72,7 @@ public abstract class IncludeExcludeBasedFilter implements Filter
     private final IncludeExclude<String> _mimeTypes = new IncludeExclude<>();
     private final IncludeExclude<String> _httpMethods = new IncludeExclude<>();
     private final IncludeExclude<String> _paths = new IncludeExclude<>(PathSpecSet.class);
-    private static final Logger LOG = Log.getLogger(IncludeExcludeBasedFilter.class);
+    private static final Logger LOG = LoggerFactory.getLogger(IncludeExcludeBasedFilter.class);
 
     @Override
     public void init(FilterConfig filterConfig) throws ServletException

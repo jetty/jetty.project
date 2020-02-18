@@ -32,8 +32,8 @@ import javax.naming.spi.ObjectFactory;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.component.Dumpable;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * ContextFactory
@@ -58,7 +58,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class ContextFactory implements ObjectFactory
 {
-    private static final Logger LOG = Log.getLogger(ContextFactory.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ContextFactory.class);
 
     /**
      * Map of classloaders to contexts.

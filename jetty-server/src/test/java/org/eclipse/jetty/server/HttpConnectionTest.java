@@ -52,7 +52,6 @@ import org.eclipse.jetty.server.LocalConnector.LocalEndPoint;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.log.Log;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -800,7 +799,7 @@ public class HttpConnectionTest
     @Test
     public void testBadHostPort() throws Exception
     {
-        Log.getLogger(HttpParser.class).info("badMessage: Number formate exception expected ...");
+        LOG.info("badMessage: Number formate exception expected ...");
         String response;
 
         response = connector.getResponse("GET http://localhost:EXPECTED_NUMBER_FORMAT_EXCEPTION/ HTTP/1.1\r\n" +
@@ -844,7 +843,7 @@ public class HttpConnectionTest
     @Test
     public void testBadUTF8FallsbackTo8859() throws Exception
     {
-        Log.getLogger(HttpParser.class).info("badMessage: bad encoding expected ...");
+        LOG.info("badMessage: bad encoding expected ...");
         String response;
 
         response = connector.getResponse("GET /foo/bar%c0%00 HTTP/1.1\r\n" +
@@ -946,7 +945,7 @@ public class HttpConnectionTest
             checkContains(response, offset, "12345");
 
             offset = 0;
-            Log.getLogger(DumpHandler.class).info("Expecting java.io.UnsupportedEncodingException");
+            LOG.info("Expecting java.io.UnsupportedEncodingException");
             response = connector.getResponse("GET /R1 HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
                 "Transfer-Encoding: chunked\r\n" +

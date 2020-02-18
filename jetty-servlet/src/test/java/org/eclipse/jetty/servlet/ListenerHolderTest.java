@@ -31,7 +31,7 @@ public class ListenerHolderTest
     public static class DummyListener implements EventListener
     {
     }
-    
+
     @Test
     public void testCreateInstance() throws Exception
     {
@@ -42,7 +42,7 @@ public class ListenerHolderTest
             holder.setHeldClass(DummyListener.class);
             EventListener listener = holder.createInstance();
             assertNotNull(listener);
-            
+
             //test with a ServletContextHandler
             Server server = new Server();
             ServletContextHandler context = new ServletContextHandler();

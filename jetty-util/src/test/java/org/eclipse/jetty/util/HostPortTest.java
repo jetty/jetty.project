@@ -83,7 +83,7 @@ public class HostPortTest
             "127.0.0.1:-80",
             "[0::0::0::0::1]:-80",
             "127.0.0.1:65536"
-            )
+        )
             .map(Arguments::of);
     }
 

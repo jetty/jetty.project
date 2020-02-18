@@ -25,15 +25,15 @@ import java.nio.channels.SeekableByteChannel;
 import java.util.Objects;
 
 import org.eclipse.jetty.http.HttpContent;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Range Writer selection for HttpContent
  */
 public class HttpContentRangeWriter
 {
-    private static final Logger LOG = Log.getLogger(HttpContentRangeWriter.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HttpContentRangeWriter.class);
 
     /**
      * Obtain a new RangeWriter for the supplied HttpContent.

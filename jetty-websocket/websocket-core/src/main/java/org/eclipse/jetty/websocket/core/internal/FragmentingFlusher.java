@@ -21,11 +21,11 @@ package org.eclipse.jetty.websocket.core.internal;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Used to split large data frames into multiple frames below the maxFrameSize.
@@ -34,7 +34,7 @@ import org.eclipse.jetty.websocket.core.OpCode;
  */
 public abstract class FragmentingFlusher extends TransformingFlusher
 {
-    private static final Logger LOG = Log.getLogger(FragmentingFlusher.class);
+    private static final Logger LOG = LoggerFactory.getLogger(FragmentingFlusher.class);
     private final Configuration configuration;
     private FrameEntry current;
     private ByteBuffer payload;

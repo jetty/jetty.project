@@ -37,11 +37,12 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.util.log.Log;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -49,6 +50,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
 {
+    private static final Logger LOG = LoggerFactory.getLogger(HttpConnectionLifecycleTest.class);
+
     @Override
     public HttpClient newHttpClient(HttpClientTransport transport)
     {
@@ -403,7 +406,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
             Collection<Connection> activeConnections = connectionPool.getActiveConnections();
             assertEquals(0, activeConnections.size());
 
-            Log.getLogger(HttpConnection.class).info("Expecting java.lang.IllegalStateException: HttpParser{s=CLOSED,...");
+            LOG.info("Expecting java.lang.IllegalStateException: HttpParser{s=CLOSED,...");
 
             CountDownLatch latch = new CountDownLatch(1);
             ByteBuffer buffer = ByteBuffer.allocate(16 * 1024 * 1024);

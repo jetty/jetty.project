@@ -46,8 +46,8 @@ import javax.naming.Referenceable;
 import javax.naming.spi.NamingManager;
 
 import org.eclipse.jetty.util.component.Dumpable;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * NamingContext
@@ -60,7 +60,7 @@ import org.eclipse.jetty.util.log.Logger;
 @SuppressWarnings("unchecked")
 public class NamingContext implements Context, Dumpable
 {
-    private static final Logger LOG = Log.getLogger(NamingContext.class);
+    private static final Logger LOG = LoggerFactory.getLogger(NamingContext.class);
     private static final List<Binding> __empty = Collections.emptyList();
     public static final String DEEP_BINDING = "org.eclipse.jetty.jndi.deepBinding";
     public static final String LOCK_PROPERTY = "org.eclipse.jetty.jndi.lock";

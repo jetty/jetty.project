@@ -23,9 +23,9 @@ import java.util.Queue;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.Frame;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This is used to iteratively transform or process a frame into one or more other frames.
@@ -36,7 +36,7 @@ import org.eclipse.jetty.websocket.core.Frame;
  */
 public abstract class TransformingFlusher
 {
-    private final Logger log = Log.getLogger(this.getClass());
+    private final Logger log = LoggerFactory.getLogger(this.getClass());
 
     private final Queue<FrameEntry> entries = new ArrayDeque<>();
     private final IteratingCallback flusher = new Flusher();

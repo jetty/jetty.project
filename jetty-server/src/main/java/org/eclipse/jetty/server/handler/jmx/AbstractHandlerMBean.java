@@ -25,12 +25,12 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.AbstractHandlerContainer;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class AbstractHandlerMBean extends ObjectMBean
 {
-    private static final Logger LOG = Log.getLogger(AbstractHandlerMBean.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AbstractHandlerMBean.class);
 
     public AbstractHandlerMBean(Object managedObject)
     {
@@ -93,7 +93,7 @@ public class AbstractHandlerMBean extends ObjectMBean
             }
             catch (IOException e)
             {
-                LOG.ignore(e);
+                LOG.trace("IGNORED", e);
                 name = context.getBaseResource().getName();
             }
         }

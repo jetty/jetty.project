@@ -56,17 +56,17 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.Promise;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>Implementation of a {@link Handler} that supports HTTP CONNECT.</p>
  */
 public class ConnectHandler extends HandlerWrapper
 {
-    protected static final Logger LOG = Log.getLogger(ConnectHandler.class);
+    protected static final Logger LOG = LoggerFactory.getLogger(ConnectHandler.class);
 
     private final Set<String> whiteList = new HashSet<>();
     private final Set<String> blackList = new HashSet<>();
@@ -319,7 +319,7 @@ public class ConnectHandler extends HandlerWrapper
         }
         catch (Throwable x)
         {
-            LOG.ignore(x);
+            LOG.trace("IGNORED", x);
         }
     }
 

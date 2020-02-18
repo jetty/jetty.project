@@ -23,13 +23,13 @@ import org.eclipse.jetty.jmx.ObjectMBean;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @ManagedObject("Derived MBean Wrapper")
 public class DerivedMBean extends ObjectMBean
 {
-    private static final Logger LOG = Log.getLogger(DerivedMBean.class);
+    private static final Logger LOG = LoggerFactory.getLogger(DerivedMBean.class);
 
     public DerivedMBean(Object managedObject)
     {

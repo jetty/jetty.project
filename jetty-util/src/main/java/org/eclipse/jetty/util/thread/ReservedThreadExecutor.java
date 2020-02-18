@@ -29,8 +29,8 @@ import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * An Executor using preallocated/reserved Threads from a wrapped Executor.
@@ -45,7 +45,7 @@ import org.eclipse.jetty.util.log.Logger;
 @ManagedObject("A pool for reserved threads")
 public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExecutor
 {
-    private static final Logger LOG = Log.getLogger(ReservedThreadExecutor.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ReservedThreadExecutor.class);
     private static final Runnable STOP = new Runnable()
     {
         @Override
@@ -248,7 +248,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
         }
         catch (RejectedExecutionException e)
         {
-            LOG.ignore(e);
+            LOG.trace("IGNORED", e);
         }
     }
 
@@ -280,7 +280,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
             }
             catch (Throwable e)
             {
-                LOG.ignore(e);
+                LOG.trace("IGNORED", e);
                 _size.getAndIncrement();
                 _stack.offerFirst(this);
                 return false;
@@ -317,7 +317,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
                 }
                 catch (InterruptedException e)
                 {
-                    LOG.ignore(e);
+                    LOG.trace("IGNORED", e);
                 }
             }
         }
@@ -376,7 +376,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
                 }
                 catch (Throwable e)
                 {
-                    LOG.warn(e);
+                    LOG.warn("Unable to run task", e);
                 }
             }
 

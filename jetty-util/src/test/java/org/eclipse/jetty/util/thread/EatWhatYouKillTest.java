@@ -61,7 +61,7 @@ public class EatWhatYouKillTest
     @Test
     public void testExceptionThrownByTask() throws Exception
     {
-        try (StacklessLogging stackLess = new StacklessLogging(EatWhatYouKill.class))
+        try (StacklessLogging ignored = new StacklessLogging(EatWhatYouKill.class))
         {
             AtomicReference<Throwable> detector = new AtomicReference<>();
             CountDownLatch latch = new CountDownLatch(2);

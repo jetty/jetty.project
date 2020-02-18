@@ -28,12 +28,12 @@ import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class SettingsBodyParser extends BodyParser
 {
-    private static final Logger LOG = Log.getLogger(SettingsBodyParser.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SettingsBodyParser.class);
 
     private final int maxKeys;
     private State state = State.PREPARE;

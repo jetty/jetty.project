@@ -41,8 +41,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- *  Base class for all tests on all flavours of SessionCache
- *
+ * Base class for all tests on all flavours of SessionCache
  */
 public abstract class AbstractSessionCacheTest
 {

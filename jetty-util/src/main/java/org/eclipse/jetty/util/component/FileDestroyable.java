@@ -25,13 +25,13 @@ import java.util.Collection;
 import java.util.List;
 
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class FileDestroyable implements Destroyable
 {
-    private static final Logger LOG = Log.getLogger(FileDestroyable.class);
+    private static final Logger LOG = LoggerFactory.getLogger(FileDestroyable.class);
     final List<File> _files = new ArrayList<File>();
 
     public FileDestroyable()

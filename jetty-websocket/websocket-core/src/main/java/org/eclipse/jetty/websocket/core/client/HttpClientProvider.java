@@ -19,8 +19,8 @@
 package org.eclipse.jetty.websocket.core.client;
 
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.slf4j.LoggerFactory;
 
 public interface HttpClientProvider
 {
@@ -35,7 +35,7 @@ public interface HttpClientProvider
         }
         catch (Throwable x)
         {
-            Log.getLogger(HttpClientProvider.class).ignore(x);
+            LoggerFactory.getLogger(HttpClientProvider.class).trace("IGNORED", x);
         }
 
         return HttpClientProvider.newDefaultHttpClient();

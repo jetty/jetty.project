@@ -28,8 +28,8 @@ import org.eclipse.jetty.http.HttpTokens;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.SearchPattern;
 import org.eclipse.jetty.util.Utf8StringBuilder;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A parser for MultiPart content type.
@@ -39,7 +39,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class MultiPartParser
 {
-    public static final Logger LOG = Log.getLogger(MultiPartParser.class);
+    public static final Logger LOG = LoggerFactory.getLogger(MultiPartParser.class);
 
     // States
     public enum FieldState

@@ -35,6 +35,8 @@ module org.eclipse.jetty.util
 
     // Required by SSL code (for X509).
     requires transitive java.naming;
+
+    // Standard Jetty Logging now.
     requires org.slf4j;
 
     // Only required if using AppContextLeakPreventer/AWTLeakPreventer.

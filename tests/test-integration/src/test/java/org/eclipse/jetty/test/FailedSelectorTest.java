@@ -55,13 +55,13 @@ import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -70,7 +70,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class FailedSelectorTest
 {
-    private static final Logger LOG = Log.getLogger(FailedSelectorTest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(FailedSelectorTest.class);
     private HttpClient client;
     private Server server;
     private StacklessLogging stacklessManagedSelector;
@@ -306,7 +306,7 @@ public class FailedSelectorTest
 
     private static class RestartSelectorTask implements Consumer<CustomManagedSelector>
     {
-        private static final Logger LOG = Log.getLogger(RestartSelectorTask.class);
+        private static final Logger LOG = LoggerFactory.getLogger(RestartSelectorTask.class);
         private final CountDownLatch latch;
 
         public RestartSelectorTask(CountDownLatch latch)
@@ -324,7 +324,7 @@ public class FailedSelectorTest
             }
             catch (Exception e)
             {
-                LOG.warn(e);
+                LOG.warn("Unable to restart selector: {}", customManagedSelector, e);
             }
             finally
             {
@@ -335,7 +335,7 @@ public class FailedSelectorTest
 
     private static class RestartServerTask implements Consumer<CustomManagedSelector>
     {
-        private static final Logger LOG = Log.getLogger(RestartServerTask.class);
+        private static final Logger LOG = LoggerFactory.getLogger(RestartServerTask.class);
         private final Server server;
         private final CountDownLatch latch;
 
@@ -355,7 +355,7 @@ public class FailedSelectorTest
             }
             catch (Exception e)
             {
-                LOG.warn(e);
+                LOG.warn("Unable to restart server {}", server, e);
             }
             finally
             {
@@ -366,7 +366,7 @@ public class FailedSelectorTest
 
     private static class ForceCloseSelectorTask implements Runnable
     {
-        private static final Logger LOG = Log.getLogger(ForceCloseSelectorTask.class);
+        private static final Logger LOG = LoggerFactory.getLogger(ForceCloseSelectorTask.class);
         private final ServerConnector connector;
 
         public ForceCloseSelectorTask(ServerConnector connector)

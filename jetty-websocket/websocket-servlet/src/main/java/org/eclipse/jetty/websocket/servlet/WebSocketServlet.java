@@ -29,11 +29,11 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Abstract Servlet used to bridge the Servlet API to the WebSocket API.
@@ -88,7 +88,7 @@ import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
 @SuppressWarnings("serial")
 public abstract class WebSocketServlet extends HttpServlet
 {
-    private static final Logger LOG = Log.getLogger(WebSocketServlet.class);
+    private static final Logger LOG = LoggerFactory.getLogger(WebSocketServlet.class);
     private final CustomizedWebSocketServletFactory customizer = new CustomizedWebSocketServletFactory();
 
     private WebSocketMapping mapping;

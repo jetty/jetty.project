@@ -45,9 +45,9 @@ import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
@@ -188,7 +188,7 @@ public class InterleavingTest extends AbstractTest
         }
         groups.get(currentStream).add(currentLength);
 
-        Logger logger = Log.getLogger(getClass());
+        Logger logger = LoggerFactory.getLogger(getClass());
         logger.debug("frame lengths = {}", streamLengths);
 
         groups.forEach((stream, lengths) ->

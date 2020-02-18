@@ -29,8 +29,8 @@ import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.jetty.util.ajax.JSON.Output;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>Converts POJOs to JSON and vice versa.</p>
@@ -43,7 +43,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class JSONPojoConvertor implements JSON.Convertor
 {
-    private static final Logger LOG = Log.getLogger(JSONPojoConvertor.class);
+    private static final Logger LOG = LoggerFactory.getLogger(JSONPojoConvertor.class);
     private static final Map<Class<?>, NumberType> __numberTypes = new HashMap<>();
     private static final NumberType SHORT = Number::shortValue;
     private static final NumberType INTEGER = Number::intValue;
@@ -344,7 +344,7 @@ public class JSONPojoConvertor implements JSON.Convertor
                     catch (Exception e)
                     {
                         // Unusual array with multiple types.
-                        LOG.ignore(e);
+                        LOG.trace("IGNORED", e);
                         _setter.invoke(obj, value);
                     }
                 }
@@ -363,7 +363,7 @@ public class JSONPojoConvertor implements JSON.Convertor
                     catch (Exception e)
                     {
                         // unusual array with multiple types
-                        LOG.ignore(e);
+                        LOG.trace("IGNORED", e);
                         _setter.invoke(obj, value);
                     }
                 }

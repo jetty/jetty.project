@@ -20,13 +20,13 @@ package org.eclipse.jetty.http.pathmap;
 
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ServletPathSpec extends PathSpec
 {
 
-    private static final Logger LOG = Log.getLogger(ServletPathSpec.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ServletPathSpec.class);
 
     /**
      * If a servlet or filter path mapping isn't a suffix mapping, ensure

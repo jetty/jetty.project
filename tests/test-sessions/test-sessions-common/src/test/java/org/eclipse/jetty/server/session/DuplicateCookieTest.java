@@ -49,7 +49,7 @@ public class DuplicateCookieTest
         String contextPath = "";
         String servletMapping = "/server";
         HttpClient client = null;
-        
+
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
         SessionDataStoreFactory storeFactory = new TestSessionDataStoreFactory();
 

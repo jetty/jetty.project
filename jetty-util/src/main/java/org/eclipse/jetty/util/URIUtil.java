@@ -24,8 +24,8 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
 import org.eclipse.jetty.util.Utf8Appendable.NotUtf8Exception;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * URI Utility methods.
@@ -41,7 +41,7 @@ import org.eclipse.jetty.util.log.Logger;
 public class URIUtil
     implements Cloneable
 {
-    private static final Logger LOG = Log.getLogger(URIUtil.class);
+    private static final Logger LOG = LoggerFactory.getLogger(URIUtil.class);
     public static final String SLASH = "/";
     public static final String HTTP = "http";
     public static final String HTTPS = "https";

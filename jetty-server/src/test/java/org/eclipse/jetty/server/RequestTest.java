@@ -61,13 +61,13 @@ import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -88,7 +88,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
 public class RequestTest
 {
-    private static final Logger LOG = Log.getLogger(RequestTest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(RequestTest.class);
     private Server _server;
     private LocalConnector _connector;
     private RequestHandler _handler;
@@ -122,13 +122,13 @@ public class RequestTest
         _server.stop();
         _server.join();
     }
-    
+
     @Test
     public void testRequestCharacterEncoding() throws Exception
     {
         AtomicReference<String> result = new AtomicReference<>(null);
         AtomicReference<String> overrideCharEncoding = new AtomicReference<>(null);
-        
+
         _server.stop();
         ContextHandler handler = new CharEncodingContextHandler();
         _server.setHandler(handler);
@@ -154,26 +154,26 @@ public class RequestTest
             }
         };
         _server.start();
-   
+
         String request = "GET / HTTP/1.1\n" +
             "Host: whatever\r\n" +
             "Content-Type: text/html;charset=utf8\n" +
             "Connection: close\n" +
             "\n";
-        
+
         //test setting the default char encoding
-        handler.setDefaultRequestCharacterEncoding("ascii"); 
+        handler.setDefaultRequestCharacterEncoding("ascii");
         String response = _connector.getResponse(request);
         assertTrue(response.startsWith("HTTP/1.1 200"));
         assertEquals("ascii", result.get());
-        
+
         //test overriding the default char encoding with explicit encoding
         result.set(null);
         overrideCharEncoding.set("utf-16");
         response = _connector.getResponse(request);
         assertTrue(response.startsWith("HTTP/1.1 200"));
         assertEquals("utf-16", result.get());
-        
+
         //test fallback to content-type encoding
         result.set(null);
         overrideCharEncoding.set(null);
@@ -292,7 +292,7 @@ public class RequestTest
                 assertNull(request.getCookies());
                 assertEquals("", request.getHeader("Name"));
                 assertTrue(request.getHeaders("Name").hasMoreElements()); // empty
-                assertThrows(IllegalArgumentException.class, () ->  request.getDateHeader("Name"));
+                assertThrows(IllegalArgumentException.class, () -> request.getDateHeader("Name"));
                 assertEquals(-1, request.getDateHeader("Other"));
                 return true;
             }
@@ -500,7 +500,9 @@ public class RequestTest
         assertTimeoutPreemptively(Duration.ofSeconds(5), () ->
         {
             while (testTmpDir.list().length > 0)
+            {
                 Thread.yield();
+            }
         });
     }
 
@@ -596,7 +598,7 @@ public class RequestTest
         System.out.println(request);
 
         String responses = _connector.getResponse(request);
-        assertThat(responses,startsWith("HTTP/1.1 200"));
+        assertThat(responses, startsWith("HTTP/1.1 200"));
     }
 
     /**
@@ -929,9 +931,9 @@ public class RequestTest
                 "Connection: close\r\n" +
                 "\r\n" +
                 content;
-            Log.getRootLogger().debug("test l={}", l);
+            LOG.debug("test l={}", l);
             String response = _connector.getResponse(request);
-            Log.getRootLogger().debug(response);
+            LOG.debug(response);
             assertThat(response, containsString(" 200 OK"));
             assertEquals(l, length.get());
             content += "x";
@@ -1419,7 +1421,7 @@ public class RequestTest
             "Host: whatever\n" +
             "Connection: close\n" +
             "\n";
-        
+
         _server.stop();
         PathMappingHandler handler = new PathMappingHandler(null, null, null);
         _server.setHandler(handler);
@@ -1428,7 +1430,7 @@ public class RequestTest
         assertTrue(response.startsWith("HTTP/1.1 200 OK"));
         assertThat("Response body content", response, containsString("HttpServletMapping{matchValue=, pattern=, servletName=, mappingMatch=null}"));
         _server.stop();
-        
+
         ServletPathSpec spec = new ServletPathSpec("");
         handler = new PathMappingHandler(spec, spec.getPathMatch("foo"), "Something");
         _server.setHandler(handler);
@@ -1437,7 +1439,7 @@ public class RequestTest
         assertTrue(response.startsWith("HTTP/1.1 200 OK"));
         assertThat("Response body content", response, containsString("HttpServletMapping{matchValue=, pattern=, servletName=Something, mappingMatch=CONTEXT_ROOT}"));
         _server.stop();
-        
+
         spec = new ServletPathSpec("/");
         handler = new PathMappingHandler(spec, "", "Default");
         _server.setHandler(handler);
@@ -1446,7 +1448,7 @@ public class RequestTest
         assertTrue(response.startsWith("HTTP/1.1 200 OK"));
         assertThat("Response body content", response, containsString("HttpServletMapping{matchValue=/, pattern=/, servletName=Default, mappingMatch=DEFAULT}"));
         _server.stop();
-        
+
         spec = new ServletPathSpec("/foo/*");
         handler = new PathMappingHandler(spec, spec.getPathMatch("/foo/bar"), "BarServlet");
         _server.setHandler(handler);
@@ -1464,7 +1466,7 @@ public class RequestTest
         assertTrue(response.startsWith("HTTP/1.1 200 OK"));
         assertThat("Response body content", response, containsString("HttpServletMapping{matchValue=/foo/bar, pattern=*.jsp, servletName=JspServlet, mappingMatch=EXTENSION}"));
         _server.stop();
-        
+
         spec = new ServletPathSpec("/catalog");
         handler = new PathMappingHandler(spec, spec.getPathMatch("/catalog"), "CatalogServlet");
         _server.setHandler(handler);
@@ -1474,7 +1476,7 @@ public class RequestTest
         assertThat("Response body content", response, containsString("HttpServletMapping{matchValue=catalog, pattern=/catalog, servletName=CatalogServlet, mappingMatch=EXACT}"));
         _server.stop();
     }
-    
+
     @Test
     public void testCookies() throws Exception
     {
@@ -1858,7 +1860,7 @@ public class RequestTest
         assertNotNull(request.getParameterMap());
         assertEquals(0, request.getParameterMap().size());
     }
-    
+
     interface RequestTester
     {
         boolean check(HttpServletRequest request, HttpServletResponse response) throws IOException;
@@ -1986,14 +1988,14 @@ public class RequestTest
         private ContextHandler _handler;
         private String _contextPath;
         private String _name;
-        
+
         public TestUserIdentityScope(ContextHandler handler, String contextPath, String name)
         {
             _handler = handler;
             _contextPath = contextPath;
             _name = name;
         }
-        
+
         @Override
         public ContextHandler getContextHandler()
         {
@@ -2024,14 +2026,14 @@ public class RequestTest
         private ServletPathSpec _spec;
         private String _servletPath;
         private String _servletName;
-        
+
         public PathMappingHandler(ServletPathSpec spec, String servletPath, String servletName)
         {
             _spec = spec;
             _servletPath = servletPath;
             _servletName = servletName;
         }
-        
+
         @Override
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
@@ -2042,6 +2044,6 @@ public class RequestTest
                 baseRequest.setUserIdentityScope(new TestUserIdentityScope(null, null, _servletName));
             HttpServletMapping mapping = baseRequest.getHttpServletMapping();
             response.getWriter().println(mapping);
-        }   
+        }
     }
 }

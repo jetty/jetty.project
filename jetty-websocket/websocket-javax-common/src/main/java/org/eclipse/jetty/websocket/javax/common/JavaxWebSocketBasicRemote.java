@@ -28,18 +28,18 @@ import javax.websocket.RemoteEndpoint;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.FutureCallback;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.util.TextUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class JavaxWebSocketBasicRemote extends JavaxWebSocketRemoteEndpoint implements RemoteEndpoint.Basic
 {
-    private static final Logger LOG = Log.getLogger(JavaxWebSocketBasicRemote.class);
+    private static final Logger LOG = LoggerFactory.getLogger(JavaxWebSocketBasicRemote.class);
 
     protected JavaxWebSocketBasicRemote(JavaxWebSocketSession session, CoreSession coreSession)
     {
@@ -120,7 +120,6 @@ public class JavaxWebSocketBasicRemote extends JavaxWebSocketRemoteEndpoint impl
         {
             LOG.debug("sendText({})", TextUtil.hint(text));
         }
-
 
         FutureCallback b = new FutureCallback();
         sendFrame(new Frame(OpCode.TEXT).setPayload(text), b, false);

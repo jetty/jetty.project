@@ -23,11 +23,11 @@ import java.util.Hashtable;
 
 import org.eclipse.jetty.osgi.boot.OSGiServerConstants;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.ServiceReference;
 import org.osgi.util.tracker.ServiceTrackerCustomizer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * JettyServerServiceTracker
@@ -37,7 +37,7 @@ import org.osgi.util.tracker.ServiceTrackerCustomizer;
  */
 public class JettyServerServiceTracker implements ServiceTrackerCustomizer
 {
-    private static Logger LOG = Log.getLogger(JettyServerServiceTracker.class.getName());
+    private static Logger LOG = LoggerFactory.getLogger(JettyServerServiceTracker.class.getName());
 
     @Override
     public Object addingService(ServiceReference sr)
@@ -65,7 +65,7 @@ public class JettyServerServiceTracker implements ServiceTrackerCustomizer
         }
         catch (Exception e)
         {
-            LOG.warn(e);
+            LOG.warn("Failed to start server {}", name, e);
             return sr.getBundle().getBundleContext().getService(sr);
         }
     }
@@ -82,15 +82,15 @@ public class JettyServerServiceTracker implements ServiceTrackerCustomizer
     {
         if (service instanceof ServerInstanceWrapper)
         {
+            ServerInstanceWrapper wrapper = (ServerInstanceWrapper)service;
             try
             {
-                ServerInstanceWrapper wrapper = (ServerInstanceWrapper)service;
                 wrapper.stop();
                 LOG.info("Stopped Server {}", wrapper.getManagedServerName());
             }
             catch (Exception e)
             {
-                LOG.warn(e);
+                LOG.warn("Failed to stop server {}", wrapper.getManagedServerName(), e);
             }
         }
     }

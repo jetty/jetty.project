@@ -18,15 +18,15 @@
 
 package org.eclipse.jetty.util.component;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A LifeCycle that when started will stop another LifeCycle
  */
 public class StopLifeCycle extends AbstractLifeCycle implements LifeCycle.Listener
 {
-    private static final Logger LOG = Log.getLogger(StopLifeCycle.class);
+    private static final Logger LOG = LoggerFactory.getLogger(StopLifeCycle.class);
 
     private final LifeCycle _lifecycle;
 
@@ -50,7 +50,7 @@ public class StopLifeCycle extends AbstractLifeCycle implements LifeCycle.Listen
         }
         catch (Exception e)
         {
-            LOG.warn(e);
+            LOG.warn("Unable to stop", e);
         }
     }
 

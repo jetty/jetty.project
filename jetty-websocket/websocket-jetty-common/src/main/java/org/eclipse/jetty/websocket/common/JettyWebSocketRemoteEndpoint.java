@@ -27,8 +27,6 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WriteCallback;
@@ -36,12 +34,14 @@ import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.exception.ProtocolException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket.api.RemoteEndpoint
 {
-    private static final Logger LOG = Log.getLogger(JettyWebSocketRemoteEndpoint.class);
+    private static final Logger LOG = LoggerFactory.getLogger(JettyWebSocketRemoteEndpoint.class);
 
     private final CoreSession coreSession;
     private byte messageType = -1;
@@ -80,7 +80,7 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
         }
         catch (IOException e)
         {
-            LOG.ignore(e);
+            LOG.trace("IGNORED", e);
         }
     }
 

@@ -39,8 +39,8 @@ import java.util.Collection;
 import java.util.Enumeration;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Convenience class to handle validation of certificates, aliases and keystores
@@ -54,7 +54,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class CertificateValidator
 {
-    private static final Logger LOG = Log.getLogger(CertificateValidator.class);
+    private static final Logger LOG = LoggerFactory.getLogger(CertificateValidator.class);
     private static AtomicLong __aliasCount = new AtomicLong();
 
     private KeyStore _trustStore;
@@ -139,7 +139,7 @@ public class CertificateValidator
             }
             catch (KeyStoreException kse)
             {
-                LOG.debug(kse);
+                LOG.debug("Unable to validate alias:" + keyAlias, kse);
                 throw new CertificateException("Unable to validate certificate" +
                     " for alias [" + keyAlias + "]: " + kse.getMessage(), kse);
             }
@@ -187,7 +187,7 @@ public class CertificateValidator
             }
             catch (KeyStoreException kse)
             {
-                LOG.debug(kse);
+                LOG.debug("Unable to validate certificate", kse);
                 throw new CertificateException("Unable to validate certificate" +
                     (certAlias == null ? "" : " for alias [" + certAlias + "]") + ": " + kse.getMessage(), kse);
             }
@@ -257,7 +257,7 @@ public class CertificateValidator
         }
         catch (GeneralSecurityException gse)
         {
-            LOG.debug(gse);
+            LOG.debug("Unable to validate certificate chain", gse);
             throw new CertificateException("Unable to validate certificate: " + gse.getMessage(), gse);
         }
     }

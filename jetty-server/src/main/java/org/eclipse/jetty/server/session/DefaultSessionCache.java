@@ -25,9 +25,9 @@ import javax.servlet.http.HttpServletRequest;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * DefaultSessionCache
@@ -37,7 +37,7 @@ import org.eclipse.jetty.util.statistic.CounterStatistic;
 @ManagedObject
 public class DefaultSessionCache extends AbstractSessionCache
 {
-    private static final Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
+    private static final Logger LOG = LoggerFactory.getLogger(DefaultSessionCache.class);
 
     /**
      * The cache of sessions in a hashmap
@@ -148,7 +148,7 @@ public class DefaultSessionCache extends AbstractSessionCache
                     }
                     catch (Exception e)
                     {
-                        LOG.warn(e);
+                        LOG.warn("Unable to store {}", session, e);
                     }
                     doDelete(session.getId()); //remove from memory
                     session.setResident(false);
@@ -162,7 +162,7 @@ public class DefaultSessionCache extends AbstractSessionCache
                     }
                     catch (Exception e)
                     {
-                        LOG.ignore(e);
+                        LOG.trace("IGNORED", e);
                     }
                 }
             }

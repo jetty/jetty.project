@@ -21,16 +21,16 @@ package org.eclipse.jetty.annotations;
 import org.eclipse.jetty.annotations.AnnotationParser.ClassInfo;
 import org.eclipse.jetty.annotations.AnnotationParser.FieldInfo;
 import org.eclipse.jetty.annotations.AnnotationParser.MethodInfo;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.webapp.WebAppContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * WebFilterAnnotationHandler
  */
 public class WebFilterAnnotationHandler extends AbstractDiscoverableAnnotationHandler
 {
-    private static final Logger LOG = Log.getLogger(WebFilterAnnotationHandler.class);
+    private static final Logger LOG = LoggerFactory.getLogger(WebFilterAnnotationHandler.class);
 
     public WebFilterAnnotationHandler(WebAppContext context)
     {

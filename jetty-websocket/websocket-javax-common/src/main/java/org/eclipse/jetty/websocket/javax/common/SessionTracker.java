@@ -26,12 +26,12 @@ import javax.websocket.CloseReason;
 import javax.websocket.Session;
 
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class SessionTracker extends AbstractLifeCycle implements JavaxWebSocketSessionListener
 {
-    private static final Logger LOG = Log.getLogger(SessionTracker.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SessionTracker.class);
 
     private CopyOnWriteArraySet<JavaxWebSocketSession> sessions = new CopyOnWriteArraySet<>();
 
@@ -64,7 +64,7 @@ public class SessionTracker extends AbstractLifeCycle implements JavaxWebSocketS
             }
             catch (IOException e)
             {
-                LOG.ignore(e);
+                LOG.trace("IGNORED", e);
             }
         }
 

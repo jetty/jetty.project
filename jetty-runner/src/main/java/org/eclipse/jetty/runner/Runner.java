@@ -53,13 +53,13 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlet.StatisticsServlet;
 import org.eclipse.jetty.util.RolloverFileOutputStream;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.webapp.MetaInfConfiguration;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.xml.XmlConfiguration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Runner
@@ -71,7 +71,7 @@ import org.eclipse.jetty.xml.XmlConfiguration;
 @Deprecated
 public class Runner
 {
-    private static final Logger LOG = Log.getLogger(Runner.class);
+    private static final Logger LOG = LoggerFactory.getLogger(Runner.class);
 
     public static final String[] PLUS_CONFIGURATION_CLASSES =
         {

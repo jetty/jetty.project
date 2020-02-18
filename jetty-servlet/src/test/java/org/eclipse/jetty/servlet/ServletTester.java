@@ -35,13 +35,13 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ServletTester extends ContainerLifeCycle
 {
-    private static final Logger LOG = Log.getLogger(ServletTester.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ServletTester.class);
 
     private final Server _server = new Server();
     private final LocalConnector _connector = new LocalConnector(_server);

@@ -29,8 +29,8 @@ import javax.servlet.ServletContext;
 
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Holder
@@ -43,7 +43,7 @@ import org.eclipse.jetty.util.log.Logger;
 @ManagedObject("Holder - a container for servlets and the like")
 public abstract class Holder<T> extends BaseHolder<T>
 {
-    private static final Logger LOG = Log.getLogger(Holder.class);
+    private static final Logger LOG = LoggerFactory.getLogger(Holder.class);
 
     private final Map<String, String> _initParams = new HashMap<String, String>(3);
     private String _displayName;

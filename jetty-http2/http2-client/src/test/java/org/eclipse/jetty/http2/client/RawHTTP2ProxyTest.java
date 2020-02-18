@@ -53,18 +53,18 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.Promise;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class RawHTTP2ProxyTest
 {
-    private static final Logger LOGGER = Log.getLogger(RawHTTP2ProxyTest.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(RawHTTP2ProxyTest.class);
 
     private final List<Server> servers = new ArrayList<>();
     private final List<HTTP2Client> clients = new ArrayList<>();

@@ -33,10 +33,10 @@ import org.eclipse.jetty.osgi.boot.JettyBootstrapActivator;
 import org.eclipse.jetty.osgi.boot.OSGiMetaInfConfiguration;
 import org.eclipse.jetty.osgi.boot.utils.BundleFileLocatorHelper;
 import org.eclipse.jetty.osgi.boot.utils.TldBundleDiscoverer;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.FrameworkUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * ContainerTldBundleDiscoverer
@@ -66,7 +66,7 @@ import org.osgi.framework.FrameworkUtil;
 public class ContainerTldBundleDiscoverer implements TldBundleDiscoverer
 {
 
-    private static final Logger LOG = Log.getLogger(ContainerTldBundleDiscoverer.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ContainerTldBundleDiscoverer.class);
 
     private static String DEFAULT_JSP_FACTORY_IMPL_CLASS = "org.apache.jasper.runtime.JspFactoryImpl";
     /**

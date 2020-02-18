@@ -30,10 +30,10 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.websocket.javax.server.config.JavaxWebSocketServletContainerInitializer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Tool to help debug JSR based websocket circumstances reported around browsers.
@@ -43,7 +43,7 @@ import org.eclipse.jetty.websocket.javax.server.config.JavaxWebSocketServletCont
  */
 public class JsrBrowserDebugTool
 {
-    private static final Logger LOG = Log.getLogger(JsrBrowserDebugTool.class);
+    private static final Logger LOG = LoggerFactory.getLogger(JsrBrowserDebugTool.class);
 
     public static void main(String[] args)
     {
@@ -68,7 +68,7 @@ public class JsrBrowserDebugTool
         }
         catch (Throwable t)
         {
-            LOG.warn(t);
+            LOG.warn("Unable to start {}", JsrBrowserDebugTool.class.getName(), t);
         }
     }
 

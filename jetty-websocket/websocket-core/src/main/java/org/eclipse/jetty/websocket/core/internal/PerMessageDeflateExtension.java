@@ -27,8 +27,6 @@ import java.util.zip.Inflater;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.AbstractExtension;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.Frame;
@@ -37,6 +35,8 @@ import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.exception.BadPayloadException;
 import org.eclipse.jetty.websocket.core.exception.MessageTooLargeException;
 import org.eclipse.jetty.websocket.core.exception.ProtocolException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Per Message Deflate Compression extension for WebSocket.
@@ -47,7 +47,7 @@ public class PerMessageDeflateExtension extends AbstractExtension
 {
     private static final byte[] TAIL_BYTES = new byte[]{0x00, 0x00, (byte)0xFF, (byte)0xFF};
     private static final ByteBuffer TAIL_BYTES_BUF = ByteBuffer.wrap(TAIL_BYTES);
-    private static final Logger LOG = Log.getLogger(PerMessageDeflateExtension.class);
+    private static final Logger LOG = LoggerFactory.getLogger(PerMessageDeflateExtension.class);
     private static final int DEFAULT_BUF_SIZE = 8 * 1024;
 
     private final TransformingFlusher outgoingFlusher;

@@ -1438,16 +1438,6 @@
             <enabled>true</enabled>
           </snapshots>
         </repository>
-        <!--repository>
-          <id>apache.snapshots</id>
-          <url>https://repository.apache.org/content/repositories/snapshots</url>
-          <releases>
-            <enabled>false</enabled>
-          </releases>
-          <snapshots>
-            <enabled>true</enabled>
-          </snapshots>
-        </repository-->
         <repository>
           <id>oss.snapshots</id>
           <name>OSS Snapshots</name>
@@ -1589,29 +1579,4 @@
       <url>scp://build.eclipse.org:/home/data/httpd/download.eclipse.org/jetty/${project.version}/</url>
     </site>
   </distributionManagement>
-
-  <!-- comment this until if we do not need some Apache maven plugins SNAPSHOT versions -->
-<!--  <pluginRepositories>-->
-<!--    <pluginRepository>-->
-<!--      <id>apache.snapshots</id>-->
-<!--      <url>https://repository.apache.org/content/repositories/snapshots</url>-->
-<!--      <releases>-->
-<!--        <enabled>false</enabled>-->
-<!--      </releases>-->
-<!--      <snapshots>-->
-<!--        <enabled>true</enabled>-->
-<!--      </snapshots>-->
-<!--    </pluginRepository>-->
-<!--    <pluginRepository>-->
-<!--      <id>plexus-snapshots</id>-->
-<!--      <url>https://oss.sonatype.org/content/repositories/plexus-snapshots</url>-->
-<!--      <releases>-->
-<!--        <enabled>false</enabled>-->
-<!--      </releases>-->
-<!--      <snapshots>-->
-<!--        <enabled>true</enabled>-->
-<!--      </snapshots>-->
-<!--    </pluginRepository>-->
-<!--  </pluginRepositories>-->
-
 </project>

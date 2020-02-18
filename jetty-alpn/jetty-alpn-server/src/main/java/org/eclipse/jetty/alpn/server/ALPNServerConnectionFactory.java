@@ -31,12 +31,12 @@ import org.eclipse.jetty.io.ssl.ALPNProcessor.Server;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.NegotiatingServerConnectionFactory;
 import org.eclipse.jetty.util.annotation.Name;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ALPNServerConnectionFactory extends NegotiatingServerConnectionFactory
 {
-    private static final Logger LOG = Log.getLogger(ALPNServerConnectionFactory.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ALPNServerConnectionFactory.class);
 
     private final List<Server> processors = new ArrayList<>();
 
@@ -61,7 +61,7 @@ public class ALPNServerConnectionFactory extends NegotiatingServerConnectionFact
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug(x);
+                    LOG.debug(x.getMessage(), x);
                 if (x != failure)
                     failure.addSuppressed(x);
                 continue;
@@ -75,7 +75,7 @@ public class ALPNServerConnectionFactory extends NegotiatingServerConnectionFact
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Could not initialize " + processor, x);
+                    LOG.debug("Could not initialize {}", processor, x);
                 if (x != failure)
                     failure.addSuppressed(x);
             }

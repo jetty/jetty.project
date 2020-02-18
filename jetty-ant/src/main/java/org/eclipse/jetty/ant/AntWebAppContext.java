@@ -49,21 +49,21 @@ import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlet.ServletMapping;
 import org.eclipse.jetty.servlet.Source;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.MetaInfConfiguration;
 import org.eclipse.jetty.webapp.WebAppClassLoader;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.xml.XmlConfiguration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Extension of WebAppContext to allow configuration via Ant environment.
  */
 public class AntWebAppContext extends WebAppContext
 {
-    private static final Logger LOG = Log.getLogger(WebAppContext.class);
+    private static final Logger LOG = LoggerFactory.getLogger(WebAppContext.class);
 
     public static final String DEFAULT_CONTAINER_INCLUDE_JAR_PATTERN =
         ".*/.*jsp-api-[^/]*\\.jar$|.*/.*jsp-[^/]*\\.jar$|.*/.*taglibs[^/]*\\.jar$|.*/.*jstl[^/]*\\.jar$|.*/.*jsf-impl-[^/]*\\.jar$|.*/.*javax.faces-[^/]*\\.jar$|.*/.*myfaces-impl-[^/]*\\.jar$";
@@ -176,7 +176,7 @@ public class AntWebAppContext extends WebAppContext
                     }
                     catch (Exception e)
                     {
-                        LOG.ignore(e);
+                        LOG.trace("IGNORED", e);
                     }
                 }
             }

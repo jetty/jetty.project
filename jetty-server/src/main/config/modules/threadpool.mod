@@ -3,6 +3,9 @@ DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-m
 [description]
 Enables the Server thread pool.
 
+[depends]
+logging
+
 [xml]
 etc/jetty-threadpool.xml
 

@@ -41,11 +41,11 @@ import org.eclipse.jetty.server.MultiPartFormInputStream;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -54,7 +54,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class MultiPartServletTest
 {
-    private static final Logger LOG = Log.getLogger(MultiPartServletTest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(MultiPartServletTest.class);
 
     private Server server;
     private ServerConnector connector;

@@ -94,7 +94,7 @@ public class SweeperTest
     @Test
     public void testSweepThrows() throws Exception
     {
-        try (StacklessLogging scope = new StacklessLogging(Sweeper.class))
+        try (StacklessLogging ignored = new StacklessLogging(Sweeper.class))
         {
             long period = 500;
             final CountDownLatch taskLatch = new CountDownLatch(2);

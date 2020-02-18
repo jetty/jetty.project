@@ -28,12 +28,12 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.ssl.ALPNProcessor;
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.io.ssl.SslHandshakeListener;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ConscryptClientALPNProcessor implements ALPNProcessor.Client
 {
-    private static final Logger LOG = Log.getLogger(ConscryptClientALPNProcessor.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ConscryptClientALPNProcessor.class);
 
     @Override
     public void init()
@@ -95,8 +95,8 @@ public class ConscryptClientALPNProcessor implements ALPNProcessor.Client
             }
             catch (Throwable e)
             {
+                LOG.warn("Unable to process Conscrypt ApplicationProtocol for {}", alpnConnection, e);
                 alpnConnection.selected(null);
-                LOG.warn(e);
             }
         }
     }

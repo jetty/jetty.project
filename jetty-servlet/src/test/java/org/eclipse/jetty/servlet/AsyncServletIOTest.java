@@ -53,13 +53,13 @@ import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static java.nio.charset.StandardCharsets.ISO_8859_1;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -75,7 +75,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 // TODO need  these on HTTP2 as well!
 public class AsyncServletIOTest
 {
-    private static final Logger LOG = Log.getLogger(AsyncServletIOTest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AsyncServletIOTest.class);
     protected AsyncIOServlet _servlet0 = new AsyncIOServlet();
     protected AsyncIOServlet2 _servlet2 = new AsyncIOServlet2();
     protected AsyncIOServlet3 _servlet3 = new AsyncIOServlet3();

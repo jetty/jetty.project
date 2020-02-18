@@ -32,20 +32,20 @@ import org.eclipse.jetty.servlet.ServletMapping;
 import org.eclipse.jetty.servlet.Source;
 import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.LazyList;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.DiscoveredAnnotation;
 import org.eclipse.jetty.webapp.MetaData;
 import org.eclipse.jetty.webapp.Origin;
 import org.eclipse.jetty.webapp.WebAppContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * WebServletAnnotation
  */
 public class WebServletAnnotation extends DiscoveredAnnotation
 {
-    private static final Logger LOG = Log.getLogger(WebServletAnnotation.class);
+    private static final Logger LOG = LoggerFactory.getLogger(WebServletAnnotation.class);
 
     public WebServletAnnotation(WebAppContext context, String className)
     {

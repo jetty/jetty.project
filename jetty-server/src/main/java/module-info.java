@@ -25,9 +25,9 @@ module org.eclipse.jetty.server
     exports org.eclipse.jetty.server.jmx to org.eclipse.jetty.jmx;
     exports org.eclipse.jetty.server.session;
 
-    requires transitive org.slf4j;
     requires transitive jetty.servlet.api;
     requires transitive org.eclipse.jetty.http;
+    requires transitive org.slf4j;
 
     // Only required if using DatabaseAdaptor/JDBCSessionDataStore.
     requires static java.sql;

@@ -29,9 +29,9 @@ import javax.security.auth.callback.CallbackHandler;
 import org.eclipse.jetty.security.AbstractLoginService;
 import org.eclipse.jetty.security.PropertyUserStore;
 import org.eclipse.jetty.server.UserIdentity;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.security.Credential;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * PropertyFileLoginModule
@@ -40,7 +40,7 @@ public class PropertyFileLoginModule extends AbstractLoginModule
 {
     public static final String DEFAULT_FILENAME = "realm.properties";
 
-    private static final Logger LOG = Log.getLogger(PropertyFileLoginModule.class);
+    private static final Logger LOG = LoggerFactory.getLogger(PropertyFileLoginModule.class);
 
     private static ConcurrentHashMap<String, PropertyUserStore> _propertyUserStores = new ConcurrentHashMap<String, PropertyUserStore>();
 

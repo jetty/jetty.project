@@ -24,8 +24,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>A utility class to perform periodic sweeping of resources.</p>
@@ -72,7 +72,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class Sweeper extends AbstractLifeCycle implements Runnable
 {
-    private static final Logger LOG = Log.getLogger(Sweeper.class);
+    private static final Logger LOG = LoggerFactory.getLogger(Sweeper.class);
 
     private final AtomicReference<List<Sweepable>> items = new AtomicReference<>();
     private final AtomicReference<Scheduler.Task> task = new AtomicReference<>();

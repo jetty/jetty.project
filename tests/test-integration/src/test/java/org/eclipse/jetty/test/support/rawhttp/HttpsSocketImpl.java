@@ -29,16 +29,16 @@ import javax.net.ssl.SSLSession;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * An HTTPS Socket Impl
  */
 public class HttpsSocketImpl implements HttpSocket
 {
-    private static final Logger LOG = Log.getLogger(HttpsSocketImpl.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HttpsSocketImpl.class);
 
     private SSLContext sslContext;
     private SSLSocketFactory sslfactory;
