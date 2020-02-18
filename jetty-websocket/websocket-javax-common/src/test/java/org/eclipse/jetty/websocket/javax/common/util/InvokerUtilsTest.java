@@ -20,9 +20,12 @@ package org.eclipse.jetty.websocket.javax.common.util;
 
 import java.io.File;
 import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Method;
 
 import org.eclipse.jetty.util.annotation.Name;
+import org.eclipse.jetty.websocket.util.InvokerUtils;
+import org.eclipse.jetty.websocket.util.ReflectUtils;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -149,11 +152,13 @@ public class InvokerUtilsTest
         throw new AssertionError("Unable to find method: " + name);
     }
 
+    private static MethodHandles.Lookup lookup = MethodHandles.lookup();
+    
     @Test
     public void testSimpleInvoker() throws Throwable
     {
         Method method = ReflectUtils.findMethod(Simple.class, "onMessage", String.class);
-        MethodHandle methodHandle = InvokerUtils.mutatedInvoker(Simple.class, method, new InvokerUtils.Arg(String.class));
+        MethodHandle methodHandle = InvokerUtils.mutatedInvoker(lookup, Simple.class, method, new InvokerUtils.Arg(String.class));
 
         Simple simple = new Simple();
         String result = (String)methodHandle.invoke(simple, "Hello World");
@@ -170,7 +175,7 @@ public class InvokerUtilsTest
             new InvokerUtils.Arg(int.class)
         };
 
-        MethodHandle methodHandle2 = InvokerUtils.mutatedInvoker(KeyValue.class, method2, callingArgs);
+        MethodHandle methodHandle2 = InvokerUtils.mutatedInvoker(lookup, KeyValue.class, method2, callingArgs);
 
         KeyValue obj = new KeyValue();
         String result = (String)methodHandle2.invoke(obj, "Year", 1972);
@@ -187,7 +192,7 @@ public class InvokerUtilsTest
             new InvokerUtils.Arg(int.class)
         };
 
-        MethodHandle methodHandle1 = InvokerUtils.mutatedInvoker(KeyValue.class, method1, callingArgs);
+        MethodHandle methodHandle1 = InvokerUtils.mutatedInvoker(lookup, KeyValue.class, method1, callingArgs);
 
         KeyValue obj = new KeyValue();
         String result = (String)methodHandle1.invoke(obj, "Age", 45);
@@ -205,7 +210,7 @@ public class InvokerUtilsTest
             new InvokerUtils.Arg(Boolean.class)
         };
 
-        MethodHandle methodHandle1 = InvokerUtils.mutatedInvoker(KeyValue.class, method1, callingArgs);
+        MethodHandle methodHandle1 = InvokerUtils.mutatedInvoker(lookup, KeyValue.class, method1, callingArgs);
 
         KeyValue obj = new KeyValue();
         String result = (String)methodHandle1.invoke(obj, "Age", 45, Boolean.TRUE);
@@ -223,7 +228,7 @@ public class InvokerUtilsTest
             new InvokerUtils.Arg(int.class)
         };
 
-        MethodHandle methodHandle1 = InvokerUtils.mutatedInvoker(KeyValue.class, method1, callingArgs);
+        MethodHandle methodHandle1 = InvokerUtils.mutatedInvoker(lookup, KeyValue.class, method1, callingArgs);
 
         KeyValue obj = new KeyValue();
         String result = (String)methodHandle1.invoke(obj, "Year", 888888L, 2017);
@@ -241,7 +246,7 @@ public class InvokerUtilsTest
             new InvokerUtils.Arg(int.class)
         };
 
-        MethodHandle methodHandle1 = InvokerUtils.mutatedInvoker(KeyValue.class, method1, callingArgs);
+        MethodHandle methodHandle1 = InvokerUtils.mutatedInvoker(lookup, KeyValue.class, method1, callingArgs);
 
         KeyValue obj = new KeyValue();
         String result = (String)methodHandle1.invoke(obj, new Simple(), "Count", 1776);
@@ -261,7 +266,7 @@ public class InvokerUtilsTest
             new InvokerUtils.Arg(Long.class)
         };
 
-        MethodHandle methodHandle1 = InvokerUtils.mutatedInvoker(KeyValue.class, method1, callingArgs);
+        MethodHandle methodHandle1 = InvokerUtils.mutatedInvoker(lookup, KeyValue.class, method1, callingArgs);
 
         KeyValue obj = new KeyValue();
         String result = (String)methodHandle1.invoke(obj, new Simple(), "Amount", Boolean.TRUE, 200, 9999L);
@@ -279,7 +284,7 @@ public class InvokerUtilsTest
             new InvokerUtils.Arg(int.class, "cost")
         };
 
-        MethodHandle methodHandle = InvokerUtils.mutatedInvoker(NamedParams.class, method, new NameParamIdentifier(), null, callingArgs);
+        MethodHandle methodHandle = InvokerUtils.mutatedInvoker(lookup, NamedParams.class, method, new NameParamIdentifier(), null, callingArgs);
 
         NamedParams obj = new NamedParams();
         String result = (String)methodHandle.invoke(obj, "Apple", "Red", 10);
@@ -297,7 +302,7 @@ public class InvokerUtilsTest
             new InvokerUtils.Arg(String.class, "color")
         };
 
-        MethodHandle methodHandle = InvokerUtils.mutatedInvoker(NamedParams.class, method, new NameParamIdentifier(), null, callingArgs);
+        MethodHandle methodHandle = InvokerUtils.mutatedInvoker(lookup, NamedParams.class, method, new NameParamIdentifier(), null, callingArgs);
 
         NamedParams obj = new NamedParams();
         String result = (String)methodHandle.invoke(obj, 20, "Banana", "Yellow");
@@ -312,7 +317,7 @@ public class InvokerUtilsTest
 
         InvokerUtils.Arg[] callingArgs = new InvokerUtils.Arg[]{};
 
-        MethodHandle methodHandle = InvokerUtils.mutatedInvoker(SampleSignatures.class, method, callingArgs);
+        MethodHandle methodHandle = InvokerUtils.mutatedInvoker(lookup, SampleSignatures.class, method, callingArgs);
         String result = (String)methodHandle.invoke(samples);
         assertThat("Result", result, is("sigEmpty<>"));
     }
@@ -327,7 +332,7 @@ public class InvokerUtilsTest
             new InvokerUtils.Arg(File.class)
         };
 
-        MethodHandle methodHandle = InvokerUtils.mutatedInvoker(SampleSignatures.class, method, callingArgs);
+        MethodHandle methodHandle = InvokerUtils.mutatedInvoker(lookup, SampleSignatures.class, method, callingArgs);
         String result = (String)methodHandle.invoke(samples, new File("bogus"));
         assertThat("Result", result, is("sigEmpty<>"));
     }
@@ -342,7 +347,7 @@ public class InvokerUtilsTest
             new InvokerUtils.Arg(File.class)
         };
 
-        MethodHandle methodHandle = InvokerUtils.mutatedInvoker(SampleSignatures.class, method, callingArgs);
+        MethodHandle methodHandle = InvokerUtils.mutatedInvoker(lookup, SampleSignatures.class, method, callingArgs);
         String result = (String)methodHandle.invoke(samples, null);
         assertThat("Result", result, is("sigEmpty<>"));
     }
@@ -357,7 +362,7 @@ public class InvokerUtilsTest
             new InvokerUtils.Arg(String.class)
         };
 
-        MethodHandle methodHandle = InvokerUtils.mutatedInvoker(SampleSignatures.class, method, callingArgs);
+        MethodHandle methodHandle = InvokerUtils.mutatedInvoker(lookup, SampleSignatures.class, method, callingArgs);
         String result = (String)methodHandle.invoke(samples, "Hello");
         assertThat("Result", result, is("sigStr<Hello>"));
     }
@@ -373,7 +378,7 @@ public class InvokerUtilsTest
             new InvokerUtils.Arg(String.class)
         };
 
-        MethodHandle methodHandle = InvokerUtils.mutatedInvoker(SampleSignatures.class, method, callingArgs);
+        MethodHandle methodHandle = InvokerUtils.mutatedInvoker(lookup, SampleSignatures.class, method, callingArgs);
         String result = (String)methodHandle.invoke(samples, new File("bogus"), "Hiya");
         assertThat("Result", result, is("sigStr<Hiya>"));
     }
@@ -389,7 +394,7 @@ public class InvokerUtilsTest
             new InvokerUtils.Arg(File.class)
         };
 
-        MethodHandle methodHandle = InvokerUtils.mutatedInvoker(SampleSignatures.class, method, callingArgs);
+        MethodHandle methodHandle = InvokerUtils.mutatedInvoker(lookup, SampleSignatures.class, method, callingArgs);
         String result = (String)methodHandle.invoke(samples, "Greetings", new File("bogus"));
         assertThat("Result", result, is("sigStr<Greetings>"));
     }
@@ -405,7 +410,7 @@ public class InvokerUtilsTest
             new InvokerUtils.Arg(File.class)
         };
 
-        MethodHandle methodHandle = InvokerUtils.mutatedInvoker(SampleSignatures.class, method, callingArgs);
+        MethodHandle methodHandle = InvokerUtils.mutatedInvoker(lookup, SampleSignatures.class, method, callingArgs);
         String result = (String)methodHandle.invoke(samples, "Name", new File("bogus1"));
         assertThat("Result", result, is("sigStrFile<Name,bogus1>"));
     }
@@ -421,7 +426,7 @@ public class InvokerUtilsTest
             new InvokerUtils.Arg(String.class)
         };
 
-        MethodHandle methodHandle = InvokerUtils.mutatedInvoker(SampleSignatures.class, method, callingArgs);
+        MethodHandle methodHandle = InvokerUtils.mutatedInvoker(lookup, SampleSignatures.class, method, callingArgs);
         String result = (String)methodHandle.invoke(samples, new File("bogus2"), "Alt");
         assertThat("Result", result, is("sigStrFile<Alt,bogus2>"));
     }
@@ -437,7 +442,7 @@ public class InvokerUtilsTest
             new InvokerUtils.Arg(File.class)
         };
 
-        MethodHandle methodHandle = InvokerUtils.mutatedInvoker(SampleSignatures.class, method, callingArgs);
+        MethodHandle methodHandle = InvokerUtils.mutatedInvoker(lookup, SampleSignatures.class, method, callingArgs);
         String result = (String)methodHandle.invoke(samples, "Bob", new File("bogus3"));
         assertThat("Result", result, is("sigFileStr<bogus3,Bob>"));
     }
@@ -453,7 +458,7 @@ public class InvokerUtilsTest
             new InvokerUtils.Arg(String.class)
         };
 
-        MethodHandle methodHandle = InvokerUtils.mutatedInvoker(SampleSignatures.class, method, callingArgs);
+        MethodHandle methodHandle = InvokerUtils.mutatedInvoker(lookup, SampleSignatures.class, method, callingArgs);
         String result = (String)methodHandle.invoke(samples, new File("bogus4"), "Dobalina");
         assertThat("Result", result, is("sigFileStr<bogus4,Dobalina>"));
     }
@@ -470,7 +475,7 @@ public class InvokerUtilsTest
             new InvokerUtils.Arg(boolean.class, "fin")
         };
 
-        MethodHandle methodHandle = InvokerUtils.mutatedInvoker(SampleSignatures.class, method, new NameParamIdentifier(), null, callingArgs);
+        MethodHandle methodHandle = InvokerUtils.mutatedInvoker(lookup, SampleSignatures.class, method, new NameParamIdentifier(), null, callingArgs);
         String result = (String)methodHandle.invoke(samples, new File("foo"), "bar", true);
         assertThat("Result", result, is("sigFileStrFin<foo,bar,true>"));
     }
@@ -487,7 +492,7 @@ public class InvokerUtilsTest
             new InvokerUtils.Arg(boolean.class)
         };
 
-        MethodHandle methodHandle = InvokerUtils.mutatedInvoker(SampleSignatures.class, method, callingArgs);
+        MethodHandle methodHandle = InvokerUtils.mutatedInvoker(lookup, SampleSignatures.class, method, callingArgs);
         String result = (String)methodHandle.invoke(samples, new File("baz"), "flem", false);
         assertThat("Result", result, is("sigFileStrFin<baz,flem,false>"));
     }
@@ -504,7 +509,7 @@ public class InvokerUtilsTest
             new InvokerUtils.Arg(String.class)
         };
 
-        MethodHandle methodHandle = InvokerUtils.mutatedInvoker(SampleSignatures.class, method, new NameParamIdentifier(), null, callingArgs);
+        MethodHandle methodHandle = InvokerUtils.mutatedInvoker(lookup, SampleSignatures.class, method, new NameParamIdentifier(), null, callingArgs);
         String result = (String)methodHandle.invoke(samples, false, new File("foo"), "bar");
         assertThat("Result", result, is("sigFileStrFin<foo,bar,false>"));
     }
@@ -521,7 +526,7 @@ public class InvokerUtilsTest
             new InvokerUtils.Arg(String.class)
         };
 
-        MethodHandle methodHandle = InvokerUtils.mutatedInvoker(SampleSignatures.class, method, callingArgs);
+        MethodHandle methodHandle = InvokerUtils.mutatedInvoker(lookup, SampleSignatures.class, method, callingArgs);
         String result = (String)methodHandle.invoke(samples, true, new File("foo"), "bar");
         assertThat("Result", result, is("sigFileStrFin<foo,bar,true>"));
     }
@@ -538,7 +543,7 @@ public class InvokerUtilsTest
             new InvokerUtils.Arg(String.class)
         };
 
-        MethodHandle methodHandle = InvokerUtils.mutatedInvoker(SampleSignatures.class, method, new NameParamIdentifier(), null, callingArgs);
+        MethodHandle methodHandle = InvokerUtils.mutatedInvoker(lookup, SampleSignatures.class, method, new NameParamIdentifier(), null, callingArgs);
         String result = (String)methodHandle.invoke(samples, true, null, "bar");
         assertThat("Result", result, is("sigFileStrFin<<null>,bar,true>"));
     }

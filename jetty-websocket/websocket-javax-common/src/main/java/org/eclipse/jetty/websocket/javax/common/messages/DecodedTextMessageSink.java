@@ -25,13 +25,14 @@ import javax.websocket.CloseReason;
 import javax.websocket.DecodeException;
 import javax.websocket.Decoder;
 
+import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.exception.CloseException;
-import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketSession;
-import org.eclipse.jetty.websocket.javax.common.MessageSink;
+import org.eclipse.jetty.websocket.util.messages.MessageSink;
+import org.eclipse.jetty.websocket.util.messages.StringMessageSink;
 
 public class DecodedTextMessageSink<T> extends DecodedMessageSink<Decoder.Text<T>>
 {
-    public DecodedTextMessageSink(JavaxWebSocketSession session,
+    public DecodedTextMessageSink(CoreSession session,
                                   Decoder.Text<T> decoder,
                                   MethodHandle methodHandle)
         throws NoSuchMethodException, IllegalAccessException
@@ -48,7 +49,7 @@ public class DecodedTextMessageSink<T> extends DecodedMessageSink<Decoder.Text<T
     }
 
     @Override
-    protected MessageSink newRawMessageSink(JavaxWebSocketSession session, MethodHandle rawMethodHandle)
+    protected MessageSink newRawMessageSink(CoreSession session, MethodHandle rawMethodHandle)
     {
         return new StringMessageSink(session, rawMethodHandle);
     }

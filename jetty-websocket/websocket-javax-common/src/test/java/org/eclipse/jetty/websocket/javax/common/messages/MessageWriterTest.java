@@ -24,11 +24,14 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
+import org.eclipse.jetty.websocket.util.messages.MessageWriter;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -36,11 +39,14 @@ import static org.hamcrest.Matchers.is;
 
 public class MessageWriterTest
 {
+    private ByteBufferPool bufferPool = new MappedByteBufferPool();
+
     @Test
     public void testSingleByteArray512b() throws IOException, InterruptedException
     {
         FrameCapture capture = new FrameCapture();
-        try (MessageWriter writer = new MessageWriter(capture, 1024))
+        capture.setOutputBufferSize(1024);
+        try (MessageWriter writer = new MessageWriter(capture, bufferPool))
         {
             char[] cbuf = new char[512];
             Arrays.fill(cbuf, 'x');
@@ -57,7 +63,8 @@ public class MessageWriterTest
     public void testSingleByteArray2k() throws IOException, InterruptedException
     {
         FrameCapture capture = new FrameCapture();
-        try (MessageWriter writer = new MessageWriter(capture, 1024))
+        capture.setOutputBufferSize(1024);
+        try (MessageWriter writer = new MessageWriter(capture, bufferPool))
         {
             char[] cbuf = new char[1024 * 2];
             Arrays.fill(cbuf, 'x');
@@ -83,7 +90,8 @@ public class MessageWriterTest
         final int writerBufferSize = 100;
 
         FrameCapture capture = new FrameCapture();
-        try (MessageWriter writer = new MessageWriter(capture, writerBufferSize))
+        capture.setOutputBufferSize(writerBufferSize);
+        try (MessageWriter writer = new MessageWriter(capture, bufferPool))
         {
             char[] cbuf = new char[testSize];
             Arrays.fill(cbuf, 'x');
@@ -125,7 +133,8 @@ public class MessageWriterTest
         final int testSize = writerBufferSize + 16;
 
         WholeMessageCapture capture = new WholeMessageCapture();
-        try (MessageWriter writer = new MessageWriter(capture, writerBufferSize))
+        capture.setOutputBufferSize(writerBufferSize);
+        try (MessageWriter writer = new MessageWriter(capture, bufferPool))
         {
             char[] cbuf = new char[testSize];
             Arrays.fill(cbuf, 'x');
@@ -163,7 +172,7 @@ public class MessageWriterTest
             if (frame.getOpCode() == OpCode.TEXT)
                 activeMessage = new Utf8StringBuilder();
 
-            activeMessage.append(frame.getPayload());
+            activeMessage.append(frame.getPayload().slice());
 
             if (frame.isFin())
             {

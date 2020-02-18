@@ -425,7 +425,7 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
             extensionStack,
             WebSocketConstants.SPEC_VERSION_STRING);
 
-        WebSocketCoreSession coreSession = new WebSocketCoreSession(frameHandler, Behavior.CLIENT, negotiated);
+        WebSocketCoreSession coreSession = new WebSocketCoreSession(frameHandler, Behavior.CLIENT, negotiated, wsClient.getWebSocketComponents());
         customizer.customize(coreSession);
 
         HttpClient httpClient = wsClient.getHttpClient();

@@ -82,6 +82,12 @@ public interface CoreSession extends OutgoingFrames, Configuration
     Behavior getBehavior();
 
     /**
+     * TODO
+     * @return
+     */
+    WebSocketComponents getWebSocketComponents();
+
+    /**
      * @return The shared ByteBufferPool
      */
     ByteBufferPool getByteBufferPool();
@@ -210,6 +216,12 @@ public interface CoreSession extends OutgoingFrames, Configuration
 
         @Override
         public Behavior getBehavior()
+        {
+            return null;
+        }
+
+        @Override
+        public WebSocketComponents getWebSocketComponents()
         {
             return null;
         }

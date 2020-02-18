@@ -212,7 +212,7 @@ public class ClientCloseTest
         confirmConnection(clientSocket, clientConnectFuture);
 
         clientSocket.getSession().getRemote().sendString("too-large-message");
-        clientSocket.assertReceivedCloseEvent(timeout, is(StatusCode.MESSAGE_TOO_LARGE), containsString("exceeds maximum size"));
+        clientSocket.assertReceivedCloseEvent(timeout, is(StatusCode.MESSAGE_TOO_LARGE), containsString("Text message too large"));
 
         // client should have noticed the error
         assertThat("OnError Latch", clientSocket.errorLatch.await(2, SECONDS), is(true));

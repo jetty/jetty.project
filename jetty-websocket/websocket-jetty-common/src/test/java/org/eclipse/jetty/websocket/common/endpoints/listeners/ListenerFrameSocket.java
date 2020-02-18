@@ -22,8 +22,8 @@ import org.eclipse.jetty.websocket.api.Frame;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketFrameListener;
 import org.eclipse.jetty.websocket.common.EventQueue;
-import org.eclipse.jetty.websocket.common.util.TextUtil;
 import org.eclipse.jetty.websocket.core.CloseStatus;
+import org.eclipse.jetty.websocket.util.TextUtil;
 
 public class ListenerFrameSocket implements WebSocketFrameListener
 {

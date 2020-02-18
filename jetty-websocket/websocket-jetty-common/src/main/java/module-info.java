@@ -22,11 +22,9 @@ import org.eclipse.jetty.websocket.common.ExtensionConfigParser;
 module org.eclipse.jetty.websocket.jetty.common
 {
     exports org.eclipse.jetty.websocket.common;
-    exports org.eclipse.jetty.websocket.common.invoke;
-    exports org.eclipse.jetty.websocket.common.message;
-    exports org.eclipse.jetty.websocket.common.util;
 
     requires transitive org.eclipse.jetty.websocket.core;
+    requires transitive org.eclipse.jetty.websocket.util;
     requires transitive org.eclipse.jetty.websocket.jetty.api;
 
     provides ExtensionConfig.Parser with ExtensionConfigParser;
