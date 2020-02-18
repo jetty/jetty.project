@@ -142,33 +142,6 @@ public class Request implements HttpServletRequest
 {
     public static final String __MULTIPART_CONFIG_ELEMENT = "org.eclipse.jetty.multipartConfig";
 
-    public static final HttpServletMapping __NULL_MAPPING = new HttpServletMapping()
-    {
-        @Override
-        public String getMatchValue()
-        {
-            return "";
-        }
-
-        @Override
-        public String getPattern()
-        {
-            return "";
-        }
-
-        @Override
-        public String getServletName()
-        {
-            return "";
-        }
-
-        @Override
-        public MappingMatch getMappingMatch()
-        {
-            return null;
-        }
-    };
-
     private static final Logger LOG = Log.getLogger(Request.class);
     private static final Collection<Locale> __defaultLocale = Collections.singleton(Locale.getDefault());
     private static final int INPUT_NONE = 0;
@@ -219,9 +192,6 @@ public class Request implements HttpServletRequest
     
     public static HttpServletMapping getServletMapping(PathSpec pathSpec, String servletPath, String servletName)
     {
-        if (pathSpec == null || servletPath == null)
-            return __NULL_MAPPING;
-
         final MappingMatch match;
         final String mapping;
         if (pathSpec instanceof ServletPathSpec)
@@ -266,21 +236,21 @@ public class Request implements HttpServletRequest
             @Override
             public String getMatchValue()
             {
-                return mapping;
+                return (mapping == null ? "" : mapping);
             }
 
             @Override
             public String getPattern()
             {
                 if (pathSpec != null)
-                    pathSpec.toString();
-                return null;
+                    return pathSpec.getDeclaration();
+                return "";
             }
 
             @Override
             public String getServletName()
             {
-                return servletName;
+                return (servletName == null ? "" : servletName);
             }
 
             @Override
@@ -288,6 +258,14 @@ public class Request implements HttpServletRequest
             {
                 return match;
             }
+
+            @Override
+            public String toString()
+            {
+                return "HttpServletMapping{matchValue=" + getMatchValue() + 
+                    ", pattern=" + getPattern() + ", servletName=" + getServletName() + 
+                    ", mappingMatch=" + getMappingMatch() + "}";
+            }    
         };
     }
 
