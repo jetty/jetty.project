@@ -39,11 +39,11 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.SocketChannelEndPoint;
+import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.log.StacklessLogging;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 

@@ -28,10 +28,10 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
@@ -41,7 +41,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 @Disabled
 public class QueueBenchmarkTest
 {
-    private static final Logger logger = Log.getLogger(QueueBenchmarkTest.class);
+    private static final Logger logger = LoggerFactory.getLogger(QueueBenchmarkTest.class);
     private static final Runnable ELEMENT = () ->
     {
     };

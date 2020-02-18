@@ -85,9 +85,9 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.component.Graceful;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * ContextHandler.
@@ -128,7 +128,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
     private static final String UNIMPLEMENTED_USE_SERVLET_CONTEXT_HANDLER = "Unimplemented {} - use org.eclipse.jetty.servlet.ServletContextHandler";
 
-    private static final Logger LOG = Log.getLogger(ContextHandler.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ContextHandler.class);
 
     private static final ThreadLocal<Context> __context = new ThreadLocal<>();
 
@@ -526,9 +526,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         StringBuilder classpath = new StringBuilder();
         for (int i = 0; i < urls.length; i++)
         {
+            URL url = urls[i];
             try
             {
-                Resource resource = newResource(urls[i]);
+                Resource resource = newResource(url);
                 File file = resource.getFile();
                 if (file != null && file.exists())
                 {
@@ -539,7 +540,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             }
             catch (IOException e)
             {
-                LOG.debug(e);
+                LOG.debug("Could not found resource: {}", url, e);
             }
         }
         if (classpath.length() == 0)
@@ -759,7 +760,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             throw new IllegalStateException("Null contextPath");
 
         if (_logger == null)
-            _logger = Log.getLogger(ContextHandler.class.getName() + getLogNameSuffix());
+            _logger = LoggerFactory.getLogger(ContextHandler.class.getName() + getLogNameSuffix());
 
         ClassLoader oldClassloader = null;
         Thread currentThread = null;
@@ -952,7 +953,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                     }
                     catch (Throwable e)
                     {
-                        LOG.warn(e);
+                        LOG.warn("Unable to exit scope", e);
                     }
                 }
             }
@@ -1275,7 +1276,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 }
                 catch (Throwable e)
                 {
-                    LOG.warn(e);
+                    LOG.warn("Unable to enter scope", e);
                 }
             }
         }
@@ -1296,7 +1297,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 }
                 catch (Throwable e)
                 {
-                    LOG.warn(e);
+                    LOG.warn("Unable to exit scope", e);
                 }
             }
         }
@@ -1597,7 +1598,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         catch (Exception e)
         {
             LOG.warn(e.toString());
-            LOG.debug(e);
+            LOG.debug("Unable to set baseResource: {}", resourceBase, e);
             throw new IllegalArgumentException(resourceBase);
         }
     }
@@ -1810,7 +1811,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         }
         catch (Exception e)
         {
-            LOG.ignore(e);
+            LOG.trace("IGNORED", e);
         }
 
         return null;
@@ -1907,7 +1908,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         }
         catch (Exception e)
         {
-            LOG.ignore(e);
+            LOG.trace("IGNORED", e);
         }
         return Collections.emptySet();
     }
@@ -2118,7 +2119,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             }
             catch (Exception e)
             {
-                LOG.ignore(e);
+                LOG.trace("IGNORED", e);
             }
             return null;
         }
@@ -2148,7 +2149,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             }
             catch (Exception e)
             {
-                LOG.ignore(e);
+                LOG.trace("IGNORED", e);
             }
 
             return null;
@@ -2182,7 +2183,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             }
             catch (Exception e)
             {
-                LOG.ignore(e);
+                LOG.trace("IGNORED", e);
                 return null;
             }
         }

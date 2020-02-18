@@ -31,11 +31,12 @@ import javax.servlet.http.HttpSession;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.StacklessLogging;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -46,6 +47,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
  */
 public class DeleteUnloadableSessionTest
 {
+    private static final Logger LOG_SESSION = LoggerFactory.getLogger("org.eclipse.jetty.server.session");
 
     /**
      * DelSessionDataStore
@@ -158,7 +160,7 @@ public class DeleteUnloadableSessionTest
         ServletHolder holder = new ServletHolder(servlet);
         context.addServlet(holder, servletMapping);
 
-        try (StacklessLogging stackless = new StacklessLogging(Log.getLogger("org.eclipse.jetty.server.session")))
+        try (StacklessLogging ignored = new StacklessLogging(LOG_SESSION))
         {
             server.start();
             int port = server.getPort();

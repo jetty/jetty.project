@@ -46,13 +46,11 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.tools.HttpTester;
+import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.LocalConnector.LocalEndPoint;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.log.StacklessLogging;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -60,6 +58,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -798,7 +798,7 @@ public class HttpConnectionTest
     @Test
     public void testBadHostPort() throws Exception
     {
-        Log.getLogger(HttpParser.class).info("badMessage: Number formate exception expected ...");
+        LoggerFactory.getLogger(HttpParser.class).info("badMessage: Number formate exception expected ...");
         String response;
 
         response = connector.getResponse("GET http://localhost:EXPECTED_NUMBER_FORMAT_EXCEPTION/ HTTP/1.1\r\n" +
@@ -842,7 +842,7 @@ public class HttpConnectionTest
     @Test
     public void testBadUTF8FallsbackTo8859() throws Exception
     {
-        Log.getLogger(HttpParser.class).info("badMessage: bad encoding expected ...");
+        LoggerFactory.getLogger(HttpParser.class).info("badMessage: bad encoding expected ...");
         String response;
 
         response = connector.getResponse("GET /foo/bar%c0%00 HTTP/1.1\r\n" +
@@ -944,7 +944,7 @@ public class HttpConnectionTest
             checkContains(response, offset, "12345");
 
             offset = 0;
-            Log.getLogger(DumpHandler.class).info("Expecting java.io.UnsupportedEncodingException");
+            LoggerFactory.getLogger(DumpHandler.class).info("Expecting java.io.UnsupportedEncodingException");
             response = connector.getResponse("GET /R1 HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
                 "Transfer-Encoding: chunked\r\n" +
@@ -1120,8 +1120,8 @@ public class HttpConnectionTest
             "\r\n" +
             "abcdefghij\r\n";
 
-        Logger logger = Log.getLogger(HttpChannel.class);
-        try (StacklessLogging stackless = new StacklessLogging(logger))
+        Logger logger = LoggerFactory.getLogger(HttpChannel.class);
+        try (StacklessLogging ignored = new StacklessLogging(logger))
         {
             logger.info("EXPECTING: java.lang.IllegalStateException...");
             String response = connector.getResponse(requests);
@@ -1245,7 +1245,7 @@ public class HttpConnectionTest
         });
         server.start();
 
-        Logger logger = Log.getLogger(HttpChannel.class);
+        Logger logger = LoggerFactory.getLogger(HttpChannel.class);
         String response = null;
         try (StacklessLogging stackless = new StacklessLogging(logger))
         {
@@ -1270,7 +1270,7 @@ public class HttpConnectionTest
     public void testAsterisk() throws Exception
     {
         String response = null;
-        try (StacklessLogging stackless = new StacklessLogging(HttpParser.LOG))
+        try (StacklessLogging ignored = new StacklessLogging(HttpParser.class))
         {
             int offset = 0;
 

@@ -29,15 +29,15 @@ import java.net.URLConnection;
 import java.nio.channels.ReadableByteChannel;
 
 import org.eclipse.jetty.util.URIUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * URL resource class.
  */
 public class URLResource extends Resource
 {
-    private static final Logger LOG = Log.getLogger(URLResource.class);
+    private static final Logger LOG = LoggerFactory.getLogger(URLResource.class);
     protected final URL _url;
     protected final String _urlString;
 
@@ -69,7 +69,7 @@ public class URLResource extends Resource
             }
             catch (IOException e)
             {
-                LOG.ignore(e);
+                LOG.trace("IGNORED", e);
             }
         }
         return _connection != null;
@@ -89,7 +89,7 @@ public class URLResource extends Resource
             }
             catch (IOException e)
             {
-                LOG.ignore(e);
+                LOG.trace("IGNORED", e);
             }
             _in = null;
         }
@@ -114,7 +114,7 @@ public class URLResource extends Resource
         }
         catch (IOException e)
         {
-            LOG.ignore(e);
+            LOG.trace("IGNORED", e);
         }
         return _in != null;
     }

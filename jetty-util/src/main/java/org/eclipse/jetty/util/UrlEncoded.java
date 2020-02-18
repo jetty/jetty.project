@@ -27,8 +27,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.eclipse.jetty.util.TypeUtil.convertHexDigit;
 
@@ -58,21 +58,30 @@ import static org.eclipse.jetty.util.TypeUtil.convertHexDigit;
 @SuppressWarnings("serial")
 public class UrlEncoded extends MultiMap<String> implements Cloneable
 {
-    static final Logger LOG = Log.getLogger(UrlEncoded.class);
+    static final Logger LOG = LoggerFactory.getLogger(UrlEncoded.class);
 
     public static final Charset ENCODING;
 
     static
     {
         Charset encoding;
+        String charset = null;
         try
         {
-            String charset = System.getProperty("org.eclipse.jetty.util.UrlEncoding.charset");
-            encoding = charset == null ? StandardCharsets.UTF_8 : Charset.forName(charset);
+            charset = System.getProperty("org.eclipse.jetty.util.UrlEncoding.charset");
+            if (charset == null)
+            {
+                charset = StandardCharsets.UTF_8.toString();
+                encoding = StandardCharsets.UTF_8;
+            }
+            else
+            {
+                encoding = Charset.forName(charset);
+            }
         }
         catch (Exception e)
         {
-            LOG.warn(e);
+            LOG.warn("Unable to set default UrlEncoding charset: " + charset, e);
             encoding = StandardCharsets.UTF_8;
         }
         ENCODING = encoding;

@@ -33,17 +33,21 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
+import org.eclipse.jetty.logging.JettyAppender;
+import org.eclipse.jetty.logging.JettyLogger;
+import org.eclipse.jetty.logging.JettyLoggerConfiguration;
+import org.eclipse.jetty.logging.StdErrAppender;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.log.StdErrLog;
 import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -1144,33 +1148,38 @@ public class XmlConfigurationTest
                 "  <Get name=\"obsolete\" />" +
                 "</Configure>");
 
+        Logger slf4jLogger = LoggerFactory.getLogger(XmlConfiguration.class);
+        Assumptions.assumeTrue(slf4jLogger instanceof JettyLogger);
+
         ByteArrayOutputStream logBytes = null;
-        Logger logger = Log.getLogger(XmlConfiguration.class);
-        logger.setDebugEnabled(true);
-        if (logger instanceof StdErrLog)
+        JettyLogger jettyLogger = (JettyLogger)slf4jLogger;
+        JettyAppender oldAppender = jettyLogger.getAppender();
+        int oldLevel = jettyLogger.getLevel();
+        try
         {
-            StdErrLog stdErrLog = (StdErrLog)logger;
+            JettyLoggerConfiguration defConfig = new JettyLoggerConfiguration();
             logBytes = new ByteArrayOutputStream();
-            stdErrLog.setStdErrStream(new PrintStream(logBytes));
+            StdErrAppender testAppender = new StdErrAppender(defConfig, new PrintStream(logBytes, true));
+            jettyLogger.setAppender(testAppender);
+            xmlConfiguration.configure();
         }
-
-        xmlConfiguration.configure();
-
-        logger.setDebugEnabled(false);
-        if (logBytes != null)
+        finally
         {
-            String[] lines = logBytes.toString(UTF_8.name()).split(System.lineSeparator());
-            List<String> warnings = Arrays.stream(lines)
-                .filter(line -> line.contains(":WARN:"))
-                .filter(line -> line.contains(testClass.getSimpleName()))
-                .collect(Collectors.toList());
-            // 1. Deprecated constructor
-            // 2. Deprecated <Set> method
-            // 3. Deprecated <Get> method
-            // 4. Deprecated <Call> method
-            // 5. Deprecated <Set> field
-            // 6. Deprecated <Get> field
-            assertEquals(6, warnings.size());
+            jettyLogger.setAppender(oldAppender);
+            jettyLogger.setLevel(oldLevel);
         }
+
+        String[] lines = logBytes.toString(UTF_8.name()).split(System.lineSeparator());
+        List<String> warnings = Arrays.stream(lines)
+            .filter(line -> line.contains(":WARN:"))
+            .filter(line -> line.contains(testClass.getSimpleName()))
+            .collect(Collectors.toList());
+        // 1. Deprecated constructor
+        // 2. Deprecated <Set> method
+        // 3. Deprecated <Get> method
+        // 4. Deprecated <Call> method
+        // 5. Deprecated <Set> field
+        // 6. Deprecated <Get> field
+        assertEquals(6, warnings.size());
     }
 }

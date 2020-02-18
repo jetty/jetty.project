@@ -52,11 +52,11 @@ public class GCThreadLeakPreventer extends AbstractLeakPreventer
         }
         catch (ClassNotFoundException e)
         {
-            LOG.ignore(e);
+            LOG.trace("IGNORED", e);
         }
         catch (Exception e)
         {
-            LOG.warn(e);
+            LOG.warn("Unable to set GC latency", e);
         }
     }
 }

@@ -23,6 +23,7 @@ module org.eclipse.jetty.servlet
     exports org.eclipse.jetty.servlet.listener;
 
     requires transitive org.eclipse.jetty.security;
+    requires org.slf4j;
 
     // Only required if using StatisticsServlet.
     requires static java.management;

@@ -47,7 +47,7 @@ public class DOMLeakPreventer extends AbstractLeakPreventer
         }
         catch (Exception e)
         {
-            LOG.warn(e);
+            LOG.warn("Unable to ping document builder", e);
         }
     }
 }

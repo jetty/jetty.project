@@ -24,7 +24,6 @@
             @{argLine} ${jetty.surefire.argLine}
             --add-modules java.security.jgss
             --add-modules org.eclipse.jetty.jmx
-            --add-modules org.slf4j
           </argLine>
         </configuration>
       </plugin>
@@ -118,12 +117,22 @@
       <version>${project.version}</version>
     </dependency>
     <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-jmx</artifactId>
       <version>${project.version}</version>
       <optional>true</optional>
     </dependency>
 
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-slf4j-impl</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
       <artifactId>jetty-servlet-api</artifactId>
@@ -152,16 +161,6 @@
       <groupId>net.minidev</groupId>
       <artifactId>json-smart</artifactId>
       <version>2.3</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-simple</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>

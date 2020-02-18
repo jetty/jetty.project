@@ -19,5 +19,5 @@
 /**
  * Jetty JMX : Jetty Logging JMX Integration
  */
-package org.eclipse.jetty.util.log.jmx;
+package org.eclipse.jetty.logging.jmx;
 

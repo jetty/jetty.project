@@ -21,12 +21,10 @@ package org.eclipse.jetty.util.resource;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.DirectoryIteratorException;
@@ -42,19 +40,18 @@ import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Java NIO Path Resource.
  */
 public class PathResource extends Resource
 {
-    private static final Logger LOG = Log.getLogger(PathResource.class);
+    private static final Logger LOG = LoggerFactory.getLogger(PathResource.class);
     private static final LinkOption[] NO_FOLLOW_LINKS = new LinkOption[]{LinkOption.NOFOLLOW_LINKS};
     private static final LinkOption[] FOLLOW_LINKS = new LinkOption[]{};
 
@@ -87,7 +84,7 @@ public class PathResource extends Resource
                 // If the toRealPath() call fails, then let
                 // the alias checking routines continue on
                 // to other techniques.
-                LOG.ignore(ignored);
+                LOG.trace("IGNORED", ignored);
             }
         }
 
@@ -112,7 +109,7 @@ public class PathResource extends Resource
         }
         catch (IOException e)
         {
-            LOG.ignore(e);
+            LOG.trace("IGNORED", e);
         }
         catch (Exception e)
         {
@@ -285,7 +282,7 @@ public class PathResource extends Resource
         }
         catch (Exception e)
         {
-            LOG.ignore(e);
+            LOG.trace("IGNORED", e);
             throw new IOException("Unable to build Path from: " + uri, e);
         }
 
@@ -364,7 +361,7 @@ public class PathResource extends Resource
         }
         catch (IOException e)
         {
-            LOG.ignore(e);
+            LOG.trace("IGNORED", e);
             return false;
         }
     }
@@ -482,7 +479,7 @@ public class PathResource extends Resource
         }
         catch (IOException e)
         {
-            LOG.ignore(e);
+            LOG.trace("IGNORED", e);
             return 0;
         }
     }
@@ -549,11 +546,11 @@ public class PathResource extends Resource
         }
         catch (DirectoryIteratorException e)
         {
-            LOG.debug(e);
+            LOG.debug("Directory list failure", e);
         }
         catch (IOException e)
         {
-            LOG.debug(e);
+            LOG.debug("Directory list access failure", e);
         }
         return null;
     }
@@ -571,7 +568,7 @@ public class PathResource extends Resource
             }
             catch (IOException e)
             {
-                LOG.ignore(e);
+                LOG.trace("IGNORED", e);
                 return false;
             }
         }

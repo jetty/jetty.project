@@ -37,7 +37,6 @@ import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.osgi.boot.OSGiServerConstants;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.log.StdErrLog;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.ops4j.pax.exam.CoreOptions;
 import org.ops4j.pax.exam.Option;
@@ -305,7 +304,6 @@ public class TestOSGiUtil
         options.add(mavenBundle().groupId("log4j").artifactId("log4j").versionAsInProject().start());
         options.add(systemProperty("org.eclipse.jetty.util.log.class").value(Slf4jLog.class.getName()));
          */
-        options.add(systemProperty("org.eclipse.jetty.util.log.class").value(StdErrLog.class.getName()));
         options.add(systemProperty("org.eclipse.jetty.LEVEL").value("INFO"));
         return options;
     }

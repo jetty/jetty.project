@@ -24,9 +24,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.jetty.http.HttpParser.State;
+import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.toolchain.test.Net;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.log.StacklessLogging;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;

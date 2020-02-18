@@ -16,9 +16,9 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.util.log.jmx;
+package org.eclipse.jetty.logging.jmx;
 
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.eclipse.jetty.jmx.ObjectMBean;
@@ -26,7 +26,6 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.annotation.Name;
-import org.eclipse.jetty.util.log.Log;
 
 /**
  *
@@ -42,19 +41,24 @@ public class LogMBean extends ObjectMBean
     @ManagedAttribute(value = "list of instantiated loggers")
     public List<String> getLoggers()
     {
-        List<String> keySet = new ArrayList<String>(Log.getLoggers().keySet());
-        return keySet;
+        // TODO: use JettyLoggerFactory
+//        List<String> keySet = new ArrayList<String>(Log.getLoggers().keySet());
+//        return keySet;
+        return Collections.emptyList();
     }
 
     @ManagedOperation(value = "true if debug enabled for the given logger")
     public boolean isDebugEnabled(@Name("logger") String logger)
     {
-        return Log.getLogger(logger).isDebugEnabled();
+        // TODO: use JettyLogger
+        // return Log.getLogger(logger).isDebugEnabled();
+        return false;
     }
 
     @ManagedOperation(value = "Set debug enabled for given logger")
     public void setDebugEnabled(@Name("logger") String logger, @Name("enabled") Boolean enabled)
     {
-        Log.getLogger(logger).setDebugEnabled(enabled);
+        // TODO: set level on JettyLogger
+        // Log.getLogger(logger).setDebugEnabled(enabled);
     }
 }

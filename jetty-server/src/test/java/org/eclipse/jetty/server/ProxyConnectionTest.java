@@ -18,9 +18,9 @@
 
 package org.eclipse.jetty.server;
 
+import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.toolchain.test.Net;
-import org.eclipse.jetty.util.log.StacklessLogging;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assumptions;

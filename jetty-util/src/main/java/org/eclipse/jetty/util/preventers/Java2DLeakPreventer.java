@@ -41,7 +41,7 @@ public class Java2DLeakPreventer extends AbstractLeakPreventer
         }
         catch (ClassNotFoundException e)
         {
-            LOG.ignore(e);
+            LOG.trace("IGNORED", e);
         }
     }
 }

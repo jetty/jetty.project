@@ -49,8 +49,8 @@ import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static java.nio.file.StandardWatchEventKinds.ENTRY_CREATE;
 import static java.nio.file.StandardWatchEventKinds.ENTRY_DELETE;
@@ -453,7 +453,7 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
             }
             catch (Exception e)
             {
-                LOG.ignore(e);
+                LOG.trace("IGNORED", e);
                 return DirAction.IGNORE;
             }
         }
@@ -475,7 +475,7 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
             }
             catch (IOException e)
             {
-                LOG.ignore(e);
+                LOG.trace("IGNORED", e);
                 return false;
             }
         }
@@ -724,7 +724,7 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
         }
     }
 
-    static final Logger LOG = Log.getLogger(PathWatcher.class);
+    static final Logger LOG = LoggerFactory.getLogger(PathWatcher.class);
 
     @SuppressWarnings("unchecked")
     protected static <T> WatchEvent<T> cast(WatchEvent<?> event)
@@ -953,7 +953,7 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
         catch (Throwable t)
         {
             // Unknown JVM environment, assuming native.
-            LOG.ignore(t);
+            LOG.trace("IGNORED", t);
         }
 
         this.watchModifiers = modifiers;
@@ -1172,11 +1172,11 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
             {
                 if (isRunning())
                 {
-                    LOG.warn(e);
+                    LOG.warn("Watch failed", e);
                 }
                 else
                 {
-                    LOG.ignore(e);
+                    LOG.trace("IGNORED", e);
                 }
             }
         }
@@ -1235,7 +1235,7 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
                 }
                 catch (IOException e)
                 {
-                    LOG.warn(e);
+                    LOG.warn("Unable to register", e);
                 }
             }
         }
@@ -1341,7 +1341,7 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
                 }
                 catch (Throwable t)
                 {
-                    LOG.warn(t);
+                    LOG.warn("Unable to notify PathWatch Events", t);
                 }
             }
             else
@@ -1364,7 +1364,7 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
                         }
                         catch (Throwable t)
                         {
-                            LOG.warn(t);
+                            LOG.warn("Unable to notify PathWatch Events", t);
                         }
                     }
                 }

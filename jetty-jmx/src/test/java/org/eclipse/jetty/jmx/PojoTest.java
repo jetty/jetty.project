@@ -26,7 +26,7 @@ import com.openpojo.validation.Validator;
 import com.openpojo.validation.ValidatorBuilder;
 import com.openpojo.validation.test.impl.GetterTester;
 import com.openpojo.validation.test.impl.SetterTester;
-import org.eclipse.jetty.util.log.jmx.LogMBean;
+import org.eclipse.jetty.logging.jmx.LogMBean;
 import org.junit.jupiter.api.Test;
 
 /*

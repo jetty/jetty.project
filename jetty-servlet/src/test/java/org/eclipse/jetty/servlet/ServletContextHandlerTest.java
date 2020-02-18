@@ -60,6 +60,7 @@ import javax.servlet.http.HttpSessionIdListener;
 import javax.servlet.http.HttpSessionListener;
 
 import org.eclipse.jetty.http.pathmap.MappedResource;
+import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.security.RoleInfo;
 import org.eclipse.jetty.security.SecurityHandler;
@@ -80,14 +81,12 @@ import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.Decorator;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.log.StacklessLogging;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.function.Executable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -104,6 +103,8 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 public class ServletContextHandlerTest
 {
+    private static final Logger LOG_CTXROOT = LoggerFactory.getLogger(ContextHandler.class.getName() + ".ROOT");
+
     private Server _server;
     private LocalConnector _connector;
 
@@ -725,12 +726,10 @@ public class ServletContextHandlerTest
     public void testAddServletFromServlet() throws Exception
     {
         //A servlet cannot be added by another servlet
-        Logger logger = Log.getLogger(ContextHandler.class.getName() + "ROOT");
-        
-        try (StacklessLogging stackless = new StacklessLogging(logger))
+        try (StacklessLogging ignored = new StacklessLogging(LOG_CTXROOT))
         {
             ServletContextHandler context = new ServletContextHandler();
-            context.setLogger(logger);
+            context.setLogger(LOG_CTXROOT);
             ServletHolder holder = context.addServlet(ServletAddingServlet.class, "/start");
             context.getServletHandler().setStartWithUnavailable(false);
             holder.setInitOrder(0);
@@ -754,12 +753,10 @@ public class ServletContextHandlerTest
     public void testAddFilterFromServlet() throws Exception
     {
         //A filter cannot be added from a servlet
-        Logger logger = Log.getLogger(ContextHandler.class.getName() + "ROOT");
-
-        try (StacklessLogging stackless = new StacklessLogging(logger))
+        try (StacklessLogging ignored = new StacklessLogging(LOG_CTXROOT))
         {
             ServletContextHandler context = new ServletContextHandler();
-            context.setLogger(logger);
+            context.setLogger(LOG_CTXROOT);
             ServletHolder holder = context.addServlet(FilterAddingServlet.class, "/filter");
             context.getServletHandler().setStartWithUnavailable(false);
             holder.setInitOrder(0);
@@ -783,12 +780,11 @@ public class ServletContextHandlerTest
     public void testAddServletByClassFromFilter() throws Exception
     {
         //A servlet cannot be added from a Filter
-        Logger logger = Log.getLogger(ContextHandler.class.getName() + "ROOT");
 
-        try (StacklessLogging stackless = new StacklessLogging(logger))
+        try (StacklessLogging ignored = new StacklessLogging(LOG_CTXROOT))
         {
             ServletContextHandler context = new ServletContextHandler();
-            context.setLogger(logger);
+            context.setLogger(LOG_CTXROOT);
             FilterHolder holder = new FilterHolder(new Filter()
             {
                 @Override
@@ -835,12 +831,11 @@ public class ServletContextHandlerTest
     public void testAddServletByInstanceFromFilter() throws Exception
     {
         //A servlet cannot be added from a Filter
-        Logger logger = Log.getLogger(ContextHandler.class.getName() + "ROOT");
 
-        try (StacklessLogging stackless = new StacklessLogging(logger))
+        try (StacklessLogging ignored = new StacklessLogging(LOG_CTXROOT))
         {
             ServletContextHandler context = new ServletContextHandler();
-            context.setLogger(logger);
+            context.setLogger(LOG_CTXROOT);
             FilterHolder holder = new FilterHolder(new Filter()
             {
                 @Override
@@ -887,12 +882,11 @@ public class ServletContextHandlerTest
     public void testAddServletByClassNameFromFilter() throws Exception
     {
         //A servlet cannot be added from a Filter
-        Logger logger = Log.getLogger(ContextHandler.class.getName() + "ROOT");
 
-        try (StacklessLogging stackless = new StacklessLogging(logger))
+        try (StacklessLogging ignored = new StacklessLogging(LOG_CTXROOT))
         {
             ServletContextHandler context = new ServletContextHandler();
-            context.setLogger(logger);
+            context.setLogger(LOG_CTXROOT);
             FilterHolder holder = new FilterHolder(new Filter()
             {
                 @Override

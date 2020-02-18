@@ -19,6 +19,7 @@
 package org.eclipse.jetty.util.log.jmx;
 
 import com.acme.Managed;
+import org.eclipse.jetty.logging.jmx.LogMBean;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

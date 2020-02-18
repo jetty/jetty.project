@@ -23,11 +23,11 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.log.StacklessLogging;
+import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.util.thread.ThreadPool.SizedThreadPool;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
@@ -40,7 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class QueuedThreadPoolTest extends AbstractThreadPoolTest
 {
-    private static final Logger LOG = Log.getLogger(QueuedThreadPoolTest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(QueuedThreadPoolTest.class);
     private final AtomicInteger _jobs = new AtomicInteger();
 
     private static class TestQueuedThreadPool extends QueuedThreadPool
@@ -138,7 +138,7 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
             }
             catch (Exception e)
             {
-                LOG.debug(e);
+                LOG.debug("Oops", e);
             }
             finally
             {
@@ -284,7 +284,7 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         tp.setIdleTimeout(900);
         tp.setThreadsPriority(Thread.NORM_PRIORITY - 1);
 
-        try (StacklessLogging stackless = new StacklessLogging(QueuedThreadPool.class))
+        try (StacklessLogging ignored = new StacklessLogging(QueuedThreadPool.class))
         {
             tp.start();
 
@@ -708,7 +708,7 @@ public class QueuedThreadPoolTest extends AbstractThreadPoolTest
         tp.setMaxThreads(10);
         tp.setIdleTimeout(1000);
         tp.start();
-        try (StacklessLogging stackless = new StacklessLogging(QueuedThreadPool.class))
+        try (StacklessLogging ignored = new StacklessLogging(QueuedThreadPool.class))
         {
             tp.execute(() ->
             {

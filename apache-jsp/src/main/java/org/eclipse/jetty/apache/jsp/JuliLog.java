@@ -18,6 +18,10 @@
 
 package org.eclipse.jetty.apache.jsp;
 
+import java.util.Objects;
+
+import org.slf4j.LoggerFactory;
+
 public class JuliLog implements org.apache.juli.logging.Log
 {
     public static org.apache.juli.logging.Log getInstance(String name)
@@ -25,163 +29,124 @@ public class JuliLog implements org.apache.juli.logging.Log
         return new JuliLog(name);
     }
 
-    private final org.eclipse.jetty.util.log.Logger _logger;
-    private final org.eclipse.jetty.util.log.StdErrLog _stdErrLog;
+    private final org.slf4j.Logger logger;
 
     public JuliLog()
     {
-        _logger = org.eclipse.jetty.util.log.Log.getRootLogger();
-        _stdErrLog = (_logger instanceof org.eclipse.jetty.util.log.StdErrLog) ? (org.eclipse.jetty.util.log.StdErrLog)_logger : null;
+        this(JuliLog.class.getName());
     }
 
     public JuliLog(String name)
     {
-        _logger = org.eclipse.jetty.util.log.Log.getLogger(name);
-        _stdErrLog = (_logger instanceof org.eclipse.jetty.util.log.StdErrLog) ? (org.eclipse.jetty.util.log.StdErrLog)_logger : null;
+        logger = LoggerFactory.getLogger(name);
     }
 
     @Override
     public boolean isDebugEnabled()
     {
-        return _logger.isDebugEnabled();
+        return logger.isDebugEnabled();
     }
 
     @Override
     public boolean isErrorEnabled()
     {
-        return _stdErrLog == null ? true : _stdErrLog.getLevel() <= org.eclipse.jetty.util.log.StdErrLog.LEVEL_WARN;
+        return logger.isErrorEnabled();
     }
 
     @Override
     public boolean isFatalEnabled()
     {
-        return _stdErrLog == null ? true : _stdErrLog.getLevel() <= org.eclipse.jetty.util.log.StdErrLog.LEVEL_WARN;
+        return logger.isErrorEnabled();
     }
 
     @Override
     public boolean isInfoEnabled()
     {
-        return _stdErrLog == null ? true : _stdErrLog.getLevel() <= org.eclipse.jetty.util.log.StdErrLog.LEVEL_INFO;
+        return logger.isInfoEnabled();
     }
 
     @Override
     public boolean isTraceEnabled()
     {
-        return _stdErrLog == null ? true : _stdErrLog.getLevel() <= org.eclipse.jetty.util.log.StdErrLog.LEVEL_DEBUG;
+        return logger.isTraceEnabled();
     }
 
     @Override
     public boolean isWarnEnabled()
     {
-        return _stdErrLog == null ? true : _stdErrLog.getLevel() <= org.eclipse.jetty.util.log.StdErrLog.LEVEL_WARN;
+        return logger.isWarnEnabled();
     }
 
     @Override
     public void trace(Object message)
     {
-        if (message instanceof String)
-            _logger.debug((String)message);
-        else
-            _logger.debug("{}", message);
+        logger.trace(Objects.toString(message));
     }
 
     @Override
     public void trace(Object message, Throwable t)
     {
-        if (message instanceof String)
-            _logger.debug((String)message, t);
-        else
-            _logger.debug("{}", message, t);
+        logger.trace(Objects.toString(message), t);
     }
 
     @Override
     public void debug(Object message)
     {
-        if (message instanceof String)
-            _logger.debug((String)message);
-        else
-            _logger.debug("{}", message);
+        logger.debug(Objects.toString(message));
     }
 
     @Override
     public void debug(Object message, Throwable t)
     {
-        if (message instanceof String)
-            _logger.debug((String)message, t);
-        else
-            _logger.debug("{}", message, t);
+        logger.debug(Objects.toString(message), t);
     }
 
     @Override
     public void info(Object message)
     {
-        if (message instanceof String)
-            _logger.info((String)message);
-        else
-            _logger.info("{}", message);
+        logger.info(Objects.toString(message));
     }
 
     @Override
     public void info(Object message, Throwable t)
     {
-        if (message instanceof String)
-            _logger.info((String)message, t);
-        else
-            _logger.info("{}", message, t);
+        logger.info(Objects.toString(message), t);
     }
 
     @Override
     public void warn(Object message)
     {
-        if (message instanceof String)
-            _logger.warn((String)message);
-        else
-            _logger.warn("{}", message);
+        logger.warn(Objects.toString(message));
     }
 
     @Override
     public void warn(Object message, Throwable t)
     {
-        if (message instanceof String)
-            _logger.warn((String)message, t);
-        else
-            _logger.warn("{}", message, t);
+        logger.warn(Objects.toString(message), t);
     }
 
     @Override
     public void error(Object message)
     {
-        if (message instanceof String)
-            _logger.warn((String)message);
-        else
-            _logger.warn("{}", message);
+        logger.error(Objects.toString(message));
     }
 
     @Override
     public void error(Object message, Throwable t)
     {
-        if (message instanceof String)
-            _logger.warn((String)message, t);
-        else
-            _logger.warn("{}", message, t);
+        logger.error(Objects.toString(message), t);
     }
 
     @Override
     public void fatal(Object message)
     {
-        if (message instanceof String)
-            _logger.warn((String)message);
-        else
-            _logger.warn("{}", message);
+        logger.error(Objects.toString(message));
     }
 
     @Override
     public void fatal(Object message, Throwable t)
     {
-        if (message instanceof String)
-            _logger.warn((String)message, t);
-        else
-            _logger.warn("{}", message, t);
+        logger.error(Objects.toString(message), t);
     }
 }
 
