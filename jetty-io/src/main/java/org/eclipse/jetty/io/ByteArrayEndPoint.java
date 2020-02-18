@@ -355,9 +355,6 @@ public class ByteArrayEndPoint extends AbstractEndPoint
         return getOutput().position() > 0;
     }
 
-    /*
-     * @see org.eclipse.io.EndPoint#fill(org.eclipse.io.Buffer)
-     */
     @Override
     public int fill(ByteBuffer buffer) throws IOException
     {
@@ -400,9 +397,6 @@ public class ByteArrayEndPoint extends AbstractEndPoint
         return filled;
     }
 
-    /*
-     * @see org.eclipse.io.EndPoint#flush(org.eclipse.io.Buffer, org.eclipse.io.Buffer, org.eclipse.io.Buffer)
-     */
     @Override
     public boolean flush(ByteBuffer... buffers) throws IOException
     {
@@ -450,9 +444,6 @@ public class ByteArrayEndPoint extends AbstractEndPoint
         return flushed;
     }
 
-    /**
-     *
-     */
     @Override
     public void reset()
     {
@@ -465,9 +456,6 @@ public class ByteArrayEndPoint extends AbstractEndPoint
         super.reset();
     }
 
-    /*
-     * @see org.eclipse.io.EndPoint#getConnection()
-     */
     @Override
     public Object getTransport()
     {

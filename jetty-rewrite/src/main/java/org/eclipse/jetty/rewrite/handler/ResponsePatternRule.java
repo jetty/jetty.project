@@ -68,10 +68,6 @@ public class ResponsePatternRule extends PatternRule
         _message = message;
     }
 
-    /*
-     * (non-Javadoc)
-     * @see org.eclipse.jetty.server.server.handler.rules.RuleBase#apply(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
-     */
     @Override
     public String apply(String target, HttpServletRequest request, HttpServletResponse response) throws IOException
     {

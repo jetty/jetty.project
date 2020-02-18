@@ -49,9 +49,6 @@ public class Activator implements BundleActivator
         server.getConnectors()[0].addEventListener(new AbstractLifeCycleListener()
         {
 
-            /**
-             * @see org.eclipse.jetty.util.component.AbstractLifeCycle.AbstractLifeCycleListener#lifeCycleStarted(org.eclipse.jetty.util.component.LifeCycle)
-             */
             @Override
             public void lifeCycleStarted(LifeCycle event)
             {

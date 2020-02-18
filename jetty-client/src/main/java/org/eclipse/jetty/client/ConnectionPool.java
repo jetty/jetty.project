@@ -70,11 +70,6 @@ public interface ConnectionPool extends Closeable
      */
     boolean remove(Connection connection);
 
-    /**
-     * Closes this ConnectionPool.
-     *
-     * @see #isClosed()
-     */
     @Override
     void close();
 

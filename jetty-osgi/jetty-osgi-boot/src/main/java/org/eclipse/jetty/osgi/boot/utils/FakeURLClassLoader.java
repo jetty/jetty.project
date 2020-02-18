@@ -52,9 +52,6 @@ public class FakeURLClassLoader extends URLClassLoader
         return _jars;
     }
 
-    /**
-     * @see java.lang.Object#toString()
-     */
     @Override
     public String toString()
     {

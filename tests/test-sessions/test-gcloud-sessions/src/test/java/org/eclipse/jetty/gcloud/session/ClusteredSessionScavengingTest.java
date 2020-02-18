@@ -45,9 +45,6 @@ public class ClusteredSessionScavengingTest extends AbstractClusteredSessionScav
         __testSupport.tearDown();
     }
 
-    /**
-     * @see org.eclipse.jetty.server.session.AbstractTestBase#createSessionDataStoreFactory()
-     */
     @Override
     public SessionDataStoreFactory createSessionDataStoreFactory()
     {

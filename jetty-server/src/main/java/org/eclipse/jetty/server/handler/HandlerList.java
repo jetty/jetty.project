@@ -43,9 +43,6 @@ public class HandlerList extends HandlerCollection
         super(handlers);
     }
 
-    /**
-     * @see Handler#handle(String, Request, HttpServletRequest, HttpServletResponse)
-     */
     @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
         throws IOException, ServletException

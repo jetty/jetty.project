@@ -179,10 +179,6 @@ public abstract class AbstractLoginModule implements LoginModule
         this.commitState = commitState;
     }
 
-    /**
-     * @throws LoginException if unable to abort
-     * @see javax.security.auth.spi.LoginModule#abort()
-     */
     @Override
     public boolean abort() throws LoginException
     {

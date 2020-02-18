@@ -39,9 +39,6 @@ public class ClusteredInvalidateSessionTest extends AbstractClusteredInvalidatio
         MongoTestHelper.dropCollection();
     }
 
-    /**
-     * @see org.eclipse.jetty.server.session.AbstractTestBase#createSessionDataStoreFactory()
-     */
     @Override
     public SessionDataStoreFactory createSessionDataStoreFactory()
     {
