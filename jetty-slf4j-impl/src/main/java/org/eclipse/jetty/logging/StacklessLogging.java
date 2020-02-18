@@ -81,6 +81,23 @@ public class StacklessLogging implements AutoCloseable
         }
     }
 
+    public StacklessLogging(Package... packagesToSquelch)
+    {
+        for (Package pkg : packagesToSquelch)
+        {
+            JettyLogger jettyLogger = loggerFactory.getConfiguredJettyLogger(pkg.getName());
+            // only operate on loggers that are of type StdErrLog
+            if (!jettyLogger.isDebugEnabled())
+            {
+                if (!jettyLogger.isHideStacks())
+                {
+                    jettyLogger.setHideStacks(true);
+                    squelched.add(jettyLogger);
+                }
+            }
+        }
+    }
+
     public StacklessLogging(Logger... logs)
     {
         for (Logger log : logs)
