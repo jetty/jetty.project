@@ -39,9 +39,6 @@ public class JettyServerServiceTracker implements ServiceTrackerCustomizer
 {
     private static Logger LOG = Log.getLogger(JettyServerServiceTracker.class.getName());
 
-    /**
-     * @see org.osgi.util.tracker.ServiceTrackerCustomizer#addingService(org.osgi.framework.ServiceReference)
-     */
     @Override
     public Object addingService(ServiceReference sr)
     {
@@ -73,9 +70,6 @@ public class JettyServerServiceTracker implements ServiceTrackerCustomizer
         }
     }
 
-    /**
-     * @see org.osgi.util.tracker.ServiceTrackerCustomizer#modifiedService(org.osgi.framework.ServiceReference, java.lang.Object)
-     */
     @Override
     public void modifiedService(ServiceReference reference, Object service)
     {
@@ -83,9 +77,6 @@ public class JettyServerServiceTracker implements ServiceTrackerCustomizer
         addingService(reference);
     }
 
-    /**
-     * @see org.osgi.util.tracker.ServiceTrackerCustomizer#removedService(org.osgi.framework.ServiceReference, java.lang.Object)
-     */
     @Override
     public void removedService(ServiceReference reference, Object service)
     {

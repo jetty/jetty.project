@@ -32,9 +32,6 @@ public class ClusteredInvalidationSessionTest extends AbstractClusteredInvalidat
         JdbcTestHelper.shutdown(null);
     }
 
-    /**
-     * @see org.eclipse.jetty.server.session.AbstractTestBase#createSessionDataStoreFactory()
-     */
     @Override
     public SessionDataStoreFactory createSessionDataStoreFactory()
     {

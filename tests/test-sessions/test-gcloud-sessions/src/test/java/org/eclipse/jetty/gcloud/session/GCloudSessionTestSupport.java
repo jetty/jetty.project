@@ -68,9 +68,6 @@ public class GCloudSessionTestSupport
             _d = d;
         }
 
-        /**
-         * @see org.eclipse.jetty.gcloud.session.GCloudSessionDataStoreFactory#getSessionDataStore(org.eclipse.jetty.server.session.SessionHandler)
-         */
         @Override
         public SessionDataStore getSessionDataStore(SessionHandler handler) throws Exception
         {

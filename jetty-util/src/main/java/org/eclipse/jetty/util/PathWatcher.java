@@ -628,9 +628,6 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
             config.setPauseUntil(now + getUpdateQuietTimeMillis());
         }
 
-        /**
-         * @see java.lang.Object#equals(java.lang.Object)
-         */
         @Override
         public boolean equals(Object obj)
         {
@@ -675,9 +672,6 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
             return type;
         }
 
-        /**
-         * @see java.lang.Object#hashCode()
-         */
         @Override
         public int hashCode()
         {
@@ -688,9 +682,6 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
             return result;
         }
 
-        /**
-         * @see java.lang.Object#toString()
-         */
         @Override
         public String toString()
         {
@@ -864,9 +855,6 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
         s.append("]");
     }
 
-    /**
-     * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStart()
-     */
     @Override
     protected void doStart() throws Exception
     {
@@ -896,9 +884,6 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
         super.doStart();
     }
 
-    /**
-     * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStop()
-     */
     @Override
     protected void doStop() throws Exception
     {

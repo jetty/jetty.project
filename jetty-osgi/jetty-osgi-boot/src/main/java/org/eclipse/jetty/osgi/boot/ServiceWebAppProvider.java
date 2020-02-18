@@ -72,9 +72,6 @@ public class ServiceWebAppProvider extends AbstractWebAppProvider implements Ser
             super(bundleContext, filter, null);
         }
 
-        /**
-         * @see org.osgi.util.tracker.ServiceTracker#addingService(org.osgi.framework.ServiceReference)
-         */
         @Override
         public Object addingService(ServiceReference reference)
         {
@@ -83,9 +80,6 @@ public class ServiceWebAppProvider extends AbstractWebAppProvider implements Ser
             return wac;
         }
 
-        /**
-         * @see org.osgi.util.tracker.ServiceTracker#modifiedService(org.osgi.framework.ServiceReference, java.lang.Object)
-         */
         @Override
         public void modifiedService(ServiceReference reference, Object service)
         {
@@ -93,9 +87,6 @@ public class ServiceWebAppProvider extends AbstractWebAppProvider implements Ser
             addingService(reference);
         }
 
-        /**
-         * @see org.osgi.util.tracker.ServiceTracker#removedService(org.osgi.framework.ServiceReference, java.lang.Object)
-         */
         @Override
         public void removedService(ServiceReference reference, Object service)
         {
@@ -229,9 +220,6 @@ public class ServiceWebAppProvider extends AbstractWebAppProvider implements Ser
         return false;
     }
 
-    /**
-     * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStart()
-     */
     @Override
     protected void doStart() throws Exception
     {
@@ -251,9 +239,6 @@ public class ServiceWebAppProvider extends AbstractWebAppProvider implements Ser
         super.doStart();
     }
 
-    /**
-     * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStop()
-     */
     @Override
     protected void doStop() throws Exception
     {

@@ -130,36 +130,24 @@ public class ServletResponseHttpWrapper extends ServletResponseWrapper implement
     {
     }
 
-    /**
-     * @see javax.servlet.http.HttpServletResponse#getHeader(java.lang.String)
-     */
     @Override
     public String getHeader(String name)
     {
         return null;
     }
 
-    /**
-     * @see javax.servlet.http.HttpServletResponse#getHeaderNames()
-     */
     @Override
     public Collection<String> getHeaderNames()
     {
         return null;
     }
 
-    /**
-     * @see javax.servlet.http.HttpServletResponse#getHeaders(java.lang.String)
-     */
     @Override
     public Collection<String> getHeaders(String name)
     {
         return null;
     }
 
-    /**
-     * @see javax.servlet.http.HttpServletResponse#getStatus()
-     */
     @Override
     public int getStatus()
     {

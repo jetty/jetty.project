@@ -352,9 +352,6 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         _roles.addAll(roles);
     }
 
-    /**
-     * @see org.eclipse.jetty.security.ConstraintAware#addConstraintMapping(org.eclipse.jetty.security.ConstraintMapping)
-     */
     @Override
     public void addConstraintMapping(ConstraintMapping mapping)
     {
@@ -377,9 +374,6 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         }
     }
 
-    /**
-     * @see org.eclipse.jetty.security.ConstraintAware#addRole(java.lang.String)
-     */
     @Override
     public void addRole(String role)
     {
@@ -399,9 +393,6 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         }
     }
 
-    /**
-     * @see org.eclipse.jetty.security.SecurityHandler#doStart()
-     */
     @Override
     protected void doStart() throws Exception
     {
@@ -677,9 +668,6 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         return constraintInfo != null && ((RoleInfo)constraintInfo).isChecked();
     }
 
-    /**
-     * @see org.eclipse.jetty.security.SecurityHandler#checkWebResourcePermissions(java.lang.String, org.eclipse.jetty.server.Request, org.eclipse.jetty.server.Response, java.lang.Object, org.eclipse.jetty.server.UserIdentity)
-     */
     @Override
     protected boolean checkWebResourcePermissions(String pathInContext, Request request, Response response, Object constraintInfo, UserIdentity userIdentity)
         throws IOException
@@ -735,9 +723,6 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
             DumpableCollection.from("constraints", _constraintMappings));
     }
 
-    /**
-     * @see org.eclipse.jetty.security.ConstraintAware#setDenyUncoveredHttpMethods(boolean)
-     */
     @Override
     public void setDenyUncoveredHttpMethods(boolean deny)
     {

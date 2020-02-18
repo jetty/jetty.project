@@ -208,9 +208,6 @@ public abstract class AbstractContextProvider extends AbstractLifeCycle implemen
         return _serverWrapper;
     }
 
-    /**
-     * @see org.eclipse.jetty.deploy.AppProvider#createContextHandler(org.eclipse.jetty.deploy.App)
-     */
     @Override
     public ContextHandler createContextHandler(App app) throws Exception
     {

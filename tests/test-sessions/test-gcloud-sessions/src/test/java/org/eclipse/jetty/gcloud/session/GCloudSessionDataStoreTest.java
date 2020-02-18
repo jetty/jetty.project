@@ -81,9 +81,6 @@ public class GCloudSessionDataStoreTest extends AbstractSessionDataStoreTest
         return __testSupport.checkSessionExists(data.getId());
     }
 
-    /**
-     *
-     */
     @Override
     public boolean checkSessionPersisted(SessionData data) throws Exception
     {

@@ -171,9 +171,6 @@ public class JettyHttpsExchange extends HttpsExchange implements JettyExchange
         return _delegate.toString();
     }
 
-    /**
-     * @see com.sun.net.httpserver.HttpsExchange#getSSLSession()
-     */
     @Override
     public SSLSession getSSLSession()
     {

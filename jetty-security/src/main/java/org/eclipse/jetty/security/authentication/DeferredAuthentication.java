@@ -55,9 +55,6 @@ public class DeferredAuthentication implements Authentication.Deferred
         this._authenticator = authenticator;
     }
 
-    /**
-     * @see org.eclipse.jetty.server.Authentication.Deferred#authenticate(ServletRequest)
-     */
     @Override
     public Authentication authenticate(ServletRequest request)
     {
@@ -83,9 +80,6 @@ public class DeferredAuthentication implements Authentication.Deferred
         return this;
     }
 
-    /**
-     * @see org.eclipse.jetty.server.Authentication.Deferred#authenticate(javax.servlet.ServletRequest, javax.servlet.ServletResponse)
-     */
     @Override
     public Authentication authenticate(ServletRequest request, ServletResponse response)
     {
@@ -106,9 +100,6 @@ public class DeferredAuthentication implements Authentication.Deferred
         return this;
     }
 
-    /**
-     * @see org.eclipse.jetty.server.Authentication.Deferred#login(String, Object, ServletRequest)
-     */
     @Override
     public Authentication login(String username, Object password, ServletRequest request)
     {

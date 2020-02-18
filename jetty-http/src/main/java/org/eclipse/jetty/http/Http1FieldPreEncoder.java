@@ -28,18 +28,12 @@ import static java.nio.charset.StandardCharsets.ISO_8859_1;
 public class Http1FieldPreEncoder implements HttpFieldPreEncoder
 {
 
-    /**
-     * @see org.eclipse.jetty.http.HttpFieldPreEncoder#getHttpVersion()
-     */
     @Override
     public HttpVersion getHttpVersion()
     {
         return HttpVersion.HTTP_1_0;
     }
 
-    /**
-     * @see org.eclipse.jetty.http.HttpFieldPreEncoder#getEncodedField(org.eclipse.jetty.http.HttpHeader, java.lang.String, java.lang.String)
-     */
     @Override
     public byte[] getEncodedField(HttpHeader header, String headerString, String value)
     {

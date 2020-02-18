@@ -444,9 +444,6 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
         }
     }
 
-    /**
-     * @see org.eclipse.jetty.security.Authenticator.AuthConfiguration#isSessionRenewedOnAuthentication()
-     */
     @Override
     public boolean isSessionRenewedOnAuthentication()
     {

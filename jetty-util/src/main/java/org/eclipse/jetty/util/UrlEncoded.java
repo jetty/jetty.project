@@ -973,9 +973,6 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
         return new String(encoded, 0, n, charset);
     }
 
-    /**
-     *
-     */
     @Override
     public Object clone()
     {

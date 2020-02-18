@@ -45,9 +45,6 @@ public class RemoteClusteredInvalidationSessionTest extends AbstractClusteredInv
         __testSupport.teardown();
     }
 
-    /**
-     * @see org.eclipse.jetty.server.session.AbstractTestBase#createSessionDataStoreFactory()
-     */
     @Override
     public SessionDataStoreFactory createSessionDataStoreFactory()
     {
