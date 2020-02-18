@@ -90,6 +90,7 @@
 
   <modules>
     <module>build-resources</module>
+    <module>jetty-slf4j-impl</module>
     <module>jetty-ant</module>
     <module>jetty-util</module>
     <module>jetty-jmx</module>
