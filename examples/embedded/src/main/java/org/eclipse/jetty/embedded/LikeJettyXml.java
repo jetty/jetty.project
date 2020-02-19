@@ -51,7 +51,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.DefaultHandler;
-import org.eclipse.jetty.server.handler.HandlerCollection;
+import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -105,7 +105,7 @@ public class LikeJettyXml
         // httpConfig.addCustomizer(new ForwardedRequestCustomizer());
 
         // Handler Structure
-        HandlerCollection handlers = new HandlerCollection();
+        HandlerList handlers = new HandlerList();
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         handlers.setHandlers(new Handler[]{contexts, new DefaultHandler()});
         server.setHandler(handlers);

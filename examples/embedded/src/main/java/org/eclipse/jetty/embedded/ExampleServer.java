@@ -23,7 +23,7 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.DefaultHandler;
-import org.eclipse.jetty.server.handler.HandlerCollection;
+import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 
 public class ExampleServer
@@ -41,7 +41,7 @@ public class ExampleServer
         context.addServlet(HelloServlet.class, "/hello");
         context.addServlet(AsyncEchoServlet.class, "/echo/*");
 
-        HandlerCollection handlers = new HandlerCollection();
+        HandlerList handlers = new HandlerList();
         handlers.setHandlers(new Handler[]{context, new DefaultHandler()});
         server.setHandler(handlers);
 

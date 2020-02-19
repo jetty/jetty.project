@@ -29,7 +29,7 @@
     </property>
 
     <property name="handler">
-      <bean id="handlers" class="org.eclipse.jetty.server.handler.HandlerCollection">
+      <bean id="handlers" class="org.eclipse.jetty.server.handler.HandlerList">
         <property name="handlers">
           <list>
             <ref bean="contexts"/>

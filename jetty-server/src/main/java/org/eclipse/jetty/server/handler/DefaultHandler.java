@@ -90,7 +90,6 @@ public class DefaultHandler extends AbstractHandler
         // TODO This test used to be an isHandled test, which essentially allows the DefaultHandler to be
         // TODO put into a HandlerCollection, but acted like it was a HandlerList.  We have too many examples that
         // TODO show using a DefaultHandler in a HandlerCollection, so we need to make this work... at least for now.
-        // TODO For now, we will make this work correctly with a hack in HandlerCollection.
         if (response.isCommitted() || baseRequest.getResponse().isWritingOrStreaming())
             return false;
 

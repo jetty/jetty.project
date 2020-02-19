@@ -101,12 +101,9 @@
     <!-- handler by context path and virtual host, and the           -->
     <!-- DefaultHandler, which handles any requests not handled by   -->
     <!-- the context handlers.                                       -->
-    <!-- Other handlers may be added to the "Handlers" collection,   -->
-    <!-- for example the jetty-requestlog.xml file adds the          -->
-    <!-- RequestLogHandler after the default handler                 -->
     <!-- =========================================================== -->
     <Set name="handler">
-      <New id="Handlers" class="org.eclipse.jetty.server.handler.HandlerCollection">
+      <New id="Handlers" class="org.eclipse.jetty.server.handler.HandlerList">
         <Set name="handlers">
          <Array type="org.eclipse.jetty.server.Handler">
            <Item>

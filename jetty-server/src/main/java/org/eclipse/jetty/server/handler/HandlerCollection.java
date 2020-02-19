@@ -144,15 +144,6 @@ public class HandlerCollection extends AbstractHandlerContainer
             {
                 try
                 {
-                    // TODO This is a special case for DefaultHandler
-                    // TODO Previously the DefaultHandler was protected with an isHandled check, which allowed it
-                    // TODO to be into a HandlerCollection, but acted like it was a HandlerList.
-                    // TODO The real solution would be to change to using a HandlerList for the DefaultHandler, but
-                    // TODO we have many examples and embedded usages that will use a HandlerCollection, so this is
-                    // TODO a special case to make that work.  A better solution is needed
-                    if (handled && handler instanceof DefaultHandler)
-                        continue;
-
                     if (handler.handle(target, baseRequest, request, response))
                         handled = true;
                 }
