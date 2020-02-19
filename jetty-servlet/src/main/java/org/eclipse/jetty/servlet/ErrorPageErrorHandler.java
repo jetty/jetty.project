@@ -24,9 +24,9 @@ import java.util.List;
 import java.util.Map;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
 
 import org.eclipse.jetty.server.Dispatcher;
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.util.log.Log;
@@ -51,14 +51,14 @@ public class ErrorPageErrorHandler extends ErrorHandler implements ErrorHandler.
     private final List<ErrorCodeRange> _errorPageList = new ArrayList<>(); // list of ErrorCode by range
 
     @Override
-    public String getErrorPage(HttpServletRequest request)
+    public String getErrorPage(Request basseRequest)
     {
         String errorPage = null;
 
         PageLookupTechnique pageSource = null;
 
         Class<?> matchedThrowable = null;
-        Throwable th = (Throwable)request.getAttribute(Dispatcher.ERROR_EXCEPTION);
+        Throwable th = (Throwable)basseRequest.getAttribute(Dispatcher.ERROR_EXCEPTION);
 
         // Walk the cause hierarchy
         while (errorPage == null && th != null)
@@ -90,7 +90,7 @@ public class ErrorPageErrorHandler extends ErrorHandler implements ErrorHandler.
             pageSource = PageLookupTechnique.STATUS_CODE;
 
             // look for an exact code match
-            errorStatusCode = (Integer)request.getAttribute(Dispatcher.ERROR_STATUS_CODE);
+            errorStatusCode = (Integer)basseRequest.getAttribute(Dispatcher.ERROR_STATUS_CODE);
             if (errorStatusCode != null)
             {
                 errorPage = _errorPages.get(Integer.toString(errorStatusCode));
@@ -122,8 +122,8 @@ public class ErrorPageErrorHandler extends ErrorHandler implements ErrorHandler.
         {
             StringBuilder dbg = new StringBuilder();
             dbg.append("getErrorPage(");
-            dbg.append(request.getMethod()).append(' ');
-            dbg.append(request.getRequestURI());
+            dbg.append(basseRequest.getMethod()).append(' ');
+            dbg.append(basseRequest.getRequestURI());
             dbg.append(") => error_page=").append(errorPage);
             switch (pageSource)
             {
@@ -131,7 +131,7 @@ public class ErrorPageErrorHandler extends ErrorHandler implements ErrorHandler.
                     dbg.append(" (using matched Throwable ");
                     dbg.append(matchedThrowable.getName());
                     dbg.append(" / actually thrown as ");
-                    Throwable originalThrowable = (Throwable)request.getAttribute(Dispatcher.ERROR_EXCEPTION);
+                    Throwable originalThrowable = (Throwable)basseRequest.getAttribute(Dispatcher.ERROR_EXCEPTION);
                     dbg.append(originalThrowable.getClass().getName());
                     dbg.append(')');
                     LOG.debug(dbg.toString(), th);
