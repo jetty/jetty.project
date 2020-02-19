@@ -68,7 +68,7 @@ public class StacklessLogging implements AutoCloseable
     {
         for (Class<?> clazz : classesToSquelch)
         {
-            JettyLogger jettyLogger = loggerFactory.getConfiguredJettyLogger(clazz);
+            JettyLogger jettyLogger = loggerFactory.getJettyLogger(clazz.getName());
             // only operate on loggers that are of type StdErrLog
             if (!jettyLogger.isDebugEnabled())
             {
@@ -85,7 +85,7 @@ public class StacklessLogging implements AutoCloseable
     {
         for (Package pkg : packagesToSquelch)
         {
-            JettyLogger jettyLogger = loggerFactory.getConfiguredJettyLogger(pkg.getName());
+            JettyLogger jettyLogger = loggerFactory.getJettyLogger(pkg.getName());
             // only operate on loggers that are of type StdErrLog
             if (!jettyLogger.isDebugEnabled())
             {

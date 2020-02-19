@@ -31,9 +31,9 @@ import org.eclipse.jetty.util.annotation.Name;
  *
  */
 @ManagedObject("Jetty Logging")
-public class LogMBean extends ObjectMBean
+public class JettyLoggerMBean extends ObjectMBean
 {
-    public LogMBean(Object managedObject)
+    public JettyLoggerMBean(Object managedObject)
     {
         super(managedObject);
     }
