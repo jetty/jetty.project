@@ -24,6 +24,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.HandlerContainer;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.URIUtil;
@@ -126,7 +127,7 @@ public class MovedContextHandler extends ContextHandler
             if (_expires != null)
                 response.setHeader(HttpHeader.EXPIRES.asString(), _expires);
 
-            response.setStatus(_permanent ? HttpServletResponse.SC_MOVED_PERMANENTLY : HttpServletResponse.SC_FOUND);
+            response.setStatus(_permanent ? HttpStatus.MOVED_PERMANENTLY_301 : HttpStatus.FOUND_302);
             response.setContentLength(0);
             return true;
         }

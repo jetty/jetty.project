@@ -42,6 +42,7 @@ import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.http.QuotedQualityCSV;
@@ -462,7 +463,7 @@ public class ResourceService
 
     protected void notFound(HttpServletRequest request, HttpServletResponse response) throws IOException
     {
-        response.sendError(HttpServletResponse.SC_NOT_FOUND);
+        response.sendError(HttpStatus.NOT_FOUND_404);
     }
 
     protected void sendStatus(HttpServletResponse response, int status, Supplier<String> etag) throws IOException
@@ -542,7 +543,7 @@ public class ResourceService
 
                     if (!match)
                     {
-                        sendStatus(response, HttpServletResponse.SC_PRECONDITION_FAILED, null);
+                        sendStatus(response, HttpStatus.PRECONDITION_FAILED_412, null);
                         return false;
                     }
                 }
@@ -552,7 +553,7 @@ public class ResourceService
                     // Handle special case of exact match OR gzip exact match
                     if (CompressedContentFormat.tagEquals(etag, ifnm) && ifnm.indexOf(',') < 0)
                     {
-                        sendStatus(response, HttpServletResponse.SC_NOT_MODIFIED, ifnm::toString);
+                        sendStatus(response, HttpStatus.NOT_MODIFIED_304, ifnm::toString);
                         return false;
                     }
 
@@ -562,7 +563,7 @@ public class ResourceService
                     {
                         if (CompressedContentFormat.tagEquals(etag, tag))
                         {
-                            sendStatus(response, HttpServletResponse.SC_NOT_MODIFIED, tag::toString);
+                            sendStatus(response, HttpStatus.NOT_MODIFIED_304, tag::toString);
                             return false;
                         }
                     }
@@ -579,14 +580,14 @@ public class ResourceService
                 String mdlm = content.getLastModifiedValue();
                 if (mdlm != null && ifms.equals(mdlm))
                 {
-                    sendStatus(response, HttpServletResponse.SC_NOT_MODIFIED, content::getETagValue);
+                    sendStatus(response, HttpStatus.NOT_MODIFIED_304, content::getETagValue);
                     return false;
                 }
 
                 long ifmsl = request.getDateHeader(HttpHeader.IF_MODIFIED_SINCE.asString());
                 if (ifmsl != -1 && content.getResource().lastModified() / 1000 <= ifmsl / 1000)
                 {
-                    sendStatus(response, HttpServletResponse.SC_NOT_MODIFIED, content::getETagValue);
+                    sendStatus(response, HttpStatus.NOT_MODIFIED_304, content::getETagValue);
                     return false;
                 }
             }
@@ -594,7 +595,7 @@ public class ResourceService
             // Parse the if[un]modified dates and compare to resource
             if (ifums != -1 && content.getResource().lastModified() / 1000 > ifums / 1000)
             {
-                response.sendError(HttpServletResponse.SC_PRECONDITION_FAILED);
+                response.sendError(HttpStatus.PRECONDITION_FAILED_412);
                 return false;
             }
         }
@@ -616,7 +617,7 @@ public class ResourceService
     {
         if (!_dirAllowed)
         {
-            response.sendError(HttpServletResponse.SC_FORBIDDEN);
+            response.sendError(HttpStatus.FORBIDDEN_403);
             return;
         }
 
@@ -625,7 +626,7 @@ public class ResourceService
         String dir = resource.getListHTML(base, pathInContext.length() > 1, request.getQueryString());
         if (dir == null)
         {
-            response.sendError(HttpServletResponse.SC_FORBIDDEN,
+            response.sendError(HttpStatus.FORBIDDEN_403,
                 "No directory");
             return;
         }
@@ -736,7 +737,7 @@ public class ResourceService
                 putHeaders(response, content, 0);
                 response.setHeader(HttpHeader.CONTENT_RANGE.asString(),
                     InclusiveByteRange.to416HeaderRangeString(content_length));
-                sendStatus(response, HttpServletResponse.SC_REQUESTED_RANGE_NOT_SATISFIABLE, null);
+                sendStatus(response, HttpStatus.RANGE_NOT_SATISFIABLE_416, null);
                 return true;
             }
 
@@ -747,7 +748,7 @@ public class ResourceService
                 InclusiveByteRange singleSatisfiableRange = ranges.iterator().next();
                 long singleLength = singleSatisfiableRange.getSize();
                 putHeaders(response, content, singleLength);
-                response.setStatus(HttpServletResponse.SC_PARTIAL_CONTENT);
+                response.setStatus(HttpStatus.PARTIAL_CONTENT_206);
                 if (!response.containsHeader(HttpHeader.DATE.asString()))
                     response.addDateHeader(HttpHeader.DATE.asString(), System.currentTimeMillis());
                 response.setHeader(HttpHeader.CONTENT_RANGE.asString(),
@@ -764,7 +765,7 @@ public class ResourceService
             String mimetype = (content == null ? null : content.getContentTypeValue());
             if (mimetype == null)
                 LOG.warn("Unknown mimetype for " + request.getRequestURI());
-            response.setStatus(HttpServletResponse.SC_PARTIAL_CONTENT);
+            response.setStatus(HttpStatus.PARTIAL_CONTENT_206);
             if (!response.containsHeader(HttpHeader.DATE.asString()))
                 response.addDateHeader(HttpHeader.DATE.asString(), System.currentTimeMillis());
 

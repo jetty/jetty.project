@@ -31,6 +31,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.security.jaspi.modules.BaseAuthModule;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -89,7 +90,7 @@ public class BasicAuthModule extends BaseAuthModule
                 return AuthStatus.SUCCESS;
             }
             response.setHeader(HttpHeader.WWW_AUTHENTICATE.asString(), "basic realm=\"" + realmName + '"');
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+            response.sendError(HttpStatus.UNAUTHORIZED_401);
             return AuthStatus.SEND_CONTINUE;
         }
         catch (IOException e)

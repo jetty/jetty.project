@@ -28,6 +28,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.IO;
@@ -153,7 +154,7 @@ public class HalfCloseTest
         {
             handled++;
             response.setContentType("text/html;charset=utf-8");
-            response.setStatus(HttpServletResponse.SC_OK);
+            response.setStatus(HttpStatus.OK_200);
             response.getWriter().println("<h1>Test</h1>");
             return true;
         }
@@ -186,7 +187,7 @@ public class HalfCloseTest
                     try
                     {
                         response.setContentType("text/html;charset=utf-8");
-                        response.setStatus(HttpServletResponse.SC_OK);
+                        response.setStatus(HttpStatus.OK_200);
                         response.getWriter().println("<h1>Test</h1>");
                     }
                     catch (Exception ex)

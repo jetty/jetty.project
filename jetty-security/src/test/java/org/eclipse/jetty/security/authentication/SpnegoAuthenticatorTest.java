@@ -19,10 +19,10 @@
 package org.eclipse.jetty.security.authentication;
 
 import java.io.IOException;
-import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.server.AbstractConnector;
@@ -84,7 +84,7 @@ public class SpnegoAuthenticatorTest
         assertThat(channel.getState().handling(), is(HttpChannelState.Action.DISPATCH));
         assertEquals(Authentication.SEND_CONTINUE, _authenticator.validateRequest(req, res, true));
         assertEquals(HttpHeader.NEGOTIATE.asString(), res.getHeader(HttpHeader.WWW_AUTHENTICATE.asString()));
-        assertEquals(HttpServletResponse.SC_UNAUTHORIZED, res.getStatus());
+        assertEquals(HttpStatus.UNAUTHORIZED_401, res.getStatus());
     }
 
     @Test
@@ -123,7 +123,7 @@ public class SpnegoAuthenticatorTest
         assertThat(channel.getState().handling(), is(HttpChannelState.Action.DISPATCH));
         assertEquals(Authentication.SEND_CONTINUE, _authenticator.validateRequest(req, res, true));
         assertEquals(HttpHeader.NEGOTIATE.asString(), res.getHeader(HttpHeader.WWW_AUTHENTICATE.asString()));
-        assertEquals(HttpServletResponse.SC_UNAUTHORIZED, res.getStatus());
+        assertEquals(HttpStatus.UNAUTHORIZED_401, res.getStatus());
     }
 
     class MockConnector extends AbstractConnector

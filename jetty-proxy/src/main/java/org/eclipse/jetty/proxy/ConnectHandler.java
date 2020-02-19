@@ -38,6 +38,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -235,7 +236,7 @@ public class ConnectHandler extends HandlerWrapper
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Missing proxy authentication");
-                sendConnectResponse(request, response, HttpServletResponse.SC_PROXY_AUTHENTICATION_REQUIRED);
+                sendConnectResponse(request, response, HttpStatus.PROXY_AUTHENTICATION_REQUIRED_407);
                 return;
             }
 
@@ -247,7 +248,7 @@ public class ConnectHandler extends HandlerWrapper
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Destination {}:{} forbidden", host, port);
-                sendConnectResponse(request, response, HttpServletResponse.SC_FORBIDDEN);
+                sendConnectResponse(request, response, HttpStatus.FORBIDDEN_403);
                 return;
             }
 
@@ -256,7 +257,7 @@ public class ConnectHandler extends HandlerWrapper
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("CONNECT not supported for {}", httpChannel);
-                sendConnectResponse(request, response, HttpServletResponse.SC_FORBIDDEN);
+                sendConnectResponse(request, response, HttpStatus.FORBIDDEN_403);
                 return;
             }
 
@@ -351,7 +352,7 @@ public class ConnectHandler extends HandlerWrapper
             LOG.debug("Connection setup completed: {}<->{}", downstreamConnection, upstreamConnection);
 
         HttpServletResponse response = connectContext.getResponse();
-        sendConnectResponse(request, response, HttpServletResponse.SC_OK);
+        sendConnectResponse(request, response, HttpStatus.OK_200);
 
         upgradeConnection(request, response, downstreamConnection);
 
@@ -362,7 +363,7 @@ public class ConnectHandler extends HandlerWrapper
     {
         if (LOG.isDebugEnabled())
             LOG.debug("CONNECT failed", failure);
-        sendConnectResponse(request, response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+        sendConnectResponse(request, response, HttpStatus.INTERNAL_SERVER_ERROR_500);
         if (asyncContext != null)
             asyncContext.complete();
     }
@@ -373,7 +374,7 @@ public class ConnectHandler extends HandlerWrapper
         {
             response.setStatus(statusCode);
             response.setContentLength(0);
-            if (statusCode != HttpServletResponse.SC_OK)
+            if (statusCode != HttpStatus.OK_200)
                 response.setHeader(HttpHeader.CONNECTION.asString(), HttpHeaderValue.CLOSE.asString());
             if (LOG.isDebugEnabled())
                 LOG.debug("CONNECT response sent {} {}", request.getProtocol(), response.getStatus());

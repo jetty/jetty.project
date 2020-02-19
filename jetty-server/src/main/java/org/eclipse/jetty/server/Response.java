@@ -492,7 +492,7 @@ public class Response implements HttpServletResponse
      */
     public void sendRedirect(int code, String location) throws IOException
     {
-        if ((code < HttpServletResponse.SC_MULTIPLE_CHOICES) || (code >= HttpServletResponse.SC_BAD_REQUEST))
+        if ((code < HttpStatus.MULTIPLE_CHOICES_300) || (code >= HttpStatus.BAD_REQUEST_400))
             throw new IllegalArgumentException("Not a 3xx redirect code");
 
         if (!isMutable())
@@ -535,7 +535,7 @@ public class Response implements HttpServletResponse
     @Override
     public void sendRedirect(String location) throws IOException
     {
-        sendRedirect(HttpServletResponse.SC_MOVED_TEMPORARILY, location);
+        sendRedirect(HttpStatus.MOVED_TEMPORARILY_302, location);
     }
 
     @Override

@@ -38,6 +38,7 @@ import javax.servlet.http.HttpSessionBindingListener;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.toolchain.test.IO;
@@ -97,7 +98,7 @@ public class SessionListenerTest
                 String url = "http://localhost:" + port1 + contextPath + servletMapping;
                 // Create the session
                 ContentResponse response1 = client.GET(url + "?action=init");
-                assertEquals(HttpServletResponse.SC_OK, response1.getStatus());
+                assertEquals(HttpStatus.OK_200, response1.getStatus());
                 String sessionCookie = response1.getHeaders().get("Set-Cookie");
                 assertTrue(sessionCookie != null);
                 assertTrue(TestServlet.bindingListener.bound);
@@ -108,7 +109,7 @@ public class SessionListenerTest
                 // Make a request which will invalidate the existing session
                 Request request2 = client.newRequest(url + "?action=test");
                 ContentResponse response2 = request2.send();
-                assertEquals(HttpServletResponse.SC_OK, response2.getStatus());
+                assertEquals(HttpStatus.OK_200, response2.getStatus());
 
                 assertTrue(TestServlet.bindingListener.unbound);
                 assertTrue(listener.destroyedSessions.contains(sessionId));

@@ -66,6 +66,7 @@ import javax.servlet.http.HttpSessionAttributeListener;
 import javax.servlet.http.HttpSessionIdListener;
 import javax.servlet.http.HttpSessionListener;
 
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.ClassLoaderDump;
@@ -1106,7 +1107,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         {
             case SHUTDOWN:
             case UNAVAILABLE:
-                response.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
+                response.sendError(HttpStatus.SERVICE_UNAVAILABLE_503);
                 return true;
             default:
                 // TODO is this still needed?
@@ -1219,7 +1220,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
             if (dispatch == DispatcherType.REQUEST && isProtectedTarget(target))
             {
-                response.sendError(HttpServletResponse.SC_NOT_FOUND);
+                response.sendError(HttpStatus.NOT_FOUND_404);
                 return true;
             }
 

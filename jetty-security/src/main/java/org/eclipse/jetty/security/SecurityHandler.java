@@ -32,6 +32,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.security.authentication.DeferredAuthentication;
 import org.eclipse.jetty.server.Authentication;
 import org.eclipse.jetty.server.Handler;
@@ -495,7 +496,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
         if (!checkUserDataPermissions(pathInContext, baseRequest, base_response, roleInfo))
         {
             if (!baseRequest.getHttpChannel().isCommitted())
-                response.sendError(HttpServletResponse.SC_FORBIDDEN);
+                response.sendError(HttpStatus.FORBIDDEN_403);
             return true;
         }
 
@@ -507,7 +508,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
         {
             LOG.warn("No authenticator for: " + roleInfo);
             if (!baseRequest.getResponse().isCommitted())
-                response.sendError(HttpServletResponse.SC_FORBIDDEN);
+                response.sendError(HttpStatus.FORBIDDEN_403);
             return true;
         }
 
@@ -540,7 +541,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
                     boolean authorized = checkWebResourcePermissions(pathInContext, baseRequest, base_response, roleInfo, userAuth.getUserIdentity());
                     if (!authorized)
                     {
-                        response.sendError(HttpServletResponse.SC_FORBIDDEN, "!role");
+                        response.sendError(HttpStatus.FORBIDDEN_403, "!role");
                         return true;
                     }
                 }
@@ -599,7 +600,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
         {
             // jaspi 3.8.3 send HTTP 500 internal server error, with message
             // from AuthException
-            response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
+            response.sendError(HttpStatus.INTERNAL_SERVER_ERROR_500, e.getMessage());
             return true;
         }
         finally

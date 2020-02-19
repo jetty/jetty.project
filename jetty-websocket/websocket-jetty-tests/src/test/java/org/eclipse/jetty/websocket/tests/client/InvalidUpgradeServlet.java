@@ -23,6 +23,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.websocket.core.internal.WebSocketCore;
 
 public class InvalidUpgradeServlet extends HttpServlet
@@ -34,14 +35,14 @@ public class InvalidUpgradeServlet extends HttpServlet
         if (pathInfo.contains("only-accept"))
         {
             // Force 200 response, no response body content, incomplete websocket response headers, no actual upgrade for this test
-            resp.setStatus(HttpServletResponse.SC_OK);
+            resp.setStatus(HttpStatus.OK_200);
             String key = req.getHeader(HttpHeader.SEC_WEBSOCKET_KEY.toString());
             resp.setHeader(HttpHeader.SEC_WEBSOCKET_ACCEPT.toString(), WebSocketCore.hashKey(key));
         }
         else if (pathInfo.contains("close-connection"))
         {
             // Force 101 response, with invalid Connection header, invalid handshake
-            resp.setStatus(HttpServletResponse.SC_SWITCHING_PROTOCOLS);
+            resp.setStatus(HttpStatus.SWITCHING_PROTOCOLS_101);
             String key = req.getHeader(HttpHeader.SEC_WEBSOCKET_KEY.toString());
             resp.setHeader(HttpHeader.CONNECTION.toString(), "close");
             resp.setHeader(HttpHeader.SEC_WEBSOCKET_ACCEPT.toString(), WebSocketCore.hashKey(key));
@@ -49,7 +50,7 @@ public class InvalidUpgradeServlet extends HttpServlet
         else if (pathInfo.contains("missing-connection"))
         {
             // Force 101 response, with no Connection header, invalid handshake
-            resp.setStatus(HttpServletResponse.SC_SWITCHING_PROTOCOLS);
+            resp.setStatus(HttpStatus.SWITCHING_PROTOCOLS_101);
             String key = req.getHeader(HttpHeader.SEC_WEBSOCKET_KEY.toString());
             // Intentionally leave out Connection header
             resp.setHeader(HttpHeader.SEC_WEBSOCKET_ACCEPT.toString(), WebSocketCore.hashKey(key));
@@ -57,7 +58,7 @@ public class InvalidUpgradeServlet extends HttpServlet
         else if (pathInfo.contains("rubbish-accept"))
         {
             // Force 101 response, with no Connection header, invalid handshake
-            resp.setStatus(HttpServletResponse.SC_SWITCHING_PROTOCOLS);
+            resp.setStatus(HttpStatus.SWITCHING_PROTOCOLS_101);
             resp.setHeader(HttpHeader.SEC_WEBSOCKET_ACCEPT.toString(), "rubbish");
         }
         else

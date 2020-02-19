@@ -29,6 +29,7 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.security.ServerAuthException;
 import org.eclipse.jetty.security.UserAuthentication;
 import org.eclipse.jetty.server.Authentication;
@@ -149,7 +150,7 @@ public class ClientCertAuthenticator extends LoginAuthenticator
 
             if (!DeferredAuthentication.isDeferred(response))
             {
-                response.sendError(HttpServletResponse.SC_FORBIDDEN);
+                response.sendError(HttpStatus.FORBIDDEN_403);
                 return Authentication.SEND_FAILURE;
             }
 

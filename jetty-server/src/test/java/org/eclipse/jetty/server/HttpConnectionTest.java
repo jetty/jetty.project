@@ -44,6 +44,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpParser;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.tools.HttpTester;
 import org.eclipse.jetty.server.LocalConnector.LocalEndPoint;
@@ -267,7 +268,7 @@ public class HttpConnectionTest
 
             String rawResponse = connector.getResponse(request.toString());
             HttpTester.Response response = HttpTester.parseResponse(rawResponse);
-            assertThat("Response.status", response.getStatus(), is(HttpServletResponse.SC_BAD_REQUEST));
+            assertThat("Response.status", response.getStatus(), is(HttpStatus.BAD_REQUEST_400));
         }
     }
 
@@ -336,7 +337,7 @@ public class HttpConnectionTest
 
         String rawResponse = connector.getResponse(request.toString());
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
-        assertThat("Response.status", response.getStatus(), is(HttpServletResponse.SC_BAD_REQUEST));
+        assertThat("Response.status", response.getStatus(), is(HttpStatus.BAD_REQUEST_400));
     }
 
     /**
@@ -382,7 +383,7 @@ public class HttpConnectionTest
 
         String rawResponse = connector.getResponse(request.toString());
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
-        assertThat("Response.status (" + response.getReason() + ")", response.getStatus(), is(HttpServletResponse.SC_OK));
+        assertThat("Response.status (" + response.getReason() + ")", response.getStatus(), is(HttpStatus.OK_200));
     }
 
     public static Stream<Arguments> http11TransferEncodingInvalidChunked()
@@ -436,7 +437,7 @@ public class HttpConnectionTest
 
         String rawResponse = connector.getResponse(request.toString());
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
-        assertThat("Response.status", response.getStatus(), is(HttpServletResponse.SC_BAD_REQUEST));
+        assertThat("Response.status", response.getStatus(), is(HttpStatus.BAD_REQUEST_400));
     }
 
     @Test

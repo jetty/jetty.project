@@ -29,6 +29,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
@@ -99,10 +100,10 @@ public class DefaultHandler extends AbstractHandler
         if (_serveIcon && _favicon != null && HttpMethod.GET.is(method) && target.equals("/favicon.ico"))
         {
             if (request.getDateHeader(HttpHeader.IF_MODIFIED_SINCE.toString()) == _faviconModified)
-                response.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
+                response.setStatus(HttpStatus.NOT_MODIFIED_304);
             else
             {
-                response.setStatus(HttpServletResponse.SC_OK);
+                response.setStatus(HttpStatus.OK_200);
                 response.setContentType("image/x-icon");
                 response.setContentLength(_favicon.length);
                 response.setDateHeader(HttpHeader.LAST_MODIFIED.toString(), _faviconModified);
@@ -114,11 +115,11 @@ public class DefaultHandler extends AbstractHandler
 
         if (!_showContexts || !HttpMethod.GET.is(method) || !request.getRequestURI().equals("/"))
         {
-            response.sendError(HttpServletResponse.SC_NOT_FOUND);
+            response.sendError(HttpStatus.NOT_FOUND_404);
             return true;
         }
 
-        response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+        response.setStatus(HttpStatus.NOT_FOUND_404);
         response.setContentType(MimeTypes.Type.TEXT_HTML_UTF_8.toString());
 
         try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream();

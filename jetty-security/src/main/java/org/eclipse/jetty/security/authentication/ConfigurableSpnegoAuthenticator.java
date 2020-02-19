@@ -30,6 +30,7 @@ import javax.servlet.http.HttpSession;
 
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.security.ServerAuthException;
 import org.eclipse.jetty.security.SpnegoUserIdentity;
 import org.eclipse.jetty.security.SpnegoUserPrincipal;
@@ -201,7 +202,7 @@ public class ConfigurableSpnegoAuthenticator extends LoginAuthenticator
         try
         {
             setSpnegoToken(response, token);
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+            response.sendError(HttpStatus.UNAUTHORIZED_401);
         }
         catch (IOException x)
         {

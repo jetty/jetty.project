@@ -24,6 +24,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 
@@ -56,7 +57,7 @@ public class HelloHandler extends AbstractHandler
         ServletException
     {
         response.setContentType("text/html; charset=utf-8");
-        response.setStatus(HttpServletResponse.SC_OK);
+        response.setStatus(HttpStatus.OK_200);
 
         PrintWriter out = response.getWriter();
 

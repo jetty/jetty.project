@@ -29,6 +29,7 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.security.LoginService;
@@ -268,7 +269,7 @@ public class OpenIdAuthenticator extends LoginAuthenticator
                     {
                         LOG.warn("auth failed 403: invalid state parameter");
                         if (response != null)
-                            response.sendError(HttpServletResponse.SC_FORBIDDEN);
+                            response.sendError(HttpStatus.FORBIDDEN_403);
                         return Authentication.SEND_FAILURE;
                     }
 
@@ -309,7 +310,7 @@ public class OpenIdAuthenticator extends LoginAuthenticator
                     if (LOG.isDebugEnabled())
                         LOG.debug("auth failed 403");
                     if (response != null)
-                        response.sendError(HttpServletResponse.SC_FORBIDDEN);
+                        response.sendError(HttpStatus.FORBIDDEN_403);
                 }
                 else
                 {
@@ -436,7 +437,7 @@ public class OpenIdAuthenticator extends LoginAuthenticator
     private static int getRedirectCode(HttpVersion httpVersion)
     {
         return (httpVersion.getVersion() < HttpVersion.HTTP_1_1.getVersion()
-            ? HttpServletResponse.SC_MOVED_TEMPORARILY : HttpServletResponse.SC_SEE_OTHER);
+            ? HttpStatus.MOVED_TEMPORARILY_302 : HttpStatus.SEE_OTHER_303);
     }
 
     private String getRedirectUri(HttpServletRequest request)

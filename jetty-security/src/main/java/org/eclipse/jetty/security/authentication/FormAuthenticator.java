@@ -35,6 +35,7 @@ import javax.servlet.http.HttpSession;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.security.ServerAuthException;
@@ -291,7 +292,7 @@ public class FormAuthenticator extends LoginAuthenticator
                     LOG.debug("authenticated {}->{}", formAuth, nuri);
 
                     response.setContentLength(0);
-                    int redirectCode = (baseRequest.getHttpVersion().getVersion() < HttpVersion.HTTP_1_1.getVersion() ? HttpServletResponse.SC_MOVED_TEMPORARILY : HttpServletResponse.SC_SEE_OTHER);
+                    int redirectCode = (baseRequest.getHttpVersion().getVersion() < HttpVersion.HTTP_1_1.getVersion() ? HttpStatus.MOVED_TEMPORARILY_302 : HttpStatus.SEE_OTHER_303);
                     baseResponse.sendRedirect(redirectCode, response.encodeRedirectURL(nuri));
                     return formAuth;
                 }
@@ -303,7 +304,7 @@ public class FormAuthenticator extends LoginAuthenticator
                 {
                     LOG.debug("auth failed {}->403", username);
                     if (response != null)
-                        response.sendError(HttpServletResponse.SC_FORBIDDEN);
+                        response.sendError(HttpStatus.FORBIDDEN_403);
                 }
                 else if (_dispatch)
                 {
@@ -316,7 +317,7 @@ public class FormAuthenticator extends LoginAuthenticator
                 else
                 {
                     LOG.debug("auth failed {}->{}", username, _formErrorPage);
-                    int redirectCode = (baseRequest.getHttpVersion().getVersion() < HttpVersion.HTTP_1_1.getVersion() ? HttpServletResponse.SC_MOVED_TEMPORARILY : HttpServletResponse.SC_SEE_OTHER);
+                    int redirectCode = (baseRequest.getHttpVersion().getVersion() < HttpVersion.HTTP_1_1.getVersion() ? HttpStatus.MOVED_TEMPORARILY_302 : HttpStatus.SEE_OTHER_303);
                     baseResponse.sendRedirect(redirectCode, response.encodeRedirectURL(URIUtil.addPaths(request.getContextPath(), _formErrorPage)));
                 }
 
@@ -410,7 +411,7 @@ public class FormAuthenticator extends LoginAuthenticator
             else
             {
                 LOG.debug("challenge {}->{}", session.getId(), _formLoginPage);
-                int redirectCode = (baseRequest.getHttpVersion().getVersion() < HttpVersion.HTTP_1_1.getVersion() ? HttpServletResponse.SC_MOVED_TEMPORARILY : HttpServletResponse.SC_SEE_OTHER);
+                int redirectCode = (baseRequest.getHttpVersion().getVersion() < HttpVersion.HTTP_1_1.getVersion() ? HttpStatus.MOVED_TEMPORARILY_302 : HttpStatus.SEE_OTHER_303);
                 baseResponse.sendRedirect(redirectCode, response.encodeRedirectURL(URIUtil.addPaths(request.getContextPath(), _formLoginPage)));
             }
             return Authentication.SEND_CONTINUE;

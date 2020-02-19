@@ -27,6 +27,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Request;
@@ -160,19 +161,19 @@ public class ShutdownHandler extends HandlerWrapper
 
         if (!request.getMethod().equals("POST"))
         {
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST);
+            response.sendError(HttpStatus.BAD_REQUEST_400);
             return true;
         }
         if (!hasCorrectSecurityToken(request))
         {
             LOG.warn("Unauthorized tokenless shutdown attempt from " + request.getRemoteAddr());
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+            response.sendError(HttpStatus.UNAUTHORIZED_401);
             return true;
         }
         if (!requestFromLocalhost(baseRequest))
         {
             LOG.warn("Unauthorized non-loopback shutdown attempt from " + request.getRemoteAddr());
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+            response.sendError(HttpStatus.UNAUTHORIZED_401);
             return true;
         }
 

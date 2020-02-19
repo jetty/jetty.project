@@ -33,6 +33,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -103,14 +104,14 @@ public class OpenIdProvider extends ContainerLifeCycle
         {
             if (!clientId.equals(req.getParameter("client_id")))
             {
-                resp.sendError(HttpServletResponse.SC_FORBIDDEN, "invalid client_id");
+                resp.sendError(HttpStatus.FORBIDDEN_403, "invalid client_id");
                 return;
             }
 
             String redirectUri = req.getParameter("redirect_uri");
             if (!redirectUris.contains(redirectUri))
             {
-                resp.sendError(HttpServletResponse.SC_FORBIDDEN, "invalid redirect_uri");
+                resp.sendError(HttpStatus.FORBIDDEN_403, "invalid redirect_uri");
                 return;
             }
 
@@ -118,20 +119,20 @@ public class OpenIdProvider extends ContainerLifeCycle
             List<String> scopes = (scopeString == null) ? Collections.emptyList() : Arrays.asList(StringUtil.csvSplit(scopeString));
             if (!scopes.contains("openid"))
             {
-                resp.sendError(HttpServletResponse.SC_FORBIDDEN, "no openid scope");
+                resp.sendError(HttpStatus.FORBIDDEN_403, "no openid scope");
                 return;
             }
 
             if (!"code".equals(req.getParameter("response_type")))
             {
-                resp.sendError(HttpServletResponse.SC_FORBIDDEN, "response_type must be code");
+                resp.sendError(HttpStatus.FORBIDDEN_403, "response_type must be code");
                 return;
             }
 
             String state = req.getParameter("state");
             if (state == null)
             {
-                resp.sendError(HttpServletResponse.SC_FORBIDDEN, "no state param");
+                resp.sendError(HttpStatus.FORBIDDEN_403, "no state param");
                 return;
             }
 
@@ -143,7 +144,7 @@ public class OpenIdProvider extends ContainerLifeCycle
             final Response baseResponse = baseRequest.getResponse();
             redirectUri += "?code=" + authCode + "&state=" + state;
             int redirectCode = (baseRequest.getHttpVersion().getVersion() < HttpVersion.HTTP_1_1.getVersion()
-                ? HttpServletResponse.SC_MOVED_TEMPORARILY : HttpServletResponse.SC_SEE_OTHER);
+                ? HttpStatus.MOVED_TEMPORARILY_302 : HttpStatus.SEE_OTHER_303);
             baseResponse.sendRedirect(redirectCode, resp.encodeRedirectURL(redirectUri));
         }
     }
@@ -161,14 +162,14 @@ public class OpenIdProvider extends ContainerLifeCycle
                 !"authorization_code".equals(req.getParameter("grant_type")) ||
                 code == null)
             {
-                resp.sendError(HttpServletResponse.SC_FORBIDDEN, "bad auth request");
+                resp.sendError(HttpStatus.FORBIDDEN_403, "bad auth request");
                 return;
             }
 
             User user = issuedAuthCodes.remove(code);
             if (user == null)
             {
-                resp.sendError(HttpServletResponse.SC_FORBIDDEN, "invalid auth code");
+                resp.sendError(HttpStatus.FORBIDDEN_403, "invalid auth code");
                 return;
             }
 

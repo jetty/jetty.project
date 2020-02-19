@@ -35,6 +35,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.ServerAuthException;
 import org.eclipse.jetty.security.UserAuthentication;
@@ -196,7 +197,7 @@ public class JaspiAuthenticator extends LoginAuthenticator
             if (authStatus == AuthStatus.FAILURE)
             {
                 HttpServletResponse response = (HttpServletResponse)messageInfo.getResponseMessage();
-                response.sendError(HttpServletResponse.SC_FORBIDDEN);
+                response.sendError(HttpStatus.FORBIDDEN_403);
                 return Authentication.SEND_FAILURE;
             }
             // should not happen

@@ -26,6 +26,7 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.server.Connector;
@@ -105,7 +106,7 @@ public final class RFC6455Handshaker extends AbstractHandshaker
     @Override
     protected void prepareResponse(Response response, Negotiation negotiation)
     {
-        response.setStatus(HttpServletResponse.SC_SWITCHING_PROTOCOLS);
+        response.setStatus(HttpStatus.SWITCHING_PROTOCOLS_101);
         HttpFields responseFields = response.getHttpFields();
         responseFields.put(UPGRADE_WEBSOCKET);
         responseFields.put(CONNECTION_UPGRADE);

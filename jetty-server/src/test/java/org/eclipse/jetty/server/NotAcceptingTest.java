@@ -28,6 +28,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.tools.HttpTester;
 import org.eclipse.jetty.server.LocalConnector.LocalEndPoint;
 import org.eclipse.jetty.server.handler.AbstractHandler;
@@ -279,7 +280,7 @@ public class NotAcceptingTest
                 String content = exchange.exchange(baseRequest.getRequestURI());
                 handled++;
                 response.setContentType("text/html;charset=utf-8");
-                response.setStatus(HttpServletResponse.SC_OK);
+                response.setStatus(HttpStatus.OK_200);
                 response.getWriter().print(content);
                 return true;
             }
@@ -430,7 +431,7 @@ public class NotAcceptingTest
         public boolean handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             response.setContentType("text/html;charset=utf-8");
-            response.setStatus(HttpServletResponse.SC_OK);
+            response.setStatus(HttpStatus.OK_200);
             response.getWriter().println("Hello");
             return true;
         }
