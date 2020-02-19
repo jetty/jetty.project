@@ -41,6 +41,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -98,6 +99,22 @@ public class XmlConfiguration
         };
     private static final Iterable<ConfigurationProcessorFactory> __factoryLoader = ServiceLoader.load(ConfigurationProcessorFactory.class);
     private static final XmlParser __parser = initParser();
+    public static final Comparator<Executable> EXECUTABLE_COMPARATOR = (o1, o2) ->
+    {
+        int p1 = o1.getParameterCount();
+        int p2 = o2.getParameterCount();
+        int compare = Integer.compare(p1, p2);
+        if (compare == 0 && p1 > 0)
+        {
+            boolean a1 = o1.getParameterTypes()[p1 - 1].isArray();
+            boolean a2 = o2.getParameterTypes()[p2 - 1].isArray();
+            if (a1 && !a2)
+                compare = 1;
+            else if (!a1 && a2)
+                compare = -1;
+        }
+        return compare;
+    };
 
     private static XmlParser initParser()
     {
@@ -930,7 +947,10 @@ public class XmlConfiguration
                 throw new IllegalArgumentException("Method name cannot be blank");
 
             // Lets just try all methods for now
-            for (Method method : oClass.getMethods())
+
+            Method[] methods = oClass.getMethods();
+            Arrays.sort(methods, EXECUTABLE_COMPARATOR);
+            for (Method method : methods)
             {
                 if (!method.getName().equals(methodName))
                     continue;
@@ -996,7 +1016,9 @@ public class XmlConfiguration
             Objects.requireNonNull(klass, "Class cannot be null");
             Objects.requireNonNull(args, "Named list cannot be null");
 
-            for (Constructor<?> constructor : klass.getConstructors())
+            Constructor<?>[] constructors = klass.getConstructors();
+            Arrays.sort(constructors, EXECUTABLE_COMPARATOR);
+            for (Constructor<?> constructor : constructors)
             {
                 try
                 {
@@ -1683,24 +1705,8 @@ public class XmlConfiguration
                     int count = executable.getParameterCount();
                     if (count > 0 && executable.getParameterTypes()[count - 1].isArray())
                     {
-                        try
-                        {
-                            // Does a non varargs method exist?
-                            Class<?>[] types = Arrays.copyOf(executable.getParameterTypes(), count - 1);
-                            if (executable instanceof Constructor)
-                                _class.getConstructor(types);
-                            else
-                                _class.getMethod(executable.getName(), types);
-                        }
-                        catch (NoSuchMethodException e)
-                        {
-                            // There is not a no varArgs alternative so let's try a an empty varArgs match
-                            args = asEmptyVarArgs(executable.getParameterTypes()[count - 1]).matchArgsToParameters(executable);
-                        }
-                        catch (Exception e)
-                        {
-                            LOG.ignore(e);
-                        }
+                        // There is not a no varArgs alternative so let's try a an empty varArgs match
+                        args = asEmptyVarArgs(executable.getParameterTypes()[count - 1]).matchArgsToParameters(executable);
                     }
                 }
                 return args;
