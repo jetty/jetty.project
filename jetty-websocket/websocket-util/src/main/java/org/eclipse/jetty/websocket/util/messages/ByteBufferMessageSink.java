@@ -57,6 +57,14 @@ public class ByteBufferMessageSink extends AbstractMessageSink
     {
         try
         {
+            size += frame.getPayloadLength();
+            long maxBinaryMessageSize = session.getMaxBinaryMessageSize();
+            if (maxBinaryMessageSize > 0 && size > maxBinaryMessageSize)
+            {
+                throw new MessageTooLargeException(String.format("Binary message too large: (actual) %,d > (configured max binary message size) %,d",
+                    size, maxBinaryMessageSize));
+            }
+
             // If we are fin and no OutputStream has been created we don't need to aggregate.
             if (frame.isFin() && (out == null))
             {
@@ -95,13 +103,6 @@ public class ByteBufferMessageSink extends AbstractMessageSink
         if (frame.hasPayload())
         {
             ByteBuffer payload = frame.getPayload();
-            size += payload.remaining();
-            long maxBinaryMessageSize = session.getMaxBinaryMessageSize();
-            if (maxBinaryMessageSize > 0 && size > maxBinaryMessageSize)
-            {
-                throw new MessageTooLargeException(String.format("Binary message too large: (actual) %,d > (configured max binary message size) %,d",
-                    size, maxBinaryMessageSize));
-            }
 
             if (out == null)
                 out = new ByteArrayOutputStream(BUFFER_SIZE);

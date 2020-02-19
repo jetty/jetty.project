@@ -45,6 +45,14 @@ public class StringMessageSink extends AbstractMessageSink
     {
         try
         {
+            size += frame.getPayloadLength();
+            long maxTextMessageSize = session.getMaxTextMessageSize();
+            if (maxTextMessageSize > 0 && size > maxTextMessageSize)
+            {
+                throw new MessageTooLargeException(String.format("Text message too large: (actual) %,d > (configured max text message size) %,d",
+                    size, maxTextMessageSize));
+            }
+
             // If we are fin and out has not been created we don't need to aggregate.
             if (frame.isFin() && (out == null))
             {
@@ -83,13 +91,6 @@ public class StringMessageSink extends AbstractMessageSink
         if (frame.hasPayload())
         {
             ByteBuffer payload = frame.getPayload();
-            size += frame.getPayloadLength();
-            long maxTextMessageSize = session.getMaxTextMessageSize();
-            if (maxTextMessageSize > 0 && size > maxTextMessageSize)
-            {
-                throw new MessageTooLargeException(String.format("Text message too large: (actual) %,d > (configured max text message size) %,d",
-                    size, maxTextMessageSize));
-            }
 
             if (out == null)
                 out = new Utf8StringBuilder(BUFFER_SIZE);
