@@ -26,12 +26,12 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import javax.websocket.ClientEndpoint;
+import javax.websocket.ClientEndpointConfig;
 import javax.websocket.ContainerProvider;
-import javax.websocket.Endpoint;
 import javax.websocket.EndpointConfig;
 import javax.websocket.MessageHandler;
 import javax.websocket.OnMessage;
@@ -43,14 +43,17 @@ import javax.websocket.server.ServerEndpointConfig;
 
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
+import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketSession;
 import org.eclipse.jetty.websocket.javax.tests.DataUtils;
 import org.eclipse.jetty.websocket.javax.tests.Fuzzer;
 import org.eclipse.jetty.websocket.javax.tests.LocalServer;
+import org.eclipse.jetty.websocket.javax.tests.WSEndpointTracker;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -59,12 +62,15 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TextStreamTest
 {
     private static final Logger LOG = Log.getLogger(TextStreamTest.class);
     private static final BlockingArrayQueue<QueuedTextStreamer> serverEndpoints = new BlockingArrayQueue<>();
 
+    private final ClientEndpointConfig clientConfig = ClientEndpointConfig.Builder.create().build();
     private LocalServer server;
     private ServerContainer container;
     private WebSocketContainer wsClient;
@@ -172,7 +178,7 @@ public class TextStreamTest
     public void testMessageOrdering() throws Exception
     {
         ClientTextStreamer client = new ClientTextStreamer();
-        Session session = wsClient.connectToServer(client, server.getWsUri().resolve("/test"));
+        Session session = wsClient.connectToServer(client, clientConfig, server.getWsUri().resolve("/test"));
 
         final int numLoops = 20;
         for (int i = 0; i < numLoops; i++)
@@ -194,7 +200,7 @@ public class TextStreamTest
     public void testFragmentedMessageOrdering() throws Exception
     {
         ClientTextStreamer client = new ClientTextStreamer();
-        Session session = wsClient.connectToServer(client, server.getWsUri().resolve("/test"));
+        Session session = wsClient.connectToServer(client, clientConfig, server.getWsUri().resolve("/test"));
 
         final int numLoops = 20;
         for (int i = 0; i < numLoops; i++)
@@ -218,52 +224,68 @@ public class TextStreamTest
     @Test
     public void testMessageOrderingDoNotReadToEOF() throws Exception
     {
-        ClientTextStreamer client = new ClientTextStreamer();
-        Session session = wsClient.connectToServer(client, server.getWsUri().resolve("/partial"));
+        ClientTextStreamer clientEndpoint = new ClientTextStreamer();
+        Session session = wsClient.connectToServer(clientEndpoint, clientConfig, server.getWsUri().resolve("/partial"));
+        QueuedTextStreamer serverEndpoint = Objects.requireNonNull(serverEndpoints.poll(5, TimeUnit.SECONDS));
 
-        final int numLoops = 20;
-        for (int i = 0; i < numLoops; i++)
-        {
-            session.getBasicRemote().sendText(i + "|-----");
-        }
+        int serverInputBufferSize = 1024;
+        JavaxWebSocketSession serverSession = (JavaxWebSocketSession)serverEndpoint.session;
+        serverSession.getCoreSession().setInputBufferSize(serverInputBufferSize);
+
+        // Write some initial data.
+        Writer writer = session.getBasicRemote().getSendWriter();
+        writer.write("first frame");
+        writer.flush();
+
+        // Signal to stop reading.
+        writer.write("|");
+        writer.flush();
+
+        // Lots of data after we have stopped reading and onMessage exits.
+        final String largePayload = StringUtil.stringFrom("x", serverInputBufferSize * 2);
+        writer.write(largePayload);
+        writer.close();
+
         session.close();
+        assertTrue(clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(serverEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
+        assertNull(clientEndpoint.error.get());
+        assertNull(serverEndpoint.error.get());
 
-        QueuedTextStreamer queuedTextStreamer = serverEndpoints.poll(5, TimeUnit.SECONDS);
-        assertNotNull(queuedTextStreamer);
-        for (int i = 0; i < numLoops; i++)
-        {
-            String msg = queuedTextStreamer.messages.poll(5, TimeUnit.SECONDS);
-            assertThat(msg, Matchers.is(Integer.toString(i)));
-        }
+        String msg = serverEndpoint.messages.poll(5, TimeUnit.SECONDS);
+        assertThat(msg, Matchers.is("first frame"));
     }
 
-    @ClientEndpoint
-    public static class ClientTextStreamer
+    public static class ClientTextStreamer extends WSEndpointTracker implements MessageHandler.Whole<Reader>
     {
         private final CountDownLatch latch = new CountDownLatch(1);
         private final StringBuilder output = new StringBuilder();
 
-        @OnMessage
-        public void echoed(Reader input) throws IOException
+        @Override
+        public void onOpen(Session session, EndpointConfig config)
         {
-            while (true)
+            session.addMessageHandler(this);
+            super.onOpen(session, config);
+        }
+
+        @Override
+        public void onMessage(Reader input)
+        {
+            try
             {
-                int read = input.read();
-                if (read < 0)
-                    break;
-                output.append((char)read);
+                while (true)
+                {
+                    int read = input.read();
+                    if (read < 0)
+                        break;
+                    output.append((char)read);
+                }
+                latch.countDown();
             }
-            latch.countDown();
-        }
-
-        public char[] getEcho()
-        {
-            return output.toString().toCharArray();
-        }
-
-        public boolean await(long timeout, TimeUnit unit) throws InterruptedException
-        {
-            return latch.await(timeout, unit);
+            catch (IOException e)
+            {
+                throw new RuntimeException(e);
+            }
         }
     }
 
@@ -289,19 +311,16 @@ public class TextStreamTest
         }
     }
 
-    public static class QueuedTextStreamer extends Endpoint implements MessageHandler.Whole<Reader>
+    public static class QueuedTextStreamer extends WSEndpointTracker implements MessageHandler.Whole<Reader>
     {
         protected BlockingArrayQueue<String> messages = new BlockingArrayQueue<>();
-
-        public QueuedTextStreamer()
-        {
-            serverEndpoints.add(this);
-        }
 
         @Override
         public void onOpen(Session session, EndpointConfig config)
         {
             session.addMessageHandler(this);
+            super.onOpen(session, config);
+            serverEndpoints.add(this);
         }
 
         @Override

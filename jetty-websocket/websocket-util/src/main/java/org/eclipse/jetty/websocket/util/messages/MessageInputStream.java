@@ -102,14 +102,14 @@ public class MessageInputStream extends InputStream implements MessageSink
 
     public int read(ByteBuffer buffer) throws IOException
     {
-        Entry result = getCurrentEntry();
+        Entry currentEntry = getCurrentEntry();
         if (LOG.isDebugEnabled())
-            LOG.debug("result = {}", result);
+            LOG.debug("currentEntry = {}", currentEntry);
 
-        if (result == CLOSED)
+        if (currentEntry == CLOSED)
             throw new IOException("Closed");
 
-        if (result == EOF)
+        if (currentEntry == EOF)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Read EOF");
@@ -117,11 +117,13 @@ public class MessageInputStream extends InputStream implements MessageSink
         }
 
         // We have content.
-        int fillLen = BufferUtil.append(buffer, result.buffer);
-        if (!result.buffer.hasRemaining())
+        int fillLen = BufferUtil.append(buffer, currentEntry.buffer);
+        if (!currentEntry.buffer.hasRemaining())
             succeedCurrentEntry();
 
         // Return number of bytes actually copied into buffer.
+        if (LOG.isDebugEnabled())
+            LOG.debug("filled {} bytes from {}", fillLen, currentEntry);
         return fillLen;
     }
 
@@ -131,7 +133,7 @@ public class MessageInputStream extends InputStream implements MessageSink
         if (LOG.isDebugEnabled())
             LOG.debug("close()");
 
-        ArrayList<Entry> failedEntries = new ArrayList<>();
+        ArrayList<Entry> entries = new ArrayList<>();
         synchronized (this)
         {
             if (closed)
@@ -140,20 +142,20 @@ public class MessageInputStream extends InputStream implements MessageSink
 
             if (currentEntry != null)
             {
-                failedEntries.add(currentEntry);
+                entries.add(currentEntry);
                 currentEntry = null;
             }
 
             // Clear queue and fail all entries.
-            failedEntries.addAll(buffers);
+            entries.addAll(buffers);
             buffers.clear();
             buffers.offer(CLOSED);
         }
 
-        Throwable cause = new IOException("Closed");
-        for (Entry e : failedEntries)
+        // Succeed all entries as we don't need them anymore (failing would close the connection).
+        for (Entry e : entries)
         {
-            e.callback.failed(cause);
+            e.callback.succeeded();
         }
 
         super.close();

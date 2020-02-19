@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.util.messages;
 
+import java.io.Closeable;
 import java.lang.invoke.MethodHandle;
 import java.util.concurrent.CompletableFuture;
 
@@ -120,6 +121,10 @@ public abstract class DispatchedMessageSink extends AbstractMessageSink
                 {
                     methodHandle.invoke(typeSink);
                     dispatchComplete.complete(null);
+
+                    // If the MessageSink can be closed do this to free up resources.
+                    if (typeSink instanceof Closeable)
+                        ((Closeable)typeSink).close();
                 }
                 catch (Throwable throwable)
                 {
