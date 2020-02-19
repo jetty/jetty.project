@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.client.http.HttpConnectionOverHTTP;
-import org.eclipse.jetty.client.util.DeferredContentProvider;
+import org.eclipse.jetty.client.util.AsyncRequestContent;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
@@ -116,16 +116,16 @@ public class HttpClientFailureTest
         });
         client.start();
 
-        final CountDownLatch commitLatch = new CountDownLatch(1);
-        final CountDownLatch completeLatch = new CountDownLatch(1);
-        DeferredContentProvider content = new DeferredContentProvider();
+        CountDownLatch commitLatch = new CountDownLatch(1);
+        CountDownLatch completeLatch = new CountDownLatch(1);
+        AsyncRequestContent content = new AsyncRequestContent();
         client.newRequest("localhost", connector.getLocalPort())
             .onRequestCommit(request ->
             {
                 connectionRef.get().getEndPoint().close();
                 commitLatch.countDown();
             })
-            .content(content)
+            .body(content)
             .idleTimeout(2, TimeUnit.SECONDS)
             .send(result ->
             {

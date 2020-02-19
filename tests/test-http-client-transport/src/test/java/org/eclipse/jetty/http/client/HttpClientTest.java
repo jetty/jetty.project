@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InterruptedIOException;
 import java.util.List;
-import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -39,7 +38,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.client.util.BytesContentProvider;
+import org.eclipse.jetty.client.util.BytesRequestContent;
 import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
 import org.eclipse.jetty.http.HttpHeader;
@@ -231,7 +230,7 @@ public class HttpClientTest extends AbstractTest<TransportScenario>
 
         ContentResponse response = scenario.client.newRequest(scenario.newURI())
             .method(HttpMethod.POST)
-            .content(new BytesContentProvider(bytes))
+            .body(new BytesRequestContent(bytes))
             .timeout(15, TimeUnit.SECONDS)
             .send();
 
@@ -275,10 +274,10 @@ public class HttpClientTest extends AbstractTest<TransportScenario>
         int chunks = 256;
         int chunkSize = 16;
         byte[][] bytes = IntStream.range(0, chunks).mapToObj(x -> new byte[chunkSize]).toArray(byte[][]::new);
-        BytesContentProvider contentProvider = new BytesContentProvider("application/octet-stream", bytes);
+        BytesRequestContent content = new BytesRequestContent("application/octet-stream", bytes);
         ContentResponse response = scenario.client.newRequest(scenario.newURI())
             .method(HttpMethod.POST)
-            .content(contentProvider)
+            .body(content)
             .timeout(15, TimeUnit.SECONDS)
             .send();
 

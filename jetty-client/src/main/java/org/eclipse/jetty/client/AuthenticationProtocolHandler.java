@@ -30,7 +30,6 @@ import java.util.regex.Pattern;
 import org.eclipse.jetty.client.api.Authentication;
 import org.eclipse.jetty.client.api.Authentication.HeaderInfo;
 import org.eclipse.jetty.client.api.Connection;
-import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
@@ -187,8 +186,8 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
                 return;
             }
 
-            ContentProvider requestContent = request.getContent();
-            if (requestContent != null && !requestContent.isReproducible())
+            Request.Content requestContent = request.getBody();
+            if (!requestContent.isReproducible())
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Request content not reproducible for {}", request);

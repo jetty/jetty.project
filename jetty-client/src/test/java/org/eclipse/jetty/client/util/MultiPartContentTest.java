@@ -20,7 +20,6 @@ package org.eclipse.jetty.client.util;
 
 import java.io.BufferedWriter;
 import java.io.ByteArrayInputStream;
-import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -32,12 +31,10 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import javax.servlet.MultipartConfigElement;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -63,7 +60,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
-public class MultiPartContentProviderTest extends AbstractHttpClientServerTest
+public class MultiPartContentTest extends AbstractHttpClientServerTest
 {
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
@@ -79,12 +76,12 @@ public class MultiPartContentProviderTest extends AbstractHttpClientServerTest
             }
         });
 
-        MultiPartContentProvider multiPart = new MultiPartContentProvider();
+        MultiPartRequestContent multiPart = new MultiPartRequestContent();
         multiPart.close();
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
             .scheme(scenario.getScheme())
             .method(HttpMethod.POST)
-            .content(multiPart)
+            .body(multiPart)
             .send();
 
         assertEquals(200, response.getStatus());
@@ -109,13 +106,13 @@ public class MultiPartContentProviderTest extends AbstractHttpClientServerTest
             }
         });
 
-        MultiPartContentProvider multiPart = new MultiPartContentProvider();
-        multiPart.addFieldPart(name, new StringContentProvider(value), null);
+        MultiPartRequestContent multiPart = new MultiPartRequestContent();
+        multiPart.addFieldPart(name, new StringRequestContent(value), null);
         multiPart.close();
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
             .scheme(scenario.getScheme())
             .method(HttpMethod.POST)
-            .content(multiPart)
+            .body(multiPart)
             .send();
 
         assertEquals(200, response.getStatus());
@@ -123,7 +120,7 @@ public class MultiPartContentProviderTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void testFieldWithOverridenContentType(Scenario scenario) throws Exception
+    public void testFieldWithOverriddenContentType(Scenario scenario) throws Exception
     {
         String name = "field";
         String value = "\u00e8";
@@ -146,16 +143,16 @@ public class MultiPartContentProviderTest extends AbstractHttpClientServerTest
             }
         });
 
-        MultiPartContentProvider multiPart = new MultiPartContentProvider();
+        MultiPartRequestContent multiPart = new MultiPartRequestContent();
         HttpFields fields = new HttpFields();
         fields.put(HttpHeader.CONTENT_TYPE, "text/plain;charset=" + encoding.name());
-        BytesContentProvider content = new BytesContentProvider(value.getBytes(encoding));
+        BytesRequestContent content = new BytesRequestContent(value.getBytes(encoding));
         multiPart.addFieldPart(name, content, fields);
         multiPart.close();
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
             .scheme(scenario.getScheme())
             .method(HttpMethod.POST)
-            .content(multiPart)
+            .body(multiPart)
             .send();
 
         assertEquals(200, response.getStatus());
@@ -181,15 +178,15 @@ public class MultiPartContentProviderTest extends AbstractHttpClientServerTest
             }
         });
 
-        MultiPartContentProvider multiPart = new MultiPartContentProvider();
-        DeferredContentProvider content = new DeferredContentProvider();
+        MultiPartRequestContent multiPart = new MultiPartRequestContent();
+        AsyncRequestContent content = new AsyncRequestContent("text/plain");
         multiPart.addFieldPart(name, content, null);
         multiPart.close();
         CountDownLatch responseLatch = new CountDownLatch(1);
         client.newRequest("localhost", connector.getLocalPort())
             .scheme(scenario.getScheme())
             .method(HttpMethod.POST)
-            .content(multiPart)
+            .body(multiPart)
             .send(result ->
             {
                 assertTrue(result.isSucceeded(), supply(result.getFailure()));
@@ -233,8 +230,8 @@ public class MultiPartContentProviderTest extends AbstractHttpClientServerTest
         });
 
         CountDownLatch closeLatch = new CountDownLatch(1);
-        MultiPartContentProvider multiPart = new MultiPartContentProvider();
-        InputStreamContentProvider content = new InputStreamContentProvider(new ByteArrayInputStream(data)
+        MultiPartRequestContent multiPart = new MultiPartRequestContent();
+        InputStreamRequestContent content = new InputStreamRequestContent(new ByteArrayInputStream(data)
         {
             @Override
             public void close() throws IOException
@@ -250,7 +247,7 @@ public class MultiPartContentProviderTest extends AbstractHttpClientServerTest
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
             .scheme(scenario.getScheme())
             .method(HttpMethod.POST)
-            .content(multiPart)
+            .body(multiPart)
             .send();
 
         assertTrue(closeLatch.await(5, TimeUnit.SECONDS));
@@ -289,8 +286,8 @@ public class MultiPartContentProviderTest extends AbstractHttpClientServerTest
             }
         });
 
-        MultiPartContentProvider multiPart = new MultiPartContentProvider();
-        PathContentProvider content = new PathContentProvider(contentType, tmpPath);
+        MultiPartRequestContent multiPart = new MultiPartRequestContent();
+        PathRequestContent content = new PathRequestContent(contentType, tmpPath);
         content.setByteBufferPool(client.getByteBufferPool());
         content.setUseDirectByteBuffers(client.isUseOutputDirectByteBuffers());
         multiPart.addFilePart(name, tmpPath.getFileName().toString(), content, null);
@@ -298,7 +295,7 @@ public class MultiPartContentProviderTest extends AbstractHttpClientServerTest
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
             .scheme(scenario.getScheme())
             .method(HttpMethod.POST)
-            .content(multiPart)
+            .body(multiPart)
             .send();
 
         assertEquals(200, response.getStatus());
@@ -356,16 +353,16 @@ public class MultiPartContentProviderTest extends AbstractHttpClientServerTest
             }
         });
 
-        MultiPartContentProvider multiPart = new MultiPartContentProvider();
+        MultiPartRequestContent multiPart = new MultiPartRequestContent();
         HttpFields fields = new HttpFields();
         fields.put(headerName, headerValue);
-        multiPart.addFieldPart(field, new StringContentProvider(value, encoding), fields);
-        multiPart.addFilePart(fileField, tmpPath.getFileName().toString(), new PathContentProvider(tmpPath), null);
+        multiPart.addFieldPart(field, new StringRequestContent(value, encoding), fields);
+        multiPart.addFilePart(fileField, tmpPath.getFileName().toString(), new PathRequestContent(tmpPath), null);
         multiPart.close();
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
             .scheme(scenario.getScheme())
             .method(HttpMethod.POST)
-            .content(multiPart)
+            .body(multiPart)
             .send();
 
         assertEquals(200, response.getStatus());
@@ -406,16 +403,16 @@ public class MultiPartContentProviderTest extends AbstractHttpClientServerTest
             }
         });
 
-        MultiPartContentProvider multiPart = new MultiPartContentProvider();
-        DeferredContentProvider fieldContent = new DeferredContentProvider();
+        MultiPartRequestContent multiPart = new MultiPartRequestContent();
+        AsyncRequestContent fieldContent = new AsyncRequestContent();
         multiPart.addFieldPart("field", fieldContent, null);
-        DeferredContentProvider fileContent = new DeferredContentProvider();
+        AsyncRequestContent fileContent = new AsyncRequestContent();
         multiPart.addFilePart("file", "fileName", fileContent, null);
         CountDownLatch responseLatch = new CountDownLatch(1);
         client.newRequest("localhost", connector.getLocalPort())
             .scheme(scenario.getScheme())
             .method(HttpMethod.POST)
-            .content(multiPart)
+            .body(multiPart)
             .send(result ->
             {
                 assertTrue(result.isSucceeded(), supply(result.getFailure()));
@@ -440,46 +437,6 @@ public class MultiPartContentProviderTest extends AbstractHttpClientServerTest
         assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void testEachPartIsClosed(Scenario scenario) throws Exception
-    {
-        String name1 = "field1";
-        String value1 = "value1";
-        String name2 = "field2";
-        String value2 = "value2";
-        start(scenario, new AbstractMultiPartHandler()
-        {
-            @Override
-            protected void handle(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
-            {
-                Collection<Part> parts = request.getParts();
-                assertEquals(2, parts.size());
-                Iterator<Part> iterator = parts.iterator();
-                Part part1 = iterator.next();
-                assertEquals(name1, part1.getName());
-                assertEquals(value1, IO.toString(part1.getInputStream()));
-                Part part2 = iterator.next();
-                assertEquals(name2, part2.getName());
-                assertEquals(value2, IO.toString(part2.getInputStream()));
-            }
-        });
-
-        AtomicInteger closeCount = new AtomicInteger();
-        MultiPartContentProvider multiPart = new MultiPartContentProvider();
-        multiPart.addFieldPart(name1, new CloseableStringContentProvider(value1, closeCount::incrementAndGet), null);
-        multiPart.addFieldPart(name2, new CloseableStringContentProvider(value2, closeCount::incrementAndGet), null);
-        multiPart.close();
-        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-            .scheme(scenario.getScheme())
-            .method(HttpMethod.POST)
-            .content(multiPart)
-            .send();
-
-        assertEquals(200, response.getStatus());
-        assertEquals(2, closeCount.get());
-    }
-
     private abstract static class AbstractMultiPartHandler extends AbstractHandler
     {
         @Override
@@ -492,50 +449,5 @@ public class MultiPartContentProviderTest extends AbstractHttpClientServerTest
         }
 
         protected abstract void handle(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException;
-    }
-
-    private static class CloseableStringContentProvider extends StringContentProvider
-    {
-        private final Runnable closeFn;
-
-        private CloseableStringContentProvider(String content, Runnable closeFn)
-        {
-            super(content);
-            this.closeFn = closeFn;
-        }
-
-        @Override
-        public Iterator<ByteBuffer> iterator()
-        {
-            return new CloseableIterator<>(super.iterator());
-        }
-
-        private class CloseableIterator<T> implements Iterator<T>, Closeable
-        {
-            private final Iterator<T> iterator;
-
-            public CloseableIterator(Iterator<T> iterator)
-            {
-                this.iterator = iterator;
-            }
-
-            @Override
-            public boolean hasNext()
-            {
-                return iterator.hasNext();
-            }
-
-            @Override
-            public T next()
-            {
-                return iterator.next();
-            }
-
-            @Override
-            public void close()
-            {
-                closeFn.run();
-            }
-        }
     }
 }

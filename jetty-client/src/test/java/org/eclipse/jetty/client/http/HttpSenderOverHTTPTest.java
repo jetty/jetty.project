@@ -33,7 +33,7 @@ import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
-import org.eclipse.jetty.client.util.ByteBufferContentProvider;
+import org.eclipse.jetty.client.util.ByteBufferRequestContent;
 import org.eclipse.jetty.io.ByteArrayEndPoint;
 import org.eclipse.jetty.util.Promise;
 import org.hamcrest.Matchers;
@@ -201,7 +201,7 @@ public class HttpSenderOverHTTPTest
         HttpConnectionOverHTTP connection = new HttpConnectionOverHTTP(endPoint, destination, new Promise.Adapter<Connection>());
         Request request = client.newRequest(URI.create("http://localhost/"));
         String content = "abcdef";
-        request.content(new ByteBufferContentProvider(ByteBuffer.wrap(content.getBytes(StandardCharsets.UTF_8))));
+        request.body(new ByteBufferRequestContent(ByteBuffer.wrap(content.getBytes(StandardCharsets.UTF_8))));
         final CountDownLatch headersLatch = new CountDownLatch(1);
         final CountDownLatch successLatch = new CountDownLatch(1);
         request.listener(new Request.Listener.Adapter()
@@ -237,7 +237,7 @@ public class HttpSenderOverHTTPTest
         Request request = client.newRequest(URI.create("http://localhost/"));
         String content1 = "0123456789";
         String content2 = "abcdef";
-        request.content(new ByteBufferContentProvider(ByteBuffer.wrap(content1.getBytes(StandardCharsets.UTF_8)), ByteBuffer.wrap(content2.getBytes(StandardCharsets.UTF_8))));
+        request.body(new ByteBufferRequestContent(ByteBuffer.wrap(content1.getBytes(StandardCharsets.UTF_8)), ByteBuffer.wrap(content2.getBytes(StandardCharsets.UTF_8))));
         final CountDownLatch headersLatch = new CountDownLatch(1);
         final CountDownLatch successLatch = new CountDownLatch(1);
         request.listener(new Request.Listener.Adapter()
@@ -273,7 +273,7 @@ public class HttpSenderOverHTTPTest
         Request request = client.newRequest(URI.create("http://localhost/"));
         String content1 = "0123456789";
         String content2 = "ABCDEF";
-        request.content(new ByteBufferContentProvider(ByteBuffer.wrap(content1.getBytes(StandardCharsets.UTF_8)), ByteBuffer.wrap(content2.getBytes(StandardCharsets.UTF_8)))
+        request.body(new ByteBufferRequestContent(ByteBuffer.wrap(content1.getBytes(StandardCharsets.UTF_8)), ByteBuffer.wrap(content2.getBytes(StandardCharsets.UTF_8)))
         {
             @Override
             public long getLength()

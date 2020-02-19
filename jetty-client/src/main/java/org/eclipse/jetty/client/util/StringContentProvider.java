@@ -28,7 +28,10 @@ import org.eclipse.jetty.client.api.ContentProvider;
  * <p>
  * It is possible to specify, at the constructor, an encoding used to convert
  * the string into bytes, by default UTF-8.
+ *
+ * @deprecated use {@link StringRequestContent} instead.
  */
+@Deprecated
 public class StringContentProvider extends BytesContentProvider
 {
     public StringContentProvider(String content)

@@ -25,8 +25,8 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.util.DeferredContentProvider;
-import org.eclipse.jetty.client.util.StringContentProvider;
+import org.eclipse.jetty.client.util.AsyncRequestContent;
+import org.eclipse.jetty.client.util.StringRequestContent;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
@@ -82,7 +82,7 @@ public class RequestTrailersTest extends AbstractTest
         HttpFields trailers = new HttpFields();
         request.trailers(() -> trailers);
         if (content != null)
-            request.content(new StringContentProvider(content));
+            request.body(new StringRequestContent(content));
 
         ContentResponse response = request.send();
         assertEquals(HttpStatus.OK_200, response.getStatus());
@@ -92,7 +92,7 @@ public class RequestTrailersTest extends AbstractTest
     }
 
     @Test
-    public void testEmptyTrailersWithDeferredContent() throws Exception
+    public void testEmptyTrailersWithAsyncContent() throws Exception
     {
         start(new ServerSessionListener.Adapter()
         {
@@ -121,8 +121,8 @@ public class RequestTrailersTest extends AbstractTest
         HttpRequest request = (HttpRequest)client.newRequest("localhost", connector.getLocalPort());
         HttpFields trailers = new HttpFields();
         request.trailers(() -> trailers);
-        DeferredContentProvider content = new DeferredContentProvider();
-        request.content(content);
+        AsyncRequestContent content = new AsyncRequestContent();
+        request.body(content);
 
         CountDownLatch latch = new CountDownLatch(1);
         request.send(result ->
@@ -132,16 +132,16 @@ public class RequestTrailersTest extends AbstractTest
             latch.countDown();
         });
 
-        // Send deferred content after a while.
+        // Send async content after a while.
         Thread.sleep(1000);
-        content.offer(ByteBuffer.wrap("deferred_content".getBytes(StandardCharsets.UTF_8)));
+        content.offer(ByteBuffer.wrap("async_content".getBytes(StandardCharsets.UTF_8)));
         content.close();
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
-    public void testEmptyTrailersWithEmptyDeferredContent() throws Exception
+    public void testEmptyTrailersWithEmptyAsyncContent() throws Exception
     {
         start(new ServerSessionListener.Adapter()
         {
@@ -170,8 +170,8 @@ public class RequestTrailersTest extends AbstractTest
         HttpRequest request = (HttpRequest)client.newRequest("localhost", connector.getLocalPort());
         HttpFields trailers = new HttpFields();
         request.trailers(() -> trailers);
-        DeferredContentProvider content = new DeferredContentProvider();
-        request.content(content);
+        AsyncRequestContent content = new AsyncRequestContent();
+        request.body(content);
 
         CountDownLatch latch = new CountDownLatch(1);
         request.send(result ->
@@ -181,7 +181,7 @@ public class RequestTrailersTest extends AbstractTest
             latch.countDown();
         });
 
-        // Send deferred content after a while.
+        // Send async content after a while.
         Thread.sleep(1000);
         content.close();
 

@@ -26,7 +26,7 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.client.util.FormContentProvider;
+import org.eclipse.jetty.client.util.FormRequestContent;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.ajax.JSON;
 import org.eclipse.jetty.util.log.Log;
@@ -176,9 +176,9 @@ public class OpenIdCredentials implements Serializable
         fields.add("client_secret", configuration.getClientSecret());
         fields.add("redirect_uri", redirectUri);
         fields.add("grant_type", "authorization_code");
-        FormContentProvider formContentProvider = new FormContentProvider(fields);
+        FormRequestContent formContent = new FormRequestContent(fields);
         Request request = httpClient.POST(configuration.getTokenEndpoint())
-                .content(formContentProvider)
+                .body(formContent)
                 .timeout(10, TimeUnit.SECONDS);
         ContentResponse response = request.send();
         String responseBody = response.getContentAsString();

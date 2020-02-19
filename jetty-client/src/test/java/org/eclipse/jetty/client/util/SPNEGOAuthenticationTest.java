@@ -291,7 +291,7 @@ public class SPNEGOAuthenticationTest extends AbstractHttpClientServerTest
 
         requests.set(0);
         ByteArrayInputStream input = new ByteArrayInputStream("hello_world".getBytes(StandardCharsets.UTF_8));
-        request = client.newRequest(uri).method("POST").path("/secure").content(new InputStreamContentProvider(input));
+        request = client.newRequest(uri).method("POST").path("/secure").body(new InputStreamRequestContent(input));
         response = request.timeout(15, TimeUnit.SECONDS).send();
         assertEquals(200, response.getStatus());
         // Authentication expired, but POSTs are allowed.

@@ -27,6 +27,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -76,12 +77,12 @@ import org.eclipse.jetty.util.log.Logger;
 public class InputStreamResponseListener extends Listener.Adapter
 {
     private static final Logger LOG = Log.getLogger(InputStreamResponseListener.class);
-    private static final DeferredContentProvider.Chunk EOF = new DeferredContentProvider.Chunk(BufferUtil.EMPTY_BUFFER, Callback.NOOP);
+    private static final Chunk EOF = new Chunk(BufferUtil.EMPTY_BUFFER, Callback.NOOP);
     private final Object lock = this;
     private final CountDownLatch responseLatch = new CountDownLatch(1);
     private final CountDownLatch resultLatch = new CountDownLatch(1);
     private final AtomicReference<InputStream> stream = new AtomicReference<>();
-    private final Queue<DeferredContentProvider.Chunk> chunks = new ArrayDeque<>();
+    private final Queue<Chunk> chunks = new ArrayDeque<>();
     private Response response;
     private Result result;
     private Throwable failure;
@@ -120,7 +121,7 @@ public class InputStreamResponseListener extends Listener.Adapter
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Queueing content {}", content);
-                chunks.add(new DeferredContentProvider.Chunk(content, callback));
+                chunks.add(new Chunk(content, callback));
                 lock.notifyAll();
             }
         }
@@ -268,7 +269,7 @@ public class InputStreamResponseListener extends Listener.Adapter
         {
             while (true)
             {
-                DeferredContentProvider.Chunk chunk = chunks.peek();
+                Chunk chunk = chunks.peek();
                 if (chunk == null || chunk == EOF)
                     break;
                 callbacks.add(chunk.callback);
@@ -299,7 +300,7 @@ public class InputStreamResponseListener extends Listener.Adapter
                 Callback callback = null;
                 synchronized (lock)
                 {
-                    DeferredContentProvider.Chunk chunk;
+                    Chunk chunk;
                     while (true)
                     {
                         chunk = chunks.peek();
@@ -365,6 +366,18 @@ public class InputStreamResponseListener extends Listener.Adapter
             callbacks.forEach(callback -> callback.failed(failure));
 
             super.close();
+        }
+    }
+
+    private static class Chunk
+    {
+        private final ByteBuffer buffer;
+        private final Callback callback;
+
+        private Chunk(ByteBuffer buffer, Callback callback)
+        {
+            this.buffer = Objects.requireNonNull(buffer);
+            this.callback = Objects.requireNonNull(callback);
         }
     }
 }

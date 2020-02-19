@@ -32,12 +32,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.util.AsyncRequestContent;
 import org.eclipse.jetty.client.util.BasicAuthentication;
-import org.eclipse.jetty.client.util.DeferredContentProvider;
 import org.eclipse.jetty.client.util.FutureResponseListener;
-import org.eclipse.jetty.client.util.InputStreamContentProvider;
+import org.eclipse.jetty.client.util.InputStreamRequestContent;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
-import org.eclipse.jetty.client.util.OutputStreamContentProvider;
+import org.eclipse.jetty.client.util.OutputStreamRequestContent;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.util.FuturePromise;
@@ -101,16 +101,12 @@ public class Usage
 
         client.newRequest("localhost", 8080)
             // Send asynchronously
-            .send(new Response.CompleteListener()
+            .send(result ->
             {
-                @Override
-                public void onComplete(Result result)
+                if (result.isSucceeded())
                 {
-                    if (result.isSucceeded())
-                    {
-                        responseRef.set(result.getResponse());
-                        latch.countDown();
-                    }
+                    responseRef.set(result.getResponse());
+                    latch.countDown();
                 }
             });
 
@@ -278,7 +274,7 @@ public class Usage
 
         ContentResponse response = client.newRequest("localhost", 8080)
             // Provide the content as InputStream
-            .content(new InputStreamContentProvider(input))
+            .body(new InputStreamRequestContent(input))
             .send();
 
         assertEquals(200, response.getStatus());
@@ -290,11 +286,11 @@ public class Usage
         HttpClient client = new HttpClient();
         client.start();
 
-        OutputStreamContentProvider content = new OutputStreamContentProvider();
+        OutputStreamRequestContent content = new OutputStreamRequestContent();
         try (OutputStream output = content.getOutputStream())
         {
             client.newRequest("localhost", 8080)
-                    .content(content)
+                    .body(content)
                     .send(result -> assertEquals(200, result.getResponse().getStatus()));
 
             output.write(new byte[1024]);
@@ -308,15 +304,15 @@ public class Usage
     public void testProxyUsage() throws Exception
     {
         // In proxies, we receive the headers but not the content, so we must be able to send the request with
-        // a lazy content provider that does not block request.send(...)
+        // a lazy request content that does not block request.send(...)
 
         HttpClient client = new HttpClient();
         client.start();
 
-        final AtomicBoolean sendContent = new AtomicBoolean(true);
-        DeferredContentProvider async = new DeferredContentProvider(ByteBuffer.wrap(new byte[]{0, 1, 2}));
+        AtomicBoolean sendContent = new AtomicBoolean(true);
+        AsyncRequestContent async = new AsyncRequestContent(ByteBuffer.wrap(new byte[]{0, 1, 2}));
         client.newRequest("localhost", 8080)
-            .content(async)
+            .body(async)
             .send(new Response.Listener.Adapter()
             {
                 @Override
