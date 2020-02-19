@@ -474,13 +474,15 @@ public class StdErrLog extends AbstractLogger
             {
                 escape(builder, msg.substring(start));
                 builder.append(" ");
-                builder.append(arg);
+                if (arg != null)
+                    builder.append(arg);
                 start = msg.length();
             }
             else
             {
                 escape(builder, msg.substring(start, bracesIndex));
-                builder.append(arg);
+                if (arg != null)
+                    builder.append(arg);
                 start = bracesIndex + braces.length();
             }
         }
