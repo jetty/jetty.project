@@ -50,8 +50,6 @@ import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
 import org.eclipse.jetty.webapp.AbstractConfiguration;
@@ -63,13 +61,15 @@ import org.eclipse.jetty.webapp.MetaInfConfiguration;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.webapp.WebDescriptor;
 import org.eclipse.jetty.webapp.WebXmlConfiguration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Configuration for Annotations
  */
 public class AnnotationConfiguration extends AbstractConfiguration
 {
-    private static final Logger LOG = Log.getLogger(AnnotationConfiguration.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AnnotationConfiguration.class);
 
     public static final String SERVLET_CONTAINER_INITIALIZER_EXCLUSION_PATTERN = "org.eclipse.jetty.containerInitializerExclusionPattern";
     public static final String SERVLET_CONTAINER_INITIALIZER_ORDER = "org.eclipse.jetty.containerInitializerOrder";
@@ -840,8 +840,10 @@ public class AnnotationConfiguration extends AbstractConfiguration
             catch (Error e)
             {
                 // Probably a SCI discovered on the system classpath that is hidden by the context classloader
-                LOG.info("Error: " + e.getMessage() + " for " + context);
-                LOG.debug(e);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Error: {} for {}", e.getMessage(), context, e);
+                else
+                    LOG.info("Error: {} for {}", e.getMessage(), context);
                 continue;
             }
 

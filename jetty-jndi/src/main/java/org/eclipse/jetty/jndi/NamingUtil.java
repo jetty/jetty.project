@@ -28,15 +28,15 @@ import javax.naming.NameParser;
 import javax.naming.NamingEnumeration;
 import javax.naming.NamingException;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Naming Utility Methods
  */
 public class NamingUtil
 {
-    private static final Logger LOG = Log.getLogger(NamingUtil.class);
+    private static final Logger LOG = LoggerFactory.getLogger(NamingUtil.class);
 
     /**
      * Bind an object to a context ensuring all sub-contexts

@@ -21,12 +21,12 @@ package org.eclipse.jetty.websocket.javax.common;
 import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class CompletableFutureCallback extends CompletableFuture<Callback> implements Callback
 {
-    private static final Logger LOG = Log.getLogger(CompletableFutureCallback.class);
+    private static final Logger LOG = LoggerFactory.getLogger(CompletableFutureCallback.class);
 
     @Override
     public void failed(Throwable cause)

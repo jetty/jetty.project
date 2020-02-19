@@ -31,8 +31,8 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A handler that shuts the server down on a valid request. Used to do "soft" restarts from Java.
@@ -74,7 +74,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class ShutdownHandler extends HandlerWrapper
 {
-    private static final Logger LOG = Log.getLogger(ShutdownHandler.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ShutdownHandler.class);
 
     private final String _shutdownToken;
     private boolean _sendShutdownAtStart;
@@ -206,7 +206,7 @@ public class ShutdownHandler extends HandlerWrapper
                 }
                 catch (InterruptedException e)
                 {
-                    LOG.ignore(e);
+                    LOG.trace("IGNORED", e);
                 }
                 catch (Exception e)
                 {

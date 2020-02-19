@@ -35,8 +35,6 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -51,7 +49,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 public class IdleSessionTest
 {
-    private static final Logger LOG_SESSION = LoggerFactory.getLogger("org.eclipse.jetty.server.session");
+    private static final Package SESSION_PACKAGE = IdleSessionTest.class.getPackage();
 
     protected TestServlet _servlet = new TestServlet();
     protected TestServer _server1 = null;
@@ -86,7 +84,7 @@ public class IdleSessionTest
         _server1.start();
         int port1 = _server1.getPort();
 
-        try (StacklessLogging ignored = new StacklessLogging(LOG_SESSION))
+        try (StacklessLogging ignored = new StacklessLogging(SESSION_PACKAGE))
         {
             HttpClient client = new HttpClient();
             client.start();
@@ -212,7 +210,7 @@ public class IdleSessionTest
         _server1.start();
         int port1 = _server1.getPort();
 
-        try (StacklessLogging ignored = new StacklessLogging(LOG_SESSION))
+        try (StacklessLogging ignored = new StacklessLogging(SESSION_PACKAGE))
         {
             HttpClient client = new HttpClient();
             client.start();

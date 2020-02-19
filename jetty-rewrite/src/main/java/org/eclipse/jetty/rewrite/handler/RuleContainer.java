@@ -28,8 +28,8 @@ import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.component.Dumpable;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Base container to group rules. Can be extended so that the contained rules
@@ -38,7 +38,7 @@ import org.eclipse.jetty.util.log.Logger;
 public class RuleContainer extends Rule implements Dumpable
 {
     public static final String ORIGINAL_QUERYSTRING_ATTRIBUTE_SUFFIX = ".QUERYSTRING";
-    private static final Logger LOG = Log.getLogger(RuleContainer.class);
+    private static final Logger LOG = LoggerFactory.getLogger(RuleContainer.class);
 
     protected Rule[] _rules;
 

@@ -47,8 +47,6 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.Behavior;
 import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.CoreSession;
@@ -61,6 +59,8 @@ import org.eclipse.jetty.websocket.core.internal.ExtensionStack;
 import org.eclipse.jetty.websocket.core.internal.Negotiated;
 import org.eclipse.jetty.websocket.core.internal.WebSocketConnection;
 import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract class ClientUpgradeRequest extends HttpRequest implements Response.CompleteListener, HttpUpgrader.Factory
 {
@@ -76,7 +76,7 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
         };
     }
 
-    private static final Logger LOG = Log.getLogger(ClientUpgradeRequest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ClientUpgradeRequest.class);
     protected final CompletableFuture<CoreSession> futureCoreSession;
     private final WebSocketCoreClient wsClient;
     private FrameHandler frameHandler;

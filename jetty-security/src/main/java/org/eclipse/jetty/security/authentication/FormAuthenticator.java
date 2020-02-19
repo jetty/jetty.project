@@ -47,9 +47,9 @@ import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.security.Constraint;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * FORM Authenticator.
@@ -66,7 +66,7 @@ import org.eclipse.jetty.util.security.Constraint;
  */
 public class FormAuthenticator extends LoginAuthenticator
 {
-    private static final Logger LOG = Log.getLogger(FormAuthenticator.class);
+    private static final Logger LOG = LoggerFactory.getLogger(FormAuthenticator.class);
 
     public static final String __FORM_LOGIN_PAGE = "org.eclipse.jetty.security.form_login_page";
     public static final String __FORM_ERROR_PAGE = "org.eclipse.jetty.security.form_error_page";

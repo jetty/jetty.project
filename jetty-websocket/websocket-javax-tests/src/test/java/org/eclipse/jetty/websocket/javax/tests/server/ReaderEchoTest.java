@@ -28,8 +28,6 @@ import javax.websocket.server.PathParam;
 import javax.websocket.server.ServerEndpoint;
 
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
@@ -38,13 +36,15 @@ import org.eclipse.jetty.websocket.javax.tests.LocalServer;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Test various {@link javax.websocket.Decoder.TextStream Decoder.TextStream} and {@link javax.websocket.Encoder.TextStream Encoder.TextStream} echo behavior of Java Readers
  */
 public class ReaderEchoTest
 {
-    private static final Logger LOG = Log.getLogger(ReaderEchoTest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ReaderEchoTest.class);
 
     public static class BaseSocket
     {

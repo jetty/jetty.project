@@ -25,12 +25,12 @@ import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ServerParser extends Parser
 {
-    private static final Logger LOG = Log.getLogger(ServerParser.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ServerParser.class);
 
     private final Listener listener;
     private final PrefaceParser prefaceParser;
@@ -124,7 +124,7 @@ public class ServerParser extends Parser
         }
         catch (Throwable x)
         {
-            LOG.debug(x);
+            LOG.debug("Parse error", x);
             BufferUtil.clear(buffer);
             notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "parser_error");
         }

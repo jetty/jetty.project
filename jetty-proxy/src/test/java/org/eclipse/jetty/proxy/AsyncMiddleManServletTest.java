@@ -74,13 +74,13 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.ajax.JSON;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.OS;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -92,7 +92,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Disabled("See issue #3974")
 public class AsyncMiddleManServletTest
 {
-    private static final Logger LOG = Log.getLogger(AsyncMiddleManServletTest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AsyncMiddleManServletTest.class);
     private static final String PROXIED_HEADER = "X-Proxied";
 
     private HttpClient client;

@@ -25,16 +25,16 @@ import javax.servlet.ServletRequest;
 
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.security.Credential;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * AbstractLoginService
  */
 public abstract class AbstractLoginService extends ContainerLifeCycle implements LoginService
 {
-    private static final Logger LOG = Log.getLogger(AbstractLoginService.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AbstractLoginService.class);
 
     protected IdentityService _identityService = new DefaultIdentityService();
     protected String _name;

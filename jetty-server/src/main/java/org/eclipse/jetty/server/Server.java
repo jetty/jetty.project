@@ -55,12 +55,12 @@ import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.AttributeContainerMap;
 import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.component.LifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ShutdownThread;
 import org.eclipse.jetty.util.thread.ThreadPool;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Jetty HTTP Servlet Server.
@@ -72,7 +72,7 @@ import org.eclipse.jetty.util.thread.ThreadPool;
 @ManagedObject(value = "Jetty HTTP Servlet server")
 public class Server extends HandlerWrapper implements Attributes
 {
-    private static final Logger LOG = Log.getLogger(Server.class);
+    private static final Logger LOG = LoggerFactory.getLogger(Server.class);
 
     private final AttributeContainerMap _attributes = new AttributeContainerMap();
     private final ThreadPool _threadPool;
@@ -697,7 +697,7 @@ public class Server extends HandlerWrapper implements Attributes
         }
         catch (Exception e)
         {
-            LOG.warn(e);
+            LOG.warn("Unable to build server URI", e);
             return null;
         }
     }

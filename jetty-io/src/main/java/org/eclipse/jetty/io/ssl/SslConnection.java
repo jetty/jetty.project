@@ -43,9 +43,9 @@ import org.eclipse.jetty.io.WriteFlusher;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Invocable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A Connection that acts as an interceptor between an EndPoint providing SSL encrypted data
@@ -79,7 +79,7 @@ import org.eclipse.jetty.util.thread.Invocable;
  */
 public class SslConnection extends AbstractConnection implements Connection.UpgradeTo
 {
-    private static final Logger LOG = Log.getLogger(SslConnection.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SslConnection.class);
     private static final String TLS_1_3 = "TLSv1.3";
 
     private enum HandshakeState
@@ -924,7 +924,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
             }
             catch (Throwable x)
             {
-                LOG.ignore(x);
+                LOG.trace("IGNORED", x);
             }
         }
 
@@ -940,12 +940,12 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
             {
                 if (handshakeStatus == HandshakeStatus.NOT_HANDSHAKING && isRequireCloseMessage())
                     throw x;
-                LOG.ignore(x);
+                LOG.trace("IGNORED", x);
                 return x;
             }
             catch (Throwable x)
             {
-                LOG.ignore(x);
+                LOG.trace("IGNORED", x);
                 return x;
             }
         }
@@ -1194,7 +1194,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                                 }
                                 catch (IOException e)
                                 {
-                                    LOG.debug(e);
+                                    LOG.debug("Incomplete flush?", e);
                                     close(e);
                                     write = BufferUtil.EMPTY_BUFFER;
                                     _flushState = FlushState.WRITING;
@@ -1294,7 +1294,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
             }
             catch (Throwable x)
             {
-                LOG.ignore(x);
+                LOG.trace("IGNORED", x);
                 endPoint.close();
             }
         }
@@ -1308,7 +1308,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug(x);
+                    LOG.debug("Unable to close outbound", x);
             }
         }
 
@@ -1333,7 +1333,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
             }
             catch (Throwable x)
             {
-                LOG.ignore(x);
+                LOG.trace("IGNORED", x);
                 return true;
             }
         }
@@ -1367,7 +1367,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
             }
             catch (Throwable x)
             {
-                LOG.ignore(x);
+                LOG.trace("IGNORED", x);
                 return true;
             }
         }

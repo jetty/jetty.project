@@ -28,8 +28,8 @@ import javax.servlet.ServletResponse;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Specialized PrintWriter for servlet Responses
@@ -43,7 +43,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class ResponseWriter extends PrintWriter
 {
-    private static final Logger LOG = Log.getLogger(ResponseWriter.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ResponseWriter.class);
     private static final String __lineSeparator = System.getProperty("line.separator");
     private static final String __trueln = "true" + __lineSeparator;
     private static final String __falseln = "false" + __lineSeparator;
@@ -114,7 +114,7 @@ public class ResponseWriter extends PrintWriter
         }
 
         if (LOG.isDebugEnabled())
-            LOG.debug(th);
+            LOG.debug("PrintWriter Error is set", th);
     }
 
     @Override
@@ -194,7 +194,7 @@ public class ResponseWriter extends PrintWriter
         }
         catch (InterruptedIOException ex)
         {
-            LOG.debug(ex);
+            LOG.debug("Write interrupted", ex);
             Thread.currentThread().interrupt();
         }
         catch (IOException ex)
@@ -216,7 +216,7 @@ public class ResponseWriter extends PrintWriter
         }
         catch (InterruptedIOException ex)
         {
-            LOG.debug(ex);
+            LOG.debug("Write interrupted", ex);
             Thread.currentThread().interrupt();
         }
         catch (IOException ex)
@@ -244,7 +244,7 @@ public class ResponseWriter extends PrintWriter
         }
         catch (InterruptedIOException ex)
         {
-            LOG.debug(ex);
+            LOG.debug("Write interrupted", ex);
             Thread.currentThread().interrupt();
         }
         catch (IOException ex)
@@ -328,7 +328,7 @@ public class ResponseWriter extends PrintWriter
         }
         catch (InterruptedIOException ex)
         {
-            LOG.debug(ex);
+            LOG.debug("write interrupted", ex);
             Thread.currentThread().interrupt();
         }
         catch (IOException ex)
@@ -356,7 +356,7 @@ public class ResponseWriter extends PrintWriter
         }
         catch (InterruptedIOException ex)
         {
-            LOG.debug(ex);
+            LOG.debug("Write interrupted", ex);
             Thread.currentThread().interrupt();
         }
         catch (IOException ex)
@@ -403,7 +403,7 @@ public class ResponseWriter extends PrintWriter
         }
         catch (InterruptedIOException ex)
         {
-            LOG.debug(ex);
+            LOG.debug("Write interrupted", ex);
             Thread.currentThread().interrupt();
         }
         catch (IOException ex)
@@ -429,7 +429,7 @@ public class ResponseWriter extends PrintWriter
         }
         catch (InterruptedIOException ex)
         {
-            LOG.debug(ex);
+            LOG.debug("Write interrupted", ex);
             Thread.currentThread().interrupt();
         }
         catch (IOException ex)
@@ -491,7 +491,7 @@ public class ResponseWriter extends PrintWriter
         }
         catch (InterruptedIOException ex)
         {
-            LOG.debug(ex);
+            LOG.debug("format interrupted", ex);
             Thread.currentThread().interrupt();
         }
         catch (IOException ex)

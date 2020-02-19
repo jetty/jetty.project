@@ -24,8 +24,8 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.compression.DeflaterPool;
 import org.eclipse.jetty.util.compression.InflaterPool;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @ManagedObject("Abstract Extension")
 public class AbstractExtension implements Extension
@@ -41,7 +41,7 @@ public class AbstractExtension implements Extension
 
     public AbstractExtension()
     {
-        log = Log.getLogger(this.getClass());
+        log = LoggerFactory.getLogger(this.getClass());
     }
 
     @Override

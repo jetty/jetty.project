@@ -37,8 +37,6 @@ import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -51,7 +49,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 public class AsyncTest
 {
-    private static final Logger LOG_SESSION = LoggerFactory.getLogger("org.eclipse.jetty.server.session");
+    private static final Package SESSION_PACKAGE = AsyncTest.class.getPackage();
 
     @Test
     public void testSessionWithAsyncDispatch() throws Exception
@@ -76,7 +74,7 @@ public class AsyncTest
         server.start();
         int port = server.getPort();
 
-        try (StacklessLogging ignored = new StacklessLogging(LOG_SESSION))
+        try (StacklessLogging ignored = new StacklessLogging(SESSION_PACKAGE))
         {
             HttpClient client = new HttpClient();
             client.start();
@@ -128,7 +126,7 @@ public class AsyncTest
         server.start();
         int port = server.getPort();
 
-        try (StacklessLogging ignored = new StacklessLogging(LOG_SESSION))
+        try (StacklessLogging ignored = new StacklessLogging(SESSION_PACKAGE))
         {
             HttpClient client = new HttpClient();
             client.start();
@@ -184,7 +182,7 @@ public class AsyncTest
         server.start();
         int port = server.getPort();
 
-        try (StacklessLogging ignored = new StacklessLogging(LOG_SESSION))
+        try (StacklessLogging ignored = new StacklessLogging(SESSION_PACKAGE))
         {
             HttpClient client = new HttpClient();
             client.start();
@@ -237,7 +235,7 @@ public class AsyncTest
         server.start();
         int port = server.getPort();
 
-        try (StacklessLogging ignored = new StacklessLogging(LOG_SESSION))
+        try (StacklessLogging ignored = new StacklessLogging(SESSION_PACKAGE))
         {
             HttpClient client = new HttpClient();
             client.start();
@@ -294,7 +292,7 @@ public class AsyncTest
         int port = server.getPort();
         HttpClient client = new HttpClient();
 
-        try (StacklessLogging ignored = new StacklessLogging(LOG_SESSION))
+        try (StacklessLogging ignored = new StacklessLogging(SESSION_PACKAGE))
         {
 
             client.start();

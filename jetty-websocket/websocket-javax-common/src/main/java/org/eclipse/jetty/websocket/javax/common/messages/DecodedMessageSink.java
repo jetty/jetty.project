@@ -22,11 +22,11 @@ import java.lang.invoke.MethodHandle;
 import javax.websocket.Decoder;
 
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketSession;
 import org.eclipse.jetty.websocket.javax.common.MessageSink;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract class DecodedMessageSink<T extends Decoder> extends AbstractMessageSink
 {
@@ -39,7 +39,7 @@ public abstract class DecodedMessageSink<T extends Decoder> extends AbstractMess
         throws NoSuchMethodException, IllegalAccessException
     {
         super(session, methodHandle);
-        this.logger = Log.getLogger(this.getClass());
+        this.logger = LoggerFactory.getLogger(this.getClass());
         this.decoder = decoder;
         this.rawMethodHandle = newRawMethodHandle();
         this.rawMessageSink = newRawMessageSink(session, rawMethodHandle);

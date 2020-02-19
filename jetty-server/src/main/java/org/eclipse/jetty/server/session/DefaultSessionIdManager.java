@@ -32,8 +32,8 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * DefaultSessionIdManager
@@ -50,7 +50,7 @@ import org.eclipse.jetty.util.log.Logger;
 @ManagedObject
 public class DefaultSessionIdManager extends ContainerLifeCycle implements SessionIdManager
 {
-    private static final Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
+    private static final Logger LOG = LoggerFactory.getLogger(DefaultSessionIdManager.class);
 
     public static final String __NEW_SESSION_ID = "org.eclipse.jetty.server.newSessionId";
 
@@ -306,8 +306,7 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
         }
         catch (Exception e)
         {
-            LOG.warn("Problem checking if id {} is in use", id);
-            LOG.warn(e);
+            LOG.warn("Problem checking if id {} is in use", id, e);
             return false;
         }
     }

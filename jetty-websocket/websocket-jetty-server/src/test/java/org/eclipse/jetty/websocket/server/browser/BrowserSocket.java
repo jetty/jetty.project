@@ -33,8 +33,6 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.component.Dumpable;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
@@ -42,6 +40,8 @@ import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @WebSocket
 public class BrowserSocket
@@ -81,7 +81,7 @@ public class BrowserSocket
         }
     }
 
-    private static final Logger LOG = Log.getLogger(BrowserSocket.class);
+    private static final Logger LOG = LoggerFactory.getLogger(BrowserSocket.class);
 
     private Session session;
     private final String userAgent;
@@ -198,7 +198,7 @@ public class BrowserSocket
                     }
                     catch (IOException e)
                     {
-                        LOG.warn(e);
+                        LOG.warn("Unable to send ping", e);
                     }
                     break;
                 }

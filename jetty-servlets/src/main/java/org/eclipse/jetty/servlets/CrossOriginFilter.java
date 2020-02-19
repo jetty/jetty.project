@@ -36,8 +36,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Implementation of the
@@ -123,7 +123,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class CrossOriginFilter implements Filter
 {
-    private static final Logger LOG = Log.getLogger(CrossOriginFilter.class);
+    private static final Logger LOG = LoggerFactory.getLogger(CrossOriginFilter.class);
 
     // Request headers
     private static final String ORIGIN_HEADER = "Origin";

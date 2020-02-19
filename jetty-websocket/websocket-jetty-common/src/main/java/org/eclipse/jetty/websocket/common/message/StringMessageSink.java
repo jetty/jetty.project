@@ -27,17 +27,17 @@ import java.util.concurrent.Executor;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Utf8StringBuilder;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.common.AbstractMessageSink;
 import org.eclipse.jetty.websocket.common.invoke.InvalidSignatureException;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.exception.MessageTooLargeException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class StringMessageSink extends AbstractMessageSink
 {
-    private static final Logger LOG = Log.getLogger(StringMessageSink.class);
+    private static final Logger LOG = LoggerFactory.getLogger(StringMessageSink.class);
     private final Session session;
     private Utf8StringBuilder utf;
     private int size = 0;

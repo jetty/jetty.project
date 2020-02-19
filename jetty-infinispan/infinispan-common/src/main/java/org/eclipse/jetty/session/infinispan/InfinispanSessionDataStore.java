@@ -29,9 +29,9 @@ import org.eclipse.jetty.server.session.SessionData;
 import org.eclipse.jetty.server.session.UnreadableSessionDataException;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.infinispan.commons.api.BasicCache;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * InfinispanSessionDataStore
@@ -39,7 +39,7 @@ import org.infinispan.commons.api.BasicCache;
 @ManagedObject
 public class InfinispanSessionDataStore extends AbstractSessionDataStore
 {
-    private static final Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
+    private static final Logger LOG = LoggerFactory.getLogger(InfinispanSessionDataStore.class);
 
     /**
      * Clustered cache of sessions

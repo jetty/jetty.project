@@ -28,13 +28,13 @@ import org.eclipse.jetty.annotations.AnnotationParser.Handler;
 import org.eclipse.jetty.osgi.boot.OSGiMetaInfConfiguration;
 import org.eclipse.jetty.osgi.boot.OSGiWebappConstants;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.Constants;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Extend the AnnotationConfiguration to support OSGi:
@@ -43,7 +43,7 @@ import org.osgi.framework.Constants;
  */
 public class AnnotationConfiguration extends org.eclipse.jetty.annotations.AnnotationConfiguration
 {
-    private static final Logger LOG = Log.getLogger(org.eclipse.jetty.annotations.AnnotationConfiguration.class);
+    private static final Logger LOG = LoggerFactory.getLogger(org.eclipse.jetty.annotations.AnnotationConfiguration.class);
 
     public class BundleParserTask extends ParserTask
     {

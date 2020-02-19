@@ -41,8 +41,8 @@ import org.eclipse.jetty.util.IncludeExclude;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Buffered Response Handler
@@ -63,7 +63,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class BufferedResponseHandler extends HandlerWrapper
 {
-    static final Logger LOG = Log.getLogger(BufferedResponseHandler.class);
+    static final Logger LOG = LoggerFactory.getLogger(BufferedResponseHandler.class);
 
     private final IncludeExclude<String> _methods = new IncludeExclude<>();
     private final IncludeExclude<String> _paths = new IncludeExclude<>(PathSpecSet.class);

@@ -58,10 +58,11 @@ import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.UrlEncoded;
-import org.eclipse.jetty.util.log.Log;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -73,6 +74,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class DispatcherTest
 {
+    private static final Logger LOG = LoggerFactory.getLogger(DispatcherTest.class);
+
     private Server _server;
     private LocalConnector _connector;
     private ContextHandlerCollection _contextCollection;
@@ -169,9 +172,9 @@ public class DispatcherTest
     @Test
     public void testForwardWithBadParams() throws Exception
     {
-        try (StacklessLogging nostack = new StacklessLogging(HttpChannel.class))
+        try (StacklessLogging ignored = new StacklessLogging(HttpChannel.class))
         {
-            Log.getLogger(ServletHandler.class).info("Expect Not valid UTF8 warnings...");
+            LOG.info("Expect Not valid UTF8 warnings...");
             _contextHandler.addServlet(AlwaysForwardServlet.class, "/forward/*");
             _contextHandler.addServlet(EchoServlet.class, "/echo/*");
 

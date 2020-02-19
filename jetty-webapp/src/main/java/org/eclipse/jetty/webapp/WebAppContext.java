@@ -67,10 +67,10 @@ import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.DumpableCollection;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Web Application Context Handler.
@@ -154,7 +154,7 @@ import org.eclipse.jetty.util.resource.ResourceCollection;
 @ManagedObject("Web Application ContextHandler")
 public class WebAppContext extends ServletContextHandler implements WebAppClassLoader.Context
 {
-    static final Logger LOG = Log.getLogger(WebAppContext.class);
+    static final Logger LOG = LoggerFactory.getLogger(WebAppContext.class);
 
     public static final String TEMPDIR = "javax.servlet.context.tempdir";
     public static final String BASETEMPDIR = "org.eclipse.jetty.webapp.basetempdir";
@@ -423,7 +423,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             }
             catch (IOException e)
             {
-                LOG.ignore(e);
+                LOG.trace("IGNORED", e);
                 if (ioe == null)
                     ioe = e;
             }
@@ -1169,7 +1169,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             }
             catch (IOException e)
             {
-                LOG.warn(Log.EXCEPTION, e);
+                LOG.warn("Unable to find canonical path for {}", dir, e);
             }
         }
 

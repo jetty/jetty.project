@@ -19,20 +19,19 @@
 package org.eclipse.jetty.tests.webapp.websocket;
 
 import java.io.IOException;
-
 import javax.websocket.OnClose;
 import javax.websocket.OnError;
 import javax.websocket.OnMessage;
 import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @ServerEndpoint("/onclose/{arg}")
 public class OnCloseServerEndpoint
 {
-    private static final Logger LOGGER = Log.getLogger(OnCloseServerEndpoint.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(OnCloseServerEndpoint.class);
     private static String close = "";
 
     @OnMessage

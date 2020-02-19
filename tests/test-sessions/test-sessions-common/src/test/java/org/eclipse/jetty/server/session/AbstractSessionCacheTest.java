@@ -30,8 +30,6 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -47,7 +45,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 public abstract class AbstractSessionCacheTest
 {
-    private static final Logger LOG_SESSION = LoggerFactory.getLogger("org.eclipse.jetty.server.session");
+    private static final Package SESSION_PACKAGE = AbstractSessionCacheTest.class.getPackage();
 
     public static class UnreadableSessionDataStore extends AbstractSessionDataStore
     {
@@ -151,7 +149,7 @@ public abstract class AbstractSessionCacheTest
         context.getSessionHandler().setSessionCache(cache);
         server.start();
 
-        try (StacklessLogging ignored = new StacklessLogging(LOG_SESSION))
+        try (StacklessLogging ignored = new StacklessLogging(SESSION_PACKAGE))
         {
             //check that session 1234 cannot be read, ie returns null AND
             //that it is deleted in the datastore

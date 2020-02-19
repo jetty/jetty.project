@@ -34,12 +34,12 @@ import javax.servlet.ServletException;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class FilterHolder extends Holder<Filter>
 {
-    private static final Logger LOG = Log.getLogger(FilterHolder.class);
+    private static final Logger LOG = LoggerFactory.getLogger(FilterHolder.class);
 
     private transient Filter _filter;
     private transient Config _config;

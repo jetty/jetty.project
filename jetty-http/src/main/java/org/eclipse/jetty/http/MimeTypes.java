@@ -36,8 +36,8 @@ import org.eclipse.jetty.util.ArrayTrie;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.Trie;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * MIME Type enum and utilities
@@ -45,7 +45,7 @@ import org.eclipse.jetty.util.log.Logger;
 public class MimeTypes
 {
 
-    private static final Logger LOG = Log.getLogger(MimeTypes.class);
+    private static final Logger LOG = LoggerFactory.getLogger(MimeTypes.class);
     private static final Trie<ByteBuffer> TYPES = new ArrayTrie<ByteBuffer>(512);
     private static final Map<String, String> __dftMimeMap = new HashMap<String, String>();
     private static final Map<String, String> __inferredEncodings = new HashMap<String, String>();
@@ -218,15 +218,19 @@ public class MimeTypes
                 }
                 catch (IOException e)
                 {
-                    LOG.warn(e.toString());
-                    LOG.debug(e);
+                    if (LOG.isDebugEnabled())
+                        LOG.warn("Unable to read mime-type resource: {}", resourceName, e);
+                    else
+                        LOG.warn("Unable to read mime-type resource: {} - {}", resourceName, e.toString());
                 }
             }
         }
         catch (IOException e)
         {
-            LOG.warn(e.toString());
-            LOG.debug(e);
+            if (LOG.isDebugEnabled())
+                LOG.warn("Unable to load mime-type resource: {}", resourceName, e);
+            else
+                LOG.warn("Unable to load mime-type resource: {} - {}", resourceName, e.toString());
         }
 
         resourceName = "encoding.properties";
@@ -262,15 +266,19 @@ public class MimeTypes
                 }
                 catch (IOException e)
                 {
-                    LOG.warn(e.toString());
-                    LOG.debug(e);
+                    if (LOG.isDebugEnabled())
+                        LOG.warn("Unable to read encoding resource: {}", resourceName, e);
+                    else
+                        LOG.warn("Unable to read encoding resource: {} - {}", resourceName, e.toString());
                 }
             }
         }
         catch (IOException e)
         {
-            LOG.warn(e.toString());
-            LOG.debug(e);
+            if (LOG.isDebugEnabled())
+                LOG.warn("Unable to load encoding resource: {}", resourceName, e);
+            else
+                LOG.warn("Unable to load encoding resource: {} - {}", resourceName, e.toString());
         }
     }
 

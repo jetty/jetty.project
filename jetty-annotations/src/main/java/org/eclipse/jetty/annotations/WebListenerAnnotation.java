@@ -29,20 +29,20 @@ import javax.servlet.http.HttpSessionListener;
 
 import org.eclipse.jetty.servlet.ListenerHolder;
 import org.eclipse.jetty.servlet.Source;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.DiscoveredAnnotation;
 import org.eclipse.jetty.webapp.MetaData;
 import org.eclipse.jetty.webapp.Origin;
 import org.eclipse.jetty.webapp.WebAppContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * WebListenerAnnotation
  */
 public class WebListenerAnnotation extends DiscoveredAnnotation
 {
-    private static final Logger LOG = Log.getLogger(WebListenerAnnotation.class);
+    private static final Logger LOG = LoggerFactory.getLogger(WebListenerAnnotation.class);
 
     public WebListenerAnnotation(WebAppContext context, String className)
     {
@@ -91,7 +91,7 @@ public class WebListenerAnnotation extends DiscoveredAnnotation
         }
         catch (Exception e)
         {
-            LOG.warn(e);
+            LOG.warn("Unable to add listener {}", clazz, e);
         }
     }
 }

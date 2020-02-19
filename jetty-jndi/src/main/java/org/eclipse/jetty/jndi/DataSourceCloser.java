@@ -25,8 +25,8 @@ import javax.sql.DataSource;
 
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Destroyable;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Close a DataSource.
@@ -36,7 +36,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class DataSourceCloser implements Destroyable
 {
-    private static final Logger LOG = Log.getLogger(DataSourceCloser.class);
+    private static final Logger LOG = LoggerFactory.getLogger(DataSourceCloser.class);
 
     final DataSource _datasource;
     final String _shutdown;
@@ -74,7 +74,7 @@ public class DataSourceCloser implements Destroyable
         }
         catch (Exception e)
         {
-            LOG.warn(e);
+            LOG.warn("Unable to shutdown datasource {}", _datasource, e);
         }
 
         try
@@ -85,7 +85,7 @@ public class DataSourceCloser implements Destroyable
         }
         catch (Exception e)
         {
-            LOG.warn(e);
+            LOG.warn("Unable to close datasource {}", _datasource, e);
         }
     }
 }

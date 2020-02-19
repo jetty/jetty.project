@@ -18,8 +18,8 @@
 
 package org.eclipse.jetty.osgi.boot.utils;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * BundleFileLocatorHelperFactory
@@ -28,7 +28,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class BundleFileLocatorHelperFactory
 {
-    private static final Logger LOG = Log.getLogger(BundleFileLocatorHelperFactory.class);
+    private static final Logger LOG = LoggerFactory.getLogger(BundleFileLocatorHelperFactory.class);
 
     private static BundleFileLocatorHelperFactory _instance = new BundleFileLocatorHelperFactory();
 
@@ -52,7 +52,7 @@ public class BundleFileLocatorHelperFactory
         }
         catch (Throwable t)
         {
-            LOG.ignore(t);
+            LOG.trace("IGNORED", t);
         }
         return helper;
     }

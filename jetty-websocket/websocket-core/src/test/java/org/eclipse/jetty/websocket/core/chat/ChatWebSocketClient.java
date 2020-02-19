@@ -28,15 +28,15 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.MessageHandler;
 import org.eclipse.jetty.websocket.core.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ChatWebSocketClient
 {
-    private static Logger LOG = Log.getLogger(ChatWebSocketClient.class);
+    private static Logger LOG = LoggerFactory.getLogger(ChatWebSocketClient.class);
 
     private URI baseWebsocketUri;
     private WebSocketCoreClient client;
@@ -102,7 +102,7 @@ public class ChatWebSocketClient
         }
         LOG.debug("sending {}...", line);
 
-        handler.sendText(Callback.from(() -> LOG.debug("message sent"), LOG::warn), false, name, ": ", line);
+        handler.sendText(Callback.from(() -> LOG.debug("message sent"), (cause) -> LOG.warn("message send failure", cause)), false, name, ": ", line);
     }
 
     public static void main(String[] args)

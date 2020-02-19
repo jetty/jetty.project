@@ -39,8 +39,6 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.StringUtil;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -57,7 +55,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 public class CreationTest
 {
-    private static final Logger LOG_SESSION = LoggerFactory.getLogger("org.eclipse.jetty.server.session");
+    private static final Package SESSION_PACKAGE = CreationTest.class.getPackage();
 
     /**
      * Test creating a session when the cache is set to
@@ -85,7 +83,7 @@ public class CreationTest
         server1.start();
         int port1 = server1.getPort();
 
-        try (StacklessLogging ignored = new StacklessLogging(LOG_SESSION))
+        try (StacklessLogging ignored = new StacklessLogging(SESSION_PACKAGE))
         {
             HttpClient client = new HttpClient();
             client.start();
@@ -154,7 +152,7 @@ public class CreationTest
         server1.start();
         int port1 = server1.getPort();
 
-        try (StacklessLogging ignored = new StacklessLogging(LOG_SESSION))
+        try (StacklessLogging ignored = new StacklessLogging(SESSION_PACKAGE))
         {
             HttpClient client = new HttpClient();
             client.start();
@@ -206,7 +204,7 @@ public class CreationTest
         server1.start();
         int port1 = server1.getPort();
 
-        try (StacklessLogging ignored = new StacklessLogging(LOG_SESSION))
+        try (StacklessLogging ignored = new StacklessLogging(SESSION_PACKAGE))
         {
             HttpClient client = new HttpClient();
             client.start();
@@ -254,7 +252,7 @@ public class CreationTest
         server1.start();
         int port1 = server1.getPort();
 
-        try (StacklessLogging ignored = new StacklessLogging(LOG_SESSION))
+        try (StacklessLogging ignored = new StacklessLogging(SESSION_PACKAGE))
         {
             HttpClient client = new HttpClient();
             client.start();
@@ -309,7 +307,7 @@ public class CreationTest
         server1.start();
         int port1 = server1.getPort();
 
-        try (StacklessLogging ignored = new StacklessLogging(LOG_SESSION))
+        try (StacklessLogging ignored = new StacklessLogging(SESSION_PACKAGE))
         {
             HttpClient client = new HttpClient();
             client.start();
@@ -364,7 +362,7 @@ public class CreationTest
         server1.start();
         int port1 = server1.getPort();
 
-        try (StacklessLogging ignored = new StacklessLogging(LOG_SESSION))
+        try (StacklessLogging ignored = new StacklessLogging(SESSION_PACKAGE))
         {
             HttpClient client = new HttpClient();
             client.start();

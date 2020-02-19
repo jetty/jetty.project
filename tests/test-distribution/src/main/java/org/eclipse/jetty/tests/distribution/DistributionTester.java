@@ -65,8 +65,8 @@ import org.eclipse.aether.transport.http.HttpTransporterFactory;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>Helper class to test the Jetty Distribution</p>.
@@ -108,7 +108,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class DistributionTester
 {
-    private static final Logger LOGGER = Log.getLogger(DistributionTester.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(DistributionTester.class);
 
     private Config config;
 

@@ -35,8 +35,6 @@ import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -47,7 +45,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
  */
 public class DeleteUnloadableSessionTest
 {
-    private static final Logger LOG_SESSION = LoggerFactory.getLogger("org.eclipse.jetty.server.session");
+    private static final Package SESSION_PACKAGE = DeleteUnloadableSessionTest.class.getPackage();
 
     /**
      * DelSessionDataStore
@@ -160,7 +158,7 @@ public class DeleteUnloadableSessionTest
         ServletHolder holder = new ServletHolder(servlet);
         context.addServlet(holder, servletMapping);
 
-        try (StacklessLogging ignored = new StacklessLogging(LOG_SESSION))
+        try (StacklessLogging ignored = new StacklessLogging(SESSION_PACKAGE))
         {
             server.start();
             int port = server.getPort();

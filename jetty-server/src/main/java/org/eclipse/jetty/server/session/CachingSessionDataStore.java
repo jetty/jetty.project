@@ -21,8 +21,8 @@ package org.eclipse.jetty.server.session;
 import java.util.Set;
 
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * CachingSessionDataStore
@@ -44,7 +44,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class CachingSessionDataStore extends ContainerLifeCycle implements SessionDataStore
 {
-    private static final Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
+    private static final Logger LOG = LoggerFactory.getLogger(CachingSessionDataStore.class);
     /**
      * The actual store for the session data
      */
@@ -98,7 +98,7 @@ public class CachingSessionDataStore extends ContainerLifeCycle implements Sessi
         }
         catch (Exception e)
         {
-            LOG.warn(e);
+            LOG.warn("Unable to load id {}", id, e);
         }
 
         if (d != null)
@@ -186,7 +186,7 @@ public class CachingSessionDataStore extends ContainerLifeCycle implements Sessi
         }
         catch (Exception e)
         {
-            LOG.warn(e);
+            LOG.warn("Unable test exists on {}", id, e);
         }
 
         //then the delegate store

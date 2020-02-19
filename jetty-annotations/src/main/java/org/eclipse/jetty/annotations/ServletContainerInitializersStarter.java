@@ -23,9 +23,9 @@ import java.util.List;
 import org.eclipse.jetty.plus.annotation.ContainerInitializer;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.webapp.WebAppContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * ServletContainerInitializersStarter
@@ -35,7 +35,7 @@ import org.eclipse.jetty.webapp.WebAppContext;
  */
 public class ServletContainerInitializersStarter extends AbstractLifeCycle implements ServletContextHandler.ServletContainerInitializerCaller
 {
-    private static final Logger LOG = Log.getLogger(ServletContainerInitializersStarter.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ServletContainerInitializersStarter.class);
     WebAppContext _context;
 
     public ServletContainerInitializersStarter(WebAppContext context)
@@ -65,7 +65,7 @@ public class ServletContainerInitializersStarter extends AbstractLifeCycle imple
             }
             catch (Exception e)
             {
-                LOG.warn(e);
+                LOG.warn("Failed to call startup on {}", i, e);
                 throw new RuntimeException(e);
             }
         }

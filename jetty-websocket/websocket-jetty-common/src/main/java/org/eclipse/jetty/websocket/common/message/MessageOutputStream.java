@@ -26,18 +26,18 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Support for writing a single WebSocket BINARY message via a {@link OutputStream}
  */
 public class MessageOutputStream extends OutputStream
 {
-    private static final Logger LOG = Log.getLogger(MessageOutputStream.class);
+    private static final Logger LOG = LoggerFactory.getLogger(MessageOutputStream.class);
 
     private final CoreSession coreSession;
     private final ByteBufferPool bufferPool;

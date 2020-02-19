@@ -22,16 +22,16 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 
 import org.eclipse.jetty.servlet.ErrorPageErrorHandler;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Configure by parsing default web.xml and web.xml
  */
 public class WebXmlConfiguration extends AbstractConfiguration
 {
-    private static final Logger LOG = Log.getLogger(WebXmlConfiguration.class);
+    private static final Logger LOG = LoggerFactory.getLogger(WebXmlConfiguration.class);
 
     public WebXmlConfiguration()
     {

@@ -28,10 +28,10 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.Scheduler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Channel End Point.
@@ -39,7 +39,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
  */
 public abstract class ChannelEndPoint extends AbstractEndPoint implements ManagedSelector.Selectable
 {
-    private static final Logger LOG = Log.getLogger(ChannelEndPoint.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ChannelEndPoint.class);
 
     private final ByteChannel _channel;
     private final GatheringByteChannel _gather;
@@ -89,7 +89,7 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
             }
             catch (Throwable x)
             {
-                LOG.warn(x);
+                LOG.warn("Unable to close ChannelEndPoint", x);
             }
         }
     }
@@ -192,7 +192,7 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
         }
         catch (IOException e)
         {
-            LOG.debug(e);
+            LOG.debug("Unable to close channel", e);
         }
         finally
         {
@@ -232,7 +232,7 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
         }
         catch (IOException e)
         {
-            LOG.debug(e);
+            LOG.debug("Unable to shutdown output", e);
             shutdownInput();
             filled = -1;
         }

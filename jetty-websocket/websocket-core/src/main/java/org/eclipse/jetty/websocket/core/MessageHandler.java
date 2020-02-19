@@ -27,10 +27,10 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingNestedCallback;
 import org.eclipse.jetty.util.Utf8Appendable;
 import org.eclipse.jetty.util.Utf8StringBuilder;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.exception.BadPayloadException;
 import org.eclipse.jetty.websocket.core.exception.MessageTooLargeException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A utility implementation of FrameHandler that defragments
@@ -87,7 +87,7 @@ public class MessageHandler implements FrameHandler
         };
     }
 
-    protected static final Logger LOG = Log.getLogger(MessageHandler.class);
+    protected static final Logger LOG = LoggerFactory.getLogger(MessageHandler.class);
 
     private CoreSession coreSession;
     private Utf8StringBuilder textMessageBuffer;

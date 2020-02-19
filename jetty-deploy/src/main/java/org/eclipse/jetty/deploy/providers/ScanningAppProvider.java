@@ -37,9 +37,9 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -47,7 +47,7 @@ import org.eclipse.jetty.util.resource.Resource;
 @ManagedObject("Abstract Provider for loading webapps")
 public abstract class ScanningAppProvider extends ContainerLifeCycle implements AppProvider
 {
-    private static final Logger LOG = Log.getLogger(ScanningAppProvider.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ScanningAppProvider.class);
 
     private Map<String, App> _appMap = new HashMap<String, App>();
 

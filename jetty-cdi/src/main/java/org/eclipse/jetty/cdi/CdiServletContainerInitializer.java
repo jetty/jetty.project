@@ -26,8 +26,8 @@ import javax.servlet.ServletContext;
 import org.eclipse.jetty.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.Loader;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>A {@link ServletContainerInitializer} that introspects for a CDI API
@@ -48,7 +48,7 @@ import org.eclipse.jetty.util.log.Logger;
 public class CdiServletContainerInitializer implements ServletContainerInitializer
 {
     public static final String CDI_INTEGRATION_ATTRIBUTE = "org.eclipse.jetty.cdi";
-    private static final Logger LOG = Log.getLogger(CdiServletContainerInitializer.class);
+    private static final Logger LOG = LoggerFactory.getLogger(CdiServletContainerInitializer.class);
 
     @Override
     public void onStartup(Set<Class<?>> c, ServletContext ctx)

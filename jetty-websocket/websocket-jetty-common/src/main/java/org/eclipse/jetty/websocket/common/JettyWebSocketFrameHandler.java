@@ -26,8 +26,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
@@ -46,6 +44,8 @@ import org.eclipse.jetty.websocket.core.exception.ProtocolException;
 import org.eclipse.jetty.websocket.core.exception.UpgradeException;
 import org.eclipse.jetty.websocket.core.exception.WebSocketException;
 import org.eclipse.jetty.websocket.core.exception.WebSocketTimeoutException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class JettyWebSocketFrameHandler implements FrameHandler
 {
@@ -94,7 +94,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
                                       BatchMode batchMode,
                                       Configuration.Customizer customizer)
     {
-        this.log = Log.getLogger(endpointInstance.getClass());
+        this.log = LoggerFactory.getLogger(endpointInstance.getClass());
 
         this.container = container;
         this.endpointInstance = endpointInstance;

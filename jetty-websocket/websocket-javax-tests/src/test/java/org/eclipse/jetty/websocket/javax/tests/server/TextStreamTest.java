@@ -30,8 +30,6 @@ import javax.websocket.Session;
 import javax.websocket.server.ServerContainer;
 import javax.websocket.server.ServerEndpoint;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
@@ -42,10 +40,12 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class TextStreamTest
 {
-    private static final Logger LOG = Log.getLogger(TextStreamTest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(TextStreamTest.class);
 
     private static LocalServer server;
     private static ServerContainer container;

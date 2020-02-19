@@ -19,16 +19,16 @@
 package org.eclipse.jetty.websocket.javax.tests.framehandlers;
 
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class FrameEcho implements FrameHandler
 {
-    private static final Logger LOG = Log.getLogger(FrameEcho.class);
+    private static final Logger LOG = LoggerFactory.getLogger(FrameEcho.class);
 
     private CoreSession coreSession;
 

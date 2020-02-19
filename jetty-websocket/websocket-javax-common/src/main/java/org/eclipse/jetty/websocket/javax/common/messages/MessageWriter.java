@@ -28,11 +28,11 @@ import java.nio.charset.CodingErrorAction;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -43,7 +43,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  */
 public class MessageWriter extends Writer
 {
-    private static final Logger LOG = Log.getLogger(MessageWriter.class);
+    private static final Logger LOG = LoggerFactory.getLogger(MessageWriter.class);
 
     private final CharsetEncoder utf8Encoder = UTF_8.newEncoder()
         .onUnmappableCharacter(CodingErrorAction.REPORT)

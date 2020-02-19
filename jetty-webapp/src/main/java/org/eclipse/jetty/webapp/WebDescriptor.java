@@ -24,10 +24,10 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.eclipse.jetty.util.Loader;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.xml.XmlParser;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.xml.sax.InputSource;
 
 /**
@@ -37,7 +37,7 @@ import org.xml.sax.InputSource;
  */
 public class WebDescriptor extends Descriptor
 {
-    private static final Logger LOG = Log.getLogger(WebDescriptor.class);
+    private static final Logger LOG = LoggerFactory.getLogger(WebDescriptor.class);
 
     protected static XmlParser _nonValidatingStaticParser;
     protected MetaDataComplete _metaDataComplete;
@@ -130,7 +130,7 @@ public class WebDescriptor extends Descriptor
                 }
                 catch (Exception e)
                 {
-                    LOG.ignore(e);
+                    LOG.trace("IGNORED", e);
                 }
                 finally
                 {

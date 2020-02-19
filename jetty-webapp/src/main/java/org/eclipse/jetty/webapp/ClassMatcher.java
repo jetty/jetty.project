@@ -43,9 +43,9 @@ import org.eclipse.jetty.util.IncludeExcludeSet;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A matcher for classes based on package and/or location and/or module/
@@ -70,7 +70,7 @@ import org.eclipse.jetty.util.resource.Resource;
 
 public class ClassMatcher extends AbstractSet<String>
 {
-    private static final Logger LOG = Log.getLogger(ClassMatcher.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ClassMatcher.class);
 
     public static class Entry
     {
@@ -723,7 +723,7 @@ public class ClassMatcher extends AbstractSet<String>
         }
         catch (Exception e)
         {
-            LOG.warn(e);
+            LOG.warn("Unable to match against {}", clazz, e);
         }
         return false;
     }
@@ -745,7 +745,7 @@ public class ClassMatcher extends AbstractSet<String>
             }
             catch (URISyntaxException e)
             {
-                LOG.ignore(e);
+                LOG.trace("IGNORED", e);
                 return null;
             }
         });

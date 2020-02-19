@@ -34,17 +34,17 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Scheduler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * ByteArrayEndPoint.
  */
 public class ByteArrayEndPoint extends AbstractEndPoint
 {
-    static final Logger LOG = Log.getLogger(ByteArrayEndPoint.class);
+    static final Logger LOG = LoggerFactory.getLogger(ByteArrayEndPoint.class);
     static final InetAddress NOIP;
     static final InetSocketAddress NOIPPORT;
 
@@ -57,7 +57,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
         }
         catch (UnknownHostException e)
         {
-            LOG.warn(e);
+            LOG.warn("Unable to get IPv4 no-ip reference for 0.0.0.0", e);
         }
         finally
         {

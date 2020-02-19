@@ -46,9 +46,9 @@ import javax.security.auth.login.LoginException;
 
 import org.eclipse.jetty.jaas.callback.ObjectCallback;
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.security.Credential;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A LdapLoginModule for use with JAAS setups
@@ -84,7 +84,7 @@ import org.eclipse.jetty.util.security.Credential;
  */
 public class LdapLoginModule extends AbstractLoginModule
 {
-    private static final Logger LOG = Log.getLogger(LdapLoginModule.class);
+    private static final Logger LOG = LoggerFactory.getLogger(LdapLoginModule.class);
 
     /**
      * hostname of the ldap server
@@ -450,17 +450,13 @@ public class LdapLoginModule extends AbstractLoginModule
         catch (IOException e)
         {
             if (_debug)
-            {
-                LOG.info(e);
-            }
+                LOG.info("Login failure", e);
             throw new LoginException("IO Error performing login.");
         }
         catch (AuthenticationException e)
         {
             if (_debug)
-            {
-                LOG.info(e);
-            }
+                LOG.info("Login failure", e);
             return false;
         }
         catch (LoginException e)
@@ -470,7 +466,7 @@ public class LdapLoginModule extends AbstractLoginModule
         catch (Exception e)
         {
             if (_debug)
-                LOG.info(e);
+                LOG.info("Login failure", e);
             throw new LoginException("Error obtaining user info");
         }
     }

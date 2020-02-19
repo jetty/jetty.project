@@ -32,12 +32,12 @@ import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.CountingCallback;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ResponseNotifier
 {
-    private static final Logger LOG = Log.getLogger(ResponseNotifier.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ResponseNotifier.class);
 
     public void notifyBegin(List<Response.ResponseListener> listeners, Response response)
     {

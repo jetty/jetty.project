@@ -29,16 +29,16 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.JarFileResource;
 import org.eclipse.jetty.util.resource.JarResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class WebInfConfiguration extends AbstractConfiguration
 {
-    private static final Logger LOG = Log.getLogger(WebInfConfiguration.class);
+    private static final Logger LOG = LoggerFactory.getLogger(WebInfConfiguration.class);
 
     public static final String TEMPDIR_CONFIGURED = "org.eclipse.jetty.tmpdirConfigured";
     public static final String TEMPORARY_RESOURCE_BASE = "org.eclipse.jetty.webapp.tmpResourceBase";

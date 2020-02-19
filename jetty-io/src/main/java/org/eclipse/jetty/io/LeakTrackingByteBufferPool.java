@@ -24,12 +24,12 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.LeakDetector;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class LeakTrackingByteBufferPool extends ContainerLifeCycle implements ByteBufferPool
 {
-    private static final Logger LOG = Log.getLogger(LeakTrackingByteBufferPool.class);
+    private static final Logger LOG = LoggerFactory.getLogger(LeakTrackingByteBufferPool.class);
 
     private final LeakDetector<ByteBuffer> leakDetector = new LeakDetector<ByteBuffer>()
     {

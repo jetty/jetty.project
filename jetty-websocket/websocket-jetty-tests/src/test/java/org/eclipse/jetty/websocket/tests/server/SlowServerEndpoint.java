@@ -23,16 +23,16 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @WebSocket
 public class SlowServerEndpoint
 {
-    private static final Logger LOG = Log.getLogger(SlowServerEndpoint.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SlowServerEndpoint.class);
 
     @OnWebSocketMessage
     public void onMessage(Session session, String msg)
@@ -55,7 +55,7 @@ public class SlowServerEndpoint
                     }
                     catch (Throwable cause)
                     {
-                        LOG.warn(cause);
+                        LOG.warn("failed to send text", cause);
                     }
                 }
             });
@@ -69,7 +69,7 @@ public class SlowServerEndpoint
             }
             catch (IOException ignore)
             {
-                LOG.ignore(ignore);
+                LOG.trace("IGNORED", ignore);
             }
         }
     }

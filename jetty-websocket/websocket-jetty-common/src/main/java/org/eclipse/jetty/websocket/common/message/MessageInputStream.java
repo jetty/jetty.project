@@ -27,10 +27,10 @@ import java.util.Deque;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.common.MessageSink;
 import org.eclipse.jetty.websocket.core.Frame;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Support class for reading a WebSocket BINARY message via a InputStream.
@@ -40,7 +40,7 @@ import org.eclipse.jetty.websocket.core.Frame;
  */
 public class MessageInputStream extends InputStream implements MessageSink
 {
-    private static final Logger LOG = Log.getLogger(MessageInputStream.class);
+    private static final Logger LOG = LoggerFactory.getLogger(MessageInputStream.class);
     private static final CallbackBuffer EOF = new CallbackBuffer(Callback.NOOP, ByteBuffer.allocate(0).asReadOnlyBuffer());
     private final Deque<CallbackBuffer> buffers = new ArrayDeque<>(2);
     private final AtomicBoolean closed = new AtomicBoolean(false);

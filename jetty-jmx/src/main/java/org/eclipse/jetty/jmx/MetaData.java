@@ -47,12 +47,12 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.annotation.Name;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 class MetaData
 {
-    private static final Logger LOG = Log.getLogger(MetaData.class);
+    private static final Logger LOG = LoggerFactory.getLogger(MetaData.class);
     private static final MBeanAttributeInfo[] NO_ATTRIBUTES = new MBeanAttributeInfo[0];
     private static final MBeanConstructorInfo[] NO_CONSTRUCTORS = new MBeanConstructorInfo[0];
     private static final MBeanOperationInfo[] NO_OPERATIONS = new MBeanOperationInfo[0];

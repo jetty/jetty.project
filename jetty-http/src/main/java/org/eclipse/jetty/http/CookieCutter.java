@@ -21,8 +21,8 @@ package org.eclipse.jetty.http;
 import java.util.List;
 import java.util.Locale;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.eclipse.jetty.http.CookieCompliance.Violation.COMMA_NOT_VALID_OCTET;
 import static org.eclipse.jetty.http.CookieCompliance.Violation.RESERVED_NAMES_NOT_DOLLAR_PREFIXED;
@@ -32,7 +32,7 @@ import static org.eclipse.jetty.http.CookieCompliance.Violation.RESERVED_NAMES_N
  */
 public abstract class CookieCutter
 {
-    protected static final Logger LOG = Log.getLogger(CookieCutter.class);
+    protected static final Logger LOG = LoggerFactory.getLogger(CookieCutter.class);
 
     protected final CookieCompliance _complianceMode;
     private final ComplianceViolation.Listener _complianceListener;
@@ -207,7 +207,7 @@ public abstract class CookieCutter
                                 }
                                 catch (Exception e)
                                 {
-                                    LOG.debug(e);
+                                    LOG.debug("Unable to process Cookie", e);
                                 }
 
                                 name = null;

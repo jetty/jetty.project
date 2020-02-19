@@ -24,16 +24,16 @@ import org.eclipse.jetty.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.plus.webapp.EnvConfiguration;
 import org.eclipse.jetty.plus.webapp.PlusConfiguration;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.JarResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.xml.XmlConfiguration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class PreconfigureQuickStartWar
 {
-    private static final Logger LOG = Log.getLogger(PreconfigureQuickStartWar.class);
+    private static final Logger LOG = LoggerFactory.getLogger(PreconfigureQuickStartWar.class);
     static final boolean ORIGIN = LOG.isDebugEnabled();
 
     public static void main(String... args) throws Exception

@@ -24,15 +24,15 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Utf8StringBuilder;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.exception.MessageTooLargeException;
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketSession;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class StringMessageSink extends AbstractMessageSink
 {
-    private static final Logger LOG = Log.getLogger(StringMessageSink.class);
+    private static final Logger LOG = LoggerFactory.getLogger(StringMessageSink.class);
     private Utf8StringBuilder utf;
     private int size;
 

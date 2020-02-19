@@ -36,8 +36,8 @@ import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>ConnectionFactory for the PROXY Protocol.</p>
@@ -48,7 +48,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class ProxyConnectionFactory extends AbstractConnectionFactory
 {
-    private static final Logger LOG = Log.getLogger(ProxyConnectionFactory.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ProxyConnectionFactory.class);
     public static final String TLS_VERSION = "TLS_VERSION";
 
     private final String _next;
@@ -597,7 +597,7 @@ public class ProxyConnectionFactory extends AbstractConnectionFactory
                 }
                 catch (Exception e)
                 {
-                    LOG.warn(e);
+                    LOG.warn("Unable to process proxy protocol", e);
                 }
             }
 

@@ -32,12 +32,12 @@ import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ClientConnector extends ContainerLifeCycle
 {
@@ -45,7 +45,7 @@ public class ClientConnector extends ContainerLifeCycle
     public static final String REMOTE_SOCKET_ADDRESS_CONTEXT_KEY = CLIENT_CONNECTOR_CONTEXT_KEY + ".remoteSocketAddress";
     public static final String CLIENT_CONNECTION_FACTORY_CONTEXT_KEY = CLIENT_CONNECTOR_CONTEXT_KEY + ".clientConnectionFactory";
     public static final String CONNECTION_PROMISE_CONTEXT_KEY = CLIENT_CONNECTOR_CONTEXT_KEY + ".connectionPromise";
-    private static final Logger LOG = Log.getLogger(ClientConnector.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ClientConnector.class);
 
     private Executor executor;
     private Scheduler scheduler;
@@ -288,7 +288,7 @@ public class ClientConnector extends ContainerLifeCycle
         }
         catch (Throwable x)
         {
-            LOG.ignore(x);
+            LOG.trace("IGNORED", x);
         }
     }
 

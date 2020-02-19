@@ -29,20 +29,20 @@ import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.FilterMapping;
 import org.eclipse.jetty.servlet.Source;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.DiscoveredAnnotation;
 import org.eclipse.jetty.webapp.MetaData;
 import org.eclipse.jetty.webapp.Origin;
 import org.eclipse.jetty.webapp.WebAppContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * WebFilterAnnotation
  */
 public class WebFilterAnnotation extends DiscoveredAnnotation
 {
-    private static final Logger LOG = Log.getLogger(WebFilterAnnotation.class);
+    private static final Logger LOG = LoggerFactory.getLogger(WebFilterAnnotation.class);
 
     public WebFilterAnnotation(WebAppContext context, String className)
     {

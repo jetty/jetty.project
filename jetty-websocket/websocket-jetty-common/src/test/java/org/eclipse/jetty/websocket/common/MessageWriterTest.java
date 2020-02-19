@@ -20,19 +20,19 @@ package org.eclipse.jetty.websocket.common;
 
 import java.util.Arrays;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.common.message.MessageWriter;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
 public class MessageWriterTest
 {
-    private static final Logger LOG = Log.getLogger(MessageWriterTest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(MessageWriterTest.class);
     private static final int OUTPUT_BUFFER_SIZE = 4096;
 
     public TestableLeakTrackingBufferPool bufferPool = new TestableLeakTrackingBufferPool("Test");

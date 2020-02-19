@@ -23,8 +23,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.server.UserIdentity;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Properties User Realm.
@@ -44,7 +44,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class HashLoginService extends AbstractLoginService
 {
-    private static final Logger LOG = Log.getLogger(HashLoginService.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HashLoginService.class);
 
     private String _config;
     private boolean hotReload = false; // default is not to reload

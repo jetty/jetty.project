@@ -32,8 +32,8 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * TestFilter.
@@ -44,7 +44,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class TestFilter implements Filter
 {
-    private static final Logger LOG = Log.getLogger(TestFilter.class);
+    private static final Logger LOG = LoggerFactory.getLogger(TestFilter.class);
 
     private boolean _remote;
     private ServletContext _context;

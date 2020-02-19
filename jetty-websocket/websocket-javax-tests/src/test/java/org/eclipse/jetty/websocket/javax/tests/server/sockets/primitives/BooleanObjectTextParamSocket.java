@@ -27,13 +27,13 @@ import javax.websocket.server.PathParam;
 import javax.websocket.server.ServerEndpoint;
 
 import org.eclipse.jetty.toolchain.test.StackUtils;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @ServerEndpoint("/echo/primitives/booleanobject/params/{a}")
 public class BooleanObjectTextParamSocket
 {
-    private static final Logger LOG = Log.getLogger(BooleanObjectTextParamSocket.class);
+    private static final Logger LOG = LoggerFactory.getLogger(BooleanObjectTextParamSocket.class);
 
     private Session session;
 

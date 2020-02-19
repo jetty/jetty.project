@@ -36,8 +36,8 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>ClientConnectionFactory for the
@@ -446,7 +446,7 @@ public abstract class ProxyProtocolClientConnectionFactory implements ClientConn
 
     protected abstract static class ProxyProtocolConnection extends AbstractConnection implements Callback
     {
-        protected static final Logger LOG = Log.getLogger(ProxyProtocolConnection.class);
+        protected static final Logger LOG = LoggerFactory.getLogger(ProxyProtocolConnection.class);
 
         private final ClientConnectionFactory factory;
         private final Map<String, Object> context;

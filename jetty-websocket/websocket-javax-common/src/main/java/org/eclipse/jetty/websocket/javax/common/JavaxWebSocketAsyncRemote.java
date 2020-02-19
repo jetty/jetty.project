@@ -28,18 +28,18 @@ import javax.websocket.SendResult;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.FutureCallback;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.javax.common.messages.MessageOutputStream;
 import org.eclipse.jetty.websocket.javax.common.messages.MessageWriter;
 import org.eclipse.jetty.websocket.javax.common.util.TextUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class JavaxWebSocketAsyncRemote extends JavaxWebSocketRemoteEndpoint implements javax.websocket.RemoteEndpoint.Async
 {
-    static final Logger LOG = Log.getLogger(JavaxWebSocketAsyncRemote.class);
+    static final Logger LOG = LoggerFactory.getLogger(JavaxWebSocketAsyncRemote.class);
 
     protected JavaxWebSocketAsyncRemote(JavaxWebSocketSession session, CoreSession coreSession)
     {

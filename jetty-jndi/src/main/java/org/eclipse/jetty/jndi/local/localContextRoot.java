@@ -38,8 +38,8 @@ import javax.naming.Referenceable;
 import javax.naming.spi.NamingManager;
 
 import org.eclipse.jetty.jndi.NamingContext;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 // This is a required name for JNDI
 // @checkstyle-disable-check : TypeNameCheck
@@ -51,7 +51,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class localContextRoot implements Context
 {
-    private static final Logger LOG = Log.getLogger(localContextRoot.class);
+    private static final Logger LOG = LoggerFactory.getLogger(localContextRoot.class);
     protected static final NamingContext __root = new NamingRoot();
     private final Hashtable<String, Object> _env;
 
@@ -157,7 +157,7 @@ public class localContextRoot implements Context
             }
             catch (Exception e)
             {
-                LOG.warn(e);
+                LOG.warn("Unable to dereference {}, {}", ctx, firstComponent, e);
                 throw new NamingException(e.getMessage());
             }
         }

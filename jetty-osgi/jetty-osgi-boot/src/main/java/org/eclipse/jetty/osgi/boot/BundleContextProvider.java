@@ -28,14 +28,14 @@ import java.util.Map;
 import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.osgi.boot.internal.serverfactory.ServerInstanceWrapper;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleEvent;
 import org.osgi.framework.FrameworkUtil;
 import org.osgi.framework.ServiceRegistration;
 import org.osgi.util.tracker.BundleTracker;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * BundleContextProvider
@@ -44,7 +44,7 @@ import org.osgi.util.tracker.BundleTracker;
  */
 public class BundleContextProvider extends AbstractContextProvider implements BundleProvider
 {
-    private static final Logger LOG = Log.getLogger(AbstractContextProvider.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AbstractContextProvider.class);
 
     private Map<String, App> _appMap = new HashMap<String, App>();
 
@@ -82,7 +82,7 @@ public class BundleContextProvider extends AbstractContextProvider implements Bu
             }
             catch (Exception e)
             {
-                LOG.warn(e);
+                LOG.warn("Unable to add bundle {}", bundle, e);
             }
             return null;
         }
@@ -99,7 +99,7 @@ public class BundleContextProvider extends AbstractContextProvider implements Bu
             }
             catch (Exception e)
             {
-                LOG.warn(e);
+                LOG.warn("Unable to remove bundle {}", bundle, e);
             }
         }
     }
@@ -137,7 +137,7 @@ public class BundleContextProvider extends AbstractContextProvider implements Bu
             }
             catch (Exception e)
             {
-                LOG.warn(e);
+                LOG.warn("Unable to unregister {}", _serviceRegForBundles, e);
             }
         }
     }

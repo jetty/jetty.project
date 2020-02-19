@@ -23,13 +23,13 @@ import javax.annotation.Resources;
 import javax.naming.NamingException;
 
 import org.eclipse.jetty.annotations.AnnotationIntrospector.AbstractIntrospectableAnnotationHandler;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.webapp.WebAppContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ResourcesAnnotationHandler extends AbstractIntrospectableAnnotationHandler
 {
-    private static final Logger LOG = Log.getLogger(ResourcesAnnotationHandler.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ResourcesAnnotationHandler.class);
 
     protected WebAppContext _wac;
 
@@ -70,7 +70,7 @@ public class ResourcesAnnotationHandler extends AbstractIntrospectableAnnotation
                 }
                 catch (NamingException e)
                 {
-                    LOG.warn(e);
+                    LOG.warn("Unable to bind {} to {}", name, mappedName, e);
                 }
             }
         }

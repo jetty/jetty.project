@@ -36,8 +36,6 @@ import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.BlockingArrayQueue;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.Frame;
 import org.eclipse.jetty.websocket.api.MessageTooLargeException;
 import org.eclipse.jetty.websocket.api.Session;
@@ -56,6 +54,8 @@ import org.eclipse.jetty.websocket.tests.CloseTrackingEndpoint;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.time.Duration.ofSeconds;
@@ -425,7 +425,7 @@ public class ClientCloseTest
 
     public static class ServerEndpoint implements WebSocketFrameListener, WebSocketListener
     {
-        private static final Logger LOG = Log.getLogger(ServerEndpoint.class);
+        private static final Logger LOG = LoggerFactory.getLogger(ServerEndpoint.class);
         private Session session;
         CountDownLatch block = new CountDownLatch(1);
 
@@ -461,7 +461,7 @@ public class ClientCloseTest
             }
             catch (Throwable t)
             {
-                LOG.debug(t);
+                LOG.debug("send text failure", t);
                 throw new RuntimeException(t);
             }
         }
@@ -514,7 +514,7 @@ public class ClientCloseTest
                     }
                     catch (Throwable ignore)
                     {
-                        LOG.ignore(ignore);
+                        LOG.trace("IGNORED", ignore);
                     }
                 }
                 else if (reason.startsWith("sleep|"))
@@ -528,7 +528,7 @@ public class ClientCloseTest
                     }
                     catch (InterruptedException ignore)
                     {
-                        LOG.ignore(ignore);
+                        LOG.trace("IGNORED", ignore);
                     }
                 }
             }

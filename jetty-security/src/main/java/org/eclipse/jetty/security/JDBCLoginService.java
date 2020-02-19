@@ -31,10 +31,10 @@ import java.util.Properties;
 import javax.servlet.ServletRequest;
 
 import org.eclipse.jetty.util.Loader;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.security.Credential;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * HashMapped User Realm with JDBC as data source.
@@ -51,7 +51,7 @@ import org.eclipse.jetty.util.security.Credential;
  */
 public class JDBCLoginService extends AbstractLoginService
 {
-    private static final Logger LOG = Log.getLogger(JDBCLoginService.class);
+    private static final Logger LOG = LoggerFactory.getLogger(JDBCLoginService.class);
 
     protected String _config;
     protected String _jdbcDriver;
@@ -287,7 +287,7 @@ public class JDBCLoginService extends AbstractLoginService
             }
             catch (Exception e)
             {
-                LOG.ignore(e);
+                LOG.trace("IGNORED", e);
             }
         }
         _con = null;

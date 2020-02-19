@@ -37,12 +37,12 @@ import org.eclipse.jetty.security.DefaultAuthenticatorFactory;
 import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class JaspiAuthenticatorFactory extends DefaultAuthenticatorFactory
 {
-    private static final Logger LOG = Log.getLogger(JaspiAuthenticatorFactory.class);
+    private static final Logger LOG = LoggerFactory.getLogger(JaspiAuthenticatorFactory.class);
 
     private static String MESSAGE_LAYER = "HTTP";
 
@@ -120,7 +120,7 @@ public class JaspiAuthenticatorFactory extends DefaultAuthenticatorFactory
         }
         catch (AuthException e)
         {
-            LOG.warn(e);
+            LOG.warn("Failed to get ServerAuthConfig", e);
         }
         return authenticator;
     }

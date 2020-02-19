@@ -25,12 +25,12 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.util.AttributesMap;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class HttpConversation extends AttributesMap
 {
-    private static final Logger LOG = Log.getLogger(HttpConversation.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HttpConversation.class);
 
     private final Deque<HttpExchange> exchanges = new ConcurrentLinkedDeque<>();
     private volatile List<Response.ResponseListener> listeners;

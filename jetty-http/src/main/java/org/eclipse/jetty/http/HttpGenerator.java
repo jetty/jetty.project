@@ -29,8 +29,8 @@ import org.eclipse.jetty.util.ArrayTrie;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.Trie;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.eclipse.jetty.http.HttpStatus.INTERNAL_SERVER_ERROR_500;
 
@@ -44,7 +44,7 @@ import static org.eclipse.jetty.http.HttpStatus.INTERNAL_SERVER_ERROR_500;
  */
 public class HttpGenerator
 {
-    private static final Logger LOG = Log.getLogger(HttpGenerator.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HttpGenerator.class);
 
     public static final boolean __STRICT = Boolean.getBoolean("org.eclipse.jetty.http.HttpGenerator.STRICT");
 

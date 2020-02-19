@@ -41,10 +41,10 @@ import org.eclipse.jetty.jndi.NamingContext;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.HandlerList;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -58,7 +58,7 @@ import static org.junit.jupiter.api.Assertions.fail;
  */
 public class TestJNDI
 {
-    private static final Logger LOG = Log.getLogger(TestJNDI.class);
+    private static final Logger LOG = LoggerFactory.getLogger(TestJNDI.class);
 
     static
     {

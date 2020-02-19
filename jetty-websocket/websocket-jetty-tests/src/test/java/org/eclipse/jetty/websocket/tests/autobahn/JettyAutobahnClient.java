@@ -28,13 +28,13 @@ import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.UrlEncoded;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.tests.EchoSocket;
 import org.eclipse.jetty.websocket.tests.EventSocket;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -140,7 +140,7 @@ public class JettyAutobahnClient
         }
     }
 
-    private static final Logger LOG = Log.getLogger(JettyAutobahnClient.class);
+    private static final Logger LOG = LoggerFactory.getLogger(JettyAutobahnClient.class);
     private URI baseWebsocketUri;
     private WebSocketClient client;
     private String userAgent;

@@ -23,15 +23,15 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.BlockingArrayQueue;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * An asynchronously writing RequestLogWriter
  */
 public class AsyncRequestLogWriter extends RequestLogWriter
 {
-    private static final Logger LOG = Log.getLogger(AsyncRequestLogWriter.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AsyncRequestLogWriter.class);
     private final BlockingQueue<String> _queue;
     private transient AsyncRequestLogWriter.WriterThread _thread;
     private boolean _warnedFull;
@@ -81,11 +81,11 @@ public class AsyncRequestLogWriter extends RequestLogWriter
                 }
                 catch (InterruptedException e)
                 {
-                    LOG.ignore(e);
+                    LOG.trace("IGNORED", e);
                 }
                 catch (Throwable t)
                 {
-                    LOG.warn(t);
+                    LOG.warn("Failed to write log", t);
                 }
             }
         }

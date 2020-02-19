@@ -25,14 +25,14 @@ import java.util.Objects;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Utf8StringBuilder;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketSession;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class PartialStringMessageSink extends AbstractMessageSink
 {
-    private static final Logger LOG = Log.getLogger(PartialStringMessageSink.class);
+    private static final Logger LOG = LoggerFactory.getLogger(PartialStringMessageSink.class);
     private Utf8StringBuilder utf;
     private int size;
 

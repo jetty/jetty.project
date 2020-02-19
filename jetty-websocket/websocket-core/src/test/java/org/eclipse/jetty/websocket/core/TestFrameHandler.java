@@ -24,12 +24,12 @@ import java.util.concurrent.CountDownLatch;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class TestFrameHandler implements SynchronousFrameHandler
 {
-    private static Logger LOG = Log.getLogger(TestFrameHandler.class);
+    private static final Logger LOG = LoggerFactory.getLogger(TestFrameHandler.class);
 
     protected CoreSession coreSession;
     public BlockingQueue<Frame> receivedFrames = new BlockingArrayQueue<>();

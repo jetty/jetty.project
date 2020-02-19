@@ -28,8 +28,6 @@ import org.eclipse.jetty.toolchain.test.ByteBufferAssert;
 import org.eclipse.jetty.toolchain.test.Hex;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.exception.ProtocolException;
 import org.eclipse.jetty.websocket.core.exception.WebSocketException;
 import org.eclipse.jetty.websocket.core.internal.ExtensionStack;
@@ -38,6 +36,8 @@ import org.eclipse.jetty.websocket.core.internal.Negotiated;
 import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -45,7 +45,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class GeneratorTest
 {
-    private static final Logger LOG = Log.getLogger(Helper.class);
+    private static final Logger LOG = LoggerFactory.getLogger(Helper.class);
 
     private static Generator generator = new Generator();
     private static WebSocketCoreSession coreSession = newWebSocketCoreSession(Behavior.SERVER);

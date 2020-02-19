@@ -33,8 +33,8 @@ import org.eclipse.jetty.util.IncludeExclude;
 import org.eclipse.jetty.util.IncludeExcludeSet;
 import org.eclipse.jetty.util.InetAddressSet;
 import org.eclipse.jetty.util.component.DumpableCollection;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * InetAddress Access Handler
@@ -51,7 +51,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class InetAccessHandler extends HandlerWrapper
 {
-    private static final Logger LOG = Log.getLogger(InetAccessHandler.class);
+    private static final Logger LOG = LoggerFactory.getLogger(InetAccessHandler.class);
 
     private final IncludeExcludeSet<String, InetAddress> _addrs = new IncludeExcludeSet<>(InetAddressSet.class);
     private final IncludeExclude<String> _names = new IncludeExclude<>();

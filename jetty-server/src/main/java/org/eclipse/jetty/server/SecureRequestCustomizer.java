@@ -35,11 +35,11 @@ import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.io.ssl.SslConnection.DecryptedEndPoint;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.Name;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SniX509ExtendedKeyManager;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.ssl.X509;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>Customizer that extracts the attribute from an {@link SSLContext}
@@ -48,7 +48,7 @@ import org.eclipse.jetty.util.ssl.X509;
  */
 public class SecureRequestCustomizer implements HttpConfiguration.Customizer
 {
-    private static final Logger LOG = Log.getLogger(SecureRequestCustomizer.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SecureRequestCustomizer.class);
 
     /**
      * The name of the SSLSession attribute that will contain any cached information.
@@ -298,7 +298,7 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
         }
         catch (Exception e)
         {
-            LOG.warn(Log.EXCEPTION, e);
+            LOG.warn("Unable to customize request with encryption details", e);
         }
     }
 

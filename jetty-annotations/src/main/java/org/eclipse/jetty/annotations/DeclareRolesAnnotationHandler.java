@@ -24,16 +24,16 @@ import javax.servlet.Servlet;
 import org.eclipse.jetty.annotations.AnnotationIntrospector.AbstractIntrospectableAnnotationHandler;
 import org.eclipse.jetty.security.ConstraintAware;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.webapp.WebAppContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * DeclaresRolesAnnotationHandler
  */
 public class DeclareRolesAnnotationHandler extends AbstractIntrospectableAnnotationHandler
 {
-    private static final Logger LOG = Log.getLogger(DeclareRolesAnnotationHandler.class);
+    private static final Logger LOG = LoggerFactory.getLogger(DeclareRolesAnnotationHandler.class);
 
     protected WebAppContext _context;
 

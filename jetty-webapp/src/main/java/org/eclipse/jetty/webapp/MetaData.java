@@ -26,10 +26,10 @@ import java.util.List;
 import java.util.Map;
 import javax.servlet.ServletContext;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.EmptyResource;
 import org.eclipse.jetty.util.resource.Resource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * MetaData
@@ -38,7 +38,7 @@ import org.eclipse.jetty.util.resource.Resource;
  */
 public class MetaData
 {
-    private static final Logger LOG = Log.getLogger(MetaData.class);
+    private static final Logger LOG = LoggerFactory.getLogger(MetaData.class);
 
     public static final String VALIDATE_XML = "org.eclipse.jetty.webapp.validateXml";
     public static final String ORDERED_LIBS = "javax.servlet.context.orderedLibs";

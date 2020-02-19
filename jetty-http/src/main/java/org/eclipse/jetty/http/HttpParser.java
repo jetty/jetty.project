@@ -31,8 +31,8 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.Trie;
 import org.eclipse.jetty.util.Utf8StringBuilder;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.eclipse.jetty.http.HttpCompliance.RFC7230;
 import static org.eclipse.jetty.http.HttpCompliance.Violation;
@@ -89,7 +89,7 @@ import static org.eclipse.jetty.http.HttpCompliance.Violation.WHITESPACE_AFTER_F
  */
 public class HttpParser
 {
-    public static final Logger LOG = Log.getLogger(HttpParser.class);
+    public static final Logger LOG = LoggerFactory.getLogger(HttpParser.class);
     public static final int INITIAL_URI_LENGTH = 256;
     private static final int MAX_CHUNK_LENGTH = Integer.MAX_VALUE / 16 - 16;
 
@@ -1069,7 +1069,7 @@ public class HttpParser
         }
         catch (NumberFormatException e)
         {
-            LOG.ignore(e);
+            LOG.trace("IGNORED", e);
             throw new BadMessageException(HttpStatus.BAD_REQUEST_400, "Invalid Content-Length Value", e);
         }
     }

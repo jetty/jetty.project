@@ -27,8 +27,8 @@ import javax.websocket.OnMessage;
 import javax.websocket.OnOpen;
 import javax.websocket.Session;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -36,7 +36,7 @@ import static org.junit.jupiter.api.Assertions.fail;
     subprotocols = {"chat"})
 public class JavaxSimpleEchoSocket
 {
-    private static final Logger LOG = Log.getLogger(JavaxSimpleEchoSocket.class);
+    private static final Logger LOG = LoggerFactory.getLogger(JavaxSimpleEchoSocket.class);
     private Session session;
     public CountDownLatch messageLatch = new CountDownLatch(1);
     public CountDownLatch closeLatch = new CountDownLatch(1);
@@ -44,7 +44,7 @@ public class JavaxSimpleEchoSocket
     @OnError
     public void onError(Throwable t)
     {
-        LOG.warn(t);
+        LOG.warn("Error", t);
         fail(t.getMessage());
     }
 

@@ -58,13 +58,13 @@ import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -85,7 +85,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
 public class RequestTest
 {
-    private static final Logger LOG = Log.getLogger(RequestTest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(RequestTest.class);
     private Server _server;
     private LocalConnector _connector;
     private RequestHandler _handler;
@@ -926,9 +926,9 @@ public class RequestTest
                 "Connection: close\r\n" +
                 "\r\n" +
                 content;
-            Log.getRootLogger().debug("test l={}", l);
+            LOG.debug("test l={}", l);
             String response = _connector.getResponse(request);
-            Log.getRootLogger().debug(response);
+            LOG.debug(response);
             assertThat(response, containsString(" 200 OK"));
             assertEquals(l, length.get());
             content += "x";

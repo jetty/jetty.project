@@ -35,12 +35,12 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.MultiMap;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Dispatcher implements RequestDispatcher
 {
-    private static final Logger LOG = Log.getLogger(Dispatcher.class);
+    private static final Logger LOG = LoggerFactory.getLogger(Dispatcher.class);
 
     /**
      * Dispatch include attribute names

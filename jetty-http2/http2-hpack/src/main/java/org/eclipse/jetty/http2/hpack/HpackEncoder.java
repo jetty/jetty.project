@@ -38,12 +38,12 @@ import org.eclipse.jetty.http2.hpack.HpackContext.Entry;
 import org.eclipse.jetty.http2.hpack.HpackContext.StaticEntry;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class HpackEncoder
 {
-    private static final Logger LOG = Log.getLogger(HpackEncoder.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HpackEncoder.class);
     private static final HttpField[] STATUSES = new HttpField[599];
     static final EnumSet<HttpHeader> DO_NOT_HUFFMAN =
         EnumSet.of(

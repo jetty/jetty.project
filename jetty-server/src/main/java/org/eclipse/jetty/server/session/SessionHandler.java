@@ -26,9 +26,11 @@ import java.util.Enumeration;
 import java.util.EventListener;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.stream.Collectors;
 import javax.servlet.DispatcherType;
 import javax.servlet.ServletException;
 import javax.servlet.SessionCookieConfig;
@@ -55,13 +57,13 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
 import org.eclipse.jetty.util.statistic.SampleStatistic;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static java.lang.Math.round;
 
@@ -71,7 +73,7 @@ import static java.lang.Math.round;
 @ManagedObject
 public class SessionHandler extends ScopedHandler
 {
-    static final Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
+    private static final Logger LOG = LoggerFactory.getLogger(SessionHandler.class);
 
     public static final EnumSet<SessionTrackingMode> DEFAULT_TRACKING = EnumSet.of(SessionTrackingMode.COOKIE,
         SessionTrackingMode.URL);
@@ -128,12 +130,12 @@ public class SessionHandler extends ScopedHandler
     @SuppressWarnings("unchecked")
     public static final Class<? extends EventListener>[] SESSION_LISTENER_TYPES =
         new Class[]
-        {
-            HttpSessionAttributeListener.class,
-            HttpSessionIdListener.class,
-            HttpSessionListener.class
-        };
-    
+            {
+                HttpSessionAttributeListener.class,
+                HttpSessionIdListener.class,
+                HttpSessionListener.class
+            };
+
     @Deprecated(since = "Servlet API 2.1")
     static final HttpSessionContext __nullSessionContext = new HttpSessionContext()
     {
@@ -152,7 +154,7 @@ public class SessionHandler extends ScopedHandler
             return Collections.enumeration(Collections.EMPTY_LIST);
         }
     };
-    
+
     /**
      * Setting of max inactive interval for new sessions
      * -1 means no timeout
@@ -215,7 +217,7 @@ public class SessionHandler extends ScopedHandler
 
     /**
      * Called by the {@link SessionHandler} when a session is first accessed by a request.
-     * 
+     *
      * Updates the last access time for the session and generates a fresh cookie if necessary.
      *
      * @param session the session object
@@ -236,7 +238,7 @@ public class SessionHandler extends ScopedHandler
             if (isUsingCookies() &&
                 (s.isIdChanged() ||
                     (getSessionCookieConfig().getMaxAge() > 0 && getRefreshCookieAge() > 0 &&
-                            ((now - s.getCookieSetTime()) / 1000 > getRefreshCookieAge()))))
+                        ((now - s.getCookieSetTime()) / 1000 > getRefreshCookieAge()))))
             {
                 HttpCookie cookie = getSessionCookie(session, _context == null ? "/" : (_context.getContextPath()), secure);
                 s.cookieSet();
@@ -360,10 +362,10 @@ public class SessionHandler extends ScopedHandler
         }
         catch (Exception e)
         {
-            LOG.warn(e);
+            LOG.warn("Unable to release Session {}", s, e);
         }
     }
-    
+
     /**
      * Called when a response is about to be committed.
      * We might take this opportunity to persist the session
@@ -382,7 +384,7 @@ public class SessionHandler extends ScopedHandler
         }
         catch (Exception e)
         {
-            LOG.warn(e);
+            LOG.warn("Unable to commit Session {}", s, e);
         }
     }
 
@@ -764,7 +766,7 @@ public class SessionHandler extends ScopedHandler
         }
         catch (Exception e)
         {
-            LOG.warn(e);
+            LOG.warn("Unable to add Session {}", id, e);
             return null;
         }
     }
@@ -797,6 +799,7 @@ public class SessionHandler extends ScopedHandler
 
     /**
      * Set if Session cookies should use HTTP Only
+     *
      * @param httpOnly True if cookies should be HttpOnly.
      * @see HttpCookie
      */
@@ -808,6 +811,7 @@ public class SessionHandler extends ScopedHandler
     /**
      * Set Session cookie sameSite mode.
      * Currently this is encoded in the session comment until sameSite is supported by {@link SessionCookieConfig}
+     *
      * @param sameSite The sameSite setting for Session cookies (or null for no sameSite setting)
      */
     public void setSameSite(HttpCookie.SameSite sameSite)
@@ -866,7 +870,7 @@ public class SessionHandler extends ScopedHandler
     {
         _sessionIdPathParameterName = (param == null || "none".equals(param)) ? null : param;
         _sessionIdPathParameterNamePrefix = (param == null || "none".equals(param))
-                                            ? null : (";" + _sessionIdPathParameterName + "=");
+            ? null : (";" + _sessionIdPathParameterName + "=");
     }
 
     /**
@@ -900,8 +904,7 @@ public class SessionHandler extends ScopedHandler
                     }
                     catch (Exception e)
                     {
-                        LOG.warn("Invalidating session {} found to be expired when requested", id);
-                        LOG.warn(e);
+                        LOG.warn("Invalidating session {} found to be expired when requested", id, e);
                     }
 
                     return null;
@@ -913,8 +916,7 @@ public class SessionHandler extends ScopedHandler
         }
         catch (UnreadableSessionDataException e)
         {
-            LOG.warn("Error loading session {}", id);
-            LOG.warn(e);
+            LOG.warn("Error loading session {}", id, e);
             try
             {
                 //tell id mgr to remove session from all other contexts
@@ -922,14 +924,13 @@ public class SessionHandler extends ScopedHandler
             }
             catch (Exception x)
             {
-                LOG.warn("Error cross-context invalidating unreadable session {}", id);
-                LOG.warn(x);
+                LOG.warn("Error cross-context invalidating unreadable session {}", id, x);
             }
             return null;
         }
         catch (Exception other)
         {
-            LOG.warn(other);
+            LOG.warn("Unable to get Session", other);
             return null;
         }
     }
@@ -1014,7 +1015,7 @@ public class SessionHandler extends ScopedHandler
         }
         catch (Exception e)
         {
-            LOG.warn(e);
+            LOG.warn("Unable to remove Session", e);
             return null;
         }
     }
@@ -1137,7 +1138,7 @@ public class SessionHandler extends ScopedHandler
         }
         catch (Exception e)
         {
-            LOG.warn(e);
+            LOG.warn("Unable to renew Session Id {}:{} -> {}:{}", oldId, oldExtendedId, newId, newExtendedId, e);
         }
         finally
         {
@@ -1149,7 +1150,7 @@ public class SessionHandler extends ScopedHandler
                 }
                 catch (Exception e)
                 {
-                    LOG.warn(e);
+                    LOG.warn("Unable to release {}", newId, e);
                 }
             }
         }
@@ -1198,7 +1199,7 @@ public class SessionHandler extends ScopedHandler
                         }
                         catch (Exception e)
                         {
-                            LOG.warn(e);
+                            LOG.warn("Error during Session destroy listener", e);
                         }
                         //call the attribute removed listeners and finally mark it as invalid
                         session.finishInvalidate();
@@ -1207,14 +1208,13 @@ public class SessionHandler extends ScopedHandler
                 catch (IllegalStateException e)
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Session {} already invalid", session);
-                    LOG.ignore(e);
+                        LOG.debug("Session {} already invalid", session, e);
                 }
             }
         }
         catch (Exception e)
         {
-            LOG.warn(e);
+            LOG.warn("Unable to delete Session {}", id, e);
         }
     }
 
@@ -1249,13 +1249,15 @@ public class SessionHandler extends ScopedHandler
                 }
                 catch (Exception e)
                 {
-                    LOG.warn(e);
+                    LOG.warn("Unable to expire Session {}", id, e);
                 }
             }
         }
         catch (Exception e)
         {
-            LOG.warn(e);
+            LOG.warn("Failed to check expiration on {}",
+                candidates.stream().map(Objects::toString).collect(Collectors.joining(", ", "[", "]")),
+                e);
         }
     }
 
@@ -1306,7 +1308,7 @@ public class SessionHandler extends ScopedHandler
                 //roundtrips to the persistent store. Only do this if the HouseKeeper that
                 //does the scavenging is configured to actually scavenge
                 if (_sessionIdManager.getSessionHouseKeeper() != null &&
-                        _sessionIdManager.getSessionHouseKeeper().getIntervalSec() > 0)
+                    _sessionIdManager.getSessionHouseKeeper().getIntervalSec() > 0)
                 {
                     _candidateSessionIdsForExpiry.add(session.getId());
                     if (LOG.isDebugEnabled())
@@ -1355,6 +1357,7 @@ public class SessionHandler extends ScopedHandler
      *
      * Implementation of the javax.servlet.SessionCookieConfig.
      * SameSite configuration can be achieved by using setComment
+     *
      * @see HttpCookie
      */
     public final class CookieConfig implements SessionCookieConfig
@@ -1542,8 +1545,8 @@ public class SessionHandler extends ScopedHandler
                 HttpCookie cookie = access(existingSession, request.isSecure());
                 // Handle changed ID or max-age refresh, but only if this is not a redispatched request
                 if ((cookie != null) &&
-                        (request.getDispatcherType() == DispatcherType.ASYNC ||
-                                request.getDispatcherType() == DispatcherType.REQUEST))
+                    (request.getDispatcherType() == DispatcherType.ASYNC ||
+                        request.getDispatcherType() == DispatcherType.REQUEST))
                     baseRequest.getResponse().replaceCookie(cookie);
             }
 
@@ -1628,7 +1631,7 @@ public class SessionHandler extends ScopedHandler
                             LOG.debug("Got Session ID {} from cookie {}", id, sessionCookie);
 
                         HttpSession s = getHttpSession(id);
-                        
+
                         if (requestedSessionId == null)
                         {
                             //no previous id, always accept this one

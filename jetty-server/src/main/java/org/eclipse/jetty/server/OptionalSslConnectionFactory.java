@@ -27,8 +27,8 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>A ConnectionFactory whose connections detect whether the first bytes are
@@ -37,7 +37,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class OptionalSslConnectionFactory extends AbstractConnectionFactory
 {
-    private static final Logger LOG = Log.getLogger(OptionalSslConnection.class);
+    private static final Logger LOG = LoggerFactory.getLogger(OptionalSslConnection.class);
     private static final int TLS_ALERT_FRAME_TYPE = 0x15;
     private static final int TLS_HANDSHAKE_FRAME_TYPE = 0x16;
     private static final int TLS_MAJOR_VERSION = 3;
@@ -173,7 +173,7 @@ public class OptionalSslConnectionFactory extends AbstractConnectionFactory
             }
             catch (IOException x)
             {
-                LOG.warn(x);
+                LOG.warn("Failed on endpoint fill", x);
                 close();
             }
         }

@@ -36,8 +36,6 @@ import org.eclipse.jetty.webapp.WebAppContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -50,7 +48,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @ExtendWith(WorkDirExtension.class)
 public class ReloadedSessionMissingClassTest
 {
-    private static final Logger LOG_SESSION = LoggerFactory.getLogger("org.eclipse.jetty.server.session");
+    private static final Package SESSION_PACKAGE = ReloadedSessionMissingClassTest.class.getPackage();
 
     public WorkDir testdir;
 
@@ -103,7 +101,7 @@ public class ReloadedSessionMissingClassTest
         webApp.addServlet("Bar", "/bar");
         server1.start();
         int port1 = server1.getPort();
-        try (StacklessLogging ignored = new StacklessLogging(LOG_SESSION))
+        try (StacklessLogging ignored = new StacklessLogging(SESSION_PACKAGE))
         {
             HttpClient client = new HttpClient();
             client.start();

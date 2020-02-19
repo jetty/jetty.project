@@ -40,20 +40,20 @@ import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
 
 import org.eclipse.jetty.util.FutureCallback;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.javax.common.decoders.AvailableDecoders;
 import org.eclipse.jetty.websocket.javax.common.encoders.AvailableEncoders;
 import org.eclipse.jetty.websocket.javax.common.util.ReflectUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Client Session for the JSR.
  */
 public class JavaxWebSocketSession implements javax.websocket.Session
 {
-    private static final Logger LOG = Log.getLogger(JavaxWebSocketSession.class);
+    private static final Logger LOG = LoggerFactory.getLogger(JavaxWebSocketSession.class);
 
     private final JavaxWebSocketContainer container;
     private final CoreSession coreSession;
@@ -199,7 +199,7 @@ public class JavaxWebSocketSession implements javax.websocket.Session
         }
         catch (IOException e)
         {
-            LOG.ignore(e);
+            LOG.trace("IGNORED", e);
         }
     }
 

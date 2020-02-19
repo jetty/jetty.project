@@ -51,7 +51,7 @@ public class LogMBean extends ObjectMBean
     public boolean isDebugEnabled(@Name("logger") String logger)
     {
         // TODO: use JettyLogger
-        // return Log.getLogger(logger).isDebugEnabled();
+        // return LoggerFactory.getLogger(logger).isDebugEnabled();
         return false;
     }
 
@@ -59,6 +59,6 @@ public class LogMBean extends ObjectMBean
     public void setDebugEnabled(@Name("logger") String logger, @Name("enabled") Boolean enabled)
     {
         // TODO: set level on JettyLogger
-        // Log.getLogger(logger).setDebugEnabled(enabled);
+        // LoggerFactory.getLogger(logger).setDebugEnabled(enabled);
     }
 }

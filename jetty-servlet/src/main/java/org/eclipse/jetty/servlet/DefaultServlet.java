@@ -42,10 +42,10 @@ import org.eclipse.jetty.server.ResourceService;
 import org.eclipse.jetty.server.ResourceService.WelcomeFactory;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.URIUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * The default servlet.
@@ -129,7 +129,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
 {
     public static final String CONTEXT_INIT = "org.eclipse.jetty.servlet.Default.";
 
-    private static final Logger LOG = Log.getLogger(DefaultServlet.class);
+    private static final Logger LOG = LoggerFactory.getLogger(DefaultServlet.class);
 
     private static final long serialVersionUID = 4930458713846881193L;
 
@@ -204,7 +204,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
             }
             catch (Exception e)
             {
-                LOG.warn(Log.EXCEPTION, e);
+                LOG.warn("Unable to create resourceBase from {}", rb, e);
                 throw new UnavailableException(e.toString());
             }
         }
@@ -228,8 +228,9 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
         }
         catch (Exception e)
         {
-            LOG.warn(e.toString());
-            LOG.debug(e);
+            LOG.warn("Unable to use stylesheet: {} - {}", css, e.toString());
+            if (LOG.isDebugEnabled())
+                LOG.debug("Unable to use stylesheet: {}", css, e);
         }
 
         int encodingHeaderCacheSize = getInitInt("encodingHeaderCacheSize", -1);
@@ -269,7 +270,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
         }
         catch (Exception e)
         {
-            LOG.warn(Log.EXCEPTION, e);
+            LOG.warn("Unable to setup CachedContentFactory", e);
             throw new UnavailableException(e.toString());
         }
 
@@ -438,7 +439,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
         }
         catch (IOException e)
         {
-            LOG.ignore(e);
+            LOG.trace("IGNORED", e);
         }
 
         if ((r == null || !r.exists()) && pathInContext.endsWith("/jetty-dir.css"))

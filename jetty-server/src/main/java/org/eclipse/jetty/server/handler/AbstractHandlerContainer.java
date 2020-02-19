@@ -25,8 +25,8 @@ import java.util.List;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HandlerContainer;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Abstract Handler Container.
@@ -34,7 +34,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public abstract class AbstractHandlerContainer extends AbstractHandler implements HandlerContainer
 {
-    private static final Logger LOG = Log.getLogger(AbstractHandlerContainer.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AbstractHandlerContainer.class);
 
     public AbstractHandlerContainer()
     {

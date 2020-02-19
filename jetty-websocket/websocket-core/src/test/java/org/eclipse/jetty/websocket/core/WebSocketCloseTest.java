@@ -36,8 +36,6 @@ import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
@@ -47,6 +45,8 @@ import org.eclipse.jetty.websocket.core.server.internal.RFC6455Handshaker;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.eclipse.jetty.util.Callback.NOOP;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -66,7 +66,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 public class WebSocketCloseTest extends WebSocketTester
 {
-    private static Logger LOG = Log.getLogger(WebSocketCloseTest.class);
+    private static Logger LOG = LoggerFactory.getLogger(WebSocketCloseTest.class);
     private static final String WS_SCHEME = "ws";
     private static final String WSS_SCHEME = "wss";
 
@@ -601,7 +601,7 @@ public class WebSocketCloseTest extends WebSocketTester
 
     static class WebSocketServer extends AbstractLifeCycle
     {
-        private static Logger LOG = Log.getLogger(WebSocketServer.class);
+        private static Logger LOG = LoggerFactory.getLogger(WebSocketServer.class);
         private final Server server;
         private final DemandingTestFrameHandler handler;
 

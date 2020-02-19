@@ -27,8 +27,8 @@ import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * {@link HttpContent} is a stateful, linear representation of the request content provided
@@ -66,7 +66,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class HttpContent implements Callback, Closeable
 {
-    private static final Logger LOG = Log.getLogger(HttpContent.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HttpContent.class);
     private static final ByteBuffer AFTER = ByteBuffer.allocate(0);
     private static final ByteBuffer CLOSE = ByteBuffer.allocate(0);
 

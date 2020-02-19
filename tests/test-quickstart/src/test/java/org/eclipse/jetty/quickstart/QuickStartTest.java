@@ -31,7 +31,6 @@ import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.WebAppContext;
@@ -40,6 +39,7 @@ import org.eclipse.jetty.xml.XmlConfiguration;
 import org.eclipse.jetty.xml.XmlParser.Node;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
+import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -55,7 +55,7 @@ public class QuickStartTest
         PreconfigureStandardTestWar.main(new String[]{});
 
         WebDescriptor descriptor = new WebDescriptor(Resource.newResource("./target/test-standard-preconfigured/WEB-INF/quickstart-web.xml"));
-        descriptor.setValidating(!Log.getLogger(QuickStartGeneratorConfiguration.class).isDebugEnabled());
+        descriptor.setValidating(!LoggerFactory.getLogger(QuickStartGeneratorConfiguration.class).isDebugEnabled());
         descriptor.parse();
         Node node = descriptor.getRoot();
         assertThat(node, Matchers.notNullValue());
@@ -109,7 +109,7 @@ public class QuickStartTest
         assertTrue(Files.exists(webXmlPath), "Path should exist:" + webXmlPath);
 
         WebDescriptor descriptor = new WebDescriptor(new PathResource(webXmlPath));
-        descriptor.setValidating(!Log.getLogger(QuickStartGeneratorConfiguration.class).isDebugEnabled());
+        descriptor.setValidating(!LoggerFactory.getLogger(QuickStartGeneratorConfiguration.class).isDebugEnabled());
         descriptor.parse();
         Node node = descriptor.getRoot();
         assertThat(node, Matchers.notNullValue());
@@ -160,7 +160,7 @@ public class QuickStartTest
         PreconfigureJNDIWar.main(new String[]{});
 
         WebDescriptor descriptor = new WebDescriptor(Resource.newResource("./target/test-jndi-preconfigured/WEB-INF/quickstart-web.xml"));
-        descriptor.setValidating(!Log.getLogger(QuickStartGeneratorConfiguration.class).isDebugEnabled());
+        descriptor.setValidating(!LoggerFactory.getLogger(QuickStartGeneratorConfiguration.class).isDebugEnabled());
         descriptor.parse();
         Node node = descriptor.getRoot();
         assertThat(node, Matchers.notNullValue());

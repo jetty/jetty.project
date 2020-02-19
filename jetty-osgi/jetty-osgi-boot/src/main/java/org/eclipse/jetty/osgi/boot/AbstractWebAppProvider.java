@@ -33,8 +33,6 @@ import org.eclipse.jetty.osgi.boot.internal.webapp.OSGiWebappClassLoader;
 import org.eclipse.jetty.osgi.boot.utils.BundleFileLocatorHelperFactory;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.JarResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.WebAppClassLoader;
@@ -44,6 +42,8 @@ import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
 import org.osgi.service.packageadmin.PackageAdmin;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * AbstractWebAppProvider
@@ -53,7 +53,7 @@ import org.osgi.service.packageadmin.PackageAdmin;
  */
 public abstract class AbstractWebAppProvider extends AbstractLifeCycle implements AppProvider
 {
-    private static final Logger LOG = Log.getLogger(AbstractWebAppProvider.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AbstractWebAppProvider.class);
 
     private boolean _parentLoaderPriority;
 

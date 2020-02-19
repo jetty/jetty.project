@@ -34,8 +34,6 @@ import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -47,7 +45,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 public class SessionEvictionFailureTest
 {
-    private static final Logger LOG_SESSION = LoggerFactory.getLogger("org.eclipse.jetty.server.session");
+    private static final Package SESSION_PACKAGE = SessionEvictionFailureTest.class.getPackage();
 
     /**
      * MockSessionDataStore
@@ -181,7 +179,7 @@ public class SessionEvictionFailureTest
             int port1 = server.getPort();
             HttpClient client = new HttpClient();
             client.start();
-            try (StacklessLogging ignored = new StacklessLogging(LOG_SESSION))
+            try (StacklessLogging ignored = new StacklessLogging(SESSION_PACKAGE))
             {
                 String url = "http://localhost:" + port1 + contextPath + servletMapping;
 

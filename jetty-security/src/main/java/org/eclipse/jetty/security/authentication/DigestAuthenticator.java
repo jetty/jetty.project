@@ -44,10 +44,10 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.security.Credential;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * The nonce max age in ms can be set with the {@link SecurityHandler#setInitParameter(String, String)}
@@ -56,7 +56,7 @@ import org.eclipse.jetty.util.security.Credential;
  */
 public class DigestAuthenticator extends LoginAuthenticator
 {
-    private static final Logger LOG = Log.getLogger(DigestAuthenticator.class);
+    private static final Logger LOG = LoggerFactory.getLogger(DigestAuthenticator.class);
 
     private final SecureRandom _random = new SecureRandom();
     private long _maxNonceAgeMs = 60 * 1000;
@@ -275,7 +275,7 @@ public class DigestAuthenticator extends LoginAuthenticator
         }
         catch (Exception e)
         {
-            LOG.ignore(e);
+            LOG.trace("IGNORED", e);
         }
         return -1;
     }
@@ -384,7 +384,7 @@ public class DigestAuthenticator extends LoginAuthenticator
             }
             catch (Exception e)
             {
-                LOG.warn(e);
+                LOG.warn("Unable to process digest", e);
             }
 
             return false;

@@ -34,8 +34,6 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.StringUtil;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -45,7 +43,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
  */
 public class DuplicateCookieTest
 {
-    private static final Logger LOG_SESSION = LoggerFactory.getLogger("org.eclipse.jetty.server.session");
+    private static final Package SESSION_PACKAGE = DuplicateCookieTest.class.getPackage();
 
     @Test
     public void testMultipleSessionCookiesOnlyOneExists() throws Exception
@@ -65,7 +63,7 @@ public class DuplicateCookieTest
         server1.start();
         int port1 = server1.getPort();
 
-        try (StacklessLogging ignored = new StacklessLogging(LOG_SESSION))
+        try (StacklessLogging ignored = new StacklessLogging(SESSION_PACKAGE))
         {
             //create a valid session
             createUnExpiredSession(contextHandler.getSessionHandler().getSessionCache(),
@@ -108,7 +106,7 @@ public class DuplicateCookieTest
         server1.start();
         int port1 = server1.getPort();
 
-        try (StacklessLogging ignored = new StacklessLogging(LOG_SESSION))
+        try (StacklessLogging ignored = new StacklessLogging(SESSION_PACKAGE))
         {
             //create a valid session
             createUnExpiredSession(contextHandler.getSessionHandler().getSessionCache(),
@@ -155,7 +153,7 @@ public class DuplicateCookieTest
         server1.start();
         int port1 = server1.getPort();
 
-        try (StacklessLogging ignored = new StacklessLogging(LOG_SESSION))
+        try (StacklessLogging ignored = new StacklessLogging(SESSION_PACKAGE))
         {
             //create some of unexpired sessions
             createUnExpiredSession(contextHandler.getSessionHandler().getSessionCache(),
