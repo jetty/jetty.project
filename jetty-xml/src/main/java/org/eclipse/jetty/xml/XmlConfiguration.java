@@ -414,7 +414,7 @@ public class XmlConfiguration
             {
                 try
                 {
-                    obj = construct(oClass, new NamedArgs(null, oClass, XmlConfiguration.getNodes(_root, "Arg")));
+                    obj = construct(oClass, new Args(null, oClass, XmlConfiguration.getNodes(_root, "Arg")));
                 }
                 catch (NoSuchMethodException x)
                 {
@@ -910,7 +910,7 @@ public class XmlConfiguration
 
             try
             {
-                Object nobj = call(oClass, name, obj, new NamedArgs(obj, oClass, aoeNode.getNodes("Arg")));
+                Object nobj = call(oClass, name, obj, new Args(obj, oClass, aoeNode.getNodes("Arg")));
                 if (id != null)
                     _configuration.getIdMap().put(id, nobj);
                 configure(nobj, node, aoeNode.getNext());
@@ -922,7 +922,7 @@ public class XmlConfiguration
             }
         }
 
-        private Object call(Class<?> oClass, String methodName, Object obj, NamedArgs args) throws InvocationTargetException, NoSuchMethodException
+        private Object call(Class<?> oClass, String methodName, Object obj, Args args) throws InvocationTargetException, NoSuchMethodException
         {
             Objects.requireNonNull(oClass, "Class cannot be null");
             Objects.requireNonNull(methodName, "Method name cannot be null");
@@ -976,7 +976,7 @@ public class XmlConfiguration
             Object nobj;
             try
             {
-                nobj = construct(oClass, new NamedArgs(obj, oClass, aoeNode.getNodes("Arg")));
+                nobj = construct(oClass, new Args(obj, oClass, aoeNode.getNodes("Arg")));
             }
             catch (NoSuchMethodException e)
             {
@@ -991,12 +991,11 @@ public class XmlConfiguration
             return nobj;
         }
 
-        private Object construct(Class<?> klass, NamedArgs args) throws InvocationTargetException, NoSuchMethodException
+        private Object construct(Class<?> klass, Args args) throws InvocationTargetException, NoSuchMethodException
         {
             Objects.requireNonNull(klass, "Class cannot be null");
             Objects.requireNonNull(args, "Named list cannot be null");
 
-            constructors:
             for (Constructor<?> constructor : klass.getConstructors())
             {
                 try
@@ -1650,13 +1649,13 @@ public class XmlConfiguration
             }
         }
 
-        private class NamedArgs
+        private class Args
         {
-            final Class<?> _class;
-            final List<Object> _arguments;
-            final List<String> _names;
+            private final Class<?> _class;
+            private final List<Object> _arguments;
+            private final List<String> _names;
 
-            NamedArgs(Object obj, Class<?> oClass, List<XmlParser.Node> args) throws Exception
+            private Args(Object obj, Class<?> oClass, List<XmlParser.Node> args) throws Exception
             {
                 _class = oClass;
                 _arguments = new ArrayList<>();
@@ -1668,7 +1667,7 @@ public class XmlConfiguration
                 }
             }
 
-            private NamedArgs(List<Object> arguments, List<String> names)
+            private Args(List<Object> arguments, List<String> names)
             {
                 _class = null;
                 _arguments = arguments;
@@ -1691,11 +1690,11 @@ public class XmlConfiguration
                             if (executable instanceof Constructor)
                                 _class.getConstructor(types);
                             else
-                                _class.getMethod(((Method)executable).getName(), types);
+                                _class.getMethod(executable.getName(), types);
                         }
                         catch (NoSuchMethodException e)
                         {
-                            // There is not a no varArgs alternative so let's try a null varArgs match
+                            // There is not a no varArgs alternative so let's try a an empty varArgs match
                             args = asEmptyVarArgs(executable.getParameterTypes()[count - 1]).matchArgsToParameters(executable);
                         }
                         catch (Exception e)
@@ -1707,13 +1706,13 @@ public class XmlConfiguration
                 return args;
             }
 
-            NamedArgs asEmptyVarArgs(Class<?> varArgType)
+            Args asEmptyVarArgs(Class<?> varArgType)
             {
                 List<Object> arguments = new ArrayList<>(_arguments);
                 arguments.add(Array.newInstance(varArgType.getComponentType(), 0));
                 List<String> names = new ArrayList<>(_names);
                 names.add(null);
-                return new NamedArgs(arguments, names);
+                return new Args(arguments, names);
             }
 
             Object[] matchArgsToParameters(Executable executable)
