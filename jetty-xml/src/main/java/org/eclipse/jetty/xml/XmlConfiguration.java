@@ -435,7 +435,7 @@ public class XmlConfiguration
                 }
                 catch (NoSuchMethodException x)
                 {
-                    throw new IllegalStateException(String.format("No maatching constructor %s in %s", oClass, _configuration));
+                    throw new IllegalStateException(String.format("No matching constructor %s in %s", oClass, _configuration));
                 }
             }
             if (id != null)
