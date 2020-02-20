@@ -21,10 +21,11 @@ package org.eclipse.jetty.logging;
 import java.util.Objects;
 
 import org.slf4j.Logger;
+import org.slf4j.Marker;
 import org.slf4j.event.Level;
-import org.slf4j.helpers.MarkerIgnoringBase;
+import org.slf4j.spi.LocationAwareLogger;
 
-public class JettyLogger extends MarkerIgnoringBase implements Logger
+public class JettyLogger implements LocationAwareLogger, Logger
 {
     /**
      * The Level to set if you want this logger to be "OFF"
@@ -93,6 +94,42 @@ public class JettyLogger extends MarkerIgnoringBase implements Logger
     }
 
     @Override
+    public boolean isDebugEnabled(Marker marker)
+    {
+        return isDebugEnabled();
+    }
+
+    @Override
+    public void debug(Marker marker, String msg)
+    {
+        debug(msg);
+    }
+
+    @Override
+    public void debug(Marker marker, String format, Object arg)
+    {
+        debug(format, arg);
+    }
+
+    @Override
+    public void debug(Marker marker, String format, Object arg1, Object arg2)
+    {
+        debug(format, arg1, arg2);
+    }
+
+    @Override
+    public void debug(Marker marker, String format, Object... arguments)
+    {
+        debug(format, arguments);
+    }
+
+    @Override
+    public void debug(Marker marker, String msg, Throwable t)
+    {
+        debug(msg, t);
+    }
+
+    @Override
     public void error(String msg)
     {
         if (isErrorEnabled())
@@ -137,9 +174,54 @@ public class JettyLogger extends MarkerIgnoringBase implements Logger
         }
     }
 
+    @Override
+    public boolean isErrorEnabled(Marker marker)
+    {
+        return isErrorEnabled();
+    }
+
+    @Override
+    public void error(Marker marker, String msg)
+    {
+        error(msg);
+    }
+
+    @Override
+    public void error(Marker marker, String format, Object arg)
+    {
+        error(format, arg);
+    }
+
+    @Override
+    public void error(Marker marker, String format, Object arg1, Object arg2)
+    {
+        error(format, arg1, arg2);
+    }
+
+    @Override
+    public void error(Marker marker, String format, Object... arguments)
+    {
+        error(format, arguments);
+    }
+
+    @Override
+    public void error(Marker marker, String msg, Throwable t)
+    {
+        error(msg, t);
+    }
+
     public JettyAppender getAppender()
     {
         return appender;
+    }
+
+    @Override
+    public void log(Marker marker, String fqcn, int levelInt, String message, Object[] argArray, Throwable throwable)
+    {
+        if (this.level <= levelInt)
+        {
+            getAppender().emit(asEvent(intToLevel(levelInt), message, throwable, argArray));
+        }
     }
 
     public void setAppender(JettyAppender appender)
@@ -169,8 +251,7 @@ public class JettyLogger extends MarkerIgnoringBase implements Logger
 
         // apply setLevel to children too.
         JettyLoggerFactory jettyLoggerFactory = JettyLoggerFactory.getLoggerFactory();
-        jettyLoggerFactory.walkChildLoggers(this.getName(),
-            (logger) -> logger.setLevel(lvlInt));
+        jettyLoggerFactory.walkChildLoggers(this.getName(), (logger) -> logger.setLevel(lvlInt));
     }
 
     @Override
@@ -222,6 +303,42 @@ public class JettyLogger extends MarkerIgnoringBase implements Logger
         {
             getAppender().emit(asEvent(Level.INFO, msg, throwable));
         }
+    }
+
+    @Override
+    public boolean isInfoEnabled(Marker marker)
+    {
+        return isInfoEnabled();
+    }
+
+    @Override
+    public void info(Marker marker, String msg)
+    {
+        info(msg);
+    }
+
+    @Override
+    public void info(Marker marker, String format, Object arg)
+    {
+        info(format, arg);
+    }
+
+    @Override
+    public void info(Marker marker, String format, Object arg1, Object arg2)
+    {
+        info(format, arg1, arg2);
+    }
+
+    @Override
+    public void info(Marker marker, String format, Object... arguments)
+    {
+        info(format, arguments);
+    }
+
+    @Override
+    public void info(Marker marker, String msg, Throwable t)
+    {
+        info(msg, t);
     }
 
     @Override
@@ -310,6 +427,42 @@ public class JettyLogger extends MarkerIgnoringBase implements Logger
     }
 
     @Override
+    public boolean isTraceEnabled(Marker marker)
+    {
+        return isTraceEnabled();
+    }
+
+    @Override
+    public void trace(Marker marker, String msg)
+    {
+        trace(msg);
+    }
+
+    @Override
+    public void trace(Marker marker, String format, Object arg)
+    {
+        trace(format, arg);
+    }
+
+    @Override
+    public void trace(Marker marker, String format, Object arg1, Object arg2)
+    {
+        trace(format, arg1, arg2);
+    }
+
+    @Override
+    public void trace(Marker marker, String format, Object... argArray)
+    {
+        trace(format, argArray);
+    }
+
+    @Override
+    public void trace(Marker marker, String msg, Throwable t)
+    {
+        trace(msg, t);
+    }
+
+    @Override
     public void warn(String msg)
     {
         if (isWarnEnabled())
@@ -354,6 +507,59 @@ public class JettyLogger extends MarkerIgnoringBase implements Logger
         }
     }
 
+    @Override
+    public boolean isWarnEnabled(Marker marker)
+    {
+        return isWarnEnabled();
+    }
+
+    @Override
+    public void warn(Marker marker, String msg)
+    {
+        warn(msg);
+    }
+
+    @Override
+    public void warn(Marker marker, String format, Object arg)
+    {
+        warn(format, arg);
+    }
+
+    @Override
+    public void warn(Marker marker, String format, Object arg1, Object arg2)
+    {
+        warn(format, arg1, arg2);
+    }
+
+    @Override
+    public void warn(Marker marker, String format, Object... arguments)
+    {
+        warn(format, arguments);
+    }
+
+    @Override
+    public void warn(Marker marker, String msg, Throwable t)
+    {
+        warn(msg, t);
+    }
+
+    public static Level intToLevel(int level)
+    {
+        if (level >= JettyLogger.OFF)
+            return Level.ERROR;
+        if (level >= Level.ERROR.toInt())
+            return Level.ERROR;
+        if (level >= Level.WARN.toInt())
+            return Level.WARN;
+        if (level >= Level.INFO.toInt())
+            return Level.INFO;
+        if (level >= Level.DEBUG.toInt())
+            return Level.DEBUG;
+        if (level >= Level.TRACE.toInt())
+            return Level.TRACE;
+        return Level.TRACE; // everything else
+    }
+
     public static String levelToString(int level)
     {
         if (level >= JettyLogger.OFF)
@@ -371,6 +577,7 @@ public class JettyLogger extends MarkerIgnoringBase implements Logger
         return "OFF"; // everything else
     }
 
+    @SuppressWarnings("StringBufferReplaceableByString")
     @Override
     public String toString()
     {
@@ -414,6 +621,13 @@ public class JettyLogger extends MarkerIgnoringBase implements Logger
         {
             return new JettyLoggingEvent(this, level, threadName, timestamp, format, null, arg1, arg2);
         }
+    }
+
+    private JettyLoggingEvent asEvent(Level level, String format, Throwable cause, Object... args)
+    {
+        String threadName = Thread.currentThread().getName();
+        long timestamp = System.currentTimeMillis();
+        return new JettyLoggingEvent(this, level, threadName, timestamp, format, cause, args);
     }
 
     private JettyLoggingEvent asEvent(Level level, String format, Object... args)

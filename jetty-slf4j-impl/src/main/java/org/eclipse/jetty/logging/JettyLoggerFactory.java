@@ -172,7 +172,6 @@ public class JettyLoggerFactory implements ILoggerFactory
 
     private JettyLogger createLogger(String name)
     {
-        // TODO: if SOURCE property is configured, return a org.slf4j.spi.LocationAwareLogger wrapper?
         // or is that handled by slf4j itself?
         JettyLogger jettyLogger = new JettyLogger(name);
         jettyLogger.setLevel(this.configuration.getLevel(name));

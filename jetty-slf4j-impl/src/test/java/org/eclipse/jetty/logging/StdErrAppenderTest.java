@@ -49,7 +49,7 @@ public class StdErrAppenderTest
     }
 
     @Test
-    @Disabled("Needs org.slf4j.spi.LocationAwareLogger impl")
+    @Disabled("Needs org.slf4j.spi.LocationAwareLogger impl to test")
     public void testPrintSource()
     {
         Properties props = new Properties();
@@ -67,6 +67,6 @@ public class StdErrAppenderTest
         appender.emit(event);
 
         System.err.println(output);
-        output.assertContains(".StdErrAppenderTest#testPrintSource(StdErrAppenderTest.java:");
+        output.assertContains(".StdErrxAppenderTest#testPrintSource(StdErrAppenderTest.java:");
     }
 }

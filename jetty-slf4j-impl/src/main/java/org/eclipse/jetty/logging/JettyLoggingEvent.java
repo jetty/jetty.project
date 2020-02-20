@@ -18,7 +18,10 @@
 
 package org.eclipse.jetty.logging;
 
+import java.util.List;
+
 import org.slf4j.Marker;
+import org.slf4j.event.KeyValuePair;
 import org.slf4j.event.Level;
 import org.slf4j.event.LoggingEvent;
 
@@ -64,12 +67,6 @@ public class JettyLoggingEvent implements LoggingEvent
     }
 
     @Override
-    public Marker getMarker()
-    {
-        return null;
-    }
-
-    @Override
     public String getLoggerName()
     {
         return this.name;
@@ -82,6 +79,12 @@ public class JettyLoggingEvent implements LoggingEvent
     }
 
     @Override
+    public List<Object> getArguments()
+    {
+        return null;
+    }
+
+    @Override
     public String getThreadName()
     {
         return this.threadName;
@@ -91,6 +94,18 @@ public class JettyLoggingEvent implements LoggingEvent
     public Object[] getArgumentArray()
     {
         return this.argumentArray;
+    }
+
+    @Override
+    public List<Marker> getMarkers()
+    {
+        return null;
+    }
+
+    @Override
+    public List<KeyValuePair> getKeyValuePairs()
+    {
+        return null;
     }
 
     @Override
