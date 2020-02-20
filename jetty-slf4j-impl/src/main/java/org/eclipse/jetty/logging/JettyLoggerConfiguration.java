@@ -30,16 +30,20 @@ import java.util.function.Function;
 import org.slf4j.event.Level;
 
 /**
- * Properties to look for
- * - org.eclipse.jetty.logging.THREAD_PADDING (number, default "0") - used for minimum padding width of the Thread.name
- * - org.eclipse.jetty.logging.SOURCE (boolean, default "false") - used for showing of source (filename and line number) in stacktraces
- * - org.eclipse.jetty.logging.NAME_CONDENSE (boolean, default "true") - used for condensing the logger name package
- * - org.eclipse.jetty.logging.MESSAGE_ESCAPE (boolean, default "true") - used for escaping the output of the logger message
- * - org.eclipse.jetty.logging.STRICT_SLF4J_SYNTAX (boolean, default "true") - use strict slf4j message formatting when arguments are provided
+ * Properties to look for:
+ * <ul>
+ *  <li>{@code org.eclipse.jetty.logging.THREAD_PADDING} (number, default "0") - used for minimum padding width of the Thread.name</li>
+ *  <li>{@code org.eclipse.jetty.logging.SOURCE} (boolean, default "false") - used for showing of source (filename and line number) in stacktraces</li>
+ *  <li>{@code org.eclipse.jetty.logging.NAME_CONDENSE} (boolean, default "true") - used for condensing the logger name package</li>
+ *  <li>{@code org.eclipse.jetty.logging.MESSAGE_ESCAPE} (boolean, default "true") - used for escaping the output of the logger message</li>
+ *  <li>{@code org.eclipse.jetty.logging.STRICT_SLF4J_SYNTAX} (boolean, default "true") - use strict slf4j message formatting when arguments are provided</li>
+ * </ul>
  *
- * JettyLogger specific configuration
- * - <name>.LEVEL=(String:LevelName)
- * - <name>.STACKS=(boolean)
+ * JettyLogger specific configuration:
+ * <ul>
+ *  <li>{@code <name>.LEVEL=(String:LevelName)}</li>
+ *  <li>{@code <name>.STACKS=(boolean)}</li>
+ * </ul>
  */
 public class JettyLoggerConfiguration
 {
@@ -71,6 +75,8 @@ public class JettyLoggerConfiguration
 
     /**
      * JettyLogger configuration from provided Properties
+     *
+     * @param props A set of properties to base this configuration off of
      */
     public JettyLoggerConfiguration(Properties props)
     {
@@ -197,6 +203,8 @@ public class JettyLoggerConfiguration
     /**
      * Load the Configuration from the ClassLoader
      *
+     * @param loader the classloader to use when finding the {@code jetty-logging.properties} resources in.
+     * Passing {@code null} means the {@link ClassLoader#getSystemClassLoader()} is used.
      * @return the configuration
      */
     public JettyLoggerConfiguration loadRuntime(ClassLoader loader)
