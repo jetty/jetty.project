@@ -92,7 +92,7 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 @ManagedObject("Jetty StdErr Logging Implementation")
 public class StdErrLog extends AbstractLogger
 {
-    private static final String EOL = System.getProperty("line.separator");
+    private static final String EOL = System.lineSeparator();
     private static final Object[] EMPTY_ARGS = new Object[0];
     // Do not change output format lightly, people rely on this output format now.
     private static int __tagpad = Integer.parseInt(Log.__props.getProperty("org.eclipse.jetty.util.log.StdErrLog.TAG_PAD", "0"));
@@ -132,13 +132,11 @@ public class StdErrLog extends AbstractLogger
         __tagpad = pad;
     }
 
-    @SuppressWarnings("UnusedAssignment")
-    private int _level = LEVEL_INFO;
+    private int _level;
     // Level that this Logger was configured as (remembered in special case of .setDebugEnabled())
     private int _configuredLevel;
     private PrintStream _stderr = System.err;
-    @SuppressWarnings("UnusedAssignment")
-    private boolean _source = __source;
+    private boolean _source;
     // Print the long form names, otherwise use abbreviated
     private boolean _printLongNames = __long;
     // The full log name, as provided by the system.
@@ -353,26 +351,24 @@ public class StdErrLog extends AbstractLogger
     @Override
     public void setDebugEnabled(boolean enabled)
     {
-        if (enabled)
-        {
-            this._level = LEVEL_DEBUG;
+        int level = enabled ? LEVEL_DEBUG : this.getConfiguredLevel();
+        this.setLevel(level);
 
-            for (Logger log : Log.getLoggers().values())
+        String name = getName();
+        for (Logger log : Log.getLoggers().values())
+        {
+            if (log.getName().startsWith(name) && log instanceof StdErrLog)
             {
-                if (log.getName().startsWith(getName()) && log instanceof StdErrLog)
-                    ((StdErrLog)log).setLevel(LEVEL_DEBUG);
+                StdErrLog logger = (StdErrLog)log;
+                level = enabled ? LEVEL_DEBUG : logger.getConfiguredLevel();
+                logger.setLevel(level);
             }
         }
-        else
-        {
-            this._level = this._configuredLevel;
+    }
 
-            for (Logger log : Log.getLoggers().values())
-            {
-                if (log.getName().startsWith(getName()) && log instanceof StdErrLog)
-                    ((StdErrLog)log).setLevel(((StdErrLog)log)._configuredLevel);
-            }
-        }
+    private int getConfiguredLevel()
+    {
+        return _configuredLevel;
     }
 
     public int getLevel()
