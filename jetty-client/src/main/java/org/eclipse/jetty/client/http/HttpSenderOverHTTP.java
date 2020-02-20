@@ -27,6 +27,7 @@ import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.HttpRequestException;
 import org.eclipse.jetty.client.HttpSender;
 import org.eclipse.jetty.client.api.ContentProvider;
+import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MetaData;
@@ -35,6 +36,8 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
+
+import static org.eclipse.jetty.http.HttpStatus.INTERNAL_SERVER_ERROR_500;
 
 public class HttpSenderOverHTTP extends HttpSender
 {
@@ -224,6 +227,12 @@ public class HttpSenderOverHTTP extends HttpSender
                     {
                         headerBuffer = httpClient.getByteBufferPool().acquire(httpClient.getRequestBufferSize(), false);
                         break;
+                    }
+                    case HEADER_OVERFLOW:
+                    {
+                        httpClient.getByteBufferPool().release(headerBuffer);
+                        headerBuffer = null;
+                        throw new BadMessageException(INTERNAL_SERVER_ERROR_500, "Request header too large");
                     }
                     case NEED_CHUNK:
                     {

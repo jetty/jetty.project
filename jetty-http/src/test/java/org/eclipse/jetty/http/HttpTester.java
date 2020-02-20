@@ -451,6 +451,12 @@ public class HttpTester
                             header = BufferUtil.allocate(8192);
                             continue;
 
+                        case HEADER_OVERFLOW:
+                            if (header.capacity() >= 32 * 1024)
+                                throw new BadMessageException(500, "Header too large");
+                            header = BufferUtil.allocate(32 * 1024);
+                            continue;
+
                         case NEED_CHUNK:
                             chunk = BufferUtil.allocate(HttpGenerator.CHUNK_SIZE);
                             continue;

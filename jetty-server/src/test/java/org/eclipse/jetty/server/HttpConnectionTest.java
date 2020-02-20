@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.io.StringReader;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -1256,6 +1257,48 @@ public class HttpConnectionTest
                 System.err.println(response);
             throw e;
         }
+    }
+
+    @Test
+    public void testAllowedLargeResponse() throws Exception
+    {
+        connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setResponseHeaderSize(16 * 1024);
+        connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setOutputBufferSize(8 * 1024);
+
+        byte[] bytes = new byte[12 * 1024];
+        Arrays.fill(bytes, (byte)'X');
+        final String longstr = "thisisastringthatshouldreachover12kbytes-" + new String(bytes, StandardCharsets.ISO_8859_1) + "_Z_";
+        final CountDownLatch checkError = new CountDownLatch(1);
+        server.stop();
+        server.setHandler(new AbstractHandler()
+        {
+            @SuppressWarnings("unused")
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                response.setHeader(HttpHeader.CONTENT_TYPE.toString(), MimeTypes.Type.TEXT_HTML.toString());
+                response.setHeader("LongStr", longstr);
+                PrintWriter writer = response.getWriter();
+                writer.write("<html><h1>FOO</h1></html>");
+                writer.flush();
+                if (writer.checkError())
+                    checkError.countDown();
+                response.flushBuffer();
+            }
+        });
+        server.start();
+
+        String response = null;
+        response = connector.getResponse("GET / HTTP/1.1\r\n" +
+            "Host: localhost\r\n" +
+            "\r\n"
+        );
+
+        checkContains(response, 0, "HTTP/1.1 200");
+        checkContains(response, 0, "LongStr: thisisastringthatshouldreachover12kbytes");
+        checkContains(response, 0, "XXX_Z_");
+        assertThat(checkError.getCount(), is(1L));
     }
 
     @Test

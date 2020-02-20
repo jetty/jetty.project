@@ -25,6 +25,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
 
+import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpGenerator;
@@ -46,6 +47,8 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+
+import static org.eclipse.jetty.http.HttpStatus.INTERNAL_SERVER_ERROR_500;
 
 /**
  * <p>A {@link Connection} that handles the HTTP protocol.</p>
@@ -754,8 +757,17 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
 
                     case NEED_HEADER:
                     {
-                        _header = _bufferPool.acquire(_config.getResponseHeaderSize(), HEADER_BUFFER_DIRECT);
+                        _header = _bufferPool.acquire(Math.min(_config.getResponseHeaderSize(), _config.getOutputBufferSize()), HEADER_BUFFER_DIRECT);
+                        continue;
+                    }
 
+                    case HEADER_OVERFLOW:
+                    {
+                        int capacity = _header.capacity();
+                        _bufferPool.release(_header);
+                        if (capacity >= _config.getResponseHeaderSize())
+                            throw new BadMessageException(INTERNAL_SERVER_ERROR_500, "Response header too large");
+                        _header = _bufferPool.acquire(_config.getResponseHeaderSize(), HEADER_BUFFER_DIRECT);
                         continue;
                     }
                     case NEED_CHUNK:
