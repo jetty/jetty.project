@@ -121,13 +121,11 @@ public class StdErrLog extends AbstractLogger
         __threadNamePadding = pad;
     }
 
-    @SuppressWarnings("UnusedAssignment")
-    private int _level = LEVEL_INFO;
+    private int _level;
     // Level that this Logger was configured as (remembered in special case of .setDebugEnabled())
     private int _configuredLevel;
     private PrintStream _stderr = System.err;
-    @SuppressWarnings("UnusedAssignment")
-    private boolean _source = SOURCE;
+    private boolean _source;
     // Print the long form names, otherwise use abbreviated
     private boolean _printLongNames = LONG_CLASSNAMES;
     // The full log name, as provided by the system.
@@ -237,7 +235,6 @@ public class StdErrLog extends AbstractLogger
         this._printLongNames = printLongNames;
     }
 
-    @SuppressWarnings("unused")
     public boolean isPrintLongNames()
     {
         return this._printLongNames;
