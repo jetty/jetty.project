@@ -458,12 +458,7 @@ public class StdErrLog extends AbstractLogger
 
         if (msg == null)
         {
-            msg = "";
-            for (int i = 0; i < msgArgsLen; i++)
-            {
-                //noinspection StringConcatenationInLoop
-                msg += "{} ";
-            }
+            msg = "{} ".repeat(msgArgsLen);
         }
         String braces = "{}";
         int start = 0;
