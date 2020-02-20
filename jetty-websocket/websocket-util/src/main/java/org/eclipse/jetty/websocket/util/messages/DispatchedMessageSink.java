@@ -23,6 +23,7 @@ import java.lang.invoke.MethodHandle;
 import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 
@@ -115,19 +116,22 @@ public abstract class DispatchedMessageSink extends AbstractMessageSink
             dispatchComplete = new CompletableFuture<>();
 
             // Dispatch to end user function (will likely start with blocking for data/accept).
+            // If the MessageSink can be closed do this after invoking and before completing the CompletableFuture.
             new Thread(() ->
             {
                 try
                 {
                     methodHandle.invoke(typeSink);
-                    dispatchComplete.complete(null);
-
-                    // If the MessageSink can be closed do this to free up resources.
                     if (typeSink instanceof Closeable)
-                        ((Closeable)typeSink).close();
+                        IO.close((Closeable)typeSink);
+
+                    dispatchComplete.complete(null);
                 }
                 catch (Throwable throwable)
                 {
+                    if (typeSink instanceof Closeable)
+                        IO.close((Closeable)typeSink);
+
                     dispatchComplete.completeExceptionally(throwable);
                 }
             }).start();
