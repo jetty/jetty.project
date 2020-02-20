@@ -46,9 +46,6 @@ public class ClusteredOrphanedSessionTest
         _testHelper.tearDown();
     }
 
-    /**
-     * @see org.eclipse.jetty.server.session.AbstractTestBase#createSessionDataStoreFactory()
-     */
     @Override
     public SessionDataStoreFactory createSessionDataStoreFactory()
     {

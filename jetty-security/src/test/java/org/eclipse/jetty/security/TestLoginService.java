@@ -43,9 +43,6 @@ public class TestLoginService extends AbstractLoginService
         userStore.addUser(username, credential, roles);
     }
 
-    /**
-     * @see org.eclipse.jetty.security.AbstractLoginService#loadRoleInfo(org.eclipse.jetty.security.AbstractLoginService.UserPrincipal)
-     */
     @Override
     protected String[] loadRoleInfo(UserPrincipal user)
     {
@@ -63,9 +60,6 @@ public class TestLoginService extends AbstractLoginService
         return list.toArray(new String[roles.size()]);
     }
 
-    /**
-     * @see org.eclipse.jetty.security.AbstractLoginService#loadUserInfo(java.lang.String)
-     */
     @Override
     protected UserPrincipal loadUserInfo(String username)
     {

@@ -22,7 +22,7 @@ import java.util.Arrays;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.common.message.MessageWriter;
+import org.eclipse.jetty.websocket.util.messages.MessageWriter;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -49,12 +49,13 @@ public class MessageWriterTest
     public void setupSession()
     {
         remoteSocket = new OutgoingMessageCapture();
+        remoteSocket.setOutputBufferSize(OUTPUT_BUFFER_SIZE);
     }
 
     @Test
     public void testMultipleWrites() throws Exception
     {
-        try (MessageWriter stream = new MessageWriter(remoteSocket, OUTPUT_BUFFER_SIZE))
+        try (MessageWriter stream = new MessageWriter(remoteSocket, bufferPool))
         {
             stream.write("Hello");
             stream.write(" ");
@@ -69,7 +70,7 @@ public class MessageWriterTest
     @Test
     public void testSingleWrite() throws Exception
     {
-        try (MessageWriter stream = new MessageWriter(remoteSocket, OUTPUT_BUFFER_SIZE))
+        try (MessageWriter stream = new MessageWriter(remoteSocket, bufferPool))
         {
             stream.append("Hello World");
         }
@@ -89,7 +90,7 @@ public class MessageWriterTest
         Arrays.fill(buf, 'x');
         buf[size - 1] = 'o'; // mark last entry for debugging
 
-        try (MessageWriter stream = new MessageWriter(remoteSocket, OUTPUT_BUFFER_SIZE))
+        try (MessageWriter stream = new MessageWriter(remoteSocket, bufferPool))
         {
             stream.write(buf);
         }

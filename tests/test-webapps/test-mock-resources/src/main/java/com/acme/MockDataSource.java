@@ -39,18 +39,12 @@ public class MockDataSource implements DataSource
         return null;
     }
 
-    /**
-     * @see javax.sql.DataSource#getConnection()
-     */
     @Override
     public Connection getConnection() throws SQLException
     {
         return null;
     }
 
-    /**
-     * @see javax.sql.DataSource#getConnection(java.lang.String, java.lang.String)
-     */
     @Override
     public Connection getConnection(String username, String password)
         throws SQLException
@@ -58,35 +52,23 @@ public class MockDataSource implements DataSource
         return null;
     }
 
-    /**
-     * @see javax.sql.DataSource#getLogWriter()
-     */
     @Override
     public PrintWriter getLogWriter() throws SQLException
     {
         return null;
     }
 
-    /**
-     * @see javax.sql.DataSource#getLoginTimeout()
-     */
     @Override
     public int getLoginTimeout() throws SQLException
     {
         return 0;
     }
 
-    /**
-     * @see javax.sql.DataSource#setLogWriter(java.io.PrintWriter)
-     */
     @Override
     public void setLogWriter(PrintWriter out) throws SQLException
     {
     }
 
-    /**
-     * @see javax.sql.DataSource#setLoginTimeout(int)
-     */
     @Override
     public void setLoginTimeout(int seconds) throws SQLException
     {

@@ -479,9 +479,6 @@ public class DistributionTester
             consoleStreamers.forEach(ConsoleStreamer::stop);
         }
 
-        /**
-         * @see #destroy()
-         */
         @Override
         public void close()
         {

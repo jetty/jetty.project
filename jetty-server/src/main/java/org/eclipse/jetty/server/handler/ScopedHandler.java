@@ -105,9 +105,6 @@ public abstract class ScopedHandler extends HandlerWrapper
     protected ScopedHandler _outerScope;
     protected ScopedHandler _nextScope;
 
-    /**
-     * @see org.eclipse.jetty.server.handler.HandlerWrapper#doStart()
-     */
     @Override
     protected void doStart() throws Exception
     {

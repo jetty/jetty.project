@@ -65,9 +65,6 @@ public class Source
         return _resource;
     }
 
-    /**
-     * @see java.lang.Object#toString()
-     */
     @Override
     public String toString()
     {

@@ -45,9 +45,6 @@ public class Activator implements BundleActivator
     public static class TestServlet extends HttpServlet
     {
 
-        /**
-         * @see javax.servlet.http.HttpServlet#doGet(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
-         */
         @Override
         protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
         {

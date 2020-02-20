@@ -65,18 +65,12 @@ public class QuickStartDescriptorProcessor extends IterativeDescriptorProcessor
         }
     }
 
-    /**
-     * @see org.eclipse.jetty.webapp.IterativeDescriptorProcessor#start(org.eclipse.jetty.webapp.WebAppContext, org.eclipse.jetty.webapp.Descriptor)
-     */
     @Override
     public void start(WebAppContext context, Descriptor descriptor)
     {
         _originAttributeName = context.getInitParameter(QuickStartGeneratorConfiguration.ORIGIN);
     }
 
-    /**
-     * @see org.eclipse.jetty.webapp.IterativeDescriptorProcessor#end(org.eclipse.jetty.webapp.WebAppContext, org.eclipse.jetty.webapp.Descriptor)
-     */
     @Override
     public void end(WebAppContext context, Descriptor descriptor)
     {

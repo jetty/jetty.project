@@ -84,9 +84,6 @@ public abstract class AbstractHandler extends ContainerLifeCycle implements Hand
         baseRequest.setHandled(true);
     }
 
-    /*
-     * @see org.eclipse.thread.LifeCycle#start()
-     */
     @Override
     protected void doStart() throws Exception
     {
@@ -97,9 +94,6 @@ public abstract class AbstractHandler extends ContainerLifeCycle implements Hand
         super.doStart();
     }
 
-    /*
-     * @see org.eclipse.thread.LifeCycle#stop()
-     */
     @Override
     protected void doStop() throws Exception
     {

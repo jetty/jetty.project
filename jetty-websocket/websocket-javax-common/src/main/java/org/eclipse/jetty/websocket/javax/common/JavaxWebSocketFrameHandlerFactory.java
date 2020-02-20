@@ -43,23 +43,26 @@ import javax.websocket.PongMessage;
 import javax.websocket.Session;
 
 import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
+import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.javax.common.decoders.AvailableDecoders;
-import org.eclipse.jetty.websocket.javax.common.messages.ByteArrayMessageSink;
-import org.eclipse.jetty.websocket.javax.common.messages.ByteBufferMessageSink;
 import org.eclipse.jetty.websocket.javax.common.messages.DecodedBinaryMessageSink;
 import org.eclipse.jetty.websocket.javax.common.messages.DecodedBinaryStreamMessageSink;
 import org.eclipse.jetty.websocket.javax.common.messages.DecodedMessageSink;
 import org.eclipse.jetty.websocket.javax.common.messages.DecodedTextMessageSink;
 import org.eclipse.jetty.websocket.javax.common.messages.DecodedTextStreamMessageSink;
-import org.eclipse.jetty.websocket.javax.common.messages.InputStreamMessageSink;
-import org.eclipse.jetty.websocket.javax.common.messages.PartialByteArrayMessageSink;
-import org.eclipse.jetty.websocket.javax.common.messages.PartialByteBufferMessageSink;
-import org.eclipse.jetty.websocket.javax.common.messages.PartialStringMessageSink;
-import org.eclipse.jetty.websocket.javax.common.messages.ReaderMessageSink;
-import org.eclipse.jetty.websocket.javax.common.messages.StringMessageSink;
-import org.eclipse.jetty.websocket.javax.common.util.InvalidSignatureException;
-import org.eclipse.jetty.websocket.javax.common.util.InvokerUtils;
-import org.eclipse.jetty.websocket.javax.common.util.ReflectUtils;
+import org.eclipse.jetty.websocket.util.InvalidSignatureException;
+import org.eclipse.jetty.websocket.util.InvalidWebSocketException;
+import org.eclipse.jetty.websocket.util.InvokerUtils;
+import org.eclipse.jetty.websocket.util.ReflectUtils;
+import org.eclipse.jetty.websocket.util.messages.ByteArrayMessageSink;
+import org.eclipse.jetty.websocket.util.messages.ByteBufferMessageSink;
+import org.eclipse.jetty.websocket.util.messages.InputStreamMessageSink;
+import org.eclipse.jetty.websocket.util.messages.MessageSink;
+import org.eclipse.jetty.websocket.util.messages.PartialByteArrayMessageSink;
+import org.eclipse.jetty.websocket.util.messages.PartialByteBufferMessageSink;
+import org.eclipse.jetty.websocket.util.messages.PartialStringMessageSink;
+import org.eclipse.jetty.websocket.util.messages.ReaderMessageSink;
+import org.eclipse.jetty.websocket.util.messages.StringMessageSink;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.eclipse.jetty.websocket.javax.common.JavaxWebSocketFrameHandlerMetadata.MessageMetadata;
@@ -322,15 +325,15 @@ public abstract class JavaxWebSocketFrameHandlerFactory
             if (DecodedMessageSink.class.isAssignableFrom(msgMetadata.sinkClass))
             {
                 MethodHandle ctorHandle = MethodHandles.lookup().findConstructor(msgMetadata.sinkClass,
-                    MethodType.methodType(void.class, JavaxWebSocketSession.class, msgMetadata.registeredDecoder.interfaceType, MethodHandle.class));
+                    MethodType.methodType(void.class, CoreSession.class, msgMetadata.registeredDecoder.interfaceType, MethodHandle.class));
                 Decoder decoder = session.getDecoders().getInstanceOf(msgMetadata.registeredDecoder);
-                return (MessageSink)ctorHandle.invoke(session, decoder, msgMetadata.handle);
+                return (MessageSink)ctorHandle.invoke(session.getCoreSession(), decoder, msgMetadata.handle);
             }
             else
             {
                 MethodHandle ctorHandle = MethodHandles.lookup().findConstructor(msgMetadata.sinkClass,
-                    MethodType.methodType(void.class, JavaxWebSocketSession.class, MethodHandle.class));
-                return (MessageSink)ctorHandle.invoke(session, msgMetadata.handle);
+                    MethodType.methodType(void.class, CoreSession.class, MethodHandle.class));
+                return (MessageSink)ctorHandle.invoke(session.getCoreSession(), msgMetadata.handle);
             }
         }
         catch (NoSuchMethodException e)
@@ -385,8 +388,7 @@ public abstract class JavaxWebSocketFrameHandlerFactory
     protected JavaxWebSocketFrameHandlerMetadata createEndpointMetadata(Class<? extends javax.websocket.Endpoint> endpointClass, EndpointConfig endpointConfig)
     {
         JavaxWebSocketFrameHandlerMetadata metadata = new JavaxWebSocketFrameHandlerMetadata(endpointConfig);
-
-        MethodHandles.Lookup lookup = MethodHandles.lookup();
+        MethodHandles.Lookup lookup = getMethodHandleLookup(endpointClass);
 
         Method openMethod = ReflectUtils.findMethod(endpointClass, "onOpen",
             javax.websocket.Session.class, javax.websocket.EndpointConfig.class);
@@ -408,6 +410,7 @@ public abstract class JavaxWebSocketFrameHandlerFactory
 
     protected JavaxWebSocketFrameHandlerMetadata discoverJavaxFrameHandlerMetadata(Class<?> endpointClass, JavaxWebSocketFrameHandlerMetadata metadata)
     {
+        MethodHandles.Lookup lookup = getMethodHandleLookup(endpointClass);
         Method onmethod;
 
         // OnOpen [0..1]
@@ -418,7 +421,7 @@ public abstract class JavaxWebSocketFrameHandlerFactory
             final InvokerUtils.Arg SESSION = new InvokerUtils.Arg(Session.class);
             final InvokerUtils.Arg ENDPOINT_CONFIG = new InvokerUtils.Arg(EndpointConfig.class);
             MethodHandle methodHandle = InvokerUtils
-                .mutatedInvoker(endpointClass, onmethod, paramIdentifier, metadata.getNamedTemplateVariables(), SESSION, ENDPOINT_CONFIG);
+                .mutatedInvoker(lookup, endpointClass, onmethod, paramIdentifier, metadata.getNamedTemplateVariables(), SESSION, ENDPOINT_CONFIG);
             metadata.setOpenHandler(methodHandle, onmethod);
         }
 
@@ -430,7 +433,7 @@ public abstract class JavaxWebSocketFrameHandlerFactory
             final InvokerUtils.Arg SESSION = new InvokerUtils.Arg(Session.class);
             final InvokerUtils.Arg CLOSE_REASON = new InvokerUtils.Arg(CloseReason.class);
             MethodHandle methodHandle = InvokerUtils
-                .mutatedInvoker(endpointClass, onmethod, paramIdentifier, metadata.getNamedTemplateVariables(), SESSION, CLOSE_REASON);
+                .mutatedInvoker(lookup, endpointClass, onmethod, paramIdentifier, metadata.getNamedTemplateVariables(), SESSION, CLOSE_REASON);
             metadata.setCloseHandler(methodHandle, onmethod);
         }
 
@@ -442,7 +445,7 @@ public abstract class JavaxWebSocketFrameHandlerFactory
             final InvokerUtils.Arg SESSION = new InvokerUtils.Arg(Session.class);
             final InvokerUtils.Arg CAUSE = new InvokerUtils.Arg(Throwable.class).required();
             MethodHandle methodHandle = InvokerUtils
-                .mutatedInvoker(endpointClass, onmethod, paramIdentifier, metadata.getNamedTemplateVariables(), SESSION, CAUSE);
+                .mutatedInvoker(lookup, endpointClass, onmethod, paramIdentifier, metadata.getNamedTemplateVariables(), SESSION, CAUSE);
             metadata.setErrorHandler(methodHandle, onmethod);
         }
 
@@ -465,7 +468,7 @@ public abstract class JavaxWebSocketFrameHandlerFactory
 
                 // Function to search for matching MethodHandle for the endpointClass given a signature.
                 Function<InvokerUtils.Arg[], MethodHandle> getMethodHandle = (signature) ->
-                    InvokerUtils.optionalMutatedInvoker(endpointClass, onMsg, paramIdentifier, metadata.getNamedTemplateVariables(), signature);
+                    InvokerUtils.optionalMutatedInvoker(lookup, endpointClass, onMsg, paramIdentifier, metadata.getNamedTemplateVariables(), signature);
 
                 // Try to match from available decoders.
                 if (matchDecoders(onMsg, metadata, msgMetadata, getMethodHandle))
@@ -699,6 +702,20 @@ public abstract class JavaxWebSocketFrameHandlerFactory
             ReflectUtils.append(err, endpointClass, method);
             throw new InvalidSignatureException(err.toString());
         }
+    }
+
+    private MethodHandles.Lookup getMethodHandleLookup(Class<?> endpointClass) throws InvalidWebSocketException
+    {
+        MethodHandles.Lookup lookup;
+        try
+        {
+            lookup = MethodHandles.privateLookupIn(endpointClass, MethodHandles.lookup());
+        }
+        catch (IllegalAccessException e)
+        {
+            throw new InvalidWebSocketException("Unable to obtain MethodHandle lookup for " + endpointClass, e);
+        }
+        return lookup;
     }
 
     private static class DecodedArgs

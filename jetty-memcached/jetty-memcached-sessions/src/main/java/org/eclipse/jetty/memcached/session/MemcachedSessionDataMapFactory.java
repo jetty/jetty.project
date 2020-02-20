@@ -83,9 +83,6 @@ public class MemcachedSessionDataMapFactory implements SessionDataMapFactory
         _heartbeats = heartbeats;
     }
 
-    /**
-     * @see org.eclipse.jetty.server.session.SessionDataMapFactory#getSessionDataMap()
-     */
     @Override
     public SessionDataMap getSessionDataMap()
     {

@@ -23,11 +23,12 @@ import java.security.Principal;
 
 public class UpgradeRequestAdapter implements UpgradeRequest
 {
-    private URI requestURI;
+    private final URI requestURI;
 
     public UpgradeRequestAdapter()
     {
         /* anonymous, no requestURI, upgrade request */
+        this(null);
     }
 
     public UpgradeRequestAdapter(URI uri)

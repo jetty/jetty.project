@@ -26,13 +26,14 @@ import javax.websocket.CloseReason;
 import javax.websocket.DecodeException;
 import javax.websocket.Decoder;
 
+import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.exception.CloseException;
-import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketSession;
-import org.eclipse.jetty.websocket.javax.common.MessageSink;
+import org.eclipse.jetty.websocket.util.messages.InputStreamMessageSink;
+import org.eclipse.jetty.websocket.util.messages.MessageSink;
 
 public class DecodedBinaryStreamMessageSink<T> extends DecodedMessageSink<Decoder.BinaryStream<T>>
 {
-    public DecodedBinaryStreamMessageSink(JavaxWebSocketSession session,
+    public DecodedBinaryStreamMessageSink(CoreSession session,
                                           Decoder.BinaryStream<T> decoder,
                                           MethodHandle methodHandle)
         throws NoSuchMethodException, IllegalAccessException
@@ -49,7 +50,7 @@ public class DecodedBinaryStreamMessageSink<T> extends DecodedMessageSink<Decode
     }
 
     @Override
-    protected MessageSink newRawMessageSink(JavaxWebSocketSession session, MethodHandle rawMethodHandle)
+    protected MessageSink newRawMessageSink(CoreSession session, MethodHandle rawMethodHandle)
     {
         return new InputStreamMessageSink(session, rawMethodHandle);
     }

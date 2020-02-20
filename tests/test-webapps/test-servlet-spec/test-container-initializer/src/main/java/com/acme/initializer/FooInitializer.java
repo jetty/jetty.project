@@ -33,18 +33,12 @@ public class FooInitializer implements ServletContainerInitializer
     public static class BarListener implements ServletContextListener
     {
 
-        /**
-         * @see javax.servlet.ServletContextListener#contextInitialized(javax.servlet.ServletContextEvent)
-         */
         @Override
         public void contextInitialized(ServletContextEvent sce)
         {
             throw new IllegalStateException("BAR LISTENER CALLED!");
         }
 
-        /**
-         * @see javax.servlet.ServletContextListener#contextDestroyed(javax.servlet.ServletContextEvent)
-         */
         @Override
         public void contextDestroyed(ServletContextEvent sce)
         {
@@ -55,9 +49,6 @@ public class FooInitializer implements ServletContainerInitializer
     public static class FooListener implements ServletContextListener
     {
 
-        /**
-         * @see javax.servlet.ServletContextListener#contextInitialized(javax.servlet.ServletContextEvent)
-         */
         @Override
         public void contextInitialized(ServletContextEvent sce)
         {
@@ -83,9 +74,6 @@ public class FooInitializer implements ServletContainerInitializer
             }
         }
 
-        /**
-         * @see javax.servlet.ServletContextListener#contextDestroyed(javax.servlet.ServletContextEvent)
-         */
         @Override
         public void contextDestroyed(ServletContextEvent sce)
         {

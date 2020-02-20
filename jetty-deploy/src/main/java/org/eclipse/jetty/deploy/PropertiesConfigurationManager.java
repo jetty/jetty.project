@@ -81,9 +81,6 @@ public class PropertiesConfigurationManager implements ConfigurationManager, Dum
         _map.put(name, value);
     }
 
-    /**
-     * @see org.eclipse.jetty.deploy.ConfigurationManager#getProperties()
-     */
     @Override
     public Map<String, String> getProperties()
     {

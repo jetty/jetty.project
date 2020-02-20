@@ -75,9 +75,6 @@ public class RewriteRegexRule extends RegexRule implements Rule.ApplyURI
         }
     }
 
-    /* (non-Javadoc)
-     * @see org.eclipse.jetty.server.handler.rules.RegexRule#apply(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, java.util.regex.Matcher)
-     */
     @Override
     public String apply(String target, HttpServletRequest request, HttpServletResponse response, Matcher matcher) throws IOException
     {

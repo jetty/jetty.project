@@ -203,9 +203,6 @@ public abstract class ConnectorCloseTestBase extends HttpServerTestFixture
             return _response;
         }
 
-        /**
-         * @see java.lang.Runnable#run()
-         */
         @Override
         public void run()
         {

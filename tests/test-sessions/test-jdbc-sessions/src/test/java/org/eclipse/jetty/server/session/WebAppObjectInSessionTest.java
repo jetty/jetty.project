@@ -28,9 +28,6 @@ import org.junit.jupiter.api.Test;
 public class WebAppObjectInSessionTest extends AbstractWebAppObjectInSessionTest
 {
 
-    /**
-     * @see org.eclipse.jetty.server.session.AbstractTestBase#createSessionDataStoreFactory()
-     */
     @Override
     public SessionDataStoreFactory createSessionDataStoreFactory()
     {

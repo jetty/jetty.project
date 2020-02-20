@@ -32,7 +32,6 @@ import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.api.WriteCallback;
-import org.eclipse.jetty.websocket.common.invoke.InvalidSignatureException;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.CoreSession;
@@ -46,6 +45,9 @@ import org.eclipse.jetty.websocket.core.exception.ProtocolException;
 import org.eclipse.jetty.websocket.core.exception.UpgradeException;
 import org.eclipse.jetty.websocket.core.exception.WebSocketException;
 import org.eclipse.jetty.websocket.core.exception.WebSocketTimeoutException;
+import org.eclipse.jetty.websocket.util.InvalidSignatureException;
+import org.eclipse.jetty.websocket.util.InvokerUtils;
+import org.eclipse.jetty.websocket.util.messages.MessageSink;
 
 public class JettyWebSocketFrameHandler implements FrameHandler
 {
@@ -152,14 +154,14 @@ public class JettyWebSocketFrameHandler implements FrameHandler
             customizer.customize(coreSession);
             session = new WebSocketSession(coreSession, this);
 
-            frameHandle = JettyWebSocketFrameHandlerFactory.bindTo(frameHandle, session);
-            openHandle = JettyWebSocketFrameHandlerFactory.bindTo(openHandle, session);
-            closeHandle = JettyWebSocketFrameHandlerFactory.bindTo(closeHandle, session);
-            errorHandle = JettyWebSocketFrameHandlerFactory.bindTo(errorHandle, session);
-            textHandle = JettyWebSocketFrameHandlerFactory.bindTo(textHandle, session);
-            binaryHandle = JettyWebSocketFrameHandlerFactory.bindTo(binaryHandle, session);
-            pingHandle = JettyWebSocketFrameHandlerFactory.bindTo(pingHandle, session);
-            pongHandle = JettyWebSocketFrameHandlerFactory.bindTo(pongHandle, session);
+            frameHandle = InvokerUtils.bindTo(frameHandle, session);
+            openHandle = InvokerUtils.bindTo(openHandle, session);
+            closeHandle = InvokerUtils.bindTo(closeHandle, session);
+            errorHandle = InvokerUtils.bindTo(errorHandle, session);
+            textHandle = InvokerUtils.bindTo(textHandle, session);
+            binaryHandle = InvokerUtils.bindTo(binaryHandle, session);
+            pingHandle = InvokerUtils.bindTo(pingHandle, session);
+            pongHandle = InvokerUtils.bindTo(pongHandle, session);
 
             Executor executor = container.getExecutor();
 

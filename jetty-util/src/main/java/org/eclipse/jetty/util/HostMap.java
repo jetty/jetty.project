@@ -47,9 +47,6 @@ public class HostMap<TYPE> extends HashMap<String, TYPE>
         super(capacity);
     }
 
-    /**
-     * @see java.util.HashMap#put(java.lang.Object, java.lang.Object)
-     */
     @Override
     public TYPE put(String host, TYPE object)
         throws IllegalArgumentException
@@ -57,9 +54,6 @@ public class HostMap<TYPE> extends HashMap<String, TYPE>
         return super.put(host, object);
     }
 
-    /**
-     * @see java.util.HashMap#get(java.lang.Object)
-     */
     @Override
     public TYPE get(Object key)
     {

@@ -25,6 +25,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
 
+import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpGenerator;
@@ -33,6 +34,7 @@ import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpParser.RequestHandler;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.AbstractConnection;
@@ -781,6 +783,15 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                         
                     case NEED_HEADER:
                     {
+                        _header = _bufferPool.acquire(Math.min(_config.getResponseHeaderSize(), _config.getOutputBufferSize()), useDirectByteBuffers);
+                        continue;
+                    }
+                    case HEADER_OVERFLOW:
+                    {
+                        int capacity = _header.capacity();
+                        _bufferPool.release(_header);
+                        if (capacity >= _config.getResponseHeaderSize())
+                            throw new BadMessageException(HttpStatus.INTERNAL_SERVER_ERROR_500, "Response header too large");
                         _header = _bufferPool.acquire(_config.getResponseHeaderSize(), useDirectByteBuffers);
                         continue;
                     }

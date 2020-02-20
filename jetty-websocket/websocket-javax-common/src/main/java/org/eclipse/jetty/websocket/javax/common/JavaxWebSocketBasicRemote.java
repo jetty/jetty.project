@@ -33,7 +33,7 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
-import org.eclipse.jetty.websocket.javax.common.util.TextUtil;
+import org.eclipse.jetty.websocket.util.TextUtil;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
