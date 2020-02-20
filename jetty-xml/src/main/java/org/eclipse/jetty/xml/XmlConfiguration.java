@@ -24,6 +24,7 @@ import java.io.StringReader;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Executable;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -37,11 +38,12 @@ import java.nio.file.Paths;
 import java.security.AccessController;
 import java.security.PrivilegedExceptionAction;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -51,7 +53,6 @@ import java.util.Queue;
 import java.util.ServiceLoader;
 import java.util.Set;
 
-import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.MultiException;
@@ -98,6 +99,22 @@ public class XmlConfiguration
         };
     private static final Iterable<ConfigurationProcessorFactory> __factoryLoader = ServiceLoader.load(ConfigurationProcessorFactory.class);
     private static final XmlParser __parser = initParser();
+    public static final Comparator<Executable> EXECUTABLE_COMPARATOR = (o1, o2) ->
+    {
+        int p1 = o1.getParameterCount();
+        int p2 = o2.getParameterCount();
+        int compare = Integer.compare(p1, p2);
+        if (compare == 0 && p1 > 0)
+        {
+            boolean a1 = o1.getParameterTypes()[p1 - 1].isArray();
+            boolean a2 = o2.getParameterTypes()[p2 - 1].isArray();
+            if (a1 && !a2)
+                compare = 1;
+            else if (!a1 && a2)
+                compare = -1;
+        }
+        return compare;
+    };
 
     private static XmlParser initParser()
     {
@@ -412,39 +429,13 @@ public class XmlConfiguration
             int index = 0;
             if (obj == null && oClass != null)
             {
-                index = _root.size();
-                Map<String, Object> namedArgMap = new HashMap<>();
-
-                List<Object> arguments = new LinkedList<>();
-                for (int i = 0; i < _root.size(); i++)
-                {
-                    Object o = _root.get(i);
-                    if (o instanceof String)
-                        continue;
-
-                    XmlParser.Node node = (XmlParser.Node)o;
-                    if (node.getTag().equals("Arg"))
-                    {
-                        String namedAttribute = node.getAttribute("name");
-                        Object value = value(null, (XmlParser.Node)o);
-                        if (namedAttribute != null)
-                            namedArgMap.put(namedAttribute, value);
-                        arguments.add(value);
-                    }
-                    else
-                    {
-                        index = i;
-                        break;
-                    }
-                }
-
                 try
                 {
-                    obj = construct(oClass, arguments.toArray(), namedArgMap);
+                    obj = construct(oClass, new Args(null, oClass, XmlConfiguration.getNodes(_root, "Arg")));
                 }
                 catch (NoSuchMethodException x)
                 {
-                    throw new IllegalStateException(String.format("No constructor %s(%s,%s) in %s", oClass, arguments, namedArgMap, _configuration));
+                    throw new IllegalStateException(String.format("No matching constructor %s in %s", oClass, _configuration));
                 }
             }
             if (id != null)
@@ -916,7 +907,6 @@ public class XmlConfiguration
             String id = aoeNode.getString("Id");
             String name = aoeNode.getString("Name");
             String clazz = aoeNode.getString("Class");
-            List<Object> args = aoeNode.getList("Arg");
 
             Class<?> oClass;
             if (clazz != null)
@@ -937,7 +927,7 @@ public class XmlConfiguration
 
             try
             {
-                Object nobj = call(oClass, name, obj, args.toArray(new Object[0]));
+                Object nobj = call(oClass, name, obj, new Args(obj, oClass, aoeNode.getNodes("Arg")));
                 if (id != null)
                     _configuration.getIdMap().put(id, nobj);
                 configure(nobj, node, aoeNode.getNext());
@@ -949,7 +939,7 @@ public class XmlConfiguration
             }
         }
 
-        private Object call(Class<?> oClass, String methodName, Object obj, Object[] arg) throws InvocationTargetException, NoSuchMethodException
+        private Object call(Class<?> oClass, String methodName, Object obj, Args args) throws InvocationTargetException, NoSuchMethodException
         {
             Objects.requireNonNull(oClass, "Class cannot be null");
             Objects.requireNonNull(methodName, "Method name cannot be null");
@@ -957,11 +947,15 @@ public class XmlConfiguration
                 throw new IllegalArgumentException("Method name cannot be blank");
 
             // Lets just try all methods for now
-            for (Method method : oClass.getMethods())
+
+            Method[] methods = oClass.getMethods();
+            Arrays.sort(methods, EXECUTABLE_COMPARATOR);
+            for (Method method : methods)
             {
                 if (!method.getName().equals(methodName))
                     continue;
-                if (method.getParameterCount() != arg.length)
+                Object[] arguments = args.applyTo(method);
+                if (arguments == null)
                     continue;
                 if (Modifier.isStatic(method.getModifiers()) != (obj == null))
                     continue;
@@ -970,34 +964,7 @@ public class XmlConfiguration
 
                 try
                 {
-                    return invokeMethod(method, obj, arg);
-                }
-                catch (IllegalAccessException | IllegalArgumentException e)
-                {
-                    LOG.ignore(e);
-                }
-            }
-
-            // Lets look for a method with varargs arguments
-            Object[] argsWithVarargs = null;
-            for (Method method : oClass.getMethods())
-            {
-                if (!method.getName().equals(methodName))
-                    continue;
-                if (method.getParameterCount() != arg.length + 1)
-                    continue;
-                if (!method.getParameterTypes()[arg.length].isArray())
-                    continue;
-                if (Modifier.isStatic(method.getModifiers()) != (obj == null))
-                    continue;
-                if ((obj == null) && method.getDeclaringClass() != oClass)
-                    continue;
-
-                if (argsWithVarargs == null)
-                    argsWithVarargs = ArrayUtil.addToArray(arg, new Object[0], Object.class);
-                try
-                {
-                    return invokeMethod(method, obj, argsWithVarargs);
+                    return invokeMethod(method, obj, arguments);
                 }
                 catch (IllegalAccessException | IllegalArgumentException e)
                 {
@@ -1020,33 +987,16 @@ public class XmlConfiguration
             AttrOrElementNode aoeNode = new AttrOrElementNode(obj, node, "Id", "Class", "Arg");
             String id = aoeNode.getString("Id");
             String clazz = aoeNode.getString("Class");
-            List<XmlParser.Node> argNodes = aoeNode.getNodes("Arg");
 
             if (LOG.isDebugEnabled())
                 LOG.debug("XML new " + clazz);
 
             Class<?> oClass = Loader.loadClass(clazz);
 
-            // Find the <Arg> elements
-            Map<String, Object> namedArgMap = new HashMap<>();
-            List<Object> arguments = new LinkedList<>();
-            for (XmlParser.Node child : argNodes)
-            {
-                String namedAttribute = child.getAttribute("name");
-                Object value = value(obj, child);
-                if (namedAttribute != null)
-                {
-                    // named arguments
-                    namedArgMap.put(namedAttribute, value);
-                }
-                // raw arguments
-                arguments.add(value);
-            }
-
             Object nobj;
             try
             {
-                nobj = construct(oClass, arguments.toArray(), namedArgMap);
+                nobj = construct(oClass, new Args(obj, oClass, aoeNode.getNodes("Arg")));
             }
             catch (NoSuchMethodException e)
             {
@@ -1061,80 +1011,20 @@ public class XmlConfiguration
             return nobj;
         }
 
-        private Object construct(Class<?> klass, Object[] arguments, Map<String, Object> namedArgMap) throws InvocationTargetException, NoSuchMethodException
+        private Object construct(Class<?> klass, Args args) throws InvocationTargetException, NoSuchMethodException
         {
             Objects.requireNonNull(klass, "Class cannot be null");
-            Objects.requireNonNull(namedArgMap, "Named Argument Map cannot be null");
+            Objects.requireNonNull(args, "Named list cannot be null");
 
-            for (Constructor<?> constructor : klass.getConstructors())
+            Constructor<?>[] constructors = klass.getConstructors();
+            Arrays.sort(constructors, EXECUTABLE_COMPARATOR);
+            for (Constructor<?> constructor : constructors)
             {
-                if (arguments == null)
-                {
-                    // null arguments in .newInstance() is allowed
-                    if (constructor.getParameterCount() != 0)
-                        continue;
-                }
-                else if (constructor.getParameterCount() != arguments.length)
-                {
-                    continue;
-                }
-
                 try
                 {
-                    if (arguments == null || arguments.length == 0)
-                    {
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("Invoking constructor, no arguments");
-                        return invokeConstructor(constructor);
-                    }
-
-                    if (namedArgMap.isEmpty())
-                    {
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("Invoking constructor, no XML parameter mapping");
+                    Object[] arguments = args.applyTo(constructor);
+                    if (arguments != null)
                         return invokeConstructor(constructor, arguments);
-                    }
-
-                    Annotation[][] parameterAnnotations = constructor.getParameterAnnotations();
-                    if (parameterAnnotations == null || parameterAnnotations.length == 0)
-                    {
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("Invoking constructor, no parameter annotations");
-                        return invokeConstructor(constructor, arguments);
-                    }
-
-                    int count = 0;
-                    Object[] swizzled = new Object[arguments.length];
-                    for (Annotation[] annotations : parameterAnnotations)
-                    {
-                        for (Annotation annotation : annotations)
-                        {
-                            if (annotation instanceof Name)
-                            {
-                                Name param = (Name)annotation;
-                                if (namedArgMap.containsKey(param.value()))
-                                {
-                                    if (LOG.isDebugEnabled())
-                                        LOG.debug("Mapping named parameter {} in position {}", param.value(), count);
-                                    swizzled[count] = namedArgMap.get(param.value());
-                                }
-                                else
-                                {
-                                    if (LOG.isDebugEnabled())
-                                        LOG.debug("Mapping argument {} in position {}", arguments[count], count);
-                                    swizzled[count] = arguments[count];
-                                }
-                                ++count;
-                            }
-                            else
-                            {
-                                if (LOG.isDebugEnabled())
-                                    LOG.debug("Skipping parameter annotated with {}", annotation);
-                            }
-                        }
-                    }
-
-                    return invokeConstructor(constructor, swizzled);
                 }
                 catch (InstantiationException | IllegalAccessException | IllegalArgumentException e)
                 {
@@ -1777,40 +1667,152 @@ public class XmlConfiguration
 
             public List<XmlParser.Node> getNodes(String elementName)
             {
-                String attrName = StringUtil.asciiToLowerCase(elementName);
-                final List<XmlParser.Node> values = new ArrayList<>();
-
-                String attr = _node.getAttribute(attrName);
-                if (attr != null)
-                {
-                    for (String a : StringUtil.csvSplit(null, attr, 0, attr.length()))
-                    {
-                        // create a fake node
-                        XmlParser.Node n = new XmlParser.Node(null, elementName, null);
-                        n.add(a);
-                        values.add(n);
-                    }
-                }
-
-                for (int i = 0; i < _next; i++)
-                {
-                    Object o = _node.get(i);
-                    if (!(o instanceof XmlParser.Node))
-                        continue;
-                    XmlParser.Node n = (XmlParser.Node)o;
-
-                    if (elementName.equals(n.getTag()))
-                    {
-                        if (attr != null)
-                            throw new IllegalStateException("Cannot have attr '" + attrName + "' and element '" + elementName + "'");
-
-                        values.add(n);
-                    }
-                }
-
-                return values;
+                return XmlConfiguration.getNodes(_node, elementName);
             }
         }
+
+        private class Args
+        {
+            private final Class<?> _class;
+            private final List<Object> _arguments;
+            private final List<String> _names;
+
+            private Args(Object obj, Class<?> oClass, List<XmlParser.Node> args) throws Exception
+            {
+                _class = oClass;
+                _arguments = new ArrayList<>();
+                _names = new ArrayList<>();
+                for (XmlParser.Node child : args)
+                {
+                    _arguments.add(value(obj, child));
+                    _names.add(child.getAttribute("name"));
+                }
+            }
+
+            private Args(List<Object> arguments, List<String> names)
+            {
+                _class = null;
+                _arguments = arguments;
+                _names = names;
+            }
+
+            Object[] applyTo(Executable executable)
+            {
+                Object[] args = matchArgsToParameters(executable);
+                if (args == null && _class != null)
+                {
+                    // Could this be an empty varargs match?
+                    int count = executable.getParameterCount();
+                    if (count > 0 && executable.getParameterTypes()[count - 1].isArray())
+                    {
+                        // There is not a no varArgs alternative so let's try a an empty varArgs match
+                        args = asEmptyVarArgs(executable.getParameterTypes()[count - 1]).matchArgsToParameters(executable);
+                    }
+                }
+                return args;
+            }
+
+            Args asEmptyVarArgs(Class<?> varArgType)
+            {
+                List<Object> arguments = new ArrayList<>(_arguments);
+                arguments.add(Array.newInstance(varArgType.getComponentType(), 0));
+                List<String> names = new ArrayList<>(_names);
+                names.add(null);
+                return new Args(arguments, names);
+            }
+
+            Object[] matchArgsToParameters(Executable executable)
+            {
+                int count = executable.getParameterCount();
+
+                // No match of wrong number of parameters
+                if (count != _arguments.size())
+                    return null;
+
+                // Handle no parameter case
+                if (count == 0)
+                    return new Object[0];
+
+                // If no arg names are specified, keep the arg order
+                if (_names.stream().noneMatch(Objects::nonNull))
+                    return _arguments.toArray(new Object[0]);
+
+                // If we don't have any parameters with names, then no match
+                Annotation[][] parameterAnnotations = executable.getParameterAnnotations();
+                if (parameterAnnotations == null || parameterAnnotations.length == 0)
+                    return null;
+
+                // Find the position of all named parameters from the executable
+                Map<String, Integer> position = new HashMap<>();
+                int p = 0;
+                for (Annotation[] paramAnnotation : parameterAnnotations)
+                {
+                    Integer pos = p++;
+                    Arrays.stream(paramAnnotation)
+                        .filter(Name.class::isInstance)
+                        .map(Name.class::cast)
+                        .findFirst().ifPresent(n -> position.put(n.value(), pos));
+                }
+
+                List<Object> arguments = new ArrayList<>(_arguments);
+                List<String> names = new ArrayList<>(_names);
+                // Map the actual arguments to the names
+                for (p = 0; p < count; p++)
+                {
+                    String name = names.get(p);
+                    if (name != null)
+                    {
+                        Integer pos = position.get(name);
+                        if (pos == null)
+                            return null;
+                        if (pos != p)
+                        {
+                            // adjust position of parameter
+                            arguments.add(pos, arguments.remove(p));
+                            names.add(pos, names.remove(p));
+                            p = Math.min(p, pos);
+                        }
+                    }
+                }
+                return arguments.toArray(new Object[0]);
+            }
+        }
+    }
+
+    private static List<XmlParser.Node> getNodes(XmlParser.Node node, String elementName)
+    {
+        String attrName = StringUtil.asciiToLowerCase(elementName);
+        final List<XmlParser.Node> values = new ArrayList<>();
+
+        String attr = node.getAttribute(attrName);
+        if (attr != null)
+        {
+            for (String a : StringUtil.csvSplit(null, attr, 0, attr.length()))
+            {
+                // create a fake node
+                XmlParser.Node n = new XmlParser.Node(null, elementName, null);
+                n.add(a);
+                values.add(n);
+            }
+        }
+
+        for (int i = 0; i < node.size(); i++)
+        {
+            Object o = node.get(i);
+            if (!(o instanceof XmlParser.Node))
+                continue;
+            XmlParser.Node n = (XmlParser.Node)o;
+
+            if (elementName.equals(n.getTag()))
+            {
+                if (attr != null)
+                    throw new IllegalStateException("Cannot have attr '" + attrName + "' and element '" + elementName + "'");
+
+                values.add(n);
+            }
+        }
+
+        return values;
     }
 
     /**
