@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.util.Properties;
 
@@ -54,7 +53,7 @@ public class StdErrLogTest
     }
 
     @Test
-    public void testStdErrLogFormat() throws UnsupportedEncodingException
+    public void testStdErrLogFormat()
     {
         StdErrLog log = new StdErrLog(LogTest.class.getName(), new Properties());
         StdErrCapture output = new StdErrCapture(log);
@@ -69,12 +68,11 @@ public class StdErrLogTest
 
         System.err.println(output);
         output.assertContains("INFO:oejul.LogTest:tname: testing:test,format1");
-        output.assertContains("INFO:oejul.LogTest:tname: testing:test,format1");
         output.assertContains("INFO:oejul.LogTest:tname: testing:test format2");
         output.assertContains("INFO:oejul.LogTest:tname: testing test format3");
-        output.assertContains("INFO:oejul.LogTest:tname: testing:test,null");
-        output.assertContains("INFO:oejul.LogTest:tname: testing null null");
-        output.assertContains("INFO:oejul.LogTest:tname: testing:null");
+        output.assertContains("INFO:oejul.LogTest:tname: testing:test,");
+        output.assertContains("INFO:oejul.LogTest:tname: testing");
+        output.assertContains("INFO:oejul.LogTest:tname: testing:");
         output.assertContains("INFO:oejul.LogTest:tname: testing");
     }
 
@@ -119,60 +117,158 @@ public class StdErrLogTest
     @Test
     public void testStdErrLogName()
     {
-        StdErrLog log = new StdErrLog("test", new Properties());
+        StdErrLog log = new StdErrLog("testX", new Properties());
         log.setPrintLongNames(true);
         StdErrCapture output = new StdErrCapture(log);
 
-        assertThat("Log.name", log.getName(), is("test"));
+        assertThat("Log.name", log.getName(), is("testX"));
         Logger next = log.getLogger("next");
-        assertThat("Log.name(child)", next.getName(), is("test.next"));
+        assertThat("Log.name(child)", next.getName(), is("testX.next"));
         next.info("testing {} {}", "next", "info");
 
-        output.assertContains(":test.next:tname: testing next info");
+        output.assertContains(":testX.next:tname: testing next info");
+    }
+
+    @Test
+    public void testStdErrMsgThrowable()
+    {
+        // The test Throwable
+        Throwable th = new Throwable("Message");
+
+        // Initialize Logger
+        StdErrLog log = new StdErrLog("testX", new Properties());
+        StdErrCapture output = new StdErrCapture(log);
+
+        // Test behavior
+        log.warn("ex", th); // Behavior here is being tested
+        output.assertContains(asString(th));
+    }
+
+    @SuppressWarnings("ConstantConditions")
+    @Test
+    public void testStdErrMsgThrowableNull()
+    {
+        // Initialize Logger
+        StdErrLog log = new StdErrLog("testX", new Properties());
+        StdErrCapture output = new StdErrCapture(log);
+
+        // Test behavior
+        Throwable th = null;
+        log.warn("ex", th);
+        output.assertContains("testX");
+        output.assertNotContains("null");
     }
 
     @Test
     public void testStdErrThrowable()
     {
-        // Common Throwable (for test)
+        // The test Throwable
         Throwable th = new Throwable("Message");
 
-        // Capture raw string form
-        StringWriter tout = new StringWriter();
-        th.printStackTrace(new PrintWriter(tout));
-        String ths = tout.toString();
-
-        // Start test
-        StdErrLog log = new StdErrLog("test", new Properties());
+        // Initialize Logger
+        StdErrLog log = new StdErrLog("testX", new Properties());
         StdErrCapture output = new StdErrCapture(log);
 
-        log.warn("ex", th);
-        output.assertContains(ths);
+        // Test behavior
+        log.warn(th);
+        output.assertContains(asString(th));
+    }
 
-        th = new Throwable("Message with \033 escape");
+    @Test
+    public void testStdErrThrowableNull()
+    {
+        // Initialize Logger
+        StdErrLog log = new StdErrLog("testX", new Properties());
+        StdErrCapture output = new StdErrCapture(log);
 
+        // Test behavior
+        Throwable th = null;
+        log.warn(th); // Behavior here is being tested
+        output.assertContains("testX");
+        output.assertNotContains("null");
+    }
+
+    @Test
+    public void testStdErrFormatArgsThrowable()
+    {
+        // The test throwable
+        Throwable th = new Throwable("Reasons Explained");
+
+        // Initialize Logger
+        StdErrLog log = new StdErrLog("testX", new Properties());
+        StdErrCapture output = new StdErrCapture(log);
+
+        // Test behavior
+        log.warn("Ex {}", "Reasons", th);
+        output.assertContains("Reasons");
+        output.assertContains(asString(th));
+    }
+
+    @SuppressWarnings("ConstantConditions")
+    @Test
+    public void testStdErrFormatArgsThrowableNull()
+    {
+        // The test throwable
+        Throwable th = null;
+
+        // Initialize Logger
+        StdErrLog log = new StdErrLog("testX", new Properties());
+        StdErrCapture output = new StdErrCapture(log);
+
+        // Test behavior
+        log.warn("Ex {}", "Reasons", th);
+        output.assertContains("Reasons");
+        output.assertNotContains("null");
+    }
+
+    @Test
+    public void testStdErrMsgThrowableWithControlChars()
+    {
+        // The test throwable, using "\b" (backspace) character
+        Throwable th = new Throwable("Message with \b backspace");
+
+        // Initialize Logger
+        StdErrLog log = new StdErrLog("testX", new Properties());
+        StdErrCapture output = new StdErrCapture(log);
+
+        // Test behavior
         log.warn("ex", th);
-        output.assertNotContains("Message with \033 escape");
+        output.assertNotContains("Message with \b backspace");
+        output.assertContains("Message with ? backspace");
+    }
+
+    @Test
+    public void testStdErrMsgStringThrowableWithControlChars()
+    {
+        // The test throwable, using "\b" (backspace) character
+        Throwable th = new Throwable("Message with \b backspace");
+
+        // Initialize Logger
+        StdErrLog log = new StdErrLog("testX", new Properties());
+        StdErrCapture output = new StdErrCapture(log);
+
+        // Test behavior
         log.info(th.toString());
-        output.assertNotContains("Message with \033 escape");
+        output.assertNotContains("Message with \b backspace");
+        output.assertContains("Message with ? backspace");
+    }
 
-        log.warn("ex", th);
-        output.assertContains("Message with ? escape");
-        log.info(th.toString());
-        output.assertContains("Message with ? escape");
+    private String asString(Throwable cause)
+    {
+        StringWriter tout = new StringWriter();
+        cause.printStackTrace(new PrintWriter(tout));
+        return tout.toString();
     }
 
     /**
      * Test to make sure that using a Null parameter on parameterized messages does not result in a NPE
-     *
-     * @throws Exception failed test
      */
     @Test
-    public void testParameterizedMessageNullValues() throws Exception
+    public void testParameterizedMessageNullValues()
     {
         StdErrLog log = new StdErrLog(StdErrLogTest.class.getName(), new Properties());
         log.setLevel(StdErrLog.LEVEL_DEBUG);
-        try (StacklessLogging stackless = new StacklessLogging(log))
+        try (StacklessLogging ignored = new StacklessLogging(log))
         {
             log.info("Testing info(msg,null,null) - {} {}", "arg0", "arg1");
             log.info("Testing info(msg,null,null) - {} {}", null, null);
@@ -313,14 +409,12 @@ public class StdErrLogTest
      * Tests StdErrLog.warn() methods with level filtering.
      * <p>
      * Should always see WARN level messages, regardless of set level.
-     *
-     * @throws UnsupportedEncodingException failed test
      */
     @Test
-    public void testWarnFiltering() throws UnsupportedEncodingException
+    public void testWarnFiltering()
     {
         StdErrLog log = new StdErrLog(StdErrLogTest.class.getName(), new Properties());
-        try (StacklessLogging stackless = new StacklessLogging(log))
+        try (StacklessLogging ignored = new StacklessLogging(log))
         {
             StdErrCapture output = new StdErrCapture(log);
 
@@ -355,14 +449,12 @@ public class StdErrLogTest
      * Tests StdErrLog.info() methods with level filtering.
      * <p>
      * Should only see INFO level messages when level is set to {@link StdErrLog#LEVEL_INFO} and below.
-     *
-     * @throws Exception failed test
      */
     @Test
-    public void testInfoFiltering() throws Exception
+    public void testInfoFiltering()
     {
         StdErrLog log = new StdErrLog(StdErrLogTest.class.getName(), new Properties());
-        try (StacklessLogging stackless = new StacklessLogging(log))
+        try (StacklessLogging ignored = new StacklessLogging(log))
         {
             StdErrCapture output = new StdErrCapture(log);
 
@@ -403,14 +495,12 @@ public class StdErrLogTest
 
     /**
      * Tests {@link StdErrLog#LEVEL_OFF} filtering.
-     *
-     * @throws Exception failed test
      */
     @Test
-    public void testOffFiltering() throws Exception
+    public void testOffFiltering()
     {
         StdErrLog log = new StdErrLog(StdErrLogTest.class.getName(), new Properties());
-        try (StacklessLogging stackless = new StacklessLogging(log))
+        try (StacklessLogging ignored = new StacklessLogging(log))
         {
             log.setLevel(StdErrLog.LEVEL_OFF);
 
@@ -434,14 +524,12 @@ public class StdErrLogTest
      * Tests StdErrLog.debug() methods with level filtering.
      * <p>
      * Should only see DEBUG level messages when level is set to {@link StdErrLog#LEVEL_DEBUG} and below.
-     *
-     * @throws Exception failed test
      */
     @Test
-    public void testDebugFiltering() throws Exception
+    public void testDebugFiltering()
     {
         StdErrLog log = new StdErrLog(StdErrLogTest.class.getName(), new Properties());
-        try (StacklessLogging stackless = new StacklessLogging(log))
+        try (StacklessLogging ignored = new StacklessLogging(log))
         {
             StdErrCapture output = new StdErrCapture(log);
 
@@ -485,14 +573,12 @@ public class StdErrLogTest
      * Tests StdErrLog with {@link Logger#ignore(Throwable)} use.
      * <p>
      * Should only see IGNORED level messages when level is set to {@link StdErrLog#LEVEL_ALL}.
-     *
-     * @throws Exception failed test
      */
     @Test
-    public void testIgnores() throws Exception
+    public void testIgnores()
     {
         StdErrLog log = new StdErrLog(StdErrLogTest.class.getName(), new Properties());
-        try (StacklessLogging stackless = new StacklessLogging(log))
+        try (StacklessLogging ignored = new StacklessLogging(log))
         {
             StdErrCapture output = new StdErrCapture(log);
 
@@ -516,10 +602,10 @@ public class StdErrLogTest
     }
 
     @Test
-    public void testIsDebugEnabled() throws Exception
+    public void testIsDebugEnabled()
     {
         StdErrLog log = new StdErrLog(StdErrLogTest.class.getName(), new Properties());
-        try (StacklessLogging stackless = new StacklessLogging(log))
+        try (StacklessLogging ignored = new StacklessLogging(log))
         {
             log.setLevel(StdErrLog.LEVEL_ALL);
             assertThat("log.level(all).isDebugEnabled", log.isDebugEnabled(), is(true));
@@ -542,7 +628,7 @@ public class StdErrLogTest
     public void testSetGetLevel()
     {
         StdErrLog log = new StdErrLog(StdErrLogTest.class.getName(), new Properties());
-        try (StacklessLogging stackless = new StacklessLogging(log))
+        try (StacklessLogging ignored = new StacklessLogging(log))
         {
             log.setLevel(StdErrLog.LEVEL_ALL);
             assertThat("log.level(all).getLevel()", log.getLevel(), is(StdErrLog.LEVEL_ALL));
@@ -566,7 +652,7 @@ public class StdErrLogTest
     {
         String baseName = "jetty";
         StdErrLog log = new StdErrLog(baseName, new Properties());
-        try (StacklessLogging stackless = new StacklessLogging(log))
+        try (StacklessLogging ignored = new StacklessLogging(log))
         {
             assertThat("Logger.name", log.getName(), is("jetty"));
 
@@ -580,7 +666,7 @@ public class StdErrLogTest
     {
         String baseName = "jetty";
         StdErrLog log = new StdErrLog(baseName, new Properties());
-        try (StacklessLogging stackless = new StacklessLogging(log))
+        try (StacklessLogging ignored = new StacklessLogging(log))
         {
             assertThat("Logger.name", log.getName(), is("jetty"));
 
@@ -594,7 +680,7 @@ public class StdErrLogTest
     {
         String baseName = "jetty";
         StdErrLog log = new StdErrLog(baseName, new Properties());
-        try (StacklessLogging stackless = new StacklessLogging(log))
+        try (StacklessLogging ignored = new StacklessLogging(log))
         {
             assertThat("Logger.name", log.getName(), is("jetty"));
 
@@ -610,7 +696,7 @@ public class StdErrLogTest
     {
         String baseName = "jetty";
         StdErrLog log = new StdErrLog(baseName, new Properties());
-        try (StacklessLogging stackless = new StacklessLogging(log))
+        try (StacklessLogging ignored = new StacklessLogging(log))
         {
             assertThat("Logger.name", log.getName(), is("jetty"));
 
@@ -626,7 +712,7 @@ public class StdErrLogTest
     {
         String baseName = "jetty";
         StdErrLog log = new StdErrLog(baseName, new Properties());
-        try (StacklessLogging stackless = new StacklessLogging(log))
+        try (StacklessLogging ignored = new StacklessLogging(log))
         {
             assertThat("Logger.name", log.getName(), is("jetty"));
 
@@ -671,7 +757,7 @@ public class StdErrLogTest
     }
 
     @Test
-    public void testPrintSource() throws UnsupportedEncodingException
+    public void testPrintSource()
     {
         Properties props = new Properties();
         props.put("test.SOURCE", "true");
@@ -690,7 +776,6 @@ public class StdErrLogTest
         assertThat(output, containsString(".StdErrLogTest#testPrintSource(StdErrLogTest.java:"));
 
         props.put("test.SOURCE", "false");
-        log = new StdErrLog("other", props);
     }
 
     @Test

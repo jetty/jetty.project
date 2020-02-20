@@ -59,12 +59,12 @@ public class JettyLogHandler extends java.util.logging.Handler
 
     public JettyLogHandler()
     {
-        if (Boolean.parseBoolean(Log.__props.getProperty("org.eclipse.jetty.util.log.DEBUG", "false")))
+        if (Boolean.parseBoolean(Log.getProperty("org.eclipse.jetty.util.log.DEBUG", "false")))
         {
             setLevel(Level.FINEST);
         }
 
-        if (Boolean.parseBoolean(Log.__props.getProperty("org.eclipse.jetty.util.log.IGNORED", "false")))
+        if (Boolean.parseBoolean(Log.getProperty("org.eclipse.jetty.util.log.IGNORED", "false")))
         {
             setLevel(Level.ALL);
         }
