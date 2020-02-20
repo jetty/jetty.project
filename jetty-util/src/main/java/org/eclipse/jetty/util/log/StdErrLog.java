@@ -93,6 +93,7 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 public class StdErrLog extends AbstractLogger
 {
     private static final String EOL = System.getProperty("line.separator");
+    private static final Object[] EMPTY_ARGS = new Object[0];
     // Do not change output format lightly, people rely on this output format now.
     private static int __tagpad = Integer.parseInt(Log.__props.getProperty("org.eclipse.jetty.util.log.StdErrLog.TAG_PAD", "0"));
     private static DateCache _dateCache;
@@ -131,10 +132,12 @@ public class StdErrLog extends AbstractLogger
         __tagpad = pad;
     }
 
+    @SuppressWarnings("UnusedAssignment")
     private int _level = LEVEL_INFO;
     // Level that this Logger was configured as (remembered in special case of .setDebugEnabled())
     private int _configuredLevel;
-    private PrintStream _stderr = null;
+    private PrintStream _stderr = System.err;
+    @SuppressWarnings("UnusedAssignment")
     private boolean _source = __source;
     // Print the long form names, otherwise use abbreviated
     private boolean _printLongNames = __long;
@@ -285,9 +288,9 @@ public class StdErrLog extends AbstractLogger
     {
         if (_level <= LEVEL_WARN)
         {
-            StringBuilder buffer = new StringBuilder(64);
-            format(buffer, ":WARN:", msg, args);
-            (_stderr == null ? System.err : _stderr).println(buffer);
+            StringBuilder builder = new StringBuilder(64);
+            format(builder, ":WARN:", msg, args);
+            println(builder);
         }
     }
 
@@ -302,9 +305,9 @@ public class StdErrLog extends AbstractLogger
     {
         if (_level <= LEVEL_WARN)
         {
-            StringBuilder buffer = new StringBuilder(64);
-            format(buffer, ":WARN:", msg, thrown);
-            (_stderr == null ? System.err : _stderr).println(buffer);
+            StringBuilder builder = new StringBuilder(64);
+            format(builder, ":WARN:", msg, thrown);
+            println(builder);
         }
     }
 
@@ -313,9 +316,9 @@ public class StdErrLog extends AbstractLogger
     {
         if (_level <= LEVEL_INFO)
         {
-            StringBuilder buffer = new StringBuilder(64);
-            format(buffer, ":INFO:", msg, args);
-            (_stderr == null ? System.err : _stderr).println(buffer);
+            StringBuilder builder = new StringBuilder(64);
+            format(builder, ":INFO:", msg, args);
+            println(builder);
         }
     }
 
@@ -330,9 +333,9 @@ public class StdErrLog extends AbstractLogger
     {
         if (_level <= LEVEL_INFO)
         {
-            StringBuilder buffer = new StringBuilder(64);
-            format(buffer, ":INFO:", msg, thrown);
-            (_stderr == null ? System.err : _stderr).println(buffer);
+            StringBuilder builder = new StringBuilder(64);
+            format(builder, ":INFO:", msg, thrown);
+            println(builder);
         }
     }
 
@@ -392,17 +395,24 @@ public class StdErrLog extends AbstractLogger
 
     public void setStdErrStream(PrintStream stream)
     {
-        this._stderr = stream == System.err ? null : stream;
+        if (stream == null)
+        {
+            this._stderr = System.err;
+        }
+        else
+        {
+            this._stderr = stream;
+        }
     }
 
     @Override
     public void debug(String msg, Object... args)
     {
-        if (_level <= LEVEL_DEBUG)
+        if (isDebugEnabled())
         {
-            StringBuilder buffer = new StringBuilder(64);
-            format(buffer, ":DBUG:", msg, args);
-            (_stderr == null ? System.err : _stderr).println(buffer);
+            StringBuilder builder = new StringBuilder(64);
+            format(builder, ":DBUG:", msg, args);
+            println(builder);
         }
     }
 
@@ -411,9 +421,9 @@ public class StdErrLog extends AbstractLogger
     {
         if (isDebugEnabled())
         {
-            StringBuilder buffer = new StringBuilder(64);
-            format(buffer, ":DBUG:", msg, arg);
-            (_stderr == null ? System.err : _stderr).println(buffer);
+            StringBuilder builder = new StringBuilder(64);
+            format(builder, ":DBUG:", msg, arg);
+            println(builder);
         }
     }
 
@@ -426,145 +436,119 @@ public class StdErrLog extends AbstractLogger
     @Override
     public void debug(String msg, Throwable thrown)
     {
-        if (_level <= LEVEL_DEBUG)
+        if (isDebugEnabled())
         {
-            StringBuilder buffer = new StringBuilder(64);
-            format(buffer, ":DBUG:", msg, thrown);
-            (_stderr == null ? System.err : _stderr).println(buffer);
+            StringBuilder builder = new StringBuilder(64);
+            format(builder, ":DBUG:", msg, thrown);
+            println(builder);
         }
     }
 
-    private void format(StringBuilder buffer, String level, String msg, Object... args)
+    private void println(StringBuilder builder)
+    {
+        _stderr.println(builder);
+    }
+
+    private void format(StringBuilder builder, String level, String msg, Object... inArgs)
     {
         long now = System.currentTimeMillis();
         int ms = (int)(now % 1000);
         String d = _dateCache.formatNow(now);
-        tag(buffer, d, ms, level);
-        format(buffer, msg, args);
-    }
+        tag(builder, d, ms, level);
 
-    private void format(StringBuilder buffer, String level, String msg, Throwable thrown)
-    {
-        format(buffer, level, msg);
-        if (isHideStacks())
-        {
-            format(buffer, ": " + thrown);
-        }
-        else
-        {
-            format(buffer, thrown);
-        }
-    }
+        Object[] msgArgs = EMPTY_ARGS;
+        int msgArgsLen = 0;
+        Throwable cause = null;
 
-    private void tag(StringBuilder buffer, String d, int ms, String tag)
-    {
-        buffer.setLength(0);
-        buffer.append(d);
-        if (ms > 99)
+        if (inArgs != null)
         {
-            buffer.append('.');
-        }
-        else if (ms > 9)
-        {
-            buffer.append(".0");
-        }
-        else
-        {
-            buffer.append(".00");
-        }
-        buffer.append(ms).append(tag);
-
-        String name = _printLongNames ? _name : _abbrevname;
-        String tname = Thread.currentThread().getName();
-
-        int p = __tagpad > 0 ? (name.length() + tname.length() - __tagpad) : 0;
-
-        if (p < 0)
-        {
-            buffer
-                .append(name)
-                .append(':')
-                .append("                                                  ", 0, -p)
-                .append(tname);
-        }
-        else if (p == 0)
-        {
-            buffer.append(name).append(':').append(tname);
-        }
-        buffer.append(':');
-
-        if (_source)
-        {
-            Throwable source = new Throwable();
-            StackTraceElement[] frames = source.getStackTrace();
-            for (int i = 0; i < frames.length; i++)
+            msgArgs = inArgs;
+            msgArgsLen = inArgs.length;
+            if (msgArgsLen > 0 && inArgs[msgArgsLen - 1] instanceof Throwable)
             {
-                final StackTraceElement frame = frames[i];
-                String clazz = frame.getClassName();
-                if (clazz.equals(StdErrLog.class.getName()) || clazz.equals(Log.class.getName()))
-                {
-                    continue;
-                }
-                if (!_printLongNames && clazz.startsWith("org.eclipse.jetty."))
-                {
-                    buffer.append(condensePackageString(clazz));
-                }
-                else
-                {
-                    buffer.append(clazz);
-                }
-                buffer.append('#').append(frame.getMethodName());
-                if (frame.getFileName() != null)
-                {
-                    buffer.append('(').append(frame.getFileName()).append(':').append(frame.getLineNumber()).append(')');
-                }
-                buffer.append(':');
-                break;
+                cause = (Throwable)inArgs[msgArgsLen - 1];
+                msgArgsLen--;
             }
         }
 
-        buffer.append(' ');
-    }
-
-    private void format(StringBuilder builder, String msg, Object... args)
-    {
         if (msg == null)
         {
             msg = "";
-            for (int i = 0; i < args.length; i++)
+            for (int i = 0; i < msgArgsLen; i++)
             {
+                //noinspection StringConcatenationInLoop
                 msg += "{} ";
             }
         }
         String braces = "{}";
         int start = 0;
-        for (Object arg : args)
+        for (int i = 0; i < msgArgsLen; i++)
         {
+            Object arg = msgArgs[i];
             int bracesIndex = msg.indexOf(braces, start);
             if (bracesIndex < 0)
             {
                 escape(builder, msg.substring(start));
                 builder.append(" ");
-                builder.append(arg);
+                if (arg != null)
+                    builder.append(arg);
                 start = msg.length();
             }
             else
             {
                 escape(builder, msg.substring(start, bracesIndex));
-                builder.append(arg);
+                if (arg != null)
+                    builder.append(arg);
                 start = bracesIndex + braces.length();
             }
         }
         escape(builder, msg.substring(start));
+
+        if (cause != null)
+        {
+            if (isHideStacks())
+            {
+                builder.append(": ").append(cause);
+            }
+            else
+            {
+                formatCause(builder, cause, "");
+            }
+        }
     }
 
-    private void escape(StringBuilder builder, String string)
+    private void formatCause(StringBuilder builder, Throwable cause, String indent)
+    {
+        builder.append(EOL).append(indent);
+        escape(builder, cause.toString());
+        StackTraceElement[] elements = cause.getStackTrace();
+        for (int i = 0; elements != null && i < elements.length; i++)
+        {
+            builder.append(EOL).append(indent).append("\tat ");
+            escape(builder, elements[i].toString());
+        }
+
+        for (Throwable suppressed : cause.getSuppressed())
+        {
+            builder.append(EOL).append(indent).append("Suppressed: ");
+            formatCause(builder, suppressed, "\t|" + indent);
+        }
+
+        Throwable by = cause.getCause();
+        if (by != null && by != cause)
+        {
+            builder.append(EOL).append(indent).append("Caused by: ");
+            formatCause(builder, by, indent);
+        }
+    }
+
+    private void escape(StringBuilder builder, String str)
     {
         if (__escape)
         {
-            for (int i = 0; i < string.length(); ++i)
+            for (int i = 0; i < str.length(); ++i)
             {
-                char c = string.charAt(i);
+                char c = str.charAt(i);
                 if (Character.isISOControl(c))
                 {
                     if (c == '\n')
@@ -587,44 +571,76 @@ public class StdErrLog extends AbstractLogger
             }
         }
         else
-            builder.append(string);
+            builder.append(str);
     }
 
-    protected void format(StringBuilder buffer, Throwable thrown)
+    private void tag(StringBuilder builder, String d, int ms, String tag)
     {
-        format(buffer, thrown, "");
-    }
-
-    protected void format(StringBuilder buffer, Throwable thrown, String indent)
-    {
-        if (thrown == null)
+        builder.setLength(0);
+        builder.append(d);
+        if (ms > 99)
         {
-            buffer.append("null");
+            builder.append('.');
+        }
+        else if (ms > 9)
+        {
+            builder.append(".0");
         }
         else
         {
-            buffer.append(EOL).append(indent);
-            format(buffer, thrown.toString());
-            StackTraceElement[] elements = thrown.getStackTrace();
-            for (int i = 0; elements != null && i < elements.length; i++)
-            {
-                buffer.append(EOL).append(indent).append("\tat ");
-                format(buffer, elements[i].toString());
-            }
+            builder.append(".00");
+        }
+        builder.append(ms).append(tag);
 
-            for (Throwable suppressed : thrown.getSuppressed())
-            {
-                buffer.append(EOL).append(indent).append("Suppressed: ");
-                format(buffer, suppressed, "\t|" + indent);
-            }
+        String name = _printLongNames ? _name : _abbrevname;
+        String tname = Thread.currentThread().getName();
 
-            Throwable cause = thrown.getCause();
-            if (cause != null && cause != thrown)
+        int p = __tagpad > 0 ? (name.length() + tname.length() - __tagpad) : 0;
+
+        if (p < 0)
+        {
+            builder
+                .append(name)
+                .append(':')
+                .append("                                                  ", 0, -p)
+                .append(tname);
+        }
+        else if (p == 0)
+        {
+            builder.append(name).append(':').append(tname);
+        }
+        builder.append(':');
+
+        if (_source)
+        {
+            Throwable source = new Throwable();
+            StackTraceElement[] frames = source.getStackTrace();
+            for (final StackTraceElement frame : frames)
             {
-                buffer.append(EOL).append(indent).append("Caused by: ");
-                format(buffer, cause, indent);
+                String clazz = frame.getClassName();
+                if (clazz.equals(StdErrLog.class.getName()) || clazz.equals(Log.class.getName()))
+                {
+                    continue;
+                }
+                if (!_printLongNames && clazz.startsWith("org.eclipse.jetty."))
+                {
+                    builder.append(condensePackageString(clazz));
+                }
+                else
+                {
+                    builder.append(clazz);
+                }
+                builder.append('#').append(frame.getMethodName());
+                if (frame.getFileName() != null)
+                {
+                    builder.append('(').append(frame.getFileName()).append(':').append(frame.getLineNumber()).append(')');
+                }
+                builder.append(':');
+                break;
             }
         }
+
+        builder.append(' ');
     }
 
     /**
@@ -678,9 +694,9 @@ public class StdErrLog extends AbstractLogger
     {
         if (_level <= LEVEL_ALL)
         {
-            StringBuilder buffer = new StringBuilder(64);
-            format(buffer, ":IGNORED:", "", ignored);
-            (_stderr == null ? System.err : _stderr).println(buffer);
+            StringBuilder builder = new StringBuilder(64);
+            format(builder, ":IGNORED:", "", ignored);
+            println(builder);
         }
     }
 }
