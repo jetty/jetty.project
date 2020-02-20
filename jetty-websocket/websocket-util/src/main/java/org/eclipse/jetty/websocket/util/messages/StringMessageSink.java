@@ -18,9 +18,7 @@
 
 package org.eclipse.jetty.websocket.util.messages;
 
-import java.io.IOException;
 import java.lang.invoke.MethodHandle;
-import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Utf8StringBuilder;
@@ -30,7 +28,6 @@ import org.eclipse.jetty.websocket.core.exception.MessageTooLargeException;
 
 public class StringMessageSink extends AbstractMessageSink
 {
-    private static final int BUFFER_SIZE = 1024;
     private Utf8StringBuilder out;
     private int size;
 
@@ -53,19 +50,10 @@ public class StringMessageSink extends AbstractMessageSink
                     size, maxTextMessageSize));
             }
 
-            // If we are fin and out has not been created we don't need to aggregate.
-            if (frame.isFin() && (out == null))
-            {
-                if (frame.hasPayload())
-                    methodHandle.invoke(frame.getPayloadAsUTF8());
-                else
-                    methodHandle.invoke("");
+            if (out == null)
+                out = new Utf8StringBuilder(session.getInputBufferSize());
 
-                callback.succeeded();
-                return;
-            }
-
-            aggregatePayload(frame);
+            out.append(frame.getPayload());
             if (frame.isFin())
                 methodHandle.invoke(out.toString());
 
@@ -83,20 +71,6 @@ public class StringMessageSink extends AbstractMessageSink
                 size = 0;
                 out = null;
             }
-        }
-    }
-
-    private void aggregatePayload(Frame frame) throws IOException
-    {
-        if (frame.hasPayload())
-        {
-            ByteBuffer payload = frame.getPayload();
-
-            if (out == null)
-                out = new Utf8StringBuilder(BUFFER_SIZE);
-
-            // allow for fast fail of BAD utf (incomplete utf will trigger on messageComplete)
-            out.append(payload);
         }
     }
 }

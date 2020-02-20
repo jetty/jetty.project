@@ -50,7 +50,6 @@ public class ByteArrayMessageSink extends AbstractMessageSink
         }
     }
 
-    @SuppressWarnings("Duplicates")
     @Override
     public void accept(Frame frame, Callback callback)
     {

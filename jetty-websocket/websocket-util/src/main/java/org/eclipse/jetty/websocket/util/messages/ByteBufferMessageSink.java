@@ -51,7 +51,6 @@ public class ByteBufferMessageSink extends AbstractMessageSink
         }
     }
 
-    @SuppressWarnings("Duplicates")
     @Override
     public void accept(Frame frame, Callback callback)
     {
