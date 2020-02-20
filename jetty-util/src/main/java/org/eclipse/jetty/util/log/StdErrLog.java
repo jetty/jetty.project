@@ -121,10 +121,12 @@ public class StdErrLog extends AbstractLogger
         __threadNamePadding = pad;
     }
 
+    @SuppressWarnings("UnusedAssignment")
     private int _level = LEVEL_INFO;
     // Level that this Logger was configured as (remembered in special case of .setDebugEnabled())
     private int _configuredLevel;
     private PrintStream _stderr = System.err;
+    @SuppressWarnings("UnusedAssignment")
     private boolean _source = SOURCE;
     // Print the long form names, otherwise use abbreviated
     private boolean _printLongNames = LONG_CLASSNAMES;
@@ -216,7 +218,7 @@ public class StdErrLog extends AbstractLogger
         {
             // allow stacktrace display to be controlled by properties as well
             String stacks = getLoggingProperty(Log.PROPS, _name, "STACKS");
-            _hideStacks = stacks == null ? false : !Boolean.parseBoolean(stacks);
+            _hideStacks = stacks != null && !Boolean.parseBoolean(stacks);
         }
         catch (AccessControlException ignore)
         {
@@ -235,6 +237,7 @@ public class StdErrLog extends AbstractLogger
         this._printLongNames = printLongNames;
     }
 
+    @SuppressWarnings("unused")
     public boolean isPrintLongNames()
     {
         return this._printLongNames;
@@ -461,6 +464,7 @@ public class StdErrLog extends AbstractLogger
             msg = "";
             for (int i = 0; i < msgArgsLen; i++)
             {
+                //noinspection StringConcatenationInLoop
                 msg += "{} ";
             }
         }
@@ -492,7 +496,7 @@ public class StdErrLog extends AbstractLogger
         {
             if (isHideStacks())
             {
-                builder.append(": " + cause);
+                builder.append(": ").append(cause);
             }
             else
             {
@@ -599,9 +603,8 @@ public class StdErrLog extends AbstractLogger
         {
             Throwable source = new Throwable();
             StackTraceElement[] frames = source.getStackTrace();
-            for (int i = 0; i < frames.length; i++)
+            for (final StackTraceElement frame : frames)
             {
-                final StackTraceElement frame = frames[i];
                 String clazz = frame.getClassName();
                 if (clazz.equals(StdErrLog.class.getName()) || clazz.equals(Log.class.getName()))
                 {
