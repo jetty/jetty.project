@@ -87,9 +87,7 @@
               <systemProperties>
                   <jetty.port.file>${jetty.port.file}</jetty.port.file>
               </systemProperties>
-              <jettyXmls>
-                <jettyXml>${basedir}/src/config/jetty.xml</jettyXml>
-              </jettyXmls>
+              <jettyXml>${basedir}/src/config/jetty.xml</jettyXml>
             </configuration>
           </execution>
         </executions>

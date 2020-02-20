@@ -23,8 +23,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
-import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.toolchain.test.Net;
 import org.eclipse.jetty.util.TypeUtil;
@@ -32,8 +32,8 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
-
 import org.junit.jupiter.params.provider.MethodSource;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNull;
 

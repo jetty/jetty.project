@@ -316,9 +316,12 @@
                 <manifestEntries>
                   <Bundle-ManifestVersion>2</Bundle-ManifestVersion>
                   <Bundle-Name>${project.name}</Bundle-Name>
+                  <!--suppress MavenModelInspection -->
                   <Bundle-SymbolicName>${bundle-symbolic-name}.source</Bundle-SymbolicName>
                   <Bundle-Vendor>Eclipse Jetty Project</Bundle-Vendor>
+                  <!--suppress MavenModelInspection -->
                   <Bundle-Version>${parsedVersion.osgiVersion}</Bundle-Version>
+                  <!--suppress MavenModelInspection -->
                   <Eclipse-SourceBundle>${bundle-symbolic-name};version="${parsedVersion.osgiVersion}";roots:="."</Eclipse-SourceBundle>
                 </manifestEntries>
               </archive>
@@ -528,6 +531,7 @@
             <cloneProjectsTo>${project.build.directory}/it</cloneProjectsTo>
             <localRepositoryPath>${localRepoPath}</localRepositoryPath>
             <settingsFile>${settingsPath}</settingsFile>
+            <!--suppress MavenModelInspection -->
             <skipInvocation>${skipTests}</skipInvocation>
             <pomIncludes>
               <pomInclude>*/pom.xml</pomInclude>
@@ -702,6 +706,7 @@
               <supportedProjectType>maven-plugin</supportedProjectType>
             </supportedProjectTypes>
             <instructions>
+              <!--suppress MavenModelInspection -->
               <Bundle-SymbolicName>${bundle-symbolic-name}</Bundle-SymbolicName>
               <Bundle-Description>Jetty module for ${project.name}</Bundle-Description>
               <Bundle-RequiredExecutionEnvironment>JavaSE-11</Bundle-RequiredExecutionEnvironment>
@@ -1292,6 +1297,7 @@
     <profile>
       <id>ci</id>
       <properties>
+        <!--suppress UnresolvedMavenProperty -->
         <settingsPath>${env.GLOBAL_MVN_SETTINGS}</settingsPath>
         <surefire.rerunFailingTestsCount>3</surefire.rerunFailingTestsCount>
       </properties>
@@ -1330,7 +1336,6 @@
                   <copyGenerated>true</copyGenerated>
                   <attachArtifact>false</attachArtifact>
                   <updateDate>true</updateDate>
-                  <versionTagHeader>Tag for release: jetty-${project.version}</versionTagHeader>
                   <filenameExcludes>
                     <filenameExclude>jetty-documentation/.*</filenameExclude>
                     <filenameExclude>examples/.*</filenameExclude>
@@ -1377,10 +1382,14 @@
               </execution>
             </executions>
           </plugin>
+          <!--suppress MavenModelInspection -->
           <plugin>
             <!-- This plugin only exists on Eclipse CBI -->
+            <!--suppress MavenModelInspection -->
             <groupId>org.eclipse.cbi.maven.plugins</groupId>
+            <!--suppress MavenModelInspection -->
             <artifactId>eclipse-jarsigner-plugin</artifactId>
+            <!--suppress MavenModelInspection -->
             <version>${cbi-plugins.version}</version>
             <executions>
               <execution>
@@ -1423,16 +1432,6 @@
             <enabled>true</enabled>
           </snapshots>
         </repository>
-        <!--repository>
-          <id>apache.snapshots</id>
-          <url>https://repository.apache.org/content/repositories/snapshots</url>
-          <releases>
-            <enabled>false</enabled>
-          </releases>
-          <snapshots>
-            <enabled>true</enabled>
-          </snapshots>
-        </repository-->
         <repository>
           <id>oss.snapshots</id>
           <name>OSS Snapshots</name>
@@ -1574,29 +1573,4 @@
       <url>scp://build.eclipse.org:/home/data/httpd/download.eclipse.org/jetty/${project.version}/</url>
     </site>
   </distributionManagement>
-
-  <!-- comment this until if we do not need some Apache maven plugins SNAPSHOT versions -->
-<!--  <pluginRepositories>-->
-<!--    <pluginRepository>-->
-<!--      <id>apache.snapshots</id>-->
-<!--      <url>https://repository.apache.org/content/repositories/snapshots</url>-->
-<!--      <releases>-->
-<!--        <enabled>false</enabled>-->
-<!--      </releases>-->
-<!--      <snapshots>-->
-<!--        <enabled>true</enabled>-->
-<!--      </snapshots>-->
-<!--    </pluginRepository>-->
-<!--    <pluginRepository>-->
-<!--      <id>plexus-snapshots</id>-->
-<!--      <url>https://oss.sonatype.org/content/repositories/plexus-snapshots</url>-->
-<!--      <releases>-->
-<!--        <enabled>false</enabled>-->
-<!--      </releases>-->
-<!--      <snapshots>-->
-<!--        <enabled>true</enabled>-->
-<!--      </snapshots>-->
-<!--    </pluginRepository>-->
-<!--  </pluginRepositories>-->
-
 </project>
