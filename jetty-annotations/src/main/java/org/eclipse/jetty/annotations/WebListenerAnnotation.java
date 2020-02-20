@@ -54,9 +54,6 @@ public class WebListenerAnnotation extends DiscoveredAnnotation
         super(context, className, resource);
     }
 
-    /**
-     * @see DiscoveredAnnotation#apply()
-     */
     @Override
     public void apply()
     {

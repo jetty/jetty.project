@@ -64,9 +64,6 @@ public class BundleContextProvider extends AbstractContextProvider implements Bu
             _managedServerName = managedServerName;
         }
 
-        /**
-         * @see org.osgi.util.tracker.BundleTracker#addingBundle(org.osgi.framework.Bundle, org.osgi.framework.BundleEvent)
-         */
         @Override
         public Object addingBundle(Bundle bundle, BundleEvent event)
         {
@@ -87,9 +84,6 @@ public class BundleContextProvider extends AbstractContextProvider implements Bu
             return null;
         }
 
-        /**
-         * @see org.osgi.util.tracker.BundleTracker#removedBundle(org.osgi.framework.Bundle, org.osgi.framework.BundleEvent, java.lang.Object)
-         */
         @Override
         public void removedBundle(Bundle bundle, BundleEvent event, Object object)
         {

@@ -66,9 +66,6 @@ public class ServiceContextProvider extends AbstractContextProvider implements S
             super(bundleContext, filter, null);
         }
 
-        /**
-         * @see org.osgi.util.tracker.ServiceTracker#addingService(org.osgi.framework.ServiceReference)
-         */
         @Override
         public Object addingService(ServiceReference reference)
         {
@@ -77,9 +74,6 @@ public class ServiceContextProvider extends AbstractContextProvider implements S
             return h;
         }
 
-        /**
-         * @see org.osgi.util.tracker.ServiceTracker#modifiedService(org.osgi.framework.ServiceReference, java.lang.Object)
-         */
         @Override
         public void modifiedService(ServiceReference reference, Object service)
         {
@@ -87,9 +81,6 @@ public class ServiceContextProvider extends AbstractContextProvider implements S
             addingService(reference);
         }
 
-        /**
-         * @see org.osgi.util.tracker.ServiceTracker#removedService(org.osgi.framework.ServiceReference, java.lang.Object)
-         */
         @Override
         public void removedService(ServiceReference reference, Object service)
         {

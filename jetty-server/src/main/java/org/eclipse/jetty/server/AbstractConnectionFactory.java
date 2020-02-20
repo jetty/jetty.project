@@ -20,6 +20,7 @@ package org.eclipse.jetty.server;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 
 import org.eclipse.jetty.io.AbstractConnection;
@@ -74,6 +75,26 @@ public abstract class AbstractConnectionFactory extends ContainerLifeCycle imple
     public void setInputBufferSize(int size)
     {
         _inputbufferSize = size;
+    }
+
+    protected String findNextProtocol(Connector connector)
+    {
+        return findNextProtocol(connector, getProtocol());
+    }
+
+    protected static String findNextProtocol(Connector connector, String currentProtocol)
+    {
+        String nextProtocol = null;
+        for (Iterator<String> it = connector.getProtocols().iterator(); it.hasNext(); )
+        {
+            String protocol = it.next();
+            if (currentProtocol.equalsIgnoreCase(protocol))
+            {
+                nextProtocol = it.hasNext() ? it.next() : null;
+                break;
+            }
+        }
+        return nextProtocol;
     }
 
     protected AbstractConnection configure(AbstractConnection connection, Connector connector, EndPoint endPoint)

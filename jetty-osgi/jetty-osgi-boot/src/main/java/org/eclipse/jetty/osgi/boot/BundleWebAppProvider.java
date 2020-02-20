@@ -64,9 +64,6 @@ public class BundleWebAppProvider extends AbstractWebAppProvider implements Bund
             _managedServerName = managedServerName;
         }
 
-        /**
-         * @see org.osgi.util.tracker.BundleTracker#addingBundle(org.osgi.framework.Bundle, org.osgi.framework.BundleEvent)
-         */
         @Override
         public Object addingBundle(Bundle bundle, BundleEvent event)
         {
@@ -87,9 +84,6 @@ public class BundleWebAppProvider extends AbstractWebAppProvider implements Bund
             return null;
         }
 
-        /**
-         * @see org.osgi.util.tracker.BundleTracker#removedBundle(org.osgi.framework.Bundle, org.osgi.framework.BundleEvent, java.lang.Object)
-         */
         @Override
         public void removedBundle(Bundle bundle, BundleEvent event, Object object)
         {
@@ -109,9 +103,6 @@ public class BundleWebAppProvider extends AbstractWebAppProvider implements Bund
         super(wrapper);
     }
 
-    /**
-     * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStart()
-     */
     @Override
     protected void doStart() throws Exception
     {
@@ -124,9 +115,6 @@ public class BundleWebAppProvider extends AbstractWebAppProvider implements Bund
         super.doStart();
     }
 
-    /**
-     * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStop()
-     */
     @Override
     protected void doStop() throws Exception
     {

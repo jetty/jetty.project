@@ -53,9 +53,6 @@ public class ClusteredSessionScavengingTest extends AbstractClusteredSessionScav
         super.testClusteredScavenge();
     }
 
-    /**
-     * @see org.eclipse.jetty.server.session.AbstractTestBase#createSessionDataStoreFactory()
-     */
     @Override
     public SessionDataStoreFactory createSessionDataStoreFactory()
     {

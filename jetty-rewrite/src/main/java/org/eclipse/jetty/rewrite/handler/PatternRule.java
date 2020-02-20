@@ -57,9 +57,6 @@ public abstract class PatternRule extends Rule
         _pattern = pattern;
     }
 
-    /* (non-Javadoc)
-     * @see org.eclipse.jetty.server.server.handler.rules.RuleBase#matchAndApply(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
-     */
     @Override
     public String matchAndApply(String target, HttpServletRequest request, HttpServletResponse response) throws IOException
     {

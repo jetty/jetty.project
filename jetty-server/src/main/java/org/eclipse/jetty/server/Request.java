@@ -632,9 +632,6 @@ public class Request implements HttpServletRequest
         return (_attributes == null) ? null : _attributes.getAttribute(name);
     }
 
-    /*
-     * @see javax.servlet.ServletRequest#getAttributeNames()
-     */
     @Override
     public Enumeration<String> getAttributeNames()
     {
@@ -661,9 +658,6 @@ public class Request implements HttpServletRequest
         return _authentication;
     }
 
-    /*
-     * @see javax.servlet.http.HttpServletRequest#getAuthType()
-     */
     @Override
     public String getAuthType()
     {
@@ -675,9 +669,6 @@ public class Request implements HttpServletRequest
         return null;
     }
 
-    /*
-     * @see javax.servlet.ServletRequest#getCharacterEncoding()
-     */
     @Override
     public String getCharacterEncoding()
     {
@@ -709,9 +700,6 @@ public class Request implements HttpServletRequest
         return _channel;
     }
 
-    /*
-     * @see javax.servlet.ServletRequest#getContentLength()
-     */
     @Override
     public int getContentLength()
     {
@@ -735,9 +723,6 @@ public class Request implements HttpServletRequest
         return (int)metadata.getFields().getLongField(HttpHeader.CONTENT_LENGTH.asString());
     }
 
-    /*
-     * @see javax.servlet.ServletRequest.getContentLengthLong()
-     */
     @Override
     public long getContentLengthLong()
     {
@@ -754,9 +739,6 @@ public class Request implements HttpServletRequest
         return _input.getContentConsumed();
     }
 
-    /*
-     * @see javax.servlet.ServletRequest#getContentType()
-     */
     @Override
     public String getContentType()
     {
@@ -792,18 +774,12 @@ public class Request implements HttpServletRequest
         return _errorContext;
     }
 
-    /*
-     * @see javax.servlet.http.HttpServletRequest#getContextPath()
-     */
     @Override
     public String getContextPath()
     {
         return _contextPath;
     }
 
-    /*
-     * @see javax.servlet.http.HttpServletRequest#getCookies()
-     */
     @Override
     public Cookie[] getCookies()
     {
@@ -835,9 +811,6 @@ public class Request implements HttpServletRequest
         return _cookies.getCookies();
     }
 
-    /*
-     * @see javax.servlet.http.HttpServletRequest#getDateHeader(java.lang.String)
-     */
     @Override
     public long getDateHeader(String name)
     {
@@ -851,9 +824,6 @@ public class Request implements HttpServletRequest
         return _dispatcherType;
     }
 
-    /*
-     * @see javax.servlet.http.HttpServletRequest#getHeader(java.lang.String)
-     */
     @Override
     public String getHeader(String name)
     {
@@ -861,9 +831,6 @@ public class Request implements HttpServletRequest
         return metadata == null ? null : metadata.getFields().get(name);
     }
 
-    /*
-     * @see javax.servlet.http.HttpServletRequest#getHeaderNames()
-     */
     @Override
     public Enumeration<String> getHeaderNames()
     {
@@ -871,9 +838,6 @@ public class Request implements HttpServletRequest
         return metadata == null ? Collections.emptyEnumeration() : metadata.getFields().getFieldNames();
     }
 
-    /*
-     * @see javax.servlet.http.HttpServletRequest#getHeaders(java.lang.String)
-     */
     @Override
     public Enumeration<String> getHeaders(String name)
     {
@@ -894,9 +858,6 @@ public class Request implements HttpServletRequest
         return _inputState;
     }
 
-    /*
-     * @see javax.servlet.ServletRequest#getInputStream()
-     */
     @Override
     public ServletInputStream getInputStream() throws IOException
     {
@@ -910,9 +871,6 @@ public class Request implements HttpServletRequest
         return _input;
     }
 
-    /*
-     * @see javax.servlet.http.HttpServletRequest#getIntHeader(java.lang.String)
-     */
     @Override
     public int getIntHeader(String name)
     {
@@ -920,9 +878,6 @@ public class Request implements HttpServletRequest
         return metadata == null ? -1 : (int)metadata.getFields().getLongField(name);
     }
 
-    /*
-     * @see javax.servlet.ServletRequest#getLocale()
-     */
     @Override
     public Locale getLocale()
     {
@@ -948,9 +903,6 @@ public class Request implements HttpServletRequest
         return new Locale(language, country);
     }
 
-    /*
-     * @see javax.servlet.ServletRequest#getLocales()
-     */
     @Override
     public Enumeration<Locale> getLocales()
     {
@@ -980,9 +932,6 @@ public class Request implements HttpServletRequest
         return Collections.enumeration(locales);
     }
 
-    /*
-     * @see javax.servlet.ServletRequest#getLocalAddr()
-     */
     @Override
     public String getLocalAddr()
     {
@@ -1010,9 +959,6 @@ public class Request implements HttpServletRequest
         return address.getHostAddress();
     }
 
-    /*
-     * @see javax.servlet.ServletRequest#getLocalName()
-     */
     @Override
     public String getLocalName()
     {
@@ -1037,9 +983,6 @@ public class Request implements HttpServletRequest
         return null;
     }
 
-    /*
-     * @see javax.servlet.ServletRequest#getLocalPort()
-     */
     @Override
     public int getLocalPort()
     {
@@ -1049,9 +992,6 @@ public class Request implements HttpServletRequest
         return local == null ? 0 : local.getPort();
     }
 
-    /*
-     * @see javax.servlet.http.HttpServletRequest#getMethod()
-     */
     @Override
     public String getMethod()
     {
@@ -1061,36 +1001,24 @@ public class Request implements HttpServletRequest
         return null;
     }
 
-    /*
-     * @see javax.servlet.ServletRequest#getParameter(java.lang.String)
-     */
     @Override
     public String getParameter(String name)
     {
         return getParameters().getValue(name, 0);
     }
 
-    /*
-     * @see javax.servlet.ServletRequest#getParameterMap()
-     */
     @Override
     public Map<String, String[]> getParameterMap()
     {
         return Collections.unmodifiableMap(getParameters().toStringArrayMap());
     }
 
-    /*
-     * @see javax.servlet.ServletRequest#getParameterNames()
-     */
     @Override
     public Enumeration<String> getParameterNames()
     {
         return Collections.enumeration(getParameters().keySet());
     }
 
-    /*
-     * @see javax.servlet.ServletRequest#getParameterValues(java.lang.String)
-     */
     @Override
     public String[] getParameterValues(String name)
     {
@@ -1120,18 +1048,12 @@ public class Request implements HttpServletRequest
         _parameters = null;
     }
 
-    /*
-     * @see javax.servlet.http.HttpServletRequest#getPathInfo()
-     */
     @Override
     public String getPathInfo()
     {
         return _pathInfo;
     }
 
-    /*
-     * @see javax.servlet.http.HttpServletRequest#getPathTranslated()
-     */
     @Override
     public String getPathTranslated()
     {
@@ -1140,9 +1062,6 @@ public class Request implements HttpServletRequest
         return _context.getRealPath(_pathInfo);
     }
 
-    /*
-     * @see javax.servlet.ServletRequest#getProtocol()
-     */
     @Override
     public String getProtocol()
     {
@@ -1169,9 +1088,6 @@ public class Request implements HttpServletRequest
         return _queryEncoding;
     }
 
-    /*
-     * @see javax.servlet.http.HttpServletRequest#getQueryString()
-     */
     @Override
     public String getQueryString()
     {
@@ -1179,9 +1095,6 @@ public class Request implements HttpServletRequest
         return metadata == null ? null : metadata.getURI().getQuery();
     }
 
-    /*
-     * @see javax.servlet.ServletRequest#getReader()
-     */
     @Override
     public BufferedReader getReader() throws IOException
     {
@@ -1236,9 +1149,6 @@ public class Request implements HttpServletRequest
         return remote;
     }
 
-    /*
-     * @see javax.servlet.ServletRequest#getRemoteAddr()
-     */
     @Override
     public String getRemoteAddr()
     {
@@ -1256,9 +1166,6 @@ public class Request implements HttpServletRequest
         return address.getHostAddress();
     }
 
-    /*
-     * @see javax.servlet.ServletRequest#getRemoteHost()
-     */
     @Override
     public String getRemoteHost()
     {
@@ -1268,9 +1175,6 @@ public class Request implements HttpServletRequest
         return remote == null ? "" : remote.getHostString();
     }
 
-    /*
-     * @see javax.servlet.ServletRequest#getRemotePort()
-     */
     @Override
     public int getRemotePort()
     {
@@ -1280,9 +1184,6 @@ public class Request implements HttpServletRequest
         return remote == null ? 0 : remote.getPort();
     }
 
-    /*
-     * @see javax.servlet.http.HttpServletRequest#getRemoteUser()
-     */
     @Override
     public String getRemoteUser()
     {
@@ -1292,9 +1193,6 @@ public class Request implements HttpServletRequest
         return p.getName();
     }
 
-    /*
-     * @see javax.servlet.ServletRequest#getRequestDispatcher(java.lang.String)
-     */
     @Override
     public RequestDispatcher getRequestDispatcher(String path)
     {
@@ -1320,18 +1218,12 @@ public class Request implements HttpServletRequest
         return _context.getRequestDispatcher(path);
     }
 
-    /*
-     * @see javax.servlet.http.HttpServletRequest#getRequestedSessionId()
-     */
     @Override
     public String getRequestedSessionId()
     {
         return _requestedSessionId;
     }
 
-    /*
-     * @see javax.servlet.http.HttpServletRequest#getRequestURI()
-     */
     @Override
     public String getRequestURI()
     {
@@ -1339,9 +1231,6 @@ public class Request implements HttpServletRequest
         return metadata == null ? null : metadata.getURI().getPath();
     }
 
-    /*
-     * @see javax.servlet.http.HttpServletRequest#getRequestURL()
-     */
     @Override
     public StringBuffer getRequestURL()
     {
@@ -1373,9 +1262,6 @@ public class Request implements HttpServletRequest
         return url;
     }
 
-    /*
-     * @see javax.servlet.ServletRequest#getScheme()
-     */
     @Override
     public String getScheme()
     {
@@ -1384,9 +1270,6 @@ public class Request implements HttpServletRequest
         return scheme == null ? HttpScheme.HTTP.asString() : scheme;
     }
 
-    /*
-     * @see javax.servlet.ServletRequest#getServerName()
-     */
     @Override
     public String getServerName()
     {
@@ -1419,9 +1302,6 @@ public class Request implements HttpServletRequest
         return null;
     }
 
-    /*
-     * @see javax.servlet.ServletRequest#getServerPort()
-     */
     @Override
     public int getServerPort()
     {
@@ -1463,9 +1343,6 @@ public class Request implements HttpServletRequest
         return null;
     }
 
-    /*
-     * @see javax.servlet.http.HttpServletRequest#getServletPath()
-     */
     @Override
     public String getServletPath()
     {
@@ -1566,18 +1443,12 @@ public class Request implements HttpServletRequest
         return session;
     }
     
-    /*
-     * @see javax.servlet.http.HttpServletRequest#getSession()
-     */
     @Override
     public HttpSession getSession()
     {
         return getSession(true);
     }
 
-    /*
-     * @see javax.servlet.http.HttpServletRequest#getSession(boolean)
-     */
     @Override
     public HttpSession getSession(boolean create)
     {
@@ -1677,9 +1548,6 @@ public class Request implements HttpServletRequest
         return _scope;
     }
 
-    /*
-     * @see javax.servlet.http.HttpServletRequest#getUserPrincipal()
-     */
     @Override
     public Principal getUserPrincipal()
     {
@@ -1712,18 +1580,12 @@ public class Request implements HttpServletRequest
         return _asyncNotSupportedSource == null;
     }
 
-    /*
-     * @see javax.servlet.http.HttpServletRequest#isRequestedSessionIdFromCookie()
-     */
     @Override
     public boolean isRequestedSessionIdFromCookie()
     {
         return _requestedSessionId != null && _requestedSessionIdFromCookie;
     }
 
-    /*
-     * @see javax.servlet.http.HttpServletRequest#isRequestedSessionIdFromUrl()
-     */
     @Override
     @Deprecated(since = "Servlet API 2.1")
     public boolean isRequestedSessionIdFromUrl()
@@ -1731,18 +1593,12 @@ public class Request implements HttpServletRequest
         return _requestedSessionId != null && !_requestedSessionIdFromCookie;
     }
 
-    /*
-     * @see javax.servlet.http.HttpServletRequest#isRequestedSessionIdFromURL()
-     */
     @Override
     public boolean isRequestedSessionIdFromURL()
     {
         return _requestedSessionId != null && !_requestedSessionIdFromCookie;
     }
 
-    /*
-     * @see javax.servlet.http.HttpServletRequest#isRequestedSessionIdValid()
-     */
     @Override
     public boolean isRequestedSessionIdValid()
     {
@@ -1753,9 +1609,6 @@ public class Request implements HttpServletRequest
         return (session != null && _sessionHandler.getSessionIdManager().getId(_requestedSessionId).equals(_sessionHandler.getId(session)));
     }
 
-    /*
-     * @see javax.servlet.ServletRequest#isSecure()
-     */
     @Override
     public boolean isSecure()
     {
@@ -1767,9 +1620,6 @@ public class Request implements HttpServletRequest
         _secure = secure;
     }
 
-    /*
-     * @see javax.servlet.http.HttpServletRequest#isUserInRole(java.lang.String)
-     */
     @Override
     public boolean isUserInRole(String role)
     {
@@ -1909,9 +1759,6 @@ public class Request implements HttpServletRequest
         _requestAttributeListeners.clear();
     }
 
-    /*
-     * @see javax.servlet.ServletRequest#removeAttribute(java.lang.String)
-     */
     @Override
     public void removeAttribute(String name)
     {
@@ -1940,7 +1787,7 @@ public class Request implements HttpServletRequest
         _asyncNotSupportedSource = supported ? null : (source == null ? "unknown" : source);
     }
 
-    /*
+    /**
      * Set a request attribute. if the attribute name is "org.eclipse.jetty.server.server.Request.queryEncoding" then the value is also passed in a call to
      * {@link #setQueryEncoding}.
      *
@@ -1990,9 +1837,6 @@ public class Request implements HttpServletRequest
         _authentication = authentication;
     }
 
-    /*
-     * @see javax.servlet.ServletRequest#setCharacterEncoding(java.lang.String)
-     */
     @Override
     public void setCharacterEncoding(String encoding) throws UnsupportedEncodingException
     {
@@ -2493,9 +2337,6 @@ public class Request implements HttpServletRequest
         }
     }
 
-    /**
-     * @see javax.servlet.http.HttpServletRequest#upgrade(java.lang.Class)
-     */
     @Override
     public <T extends HttpUpgradeHandler> T upgrade(Class<T> handlerClass) throws IOException, ServletException
     {

@@ -530,9 +530,6 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
         return _deploymentManager;
     }
 
-    /**
-     * @see org.eclipse.jetty.deploy.AppProvider#setDeploymentManager(org.eclipse.jetty.deploy.DeploymentManager)
-     */
     @Override
     public void setDeploymentManager(DeploymentManager deploymentManager)
     {

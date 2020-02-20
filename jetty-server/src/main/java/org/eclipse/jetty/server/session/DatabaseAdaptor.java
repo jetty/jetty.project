@@ -305,9 +305,6 @@ public class DatabaseAdaptor
             return DriverManager.getConnection(_connectionUrl);
     }
 
-    /**
-     * @see java.lang.Object#toString()
-     */
     @Override
     public String toString()
     {

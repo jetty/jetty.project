@@ -150,9 +150,6 @@ public class HashLoginService extends AbstractLoginService
         return null;
     }
 
-    /**
-     * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStart()
-     */
     @Override
     protected void doStart() throws Exception
     {
@@ -191,9 +188,6 @@ public class HashLoginService extends AbstractLoginService
         return _userStoreAutoCreate;
     }
 
-    /**
-     * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStop()
-     */
     @Override
     protected void doStop() throws Exception
     {

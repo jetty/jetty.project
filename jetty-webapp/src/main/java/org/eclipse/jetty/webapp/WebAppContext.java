@@ -386,9 +386,6 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         return _resourceAliases.remove(alias);
     }
 
-    /* (non-Javadoc)
-     * @see org.eclipse.jetty.server.server.handler.ContextHandler#setClassLoader(java.lang.ClassLoader)
-     */
     @Override
     public void setClassLoader(ClassLoader classLoader)
     {
@@ -527,9 +524,6 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         _configurations.postConfigure(this);
     }
 
-    /*
-     * @see org.eclipse.thread.AbstractLifeCycle#doStart()
-     */
     @Override
     protected void doStart() throws Exception
     {

@@ -228,6 +228,12 @@ public class HttpSenderOverHTTP extends HttpSender
                         headerBuffer = byteBufferPool.acquire(httpClient.getRequestBufferSize(), useDirectByteBuffers);
                         break;
                     }
+                    case HEADER_OVERFLOW:
+                    {
+                        httpClient.getByteBufferPool().release(headerBuffer);
+                        headerBuffer = null;
+                        throw new IllegalArgumentException("Request header too large");
+                    }
                     case NEED_CHUNK:
                     {
                         chunkBuffer = byteBufferPool.acquire(HttpGenerator.CHUNK_SIZE, useDirectByteBuffers);

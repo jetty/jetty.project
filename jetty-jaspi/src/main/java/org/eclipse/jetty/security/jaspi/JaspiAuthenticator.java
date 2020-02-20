@@ -94,9 +94,6 @@ public class JaspiAuthenticator extends LoginAuthenticator
         return "JASPI";
     }
 
-    /**
-     * @see org.eclipse.jetty.security.authentication.LoginAuthenticator#login(java.lang.String, java.lang.Object, javax.servlet.ServletRequest)
-     */
     @Override
     public UserIdentity login(String username, Object password, ServletRequest request)
     {

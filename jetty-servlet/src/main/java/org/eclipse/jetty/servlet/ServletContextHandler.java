@@ -317,9 +317,6 @@ public class ServletContextHandler extends ContextHandler
         super.doStart();
     }
 
-    /**
-     * @see org.eclipse.jetty.server.handler.ContextHandler#doStop()
-     */
     @Override
     protected void doStop() throws Exception
     {
@@ -759,9 +756,6 @@ public class ServletContextHandler extends ContextHandler
         private String _buffer;
         private String _errorOnUndeclaredNamespace;
 
-        /**
-         * @see javax.servlet.descriptor.JspPropertyGroupDescriptor#getUrlPatterns()
-         */
         @Override
         public Collection<String> getUrlPatterns()
         {
@@ -774,9 +768,6 @@ public class ServletContextHandler extends ContextHandler
                 _urlPatterns.add(s);
         }
 
-        /**
-         * @see javax.servlet.descriptor.JspPropertyGroupDescriptor#getElIgnored()
-         */
         @Override
         public String getElIgnored()
         {
@@ -788,9 +779,6 @@ public class ServletContextHandler extends ContextHandler
             _elIgnored = s;
         }
 
-        /**
-         * @see javax.servlet.descriptor.JspPropertyGroupDescriptor#getPageEncoding()
-         */
         @Override
         public String getPageEncoding()
         {
@@ -837,27 +825,18 @@ public class ServletContextHandler extends ContextHandler
             _errorOnUndeclaredNamespace = errorOnUndeclaredNamespace;
         }
 
-        /**
-         * @see javax.servlet.descriptor.JspPropertyGroupDescriptor#getScriptingInvalid()
-         */
         @Override
         public String getScriptingInvalid()
         {
             return _scriptingInvalid;
         }
 
-        /**
-         * @see javax.servlet.descriptor.JspPropertyGroupDescriptor#getIsXml()
-         */
         @Override
         public String getIsXml()
         {
             return _isXml;
         }
 
-        /**
-         * @see javax.servlet.descriptor.JspPropertyGroupDescriptor#getIncludePreludes()
-         */
         @Override
         public Collection<String> getIncludePreludes()
         {
@@ -870,9 +849,6 @@ public class ServletContextHandler extends ContextHandler
                 _includePreludes.add(prelude);
         }
 
-        /**
-         * @see javax.servlet.descriptor.JspPropertyGroupDescriptor#getIncludeCodas()
-         */
         @Override
         public Collection<String> getIncludeCodas()
         {
@@ -885,45 +861,30 @@ public class ServletContextHandler extends ContextHandler
                 _includeCodas.add(coda);
         }
 
-        /**
-         * @see javax.servlet.descriptor.JspPropertyGroupDescriptor#getDeferredSyntaxAllowedAsLiteral()
-         */
         @Override
         public String getDeferredSyntaxAllowedAsLiteral()
         {
             return _deferredSyntaxAllowedAsLiteral;
         }
 
-        /**
-         * @see javax.servlet.descriptor.JspPropertyGroupDescriptor#getTrimDirectiveWhitespaces()
-         */
         @Override
         public String getTrimDirectiveWhitespaces()
         {
             return _trimDirectiveWhitespaces;
         }
 
-        /**
-         * @see javax.servlet.descriptor.JspPropertyGroupDescriptor#getDefaultContentType()
-         */
         @Override
         public String getDefaultContentType()
         {
             return _defaultContentType;
         }
 
-        /**
-         * @see javax.servlet.descriptor.JspPropertyGroupDescriptor#getBuffer()
-         */
         @Override
         public String getBuffer()
         {
             return _buffer;
         }
 
-        /**
-         * @see javax.servlet.descriptor.JspPropertyGroupDescriptor#getErrorOnUndeclaredNamespace()
-         */
         @Override
         public String getErrorOnUndeclaredNamespace()
         {
@@ -961,9 +922,6 @@ public class ServletContextHandler extends ContextHandler
         private String _uri;
         private String _location;
 
-        /**
-         * @see javax.servlet.descriptor.TaglibDescriptor#getTaglibURI()
-         */
         @Override
         public String getTaglibURI()
         {
@@ -975,9 +933,6 @@ public class ServletContextHandler extends ContextHandler
             _uri = uri;
         }
 
-        /**
-         * @see javax.servlet.descriptor.TaglibDescriptor#getTaglibLocation()
-         */
         @Override
         public String getTaglibLocation()
         {
@@ -1005,9 +960,6 @@ public class ServletContextHandler extends ContextHandler
         {
         }
 
-        /**
-         * @see javax.servlet.descriptor.JspConfigDescriptor#getTaglibs()
-         */
         @Override
         public Collection<TaglibDescriptor> getTaglibs()
         {
@@ -1019,9 +971,6 @@ public class ServletContextHandler extends ContextHandler
             _taglibs.add(d);
         }
 
-        /**
-         * @see javax.servlet.descriptor.JspConfigDescriptor#getJspPropertyGroups()
-         */
         @Override
         public Collection<JspPropertyGroupDescriptor> getJspPropertyGroups()
         {
@@ -1052,9 +1001,6 @@ public class ServletContextHandler extends ContextHandler
 
     public class Context extends ContextHandler.Context
     {
-        /*
-         * @see javax.servlet.ServletContext#getNamedDispatcher(java.lang.String)
-         */
         @Override
         public RequestDispatcher getNamedDispatcher(String name)
         {

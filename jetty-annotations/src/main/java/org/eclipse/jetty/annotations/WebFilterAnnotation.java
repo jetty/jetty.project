@@ -54,9 +54,6 @@ public class WebFilterAnnotation extends DiscoveredAnnotation
         super(context, className, resource);
     }
 
-    /**
-     * @see DiscoveredAnnotation#apply()
-     */
     @Override
     public void apply()
     {

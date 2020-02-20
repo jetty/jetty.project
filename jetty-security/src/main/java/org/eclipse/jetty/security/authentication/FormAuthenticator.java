@@ -117,9 +117,6 @@ public class FormAuthenticator extends LoginAuthenticator
         return _alwaysSaveUri;
     }
 
-    /**
-     * @see org.eclipse.jetty.security.authentication.LoginAuthenticator#setConfiguration(org.eclipse.jetty.security.Authenticator.AuthConfiguration)
-     */
     @Override
     public void setConfiguration(AuthConfiguration configuration)
     {

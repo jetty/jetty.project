@@ -650,18 +650,12 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         return ContextHandler.getContextHandler(_config.getServletContext());
     }
 
-    /**
-     * @see org.eclipse.jetty.server.UserIdentity.Scope#getContextPath()
-     */
     @Override
     public String getContextPath()
     {
         return _config.getServletContext().getContextPath();
     }
 
-    /**
-     * @see org.eclipse.jetty.server.UserIdentity.Scope#getRoleRefMap()
-     */
     @Override
     public Map<String, String> getRoleRefMap()
     {

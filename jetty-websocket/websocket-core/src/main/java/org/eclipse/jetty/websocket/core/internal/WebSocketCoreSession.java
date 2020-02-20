@@ -43,6 +43,7 @@ import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.IncomingFrames;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.OutgoingFrames;
+import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.WebSocketConstants;
 import org.eclipse.jetty.websocket.core.exception.CloseException;
 import org.eclipse.jetty.websocket.core.exception.MessageTooLargeException;
@@ -63,6 +64,7 @@ public class WebSocketCoreSession implements IncomingFrames, CoreSession, Dumpab
     private static final Logger LOG = LoggerFactory.getLogger(WebSocketCoreSession.class);
     private static final CloseStatus NO_CODE = new CloseStatus(CloseStatus.NO_CODE);
 
+    private final WebSocketComponents components;
     private final Behavior behavior;
     private final WebSocketSessionState sessionState = new WebSocketSessionState();
     private final FrameHandler handler;
@@ -81,8 +83,9 @@ public class WebSocketCoreSession implements IncomingFrames, CoreSession, Dumpab
     private Duration writeTimeout = WebSocketConstants.DEFAULT_WRITE_TIMEOUT;
     private final ContextHandler contextHandler;
 
-    public WebSocketCoreSession(FrameHandler handler, Behavior behavior, Negotiated negotiated)
+    public WebSocketCoreSession(FrameHandler handler, Behavior behavior, Negotiated negotiated, WebSocketComponents components)
     {
+        this.components = components;
         this.handler = handler;
         this.behavior = behavior;
         this.negotiated = negotiated;
@@ -792,6 +795,12 @@ public class WebSocketCoreSession implements IncomingFrames, CoreSession, Dumpab
     public Behavior getBehavior()
     {
         return behavior;
+    }
+
+    @Override
+    public WebSocketComponents getWebSocketComponents()
+    {
+        return components;
     }
 
     @Override

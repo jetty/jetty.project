@@ -463,9 +463,6 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
         doGet(request, response);
     }
 
-    /* (non-Javadoc)
-     * @see javax.servlet.http.HttpServlet#doTrace(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
-     */
     @Override
     protected void doTrace(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
     {
@@ -479,9 +476,6 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
         resp.setHeader("Allow", "GET,HEAD,POST,OPTIONS");
     }
 
-    /*
-     * @see javax.servlet.Servlet#destroy()
-     */
     @Override
     public void destroy()
     {

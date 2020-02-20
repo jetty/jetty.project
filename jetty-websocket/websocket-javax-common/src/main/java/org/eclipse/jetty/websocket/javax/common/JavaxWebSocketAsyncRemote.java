@@ -31,9 +31,9 @@ import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
-import org.eclipse.jetty.websocket.javax.common.messages.MessageOutputStream;
-import org.eclipse.jetty.websocket.javax.common.messages.MessageWriter;
-import org.eclipse.jetty.websocket.javax.common.util.TextUtil;
+import org.eclipse.jetty.websocket.util.TextUtil;
+import org.eclipse.jetty.websocket.util.messages.MessageOutputStream;
+import org.eclipse.jetty.websocket.util.messages.MessageWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

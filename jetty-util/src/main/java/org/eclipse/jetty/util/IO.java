@@ -78,9 +78,6 @@ public class IO
             this.write = write;
         }
 
-        /*
-         * @see java.lang.Runnable#run()
-         */
         @Override
         public void run()
         {

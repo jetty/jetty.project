@@ -69,18 +69,12 @@ public class JaspiTest
             _roles.put(username, roles);
         }
 
-        /**
-         * @see org.eclipse.jetty.security.AbstractLoginService#loadRoleInfo(org.eclipse.jetty.security.AbstractLoginService.UserPrincipal)
-         */
         @Override
         protected String[] loadRoleInfo(UserPrincipal user)
         {
             return _roles.get(user.getName());
         }
 
-        /**
-         * @see org.eclipse.jetty.security.AbstractLoginService#loadUserInfo(java.lang.String)
-         */
         @Override
         protected UserPrincipal loadUserInfo(String username)
         {

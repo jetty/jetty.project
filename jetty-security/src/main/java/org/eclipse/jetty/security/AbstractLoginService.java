@@ -107,9 +107,6 @@ public abstract class AbstractLoginService extends ContainerLifeCycle implements
         addBean(_identityService);
     }
 
-    /**
-     * @see org.eclipse.jetty.security.LoginService#getName()
-     */
     @Override
     public String getName()
     {
@@ -148,9 +145,6 @@ public abstract class AbstractLoginService extends ContainerLifeCycle implements
         return String.format("%s@%x[%s]", this.getClass().getSimpleName(), hashCode(), _name);
     }
 
-    /**
-     * @see org.eclipse.jetty.security.LoginService#login(java.lang.String, java.lang.Object, javax.servlet.ServletRequest)
-     */
     @Override
     public UserIdentity login(String username, Object credentials, ServletRequest request)
     {
@@ -178,9 +172,6 @@ public abstract class AbstractLoginService extends ContainerLifeCycle implements
         return null;
     }
 
-    /**
-     * @see org.eclipse.jetty.security.LoginService#validate(org.eclipse.jetty.server.UserIdentity)
-     */
     @Override
     public boolean validate(UserIdentity user)
     {
@@ -200,18 +191,12 @@ public abstract class AbstractLoginService extends ContainerLifeCycle implements
         throw new IllegalStateException("UserPrincipal not KnownUser"); //can't validate
     }
 
-    /**
-     * @see org.eclipse.jetty.security.LoginService#getIdentityService()
-     */
     @Override
     public IdentityService getIdentityService()
     {
         return _identityService;
     }
 
-    /**
-     * @see org.eclipse.jetty.security.LoginService#logout(org.eclipse.jetty.server.UserIdentity)
-     */
     @Override
     public void logout(UserIdentity user)
     {

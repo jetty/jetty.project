@@ -388,9 +388,6 @@ public class SessionHandler extends ScopedHandler
         }
     }
 
-    /*
-     * @see org.eclipse.thread.AbstractLifeCycle#doStart()
-     */
     @Override
     protected void doStart() throws Exception
     {
@@ -491,9 +488,6 @@ public class SessionHandler extends ScopedHandler
         super.doStart();
     }
 
-    /*
-     * @see org.eclipse.thread.AbstractLifeCycle#doStop()
-     */
     @Override
     protected void doStop() throws Exception
     {
@@ -1479,9 +1473,6 @@ public class SessionHandler extends ScopedHandler
         }
     }
 
-    /*
-     * @see org.eclipse.jetty.server.Handler#handle(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, int)
-     */
     @Override
     public void doScope(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
         throws IOException, ServletException
@@ -1577,9 +1568,6 @@ public class SessionHandler extends ScopedHandler
         }
     }
 
-    /*
-     * @see org.eclipse.jetty.server.Handler#handle(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, int)
-     */
     @Override
     public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
         throws IOException, ServletException
@@ -1701,9 +1689,6 @@ public class SessionHandler extends ScopedHandler
         }
     }
 
-    /**
-     * @see java.lang.Object#toString()
-     */
     @Override
     public String toString()
     {

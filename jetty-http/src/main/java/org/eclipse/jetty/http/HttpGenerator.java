@@ -74,6 +74,7 @@ public class HttpGenerator
         NEED_CHUNK,             // Need a small chunk buffer of CHUNK_SIZE
         NEED_INFO,              // Need the request/response metadata info 
         NEED_HEADER,            // Need a buffer to build HTTP headers into
+        HEADER_OVERFLOW,        // The header buffer overflowed
         NEED_CHUNK_TRAILER,     // Need a large chunk buffer for last chunk and trailers
         FLUSH,                  // The buffers previously generated should be flushed 
         CONTINUE,               // Continue generating the message
@@ -250,7 +251,8 @@ public class HttpGenerator
                 }
                 catch (BufferOverflowException e)
                 {
-                    throw new BadMessageException(INTERNAL_SERVER_ERROR_500, "Request header too large", e);
+                    LOG.trace("IGNORED", e);
+                    return Result.HEADER_OVERFLOW;
                 }
                 catch (Exception e)
                 {
@@ -427,7 +429,8 @@ public class HttpGenerator
                 }
                 catch (BufferOverflowException e)
                 {
-                    throw new BadMessageException(INTERNAL_SERVER_ERROR_500, "Response header too large", e);
+                    LOG.trace("IGNORED", e);
+                    return Result.HEADER_OVERFLOW;
                 }
                 catch (Exception e)
                 {

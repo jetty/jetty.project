@@ -262,9 +262,6 @@ public class JDBCLoginService extends AbstractLoginService
         return null;
     }
 
-    /**
-     * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStop()
-     */
     @Override
     protected void doStop() throws Exception
     {

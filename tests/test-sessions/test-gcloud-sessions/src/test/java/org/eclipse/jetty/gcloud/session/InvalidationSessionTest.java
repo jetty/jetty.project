@@ -45,9 +45,6 @@ public class InvalidationSessionTest extends AbstractClusteredInvalidationSessio
         __testSupport.tearDown();
     }
 
-    /**
-     * @see org.eclipse.jetty.server.session.AbstractTestBase#createSessionDataStoreFactory()
-     */
     @Override
     public SessionDataStoreFactory createSessionDataStoreFactory()
     {

@@ -285,11 +285,7 @@ public class WebSocketMapping implements Dumpable, LifeCycle.Listener
                 return null;
             }
 
-            FrameHandler frameHandler = factory.newFrameHandler(websocketPojo, upgradeRequest, upgradeResponse);
-            if (frameHandler != null)
-                return frameHandler;
-
-            return null;
+            return factory.newFrameHandler(websocketPojo, upgradeRequest, upgradeResponse);
         }
 
         @Override

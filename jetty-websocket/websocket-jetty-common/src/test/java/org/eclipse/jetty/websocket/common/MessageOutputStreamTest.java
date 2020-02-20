@@ -23,7 +23,7 @@ import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.websocket.common.message.MessageOutputStream;
+import org.eclipse.jetty.websocket.util.messages.MessageOutputStream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -53,12 +53,13 @@ public class MessageOutputStreamTest
     public void setupTest() throws Exception
     {
         sessionCapture = new OutgoingMessageCapture();
+        sessionCapture.setOutputBufferSize(OUTPUT_BUFFER_SIZE);
     }
 
     @Test
     public void testMultipleWrites() throws Exception
     {
-        try (MessageOutputStream stream = new MessageOutputStream(sessionCapture, OUTPUT_BUFFER_SIZE, bufferPool))
+        try (MessageOutputStream stream = new MessageOutputStream(sessionCapture, bufferPool))
         {
             stream.write("Hello".getBytes("UTF-8"));
             stream.write(" ".getBytes("UTF-8"));
@@ -74,7 +75,7 @@ public class MessageOutputStreamTest
     @Test
     public void testSingleWrite() throws Exception
     {
-        try (MessageOutputStream stream = new MessageOutputStream(sessionCapture, OUTPUT_BUFFER_SIZE, bufferPool))
+        try (MessageOutputStream stream = new MessageOutputStream(sessionCapture, bufferPool))
         {
             stream.write("Hello World".getBytes("UTF-8"));
         }
@@ -94,7 +95,7 @@ public class MessageOutputStreamTest
         Arrays.fill(buf, (byte)'x');
         buf[bufsize - 1] = (byte)'o'; // mark last entry for debugging
 
-        try (MessageOutputStream stream = new MessageOutputStream(sessionCapture, OUTPUT_BUFFER_SIZE, bufferPool))
+        try (MessageOutputStream stream = new MessageOutputStream(sessionCapture, bufferPool))
         {
             stream.write(buf);
         }

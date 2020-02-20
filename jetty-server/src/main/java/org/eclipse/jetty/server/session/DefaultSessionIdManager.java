@@ -274,9 +274,6 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
         return id;
     }
 
-    /**
-     * @see org.eclipse.jetty.server.SessionIdManager#isIdInUse(java.lang.String)
-     */
     @Override
     public boolean isIdInUse(String id)
     {
@@ -311,9 +308,6 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
         }
     }
 
-    /**
-     * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStart()
-     */
     @Override
     protected void doStart() throws Exception
     {
@@ -343,9 +337,6 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
         _houseKeeper.start();
     }
 
-    /**
-     * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStop()
-     */
     @Override
     protected void doStop() throws Exception
     {
@@ -487,9 +478,6 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
         return handlers;
     }
 
-    /**
-     * @see java.lang.Object#toString()
-     */
     @Override
     public String toString()
     {

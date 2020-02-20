@@ -99,9 +99,6 @@ public class WebInfConfiguration extends AbstractConfiguration
         context.setBaseResource(_preUnpackBaseResource);
     }
 
-    /**
-     * @see org.eclipse.jetty.webapp.AbstractConfiguration#cloneConfigure(org.eclipse.jetty.webapp.WebAppContext, org.eclipse.jetty.webapp.WebAppContext)
-     */
     @Override
     public void cloneConfigure(WebAppContext template, WebAppContext context) throws Exception
     {

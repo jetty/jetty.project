@@ -78,9 +78,6 @@ public class HouseKeeper extends AbstractLifeCycle
         _sessionIdManager = sessionIdManager;
     }
 
-    /**
-     * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStart()
-     */
     @Override
     protected void doStart() throws Exception
     {
@@ -167,9 +164,6 @@ public class HouseKeeper extends AbstractLifeCycle
         _runner = null;
     }
 
-    /**
-     * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStop()
-     */
     @Override
     protected void doStop() throws Exception
     {
@@ -263,9 +257,6 @@ public class HouseKeeper extends AbstractLifeCycle
         }
     }
 
-    /**
-     * @see java.lang.Object#toString()
-     */
     @Override
     public String toString()
     {

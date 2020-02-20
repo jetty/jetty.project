@@ -38,9 +38,6 @@ public class MockTransport extends Transport
         super(session, urlname);
     }
 
-    /**
-     * @see javax.mail.Transport#sendMessage(javax.mail.Message, javax.mail.Address[])
-     */
     @Override
     public void sendMessage(Message arg0, Address[] arg1) throws MessagingException
     {
