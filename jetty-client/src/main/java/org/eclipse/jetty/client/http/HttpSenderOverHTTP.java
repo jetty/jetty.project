@@ -230,6 +230,8 @@ public class HttpSenderOverHTTP extends HttpSender
                     }
                     case HEADER_OVERFLOW:
                     {
+                        httpClient.getByteBufferPool().release(headerBuffer);
+                        headerBuffer = null;
                         throw new BadMessageException(INTERNAL_SERVER_ERROR_500, "Request header too large");
                     }
                     case NEED_CHUNK:
