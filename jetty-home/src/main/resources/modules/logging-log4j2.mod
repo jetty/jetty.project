@@ -1,0 +1,32 @@
+# DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
+
+[description]
+Configure jetty logging to use log4j version 2
+SLF4J is used as the core logging mechanism.
+
+[tags]
+logging
+
+[depends]
+resources
+
+[provides]
+logging
+
+[files]
+basehome:modules/logging-log4j2
+
+[lib]
+lib/logging/slf4j-api-${slf4j.version}.jar
+maven://org.apache.logging.log4j/log4j-slf4j18-impl/${log4j.version}|lib/logging/log4j-slf4j18-impl-${log4j.version}.jar
+maven://org.apache.logging.log4j/log4j-api/${log4j.version}|lib/logging/log4j-api-${log4j.version}.jar
+maven://org.apache.logging.log4j/log4j-core/${log4j.version}|lib/logging/log4j-core-${log4j.version}.jar
+
+[ini]
+slf4j.version?=1.8.0-beta1
+log4j.version?=2.13.0
+jetty.webapp.addServerClasses+=,${jetty.base.uri}/lib/logging/
+
+[license]
+Log4j is released under the Apache 2.0 license.
+http://www.apache.org/licenses/LICENSE-2.0.html

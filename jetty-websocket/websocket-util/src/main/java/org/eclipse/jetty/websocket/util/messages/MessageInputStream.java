@@ -31,7 +31,6 @@ import org.eclipse.jetty.websocket.core.Frame;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 /**
  * Support class for reading a WebSocket BINARY message via a InputStream.
  * <p>

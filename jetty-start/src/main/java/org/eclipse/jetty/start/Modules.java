@@ -47,6 +47,7 @@ public class Modules implements Iterable<Module>
     private final List<Module> _modules = new ArrayList<>();
     private final Map<String, Module> _names = new HashMap<>();
     private final Map<String, Set<Module>> _provided = new HashMap<>();
+    private final Map<String, String> _providedDefaults = new HashMap<>();
     private final BaseHome _baseHome;
     private final StartArgs _args;
     private final Properties _deprecated = new Properties();
@@ -215,7 +216,19 @@ public class Modules implements Iterable<Module>
             _names.put(module.getName(), module);
             module.getProvides().forEach(n ->
             {
-                _provided.computeIfAbsent(n, k -> new HashSet<Module>()).add(module);
+                String name = n;
+                boolean isDefaultProvider = false;
+                int idx = n.indexOf('|');
+                if (idx > 0)
+                {
+                    name = n.substring(0, idx);
+                    isDefaultProvider = n.substring(idx + 1).equalsIgnoreCase("default");
+                }
+                _provided.computeIfAbsent(name, k -> new HashSet<>()).add(module);
+                if (isDefaultProvider)
+                {
+                    _providedDefaults.computeIfAbsent(name, k -> module.getName());
+                }
             });
 
             return module;
@@ -252,8 +265,36 @@ public class Modules implements Iterable<Module>
 
     public List<Module> getEnabled()
     {
-        List<Module> enabled = _modules.stream().filter(m -> m.isEnabled()).collect(Collectors.toList());
+        // Enabled modules
+        List<Module> enabled = new ArrayList<>();
 
+        _modules.stream().filter(m -> m.isEnabled()).forEach(m ->
+        {
+            // Enable and modules that are selected via provider name, but have no selected provider
+            m.getDepends().forEach(d ->
+            {
+                Set<Module> providers = getAvailableProviders(d);
+                System.err.printf("### Module %s depends on %s (impls %s)%n",
+                    m, d, providers.stream().map(Module::getName).collect(Collectors.joining(",")));
+                if (providers.stream().filter(Module::isEnabled).count() == 0)
+                {
+                    System.err.printf("### Depends on %s with no providers enabled!%n", d);
+                    String defName = _providedDefaults.get(d);
+                    System.err.printf("###   Default impl is %s!%n", defName);
+                    if (defName != null)
+                    {
+                        Module defaultImpl = get(defName);
+                        defaultImpl.enable("default", true);
+                        System.err.printf("###   Default %s!%n", defaultImpl);
+                        enabled.add(defaultImpl);
+                    }
+                }
+            });
+
+            enabled.add(m);
+        });
+
+        // Sort them
         TopologicalSort<Module> sort = new TopologicalSort<>();
         for (Module module : enabled)
         {

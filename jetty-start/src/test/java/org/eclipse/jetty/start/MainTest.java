@@ -247,4 +247,24 @@ public class MainTest
 
         ConfigurationAssert.assertConfiguration(baseHome, args, "assert-home-with-spaces.txt");
     }
+
+    @Test
+    public void testJettyHomeWithDefaultLoggingProvider() throws Exception
+    {
+        Path homePath = MavenTestingUtils.getTestResourceDir("providers-home").toPath().toRealPath();
+
+        List<String> cmdLineArgs = new ArrayList<>();
+        cmdLineArgs.add("user.dir=" + homePath);
+        cmdLineArgs.add("jetty.home=" + homePath);
+        cmdLineArgs.add("--module=server");
+
+        Main main = new Main();
+        StartArgs args = main.processCommandLine(cmdLineArgs.toArray(new String[cmdLineArgs.size()]));
+        BaseHome baseHome = main.getBaseHome();
+
+        assertThat("jetty.home", baseHome.getHome(), is(homePath.toString()));
+        assertThat("jetty.base", baseHome.getBase(), is(homePath.toString()));
+
+        ConfigurationAssert.assertConfiguration(baseHome, args, "assert-providers-home.txt");
+    }
 }
