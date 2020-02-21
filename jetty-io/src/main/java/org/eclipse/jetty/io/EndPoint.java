@@ -95,7 +95,17 @@ import org.eclipse.jetty.util.thread.Invocable;
  */
 public interface EndPoint extends Closeable
 {
-
+    /** 
+     * Marks an <code>EndPoint</code> that wraps another <code>EndPoint</code>.
+     */
+    public interface Wrapper 
+    {
+        /**
+         * @return The wrapped <code>EndPoint</code>
+         */
+        EndPoint unwrap();
+    }
+    
     /**
      * @return The local Inet address to which this <code>EndPoint</code> is bound, or <code>null</code>
      * if this <code>EndPoint</code> does not represent a network connection.
