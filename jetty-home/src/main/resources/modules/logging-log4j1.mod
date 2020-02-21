@@ -15,16 +15,19 @@ logging
 
 [files]
 basehome:modules/logging-log4j1
+maven://org.slf4j/slf4j-log4j12/${slf4j.version}|lib/logging/slf4j-log4j12-${slf4j.version}.jar
+maven://log4j/log4j/${log4j1.version}|lib/logging/log4j-${log4j.version}.jar
 
 [lib]
 lib/logging/slf4j-api-${slf4j.version}.jar
-maven://org.slf4j/slf4j-log4j12/${slf4j.version}|lib/logging/slf4j-log4j12-${slf4j.version}.jar
-maven://log4j/log4j/${log4j1.version}|lib/logging/log4j-${log4j.version}.jar
+lib/logging/slf4j-log4j12-${slf4j.version}.jar
+lib/logging/log4j-${log4j.version}.jar
 
 [ini]
 slf4j.version?=1.8.0-beta1
 log4j.version?=1.2.17
-jetty.webapp.addServerClasses+=,${jetty.base.uri}/lib/logging/
+jetty.webapp.addSystemClasses+=,org.slf4j.,org.apache.log4j.
+
 
 [license]
 SLF4J is distributed under the MIT License.

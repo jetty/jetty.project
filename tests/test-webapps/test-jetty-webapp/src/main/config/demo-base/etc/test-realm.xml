@@ -8,17 +8,22 @@
     <!-- configuration (see $(jetty.home)/webapps/test.xml for an    -->
     <!-- example).                                                   -->
     <!-- =========================================================== -->
-    <Call name="addBean">
-      <Arg>
-        <New class="org.eclipse.jetty.security.HashLoginService">
-          <Set name="name">Test Realm</Set>
-          <Set name="config"><Property name="jetty.demo.realm" default="etc/realm.properties"/></Set>
-          <Set name="hotReload">false</Set>
-        </New>
-      </Arg>
-    </Call>
+  <Call name="addBean">
+    <Arg>
+      <New class="org.eclipse.jetty.security.HashLoginService">
+        <Set name="name">Test Realm</Set>
+        <Set name="config">
+          <Property name="jetty.demo.realm" default="etc/realm.properties" />
+        </Set>
+        <Set name="hotReload">false</Set>
+      </New>
+    </Arg>
+  </Call>
 
-    <Get class="org.eclipse.jetty.util.log.Log" name="rootLogger">
-      <Call name="warn"><Arg>demo test-realm is deployed. DO NOT USE IN PRODUCTION!</Arg></Call>
-    </Get>
+  <Call class="org.slf4j.LoggerFactory" name="getLogger">
+    <Arg>org.eclipse.jetty</Arg>
+    <Call name="warn">
+      <Arg>demo test-realm is deployed. DO NOT USE IN PRODUCTION!</Arg>
+    </Call>
+  </Call>
 </Configure>

@@ -15,16 +15,18 @@ logging
 
 [files]
 basehome:modules/logging-logback
+maven://ch.qos.logback/logback-classic/${logback.version}|lib/logging/logback-classic-${logback.version}.jar
+maven://ch.qos.logback/logback-core/${logback.version}|lib/logging/logback-core-${logback.version}.jar
 
 [lib]
 lib/logging/slf4j-api-${slf4j.version}.jar
-maven://ch.qos.logback/logback-classic/${logback.version}|lib/logging/logback-classic-${logback.version}.jar
-maven://ch.qos.logback/logback-core/${logback.version}|lib/logging/logback-core-${logback.version}.jar
+lib/logging/logback-classic-${logback.version}.jar
+lib/logging/logback-core-${logback.version}.jar
 
 [ini]
 slf4j.version?=1.8.0-beta1
 logback.version?=1.3.0-alpha4
-jetty.webapp.addServerClasses+=,${jetty.base.uri}/lib/logging/
+jetty.webapp.addSystemClasses+=,org.slf4j.,ch.qos.logback.
 
 [license]
 Logback: the reliable, generic, fast and flexible logging framework.

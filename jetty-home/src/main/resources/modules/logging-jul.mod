@@ -15,15 +15,16 @@ logging
 
 [files]
 basehome:modules/logging-jul
+maven://org.slf4j/slf4j-jdk14/${slf4j.version}|lib/logging/slf4j-jdk14-${slf4j.version}.jar
 
 [lib]
 lib/logging/slf4j-api-${slf4j.version}.jar
-maven://org.slf4j/slf4j-jdk14/${slf4j.version}|lib/logging/slf4j-jdk14-${slf4j.version}.jar
+lib/logging/slf4j-jdk14-${slf4j.version}.jar
 
 [ini]
 slf4j.version?=1.8.0-beta1
 java.util.logging.config.file=${jetty.base}/resources/java-util-logging.properties
-jetty.webapp.addServerClasses+=,${jetty.base.uri}/lib/logging/
+jetty.webapp.addSystemClasses+=,org.slf4j.
 
 [license]
 SLF4J is distributed under the MIT License.
