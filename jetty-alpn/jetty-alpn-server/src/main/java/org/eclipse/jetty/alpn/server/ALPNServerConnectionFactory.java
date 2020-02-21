@@ -20,9 +20,7 @@ package org.eclipse.jetty.alpn.server;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.List;
-import java.util.ServiceLoader;
 import javax.net.ssl.SSLEngine;
 
 import org.eclipse.jetty.io.AbstractConnection;
@@ -30,6 +28,7 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ssl.ALPNProcessor.Server;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.NegotiatingServerConnectionFactory;
+import org.eclipse.jetty.util.ServiceLoaderUtil;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -51,22 +50,8 @@ public class ALPNServerConnectionFactory extends NegotiatingServerConnectionFact
 
         IllegalStateException failure = new IllegalStateException("No Server ALPNProcessors!");
         // Use a for loop on iterator so load exceptions can be caught and ignored
-        for (Iterator<Server> i = ServiceLoader.load(Server.class).iterator(); i.hasNext(); )
+        for (Server processor : ServiceLoaderUtil.load(Server.class))
         {
-            Server processor;
-            try
-            {
-                processor = i.next();
-            }
-            catch (Throwable x)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug(x);
-                if (x != failure)
-                    failure.addSuppressed(x);
-                continue;
-            }
-
             try
             {
                 processor.init();

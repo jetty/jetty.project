@@ -31,7 +31,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
-import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
@@ -48,6 +47,7 @@ import org.eclipse.jetty.plus.webapp.PlusConfiguration;
 import org.eclipse.jetty.util.JavaVersion;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.ProcessorUtils;
+import org.eclipse.jetty.util.ServiceLoaderUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -811,7 +811,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
         long start = 0;
         if (LOG.isDebugEnabled())
             start = System.nanoTime();
-        ServiceLoader<ServletContainerInitializer> loader = ServiceLoader.load(ServletContainerInitializer.class);
+        List<ServletContainerInitializer> scis = ServiceLoaderUtil.load(ServletContainerInitializer.class);
         if (LOG.isDebugEnabled())
             LOG.debug("Service loaders found in {}ms", (TimeUnit.MILLISECONDS.convert((System.nanoTime() - start), TimeUnit.NANOSECONDS)));
 
@@ -820,22 +820,8 @@ public class AnnotationConfiguration extends AbstractConfiguration
 
         //Get initial set of SCIs that aren't from excluded jars or excluded by the containerExclusionPattern, or excluded
         //because containerInitializerOrdering omits it
-        Iterator<ServletContainerInitializer> iter = loader.iterator();
-        while (iter.hasNext())
+        for (ServletContainerInitializer sci : scis)
         {
-            ServletContainerInitializer sci;
-            try
-            {
-                sci = iter.next();
-            }
-            catch (Error e)
-            {
-                // Probably a SCI discovered on the system classpath that is hidden by the context classloader
-                LOG.info("Error: " + e.getMessage() + " for " + context);
-                LOG.debug(e);
-                continue;
-            }
-
             if (matchesExclusionPattern(sci))
             {
                 if (LOG.isDebugEnabled())

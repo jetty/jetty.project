@@ -26,7 +26,6 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.ServiceLoader;
 import java.util.Set;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -41,6 +40,7 @@ import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
+import org.eclipse.jetty.util.ServiceLoaderUtil;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -76,11 +76,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
 
     static
     {
-        for (Authenticator.Factory factory : ServiceLoader.load(Authenticator.Factory.class))
-        {
-            __knownAuthenticatorFactories.add(factory);
-        }
-
+        __knownAuthenticatorFactories.addAll(ServiceLoaderUtil.load(Authenticator.Factory.class));
         __knownAuthenticatorFactories.add(new DefaultAuthenticatorFactory());
     }
 

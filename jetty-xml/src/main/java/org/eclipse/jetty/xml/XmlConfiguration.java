@@ -55,6 +55,7 @@ import java.util.Set;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.MultiException;
+import org.eclipse.jetty.util.ServiceLoaderUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.Name;
@@ -95,7 +96,7 @@ public class XmlConfiguration
         {
             ArrayList.class, HashSet.class, Queue.class, List.class, Set.class, Collection.class
         };
-    private static final Iterable<ConfigurationProcessorFactory> PROCESSOR_FACTORIES = ServiceLoader.load(ConfigurationProcessorFactory.class);
+    private static final List<ConfigurationProcessorFactory> PROCESSOR_FACTORIES = ServiceLoaderUtil.load(ConfigurationProcessorFactory.class);
     private static final XmlParser PARSER = initParser();
     private static final Comparator<Executable> EXECUTABLE_COMPARATOR = (o1, o2) ->
     {

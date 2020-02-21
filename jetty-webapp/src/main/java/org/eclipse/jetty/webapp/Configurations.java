@@ -30,12 +30,12 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
-import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Loader;
+import org.eclipse.jetty.util.ServiceLoaderUtil;
 import org.eclipse.jetty.util.TopologicalSort;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.Dumpable;
@@ -74,26 +74,18 @@ public class Configurations extends AbstractList<Configuration> implements Dumpa
     {
         if (__known.isEmpty())
         {
-            ServiceLoader<Configuration> configs = ServiceLoader.load(Configuration.class);
-            for (Iterator<Configuration> i = configs.iterator(); i.hasNext(); )
+            List<Configuration> configs = ServiceLoaderUtil.load(Configuration.class);
+            for (Configuration configuration : configs)
             {
-                try
+                if (!configuration.isAvailable())
                 {
-                    Configuration configuration = i.next();
-                    if (!configuration.isAvailable())
-                    {
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("Configuration unavailable: " + configuration);
-                        __unavailable.add(configuration);
-                        continue;
-                    }
-                    __known.add(configuration);
-                    __knownByClassName.add(configuration.getClass().getName());
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Configuration unavailable: " + configuration);
+                    __unavailable.add(configuration);
+                    continue;
                 }
-                catch (Throwable e)
-                {
-                    LOG.warn(e);
-                }
+                __known.add(configuration);
+                __knownByClassName.add(configuration.getClass().getName());
             }
 
             sort(__known);
