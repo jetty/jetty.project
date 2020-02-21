@@ -25,10 +25,14 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.server.ProxyConnectionFactory.ProxyEndPoint;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.TypeUtil;
 import org.junit.jupiter.api.AfterEach;
@@ -118,14 +122,28 @@ public class ProxyProtocolTest
     {
         final String remoteAddr = "192.168.0.1";
         final int remotePort = 12345;
+        final byte[] customE0 = new byte[] {1, 2};
+        final byte[] customE1 = new byte[] {-1, -1, -1};
+
         start(new AbstractHandler()
         {
             @Override
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
-                if (remoteAddr.equals(request.getRemoteAddr()) &&
+                if (validateEndPoint(baseRequest) &&
+                    remoteAddr.equals(request.getRemoteAddr()) &&
                     remotePort == request.getRemotePort())
                     baseRequest.setHandled(true);
+            }
+
+            private boolean validateEndPoint(Request request) 
+            {
+                HttpConnection con = (HttpConnection)request.getAttribute(HttpConnection.class.getName());
+                EndPoint endPoint = con.getEndPoint();
+                ProxyEndPoint proxyEndPoint = (ProxyEndPoint)endPoint;
+                return Arrays.equals(customE0, proxyEndPoint.getCustomValue(0xE0)) &&
+                       Arrays.equals(customE1, proxyEndPoint.getCustomValue(0xE1)) &&
+                       proxyEndPoint.getCustomValue(0xE2) == null;
             }
         });
 
@@ -141,8 +159,8 @@ public class ProxyProtocolTest
                     // 0x1 : AF_INET    0x1 : STREAM.  Address length is 2*4 + 2*2 = 12 bytes.
                     "11" +
 
-                    // length of remaining header (4+4+2+2+6+3 = 21)
-                    "0015" +
+                    // length of remaining header (4+4+2+2+3+6+5+6 = 32)
+                    "0020" +
 
                     // uint32_t src_addr; uint32_t dst_addr; uint16_t src_port; uint16_t dst_port;
                     "C0A80001" +
@@ -154,7 +172,13 @@ public class ProxyProtocolTest
                     "040000" +
 
                     // NOOP value ABCDEF
-                    "040003ABCDEF";
+                    "040003ABCDEF" +
+
+                    // Custom 0xEO {0x01,0x02}
+                    "E000020102" +
+
+                    // Custom 0xE1 {0xFF,0xFF,0xFF}
+                    "E10003FFFFFF";
 
             String request1 =
                 "GET /1 HTTP/1.1\r\n" +
@@ -193,4 +217,5 @@ public class ProxyProtocolTest
             }
         }
     }
+    
 }

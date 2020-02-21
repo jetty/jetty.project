@@ -49,7 +49,7 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
 {
     public static final String TLS_VERSION = "TLS_VERSION";
     private static final Logger LOG = Log.getLogger(ProxyConnectionFactory.class);
-
+    
     public ProxyConnectionFactory()
     {
         this(null);
@@ -366,9 +366,10 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
         {
             0x0D, 0x0A, 0x0D, 0x0A, 0x00, 0x0D, 0x0A, 0x51, 0x55, 0x49, 0x54, 0x0A
         };
+
         private final String _nextProtocol;
         private int _maxProxyHeader = 1024;
-
+        
         private ProxyV2ConnectionFactory(String nextProtocol)
         {
             super("proxy");
@@ -649,6 +650,13 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                                 }
                                 break;
                             }
+                            // PP2_TYPE_MIN_CUSTOM .. PP2_TYPE_MAX_CUSTOM 
+                            case 0xE0: case 0xE1: case 0xE2: case 0xE3: 
+                            case 0xE4: case 0xE5: case 0xE6: case 0xE7: 
+                            case 0xE8: case 0xE9: case 0xEA: case 0xEB:  
+                            case 0xEC: case 0xED: case 0xEE: case 0xEF: 
+                                proxyEndPoint.setCustomValue(type, value);
+                                break;
                             case 0x01: // PP2_TYPE_ALPN
                             case 0x02: // PP2_TYPE_AUTHORITY
                             case 0x03: // PP2_TYPE_CRC32C
@@ -751,11 +759,15 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
         }
     }
 
-    public static class ProxyEndPoint extends AttributesMap implements EndPoint
+    public static class ProxyEndPoint extends AttributesMap implements EndPoint, EndPoint.Wrapper
     {
+        private static final int PP2_TYPE_MIN_CUSTOM = 0xE0;
+        private static final int PP2_TYPE_MAX_CUSTOM = 0xEF;
+        
         private final EndPoint _endp;
         private final InetSocketAddress _remote;
         private final InetSocketAddress _local;
+        private byte[][] customValues;
 
         public ProxyEndPoint(EndPoint endp, InetSocketAddress remote, InetSocketAddress local)
         {
@@ -764,6 +776,40 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
             _local = local;
         }
 
+        public EndPoint unwrap()
+        {
+            return _endp;
+        }
+        
+        /**
+         * Sets a custom TLV vector.  See section 2.2.7 of the PROXY 
+         * protocol specification. 
+         * 
+         * @param type must be between 0xE0..0xEF inclusive.
+         * @param value the custom value
+         */
+        public synchronized void setCustomValue(int type, byte[] value)
+        {
+            int index = type - PP2_TYPE_MIN_CUSTOM;
+            if (customValues == null) 
+            {
+                customValues = new byte[PP2_TYPE_MAX_CUSTOM - PP2_TYPE_MIN_CUSTOM + 1][];
+            }
+            customValues[index] = value;
+        }
+        
+        /**
+         * Gets a custom TLV vector.  
+         * 
+         * @param type must be between 0xE0..0xEF inclusive.
+         * @return the custom value or null if not set
+         */
+        public synchronized byte[] getCustomValue(int type) 
+        {
+            return customValues == null ? null 
+                : customValues[type - PP2_TYPE_MIN_CUSTOM];
+        }
+ 
         @Override
         public void close(Throwable cause)
         {
