@@ -315,11 +315,11 @@ public class Modules implements Iterable<Module>
 
     private void enable(Set<String> newlyEnabled, Module module, String enabledFrom, boolean transitive)
     {
-        StartLog.debug("enable %s from %s transitive=%b", module, enabledFrom, transitive);
+        StartLog.debug("Enable [%s] from [%s] transitive=%b", module, enabledFrom, transitive);
 
         if (newlyEnabled.contains(module.getName()))
         {
-            StartLog.debug("Cycle at %s", module);
+            StartLog.debug("Already enabled [%s] from %s", module.getName(), module.getEnableSources());
             return;
         }
 
@@ -347,7 +347,7 @@ public class Modules implements Iterable<Module>
         // Enable the  module
         if (module.enable(enabledFrom, transitive))
         {
-            StartLog.debug("enabled %s", module.getName());
+            StartLog.debug("Enabled [%s]", module.getName());
             newlyEnabled.add(module.getName());
 
             // Expand module properties
@@ -368,13 +368,13 @@ public class Modules implements Iterable<Module>
         }
 
         // Process module dependencies (always processed as may be dynamic)
-        StartLog.debug("Enabled module %s depends on %s", module.getName(), module.getDepends());
+        StartLog.debug("Enabled module [%s] depends on %s", module.getName(), module.getDepends());
         for (String dependsOn : module.getDepends())
         {
             // Look for modules that provide that dependency
             Set<Module> providers = getAvailableProviders(dependsOn);
 
-            StartLog.debug("Module %s depends on %s provided by %s", module, dependsOn, providers);
+            StartLog.debug("Module [%s] depends on [%s] provided by %s", module, dependsOn, providers);
 
             // If there are no known providers of the module
             if (providers.isEmpty())
@@ -406,8 +406,6 @@ public class Modules implements Iterable<Module>
                     StartLog.debug("Using [%s] provider as default for [%s]", dftProvider.get(), dependsOn);
                     enable(newlyEnabled, dftProvider.get(), "transitive provider of " + dependsOn + " for " + module.getName(), true);
                 }
-                else if (StartLog.isDebugEnabled())
-                    StartLog.debug("Module %s requires a %s implementation from one of %s", module, dependsOn, providers);
             }
         }
     }
@@ -421,11 +419,15 @@ public class Modules implements Iterable<Module>
         // If more then one provider impl, is there one specified as "default"?
         if (providers.size() > 1)
         {
+            // Was it specified with [provides] "name|default" ?
             String defaultProviderName = _providedDefaults.get(dependsOn);
             if (defaultProviderName != null)
             {
                 return providers.stream().filter(m -> m.getName().equals(defaultProviderName)).findFirst();
             }
+
+            // Or does a module exist with the same name as the [provides] "name"
+            return providers.stream().filter(m -> m.getName().equals(dependsOn)).findFirst();
         }
 
         // No default provider
@@ -436,7 +438,7 @@ public class Modules implements Iterable<Module>
     {
         // Get all available providers 
         Set<Module> providers = _provided.get(name);
-        StartLog.debug("Providers of %s are %s", name, providers);
+        StartLog.debug("Providers of [%s] are %s", name, providers);
         if (providers == null || providers.isEmpty())
             return Collections.emptySet();
 
@@ -471,7 +473,7 @@ public class Modules implements Iterable<Module>
             }
         }
 
-        StartLog.debug("Available providers of %s are %s", name, providers);
+        StartLog.debug("Available providers of [%s] are %s", name, providers);
         return providers;
     }
 
@@ -512,7 +514,7 @@ public class Modules implements Iterable<Module>
                     if (unsatisfied.length() > 0)
                         unsatisfied.append(',');
                     unsatisfied.append(m.getName());
-                    StartLog.error("Module %s requires a module providing %s from one of %s%n", m.getName(), d, providers);
+                    StartLog.error("Module [%s] requires a module providing [%s] from one of %s%n", m.getName(), d, providers);
                 }
             });
         });
