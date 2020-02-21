@@ -53,9 +53,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class IPAccessHandlerTest
 {
-    private static Server _server;
-    private static NetworkConnector _connector;
-    private static IPAccessHandler _handler;
+    private Server _server;
+    private NetworkConnector _connector;
+    private IPAccessHandler _handler;
 
     @BeforeEach
     public void setUp()
@@ -115,9 +115,8 @@ public class IPAccessHandlerTest
         String request = "GET " + uri + " HTTP/1.1\n" + "Host: " + host + "\n\n";
         Socket socket = new Socket("127.0.0.1", _connector.getLocalPort());
         socket.setSoTimeout(5000);
-        try
+        try (OutputStream output = socket.getOutputStream();)
         {
-            OutputStream output = socket.getOutputStream();
             BufferedReader input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
             output.write(request.getBytes(StandardCharsets.UTF_8));
@@ -129,10 +128,6 @@ public class IPAccessHandlerTest
                 "Response", response.getCode()
             };
             assertEquals(code, response.getCode(), Arrays.deepToString(params));
-        }
-        finally
-        {
-            socket.close();
         }
     }
 
@@ -153,9 +148,8 @@ public class IPAccessHandlerTest
         String request = "GET /ctx" + uri + " HTTP/1.1\n" + "Host: " + host + "\n\n";
         Socket socket = new Socket("127.0.0.1", _connector.getLocalPort());
         socket.setSoTimeout(5000);
-        try
+        try (OutputStream output = socket.getOutputStream();)
         {
-            OutputStream output = socket.getOutputStream();
             BufferedReader input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
             output.write(request.getBytes(StandardCharsets.UTF_8));
@@ -167,10 +161,6 @@ public class IPAccessHandlerTest
                 "Response", response.getCode()
             };
             assertEquals(code, response.getCode(), Arrays.deepToString(params));
-        }
-        finally
-        {
-            socket.close();
         }
     }
 

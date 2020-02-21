@@ -101,8 +101,9 @@ import org.eclipse.jetty.util.log.Logger;
  * internet address. Both of these features have been deprecated in the current version.
  *
  * @see InetAccessHandler
- * @deprecated
+ * @deprecated Use @{@link InetAccessHandler}.
  */
+@Deprecated
 public class IPAccessHandler extends HandlerWrapper
 {
     private static final Logger LOG = Log.getLogger(IPAccessHandler.class);
