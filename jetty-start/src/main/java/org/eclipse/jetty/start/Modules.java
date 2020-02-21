@@ -284,7 +284,7 @@ public class Modules implements Iterable<Module>
                     if (defName != null)
                     {
                         Module defaultImpl = get(defName);
-                        defaultImpl.enable("default", true);
+                        defaultImpl.enable("default-provider", true);
                         System.err.printf("###   Default %s!%n", defaultImpl);
                         enabled.add(defaultImpl);
                     }
