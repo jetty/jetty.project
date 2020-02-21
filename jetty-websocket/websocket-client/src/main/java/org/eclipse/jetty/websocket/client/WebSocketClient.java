@@ -427,6 +427,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
      *
      * @return number of milliseconds for timeout of an attempted write operation
      */
+    @Deprecated
     public long getAsyncWriteTimeout()
     {
         return getPolicy().getAsyncWriteTimeout();
