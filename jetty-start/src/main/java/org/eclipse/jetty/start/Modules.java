@@ -216,6 +216,9 @@ public class Modules implements Iterable<Module>
             _names.put(module.getName(), module);
             module.getProvides().forEach(n ->
             {
+                // Syntax can be :
+                // "<name>" - for a simple provider reference
+                // "<name>|default" - for a provider that is also the default implementation
                 String name = n;
                 boolean isDefaultProvider = false;
                 int idx = n.indexOf('|');
@@ -265,36 +268,8 @@ public class Modules implements Iterable<Module>
 
     public List<Module> getEnabled()
     {
-        // Enabled modules
-        List<Module> enabled = new ArrayList<>();
+        List<Module> enabled = _modules.stream().filter(m -> m.isEnabled()).collect(Collectors.toList());
 
-        _modules.stream().filter(m -> m.isEnabled()).forEach(m ->
-        {
-            // Enable and modules that are selected via provider name, but have no selected provider
-            m.getDepends().forEach(d ->
-            {
-                Set<Module> providers = getAvailableProviders(d);
-                System.err.printf("### Module %s depends on %s (impls %s)%n",
-                    m, d, providers.stream().map(Module::getName).collect(Collectors.joining(",")));
-                if (providers.stream().filter(Module::isEnabled).count() == 0)
-                {
-                    System.err.printf("### Depends on %s with no providers enabled!%n", d);
-                    String defName = _providedDefaults.get(d);
-                    System.err.printf("###   Default impl is %s!%n", defName);
-                    if (defName != null)
-                    {
-                        Module defaultImpl = get(defName);
-                        defaultImpl.enable("default-provider", true);
-                        System.err.printf("###   Default %s!%n", defaultImpl);
-                        enabled.add(defaultImpl);
-                    }
-                }
-            });
-
-            enabled.add(m);
-        });
-
-        // Sort them
         TopologicalSort<Module> sort = new TopologicalSort<>();
         for (Module module : enabled)
         {
@@ -424,17 +399,37 @@ public class Modules implements Iterable<Module>
                 providers.stream().filter(m -> m.isEnabled() && !m.equals(module)).forEach(m -> enable(newlyEnabled, m, "transitive provider of " + dependsOn + " for " + module.getName(), true));
             else
             {
-                // Is there an obvious default?
-                Optional<Module> dftProvider = (providers.size() == 1)
-                    ? providers.stream().findFirst()
-                    : providers.stream().filter(m -> m.getName().equals(dependsOn)).findFirst();
+                Optional<Module> dftProvider = findDefaultProvider(providers, dependsOn);
 
                 if (dftProvider.isPresent())
+                {
+                    StartLog.debug("Using [%s] provider as default for [%s]", dftProvider.get(), dependsOn);
                     enable(newlyEnabled, dftProvider.get(), "transitive provider of " + dependsOn + " for " + module.getName(), true);
+                }
                 else if (StartLog.isDebugEnabled())
                     StartLog.debug("Module %s requires a %s implementation from one of %s", module, dependsOn, providers);
             }
         }
+    }
+
+    private Optional<Module> findDefaultProvider(Set<Module> providers, String dependsOn)
+    {
+        // Is it obvious?
+        if (providers.size() == 1)
+            return providers.stream().findFirst();
+
+        // If more then one provider impl, is there one specified as "default"?
+        if (providers.size() > 1)
+        {
+            String defaultProviderName = _providedDefaults.get(dependsOn);
+            if (defaultProviderName != null)
+            {
+                return providers.stream().filter(m -> m.getName().equals(defaultProviderName)).findFirst();
+            }
+        }
+
+        // No default provider
+        return Optional.empty();
     }
 
     private Set<Module> getAvailableProviders(String name)

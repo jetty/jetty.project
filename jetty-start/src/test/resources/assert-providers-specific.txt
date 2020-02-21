@@ -1,0 +1,10 @@
+## The XMLs we expect (order is important)
+XML|${jetty.base}/etc/logging-b.xml
+
+# The LIBs we expect (order is irrelevant)
+
+# The Properties we expect (order is irrelevant)
+PROP|logging.prop=b
+
+# Files / Directories to create
+
