@@ -752,6 +752,7 @@ public class TypeUtil
             return true;
 
         Class<?> c = __unbox.get(type);
-        return arg.getClass() == __unbox.get(type);
+        Class<?> ac = arg.getClass();
+        return ac == __unbox.get(type) || (Number.class.isAssignableFrom(c) && Number.class.isAssignableFrom(ac));
     }
 }
