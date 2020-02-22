@@ -29,6 +29,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.Parameter;
 import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -99,20 +100,41 @@ public class XmlConfiguration
         };
     private static final Iterable<ConfigurationProcessorFactory> __factoryLoader = ServiceLoader.load(ConfigurationProcessorFactory.class);
     private static final XmlParser __parser = initParser();
-    public static final Comparator<Executable> EXECUTABLE_COMPARATOR = (o1, o2) ->
+    public static final Comparator<Executable> EXECUTABLE_COMPARATOR = (e1, e2) ->
     {
-        int p1 = o1.getParameterCount();
-        int p2 = o2.getParameterCount();
-        int compare = Integer.compare(p1, p2);
-        if (compare == 0 && p1 > 0)
+        int count = e1.getParameterCount();
+        int compare = Integer.compare(count, e2.getParameterCount());
+        if (compare == 0 && count > 0)
         {
-            boolean a1 = o1.getParameterTypes()[p1 - 1].isArray();
-            boolean a2 = o2.getParameterTypes()[p2 - 1].isArray();
-            if (a1 && !a2)
+            Parameter[] p1 = e1.getParameters();
+            Parameter[] p2 = e2.getParameters();
+            boolean va1 = p1[count - 1].isVarArgs();
+            boolean va2 = p2[count - 1].isVarArgs();
+            if (va1 && !va2)
                 compare = 1;
-            else if (!a1 && a2)
+            else if (!va1 && va2)
                 compare = -1;
+            else
+            {
+                // Rank by assignability of the arguments
+                // This is only a rough guide that will favour call(String) vs call(Object),
+                // but it will not resolve call(String, Object) vs call (Object, String)
+                for (int i = 0; i < count; i++)
+                {
+                    Class<?> t1 = p1[i].getType();
+                    Class<?> t2 = p2[i].getType();
+                    if (t1 != t2)
+                    {
+                        if (t1.isAssignableFrom(t2))
+                            compare++;
+                        else if (t2.isAssignableFrom(t1))
+                            compare--;
+                    }
+                }
+            }
+            compare = Math.min(1, Math.max(compare, -1));
         }
+
         return compare;
     };
 
@@ -1703,7 +1725,7 @@ public class XmlConfiguration
                 {
                     // Could this be an empty varargs match?
                     int count = executable.getParameterCount();
-                    if (count > 0 && executable.getParameterTypes()[count - 1].isArray())
+                    if (count > 0 && executable.getParameters()[count - 1].isVarArgs())
                     {
                         // There is not a no varArgs alternative so let's try a an empty varArgs match
                         args = asEmptyVarArgs(executable.getParameterTypes()[count - 1]).matchArgsToParameters(executable);
@@ -1734,47 +1756,64 @@ public class XmlConfiguration
                     return new Object[0];
 
                 // If no arg names are specified, keep the arg order
+                Object[] args;
                 if (_names.stream().noneMatch(Objects::nonNull))
-                    return _arguments.toArray(new Object[0]);
-
-                // If we don't have any parameters with names, then no match
-                Annotation[][] parameterAnnotations = executable.getParameterAnnotations();
-                if (parameterAnnotations == null || parameterAnnotations.length == 0)
-                    return null;
-
-                // Find the position of all named parameters from the executable
-                Map<String, Integer> position = new HashMap<>();
-                int p = 0;
-                for (Annotation[] paramAnnotation : parameterAnnotations)
                 {
-                    Integer pos = p++;
-                    Arrays.stream(paramAnnotation)
-                        .filter(Name.class::isInstance)
-                        .map(Name.class::cast)
-                        .findFirst().ifPresent(n -> position.put(n.value(), pos));
+                    args = _arguments.toArray(new Object[0]);
                 }
-
-                List<Object> arguments = new ArrayList<>(_arguments);
-                List<String> names = new ArrayList<>(_names);
-                // Map the actual arguments to the names
-                for (p = 0; p < count; p++)
+                else
                 {
-                    String name = names.get(p);
-                    if (name != null)
+                    // If we don't have any parameters with names, then no match
+                    Annotation[][] parameterAnnotations = executable.getParameterAnnotations();
+                    if (parameterAnnotations == null || parameterAnnotations.length == 0)
+                        return null;
+
+                    // Find the position of all named parameters from the executable
+                    Map<String, Integer> position = new HashMap<>();
+                    int p = 0;
+                    for (Annotation[] paramAnnotation : parameterAnnotations)
                     {
-                        Integer pos = position.get(name);
-                        if (pos == null)
-                            return null;
-                        if (pos != p)
+                        Integer pos = p++;
+                        Arrays.stream(paramAnnotation)
+                            .filter(Name.class::isInstance)
+                            .map(Name.class::cast)
+                            .findFirst().ifPresent(n -> position.put(n.value(), pos));
+                    }
+
+                    List<Object> arguments = new ArrayList<>(_arguments);
+                    List<String> names = new ArrayList<>(_names);
+                    // Map the actual arguments to the names
+                    for (p = 0; p < count; p++)
+                    {
+                        String name = names.get(p);
+                        if (name != null)
                         {
-                            // adjust position of parameter
-                            arguments.add(pos, arguments.remove(p));
-                            names.add(pos, names.remove(p));
-                            p = Math.min(p, pos);
+                            Integer pos = position.get(name);
+                            if (pos == null)
+                                return null;
+                            if (pos != p)
+                            {
+                                // adjust position of parameter
+                                arguments.add(pos, arguments.remove(p));
+                                names.add(pos, names.remove(p));
+                                p = Math.min(p, pos);
+                            }
                         }
                     }
+                    args = arguments.toArray(new Object[0]);
                 }
-                return arguments.toArray(new Object[0]);
+
+                // Check assignable
+                Parameter[] params = executable.getParameters();
+                for (int i = 0; i < args.length; i++)
+                {
+                    if (args[i] != null &&
+                        !params[i].getType().isAssignableFrom(args[i].getClass()) &&
+                        !TypeUtil.isUnboxable(params[i].getType(), args[i]))
+                        return null;
+                }
+
+                return args;
             }
         }
     }

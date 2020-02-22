@@ -24,11 +24,13 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,7 +45,9 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.log.StdErrLog;
 import org.eclipse.jetty.util.resource.PathResource;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -602,6 +606,67 @@ public class XmlConfigurationTest
         assertEquals("arg1", atc.getNested().getFirst(), "nested first parameter not wired correctly");
         assertEquals("arg2", atc.getNested().getSecond(), "nested second parameter not wired correctly");
         assertEquals("arg3", atc.getNested().getThird(), "nested third parameter not wired correctly");
+    }
+
+    private static class TestOrder
+    {
+        public void call()
+        {
+        }
+
+        public void call(Object o)
+        {
+        }
+
+        public void call(String s)
+        {
+        }
+
+        public void call(String... ss)
+        {
+        }
+
+        public void call(String s, String... ss)
+        {
+        }
+    }
+
+    @RepeatedTest(10)
+    public void testMethodOrdering() throws Exception
+    {
+        List<Method> methods = Arrays.stream(TestOrder.class.getMethods()).filter(m -> "call".equals(m.getName())).collect(Collectors.toList());
+        Collections.shuffle(methods);
+        Collections.sort(methods, XmlConfiguration.EXECUTABLE_COMPARATOR);
+        assertThat(methods, Matchers.contains(
+            TestOrder.class.getMethod("call"),
+            TestOrder.class.getMethod("call", String.class),
+            TestOrder.class.getMethod("call", Object.class),
+            TestOrder.class.getMethod("call", String[].class),
+            TestOrder.class.getMethod("call", String.class, String[].class)
+        ));
+    }
+
+    @Test
+    public void testOverloadedCall() throws Exception
+    {
+        XmlConfiguration xmlConfiguration = asXmlConfiguration(
+            "<Configure class=\"org.eclipse.jetty.xml.AnnotatedTestConfiguration\">" +
+                "  <Call name=\"call\">" +
+                "    <Arg type=\"int\">1</Arg>" +
+                "  </Call>" +
+                "  <Call name=\"call\">" +
+                "    <Arg>2</Arg>" +
+                "  </Call>" +
+                "  <Call name=\"call\">" +
+                "    <Arg type=\"Long\">3</Arg>" +
+                "  </Call>" +
+                "</Configure>");
+
+        AnnotatedTestConfiguration atc = (AnnotatedTestConfiguration)xmlConfiguration.configure();
+
+        assertEquals("1", atc.getFirst());
+        assertEquals("2", atc.getSecond());
+        assertEquals("3", atc.getThird());
     }
 
     @Test

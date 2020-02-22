@@ -92,6 +92,21 @@ public class AnnotatedTestConfiguration
         this.third = theRest.length > 1 ? theRest[1] : null;
     }
 
+    public void call(Integer value)
+    {
+        this.first = String.valueOf(value);
+    }
+
+    public void call(String value)
+    {
+        this.second = value;
+    }
+
+    public <E> void call(E value)
+    {
+        this.third = String.valueOf(value);
+    }
+
     public String getFirst()
     {
         return first;
