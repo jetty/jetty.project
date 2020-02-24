@@ -22,18 +22,6 @@
           <instructions></instructions>
         </configuration>
       </plugin>
-      <!--      <plugin>
-              <groupId>org.apache.maven.plugins</groupId>
-              <artifactId>maven-surefire-plugin</artifactId>
-              <configuration>
-                <systemPropertyVariables>
-                  <mavenRepoPath>${settings.localRepository}</mavenRepoPath>
-                </systemPropertyVariables>
-                <argLine>
-                  @{argLine} ${jetty.surefire.argLine} &#45;&#45;add-modules org.slf4j
-                </argLine>
-              </configuration>
-            </plugin>-->
     </plugins>
   </build>
   <dependencies>
