@@ -55,6 +55,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.ArgumentsProvider;
 import org.junit.jupiter.params.provider.ArgumentsSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.xml.sax.SAXException;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -861,32 +862,25 @@ public class XmlConfigurationTest
         assertNull(atc.getThird());
     }
 
-    public static class NumberTypeProvider implements ArgumentsProvider
+    public static List<String> typeTestData()
     {
-        @Override
-        public Stream<? extends Arguments> provideArguments(ExtensionContext context)
-        {
-            return Stream.of(
-                "byte",
-                "int",
-                // "char",
-                "short",
-                "long",
-                "float",
-                "double",
-                "Byte",
-                "Integer",
-                // "Character",
-                "Short",
-                "Long",
-                "Float",
-                "Double"
-            ).map(Arguments::of);
-        }
+        return Arrays.asList(
+            "byte",
+            "int",
+            "short",
+            "long",
+            "float",
+            "double",
+            "Byte",
+            "Integer",
+            "Short",
+            "Long",
+            "Float",
+            "Double");
     }
 
     @ParameterizedTest
-    @ArgumentsSource(NumberTypeProvider.class)
+    @MethodSource("typeTestData")
     public void testCallNumberConversion(String type) throws Exception
     {
         XmlConfiguration xmlConfiguration = asXmlConfiguration(
