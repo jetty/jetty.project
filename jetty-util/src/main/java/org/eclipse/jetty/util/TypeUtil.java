@@ -65,14 +65,14 @@ public class TypeUtil
     static
     {
         Map<Class<?>, Class<?>> unbox = new HashMap<>();
-        unbox.put(int.class, Integer.class);
-        unbox.put(long.class, Long.class);
+        unbox.put(boolean.class, Boolean.class);
         unbox.put(byte.class, Byte.class);
         unbox.put(char.class, Character.class);
+        unbox.put(short.class, Short.class);
+        unbox.put(int.class, Integer.class);
+        unbox.put(long.class, Long.class);
         unbox.put(float.class, Float.class);
         unbox.put(double.class, Double.class);
-        unbox.put(short.class, Long.class);
-        unbox.put(boolean.class, Boolean.class);
         __unbox = Collections.unmodifiableMap(unbox);
     }
 
@@ -751,8 +751,6 @@ public class TypeUtil
         if (arg == null)
             return true;
 
-        Class<?> c = __unbox.get(type);
-        Class<?> ac = arg.getClass();
-        return ac == __unbox.get(type) || (Number.class.isAssignableFrom(c) && Number.class.isAssignableFrom(ac));
+        return __unbox.get(type) == arg.getClass();
     }
 }

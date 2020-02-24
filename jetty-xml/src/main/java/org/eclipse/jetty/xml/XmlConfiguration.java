@@ -117,8 +117,6 @@ public class XmlConfiguration
             else
             {
                 // Rank by assignability of the arguments
-                // This is only a rough guide that will favour call(String) vs call(Object),
-                // but it will not resolve call(String, Object) vs call (Object, String)
                 for (int i = 0; i < count; i++)
                 {
                     Class<?> t1 = p1[i].getType();
@@ -126,9 +124,12 @@ public class XmlConfiguration
                     if (t1 != t2)
                     {
                         if (t1.isAssignableFrom(t2))
-                            compare++;
+                            compare = 1;
                         else if (t2.isAssignableFrom(t1))
-                            compare--;
+                            compare = -1;
+                        else
+                            compare = t1.getName().compareTo(t2.getName());
+                        break;
                     }
                 }
             }
@@ -1803,16 +1804,6 @@ public class XmlConfiguration
                     args = arguments.toArray(new Object[0]);
                 }
 
-                // Check assignable
-                Parameter[] params = executable.getParameters();
-                for (int i = 0; i < args.length; i++)
-                {
-                    if (args[i] != null &&
-                        !params[i].getType().isAssignableFrom(args[i].getClass()) &&
-                        !TypeUtil.isUnboxable(params[i].getType(), args[i]))
-                        return null;
-                }
-
                 return args;
             }
         }
@@ -1835,9 +1826,8 @@ public class XmlConfiguration
             }
         }
 
-        for (int i = 0; i < node.size(); i++)
+        for (Object o : node)
         {
-            Object o = node.get(i);
             if (!(o instanceof XmlParser.Node))
                 continue;
             XmlParser.Node n = (XmlParser.Node)o;

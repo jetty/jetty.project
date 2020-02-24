@@ -614,6 +614,10 @@ public class XmlConfigurationTest
         {
         }
 
+        public void call(int o)
+        {
+        }
+
         public void call(Object o)
         {
         }
@@ -639,6 +643,7 @@ public class XmlConfigurationTest
         Collections.sort(methods, XmlConfiguration.EXECUTABLE_COMPARATOR);
         assertThat(methods, Matchers.contains(
             TestOrder.class.getMethod("call"),
+            TestOrder.class.getMethod("call", int.class),
             TestOrder.class.getMethod("call", String.class),
             TestOrder.class.getMethod("call", Object.class),
             TestOrder.class.getMethod("call", String[].class),
@@ -854,6 +859,45 @@ public class XmlConfigurationTest
         assertEquals("one", atc.getFirst(), "first parameter not wired correctly");
         assertNull(atc.getSecond());
         assertNull(atc.getThird());
+    }
+
+    public static class NumberTypeProvider implements ArgumentsProvider
+    {
+        @Override
+        public Stream<? extends Arguments> provideArguments(ExtensionContext context)
+        {
+            return Stream.of(
+                "byte",
+                "int",
+                // "char",
+                "short",
+                "long",
+                "float",
+                "double",
+                "Byte",
+                "Integer",
+                // "Character",
+                "Short",
+                "Long",
+                "Float",
+                "Double"
+            ).map(Arguments::of);
+        }
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(NumberTypeProvider.class)
+    public void testCallNumberConversion(String type) throws Exception
+    {
+        XmlConfiguration xmlConfiguration = asXmlConfiguration(
+            "<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\">" +
+                " <Call name=\"setNumber\">" +
+                "  <Arg type=\"" + type + "\">42</Arg>" +
+                " </Call>" +
+                "</Configure>");
+
+        TestConfiguration tc = (TestConfiguration)xmlConfiguration.configure();
+        assertEquals(42.0D, tc.number);
     }
 
     @Test
