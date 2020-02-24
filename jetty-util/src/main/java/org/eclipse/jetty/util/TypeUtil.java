@@ -60,22 +60,6 @@ public class TypeUtil
 
     private static final HashMap<String, Class<?>> name2Class = new HashMap<>();
 
-    private static final Map<Class<?>, Class<?>> __unbox;
-
-    static
-    {
-        Map<Class<?>, Class<?>> unbox = new HashMap<>();
-        unbox.put(boolean.class, Boolean.class);
-        unbox.put(byte.class, Byte.class);
-        unbox.put(char.class, Character.class);
-        unbox.put(short.class, Short.class);
-        unbox.put(int.class, Integer.class);
-        unbox.put(long.class, Long.class);
-        unbox.put(float.class, Float.class);
-        unbox.put(double.class, Double.class);
-        __unbox = Collections.unmodifiableMap(unbox);
-    }
-
     static
     {
         name2Class.put("boolean", java.lang.Boolean.TYPE);
@@ -742,15 +726,5 @@ public class TypeUtil
             return MODULE_LOCATION.getModuleLocation(clazz);
         }
         return null;
-    }
-
-    public static boolean isUnboxable(Class<?> type, Object arg)
-    {
-        if (!type.isPrimitive())
-            return false;
-        if (arg == null)
-            return true;
-
-        return __unbox.get(type) == arg.getClass();
     }
 }
