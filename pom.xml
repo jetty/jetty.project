@@ -19,9 +19,9 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <build-support.version>1.4</build-support.version>
     <checkstyle.version>8.20</checkstyle.version>
-    <slf4j.version>1.8.0-beta2</slf4j.version>
-    <log4j2.version>2.11.2</log4j2.version>
-    <logback.version>1.3.0-alpha4</logback.version>
+    <slf4j.version>1.8.0-beta1</slf4j.version>
+    <log4j2.version>2.13.0</log4j2.version>
+    <logback.version>1.3.0-alpha5</logback.version>
     <spring-version>5.1.1.RELEASE</spring-version>
     <jetty-test-policy.version>1.2</jetty-test-policy.version>
     <servlet.api.version>4.0.3</servlet.api.version>
@@ -90,6 +90,7 @@
 
   <modules>
     <module>build-resources</module>
+    <module>jetty-slf4j-impl</module>
     <module>jetty-ant</module>
     <module>jetty-util</module>
     <module>jetty-jmx</module>
@@ -1329,7 +1330,6 @@
                   <copyGenerated>true</copyGenerated>
                   <attachArtifact>false</attachArtifact>
                   <updateDate>true</updateDate>
-                  <versionTagHeader>Tag for release: jetty-${project.version}</versionTagHeader>
                   <filenameExcludes>
                     <filenameExclude>jetty-documentation/.*</filenameExclude>
                     <filenameExclude>examples/.*</filenameExclude>
