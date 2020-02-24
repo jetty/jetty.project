@@ -43,6 +43,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -141,6 +142,11 @@ public class IPAccessHandlerTest
         _server.setHandler(context);
         _server.start();
 
+        white = white.replaceAll("\\|/", "|/ctx/");
+        black = black.replaceAll("\\|/", "|/ctx/");
+
+        Assumptions.assumeFalse(white.endsWith("|"));
+        Assumptions.assumeFalse(black.endsWith("|"));
         _handler.setWhite(white.split(";", -1));
         _handler.setBlack(black.split(";", -1));
         _handler.setWhiteListByPath(byPath);
