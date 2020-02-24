@@ -245,7 +245,7 @@ public abstract class AbstractForker extends AbstractLifeCycle
             int attempts = maxChildStartChecks;
             while (!tokenFile.exists() && attempts > 0)
             {
-                Thread.currentThread().sleep(maxChildStartCheckMs);
+                Thread.sleep(maxChildStartCheckMs);
                 --attempts;
             }
             if (attempts <= 0)
