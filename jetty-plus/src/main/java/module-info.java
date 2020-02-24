@@ -29,6 +29,7 @@ module org.eclipse.jetty.plus
 
     requires org.eclipse.jetty.jndi;
     requires transitive org.eclipse.jetty.webapp;
+    requires org.slf4j;
 
     // Only required if using DataSourceLoginService.
     requires static java.sql;

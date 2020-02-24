@@ -88,6 +88,7 @@ import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
+import org.slf4j.LoggerFactory;
 
 /**
  * ContextHandler.
@@ -190,7 +191,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     private String[] _vhosts; // Host name portion, matching _vconnectors array
     private boolean[] _vhostswildcard;
     private String[] _vconnectors; // connector portion, matching _vhosts array
-    private Logger _logger;
+    private org.slf4j.Logger _logger;
     private boolean _allowNullPathInfo;
     private int _maxFormKeys = Integer.getInteger(MAX_FORM_KEYS_KEY, DEFAULT_MAX_FORM_KEYS);
     private int _maxFormContentSize = Integer.getInteger(MAX_FORM_CONTENT_SIZE_KEY, DEFAULT_MAX_FORM_CONTENT_SIZE);
@@ -734,12 +735,12 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         }
     }
 
-    public Logger getLogger()
+    public org.slf4j.Logger getLogger()
     {
         return _logger;
     }
 
-    public void setLogger(Logger logger)
+    public void setLogger(org.slf4j.Logger logger)
     {
         _logger = logger;
     }
@@ -753,7 +754,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             throw new IllegalStateException("Null contextPath");
 
         if (_logger == null)
-            _logger = Log.getLogger(ContextHandler.class.getName() + getLogNameSuffix());
+            _logger = LoggerFactory.getLogger(ContextHandler.class.getName() + getLogNameSuffix());
 
         ClassLoader oldClassloader = null;
         Thread currentThread = null;

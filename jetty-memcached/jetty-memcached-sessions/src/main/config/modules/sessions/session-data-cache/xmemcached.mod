@@ -8,7 +8,7 @@ session
 
 [depends]
 session-store
-slf4j-api
+logging/slf4j
 
 [files]
 maven://com.googlecode.xmemcached/xmemcached/2.4.5|lib/xmemcached/xmemcached-2.4.5.jar

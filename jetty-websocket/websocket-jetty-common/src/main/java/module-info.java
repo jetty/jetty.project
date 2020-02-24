@@ -26,6 +26,7 @@ module org.eclipse.jetty.websocket.jetty.common
     requires transitive org.eclipse.jetty.websocket.core;
     requires transitive org.eclipse.jetty.websocket.util;
     requires transitive org.eclipse.jetty.websocket.jetty.api;
+    requires org.slf4j;
 
     provides ExtensionConfig.Parser with ExtensionConfigParser;
 }

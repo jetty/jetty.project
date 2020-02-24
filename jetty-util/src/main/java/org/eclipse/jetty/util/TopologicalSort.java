@@ -47,6 +47,8 @@ import java.util.TreeSet;
  */
 public class TopologicalSort<T>
 {
+    // IMPORTANT NOTE: This class cannot use Logging, as this class is used by jetty-start
+
     private final Map<T, Set<T>> _dependencies = new HashMap<>();
 
     /**

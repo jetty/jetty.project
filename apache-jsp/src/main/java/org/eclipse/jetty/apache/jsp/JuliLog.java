@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.apache.jsp;
 
+import org.slf4j.LoggerFactory;
+
 public class JuliLog implements org.apache.juli.logging.Log
 {
     public static org.apache.juli.logging.Log getInstance(String name)
@@ -25,19 +27,16 @@ public class JuliLog implements org.apache.juli.logging.Log
         return new JuliLog(name);
     }
 
-    private final org.eclipse.jetty.util.log.Logger _logger;
-    private final org.eclipse.jetty.util.log.StdErrLog _stdErrLog;
+    private final org.slf4j.Logger _logger;
 
     public JuliLog()
     {
-        _logger = org.eclipse.jetty.util.log.Log.getRootLogger();
-        _stdErrLog = (_logger instanceof org.eclipse.jetty.util.log.StdErrLog) ? (org.eclipse.jetty.util.log.StdErrLog)_logger : null;
+        _logger = LoggerFactory.getLogger("");
     }
 
     public JuliLog(String name)
     {
-        _logger = org.eclipse.jetty.util.log.Log.getLogger(name);
-        _stdErrLog = (_logger instanceof org.eclipse.jetty.util.log.StdErrLog) ? (org.eclipse.jetty.util.log.StdErrLog)_logger : null;
+        _logger = LoggerFactory.getLogger(name);
     }
 
     @Override
@@ -49,31 +48,31 @@ public class JuliLog implements org.apache.juli.logging.Log
     @Override
     public boolean isErrorEnabled()
     {
-        return _stdErrLog == null ? true : _stdErrLog.getLevel() <= org.eclipse.jetty.util.log.StdErrLog.LEVEL_WARN;
+        return _logger.isErrorEnabled();
     }
 
     @Override
     public boolean isFatalEnabled()
     {
-        return _stdErrLog == null ? true : _stdErrLog.getLevel() <= org.eclipse.jetty.util.log.StdErrLog.LEVEL_WARN;
+        return _logger.isErrorEnabled();
     }
 
     @Override
     public boolean isInfoEnabled()
     {
-        return _stdErrLog == null ? true : _stdErrLog.getLevel() <= org.eclipse.jetty.util.log.StdErrLog.LEVEL_INFO;
+        return _logger.isInfoEnabled();
     }
 
     @Override
     public boolean isTraceEnabled()
     {
-        return _stdErrLog == null ? true : _stdErrLog.getLevel() <= org.eclipse.jetty.util.log.StdErrLog.LEVEL_DEBUG;
+        return _logger.isTraceEnabled();
     }
 
     @Override
     public boolean isWarnEnabled()
     {
-        return _stdErrLog == null ? true : _stdErrLog.getLevel() <= org.eclipse.jetty.util.log.StdErrLog.LEVEL_WARN;
+        return _logger.isWarnEnabled();
     }
 
     @Override

@@ -7,11 +7,11 @@ Enables the core Jetty server on the classpath.
 jvm
 ext
 resources
-logging
 
 [depend]
 threadpool
 bytebufferpool
+logging
 
 [lib]
 lib/jetty-servlet-api-4.0.*.jar

@@ -51,9 +51,9 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.util.HttpCookieStore;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>Abstract base class for proxy servlets.</p>
@@ -151,7 +151,7 @@ public abstract class AbstractProxyServlet extends HttpServlet
         catch (Exception x)
         {
             if (_log.isDebugEnabled())
-                _log.debug(x);
+                _log.debug("Failed to stop client", x);
         }
     }
 
@@ -208,7 +208,7 @@ public abstract class AbstractProxyServlet extends HttpServlet
         {
             servletName = getClass().getName() + "." + servletName;
         }
-        return Log.getLogger(servletName);
+        return LoggerFactory.getLogger(servletName);
     }
 
     /**
@@ -692,14 +692,14 @@ public abstract class AbstractProxyServlet extends HttpServlet
         }
         catch (Exception e)
         {
-            _log.ignore(e);
+            _log.trace("IGNORED", e);
             try
             {
                 proxyResponse.sendError(-1);
             }
             catch (Exception e2)
             {
-                _log.ignore(e2);
+                _log.trace("IGNORED", e2);
             }
         }
         finally

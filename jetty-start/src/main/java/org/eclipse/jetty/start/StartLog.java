@@ -44,11 +44,16 @@ public class StartLog
     private static volatile PrintStream logStream = System.err;
     private static final StartLog INSTANCE = new StartLog();
 
+    private static void outLog(String level, String format, Object... args)
+    {
+        out.printf(level + ": " + format + "%n", args);
+    }
+
     public static void debug(String format, Object... args)
     {
         if (INSTANCE.debug)
         {
-            out.printf(format + "%n", args);
+            outLog("DEBUG ", format, args);
         }
     }
 
@@ -64,7 +69,7 @@ public class StartLog
     {
         if (INSTANCE.trace)
         {
-            out.printf("TRACE " + format + "%n", args);
+            outLog("TRACE ", format, args);
         }
     }
 

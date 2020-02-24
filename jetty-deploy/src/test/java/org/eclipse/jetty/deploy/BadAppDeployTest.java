@@ -24,6 +24,7 @@ import java.nio.file.Path;
 import javax.servlet.ServletException;
 
 import org.eclipse.jetty.deploy.providers.WebAppProvider;
+import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
@@ -33,12 +34,11 @@ import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.slf4j.LoggerFactory;
 
 import static java.time.Duration.ofSeconds;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -103,10 +103,9 @@ public class BadAppDeployTest
 
         assertTimeoutPreemptively(ofSeconds(10), () ->
         {
-
-            try (StacklessLogging ignore = new StacklessLogging(Log.getLogger(WebAppContext.class),
-                Log.getLogger(DeploymentManager.class),
-                Log.getLogger("org.eclipse.jetty.server.handler.ContextHandler.badapp")))
+            try (StacklessLogging ignore = new StacklessLogging(LoggerFactory.getLogger(WebAppContext.class),
+                LoggerFactory.getLogger(DeploymentManager.class),
+                LoggerFactory.getLogger("org.eclipse.jetty.server.handler.ContextHandler.badapp")))
             {
                 ServletException cause = assertThrows(ServletException.class, () -> server.start());
                 assertThat(cause.getMessage(), containsString("intentionally"));
@@ -157,9 +156,9 @@ public class BadAppDeployTest
         assertTimeoutPreemptively(ofSeconds(10), () ->
         {
 
-            try (StacklessLogging ignore = new StacklessLogging(Log.getLogger(WebAppContext.class),
-                Log.getLogger(DeploymentManager.class),
-                Log.getLogger("org.eclipse.jetty.server.handler.ContextHandler.badapp")))
+            try (StacklessLogging ignore = new StacklessLogging(LoggerFactory.getLogger(WebAppContext.class),
+                LoggerFactory.getLogger(DeploymentManager.class),
+                LoggerFactory.getLogger("org.eclipse.jetty.server.handler.ContextHandler.badapp")))
             {
                 ServletException cause = assertThrows(ServletException.class, () -> server.start());
                 assertThat(cause.getMessage(), containsString("intentionally"));

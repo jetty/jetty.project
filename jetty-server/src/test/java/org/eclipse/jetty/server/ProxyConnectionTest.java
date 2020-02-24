@@ -24,10 +24,10 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.toolchain.test.Net;
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.log.StacklessLogging;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.params.ParameterizedTest;

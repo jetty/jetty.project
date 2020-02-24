@@ -49,7 +49,6 @@ import org.eclipse.jetty.server.session.DefaultSessionCache;
 import org.eclipse.jetty.server.session.FileSessionDataStore;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.log.StdErrLog;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.webapp.Configurations;
 import org.eclipse.jetty.webapp.MetaInfConfiguration;
@@ -63,8 +62,6 @@ public class TestServer
 
     public static void main(String[] args) throws Exception
     {
-        ((StdErrLog)Log.getLog()).setSource(false);
-
         // TODO don't depend on this file structure
         Path jettyRoot = FileSystems.getDefault().getPath(".").toAbsolutePath().normalize();
         if (!Files.exists(jettyRoot.resolve("VERSION.txt")))

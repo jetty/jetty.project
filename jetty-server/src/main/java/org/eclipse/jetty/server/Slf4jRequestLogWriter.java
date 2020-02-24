@@ -23,7 +23,7 @@ import java.io.IOException;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.eclipse.jetty.util.log.Slf4jLog;
+import org.slf4j.LoggerFactory;
 
 /**
  * Request log writer using a Slf4jLog Logger
@@ -31,7 +31,7 @@ import org.eclipse.jetty.util.log.Slf4jLog;
 @ManagedObject("Slf4j RequestLog Writer")
 public class Slf4jRequestLogWriter extends AbstractLifeCycle implements RequestLog.Writer
 {
-    private Slf4jLog logger;
+    private org.slf4j.Logger logger;
     private String loggerName;
 
     public Slf4jRequestLogWriter()
@@ -65,7 +65,7 @@ public class Slf4jRequestLogWriter extends AbstractLifeCycle implements RequestL
     @Override
     protected synchronized void doStart() throws Exception
     {
-        logger = new Slf4jLog(loggerName);
+        logger = LoggerFactory.getLogger(loggerName);
         super.doStart();
     }
 }
