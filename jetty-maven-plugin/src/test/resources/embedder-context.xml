@@ -3,5 +3,4 @@
 
 <Configure class="org.eclipse.jetty.webapp.WebAppContext">
   <Set name="contextPath">/embedder</Set>
-  <Set name="resourceBase">src/test/resources/embedder</Set>
 </Configure>
