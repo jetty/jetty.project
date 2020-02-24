@@ -457,7 +457,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
         return getEndPoint().flush(output);
     }
 
-    public class DecryptedEndPoint extends AbstractEndPoint
+    public class DecryptedEndPoint extends AbstractEndPoint implements EndPoint.Wrapper
     {
         private final Callback _incompleteWriteCallback = new IncompleteWriteCallback();
         private Throwable _failure;
@@ -469,6 +469,12 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
             super.setIdleTimeout(-1);
         }
 
+        @Override
+        public EndPoint unwrap() 
+        {
+            return getEndPoint();
+        }
+        
         @Override
         public long getIdleTimeout()
         {
@@ -682,7 +688,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                             try
                             {
                                 _underflown = false;
-                                unwrapResult = unwrap(_sslEngine, _encryptedInput, appIn);
+                                unwrapResult = SslConnection.this.unwrap(_sslEngine, _encryptedInput, appIn);
                             }
                             finally
                             {
@@ -1554,5 +1560,6 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                 return String.format("SSL@%h.DEP.writeCallback", SslConnection.this);
             }
         }
+
     }
 }

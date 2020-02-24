@@ -27,6 +27,8 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ReadPendingException;
 import java.nio.channels.WritePendingException;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.Connection;
@@ -366,6 +368,7 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
         {
             0x0D, 0x0A, 0x0D, 0x0A, 0x00, 0x0D, 0x0A, 0x51, 0x55, 0x49, 0x54, 0x0A
         };
+
         private final String _nextProtocol;
         private int _maxProxyHeader = 1024;
 
@@ -545,7 +548,6 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
 
             private void parseBodyAndUpgrade() throws IOException
             {
-                // stop reading when bufferRemainingReserve bytes are remaining in the buffer
                 int nonProxyRemaining = _buffer.remaining() - _length;
                 if (LOG.isDebugEnabled())
                     LOG.debug("Proxy v2 parsing body, length = {}, buffer = {}", _length, BufferUtil.toHexSummary(_buffer));
@@ -609,53 +611,30 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                         if (LOG.isDebugEnabled())
                             LOG.debug(String.format("Proxy v2 T=%x L=%d V=%s for %s", type, length, TypeUtil.toHexString(value), this));
 
-                        switch (type)
+                        // PP2_TYPE_NOOP is only used for byte alignment, skip them.
+                        if (type != ProxyEndPoint.PP2_TYPE_NOOP)
+                            proxyEndPoint.putTLV(type, value);
+
+                        if (type == ProxyEndPoint.PP2_TYPE_SSL)
                         {
-                            case 0x20: // PP2_TYPE_SSL
+                            int client = value[0] & 0xFF;
+                            if (client == ProxyEndPoint.PP2_TYPE_SSL_PP2_CLIENT_SSL)
                             {
-                                int client = value[0] & 0xFF;
-                                switch (client)
+                                int i = 5; // Index of the first sub_tlv, after verify.
+                                while (i < length)
                                 {
-                                    case 0x01: // PP2_CLIENT_SSL
+                                    int subType = value[i++] & 0xFF;
+                                    int subLength = (value[i++] & 0xFF) * 256 + (value[i++] & 0xFF);
+                                    byte[] subValue = new byte[subLength];
+                                    System.arraycopy(value, i, subValue, 0, subLength);
+                                    i += subLength;
+                                    if (subType == ProxyEndPoint.PP2_SUBTYPE_SSL_VERSION)
                                     {
-                                        int i = 5; // Index of the first sub_tlv, after verify.
-                                        while (i < length)
-                                        {
-                                            int subType = value[i++] & 0xFF;
-                                            int subLength = (value[i++] & 0xFF) * 256 + (value[i++] & 0xFF);
-                                            byte[] subValue = new byte[subLength];
-                                            System.arraycopy(value, i, subValue, 0, subLength);
-                                            i += subLength;
-                                            switch (subType)
-                                            {
-                                                case 0x21: // PP2_SUBTYPE_SSL_VERSION
-                                                    String tlsVersion = new String(subValue, StandardCharsets.US_ASCII);
-                                                    proxyEndPoint.setAttribute(TLS_VERSION, tlsVersion);
-                                                    break;
-                                                case 0x22: // PP2_SUBTYPE_SSL_CN
-                                                case 0x23: // PP2_SUBTYPE_SSL_CIPHER
-                                                case 0x24: // PP2_SUBTYPE_SSL_SIG_ALG
-                                                case 0x25: // PP2_SUBTYPE_SSL_KEY_ALG
-                                                default:
-                                                    break;
-                                            }
-                                        }
-                                        break;
+                                        String tlsVersion = new String(subValue, StandardCharsets.US_ASCII);
+                                        proxyEndPoint.setAttribute(TLS_VERSION, tlsVersion);
                                     }
-                                    case 0x02: // PP2_CLIENT_CERT_CONN
-                                    case 0x04: // PP2_CLIENT_CERT_SESS
-                                    default:
-                                        break;
                                 }
-                                break;
                             }
-                            case 0x01: // PP2_TYPE_ALPN
-                            case 0x02: // PP2_TYPE_AUTHORITY
-                            case 0x03: // PP2_TYPE_CRC32C
-                            case 0x04: // PP2_TYPE_NOOP
-                            case 0x30: // PP2_TYPE_NETNS
-                            default:
-                                break;
                         }
                     }
 
@@ -751,71 +730,106 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
         }
     }
 
-    public static class ProxyEndPoint extends AttributesMap implements EndPoint
+    public static class ProxyEndPoint extends AttributesMap implements EndPoint, EndPoint.Wrapper
     {
-        private final EndPoint _endp;
+        private static final int PP2_TYPE_NOOP = 0x04;
+        private static final int PP2_TYPE_SSL = 0x20;
+        private static final int PP2_TYPE_SSL_PP2_CLIENT_SSL = 0x01;
+        private static final int PP2_SUBTYPE_SSL_VERSION = 0x21;
+
+        private final EndPoint _endPoint;
         private final InetSocketAddress _remote;
         private final InetSocketAddress _local;
+        private Map<Integer, byte[]> _tlvs;
 
-        public ProxyEndPoint(EndPoint endp, InetSocketAddress remote, InetSocketAddress local)
+        public ProxyEndPoint(EndPoint endPoint, InetSocketAddress remote, InetSocketAddress local)
         {
-            _endp = endp;
+            _endPoint = endPoint;
             _remote = remote;
             _local = local;
         }
 
+        public EndPoint unwrap()
+        {
+            return _endPoint;
+        }
+        
+        /**
+         * <p>Sets a TLV vector, see section 2.2.7 of the PROXY protocol specification.</p>
+         * 
+         * @param type the TLV type
+         * @param value the TLV value
+         */
+        private void putTLV(int type, byte[] value)
+        {
+            if (_tlvs == null)
+                _tlvs = new HashMap<>();
+            _tlvs.put(type, value);
+        }
+        
+        /**
+         * <p>Gets a TLV vector, see section 2.2.7 of the PROXY protocol specification.</p>
+         *
+         * @param type the TLV type
+         * @return the TLV value or null if not present.
+         */
+        public byte[] getTLV(int type)
+        {
+            return _tlvs != null ? _tlvs.get(type) : null;
+        }
+ 
         @Override
         public void close(Throwable cause)
         {
-            _endp.close(cause);
+            _endPoint.close(cause);
         }
 
         @Override
         public int fill(ByteBuffer buffer) throws IOException
         {
-            return _endp.fill(buffer);
+            return _endPoint.fill(buffer);
         }
 
         @Override
         public void fillInterested(Callback callback) throws ReadPendingException
         {
-            _endp.fillInterested(callback);
+            _endPoint.fillInterested(callback);
         }
 
         @Override
         public boolean flush(ByteBuffer... buffer) throws IOException
         {
-            return _endp.flush(buffer);
+            return _endPoint.flush(buffer);
         }
 
         @Override
         public Connection getConnection()
         {
-            return _endp.getConnection();
+            return _endPoint.getConnection();
         }
 
         @Override
         public void setConnection(Connection connection)
         {
-            _endp.setConnection(connection);
+            _endPoint.setConnection(connection);
         }
 
         @Override
         public long getCreatedTimeStamp()
         {
-            return _endp.getCreatedTimeStamp();
+            return _endPoint.getCreatedTimeStamp();
         }
 
         @Override
         public long getIdleTimeout()
         {
-            return _endp.getIdleTimeout();
+            return _endPoint.getIdleTimeout();
         }
 
         @Override
         public void setIdleTimeout(long idleTimeout)
         {
-            _endp.setIdleTimeout(idleTimeout);
+            _endPoint.setIdleTimeout(idleTimeout);
         }
 
         @Override
@@ -833,49 +847,49 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
         @Override
         public Object getTransport()
         {
-            return _endp.getTransport();
+            return _endPoint.getTransport();
         }
 
         @Override
         public boolean isFillInterested()
         {
-            return _endp.isFillInterested();
+            return _endPoint.isFillInterested();
         }
 
         @Override
         public boolean isInputShutdown()
         {
-            return _endp.isInputShutdown();
+            return _endPoint.isInputShutdown();
         }
 
         @Override
         public boolean isOpen()
         {
-            return _endp.isOpen();
+            return _endPoint.isOpen();
         }
 
         @Override
         public boolean isOutputShutdown()
         {
-            return _endp.isOutputShutdown();
+            return _endPoint.isOutputShutdown();
         }
 
         @Override
         public void onClose(Throwable cause)
         {
-            _endp.onClose(cause);
+            _endPoint.onClose(cause);
         }
 
         @Override
         public void onOpen()
         {
-            _endp.onOpen();
+            _endPoint.onOpen();
         }
 
         @Override
         public void shutdownOutput()
         {
-            _endp.shutdownOutput();
+            _endPoint.shutdownOutput();
         }
 
         @Override
@@ -886,25 +900,25 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                 hashCode(),
                 _remote,
                 _local,
-                _endp);
+                _endPoint);
         }
 
         @Override
         public boolean tryFillInterested(Callback callback)
         {
-            return _endp.tryFillInterested(callback);
+            return _endPoint.tryFillInterested(callback);
         }
 
         @Override
         public void upgrade(Connection newConnection)
         {
-            _endp.upgrade(newConnection);
+            _endPoint.upgrade(newConnection);
         }
 
         @Override
         public void write(Callback callback, ByteBuffer... buffers) throws WritePendingException
         {
-            _endp.write(callback, buffers);
+            _endPoint.write(callback, buffers);
         }
     }
 }
