@@ -113,7 +113,7 @@ public class InfinispanTestSupport
                 .persistence()
                 .addSingleFileStore()
                 .location(_tmpdir.getAbsolutePath())
-                .storeAsBinary()
+                .storeAsBinary().enable()
                 .build();
 
             _manager.defineConfiguration(_name, config);
