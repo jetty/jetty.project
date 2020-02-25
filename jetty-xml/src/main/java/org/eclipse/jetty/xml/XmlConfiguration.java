@@ -126,7 +126,7 @@ public class XmlConfiguration
                         if (compare == 0)
                         {
                             // favour primitive type over reference
-                            compare = Boolean.compare(t2.isPrimitive(), t1.isPrimitive());
+                            compare = Boolean.compare(!t1.isPrimitive(), !t2.isPrimitive());
                             if (compare == 0)
                                 // Use name to avoid non determinant sorting
                                 compare = t1.getName().compareTo(t2.getName());
