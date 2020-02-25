@@ -31,6 +31,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
+import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
@@ -811,7 +812,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
         long start = 0;
         if (LOG.isDebugEnabled())
             start = System.nanoTime();
-        List<ServletContainerInitializer> scis = ServiceLoaderUtil.load(ServletContainerInitializer.class);
+        List<ServletContainerInitializer> scis = ServiceLoaderUtil.load(ServiceLoader.load(ServletContainerInitializer.class));
         if (LOG.isDebugEnabled())
             LOG.debug("Service loaders found in {}ms", (TimeUnit.MILLISECONDS.convert((System.nanoTime() - start), TimeUnit.NANOSECONDS)));
 

@@ -26,6 +26,7 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.ServiceLoader;
 import java.util.Set;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -76,7 +77,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
 
     static
     {
-        __knownAuthenticatorFactories.addAll(ServiceLoaderUtil.load(Authenticator.Factory.class));
+        __knownAuthenticatorFactories.addAll(ServiceLoaderUtil.load(ServiceLoader.load(Authenticator.Factory.class)));
         __knownAuthenticatorFactories.add(new DefaultAuthenticatorFactory());
     }
 

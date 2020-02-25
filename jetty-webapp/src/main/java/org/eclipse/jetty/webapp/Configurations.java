@@ -30,6 +30,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
+import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -74,7 +75,7 @@ public class Configurations extends AbstractList<Configuration> implements Dumpa
     {
         if (__known.isEmpty())
         {
-            List<Configuration> configs = ServiceLoaderUtil.load(Configuration.class);
+            List<Configuration> configs = ServiceLoaderUtil.load(ServiceLoader.load(Configuration.class));
             for (Configuration configuration : configs)
             {
                 if (!configuration.isAvailable())

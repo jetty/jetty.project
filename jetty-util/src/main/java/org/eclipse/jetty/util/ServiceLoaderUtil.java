@@ -36,15 +36,15 @@ public class ServiceLoaderUtil
      * Uses the {@link ServiceLoader} to assemble the service providers into a list.
      * If loading a service type throws {@link ServiceConfigurationError},
      * it warns and continues iterating through the service loader.
-     * @param service The interface or abstract class representing the service.
      * @param <T> The class of the service type.
+     * @param serviceLoader The service loader to use.
      * @return a list of the loaded service providers.
      * @throws ServiceConfigurationError If the number of errors exceeds {@link #MAX_ERRORS}
      */
-    public static <T> List<T> load(Class<T> service)
+    public static <T> List<T> load(ServiceLoader<T> serviceLoader)
     {
         List<T> list = new ArrayList<>();
-        Iterator<T> iterator = ServiceLoader.load(service).iterator();
+        Iterator<T> iterator = serviceLoader.iterator();
 
         int errors = 0;
         while (true)

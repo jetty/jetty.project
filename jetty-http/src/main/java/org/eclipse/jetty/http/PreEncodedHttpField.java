@@ -44,7 +44,7 @@ public class PreEncodedHttpField extends HttpField
     static
     {
         List<HttpFieldPreEncoder> encoders = new ArrayList<>();
-        List<HttpFieldPreEncoder> discoveredEncoders = ServiceLoaderUtil.load(HttpFieldPreEncoder.class);
+        List<HttpFieldPreEncoder> discoveredEncoders = ServiceLoaderUtil.load(ServiceLoader.load(HttpFieldPreEncoder.class));
         for (HttpFieldPreEncoder encoder : discoveredEncoders)
         {
             if (index(encoder.getHttpVersion()) >= 0)
