@@ -28,14 +28,13 @@ import static java.time.ZoneOffset.UTC;
 
 public class StdErrAppenderTest
 {
-    private JettyLogger logger = new JettyLogger("org.eclipse.jetty.logging.LogTest");
-
     @Test
     public void testStdErrLogFormat()
     {
         JettyLoggerConfiguration config = new JettyLoggerConfiguration();
         CapturedStream output = new CapturedStream();
         StdErrAppender appender = new StdErrAppender(config, output, UTC);
+        JettyLogger logger = new JettyLogger("org.eclipse.jetty.logging.LogTest", appender);
 
         String threadName = "tname";
         // Feb 17th, 2020 at 19:11:35 UTC (with 563 millis)
@@ -51,12 +50,14 @@ public class StdErrAppenderTest
     @Disabled("Needs org.slf4j.spi.LocationAwareLogger impl to test")
     public void testPrintSource()
     {
+        String name = "org.eclipse.jetty.logging.LogTest";
         Properties props = new Properties();
-        props.put(logger.getName() + ".SOURCE", "true");
+        props.put(name + ".SOURCE", "true");
 
         JettyLoggerConfiguration config = new JettyLoggerConfiguration(props);
         CapturedStream output = new CapturedStream();
         StdErrAppender appender = new StdErrAppender(config, output, UTC);
+        JettyLogger logger = new JettyLogger(name, appender);
 
         String threadName = "tname";
         // Feb 17th, 2020 at 19:11:35 UTC (with 563 millis)

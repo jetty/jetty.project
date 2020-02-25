@@ -33,17 +33,29 @@ import org.slf4j.helpers.NormalizedParameters;
 
 public class StdErrAppender implements JettyAppender
 {
+    /**
+     * Configuration keys specific to the StdErrAppender
+     */
+    public static final String NAME_CONDENSE_KEY = "org.eclipse.jetty.logging.appender.NAME_CONDENSE";
+    public static final String THREAD_PADDING_KEY = "org.eclipse.jetty.logging.appender.THREAD_PADDING";
+    public static final String MESSAGE_ESCAPE_KEY = "org.eclipse.jetty.logging.appender.MESSAGE_ESCAPE";
+    public static final String STRICT_SLF4J_FORMAT_KEY = "org.eclipse.jetty.logging.appender.STRICT_SLF4J_SYNTAX";
+    public static final String ZONEID_KEY = "org.eclipse.jetty.logging.appender.ZONE_ID";
+
     private static final Object[] EMPTY_ARGS = new Object[0];
     private final DateTimeFormatter timestampFormatter;
     private final ZoneId timezone;
+
     /**
      * True to have output show condensed logger names, false to use the as defined long names.
      */
     private final boolean condensedNames;
+
     /**
      * True to have messages escaped for control characters, false to leave messages alone.
      */
     private final boolean escapedMessages;
+
     /**
      * True to have formatting be based on the strict definition of Slf4J's {@link MessageFormatter},
      * where there has to be a match to the number of <code>{}</code> in the format string
@@ -53,10 +65,16 @@ public class StdErrAppender implements JettyAppender
      * elements in the provided format String.
      */
     private final boolean strictFormat;
+
+    /**
+     * The fixed size of the thread name to use for output
+     */
+    private final int threadPadding;
+
     /**
      * The stream to write logging events to.
      */
-    private final PrintStream stderr;
+    private PrintStream stderr;
 
     public StdErrAppender(JettyLoggerConfiguration config)
     {
@@ -65,20 +83,32 @@ public class StdErrAppender implements JettyAppender
 
     public StdErrAppender(JettyLoggerConfiguration config, PrintStream stream)
     {
-        this(config, stream, TimeZone.getDefault().toZoneId());
+        this(config, stream, null);
     }
 
     public StdErrAppender(JettyLoggerConfiguration config, PrintStream stream, ZoneId zoneId)
     {
         Objects.requireNonNull(config, "JettyLoggerConfiguration");
         this.stderr = Objects.requireNonNull(stream, "PrintStream");
-        this.timezone = zoneId;
+
+        ZoneId tzone = zoneId;
+        if (tzone == null)
+        {
+            tzone = config.getZoneId(ZONEID_KEY);
+            if (tzone == null)
+            {
+                tzone = TimeZone.getDefault().toZoneId();
+            }
+        }
+
+        this.timezone = tzone;
         this.timestampFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
         this.timestampFormatter.withZone(timezone);
 
-        this.condensedNames = config.isNameCondense();
-        this.escapedMessages = config.isEscapeMessages();
-        this.strictFormat = config.isStrictFormatSyntax();
+        this.condensedNames = config.getBoolean(NAME_CONDENSE_KEY, true);
+        this.escapedMessages = config.getBoolean(MESSAGE_ESCAPE_KEY, true);
+        this.strictFormat = config.getBoolean(STRICT_SLF4J_FORMAT_KEY, true);
+        this.threadPadding = config.getInt(THREAD_PADDING_KEY, -1);
     }
 
     @Override
@@ -106,6 +136,36 @@ public class StdErrAppender implements JettyAppender
         StringBuilder builder = new StringBuilder(64);
         format(builder, logger, level, timestamp, threadName, throwable, message, argumentArray);
         stderr.println(builder);
+    }
+
+    public ZoneId getTimeZone()
+    {
+        return timezone;
+    }
+
+    public boolean isCondensedNames()
+    {
+        return condensedNames;
+    }
+
+    public boolean isEscapedMessages()
+    {
+        return escapedMessages;
+    }
+
+    public int getThreadPadding()
+    {
+        return threadPadding;
+    }
+
+    public boolean isStrictFormat()
+    {
+        return strictFormat;
+    }
+
+    public void setStream(PrintStream stream)
+    {
+        this.stderr = stream;
     }
 
     private void format(StringBuilder builder, JettyLogger logger, Level level, long timestamp, String threadName, Throwable throwable, String message, Object... argumentArray)

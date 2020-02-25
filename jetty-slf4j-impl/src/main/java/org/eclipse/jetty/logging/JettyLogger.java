@@ -19,17 +19,15 @@
 package org.eclipse.jetty.logging;
 
 import java.util.Objects;
-import java.util.Queue;
 
 import org.slf4j.Logger;
 import org.slf4j.Marker;
 import org.slf4j.event.Level;
 import org.slf4j.event.LoggingEvent;
-import org.slf4j.event.SubstituteLoggingEvent;
 import org.slf4j.helpers.SubstituteLogger;
 import org.slf4j.spi.LocationAwareLogger;
 
-public class JettyLogger extends SubstituteLogger implements LocationAwareLogger, Logger
+public class JettyLogger implements LocationAwareLogger, Logger
 {
     /**
      * The Level to set if you want this logger to be "OFF"
@@ -42,26 +40,19 @@ public class JettyLogger extends SubstituteLogger implements LocationAwareLogger
 
     private final String name;
     private final String condensedName;
+    private final JettyAppender appender;
     private int level;
-    private JettyAppender appender;
     private boolean hideStacks = false;
 
     /**
      * Entry point for slf4j and it's {@link SubstituteLogger}
      */
     @SuppressWarnings("unused")
-    public JettyLogger(String name, Queue<SubstituteLoggingEvent> eventQueue, boolean createdPostInitialization)
+    public JettyLogger(String name, JettyAppender appender)
     {
-        super(name, eventQueue, createdPostInitialization);
         this.name = name;
         this.condensedName = JettyLoggerFactory.condensePackageString(name);
-    }
-
-    public JettyLogger(String name)
-    {
-        super(name, null, false);
-        this.name = name;
-        this.condensedName = JettyLoggerFactory.condensePackageString(name);
+        this.appender = appender;
     }
 
     @Override
@@ -261,6 +252,9 @@ public class JettyLogger extends SubstituteLogger implements LocationAwareLogger
         return appender;
     }
 
+    /**
+     * Entry point for {@link LocationAwareLogger}
+     */
     @Override
     public void log(Marker marker, String fqcn, int levelInt, String message, Object[] argArray, Throwable throwable)
     {
@@ -272,17 +266,17 @@ public class JettyLogger extends SubstituteLogger implements LocationAwareLogger
         }
     }
 
-    @Override
+    /**
+     * Dynamic (via Reflection) entry point for {@link SubstituteLogger} usage.
+     *
+     * @param event the logging event
+     */
+    @SuppressWarnings("unused")
     public void log(LoggingEvent event)
     {
         // TODO: do we want to support org.sfl4j.Marker?
         // TODO: do we want to support org.sfl4j.even.KeyValuePair?
         getAppender().emit(this, event.getLevel(), event.getTimeStamp(), event.getThreadName(), event.getThrowable(), event.getMessage(), event.getArgumentArray());
-    }
-
-    public void setAppender(JettyAppender appender)
-    {
-        this.appender = appender;
     }
 
     public String getCondensedName()

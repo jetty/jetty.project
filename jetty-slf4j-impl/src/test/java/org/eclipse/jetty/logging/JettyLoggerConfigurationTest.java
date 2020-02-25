@@ -33,19 +33,18 @@ public class JettyLoggerConfigurationTest
     public void testConfig()
     {
         Properties props = new Properties();
-        props.setProperty(JettyLoggerConfiguration.SOURCE_KEY, "true");
-        props.setProperty(JettyLoggerConfiguration.MESSAGE_ESCAPE_KEY, "false");
-        props.setProperty(JettyLoggerConfiguration.NAME_CONDENSE_KEY, "false");
-        props.setProperty(JettyLoggerConfiguration.THREAD_PADDING_KEY, "10");
+        props.setProperty(StdErrAppender.MESSAGE_ESCAPE_KEY, "false");
+        props.setProperty(StdErrAppender.NAME_CONDENSE_KEY, "false");
+        props.setProperty(StdErrAppender.THREAD_PADDING_KEY, "10");
         props.setProperty("com.mortbay.LEVEL", "WARN");
         props.setProperty("com.mortbay.STACKS", "false");
 
         JettyLoggerConfiguration config = new JettyLoggerConfiguration(props);
+        StdErrAppender appender = new StdErrAppender(config);
 
-        assertTrue(config.isSource());
-        assertFalse(config.isEscapeMessages());
-        assertFalse(config.isNameCondense());
-        assertEquals(config.getThreadPadding(), 10);
+        assertFalse(appender.isEscapedMessages());
+        assertFalse(appender.isCondensedNames());
+        assertEquals(appender.getThreadPadding(), 10);
 
         int level = config.getLevel("com.mortbay");
         assertEquals(Level.WARN.toInt(), level);

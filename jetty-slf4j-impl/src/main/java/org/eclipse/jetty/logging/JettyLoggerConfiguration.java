@@ -23,8 +23,10 @@ import java.io.InputStream;
 import java.net.URL;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
+import java.time.ZoneId;
 import java.util.Locale;
 import java.util.Properties;
+import java.util.TimeZone;
 import java.util.function.Function;
 
 import org.slf4j.event.Level;
@@ -47,12 +49,6 @@ import org.slf4j.event.Level;
  */
 public class JettyLoggerConfiguration
 {
-    public static final String NAME_CONDENSE_KEY = "org.eclipse.jetty.logging.NAME_CONDENSE";
-    public static final String THREAD_PADDING_KEY = "org.eclipse.jetty.logging.THREAD_PADDING";
-    public static final String SOURCE_KEY = "org.eclipse.jetty.logging.SOURCE";
-    public static final String MESSAGE_ESCAPE_KEY = "org.eclipse.jetty.logging.MESSAGE_ESCAPE";
-    public static final String STRICT_SLF4J_FORMAT_KEY = "org.eclipse.jetty.logging.STRICT_SLF4J_SYNTAX";
-
     protected static final int DEFAULT_LEVEL = Level.INFO.toInt();
     private static final boolean DEFAULT_HIDE_STACKS = false;
 
@@ -60,11 +56,6 @@ public class JettyLoggerConfiguration
     private static final String SUFFIX_STACKS = ".STACKS";
 
     private final Properties properties = new Properties();
-    private boolean nameCondense = true;
-    private int threadPadding = 0;
-    private boolean source = false;
-    private boolean escapeMessages = true;
-    private boolean strictFormatSyntax = true;
 
     /**
      * Default JettyLogger configuration (empty)
@@ -170,34 +161,13 @@ public class JettyLoggerConfiguration
         return DEFAULT_LEVEL;
     }
 
-    public int getThreadPadding()
+    public ZoneId getZoneId(String key)
     {
-        return threadPadding;
-    }
+        String zoneIdStr = properties.getProperty(key);
+        if (zoneIdStr == null)
+            return null;
 
-    public boolean isEscapeMessages()
-    {
-        return escapeMessages;
-    }
-
-    public boolean isNameCondense()
-    {
-        return nameCondense;
-    }
-
-    public boolean isSource()
-    {
-        return source;
-    }
-
-    public void setSource(boolean source)
-    {
-        this.source = source;
-    }
-
-    public boolean isStrictFormatSyntax()
-    {
-        return strictFormatSyntax;
+        return TimeZone.getTimeZone(zoneIdStr).toZoneId();
     }
 
     /**
@@ -323,12 +293,6 @@ public class JettyLoggerConfiguration
                     properties.setProperty(name, val);
             }
         }
-
-        nameCondense = getBoolean(NAME_CONDENSE_KEY, nameCondense);
-        threadPadding = getInt(THREAD_PADDING_KEY, threadPadding);
-        source = getBoolean(SOURCE_KEY, source);
-        escapeMessages = getBoolean(MESSAGE_ESCAPE_KEY, escapeMessages);
-        strictFormatSyntax = getBoolean(STRICT_SLF4J_FORMAT_KEY, strictFormatSyntax);
     }
 
     private Properties readProperties(ClassLoader loader, String resourceName)

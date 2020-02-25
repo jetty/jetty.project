@@ -68,11 +68,11 @@ public class JettyLoggerFactory implements ILoggerFactory
 
         loggerMap = new ConcurrentHashMap<>();
 
-        rootLogger = new JettyLogger(ROOT_LOGGER_NAME);
-        loggerMap.put(ROOT_LOGGER_NAME, rootLogger);
+        StdErrAppender appender = new StdErrAppender(configuration);
 
+        rootLogger = new JettyLogger(ROOT_LOGGER_NAME, appender);
+        loggerMap.put(ROOT_LOGGER_NAME, rootLogger);
         rootLogger.setLevel(configuration.getLevel(ROOT_LOGGER_NAME));
-        rootLogger.setAppender(new StdErrAppender(configuration));
         return this;
     }
 
@@ -136,10 +136,10 @@ public class JettyLoggerFactory implements ILoggerFactory
     private JettyLogger createLogger(String name)
     {
         // or is that handled by slf4j itself?
-        JettyLogger jettyLogger = new JettyLogger(name);
+        JettyAppender appender = rootLogger.getAppender();
+        JettyLogger jettyLogger = new JettyLogger(name, appender);
         jettyLogger.setLevel(this.configuration.getLevel(name));
         jettyLogger.setHideStacks(this.configuration.getHideStacks(name));
-        jettyLogger.setAppender(rootLogger.getAppender());
         return jettyLogger;
     }
 
