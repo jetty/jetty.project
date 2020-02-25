@@ -102,34 +102,39 @@ public class XmlConfiguration
     private static final XmlParser __parser = initParser();
     public static final Comparator<Executable> EXECUTABLE_COMPARATOR = (e1, e2) ->
     {
+        // Favour methods with less parameters
         int count = e1.getParameterCount();
         int compare = Integer.compare(count, e2.getParameterCount());
         if (compare == 0 && count > 0)
         {
             Parameter[] p1 = e1.getParameters();
             Parameter[] p2 = e2.getParameters();
-            boolean va1 = p1[count - 1].isVarArgs();
-            boolean va2 = p2[count - 1].isVarArgs();
-            if (va1 && !va2)
-                compare = 1;
-            else if (!va1 && va2)
-                compare = -1;
-            else
+
+            // Favour methods without varargs
+            compare = Boolean.compare(p1[count - 1].isVarArgs(), p2[count - 1].isVarArgs());
+            if (compare == 0)
             {
-                // Rank by assignability of the arguments
+                // Rank by differences in the parameters
                 for (int i = 0; i < count; i++)
                 {
                     Class<?> t1 = p1[i].getType();
                     Class<?> t2 = p2[i].getType();
                     if (t1 != t2)
                     {
-                        if (t1.isAssignableFrom(t2))
-                            compare = 1;
-                        else if (t2.isAssignableFrom(t1))
-                            compare = -1;
-                        else
-                            compare = t1.getName().compareTo(t2.getName());
-                        break;
+                        // Favour derived type over base type
+                        compare = Boolean.compare(t1.isAssignableFrom(t2), t2.isAssignableFrom(t1));
+                        if (compare == 0)
+                        {
+                            // favour primitive type over reference
+                            compare = Boolean.compare(t2.isPrimitive(), t1.isPrimitive());
+                            if (compare == 0)
+                                // Use name to avoid non determinant sorting
+                                compare = t1.getName().compareTo(t2.getName());
+                        }
+
+                        // break on the first different parameter (should always be true)
+                        if (compare != 0)
+                            break;
                     }
                 }
             }
