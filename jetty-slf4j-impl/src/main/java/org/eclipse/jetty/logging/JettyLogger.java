@@ -19,13 +19,17 @@
 package org.eclipse.jetty.logging;
 
 import java.util.Objects;
+import java.util.Queue;
 
 import org.slf4j.Logger;
 import org.slf4j.Marker;
 import org.slf4j.event.Level;
+import org.slf4j.event.LoggingEvent;
+import org.slf4j.event.SubstituteLoggingEvent;
+import org.slf4j.helpers.SubstituteLogger;
 import org.slf4j.spi.LocationAwareLogger;
 
-public class JettyLogger implements LocationAwareLogger, Logger
+public class JettyLogger extends SubstituteLogger implements LocationAwareLogger, Logger
 {
     /**
      * The Level to set if you want this logger to be "OFF"
@@ -42,8 +46,20 @@ public class JettyLogger implements LocationAwareLogger, Logger
     private JettyAppender appender;
     private boolean hideStacks = false;
 
+    /**
+     * Entry point for slf4j and it's {@link SubstituteLogger}
+     */
+    @SuppressWarnings("unused")
+    public JettyLogger(String name, Queue<SubstituteLoggingEvent> eventQueue, boolean createdPostInitialization)
+    {
+        super(name, eventQueue, createdPostInitialization);
+        this.name = name;
+        this.condensedName = JettyLoggerFactory.condensePackageString(name);
+    }
+
     public JettyLogger(String name)
     {
+        super(name, null, false);
         this.name = name;
         this.condensedName = JettyLoggerFactory.condensePackageString(name);
     }
@@ -53,7 +69,9 @@ public class JettyLogger implements LocationAwareLogger, Logger
     {
         if (isDebugEnabled())
         {
-            getAppender().emit(asEvent(Level.DEBUG, msg));
+            long timestamp = System.currentTimeMillis();
+            String threadName = Thread.currentThread().getName();
+            getAppender().emit(this, Level.DEBUG, timestamp, threadName, msg);
         }
     }
 
@@ -62,7 +80,9 @@ public class JettyLogger implements LocationAwareLogger, Logger
     {
         if (isDebugEnabled())
         {
-            getAppender().emit(asEvent(Level.DEBUG, format, arg));
+            long timestamp = System.currentTimeMillis();
+            String threadName = Thread.currentThread().getName();
+            getAppender().emit(this, Level.DEBUG, timestamp, threadName, format, arg);
         }
     }
 
@@ -71,7 +91,9 @@ public class JettyLogger implements LocationAwareLogger, Logger
     {
         if (isDebugEnabled())
         {
-            getAppender().emit(asEvent(Level.DEBUG, format, arg1, arg2));
+            long timestamp = System.currentTimeMillis();
+            String threadName = Thread.currentThread().getName();
+            getAppender().emit(this, Level.DEBUG, timestamp, threadName, format, arg1, arg2);
         }
     }
 
@@ -80,7 +102,9 @@ public class JettyLogger implements LocationAwareLogger, Logger
     {
         if (isDebugEnabled())
         {
-            getAppender().emit(asEvent(Level.DEBUG, format, arguments));
+            long timestamp = System.currentTimeMillis();
+            String threadName = Thread.currentThread().getName();
+            getAppender().emit(this, Level.DEBUG, timestamp, threadName, format, arguments);
         }
     }
 
@@ -89,7 +113,9 @@ public class JettyLogger implements LocationAwareLogger, Logger
     {
         if (isDebugEnabled())
         {
-            getAppender().emit(asEvent(Level.DEBUG, msg, throwable));
+            long timestamp = System.currentTimeMillis();
+            String threadName = Thread.currentThread().getName();
+            getAppender().emit(this, Level.INFO, timestamp, threadName, throwable, msg);
         }
     }
 
@@ -102,30 +128,35 @@ public class JettyLogger implements LocationAwareLogger, Logger
     @Override
     public void debug(Marker marker, String msg)
     {
+        // TODO: do we want to support org.sfl4j.Marker?
         debug(msg);
     }
 
     @Override
     public void debug(Marker marker, String format, Object arg)
     {
+        // TODO: do we want to support org.sfl4j.Marker?
         debug(format, arg);
     }
 
     @Override
     public void debug(Marker marker, String format, Object arg1, Object arg2)
     {
+        // TODO: do we want to support org.sfl4j.Marker?
         debug(format, arg1, arg2);
     }
 
     @Override
     public void debug(Marker marker, String format, Object... arguments)
     {
+        // TODO: do we want to support org.sfl4j.Marker?
         debug(format, arguments);
     }
 
     @Override
     public void debug(Marker marker, String msg, Throwable t)
     {
+        // TODO: do we want to support org.sfl4j.Marker?
         debug(msg, t);
     }
 
@@ -134,7 +165,9 @@ public class JettyLogger implements LocationAwareLogger, Logger
     {
         if (isErrorEnabled())
         {
-            getAppender().emit(asEvent(Level.ERROR, msg));
+            long timestamp = System.currentTimeMillis();
+            String threadName = Thread.currentThread().getName();
+            getAppender().emit(this, Level.ERROR, timestamp, threadName, msg);
         }
     }
 
@@ -143,7 +176,9 @@ public class JettyLogger implements LocationAwareLogger, Logger
     {
         if (isErrorEnabled())
         {
-            getAppender().emit(asEvent(Level.ERROR, format, arg));
+            long timestamp = System.currentTimeMillis();
+            String threadName = Thread.currentThread().getName();
+            getAppender().emit(this, Level.ERROR, timestamp, threadName, format, arg);
         }
     }
 
@@ -152,7 +187,9 @@ public class JettyLogger implements LocationAwareLogger, Logger
     {
         if (isErrorEnabled())
         {
-            getAppender().emit(asEvent(Level.ERROR, format, arg1, arg2));
+            long timestamp = System.currentTimeMillis();
+            String threadName = Thread.currentThread().getName();
+            getAppender().emit(this, Level.ERROR, timestamp, threadName, format, arg1, arg2);
         }
     }
 
@@ -161,7 +198,9 @@ public class JettyLogger implements LocationAwareLogger, Logger
     {
         if (isErrorEnabled())
         {
-            getAppender().emit(asEvent(Level.ERROR, format, arguments));
+            long timestamp = System.currentTimeMillis();
+            String threadName = Thread.currentThread().getName();
+            getAppender().emit(this, Level.ERROR, timestamp, threadName, format, arguments);
         }
     }
 
@@ -170,7 +209,9 @@ public class JettyLogger implements LocationAwareLogger, Logger
     {
         if (isErrorEnabled())
         {
-            getAppender().emit(asEvent(Level.ERROR, msg, throwable));
+            long timestamp = System.currentTimeMillis();
+            String threadName = Thread.currentThread().getName();
+            getAppender().emit(this, Level.ERROR, timestamp, threadName, throwable, msg);
         }
     }
 
@@ -183,30 +224,35 @@ public class JettyLogger implements LocationAwareLogger, Logger
     @Override
     public void error(Marker marker, String msg)
     {
+        // TODO: do we want to support org.sfl4j.Marker?
         error(msg);
     }
 
     @Override
     public void error(Marker marker, String format, Object arg)
     {
+        // TODO: do we want to support org.sfl4j.Marker?
         error(format, arg);
     }
 
     @Override
     public void error(Marker marker, String format, Object arg1, Object arg2)
     {
+        // TODO: do we want to support org.sfl4j.Marker?
         error(format, arg1, arg2);
     }
 
     @Override
     public void error(Marker marker, String format, Object... arguments)
     {
+        // TODO: do we want to support org.sfl4j.Marker?
         error(format, arguments);
     }
 
     @Override
     public void error(Marker marker, String msg, Throwable t)
     {
+        // TODO: do we want to support org.sfl4j.Marker?
         error(msg, t);
     }
 
@@ -220,8 +266,18 @@ public class JettyLogger implements LocationAwareLogger, Logger
     {
         if (this.level <= levelInt)
         {
-            getAppender().emit(asEvent(intToLevel(levelInt), message, throwable, argArray));
+            long timestamp = System.currentTimeMillis();
+            String threadName = Thread.currentThread().getName();
+            getAppender().emit(this, intToLevel(levelInt), timestamp, threadName, throwable, message, argArray);
         }
+    }
+
+    @Override
+    public void log(LoggingEvent event)
+    {
+        // TODO: do we want to support org.sfl4j.Marker?
+        // TODO: do we want to support org.sfl4j.even.KeyValuePair?
+        getAppender().emit(this, event.getLevel(), event.getTimeStamp(), event.getThreadName(), event.getThrowable(), event.getMessage(), event.getArgumentArray());
     }
 
     public void setAppender(JettyAppender appender)
@@ -265,7 +321,9 @@ public class JettyLogger implements LocationAwareLogger, Logger
     {
         if (isInfoEnabled())
         {
-            getAppender().emit(asEvent(Level.INFO, msg));
+            long timestamp = System.currentTimeMillis();
+            String threadName = Thread.currentThread().getName();
+            getAppender().emit(this, Level.INFO, timestamp, threadName, msg);
         }
     }
 
@@ -274,7 +332,9 @@ public class JettyLogger implements LocationAwareLogger, Logger
     {
         if (isInfoEnabled())
         {
-            getAppender().emit(asEvent(Level.INFO, format, arg));
+            long timestamp = System.currentTimeMillis();
+            String threadName = Thread.currentThread().getName();
+            getAppender().emit(this, Level.INFO, timestamp, threadName, format, arg);
         }
     }
 
@@ -283,7 +343,9 @@ public class JettyLogger implements LocationAwareLogger, Logger
     {
         if (isInfoEnabled())
         {
-            getAppender().emit(asEvent(Level.INFO, format, arg1, arg2));
+            long timestamp = System.currentTimeMillis();
+            String threadName = Thread.currentThread().getName();
+            getAppender().emit(this, Level.INFO, timestamp, threadName, format, arg1, arg2);
         }
     }
 
@@ -292,7 +354,9 @@ public class JettyLogger implements LocationAwareLogger, Logger
     {
         if (isInfoEnabled())
         {
-            getAppender().emit(asEvent(Level.INFO, format, arguments));
+            long timestamp = System.currentTimeMillis();
+            String threadName = Thread.currentThread().getName();
+            getAppender().emit(this, Level.INFO, timestamp, threadName, format, arguments);
         }
     }
 
@@ -301,7 +365,9 @@ public class JettyLogger implements LocationAwareLogger, Logger
     {
         if (isInfoEnabled())
         {
-            getAppender().emit(asEvent(Level.INFO, msg, throwable));
+            long timestamp = System.currentTimeMillis();
+            String threadName = Thread.currentThread().getName();
+            getAppender().emit(this, Level.INFO, timestamp, threadName, throwable, msg);
         }
     }
 
@@ -314,30 +380,35 @@ public class JettyLogger implements LocationAwareLogger, Logger
     @Override
     public void info(Marker marker, String msg)
     {
+        // TODO: do we want to support org.sfl4j.Marker?
         info(msg);
     }
 
     @Override
     public void info(Marker marker, String format, Object arg)
     {
+        // TODO: do we want to support org.sfl4j.Marker?
         info(format, arg);
     }
 
     @Override
     public void info(Marker marker, String format, Object arg1, Object arg2)
     {
+        // TODO: do we want to support org.sfl4j.Marker?
         info(format, arg1, arg2);
     }
 
     @Override
     public void info(Marker marker, String format, Object... arguments)
     {
+        // TODO: do we want to support org.sfl4j.Marker?
         info(format, arguments);
     }
 
     @Override
     public void info(Marker marker, String msg, Throwable t)
     {
+        // TODO: do we want to support org.sfl4j.Marker?
         info(msg, t);
     }
 
@@ -386,7 +457,9 @@ public class JettyLogger implements LocationAwareLogger, Logger
     {
         if (isTraceEnabled())
         {
-            getAppender().emit(asEvent(Level.TRACE, msg));
+            long timestamp = System.currentTimeMillis();
+            String threadName = Thread.currentThread().getName();
+            getAppender().emit(this, Level.TRACE, timestamp, threadName, msg);
         }
     }
 
@@ -395,7 +468,9 @@ public class JettyLogger implements LocationAwareLogger, Logger
     {
         if (isTraceEnabled())
         {
-            getAppender().emit(asEvent(Level.TRACE, format, arg));
+            long timestamp = System.currentTimeMillis();
+            String threadName = Thread.currentThread().getName();
+            getAppender().emit(this, Level.TRACE, timestamp, threadName, format, arg);
         }
     }
 
@@ -404,7 +479,9 @@ public class JettyLogger implements LocationAwareLogger, Logger
     {
         if (isTraceEnabled())
         {
-            getAppender().emit(asEvent(Level.TRACE, format, arg1, arg2));
+            long timestamp = System.currentTimeMillis();
+            String threadName = Thread.currentThread().getName();
+            getAppender().emit(this, Level.TRACE, timestamp, threadName, format, arg1, arg2);
         }
     }
 
@@ -413,7 +490,9 @@ public class JettyLogger implements LocationAwareLogger, Logger
     {
         if (isTraceEnabled())
         {
-            getAppender().emit(asEvent(Level.TRACE, format, arguments));
+            long timestamp = System.currentTimeMillis();
+            String threadName = Thread.currentThread().getName();
+            getAppender().emit(this, Level.TRACE, timestamp, threadName, format, arguments);
         }
     }
 
@@ -422,7 +501,9 @@ public class JettyLogger implements LocationAwareLogger, Logger
     {
         if (isTraceEnabled())
         {
-            getAppender().emit(asEvent(Level.TRACE, msg, throwable));
+            long timestamp = System.currentTimeMillis();
+            String threadName = Thread.currentThread().getName();
+            getAppender().emit(this, Level.TRACE, timestamp, threadName, throwable, msg);
         }
     }
 
@@ -435,30 +516,35 @@ public class JettyLogger implements LocationAwareLogger, Logger
     @Override
     public void trace(Marker marker, String msg)
     {
+        // TODO: do we want to support org.sfl4j.Marker?
         trace(msg);
     }
 
     @Override
     public void trace(Marker marker, String format, Object arg)
     {
+        // TODO: do we want to support org.sfl4j.Marker?
         trace(format, arg);
     }
 
     @Override
     public void trace(Marker marker, String format, Object arg1, Object arg2)
     {
+        // TODO: do we want to support org.sfl4j.Marker?
         trace(format, arg1, arg2);
     }
 
     @Override
     public void trace(Marker marker, String format, Object... argArray)
     {
+        // TODO: do we want to support org.sfl4j.Marker?
         trace(format, argArray);
     }
 
     @Override
     public void trace(Marker marker, String msg, Throwable t)
     {
+        // TODO: do we want to support org.sfl4j.Marker?
         trace(msg, t);
     }
 
@@ -467,7 +553,9 @@ public class JettyLogger implements LocationAwareLogger, Logger
     {
         if (isWarnEnabled())
         {
-            getAppender().emit(asEvent(Level.WARN, msg));
+            long timestamp = System.currentTimeMillis();
+            String threadName = Thread.currentThread().getName();
+            getAppender().emit(this, Level.WARN, timestamp, threadName, msg);
         }
     }
 
@@ -476,7 +564,9 @@ public class JettyLogger implements LocationAwareLogger, Logger
     {
         if (isWarnEnabled())
         {
-            getAppender().emit(asEvent(Level.WARN, format, arg));
+            long timestamp = System.currentTimeMillis();
+            String threadName = Thread.currentThread().getName();
+            getAppender().emit(this, Level.WARN, timestamp, threadName, format, arg);
         }
     }
 
@@ -485,7 +575,9 @@ public class JettyLogger implements LocationAwareLogger, Logger
     {
         if (isWarnEnabled())
         {
-            getAppender().emit(asEvent(Level.WARN, format, arguments));
+            long timestamp = System.currentTimeMillis();
+            String threadName = Thread.currentThread().getName();
+            getAppender().emit(this, Level.WARN, timestamp, threadName, format, arguments);
         }
     }
 
@@ -494,7 +586,9 @@ public class JettyLogger implements LocationAwareLogger, Logger
     {
         if (isWarnEnabled())
         {
-            getAppender().emit(asEvent(Level.WARN, format, arg1, arg2));
+            long timestamp = System.currentTimeMillis();
+            String threadName = Thread.currentThread().getName();
+            getAppender().emit(this, Level.WARN, timestamp, threadName, format, arg1, arg2);
         }
     }
 
@@ -503,7 +597,9 @@ public class JettyLogger implements LocationAwareLogger, Logger
     {
         if (isWarnEnabled())
         {
-            getAppender().emit(asEvent(Level.WARN, msg, throwable));
+            long timestamp = System.currentTimeMillis();
+            String threadName = Thread.currentThread().getName();
+            getAppender().emit(this, Level.WARN, timestamp, threadName, throwable, msg);
         }
     }
 
@@ -516,30 +612,35 @@ public class JettyLogger implements LocationAwareLogger, Logger
     @Override
     public void warn(Marker marker, String msg)
     {
+        // TODO: do we want to support org.sfl4j.Marker?
         warn(msg);
     }
 
     @Override
     public void warn(Marker marker, String format, Object arg)
     {
+        // TODO: do we want to support org.sfl4j.Marker?
         warn(format, arg);
     }
 
     @Override
     public void warn(Marker marker, String format, Object arg1, Object arg2)
     {
+        // TODO: do we want to support org.sfl4j.Marker?
         warn(format, arg1, arg2);
     }
 
     @Override
     public void warn(Marker marker, String format, Object... arguments)
     {
+        // TODO: do we want to support org.sfl4j.Marker?
         warn(format, arguments);
     }
 
     @Override
     public void warn(Marker marker, String msg, Throwable t)
     {
+        // TODO: do we want to support org.sfl4j.Marker?
         warn(msg, t);
     }
 
@@ -586,78 +687,5 @@ public class JettyLogger implements LocationAwareLogger, Logger
         sb.append(':').append(name);
         sb.append(":LEVEL=").append(levelToString(level));
         return sb.toString();
-    }
-
-    private JettyLoggingEvent asEvent(Level level, String msg)
-    {
-        String threadName = Thread.currentThread().getName();
-        long timestamp = System.currentTimeMillis();
-        return new JettyLoggingEvent(this, level, threadName, timestamp, msg, null);
-    }
-
-    private JettyLoggingEvent asEvent(Level level, String format, Object arg)
-    {
-        String threadName = Thread.currentThread().getName();
-        long timestamp = System.currentTimeMillis();
-        if (arg instanceof Throwable)
-        {
-            return new JettyLoggingEvent(this, level, threadName, timestamp, format, (Throwable)arg);
-        }
-        else
-        {
-            return new JettyLoggingEvent(this, level, threadName, timestamp, format, null, arg);
-        }
-    }
-
-    private JettyLoggingEvent asEvent(Level level, String format, Object arg1, Object arg2)
-    {
-        String threadName = Thread.currentThread().getName();
-        long timestamp = System.currentTimeMillis();
-        if (arg2 instanceof Throwable)
-        {
-            return new JettyLoggingEvent(this, level, threadName, timestamp, format, (Throwable)arg2, arg1);
-        }
-        else
-        {
-            return new JettyLoggingEvent(this, level, threadName, timestamp, format, null, arg1, arg2);
-        }
-    }
-
-    private JettyLoggingEvent asEvent(Level level, String format, Throwable cause, Object... args)
-    {
-        String threadName = Thread.currentThread().getName();
-        long timestamp = System.currentTimeMillis();
-        return new JettyLoggingEvent(this, level, threadName, timestamp, format, cause, args);
-    }
-
-    private JettyLoggingEvent asEvent(Level level, String format, Object... args)
-    {
-        String threadName = Thread.currentThread().getName();
-        long timestamp = System.currentTimeMillis();
-        if (args.length > 0)
-        {
-            int argsLen = args.length;
-            if (args[argsLen - 1] instanceof Throwable)
-            {
-                // Final arg is a Throwable
-                Throwable cause = (Throwable)args[argsLen - 1];
-                return new JettyLoggingEvent(this, level, threadName, timestamp, format, cause, args);
-            }
-            else
-            {
-                return new JettyLoggingEvent(this, level, threadName, timestamp, format, null, args);
-            }
-        }
-        else
-        {
-            return new JettyLoggingEvent(this, level, threadName, timestamp, format, null);
-        }
-    }
-
-    private JettyLoggingEvent asEvent(Level level, String msg, Throwable throwable)
-    {
-        String threadName = Thread.currentThread().getName();
-        long timestamp = System.currentTimeMillis();
-        return new JettyLoggingEvent(this, level, threadName, timestamp, msg, throwable);
     }
 }

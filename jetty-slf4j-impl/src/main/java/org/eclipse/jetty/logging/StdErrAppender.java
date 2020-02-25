@@ -29,9 +29,11 @@ import java.util.TimeZone;
 import org.slf4j.event.Level;
 import org.slf4j.helpers.FormattingTuple;
 import org.slf4j.helpers.MessageFormatter;
+import org.slf4j.helpers.NormalizedParameters;
 
 public class StdErrAppender implements JettyAppender
 {
+    private static final Object[] EMPTY_ARGS = new Object[0];
     private final DateTimeFormatter timestampFormatter;
     private final ZoneId timezone;
     /**
@@ -80,36 +82,57 @@ public class StdErrAppender implements JettyAppender
     }
 
     @Override
-    public void emit(JettyLoggingEvent event)
+    public void emit(JettyLogger logger, Level level, long timestamp, String threadName, String message)
+    {
+        emit(logger, level, timestamp, threadName, null, message, EMPTY_ARGS);
+    }
+
+    @Override
+    public void emit(JettyLogger logger, Level level, long timestamp, String threadName, Throwable throwable, String message)
+    {
+        emit(logger, level, timestamp, threadName, throwable, message, EMPTY_ARGS);
+    }
+
+    @Override
+    public void emit(JettyLogger logger, Level level, long timestamp, String threadName, String message, Object... argumentArray)
+    {
+        Throwable cause = NormalizedParameters.getThrowableCandidate(argumentArray);
+        emit(logger, level, timestamp, threadName, cause, message, argumentArray);
+    }
+
+    @Override
+    public void emit(JettyLogger logger, Level level, long timestamp, String threadName, Throwable throwable, String message, Object... argumentArray)
     {
         StringBuilder builder = new StringBuilder(64);
-        format(builder, event);
+        format(builder, logger, level, timestamp, threadName, throwable, message, argumentArray);
         stderr.println(builder);
     }
 
-    private void format(StringBuilder builder, JettyLoggingEvent event)
+    private void format(StringBuilder builder, JettyLogger logger, Level level, long timestamp, String threadName, Throwable throwable, String message, Object... argumentArray)
     {
+        Throwable cause = throwable;
+
         // Timestamp
-        ZonedDateTime tsInstant = Instant.ofEpochMilli(event.getTimeStamp()).atZone(timezone);
+        ZonedDateTime tsInstant = Instant.ofEpochMilli(timestamp).atZone(timezone);
         timestampFormatter.formatTo(tsInstant, builder);
 
         // Level
-        builder.append(':').append(renderedLevel(event.getLevel()));
+        builder.append(':').append(renderedLevel(level));
 
         // Logger Name
         builder.append(':');
         if (condensedNames)
         {
-            builder.append(event.getCondensedName());
+            builder.append(logger.getCondensedName());
         }
         else
         {
-            builder.append(event.getLoggerName());
+            builder.append(logger.getName());
         }
 
         // Thread Name
         builder.append(':');
-        builder.append(event.getThreadName()); // TODO: support TAG_PAD configuration
+        builder.append(threadName); // TODO: support TAG_PAD configuration
         builder.append(':');
 
         // Message
@@ -117,22 +140,19 @@ public class StdErrAppender implements JettyAppender
 
         if (strictFormat)
         {
-            FormattingTuple ft = MessageFormatter.arrayFormat(event.getMessage(), event.getArgumentArray());
+            FormattingTuple ft = MessageFormatter.arrayFormat(message, argumentArray);
             appendEscaped(builder, ft.getMessage());
+            if (cause == null)
+            {
+                cause = ft.getThrowable();
+            }
         }
         else
         {
-            // TODO: this should really be removed, as it violates the slf4j API contract
+            // TODO: this should really be removed, as it violates the slf4j API contract for throwables and such
             StringBuilder msg = new StringBuilder();
-            Object[] args = event.getArgumentArray();
-            if (event.getMessage() == null)
-            {
-                msg.append("{} ".repeat(args.length));
-            }
-            else
-            {
-                msg.append(event.getMessage());
-            }
+            Object[] args = argumentArray == null ? EMPTY_ARGS : argumentArray;
+            msg.append(Objects.requireNonNullElseGet(message, () -> "{} ".repeat(args.length)));
             String braces = "{}";
             int start = 0;
             for (Object arg : args)
@@ -142,7 +162,8 @@ public class StdErrAppender implements JettyAppender
                 {
                     appendEscaped(builder, msg.substring(start));
                     builder.append(" ");
-                    builder.append(arg);
+                    if (arg != null)
+                        builder.append(arg);
                     start = msg.length();
                 }
                 else
@@ -156,16 +177,15 @@ public class StdErrAppender implements JettyAppender
         }
 
         // Throwable
-        Throwable throwable = event.getThrowable();
-        if (throwable != null)
+        if (cause != null)
         {
-            if (event.isHideStacks())
+            if (logger.isHideStacks())
             {
-                builder.append(": ").append(throwable);
+                builder.append(": ").append(cause);
             }
             else
             {
-                appendCause(builder, throwable, "");
+                appendCause(builder, cause, "");
             }
         }
     }

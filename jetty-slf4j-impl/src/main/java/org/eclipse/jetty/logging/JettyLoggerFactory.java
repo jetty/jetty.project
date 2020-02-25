@@ -54,7 +54,6 @@ public class JettyLoggerFactory implements ILoggerFactory
     private static JettyLoggerFactory instance;
 
     private static final String ROOT_LOGGER_NAME = "";
-    private boolean initialized = false;
     private JettyLoggerConfiguration configuration;
     private JettyLogger rootLogger;
     private ConcurrentMap<String, JettyLogger> loggerMap;
@@ -74,17 +73,7 @@ public class JettyLoggerFactory implements ILoggerFactory
 
         rootLogger.setLevel(configuration.getLevel(ROOT_LOGGER_NAME));
         rootLogger.setAppender(new StdErrAppender(configuration));
-
-        initialized = true;
         return this;
-    }
-
-    private void assertInitialized()
-    {
-        if (!initialized)
-        {
-            throw new IllegalStateException(this.getClass().getSimpleName() + " is not initialized yet");
-        }
     }
 
     /**
@@ -95,20 +84,12 @@ public class JettyLoggerFactory implements ILoggerFactory
      */
     public JettyLogger getJettyLogger(String name)
     {
-        assertInitialized();
-
         if (name.equals(ROOT_LOGGER_NAME))
         {
             return getRootLogger();
         }
 
-        JettyLogger jettyLogger = loggerMap.get(name);
-        if (jettyLogger == null)
-        {
-            jettyLogger = createLogger(name);
-            loggerMap.putIfAbsent(name, jettyLogger);
-        }
-        return jettyLogger;
+        return loggerMap.computeIfAbsent(name, this::createLogger);
     }
 
     /**
@@ -147,26 +128,8 @@ public class JettyLoggerFactory implements ILoggerFactory
         }
     }
 
-    public JettyLogger getConfiguredJettyLogger(Class<?> clazz)
-    {
-        return getConfiguredJettyLogger(clazz.getName());
-    }
-
-    public JettyLogger getConfiguredJettyLogger(String name)
-    {
-        assertInitialized();
-
-        if (name.equals(ROOT_LOGGER_NAME))
-        {
-            return getRootLogger();
-        }
-        return loggerMap.get(name);
-    }
-
     public JettyLogger getRootLogger()
     {
-        assertInitialized();
-
         return rootLogger;
     }
 

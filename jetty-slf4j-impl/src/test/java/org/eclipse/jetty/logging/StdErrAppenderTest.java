@@ -41,8 +41,7 @@ public class StdErrAppenderTest
         // Feb 17th, 2020 at 19:11:35 UTC (with 563 millis)
         long timestamp = 1581966695563L;
 
-        JettyLoggingEvent event = new JettyLoggingEvent(logger, Level.INFO, threadName, timestamp, "testing:{},{}", null, "test", "format1");
-        appender.emit(event);
+        appender.emit(logger, Level.INFO, timestamp, threadName, "testing:{},{}", "test", "format1");
 
         System.err.println(output);
         output.assertContains("2020-02-17 19:11:35.563:INFO:oejl.LogTest:tname: testing:test,format1");
@@ -63,8 +62,7 @@ public class StdErrAppenderTest
         // Feb 17th, 2020 at 19:11:35 UTC (with 563 millis)
         long timestamp = 1581966695563L;
 
-        JettyLoggingEvent event = new JettyLoggingEvent(logger, Level.DEBUG, threadName, timestamp, "Show me the source!", null);
-        appender.emit(event);
+        appender.emit(logger, Level.INFO, timestamp, threadName, "Show me the source!");
 
         System.err.println(output);
         output.assertContains(".StdErrxAppenderTest#testPrintSource(StdErrAppenderTest.java:");
