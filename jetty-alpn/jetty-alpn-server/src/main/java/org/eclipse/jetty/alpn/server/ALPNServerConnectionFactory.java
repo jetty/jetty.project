@@ -29,7 +29,7 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ssl.ALPNProcessor.Server;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.NegotiatingServerConnectionFactory;
-import org.eclipse.jetty.util.ServiceLoaderUtil;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -51,7 +51,7 @@ public class ALPNServerConnectionFactory extends NegotiatingServerConnectionFact
 
         IllegalStateException failure = new IllegalStateException("No Server ALPNProcessors!");
         // Use a for loop on iterator so load exceptions can be caught and ignored
-        for (Server processor : ServiceLoaderUtil.load(ServiceLoader.load(Server.class)))
+        for (Server processor : TypeUtil.loadAll(ServiceLoader.load(Server.class)))
         {
             try
             {

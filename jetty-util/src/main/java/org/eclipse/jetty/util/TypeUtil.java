@@ -42,6 +42,8 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
+import java.util.ServiceConfigurationError;
+import java.util.ServiceLoader;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -63,6 +65,7 @@ public class TypeUtil
     public static final int LF = '\n';
 
     private static final HashMap<String, Class<?>> name2Class = new HashMap<>();
+    private static final int MAX_ERRORS = 1000;
 
     static
     {
@@ -750,5 +753,72 @@ public class TypeUtil
                 return i1.hasNext() ? i1.next() : i2.next();
             }
         };
+    }
+
+    /**
+     * Uses the {@link ServiceLoader} to assemble the service providers into a list.
+     * If loading a service type throws {@link ServiceConfigurationError},
+     * it warns and continues iterating through the service loader.
+     * @param <T> The class of the service type.
+     * @param serviceLoader The service loader to use.
+     * @return a list of the loaded service providers.
+     * @throws ServiceConfigurationError If the number of errors exceeds {@link #MAX_ERRORS}
+     */
+    public static <T> List<T> loadAll(ServiceLoader<T> serviceLoader)
+    {
+        List<T> list = new ArrayList<>();
+        Iterator<T> iterator = serviceLoader.iterator();
+
+        int errors = 0;
+        while (true)
+        {
+            try
+            {
+                if (!iterator.hasNext())
+                    break;
+                list.add(iterator.next());
+            }
+            catch (ServiceConfigurationError e)
+            {
+                LOG.warn(e);
+                if (++errors >= MAX_ERRORS)
+                    throw e;
+            }
+        }
+
+        return list;
+    }
+
+    /**
+     * Uses the {@link ServiceLoader} to get the first availible service provider.
+     * If loading a service type throws {@link ServiceConfigurationError},
+     * it warns and continues iterating through the service loader until one is found.
+     * @param <T> The class of the service type.
+     * @param serviceLoader The service loader to use.
+     * @return an instance of a service provider, or null if none could be found.
+     * @throws ServiceConfigurationError If the number of errors exceeds {@link #MAX_ERRORS}
+     */
+    public static <T> T loadFirst(ServiceLoader<T> serviceLoader)
+    {
+        Iterator<T> iterator = serviceLoader.iterator();
+
+        int errors = 0;
+        while (true)
+        {
+            try
+            {
+                if (!iterator.hasNext())
+                    break;
+                return iterator.next();
+            }
+            catch (ServiceConfigurationError e)
+            {
+                LOG.warn(e);
+                if (++errors >= MAX_ERRORS)
+                    throw e;
+            }
+        }
+
+        return null;
     }
 }

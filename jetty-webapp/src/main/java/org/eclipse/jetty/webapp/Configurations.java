@@ -36,8 +36,8 @@ import java.util.stream.Collectors;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Loader;
-import org.eclipse.jetty.util.ServiceLoaderUtil;
 import org.eclipse.jetty.util.TopologicalSort;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
@@ -75,7 +75,7 @@ public class Configurations extends AbstractList<Configuration> implements Dumpa
     {
         if (__known.isEmpty())
         {
-            List<Configuration> configs = ServiceLoaderUtil.load(ServiceLoader.load(Configuration.class));
+            List<Configuration> configs = TypeUtil.loadAll(ServiceLoader.load(Configuration.class));
             for (Configuration configuration : configs)
             {
                 if (!configuration.isAvailable())

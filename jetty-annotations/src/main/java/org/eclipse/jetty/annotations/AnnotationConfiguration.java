@@ -48,7 +48,6 @@ import org.eclipse.jetty.plus.webapp.PlusConfiguration;
 import org.eclipse.jetty.util.JavaVersion;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.ProcessorUtils;
-import org.eclipse.jetty.util.ServiceLoaderUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -812,7 +811,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
         long start = 0;
         if (LOG.isDebugEnabled())
             start = System.nanoTime();
-        List<ServletContainerInitializer> scis = ServiceLoaderUtil.load(ServiceLoader.load(ServletContainerInitializer.class));
+        List<ServletContainerInitializer> scis = TypeUtil.loadAll(ServiceLoader.load(ServletContainerInitializer.class));
         if (LOG.isDebugEnabled())
             LOG.debug("Service loaders found in {}ms", (TimeUnit.MILLISECONDS.convert((System.nanoTime() - start), TimeUnit.NANOSECONDS)));
 

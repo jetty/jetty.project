@@ -23,7 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.ServiceLoader;
 
-import org.eclipse.jetty.util.ServiceLoaderUtil;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -44,7 +44,7 @@ public class PreEncodedHttpField extends HttpField
     static
     {
         List<HttpFieldPreEncoder> encoders = new ArrayList<>();
-        List<HttpFieldPreEncoder> discoveredEncoders = ServiceLoaderUtil.load(ServiceLoader.load(HttpFieldPreEncoder.class));
+        List<HttpFieldPreEncoder> discoveredEncoders = TypeUtil.loadAll(ServiceLoader.load(HttpFieldPreEncoder.class));
         for (HttpFieldPreEncoder encoder : discoveredEncoders)
         {
             if (index(encoder.getHttpVersion()) >= 0)
