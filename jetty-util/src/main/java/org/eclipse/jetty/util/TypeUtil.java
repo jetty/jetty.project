@@ -44,6 +44,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.ServiceConfigurationError;
 import java.util.ServiceLoader;
+import java.util.function.Predicate;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -790,7 +791,7 @@ public class TypeUtil
     }
 
     /**
-     * Uses the {@link ServiceLoader} to get the first availible service provider.
+     * Uses the {@link ServiceLoader} to get the first available service provider.
      * If loading a service type throws {@link ServiceConfigurationError},
      * it warns and continues iterating through the service loader until one is found.
      * @param <T> The class of the service type.
@@ -799,6 +800,21 @@ public class TypeUtil
      * @throws ServiceConfigurationError If the number of errors exceeds {@link #MAX_ERRORS}
      */
     public static <T> T loadFirst(ServiceLoader<T> serviceLoader)
+    {
+        return loadFirst(serviceLoader, t -> true);
+    }
+
+    /**
+     * Uses the {@link ServiceLoader} to get the first service provider to match the provided predicate.
+     * If loading a service type throws {@link ServiceConfigurationError},
+     * it warns and continues iterating through the service loader until one is found.
+     * @param <T> The class of the service type.
+     * @param serviceLoader The service loader to use.
+     * @param predicate The predicate used to match a service provider.
+     * @return an instance of a service provider, or null if none could be found.
+     * @throws ServiceConfigurationError If the number of errors exceeds {@link #MAX_ERRORS}
+     */
+    public static <T> T loadFirst(ServiceLoader<T> serviceLoader, Predicate<T> predicate)
     {
         Iterator<T> iterator = serviceLoader.iterator();
 
@@ -809,7 +825,10 @@ public class TypeUtil
             {
                 if (!iterator.hasNext())
                     break;
-                return iterator.next();
+
+                T t = iterator.next();
+                if (predicate.test(t))
+                    return t;
             }
             catch (ServiceConfigurationError e)
             {
