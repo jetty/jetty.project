@@ -42,8 +42,9 @@ import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -53,12 +54,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class IPAccessHandlerTest
 {
-    private static Server _server;
-    private static NetworkConnector _connector;
-    private static IPAccessHandler _handler;
+    private Server _server;
+    private NetworkConnector _connector;
+    private IPAccessHandler _handler;
 
-    @BeforeAll
-    public static void setUp()
+    @BeforeEach
+    public void setUp()
         throws Exception
     {
         _server = new Server();
@@ -66,21 +67,35 @@ public class IPAccessHandlerTest
         _server.setConnectors(new Connector[]{_connector});
 
         _handler = new IPAccessHandler();
-        _handler.setHandler(new AbstractHandler()
+        _handler.setHandler(new ScopedHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void doScope(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                try
+                {
+                    baseRequest.setServletPath(baseRequest.getPathInfo());
+                    baseRequest.setPathInfo(null);
+                    super.doScope(target, baseRequest, request, response);
+                }
+                finally
+                {
+                    baseRequest.setPathInfo(baseRequest.getServletPath());
+                    baseRequest.setServletPath(null);
+                }
+            }
+
+            @Override
+            public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 baseRequest.setHandled(true);
                 response.setStatus(HttpStatus.OK_200);
             }
         });
-        _server.setHandler(_handler);
-        _server.start();
     }
 
-    @AfterAll
-    public static void tearDown()
+    @AfterEach
+    public void tearDown()
         throws Exception
     {
         _server.stop();
@@ -91,6 +106,9 @@ public class IPAccessHandlerTest
     public void testHandler(String white, String black, String host, String uri, String code, boolean byPath)
         throws Exception
     {
+        _server.setHandler(_handler);
+        _server.start();
+
         _handler.setWhite(white.split(";", -1));
         _handler.setBlack(black.split(";", -1));
         _handler.setWhiteListByPath(byPath);
@@ -98,9 +116,8 @@ public class IPAccessHandlerTest
         String request = "GET " + uri + " HTTP/1.1\n" + "Host: " + host + "\n\n";
         Socket socket = new Socket("127.0.0.1", _connector.getLocalPort());
         socket.setSoTimeout(5000);
-        try
+        try (OutputStream output = socket.getOutputStream();)
         {
-            OutputStream output = socket.getOutputStream();
             BufferedReader input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
             output.write(request.getBytes(StandardCharsets.UTF_8));
@@ -113,9 +130,43 @@ public class IPAccessHandlerTest
             };
             assertEquals(code, response.getCode(), Arrays.deepToString(params));
         }
-        finally
+    }
+
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testContext(String white, String black, String host, String uri, String code, boolean byPath)
+        throws Exception
+    {
+        ContextHandler context = new ContextHandler(_server, "/ctx");
+        context.setHandler(_handler);
+        _server.setHandler(context);
+        _server.start();
+
+        white = white.replaceAll("\\|/", "|/ctx/");
+        black = black.replaceAll("\\|/", "|/ctx/");
+
+        Assumptions.assumeFalse(white.endsWith("|"));
+        Assumptions.assumeFalse(black.endsWith("|"));
+        _handler.setWhite(white.split(";", -1));
+        _handler.setBlack(black.split(";", -1));
+        _handler.setWhiteListByPath(byPath);
+
+        String request = "GET /ctx" + uri + " HTTP/1.1\n" + "Host: " + host + "\n\n";
+        Socket socket = new Socket("127.0.0.1", _connector.getLocalPort());
+        socket.setSoTimeout(5000);
+        try (OutputStream output = socket.getOutputStream();)
         {
-            socket.close();
+            BufferedReader input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+
+            output.write(request.getBytes(StandardCharsets.UTF_8));
+            output.flush();
+
+            Response response = readResponse(input);
+            Object[] params = new Object[]{
+                "Request WBHUC", white, black, host, uri, code,
+                "Response", response.getCode()
+            };
+            assertEquals(code, response.getCode(), Arrays.deepToString(params));
         }
     }
 
