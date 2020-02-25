@@ -31,6 +31,7 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.IPAddressMap;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -107,8 +108,8 @@ public class IPAccessHandler extends HandlerWrapper
 {
     private static final Logger LOG = Log.getLogger(IPAccessHandler.class);
     // true means nodefault match
-    PathMap<IPAddressMap<Boolean>> _white = new PathMap<IPAddressMap<Boolean>>(true);
-    PathMap<IPAddressMap<Boolean>> _black = new PathMap<IPAddressMap<Boolean>>(true);
+    PathMap<IPAddressMap<Boolean>> _white = new PathMap<>(true);
+    PathMap<IPAddressMap<Boolean>> _black = new PathMap<>(true);
     boolean _whiteListByPath = false;
 
     /**
@@ -241,17 +242,16 @@ public class IPAccessHandler extends HandlerWrapper
 
             if (addr.endsWith("."))
                 deprecated = true;
-            if (path != null && (path.startsWith("|") || path.startsWith("/*.")))
+            if (path.startsWith("|") || path.startsWith("/*."))
                 path = path.substring(1);
 
             IPAddressMap<Boolean> addrMap = patternMap.get(path);
             if (addrMap == null)
             {
-                addrMap = new IPAddressMap<Boolean>();
+                addrMap = new IPAddressMap<>();
                 patternMap.put(path, addrMap);
             }
-            if (addr != null && !"".equals(addr))
-                // MUST NOT BE null
+            if (!StringUtil.isEmpty(addr))
                 addrMap.put(addr, true);
 
             if (deprecated)

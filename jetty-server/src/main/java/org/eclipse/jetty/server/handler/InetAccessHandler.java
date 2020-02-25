@@ -21,12 +21,17 @@ package org.eclipse.jetty.server.handler;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.util.List;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.pathmap.MappedResource;
+import org.eclipse.jetty.http.pathmap.PathMappings;
+import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.IncludeExclude;
@@ -54,7 +59,8 @@ public class InetAccessHandler extends HandlerWrapper
     private static final Logger LOG = Log.getLogger(InetAccessHandler.class);
 
     private final IncludeExcludeSet<String, InetAddress> _addrs = new IncludeExcludeSet<>(InetAddressSet.class);
-    private final IncludeExclude<String> _names = new IncludeExclude<>();
+    private final PathMappings<IncludeExcludeSet<String, InetAddress>> _pathMappings = new PathMappings<>();
+    private final IncludeExclude<String> _connectorNames = new IncludeExclude<>();
 
     /**
      * Clears all the includes, excludes, included connector names and excluded
@@ -63,18 +69,33 @@ public class InetAccessHandler extends HandlerWrapper
     public void clear()
     {
         _addrs.clear();
-        _names.clear();
+        _connectorNames.clear();
+        _pathMappings.reset();
     }
 
     /**
-     * Includes an InetAddress pattern
+     * Includes an InetAddress pattern with an optional URI mapping for the pattern.
+     *
+     * The InetAddress pattern is separated from the URI pattern using the "|" (pipe)
+     * character. URI patterns follow the servlet specification for simple * prefix and
+     * suffix wild cards (e.g. /, /foo, /foo/bar, /foo/bar/*, *.baz).
      *
      * @param pattern InetAddress pattern to include
      * @see InetAddressSet
      */
     public void include(String pattern)
     {
-        _addrs.include(pattern);
+        int index = pattern.indexOf('|');
+        if (index > 0)
+        {
+            String addr = pattern.substring(0, index);
+            String path = pattern.substring(index + 1);
+            ensureMapping(path).include(addr);
+        }
+        else
+        {
+            _addrs.include(pattern);
+        }
     }
 
     /**
@@ -89,14 +110,28 @@ public class InetAccessHandler extends HandlerWrapper
     }
 
     /**
-     * Excludes an InetAddress pattern
+     * Excludes an InetAddress pattern with an optional URI mapping for the pattern.
+
+     * The InetAddress pattern is separated from the URI pattern using the "|" (pipe)
+     * character. URI patterns follow the servlet specification for simple * prefix and
+     * suffix wild cards (e.g. /, /foo, /foo/bar, /foo/bar/*, *.baz).
      *
      * @param pattern InetAddress pattern to exclude
      * @see InetAddressSet
      */
     public void exclude(String pattern)
     {
-        _addrs.exclude(pattern);
+        int index = pattern.indexOf('|');
+        if (index > 0)
+        {
+            String addr = pattern.substring(0, index);
+            String path = pattern.substring(index + 1);
+            ensureMapping(path).exclude(addr);
+        }
+        else
+        {
+            _addrs.exclude(pattern);
+        }
     }
 
     /**
@@ -117,7 +152,7 @@ public class InetAccessHandler extends HandlerWrapper
      */
     public void includeConnector(String name)
     {
-        _names.include(name);
+        _connectorNames.include(name);
     }
 
     /**
@@ -127,7 +162,7 @@ public class InetAccessHandler extends HandlerWrapper
      */
     public void excludeConnector(String name)
     {
-        _names.exclude(name);
+        _connectorNames.exclude(name);
     }
 
     /**
@@ -137,7 +172,7 @@ public class InetAccessHandler extends HandlerWrapper
      */
     public void includeConnectors(String... names)
     {
-        _names.include(names);
+        _connectorNames.include(names);
     }
 
     /**
@@ -147,7 +182,7 @@ public class InetAccessHandler extends HandlerWrapper
      */
     public void excludeConnectors(String... names)
     {
-        _names.exclude(names);
+        _connectorNames.exclude(names);
     }
 
     /**
@@ -187,17 +222,69 @@ public class InetAccessHandler extends HandlerWrapper
      */
     protected boolean isAllowed(InetAddress addr, Request baseRequest, HttpServletRequest request)
     {
-        String name = baseRequest.getHttpChannel().getConnector().getName();
-        boolean filterAppliesToConnector = _names.test(name);
-        boolean allowedByAddr = _addrs.test(addr);
+        // If this connector is not in the subset of connectors to apply this filter to, the request is simply allowed through.
+        Connector connector = baseRequest.getHttpChannel().getConnector();
+        String connectorName = connector.getName();
+        boolean filterAppliesToConnector = _connectorNames.test(connectorName);
+        if (!filterAppliesToConnector)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Handler does not apply to connector {}", connector);
+            return true;
+        }
+
+        MappingResult allowedByPath = matchMappings(baseRequest.getPathInfo(), addr);
+        Boolean allowedByAddr = _addrs.isIncludedAndNotExcluded(addr);
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("name = {}/{} addr={}/{} appliesToConnector={} allowedByAddr={}",
-                name, _names, addr, _addrs, filterAppliesToConnector, allowedByAddr);
+            LOG.debug("connectorName = {}/{} addr={}/{} allowedByAddr={} allowedByPath={}",
+                connectorName, _connectorNames, addr, _addrs, allowedByAddr, allowedByPath);
         }
-        if (!filterAppliesToConnector)
-            return true;
-        return allowedByAddr;
+
+        // Not allowed if it was specifically excluded anywhere.
+        if (Boolean.FALSE.equals(allowedByAddr) || MappingResult.FALSE.equals(allowedByPath))
+            return false;
+
+        // If either set has any includes, then we must be included by one of them.
+        if (_addrs.hasIncludes() || allowedByPath.hasIncludes())
+            return Boolean.TRUE.equals(allowedByAddr) || MappingResult.TRUE.equals(allowedByPath);
+
+        return true;
+    }
+
+    private MappingResult matchMappings(String path, InetAddress addr)
+    {
+        List<MappedResource<IncludeExcludeSet<String, InetAddress>>> matches = _pathMappings.getMatches(path);
+
+        boolean hasIncludes = false;
+        boolean isIncluded = false;
+        for (MappedResource<IncludeExcludeSet<String, InetAddress>> resource : matches)
+        {
+            IncludeExcludeSet<String, InetAddress> set = resource.getResource();
+            if (set.hasIncludes())
+                hasIncludes = true;
+
+            Boolean b = set.isIncludedAndNotExcluded(addr);
+            if (Boolean.FALSE.equals(b))
+                return MappingResult.FALSE;
+
+            if (Boolean.TRUE.equals(b))
+                isIncluded = true;
+        }
+
+        return isIncluded ? MappingResult.TRUE : (hasIncludes ? MappingResult.HAS_INCLUDES : MappingResult.NO_INCLUDES);
+    }
+
+    private IncludeExcludeSet<String, InetAddress> ensureMapping(String path)
+    {
+        ServletPathSpec pathSpec = new ServletPathSpec(path);
+        IncludeExcludeSet<String, InetAddress> names = _pathMappings.get(pathSpec);
+        if (names == null)
+        {
+            names = new IncludeExcludeSet<>(InetAddressSet.class);
+            _pathMappings.put(pathSpec, names);
+        }
+        return names;
     }
 
     @Override
@@ -206,7 +293,20 @@ public class InetAccessHandler extends HandlerWrapper
         dumpObjects(out, indent,
             new DumpableCollection("included", _addrs.getIncluded()),
             new DumpableCollection("excluded", _addrs.getExcluded()),
-            new DumpableCollection("includedConnector", _names.getIncluded()),
-            new DumpableCollection("excludedConnector", _names.getExcluded()));
+            new DumpableCollection("includedConnector", _connectorNames.getIncluded()),
+            new DumpableCollection("excludedConnector", _connectorNames.getExcluded()));
+    }
+
+    private enum MappingResult
+    {
+        TRUE,
+        FALSE,
+        NO_INCLUDES,
+        HAS_INCLUDES;
+
+        boolean hasIncludes()
+        {
+            return TRUE.equals(this) || HAS_INCLUDES.equals(this);
+        }
     }
 }

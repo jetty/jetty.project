@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.util;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -145,10 +146,7 @@ public class IncludeExcludeSet<T, P> implements Predicate<P>
 
     public void include(T... element)
     {
-        for (T e : element)
-        {
-            _includes.add(e);
-        }
+        _includes.addAll(Arrays.asList(element));
     }
 
     public void exclude(T element)
@@ -158,10 +156,7 @@ public class IncludeExcludeSet<T, P> implements Predicate<P>
 
     public void exclude(T... element)
     {
-        for (T e : element)
-        {
-            _excludes.add(e);
-        }
+        _excludes.addAll(Arrays.asList(element));
     }
 
     @Deprecated
