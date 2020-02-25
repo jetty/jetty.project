@@ -19,7 +19,6 @@
 package org.eclipse.jetty.servlet;
 
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -135,8 +134,7 @@ public class FilterHolder extends Holder<Filter>
     }
 
     @Override
-    protected synchronized Filter createInstance() throws ServletException, IllegalAccessException,
-        InstantiationException, NoSuchMethodException, InvocationTargetException
+    protected synchronized Filter createInstance() throws Exception
     {
         Filter filter = super.createInstance();
         if (filter == null)

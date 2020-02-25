@@ -18,13 +18,12 @@
 
 package org.eclipse.jetty.servlet;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.EventListener;
+
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.server.handler.ContextHandler.Context;
 
 /**
  * ListenerHolder
@@ -107,8 +106,7 @@ public class ListenerHolder extends BaseHolder<EventListener>
     }
 
     @Override
-    protected synchronized EventListener createInstance() throws ServletException, IllegalAccessException,
-        InstantiationException, NoSuchMethodException, InvocationTargetException
+    protected synchronized EventListener createInstance() throws Exception
     {
 
         EventListener listener = super.createInstance();

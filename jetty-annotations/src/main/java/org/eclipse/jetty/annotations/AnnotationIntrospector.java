@@ -139,7 +139,7 @@ public class AnnotationIntrospector
         
         try
         {
-            holder = BaseHolder.class.cast(metaInfo);
+            holder = (BaseHolder)metaInfo;
         }
         catch (ClassCastException e)
         {
@@ -149,7 +149,7 @@ public class AnnotationIntrospector
         
         Origin origin = (holder.getSource() == null ? null : holder.getSource().getOrigin());
         if (origin == null)
-            return true;//assume introspectable
+            return true; //assume introspectable
         
         switch (origin)
         {
@@ -178,7 +178,7 @@ public class AnnotationIntrospector
                 }
                 catch (IOException e)
                 {
-                    LOG.warn(e);
+                    LOG.warn("Unable to get Resource for descriptor {}", descriptorLocation, e);
                     return false; //something wrong with the descriptor
                 }
             }
@@ -191,9 +191,6 @@ public class AnnotationIntrospector
      */
     public void introspect(Object o, Object metaInfo)
     {
-        if (_handlers == null)
-            return;
-        
         if (!isIntrospectable(o, metaInfo))
             return;
         
