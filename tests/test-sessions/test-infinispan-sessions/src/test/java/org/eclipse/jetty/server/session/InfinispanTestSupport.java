@@ -124,6 +124,7 @@ public class InfinispanTestSupport
                 .withProperties(properties)
                 .index(Index.ALL)
                 .addIndexedEntity(SessionData.class)
+                .storeAsBinary().enable()
                 .build());
         }
         _cache = _manager.getCache(_name);

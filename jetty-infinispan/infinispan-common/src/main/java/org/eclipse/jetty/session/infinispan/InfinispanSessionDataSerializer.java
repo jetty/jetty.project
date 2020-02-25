@@ -9,12 +9,14 @@ import org.infinispan.commons.marshall.Externalizer;
 
 public class InfinispanSessionDataSerializer implements Externalizer<InfinispanSessionData>
 {
+    private static final int VERSION = 0;
 
     private static final long serialVersionUID = 1L;
 
     @Override
     public void writeObject(ObjectOutput output, InfinispanSessionData object) throws IOException
     {
+        output.writeInt(VERSION);
         output.writeUTF(object.getId()); //session id
         output.writeUTF(object.getContextPath()); //context path
         output.writeUTF(object.getVhost()); //first vhost
@@ -33,37 +35,44 @@ public class InfinispanSessionDataSerializer implements Externalizer<InfinispanS
     @Override
     public InfinispanSessionData readObject(ObjectInput input) throws IOException, ClassNotFoundException
     {
-        String id = input.readUTF();
-        String contextPath = input.readUTF();
-        String vhost = input.readUTF();
-        long accessed = input.readLong();
-        long lastAccessed = input.readLong();
-        long created = input.readLong();
-        long cookieSet = input.readLong();
-        String lastNode = input.readUTF();
-        long expiry = input.readLong();
-        long maxInactiveMs = input.readLong();
-        
-        InfinispanSessionData data = new InfinispanSessionData(id, contextPath, vhost, created, accessed, lastAccessed, maxInactiveMs);
-        data.setCookieSet(cookieSet);
-        data.setLastNode(lastNode);
-        data.setExpiry(expiry);
-        
-        try (ByteArrayOutputStream os = new ByteArrayOutputStream())
+        int version = input.readInt();
+        if (version == 0)
         {
-            int bufferSize = 4 * 1024;
-            byte[] buffer = new byte[bufferSize];
-            int len = -1;
-            while ((len = input.read(buffer, 0, bufferSize)) != -1)
-            {
-                os.write(buffer, 0, len);
-            }
-            byte[] serializedAttributes = os.toByteArray();
-            data.setSerializedAttributes(serializedAttributes);
-            data.deserializeAttributes();
-        }
+            String id = input.readUTF();
+            String contextPath = input.readUTF();
+            String vhost = input.readUTF();
+            long accessed = input.readLong();
+            long lastAccessed = input.readLong();
+            long created = input.readLong();
+            long cookieSet = input.readLong();
+            String lastNode = input.readUTF();
+            long expiry = input.readLong();
+            long maxInactiveMs = input.readLong();
         
-        return data;
+            InfinispanSessionData data = new InfinispanSessionData(id, contextPath, vhost, created, accessed, lastAccessed, maxInactiveMs);
+            data.setCookieSet(cookieSet);
+            data.setLastNode(lastNode);
+            data.setExpiry(expiry);
+        
+            try (ByteArrayOutputStream os = new ByteArrayOutputStream())
+            {
+                int bufferSize = 4 * 1024;
+                byte[] buffer = new byte[bufferSize];
+                int len = -1;
+                while ((len = input.read(buffer, 0, bufferSize)) != -1)
+                {
+                    os.write(buffer, 0, len);
+                }
+                byte[] serializedAttributes = os.toByteArray();
+                data.setSerializedAttributes(serializedAttributes);
+                data.deserializeAttributes();
+            }
+            return data;
+        }
+        else
+        {
+            throw new IOException("Unrecognized infinispan session version " + version);
+        }
     }
     
 }
