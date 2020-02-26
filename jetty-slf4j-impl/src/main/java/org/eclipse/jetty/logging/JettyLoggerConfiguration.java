@@ -23,7 +23,6 @@ import java.io.InputStream;
 import java.net.URL;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
-import java.time.ZoneId;
 import java.util.Locale;
 import java.util.Properties;
 import java.util.TimeZone;
@@ -161,13 +160,13 @@ public class JettyLoggerConfiguration
         return DEFAULT_LEVEL;
     }
 
-    public ZoneId getZoneId(String key)
+    public TimeZone getTimeZone(String key)
     {
         String zoneIdStr = properties.getProperty(key);
         if (zoneIdStr == null)
             return null;
 
-        return TimeZone.getTimeZone(zoneIdStr).toZoneId();
+        return TimeZone.getTimeZone(zoneIdStr);
     }
 
     /**

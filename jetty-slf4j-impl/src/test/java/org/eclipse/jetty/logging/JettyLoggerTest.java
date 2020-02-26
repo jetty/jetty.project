@@ -77,15 +77,15 @@ public class JettyLoggerTest
         log.info(msg, "test2", "format4");
 
         System.err.println(output);
-        output.assertContains("INFO:oejl.JettyLoggerTest:tname: testing:test,format1");
-        output.assertContains("INFO:oejl.JettyLoggerTest:tname: testing:test,format1");
-        output.assertContains("INFO:oejl.JettyLoggerTest:tname: testing:test format2");
-        output.assertContains("INFO:oejl.JettyLoggerTest:tname: testing test format3");
-        output.assertContains("INFO:oejl.JettyLoggerTest:tname: testing:test,null");
-        output.assertContains("INFO:oejl.JettyLoggerTest:tname: testing null null");
-        output.assertContains("INFO:oejl.JettyLoggerTest:tname: testing:null");
-        output.assertContains("INFO:oejl.JettyLoggerTest:tname: testing");
-        output.assertContains("INFO:oejl.JettyLoggerTest:tname: test2 format4");
+        output.assertContains("INFO :oejl.JettyLoggerTest:tname: testing:test,format1");
+        output.assertContains("INFO :oejl.JettyLoggerTest:tname: testing:test,format1");
+        output.assertContains("INFO :oejl.JettyLoggerTest:tname: testing:test format2");
+        output.assertContains("INFO :oejl.JettyLoggerTest:tname: testing test format3");
+        output.assertContains("INFO :oejl.JettyLoggerTest:tname: testing:test,null");
+        output.assertContains("INFO :oejl.JettyLoggerTest:tname: testing null null");
+        output.assertContains("INFO :oejl.JettyLoggerTest:tname: testing:null");
+        output.assertContains("INFO :oejl.JettyLoggerTest:tname: testing");
+        output.assertContains("INFO :oejl.JettyLoggerTest:tname: test2 format4");
     }
 
     @SuppressWarnings("PlaceholderCountMatchesArgumentCount")
@@ -116,14 +116,14 @@ public class JettyLoggerTest
         log.info(msg, "test2", "format4");
 
         System.err.println(output);
-        output.assertContains("INFO:oejl.JettyLoggerTest:tname: testing:test,format1");
-        output.assertContains("INFO:oejl.JettyLoggerTest:tname: testing:test");
-        output.assertContains("INFO:oejl.JettyLoggerTest:tname: testing");
-        output.assertContains("INFO:oejl.JettyLoggerTest:tname: testing:test,null");
-        output.assertContains("INFO:oejl.JettyLoggerTest:tname: testing null null");
-        output.assertContains("INFO:oejl.JettyLoggerTest:tname: testing:null");
-        output.assertContains("INFO:oejl.JettyLoggerTest:tname: testing");
-        output.assertContains("INFO:oejl.JettyLoggerTest:tname: ");
+        output.assertContains("INFO :oejl.JettyLoggerTest:tname: testing:test,format1");
+        output.assertContains("INFO :oejl.JettyLoggerTest:tname: testing:test");
+        output.assertContains("INFO :oejl.JettyLoggerTest:tname: testing");
+        output.assertContains("INFO :oejl.JettyLoggerTest:tname: testing:test,null");
+        output.assertContains("INFO :oejl.JettyLoggerTest:tname: testing null null");
+        output.assertContains("INFO :oejl.JettyLoggerTest:tname: testing:null");
+        output.assertContains("INFO :oejl.JettyLoggerTest:tname: testing");
+        output.assertContains("INFO :oejl.JettyLoggerTest:tname: ");
     }
 
     @Test
@@ -145,9 +145,9 @@ public class JettyLoggerTest
         log.setLevel(Level.INFO);
         log.debug("YOU SHOULD NOT SEE THIS!");
 
-        output.assertContains("DBUG:xxx:tname: testing test debug");
-        output.assertContains("INFO:xxx:tname: testing test info");
-        output.assertContains("WARN:xxx:tname: testing test warn");
+        output.assertContains("DEBUG:xxx:tname: testing test debug");
+        output.assertContains("INFO :xxx:tname: testing test info");
+        output.assertContains("WARN :xxx:tname: testing test warn");
         output.assertNotContains("YOU SHOULD NOT SEE THIS!");
     }
 

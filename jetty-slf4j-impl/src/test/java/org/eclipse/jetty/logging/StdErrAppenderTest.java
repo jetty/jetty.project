@@ -19,6 +19,7 @@
 package org.eclipse.jetty.logging;
 
 import java.util.Properties;
+import java.util.TimeZone;
 
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -33,7 +34,7 @@ public class StdErrAppenderTest
     {
         JettyLoggerConfiguration config = new JettyLoggerConfiguration();
         CapturedStream output = new CapturedStream();
-        StdErrAppender appender = new StdErrAppender(config, output, UTC);
+        StdErrAppender appender = new StdErrAppender(config, output, TimeZone.getTimeZone(UTC));
         JettyLogger logger = new JettyLogger("org.eclipse.jetty.logging.LogTest", appender);
 
         String threadName = "tname";
@@ -43,7 +44,7 @@ public class StdErrAppenderTest
         appender.emit(logger, Level.INFO, timestamp, threadName, "testing:{},{}", "test", "format1");
 
         System.err.println(output);
-        output.assertContains("2020-02-17 19:11:35.563:INFO:oejl.LogTest:tname: testing:test,format1");
+        output.assertContains("2020-02-17 19:11:35.563:INFO :oejl.LogTest:tname: testing:test,format1");
     }
 
     @Test
@@ -56,7 +57,7 @@ public class StdErrAppenderTest
 
         JettyLoggerConfiguration config = new JettyLoggerConfiguration(props);
         CapturedStream output = new CapturedStream();
-        StdErrAppender appender = new StdErrAppender(config, output, UTC);
+        StdErrAppender appender = new StdErrAppender(config, output, TimeZone.getTimeZone(UTC));
         JettyLogger logger = new JettyLogger(name, appender);
 
         String threadName = "tname";

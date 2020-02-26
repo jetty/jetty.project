@@ -19,10 +19,6 @@
 package org.eclipse.jetty.logging;
 
 import java.io.PrintStream;
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.Objects;
 import java.util.TimeZone;
 
@@ -43,8 +39,7 @@ public class StdErrAppender implements JettyAppender
     public static final String ZONEID_KEY = "org.eclipse.jetty.logging.appender.ZONE_ID";
 
     private static final Object[] EMPTY_ARGS = new Object[0];
-    private final DateTimeFormatter timestampFormatter;
-    private final ZoneId timezone;
+    private final Timestamp timestamper;
 
     /**
      * True to have output show condensed logger names, false to use the as defined long names.
@@ -86,24 +81,22 @@ public class StdErrAppender implements JettyAppender
         this(config, stream, null);
     }
 
-    public StdErrAppender(JettyLoggerConfiguration config, PrintStream stream, ZoneId zoneId)
+    public StdErrAppender(JettyLoggerConfiguration config, PrintStream stream, TimeZone timeZone)
     {
         Objects.requireNonNull(config, "JettyLoggerConfiguration");
         this.stderr = Objects.requireNonNull(stream, "PrintStream");
 
-        ZoneId tzone = zoneId;
+        TimeZone tzone = timeZone;
         if (tzone == null)
         {
-            tzone = config.getZoneId(ZONEID_KEY);
+            tzone = config.getTimeZone(ZONEID_KEY);
             if (tzone == null)
             {
-                tzone = TimeZone.getDefault().toZoneId();
+                tzone = TimeZone.getDefault();
             }
         }
 
-        this.timezone = tzone;
-        this.timestampFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
-        this.timestampFormatter.withZone(timezone);
+        this.timestamper = new Timestamp(tzone);
 
         this.condensedNames = config.getBoolean(NAME_CONDENSE_KEY, true);
         this.escapedMessages = config.getBoolean(MESSAGE_ESCAPE_KEY, true);
@@ -138,11 +131,6 @@ public class StdErrAppender implements JettyAppender
         stderr.println(builder);
     }
 
-    public ZoneId getTimeZone()
-    {
-        return timezone;
-    }
-
     public boolean isCondensedNames()
     {
         return condensedNames;
@@ -173,8 +161,7 @@ public class StdErrAppender implements JettyAppender
         Throwable cause = throwable;
 
         // Timestamp
-        ZonedDateTime tsInstant = Instant.ofEpochMilli(timestamp).atZone(timezone);
-        timestampFormatter.formatTo(tsInstant, builder);
+        timestamper.formatNow(timestamp, builder);
 
         // Level
         builder.append(':').append(renderedLevel(level));
