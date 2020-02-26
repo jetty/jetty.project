@@ -54,6 +54,7 @@ public class TestConfiguration extends HashMap<String, Object>
     private Set set;
     private ConstructorArgTestClass constructorArgTestClass;
     public Map map;
+    public Double number;
 
     public TestConfiguration()
     {
@@ -63,6 +64,16 @@ public class TestConfiguration extends HashMap<String, Object>
     public TestConfiguration(@Name("name") String n)
     {
         name = n;
+    }
+
+    public void setNumber(Object value)
+    {
+        testObject = value;
+    }
+
+    public void setNumber(double value)
+    {
+        number = value;
     }
 
     public void setTest(Object value)

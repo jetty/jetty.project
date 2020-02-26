@@ -199,7 +199,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
     private final List<EventListener> _programmaticListeners = new CopyOnWriteArrayList<>();
     private final List<ServletContextListener> _servletContextListeners = new CopyOnWriteArrayList<>();
-    private final List<ServletContextListener> _destroySerletContextListeners = new ArrayList<>();
+    private final List<ServletContextListener> _destroyServletContextListeners = new ArrayList<>();
     private final List<ServletContextAttributeListener> _servletContextAttributeListeners = new CopyOnWriteArrayList<>();
     private final List<ServletRequestListener> _servletRequestListeners = new CopyOnWriteArrayList<>();
     private final List<ServletRequestAttributeListener> _servletRequestAttributeListeners = new CopyOnWriteArrayList<>();
@@ -646,7 +646,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 _contextListeners.remove(listener);
 
             if (listener instanceof ServletContextListener)
+        {
                 _servletContextListeners.remove(listener);
+            _destroyServletContextListeners.remove(listener);
+        }
 
             if (listener instanceof ServletContextAttributeListener)
                 _servletContextAttributeListeners.remove(listener);
@@ -838,14 +841,14 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         super.doStart();
 
         // Call context listeners
-        _destroySerletContextListeners.clear();
+        _destroyServletContextListeners.clear();
         if (!_servletContextListeners.isEmpty())
         {
             ServletContextEvent event = new ServletContextEvent(_scontext);
             for (ServletContextListener listener : _servletContextListeners)
             {
                 callContextInitialized(listener, event);
-                _destroySerletContextListeners.add(listener);
+                _destroyServletContextListeners.add(listener);
             }
         }
     }
@@ -854,9 +857,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     {
         // Call the context listeners
         ServletContextEvent event = new ServletContextEvent(_scontext);
-        Collections.reverse(_destroySerletContextListeners);
+        Collections.reverse(_destroyServletContextListeners);
         MultiException ex = new MultiException();
-        for (ServletContextListener listener : _destroySerletContextListeners)
+        for (ServletContextListener listener : _destroyServletContextListeners)
         {
             try
             {
