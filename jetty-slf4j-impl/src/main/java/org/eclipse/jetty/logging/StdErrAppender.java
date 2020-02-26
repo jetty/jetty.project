@@ -257,11 +257,11 @@ public class StdErrAppender implements JettyAppender
             case ERROR:  // New for Jetty 10+
                 return "ERROR";
             case WARN:
-                return "WARN";
+                return "WARN ";
             case INFO:
-                return "INFO";
+                return "INFO ";
             case DEBUG:
-                return "DBUG"; // keeping abbreviated name for historical reasons
+                return "DEBUG";
             case TRACE: // New for Jetty 10+
                 return "TRACE";
             default:
