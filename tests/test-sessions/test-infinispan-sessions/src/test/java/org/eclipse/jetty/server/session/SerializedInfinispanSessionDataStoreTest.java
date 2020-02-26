@@ -35,7 +35,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 /**
  * InfinispanSessionDataStoreTest
  */
-public class InfinispanSessionDataStoreTest extends AbstractSessionDataStoreTest
+public class SerializedInfinispanSessionDataStoreTest extends AbstractSessionDataStoreTest
 {
 
     public InfinispanTestSupport _testSupport;
@@ -44,6 +44,7 @@ public class InfinispanSessionDataStoreTest extends AbstractSessionDataStoreTest
     public void setup() throws Exception
     {
         _testSupport = new InfinispanTestSupport();
+        _testSupport.setSerializeSessionData(true);
         _testSupport.setup();
     }
 
