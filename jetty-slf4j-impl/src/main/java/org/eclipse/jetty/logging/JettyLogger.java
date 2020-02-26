@@ -20,9 +20,7 @@ package org.eclipse.jetty.logging;
 
 import java.util.Objects;
 
-import org.slf4j.ILoggerFactory;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.slf4j.Marker;
 import org.slf4j.event.Level;
 import org.slf4j.event.LoggingEvent;
@@ -40,6 +38,7 @@ public class JettyLogger implements LocationAwareLogger, Logger
      */
     public static final int ALL = -1;
 
+    private final JettyLoggerFactory factory;
     private final String name;
     private final String condensedName;
     private final JettyAppender appender;
@@ -50,8 +49,9 @@ public class JettyLogger implements LocationAwareLogger, Logger
      * Entry point for slf4j and it's {@link SubstituteLogger}
      */
     @SuppressWarnings("unused")
-    public JettyLogger(String name, JettyAppender appender)
+    protected JettyLogger(JettyLoggerFactory factory, String name, JettyAppender appender)
     {
+        this.factory = factory;
         this.name = name;
         this.condensedName = JettyLoggerFactory.condensePackageString(name);
         this.appender = appender;
@@ -302,12 +302,7 @@ public class JettyLogger implements LocationAwareLogger, Logger
         this.level = lvlInt;
 
         // apply setLevel to children too.
-        ILoggerFactory factory = LoggerFactory.getILoggerFactory();
-        if (factory instanceof JettyLoggerFactory)
-        {
-            JettyLoggerFactory jettyLoggerFactory = (JettyLoggerFactory)factory;
-            jettyLoggerFactory.walkChildLoggers(this.getName(), (logger) -> logger.setLevel(lvlInt));
-        }
+        factory.walkChildLoggers(this.getName(), (logger) -> logger.setLevel(lvlInt));
     }
 
     @Override
@@ -432,6 +427,9 @@ public class JettyLogger implements LocationAwareLogger, Logger
     public void setHideStacks(boolean hideStacks)
     {
         this.hideStacks = hideStacks;
+
+        // apply setHideStacks to children too.
+        factory.walkChildLoggers(this.getName(), (logger) -> logger.setHideStacks(hideStacks));
     }
 
     @Override

@@ -29,24 +29,11 @@ import org.slf4j.Logger;
 public class JettyLoggerFactory implements ILoggerFactory
 {
     private static final String ROOT_LOGGER_NAME = "";
-    private JettyLoggerConfiguration configuration;
-    private JettyLogger rootLogger;
+    private final JettyLoggerConfiguration configuration;
+    private final JettyLogger rootLogger;
     private ConcurrentMap<String, JettyLogger> loggerMap;
 
     public JettyLoggerFactory(JettyLoggerConfiguration config)
-    {
-        initialize(config);
-    }
-
-    /**
-     * Reinitialize this Factory, forgetting about all prior config and loggers.
-     * <p>
-     * This is really only used in test cases.
-     * </p>
-     *
-     * @param config the configuration to reset to
-     */
-    protected void initialize(JettyLoggerConfiguration config)
     {
         configuration = Objects.requireNonNull(config, "JettyLoggerConfiguration");
 
@@ -54,7 +41,7 @@ public class JettyLoggerFactory implements ILoggerFactory
 
         StdErrAppender appender = new StdErrAppender(configuration);
 
-        rootLogger = new JettyLogger(ROOT_LOGGER_NAME, appender);
+        rootLogger = new JettyLogger(this, ROOT_LOGGER_NAME, appender);
         loggerMap.put(ROOT_LOGGER_NAME, rootLogger);
         rootLogger.setLevel(configuration.getLevel(ROOT_LOGGER_NAME));
     }
@@ -120,7 +107,7 @@ public class JettyLoggerFactory implements ILoggerFactory
     {
         // or is that handled by slf4j itself?
         JettyAppender appender = rootLogger.getAppender();
-        JettyLogger jettyLogger = new JettyLogger(name, appender);
+        JettyLogger jettyLogger = new JettyLogger(this, name, appender);
         jettyLogger.setLevel(this.configuration.getLevel(name));
         jettyLogger.setHideStacks(this.configuration.getHideStacks(name));
         return jettyLogger;
