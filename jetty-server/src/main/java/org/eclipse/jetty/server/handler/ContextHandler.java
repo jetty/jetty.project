@@ -112,15 +112,15 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     public static final int SERVLET_MAJOR_VERSION = 4;
     public static final int SERVLET_MINOR_VERSION = 0;
     public static final Class<?>[] SERVLET_LISTENER_TYPES =
-    {
-        ServletContextListener.class,
-        ServletContextAttributeListener.class,
-        ServletRequestListener.class,
-        ServletRequestAttributeListener.class,
-        HttpSessionIdListener.class,
-        HttpSessionListener.class,
-        HttpSessionAttributeListener.class
-    };
+        {
+            ServletContextListener.class,
+            ServletContextAttributeListener.class,
+            ServletRequestListener.class,
+            ServletRequestAttributeListener.class,
+            HttpSessionIdListener.class,
+            HttpSessionListener.class,
+            HttpSessionAttributeListener.class
+        };
 
     public static final int DEFAULT_LISTENER_TYPE_INDEX = 1;
 
@@ -646,10 +646,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 _contextListeners.remove(listener);
 
             if (listener instanceof ServletContextListener)
-        {
+            {
                 _servletContextListeners.remove(listener);
-            _destroyServletContextListeners.remove(listener);
-        }
+                _destroyServletContextListeners.remove(listener);
+            }
 
             if (listener instanceof ServletContextAttributeListener)
                 _servletContextAttributeListeners.remove(listener);
@@ -678,7 +678,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     {
         return _programmaticListeners.contains(listener);
     }
-    
+
     public boolean isDurableListener(EventListener listener)
     {
         // The durable listeners are those set when the context is started
@@ -1450,7 +1450,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         setContextPath(contextPath);
         _contextPathDefault = true;
     }
-    
+
     public void setDefaultRequestCharacterEncoding(String encoding)
     {
         _defaultRequestCharacterEncoding = encoding;
@@ -1460,17 +1460,17 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     {
         return _defaultRequestCharacterEncoding;
     }
-    
+
     public void setDefaultResponseCharacterEncoding(String encoding)
     {
         _defaultResponseCharacterEncoding = encoding;
     }
-    
+
     public String getDefaultResponseCharacterEncoding()
     {
         return _defaultResponseCharacterEncoding;
     }
-    
+
     /**
      * @return True if the current contextPath is from default settings
      */
