@@ -28,41 +28,25 @@ import org.slf4j.Logger;
 
 public class JettyLoggerFactory implements ILoggerFactory
 {
-    protected static JettyLoggerFactory getLoggerFactory()
-    {
-        if (instance == null)
-        {
-            instance = new JettyLoggerFactory();
-        }
-
-        return instance;
-    }
-
-    protected static void setInstance(JettyLoggerFactory loggerFactory)
-    {
-        if (loggerFactory != null && instance != null)
-        {
-            System.err.printf("Replacing main Instance %s@%x with %s@%x",
-                instance.getClass().getName(),
-                instance.hashCode(),
-                loggerFactory.getClass().getName(),
-                loggerFactory.hashCode());
-        }
-        instance = loggerFactory;
-    }
-
-    private static JettyLoggerFactory instance;
-
     private static final String ROOT_LOGGER_NAME = "";
     private JettyLoggerConfiguration configuration;
     private JettyLogger rootLogger;
     private ConcurrentMap<String, JettyLogger> loggerMap;
 
-    private JettyLoggerFactory()
+    public JettyLoggerFactory(JettyLoggerConfiguration config)
     {
+        initialize(config);
     }
 
-    public JettyLoggerFactory initialize(JettyLoggerConfiguration config)
+    /**
+     * Reinitialize this Factory, forgetting about all prior config and loggers.
+     * <p>
+     * This is really only used in test cases.
+     * </p>
+     *
+     * @param config the configuration to reset to
+     */
+    protected void initialize(JettyLoggerConfiguration config)
     {
         configuration = Objects.requireNonNull(config, "JettyLoggerConfiguration");
 
@@ -73,7 +57,6 @@ public class JettyLoggerFactory implements ILoggerFactory
         rootLogger = new JettyLogger(ROOT_LOGGER_NAME, appender);
         loggerMap.put(ROOT_LOGGER_NAME, rootLogger);
         rootLogger.setLevel(configuration.getLevel(ROOT_LOGGER_NAME));
-        return this;
     }
 
     /**

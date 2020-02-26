@@ -20,7 +20,9 @@ package org.eclipse.jetty.logging;
 
 import java.util.Objects;
 
+import org.slf4j.ILoggerFactory;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.slf4j.Marker;
 import org.slf4j.event.Level;
 import org.slf4j.event.LoggingEvent;
@@ -300,8 +302,12 @@ public class JettyLogger implements LocationAwareLogger, Logger
         this.level = lvlInt;
 
         // apply setLevel to children too.
-        JettyLoggerFactory jettyLoggerFactory = JettyLoggerFactory.getLoggerFactory();
-        jettyLoggerFactory.walkChildLoggers(this.getName(), (logger) -> logger.setLevel(lvlInt));
+        ILoggerFactory factory = LoggerFactory.getILoggerFactory();
+        if (factory instanceof JettyLoggerFactory)
+        {
+            JettyLoggerFactory jettyLoggerFactory = (JettyLoggerFactory)factory;
+            jettyLoggerFactory.walkChildLoggers(this.getName(), (logger) -> logger.setLevel(lvlInt));
+        }
     }
 
     @Override

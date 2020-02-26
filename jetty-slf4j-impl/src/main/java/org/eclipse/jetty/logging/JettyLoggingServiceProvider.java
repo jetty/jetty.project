@@ -42,7 +42,7 @@ public class JettyLoggingServiceProvider implements SLF4JServiceProvider
     public void initialize()
     {
         JettyLoggerConfiguration config = new JettyLoggerConfiguration().loadRuntime(this.getClass().getClassLoader());
-        loggerFactory = JettyLoggerFactory.getLoggerFactory().initialize(config);
+        loggerFactory = new JettyLoggerFactory(config);
         markerFactory = new BasicMarkerFactory();
         mdcAdapter = new NOPMDCAdapter(); // TODO: Provide Jetty Implementation?
     }
