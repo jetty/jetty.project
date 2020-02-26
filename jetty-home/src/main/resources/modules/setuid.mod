@@ -20,3 +20,4 @@ etc/jetty-setuid.xml
 # jetty.setuid.userName=jetty
 # jetty.setuid.groupName=jetty
 # jetty.setuid.umask=002
+# jetty.setuid.clearSupplementalGroups=false
