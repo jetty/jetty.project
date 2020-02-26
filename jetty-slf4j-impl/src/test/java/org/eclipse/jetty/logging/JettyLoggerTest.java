@@ -51,49 +51,11 @@ public class JettyLoggerTest
         JettyLoggerFactory.setInstance(null);
     }
 
-    @Test
-    public void testStdErrLogFormatLax()
-    {
-        Properties props = new Properties();
-        props.setProperty(StdErrAppender.STRICT_SLF4J_FORMAT_KEY, "false");
-        props.setProperty(StdErrAppender.ZONEID_KEY, UTC.getId());
-        JettyLoggerConfiguration config = new JettyLoggerConfiguration(props);
-
-        JettyLoggerFactory factory = JettyLoggerFactory.getLoggerFactory().initialize(config);
-        StdErrAppender appender = (StdErrAppender)factory.getRootLogger().getAppender();
-        CapturedStream output = new CapturedStream();
-        appender.setStream(output);
-
-        Logger log = factory.getJettyLogger(JettyLoggerTest.class.getName());
-
-        log.info("testing:{},{}", "test", "format1");
-        log.info("testing:{}", "test", "format2");
-        log.info("testing", "test", "format3");
-        log.info("testing:{},{}", "test", null);
-        log.info("testing {} {}", null, null);
-        log.info("testing:{}", null, null);
-        log.info("testing", null, null);
-        String msg = null;
-        log.info(msg, "test2", "format4");
-
-        System.err.println(output);
-        output.assertContains("INFO :oejl.JettyLoggerTest:tname: testing:test,format1");
-        output.assertContains("INFO :oejl.JettyLoggerTest:tname: testing:test,format1");
-        output.assertContains("INFO :oejl.JettyLoggerTest:tname: testing:test format2");
-        output.assertContains("INFO :oejl.JettyLoggerTest:tname: testing test format3");
-        output.assertContains("INFO :oejl.JettyLoggerTest:tname: testing:test,null");
-        output.assertContains("INFO :oejl.JettyLoggerTest:tname: testing null null");
-        output.assertContains("INFO :oejl.JettyLoggerTest:tname: testing:null");
-        output.assertContains("INFO :oejl.JettyLoggerTest:tname: testing");
-        output.assertContains("INFO :oejl.JettyLoggerTest:tname: test2 format4");
-    }
-
     @SuppressWarnings("PlaceholderCountMatchesArgumentCount")
     @Test
     public void testStdErrLogFormatSlf4jStrict()
     {
         Properties props = new Properties();
-        props.setProperty(StdErrAppender.STRICT_SLF4J_FORMAT_KEY, "true");
         props.setProperty(StdErrAppender.ZONEID_KEY, UTC.getId());
         JettyLoggerConfiguration config = new JettyLoggerConfiguration(props);
 

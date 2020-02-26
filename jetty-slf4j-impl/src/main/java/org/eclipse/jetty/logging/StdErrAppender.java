@@ -35,7 +35,6 @@ public class StdErrAppender implements JettyAppender
     public static final String NAME_CONDENSE_KEY = "org.eclipse.jetty.logging.appender.NAME_CONDENSE";
     public static final String THREAD_PADDING_KEY = "org.eclipse.jetty.logging.appender.THREAD_PADDING";
     public static final String MESSAGE_ESCAPE_KEY = "org.eclipse.jetty.logging.appender.MESSAGE_ESCAPE";
-    public static final String STRICT_SLF4J_FORMAT_KEY = "org.eclipse.jetty.logging.appender.STRICT_SLF4J_SYNTAX";
     public static final String ZONEID_KEY = "org.eclipse.jetty.logging.appender.ZONE_ID";
 
     private static final Object[] EMPTY_ARGS = new Object[0];
@@ -50,16 +49,6 @@ public class StdErrAppender implements JettyAppender
      * True to have messages escaped for control characters, false to leave messages alone.
      */
     private final boolean escapedMessages;
-
-    /**
-     * True to have formatting be based on the strict definition of Slf4J's {@link MessageFormatter},
-     * where there has to be a match to the number of <code>{}</code> in the format string
-     * to the number of arguments provided on the various {@link org.slf4j.Logger} methods.
-     * False will use the old-school Jetty message formatter, which will add missing <code>{}</code>
-     * entries to the end of the format String if it detects more arguments then there are <code>{}</code>
-     * elements in the provided format String.
-     */
-    private final boolean strictFormat;
 
     /**
      * The fixed size of the thread name to use for output
@@ -100,7 +89,6 @@ public class StdErrAppender implements JettyAppender
 
         this.condensedNames = config.getBoolean(NAME_CONDENSE_KEY, true);
         this.escapedMessages = config.getBoolean(MESSAGE_ESCAPE_KEY, true);
-        this.strictFormat = config.getBoolean(STRICT_SLF4J_FORMAT_KEY, true);
         this.threadPadding = config.getInt(THREAD_PADDING_KEY, -1);
     }
 
@@ -146,11 +134,6 @@ public class StdErrAppender implements JettyAppender
         return threadPadding;
     }
 
-    public boolean isStrictFormat()
-    {
-        return strictFormat;
-    }
-
     public void setStream(PrintStream stream)
     {
         this.stderr = stream;
@@ -185,42 +168,11 @@ public class StdErrAppender implements JettyAppender
         // Message
         builder.append(' ');
 
-        if (strictFormat)
+        FormattingTuple ft = MessageFormatter.arrayFormat(message, argumentArray);
+        appendEscaped(builder, ft.getMessage());
+        if (cause == null)
         {
-            FormattingTuple ft = MessageFormatter.arrayFormat(message, argumentArray);
-            appendEscaped(builder, ft.getMessage());
-            if (cause == null)
-            {
-                cause = ft.getThrowable();
-            }
-        }
-        else
-        {
-            // TODO: this should really be removed, as it violates the slf4j API contract for throwables and such
-            StringBuilder msg = new StringBuilder();
-            Object[] args = argumentArray == null ? EMPTY_ARGS : argumentArray;
-            msg.append(Objects.requireNonNullElseGet(message, () -> "{} ".repeat(args.length)));
-            String braces = "{}";
-            int start = 0;
-            for (Object arg : args)
-            {
-                int bracesIndex = msg.indexOf(braces, start);
-                if (bracesIndex < 0)
-                {
-                    appendEscaped(builder, msg.substring(start));
-                    builder.append(" ");
-                    if (arg != null)
-                        builder.append(arg);
-                    start = msg.length();
-                }
-                else
-                {
-                    appendEscaped(builder, msg.substring(start, bracesIndex));
-                    builder.append(arg);
-                    start = bracesIndex + braces.length();
-                }
-            }
-            appendEscaped(builder, msg.substring(start));
+            cause = ft.getThrowable();
         }
 
         // Throwable

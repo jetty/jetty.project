@@ -31,15 +31,6 @@ import java.util.function.Function;
 import org.slf4j.event.Level;
 
 /**
- * Properties to look for:
- * <ul>
- *  <li>{@code org.eclipse.jetty.logging.THREAD_PADDING} (number, default "0") - used for minimum padding width of the Thread.name</li>
- *  <li>{@code org.eclipse.jetty.logging.SOURCE} (boolean, default "false") - used for showing of source (filename and line number) in stacktraces</li>
- *  <li>{@code org.eclipse.jetty.logging.NAME_CONDENSE} (boolean, default "true") - used for condensing the logger name package</li>
- *  <li>{@code org.eclipse.jetty.logging.MESSAGE_ESCAPE} (boolean, default "true") - used for escaping the output of the logger message</li>
- *  <li>{@code org.eclipse.jetty.logging.STRICT_SLF4J_SYNTAX} (boolean, default "true") - use strict slf4j message formatting when arguments are provided</li>
- * </ul>
- *
  * JettyLogger specific configuration:
  * <ul>
  *  <li>{@code <name>.LEVEL=(String:LevelName)}</li>
