@@ -25,19 +25,18 @@ import java.util.TimeZone;
 import org.slf4j.event.Level;
 import org.slf4j.helpers.FormattingTuple;
 import org.slf4j.helpers.MessageFormatter;
-import org.slf4j.helpers.NormalizedParameters;
 
 public class StdErrAppender implements JettyAppender
 {
     /**
      * Configuration keys specific to the StdErrAppender
      */
-    public static final String NAME_CONDENSE_KEY = "org.eclipse.jetty.logging.appender.NAME_CONDENSE";
-    public static final String THREAD_PADDING_KEY = "org.eclipse.jetty.logging.appender.THREAD_PADDING";
-    public static final String MESSAGE_ESCAPE_KEY = "org.eclipse.jetty.logging.appender.MESSAGE_ESCAPE";
-    public static final String ZONEID_KEY = "org.eclipse.jetty.logging.appender.ZONE_ID";
+    static final String NAME_CONDENSE_KEY = "org.eclipse.jetty.logging.appender.NAME_CONDENSE";
+    static final String THREAD_PADDING_KEY = "org.eclipse.jetty.logging.appender.THREAD_PADDING";
+    static final String MESSAGE_ESCAPE_KEY = "org.eclipse.jetty.logging.appender.MESSAGE_ESCAPE";
+    static final String ZONEID_KEY = "org.eclipse.jetty.logging.appender.ZONE_ID";
+    private static final String EOL = System.lineSeparator();
 
-    private static final Object[] EMPTY_ARGS = new Object[0];
     private final Timestamp timestamper;
 
     /**
@@ -90,25 +89,6 @@ public class StdErrAppender implements JettyAppender
         this.condensedNames = config.getBoolean(NAME_CONDENSE_KEY, true);
         this.escapedMessages = config.getBoolean(MESSAGE_ESCAPE_KEY, true);
         this.threadPadding = config.getInt(THREAD_PADDING_KEY, -1);
-    }
-
-    @Override
-    public void emit(JettyLogger logger, Level level, long timestamp, String threadName, String message)
-    {
-        emit(logger, level, timestamp, threadName, null, message, EMPTY_ARGS);
-    }
-
-    @Override
-    public void emit(JettyLogger logger, Level level, long timestamp, String threadName, Throwable throwable, String message)
-    {
-        emit(logger, level, timestamp, threadName, throwable, message, EMPTY_ARGS);
-    }
-
-    @Override
-    public void emit(JettyLogger logger, Level level, long timestamp, String threadName, String message, Object... argumentArray)
-    {
-        Throwable cause = NormalizedParameters.getThrowableCandidate(argumentArray);
-        emit(logger, level, timestamp, threadName, cause, message, argumentArray);
     }
 
     @Override
@@ -210,25 +190,25 @@ public class StdErrAppender implements JettyAppender
 
     private void appendCause(StringBuilder builder, Throwable cause, String indent)
     {
-        builder.append(System.lineSeparator()).append(indent);
+        builder.append(EOL).append(indent);
         appendEscaped(builder, cause.toString());
         StackTraceElement[] elements = cause.getStackTrace();
         for (int i = 0; elements != null && i < elements.length; i++)
         {
-            builder.append(System.lineSeparator()).append(indent).append("\tat ");
+            builder.append(EOL).append(indent).append("\tat ");
             appendEscaped(builder, elements[i].toString());
         }
 
         for (Throwable suppressed : cause.getSuppressed())
         {
-            builder.append(System.lineSeparator()).append(indent).append("Suppressed: ");
+            builder.append(EOL).append(indent).append("Suppressed: ");
             appendCause(builder, suppressed, "\t|" + indent);
         }
 
         Throwable by = cause.getCause();
         if (by != null && by != cause)
         {
-            builder.append(System.lineSeparator()).append(indent).append("Caused by: ");
+            builder.append(EOL).append(indent).append("Caused by: ");
             appendCause(builder, by, indent);
         }
     }

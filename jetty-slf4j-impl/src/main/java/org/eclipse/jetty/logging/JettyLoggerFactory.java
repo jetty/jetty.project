@@ -107,10 +107,9 @@ public class JettyLoggerFactory implements ILoggerFactory
     {
         // or is that handled by slf4j itself?
         JettyAppender appender = rootLogger.getAppender();
-        JettyLogger jettyLogger = new JettyLogger(this, name, appender);
-        jettyLogger.setLevel(this.configuration.getLevel(name));
-        jettyLogger.setHideStacks(this.configuration.getHideStacks(name));
-        return jettyLogger;
+        int level = this.configuration.getLevel(name);
+        boolean hideStacks = this.configuration.getHideStacks(name);
+        return new JettyLogger(this, name, appender, level, hideStacks);
     }
 
     /**

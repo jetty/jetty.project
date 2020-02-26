@@ -44,8 +44,8 @@ class Timestamp
 
     public static class Tick
     {
-        final long seconds;
-        final String formattedString;
+        private final long seconds;
+        private final String formattedString;
 
         public Tick(long seconds, String string)
         {

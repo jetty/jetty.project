@@ -39,9 +39,8 @@ import org.slf4j.event.Level;
  */
 public class JettyLoggerConfiguration
 {
-    protected static final int DEFAULT_LEVEL = Level.INFO.toInt();
+    private static final int DEFAULT_LEVEL = Level.INFO.toInt();
     private static final boolean DEFAULT_HIDE_STACKS = false;
-
     private static final String SUFFIX_LEVEL = ".LEVEL";
     private static final String SUFFIX_STACKS = ".STACKS";
 
@@ -130,7 +129,7 @@ public class JettyLoggerConfiguration
             String levelStr = properties.getProperty(key + SUFFIX_LEVEL);
             if (levelStr != null)
             {
-                return getLevelId(key, levelStr);
+                return getLevelInt(key, levelStr);
             }
             return null;
         });
@@ -141,7 +140,7 @@ public class JettyLoggerConfiguration
             String levelStr = properties.getProperty("log" + SUFFIX_LEVEL);
             if (levelStr != null)
             {
-                level = getLevelId("log", levelStr);
+                level = getLevelInt("log", levelStr);
             }
         }
 
@@ -167,9 +166,9 @@ public class JettyLoggerConfiguration
      * Passing {@code null} means the {@link ClassLoader#getSystemClassLoader()} is used.
      * @return the configuration
      */
-    public JettyLoggerConfiguration loadRuntime(ClassLoader loader)
+    public JettyLoggerConfiguration load(ClassLoader loader)
     {
-        AccessController.doPrivileged((PrivilegedAction<Object>)() ->
+        return AccessController.doPrivileged((PrivilegedAction<JettyLoggerConfiguration>)() ->
         {
             // First see if the jetty-logging.properties object exists in the classpath.
             // * This is an optional feature used by embedded mode use, and test cases to allow for early
@@ -190,10 +189,8 @@ public class JettyLoggerConfiguration
             // Now load the System.properties as-is into the properties,
             // these values will override any key conflicts in properties.
             load(System.getProperties());
-            return null;
+            return this;
         });
-
-        return this;
     }
 
     public boolean getBoolean(String key, boolean defValue)
@@ -219,7 +216,7 @@ public class JettyLoggerConfiguration
         }
     }
 
-    private Integer getLevelId(String levelSegment, String levelStr)
+    private Integer getLevelInt(String levelSegment, String levelStr)
     {
         if (levelStr == null)
         {

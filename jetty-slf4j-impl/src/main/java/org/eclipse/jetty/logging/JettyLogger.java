@@ -45,16 +45,19 @@ public class JettyLogger implements LocationAwareLogger, Logger
     private int level;
     private boolean hideStacks = false;
 
-    /**
-     * Entry point for slf4j and it's {@link SubstituteLogger}
-     */
-    @SuppressWarnings("unused")
-    protected JettyLogger(JettyLoggerFactory factory, String name, JettyAppender appender)
+    public JettyLogger(JettyLoggerFactory factory, String name, JettyAppender appender)
+    {
+        this(factory, name, appender, Level.INFO.toInt(), false);
+    }
+
+    public JettyLogger(JettyLoggerFactory factory, String name, JettyAppender appender, int level, boolean hideStacks)
     {
         this.factory = factory;
         this.name = name;
         this.condensedName = JettyLoggerFactory.condensePackageString(name);
         this.appender = appender;
+        this.level = level;
+        this.hideStacks = hideStacks;
     }
 
     @Override
@@ -62,9 +65,7 @@ public class JettyLogger implements LocationAwareLogger, Logger
     {
         if (isDebugEnabled())
         {
-            long timestamp = System.currentTimeMillis();
-            String threadName = Thread.currentThread().getName();
-            getAppender().emit(this, Level.DEBUG, timestamp, threadName, msg);
+            emit(Level.DEBUG, msg);
         }
     }
 
@@ -73,9 +74,7 @@ public class JettyLogger implements LocationAwareLogger, Logger
     {
         if (isDebugEnabled())
         {
-            long timestamp = System.currentTimeMillis();
-            String threadName = Thread.currentThread().getName();
-            getAppender().emit(this, Level.DEBUG, timestamp, threadName, format, arg);
+            emit(Level.DEBUG, format, arg);
         }
     }
 
@@ -84,9 +83,7 @@ public class JettyLogger implements LocationAwareLogger, Logger
     {
         if (isDebugEnabled())
         {
-            long timestamp = System.currentTimeMillis();
-            String threadName = Thread.currentThread().getName();
-            getAppender().emit(this, Level.DEBUG, timestamp, threadName, format, arg1, arg2);
+            emit(Level.DEBUG, format, arg1, arg2);
         }
     }
 
@@ -95,9 +92,7 @@ public class JettyLogger implements LocationAwareLogger, Logger
     {
         if (isDebugEnabled())
         {
-            long timestamp = System.currentTimeMillis();
-            String threadName = Thread.currentThread().getName();
-            getAppender().emit(this, Level.DEBUG, timestamp, threadName, format, arguments);
+            emit(Level.DEBUG, format, arguments);
         }
     }
 
@@ -106,9 +101,7 @@ public class JettyLogger implements LocationAwareLogger, Logger
     {
         if (isDebugEnabled())
         {
-            long timestamp = System.currentTimeMillis();
-            String threadName = Thread.currentThread().getName();
-            getAppender().emit(this, Level.INFO, timestamp, threadName, throwable, msg);
+            emit(Level.DEBUG, msg, throwable);
         }
     }
 
@@ -158,9 +151,7 @@ public class JettyLogger implements LocationAwareLogger, Logger
     {
         if (isErrorEnabled())
         {
-            long timestamp = System.currentTimeMillis();
-            String threadName = Thread.currentThread().getName();
-            getAppender().emit(this, Level.ERROR, timestamp, threadName, msg);
+            emit(Level.ERROR, msg);
         }
     }
 
@@ -169,9 +160,7 @@ public class JettyLogger implements LocationAwareLogger, Logger
     {
         if (isErrorEnabled())
         {
-            long timestamp = System.currentTimeMillis();
-            String threadName = Thread.currentThread().getName();
-            getAppender().emit(this, Level.ERROR, timestamp, threadName, format, arg);
+            emit(Level.ERROR, format, arg);
         }
     }
 
@@ -180,9 +169,7 @@ public class JettyLogger implements LocationAwareLogger, Logger
     {
         if (isErrorEnabled())
         {
-            long timestamp = System.currentTimeMillis();
-            String threadName = Thread.currentThread().getName();
-            getAppender().emit(this, Level.ERROR, timestamp, threadName, format, arg1, arg2);
+            emit(Level.ERROR, format, arg1, arg2);
         }
     }
 
@@ -191,9 +178,7 @@ public class JettyLogger implements LocationAwareLogger, Logger
     {
         if (isErrorEnabled())
         {
-            long timestamp = System.currentTimeMillis();
-            String threadName = Thread.currentThread().getName();
-            getAppender().emit(this, Level.ERROR, timestamp, threadName, format, arguments);
+            emit(Level.ERROR, format, arguments);
         }
     }
 
@@ -202,9 +187,7 @@ public class JettyLogger implements LocationAwareLogger, Logger
     {
         if (isErrorEnabled())
         {
-            long timestamp = System.currentTimeMillis();
-            String threadName = Thread.currentThread().getName();
-            getAppender().emit(this, Level.ERROR, timestamp, threadName, throwable, msg);
+            emit(Level.ERROR, msg, throwable);
         }
     }
 
@@ -316,9 +299,7 @@ public class JettyLogger implements LocationAwareLogger, Logger
     {
         if (isInfoEnabled())
         {
-            long timestamp = System.currentTimeMillis();
-            String threadName = Thread.currentThread().getName();
-            getAppender().emit(this, Level.INFO, timestamp, threadName, msg);
+            emit(Level.INFO, msg);
         }
     }
 
@@ -327,9 +308,7 @@ public class JettyLogger implements LocationAwareLogger, Logger
     {
         if (isInfoEnabled())
         {
-            long timestamp = System.currentTimeMillis();
-            String threadName = Thread.currentThread().getName();
-            getAppender().emit(this, Level.INFO, timestamp, threadName, format, arg);
+            emit(Level.INFO, format, arg);
         }
     }
 
@@ -338,9 +317,7 @@ public class JettyLogger implements LocationAwareLogger, Logger
     {
         if (isInfoEnabled())
         {
-            long timestamp = System.currentTimeMillis();
-            String threadName = Thread.currentThread().getName();
-            getAppender().emit(this, Level.INFO, timestamp, threadName, format, arg1, arg2);
+            emit(Level.INFO, format, arg1, arg2);
         }
     }
 
@@ -349,9 +326,7 @@ public class JettyLogger implements LocationAwareLogger, Logger
     {
         if (isInfoEnabled())
         {
-            long timestamp = System.currentTimeMillis();
-            String threadName = Thread.currentThread().getName();
-            getAppender().emit(this, Level.INFO, timestamp, threadName, format, arguments);
+            emit(Level.INFO, format, arguments);
         }
     }
 
@@ -360,9 +335,7 @@ public class JettyLogger implements LocationAwareLogger, Logger
     {
         if (isInfoEnabled())
         {
-            long timestamp = System.currentTimeMillis();
-            String threadName = Thread.currentThread().getName();
-            getAppender().emit(this, Level.INFO, timestamp, threadName, throwable, msg);
+            emit(Level.INFO, msg, throwable);
         }
     }
 
@@ -455,9 +428,7 @@ public class JettyLogger implements LocationAwareLogger, Logger
     {
         if (isTraceEnabled())
         {
-            long timestamp = System.currentTimeMillis();
-            String threadName = Thread.currentThread().getName();
-            getAppender().emit(this, Level.TRACE, timestamp, threadName, msg);
+            emit(Level.TRACE, msg);
         }
     }
 
@@ -466,9 +437,7 @@ public class JettyLogger implements LocationAwareLogger, Logger
     {
         if (isTraceEnabled())
         {
-            long timestamp = System.currentTimeMillis();
-            String threadName = Thread.currentThread().getName();
-            getAppender().emit(this, Level.TRACE, timestamp, threadName, format, arg);
+            emit(Level.TRACE, format, arg);
         }
     }
 
@@ -477,9 +446,7 @@ public class JettyLogger implements LocationAwareLogger, Logger
     {
         if (isTraceEnabled())
         {
-            long timestamp = System.currentTimeMillis();
-            String threadName = Thread.currentThread().getName();
-            getAppender().emit(this, Level.TRACE, timestamp, threadName, format, arg1, arg2);
+            emit(Level.TRACE, format, arg1, arg2);
         }
     }
 
@@ -488,9 +455,7 @@ public class JettyLogger implements LocationAwareLogger, Logger
     {
         if (isTraceEnabled())
         {
-            long timestamp = System.currentTimeMillis();
-            String threadName = Thread.currentThread().getName();
-            getAppender().emit(this, Level.TRACE, timestamp, threadName, format, arguments);
+            emit(Level.TRACE, format, arguments);
         }
     }
 
@@ -499,9 +464,7 @@ public class JettyLogger implements LocationAwareLogger, Logger
     {
         if (isTraceEnabled())
         {
-            long timestamp = System.currentTimeMillis();
-            String threadName = Thread.currentThread().getName();
-            getAppender().emit(this, Level.TRACE, timestamp, threadName, throwable, msg);
+            emit(Level.TRACE, msg, throwable);
         }
     }
 
@@ -551,9 +514,7 @@ public class JettyLogger implements LocationAwareLogger, Logger
     {
         if (isWarnEnabled())
         {
-            long timestamp = System.currentTimeMillis();
-            String threadName = Thread.currentThread().getName();
-            getAppender().emit(this, Level.WARN, timestamp, threadName, msg);
+            emit(Level.WARN, msg);
         }
     }
 
@@ -562,9 +523,7 @@ public class JettyLogger implements LocationAwareLogger, Logger
     {
         if (isWarnEnabled())
         {
-            long timestamp = System.currentTimeMillis();
-            String threadName = Thread.currentThread().getName();
-            getAppender().emit(this, Level.WARN, timestamp, threadName, format, arg);
+            emit(Level.WARN, format, arg);
         }
     }
 
@@ -573,9 +532,7 @@ public class JettyLogger implements LocationAwareLogger, Logger
     {
         if (isWarnEnabled())
         {
-            long timestamp = System.currentTimeMillis();
-            String threadName = Thread.currentThread().getName();
-            getAppender().emit(this, Level.WARN, timestamp, threadName, format, arguments);
+            emit(Level.WARN, format, arguments);
         }
     }
 
@@ -584,9 +541,7 @@ public class JettyLogger implements LocationAwareLogger, Logger
     {
         if (isWarnEnabled())
         {
-            long timestamp = System.currentTimeMillis();
-            String threadName = Thread.currentThread().getName();
-            getAppender().emit(this, Level.WARN, timestamp, threadName, format, arg1, arg2);
+            emit(Level.WARN, format, arg1, arg2);
         }
     }
 
@@ -595,9 +550,7 @@ public class JettyLogger implements LocationAwareLogger, Logger
     {
         if (isWarnEnabled())
         {
-            long timestamp = System.currentTimeMillis();
-            String threadName = Thread.currentThread().getName();
-            getAppender().emit(this, Level.WARN, timestamp, threadName, throwable, msg);
+            emit(Level.WARN, msg, throwable);
         }
     }
 
@@ -642,6 +595,47 @@ public class JettyLogger implements LocationAwareLogger, Logger
         warn(msg, t);
     }
 
+    private void emit(Level level, String msg)
+    {
+        long timestamp = System.currentTimeMillis();
+        String threadName = Thread.currentThread().getName();
+        getAppender().emit(this, level, timestamp, threadName, null, msg);
+    }
+
+    private void emit(Level level, String format, Object arg)
+    {
+        long timestamp = System.currentTimeMillis();
+        String threadName = Thread.currentThread().getName();
+        if (arg instanceof Throwable)
+            getAppender().emit(this, level, timestamp, threadName, (Throwable)arg, format);
+        else
+            getAppender().emit(this, level, timestamp, threadName, null, format, arg);
+    }
+
+    private void emit(Level level, String format, Object arg1, Object arg2)
+    {
+        long timestamp = System.currentTimeMillis();
+        String threadName = Thread.currentThread().getName();
+        if (arg2 instanceof Throwable)
+            getAppender().emit(this, level, timestamp, threadName, (Throwable)arg2, format, arg1);
+        else
+            getAppender().emit(this, level, timestamp, threadName, null, format, arg1, arg2);
+    }
+
+    private void emit(Level level, String format, Object... arguments)
+    {
+        long timestamp = System.currentTimeMillis();
+        String threadName = Thread.currentThread().getName();
+        getAppender().emit(this, level, timestamp, threadName, null, format, arguments);
+    }
+
+    private void emit(Level level, String msg, Throwable throwable)
+    {
+        long timestamp = System.currentTimeMillis();
+        String threadName = Thread.currentThread().getName();
+        getAppender().emit(this, level, timestamp, threadName, throwable, msg);
+    }
+
     public static Level intToLevel(int level)
     {
         if (level >= JettyLogger.OFF)
@@ -676,14 +670,9 @@ public class JettyLogger implements LocationAwareLogger, Logger
         return "OFF"; // everything else
     }
 
-    @SuppressWarnings("StringBufferReplaceableByString")
     @Override
     public String toString()
     {
-        final StringBuilder sb = new StringBuilder();
-        sb.append(JettyLogger.class.getSimpleName());
-        sb.append(':').append(name);
-        sb.append(":LEVEL=").append(levelToString(level));
-        return sb.toString();
+        return String.format("%s:%s:LEVEL=%s", JettyLogger.class.getSimpleName(), name, levelToString(level));
     }
 }
