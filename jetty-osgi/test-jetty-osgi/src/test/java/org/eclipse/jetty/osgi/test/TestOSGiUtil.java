@@ -305,7 +305,6 @@ public class TestOSGiUtil
         options.add(mavenBundle().groupId("org.slf4j").artifactId("jul-to-slf4j").versionAsInProject().start());
         options.add(mavenBundle().groupId("org.slf4j").artifactId("slf4j-log4j12").versionAsInProject().start());
         options.add(mavenBundle().groupId("log4j").artifactId("log4j").versionAsInProject().start());
-        options.add(systemProperty("org.eclipse.jetty.util.log.class").value(Slf4jLog.class.getName()));
          */
         options.add(systemProperty("org.eclipse.jetty.LEVEL").value("INFO"));
         return options;

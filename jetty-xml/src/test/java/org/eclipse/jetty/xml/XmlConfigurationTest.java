@@ -33,9 +33,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
-import org.eclipse.jetty.logging.JettyAppender;
 import org.eclipse.jetty.logging.JettyLogger;
-import org.eclipse.jetty.logging.JettyLoggerConfiguration;
 import org.eclipse.jetty.logging.StdErrAppender;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
@@ -1277,25 +1275,23 @@ public class XmlConfigurationTest
 
         ByteArrayOutputStream logBytes = null;
         JettyLogger jettyLogger = (JettyLogger)slf4jLogger;
-        JettyAppender oldAppender = jettyLogger.getAppender();
+        StdErrAppender appender = (StdErrAppender)jettyLogger.getAppender();
         int oldLevel = jettyLogger.getLevel();
         try
         {
-            JettyLoggerConfiguration defConfig = new JettyLoggerConfiguration();
             logBytes = new ByteArrayOutputStream();
-            StdErrAppender testAppender = new StdErrAppender(defConfig, new PrintStream(logBytes, true));
-            jettyLogger.setAppender(testAppender);
+            appender.setStream(new PrintStream(logBytes, true));
             xmlConfiguration.configure();
         }
         finally
         {
-            jettyLogger.setAppender(oldAppender);
+            appender.setStream(System.err);
             jettyLogger.setLevel(oldLevel);
         }
 
         String[] lines = logBytes.toString(UTF_8.name()).split(System.lineSeparator());
         List<String> warnings = Arrays.stream(lines)
-            .filter(line -> line.contains(":WARN:"))
+            .filter(line -> line.contains(":WARN :"))
             .filter(line -> line.contains(testClass.getSimpleName()))
             .collect(Collectors.toList());
         // 1. Deprecated constructor
