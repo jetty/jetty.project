@@ -69,7 +69,7 @@ public class JettyLoggerFactory implements ILoggerFactory
      * @return the Slf4j Logger
      */
     @Override
-    public Logger getLogger(String name)
+    public synchronized Logger getLogger(String name)
     {
         return getJettyLogger(name);
     }
