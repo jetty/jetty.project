@@ -19,10 +19,6 @@
 package org.eclipse.jetty.logging;
 
 import java.io.PrintStream;
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.Objects;
 import java.util.TimeZone;
 
@@ -32,29 +28,36 @@ import org.slf4j.helpers.MessageFormatter;
 
 public class StdErrAppender implements JettyAppender
 {
-    private final DateTimeFormatter timestampFormatter;
-    private final ZoneId timezone;
+    /**
+     * Configuration keys specific to the StdErrAppender
+     */
+    static final String NAME_CONDENSE_KEY = "org.eclipse.jetty.logging.appender.NAME_CONDENSE";
+    static final String THREAD_PADDING_KEY = "org.eclipse.jetty.logging.appender.THREAD_PADDING";
+    static final String MESSAGE_ESCAPE_KEY = "org.eclipse.jetty.logging.appender.MESSAGE_ESCAPE";
+    static final String ZONEID_KEY = "org.eclipse.jetty.logging.appender.ZONE_ID";
+    private static final String EOL = System.lineSeparator();
+
+    private final Timestamp timestamper;
+
     /**
      * True to have output show condensed logger names, false to use the as defined long names.
      */
     private final boolean condensedNames;
+
     /**
      * True to have messages escaped for control characters, false to leave messages alone.
      */
     private final boolean escapedMessages;
+
     /**
-     * True to have formatting be based on the strict definition of Slf4J's {@link MessageFormatter},
-     * where there has to be a match to the number of <code>{}</code> in the format string
-     * to the number of arguments provided on the various {@link org.slf4j.Logger} methods.
-     * False will use the old-school Jetty message formatter, which will add missing <code>{}</code>
-     * entries to the end of the format String if it detects more arguments then there are <code>{}</code>
-     * elements in the provided format String.
+     * The fixed size of the thread name to use for output
      */
-    private final boolean strictFormat;
+    private final int threadPadding;
+
     /**
      * The stream to write logging events to.
      */
-    private final PrintStream stderr;
+    private PrintStream stderr;
 
     public StdErrAppender(JettyLoggerConfiguration config)
     {
@@ -63,109 +66,105 @@ public class StdErrAppender implements JettyAppender
 
     public StdErrAppender(JettyLoggerConfiguration config, PrintStream stream)
     {
-        this(config, stream, TimeZone.getDefault().toZoneId());
+        this(config, stream, null);
     }
 
-    public StdErrAppender(JettyLoggerConfiguration config, PrintStream stream, ZoneId zoneId)
+    public StdErrAppender(JettyLoggerConfiguration config, PrintStream stream, TimeZone timeZone)
     {
         Objects.requireNonNull(config, "JettyLoggerConfiguration");
         this.stderr = Objects.requireNonNull(stream, "PrintStream");
-        this.timezone = zoneId;
-        this.timestampFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
-        this.timestampFormatter.withZone(timezone);
 
-        this.condensedNames = config.isNameCondense();
-        this.escapedMessages = config.isEscapeMessages();
-        this.strictFormat = config.isStrictFormatSyntax();
+        TimeZone tzone = timeZone;
+        if (tzone == null)
+        {
+            tzone = config.getTimeZone(ZONEID_KEY);
+            if (tzone == null)
+            {
+                tzone = TimeZone.getDefault();
+            }
+        }
+
+        this.timestamper = new Timestamp(tzone);
+
+        this.condensedNames = config.getBoolean(NAME_CONDENSE_KEY, true);
+        this.escapedMessages = config.getBoolean(MESSAGE_ESCAPE_KEY, true);
+        this.threadPadding = config.getInt(THREAD_PADDING_KEY, -1);
     }
 
     @Override
-    public void emit(JettyLoggingEvent event)
+    public void emit(JettyLogger logger, Level level, long timestamp, String threadName, Throwable throwable, String message, Object... argumentArray)
     {
         StringBuilder builder = new StringBuilder(64);
-        format(builder, event);
+        format(builder, logger, level, timestamp, threadName, throwable, message, argumentArray);
         stderr.println(builder);
     }
 
-    private void format(StringBuilder builder, JettyLoggingEvent event)
+    public boolean isCondensedNames()
     {
+        return condensedNames;
+    }
+
+    public boolean isEscapedMessages()
+    {
+        return escapedMessages;
+    }
+
+    public int getThreadPadding()
+    {
+        return threadPadding;
+    }
+
+    public void setStream(PrintStream stream)
+    {
+        this.stderr = stream;
+    }
+
+    private void format(StringBuilder builder, JettyLogger logger, Level level, long timestamp, String threadName, Throwable throwable, String message, Object... argumentArray)
+    {
+        Throwable cause = throwable;
+
         // Timestamp
-        ZonedDateTime tsInstant = Instant.ofEpochMilli(event.getTimeStamp()).atZone(timezone);
-        timestampFormatter.formatTo(tsInstant, builder);
+        timestamper.formatNow(timestamp, builder);
 
         // Level
-        builder.append(':').append(renderedLevel(event.getLevel()));
+        builder.append(':').append(renderedLevel(level));
 
         // Logger Name
         builder.append(':');
         if (condensedNames)
         {
-            builder.append(event.getCondensedName());
+            builder.append(logger.getCondensedName());
         }
         else
         {
-            builder.append(event.getLoggerName());
+            builder.append(logger.getName());
         }
 
         // Thread Name
         builder.append(':');
-        builder.append(event.getThreadName()); // TODO: support TAG_PAD configuration
+        builder.append(threadName); // TODO: support TAG_PAD configuration
         builder.append(':');
 
         // Message
         builder.append(' ');
 
-        if (strictFormat)
+        FormattingTuple ft = MessageFormatter.arrayFormat(message, argumentArray);
+        appendEscaped(builder, ft.getMessage());
+        if (cause == null)
         {
-            FormattingTuple ft = MessageFormatter.arrayFormat(event.getMessage(), event.getArgumentArray());
-            appendEscaped(builder, ft.getMessage());
-        }
-        else
-        {
-            // TODO: this should really be removed, as it violates the slf4j API contract
-            StringBuilder msg = new StringBuilder();
-            Object[] args = event.getArgumentArray();
-            if (event.getMessage() == null)
-            {
-                msg.append("{} ".repeat(args.length));
-            }
-            else
-            {
-                msg.append(event.getMessage());
-            }
-            String braces = "{}";
-            int start = 0;
-            for (Object arg : args)
-            {
-                int bracesIndex = msg.indexOf(braces, start);
-                if (bracesIndex < 0)
-                {
-                    appendEscaped(builder, msg.substring(start));
-                    builder.append(" ");
-                    builder.append(arg);
-                    start = msg.length();
-                }
-                else
-                {
-                    appendEscaped(builder, msg.substring(start, bracesIndex));
-                    builder.append(arg);
-                    start = bracesIndex + braces.length();
-                }
-            }
-            appendEscaped(builder, msg.substring(start));
+            cause = ft.getThrowable();
         }
 
         // Throwable
-        Throwable throwable = event.getThrowable();
-        if (throwable != null)
+        if (cause != null)
         {
-            if (event.isHideStacks())
+            if (logger.isHideStacks())
             {
-                builder.append(": ").append(throwable);
+                builder.append(": ").append(cause);
             }
             else
             {
-                appendCause(builder, throwable, "");
+                appendCause(builder, cause, "");
             }
         }
     }
@@ -177,11 +176,11 @@ public class StdErrAppender implements JettyAppender
             case ERROR:  // New for Jetty 10+
                 return "ERROR";
             case WARN:
-                return "WARN";
+                return "WARN ";
             case INFO:
-                return "INFO";
+                return "INFO ";
             case DEBUG:
-                return "DBUG"; // keeping abbreviated name for historical reasons
+                return "DEBUG";
             case TRACE: // New for Jetty 10+
                 return "TRACE";
             default:
@@ -191,25 +190,25 @@ public class StdErrAppender implements JettyAppender
 
     private void appendCause(StringBuilder builder, Throwable cause, String indent)
     {
-        builder.append(System.lineSeparator()).append(indent);
+        builder.append(EOL).append(indent);
         appendEscaped(builder, cause.toString());
         StackTraceElement[] elements = cause.getStackTrace();
         for (int i = 0; elements != null && i < elements.length; i++)
         {
-            builder.append(System.lineSeparator()).append(indent).append("\tat ");
+            builder.append(EOL).append(indent).append("\tat ");
             appendEscaped(builder, elements[i].toString());
         }
 
         for (Throwable suppressed : cause.getSuppressed())
         {
-            builder.append(System.lineSeparator()).append(indent).append("Suppressed: ");
+            builder.append(EOL).append(indent).append("Suppressed: ");
             appendCause(builder, suppressed, "\t|" + indent);
         }
 
         Throwable by = cause.getCause();
         if (by != null && by != cause)
         {
-            builder.append(System.lineSeparator()).append(indent).append("Caused by: ");
+            builder.append(EOL).append(indent).append("Caused by: ");
             appendCause(builder, by, indent);
         }
     }

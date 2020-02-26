@@ -25,20 +25,12 @@ import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.Locale;
 import java.util.Properties;
+import java.util.TimeZone;
 import java.util.function.Function;
 
 import org.slf4j.event.Level;
 
 /**
- * Properties to look for:
- * <ul>
- *  <li>{@code org.eclipse.jetty.logging.THREAD_PADDING} (number, default "0") - used for minimum padding width of the Thread.name</li>
- *  <li>{@code org.eclipse.jetty.logging.SOURCE} (boolean, default "false") - used for showing of source (filename and line number) in stacktraces</li>
- *  <li>{@code org.eclipse.jetty.logging.NAME_CONDENSE} (boolean, default "true") - used for condensing the logger name package</li>
- *  <li>{@code org.eclipse.jetty.logging.MESSAGE_ESCAPE} (boolean, default "true") - used for escaping the output of the logger message</li>
- *  <li>{@code org.eclipse.jetty.logging.STRICT_SLF4J_SYNTAX} (boolean, default "true") - use strict slf4j message formatting when arguments are provided</li>
- * </ul>
- *
  * JettyLogger specific configuration:
  * <ul>
  *  <li>{@code <name>.LEVEL=(String:LevelName)}</li>
@@ -47,24 +39,12 @@ import org.slf4j.event.Level;
  */
 public class JettyLoggerConfiguration
 {
-    public static final String NAME_CONDENSE_KEY = "org.eclipse.jetty.logging.NAME_CONDENSE";
-    public static final String THREAD_PADDING_KEY = "org.eclipse.jetty.logging.THREAD_PADDING";
-    public static final String SOURCE_KEY = "org.eclipse.jetty.logging.SOURCE";
-    public static final String MESSAGE_ESCAPE_KEY = "org.eclipse.jetty.logging.MESSAGE_ESCAPE";
-    public static final String STRICT_SLF4J_FORMAT_KEY = "org.eclipse.jetty.logging.STRICT_SLF4J_SYNTAX";
-
-    protected static final int DEFAULT_LEVEL = Level.INFO.toInt();
+    private static final int DEFAULT_LEVEL = Level.INFO.toInt();
     private static final boolean DEFAULT_HIDE_STACKS = false;
-
     private static final String SUFFIX_LEVEL = ".LEVEL";
     private static final String SUFFIX_STACKS = ".STACKS";
 
     private final Properties properties = new Properties();
-    private boolean nameCondense = true;
-    private int threadPadding = 0;
-    private boolean source = false;
-    private boolean escapeMessages = true;
-    private boolean strictFormatSyntax = true;
 
     /**
      * Default JettyLogger configuration (empty)
@@ -149,7 +129,7 @@ public class JettyLoggerConfiguration
             String levelStr = properties.getProperty(key + SUFFIX_LEVEL);
             if (levelStr != null)
             {
-                return getLevelId(key, levelStr);
+                return getLevelInt(key, levelStr);
             }
             return null;
         });
@@ -160,7 +140,7 @@ public class JettyLoggerConfiguration
             String levelStr = properties.getProperty("log" + SUFFIX_LEVEL);
             if (levelStr != null)
             {
-                level = getLevelId("log", levelStr);
+                level = getLevelInt("log", levelStr);
             }
         }
 
@@ -170,34 +150,13 @@ public class JettyLoggerConfiguration
         return DEFAULT_LEVEL;
     }
 
-    public int getThreadPadding()
+    public TimeZone getTimeZone(String key)
     {
-        return threadPadding;
-    }
+        String zoneIdStr = properties.getProperty(key);
+        if (zoneIdStr == null)
+            return null;
 
-    public boolean isEscapeMessages()
-    {
-        return escapeMessages;
-    }
-
-    public boolean isNameCondense()
-    {
-        return nameCondense;
-    }
-
-    public boolean isSource()
-    {
-        return source;
-    }
-
-    public void setSource(boolean source)
-    {
-        this.source = source;
-    }
-
-    public boolean isStrictFormatSyntax()
-    {
-        return strictFormatSyntax;
+        return TimeZone.getTimeZone(zoneIdStr);
     }
 
     /**
@@ -207,9 +166,9 @@ public class JettyLoggerConfiguration
      * Passing {@code null} means the {@link ClassLoader#getSystemClassLoader()} is used.
      * @return the configuration
      */
-    public JettyLoggerConfiguration loadRuntime(ClassLoader loader)
+    public JettyLoggerConfiguration load(ClassLoader loader)
     {
-        AccessController.doPrivileged((PrivilegedAction<Object>)() ->
+        return AccessController.doPrivileged((PrivilegedAction<JettyLoggerConfiguration>)() ->
         {
             // First see if the jetty-logging.properties object exists in the classpath.
             // * This is an optional feature used by embedded mode use, and test cases to allow for early
@@ -230,10 +189,8 @@ public class JettyLoggerConfiguration
             // Now load the System.properties as-is into the properties,
             // these values will override any key conflicts in properties.
             load(System.getProperties());
-            return null;
+            return this;
         });
-
-        return this;
     }
 
     public boolean getBoolean(String key, boolean defValue)
@@ -259,7 +216,7 @@ public class JettyLoggerConfiguration
         }
     }
 
-    private Integer getLevelId(String levelSegment, String levelStr)
+    private Integer getLevelInt(String levelSegment, String levelStr)
     {
         if (levelStr == null)
         {
@@ -323,12 +280,6 @@ public class JettyLoggerConfiguration
                     properties.setProperty(name, val);
             }
         }
-
-        nameCondense = getBoolean(NAME_CONDENSE_KEY, nameCondense);
-        threadPadding = getInt(THREAD_PADDING_KEY, threadPadding);
-        source = getBoolean(SOURCE_KEY, source);
-        escapeMessages = getBoolean(MESSAGE_ESCAPE_KEY, escapeMessages);
-        strictFormatSyntax = getBoolean(STRICT_SLF4J_FORMAT_KEY, strictFormatSyntax);
     }
 
     private Properties readProperties(ClassLoader loader, String resourceName)

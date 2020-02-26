@@ -23,7 +23,6 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.Properties;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -44,64 +43,18 @@ public class JettyLoggerTest
         Thread.currentThread().setName("tname");
     }
 
-    @AfterEach
-    public void after()
-    {
-        // clear out the logger instance
-        JettyLoggerFactory.setInstance(null);
-    }
-
-    @SuppressWarnings("PlaceholderCountMatchesArgumentCount")
-    @Test
-    public void testStdErrLogFormatLax()
-    {
-        Properties props = new Properties();
-        props.setProperty(JettyLoggerConfiguration.STRICT_SLF4J_FORMAT_KEY, "false");
-        JettyLoggerConfiguration config = new JettyLoggerConfiguration(props);
-
-        JettyLoggerFactory factory = JettyLoggerFactory.getLoggerFactory().initialize(config);
-
-        CapturedStream output = new CapturedStream();
-        StdErrAppender appender = new StdErrAppender(config, output, UTC);
-        factory.getRootLogger().setAppender(appender);
-
-        Logger log = factory.getJettyLogger(JettyLoggerTest.class.getName());
-
-        log.info("testing:{},{}", "test", "format1");
-        log.info("testing:{}", "test", "format2");
-        log.info("testing", "test", "format3");
-        log.info("testing:{},{}", "test", null);
-        log.info("testing {} {}", null, null);
-        log.info("testing:{}", null, null);
-        log.info("testing", null, null);
-        String msg = null;
-        log.info(msg, "test2", "format4");
-
-        System.err.println(output);
-        output.assertContains("INFO:oejl.JettyLoggerTest:tname: testing:test,format1");
-        output.assertContains("INFO:oejl.JettyLoggerTest:tname: testing:test,format1");
-        output.assertContains("INFO:oejl.JettyLoggerTest:tname: testing:test format2");
-        output.assertContains("INFO:oejl.JettyLoggerTest:tname: testing test format3");
-        output.assertContains("INFO:oejl.JettyLoggerTest:tname: testing:test,null");
-        output.assertContains("INFO:oejl.JettyLoggerTest:tname: testing null null");
-        output.assertContains("INFO:oejl.JettyLoggerTest:tname: testing:null");
-        output.assertContains("INFO:oejl.JettyLoggerTest:tname: testing");
-        output.assertContains("INFO:oejl.JettyLoggerTest:tname: test2 format4");
-    }
-
     @SuppressWarnings("PlaceholderCountMatchesArgumentCount")
     @Test
     public void testStdErrLogFormatSlf4jStrict()
     {
         Properties props = new Properties();
-        props.setProperty(JettyLoggerConfiguration.STRICT_SLF4J_FORMAT_KEY, "true");
+        props.setProperty(StdErrAppender.ZONEID_KEY, UTC.getId());
         JettyLoggerConfiguration config = new JettyLoggerConfiguration(props);
+        JettyLoggerFactory factory = new JettyLoggerFactory(config);
 
-        JettyLoggerFactory factory = JettyLoggerFactory.getLoggerFactory().initialize(config);
-
+        StdErrAppender appender = (StdErrAppender)factory.getRootLogger().getAppender();
         CapturedStream output = new CapturedStream();
-        StdErrAppender appender = new StdErrAppender(config, output, UTC);
-        factory.getRootLogger().setAppender(appender);
+        appender.setStream(output);
 
         Logger log = factory.getJettyLogger(JettyLoggerTest.class.getName());
 
@@ -116,25 +69,25 @@ public class JettyLoggerTest
         log.info(msg, "test2", "format4");
 
         System.err.println(output);
-        output.assertContains("INFO:oejl.JettyLoggerTest:tname: testing:test,format1");
-        output.assertContains("INFO:oejl.JettyLoggerTest:tname: testing:test");
-        output.assertContains("INFO:oejl.JettyLoggerTest:tname: testing");
-        output.assertContains("INFO:oejl.JettyLoggerTest:tname: testing:test,null");
-        output.assertContains("INFO:oejl.JettyLoggerTest:tname: testing null null");
-        output.assertContains("INFO:oejl.JettyLoggerTest:tname: testing:null");
-        output.assertContains("INFO:oejl.JettyLoggerTest:tname: testing");
-        output.assertContains("INFO:oejl.JettyLoggerTest:tname: ");
+        output.assertContains("INFO :oejl.JettyLoggerTest:tname: testing:test,format1");
+        output.assertContains("INFO :oejl.JettyLoggerTest:tname: testing:test");
+        output.assertContains("INFO :oejl.JettyLoggerTest:tname: testing");
+        output.assertContains("INFO :oejl.JettyLoggerTest:tname: testing:test,null");
+        output.assertContains("INFO :oejl.JettyLoggerTest:tname: testing null null");
+        output.assertContains("INFO :oejl.JettyLoggerTest:tname: testing:null");
+        output.assertContains("INFO :oejl.JettyLoggerTest:tname: testing");
+        output.assertContains("INFO :oejl.JettyLoggerTest:tname: ");
     }
 
     @Test
     public void testStdErrLogDebug()
     {
         JettyLoggerConfiguration config = new JettyLoggerConfiguration();
-        JettyLoggerFactory factory = JettyLoggerFactory.getLoggerFactory().initialize(config);
+        JettyLoggerFactory factory = new JettyLoggerFactory(config);
 
+        StdErrAppender appender = (StdErrAppender)factory.getRootLogger().getAppender();
         CapturedStream output = new CapturedStream();
-        StdErrAppender appender = new StdErrAppender(config, output, UTC);
-        factory.getRootLogger().setAppender(appender);
+        appender.setStream(output);
 
         JettyLogger log = factory.getJettyLogger("xxx");
 
@@ -145,9 +98,9 @@ public class JettyLoggerTest
         log.setLevel(Level.INFO);
         log.debug("YOU SHOULD NOT SEE THIS!");
 
-        output.assertContains("DBUG:xxx:tname: testing test debug");
-        output.assertContains("INFO:xxx:tname: testing test info");
-        output.assertContains("WARN:xxx:tname: testing test warn");
+        output.assertContains("DEBUG:xxx:tname: testing test debug");
+        output.assertContains("INFO :xxx:tname: testing test info");
+        output.assertContains("WARN :xxx:tname: testing test warn");
         output.assertNotContains("YOU SHOULD NOT SEE THIS!");
     }
 
@@ -155,13 +108,13 @@ public class JettyLoggerTest
     public void testStdErrLogName()
     {
         Properties props = new Properties();
-        props.setProperty(JettyLoggerConfiguration.NAME_CONDENSE_KEY, "false");
+        props.setProperty(StdErrAppender.NAME_CONDENSE_KEY, "false");
         JettyLoggerConfiguration config = new JettyLoggerConfiguration(props);
-        JettyLoggerFactory factory = JettyLoggerFactory.getLoggerFactory().initialize(config);
+        JettyLoggerFactory factory = new JettyLoggerFactory(config);
 
+        StdErrAppender appender = (StdErrAppender)factory.getRootLogger().getAppender();
         CapturedStream output = new CapturedStream();
-        StdErrAppender appender = new StdErrAppender(config, output, UTC);
-        factory.getRootLogger().setAppender(appender);
+        appender.setStream(output);
 
         JettyLogger log = factory.getJettyLogger("test");
 
@@ -177,11 +130,11 @@ public class JettyLoggerTest
     public void testStdErrThrowable()
     {
         JettyLoggerConfiguration config = new JettyLoggerConfiguration();
-        JettyLoggerFactory factory = JettyLoggerFactory.getLoggerFactory().initialize(config);
+        JettyLoggerFactory factory = new JettyLoggerFactory(config);
 
+        StdErrAppender appender = (StdErrAppender)factory.getRootLogger().getAppender();
         CapturedStream output = new CapturedStream();
-        StdErrAppender appender = new StdErrAppender(config, output, UTC);
-        factory.getRootLogger().setAppender(appender);
+        appender.setStream(output);
 
         // Common Throwable (for test)
         Throwable th = new Throwable("Message");
@@ -217,11 +170,11 @@ public class JettyLoggerTest
     public void testParameterizedMessageNullValues()
     {
         JettyLoggerConfiguration config = new JettyLoggerConfiguration();
-        JettyLoggerFactory factory = JettyLoggerFactory.getLoggerFactory().initialize(config);
+        JettyLoggerFactory factory = new JettyLoggerFactory(config);
 
+        StdErrAppender appender = (StdErrAppender)factory.getRootLogger().getAppender();
         CapturedStream output = new CapturedStream();
-        StdErrAppender appender = new StdErrAppender(config, output, UTC);
-        factory.getRootLogger().setAppender(appender);
+        appender.setStream(output);
 
         JettyLogger log = factory.getJettyLogger(JettyLoggerTest.class.getName());
         log.setLevel(Level.DEBUG);
@@ -267,11 +220,11 @@ public class JettyLoggerTest
     public void testWarnFiltering()
     {
         JettyLoggerConfiguration config = new JettyLoggerConfiguration();
-        JettyLoggerFactory factory = JettyLoggerFactory.getLoggerFactory().initialize(config);
+        JettyLoggerFactory factory = new JettyLoggerFactory(config);
 
+        StdErrAppender appender = (StdErrAppender)factory.getRootLogger().getAppender();
         CapturedStream output = new CapturedStream();
-        StdErrAppender appender = new StdErrAppender(config, output, UTC);
-        factory.getRootLogger().setAppender(appender);
+        appender.setStream(output);
 
         JettyLogger log = factory.getJettyLogger(JettyLoggerTest.class.getName());
 
@@ -313,11 +266,11 @@ public class JettyLoggerTest
     public void testInfoFiltering()
     {
         JettyLoggerConfiguration config = new JettyLoggerConfiguration();
-        JettyLoggerFactory factory = JettyLoggerFactory.getLoggerFactory().initialize(config);
+        JettyLoggerFactory factory = new JettyLoggerFactory(config);
 
+        StdErrAppender appender = (StdErrAppender)factory.getRootLogger().getAppender();
         CapturedStream output = new CapturedStream();
-        StdErrAppender appender = new StdErrAppender(config, output, UTC);
-        factory.getRootLogger().setAppender(appender);
+        appender.setStream(output);
 
         JettyLogger log = factory.getJettyLogger(JettyLoggerTest.class.getName());
         try (StacklessLogging ignored = new StacklessLogging(log))
@@ -364,11 +317,11 @@ public class JettyLoggerTest
     public void testErrorFiltering()
     {
         JettyLoggerConfiguration config = new JettyLoggerConfiguration();
-        JettyLoggerFactory factory = JettyLoggerFactory.getLoggerFactory().initialize(config);
+        JettyLoggerFactory factory = new JettyLoggerFactory(config);
 
+        StdErrAppender appender = (StdErrAppender)factory.getRootLogger().getAppender();
         CapturedStream output = new CapturedStream();
-        StdErrAppender appender = new StdErrAppender(config, output, UTC);
-        factory.getRootLogger().setAppender(appender);
+        appender.setStream(output);
 
         JettyLogger log = factory.getJettyLogger(JettyLoggerTest.class.getName());
         try (StacklessLogging ignored = new StacklessLogging(log))
@@ -396,11 +349,11 @@ public class JettyLoggerTest
     public void testOffFiltering()
     {
         JettyLoggerConfiguration config = new JettyLoggerConfiguration();
-        JettyLoggerFactory factory = JettyLoggerFactory.getLoggerFactory().initialize(config);
+        JettyLoggerFactory factory = new JettyLoggerFactory(config);
 
+        StdErrAppender appender = (StdErrAppender)factory.getRootLogger().getAppender();
         CapturedStream output = new CapturedStream();
-        StdErrAppender appender = new StdErrAppender(config, output, UTC);
-        factory.getRootLogger().setAppender(appender);
+        appender.setStream(output);
 
         JettyLogger log = factory.getJettyLogger(JettyLoggerTest.class.getName());
 
@@ -431,11 +384,11 @@ public class JettyLoggerTest
     public void testDebugFiltering()
     {
         JettyLoggerConfiguration config = new JettyLoggerConfiguration();
-        JettyLoggerFactory factory = JettyLoggerFactory.getLoggerFactory().initialize(config);
+        JettyLoggerFactory factory = new JettyLoggerFactory(config);
 
+        StdErrAppender appender = (StdErrAppender)factory.getRootLogger().getAppender();
         CapturedStream output = new CapturedStream();
-        StdErrAppender appender = new StdErrAppender(config, output, UTC);
-        factory.getRootLogger().setAppender(appender);
+        appender.setStream(output);
 
         JettyLogger log = factory.getJettyLogger(JettyLoggerTest.class.getName());
 
@@ -481,11 +434,11 @@ public class JettyLoggerTest
     public void testIsDebugEnabled()
     {
         JettyLoggerConfiguration config = new JettyLoggerConfiguration();
-        JettyLoggerFactory factory = JettyLoggerFactory.getLoggerFactory().initialize(config);
+        JettyLoggerFactory factory = new JettyLoggerFactory(config);
 
+        StdErrAppender appender = (StdErrAppender)factory.getRootLogger().getAppender();
         CapturedStream output = new CapturedStream();
-        StdErrAppender appender = new StdErrAppender(config, output, UTC);
-        factory.getRootLogger().setAppender(appender);
+        appender.setStream(output);
 
         JettyLogger log = factory.getJettyLogger(JettyLoggerTest.class.getName());
 
@@ -515,11 +468,11 @@ public class JettyLoggerTest
     public void testSetGetLevel()
     {
         JettyLoggerConfiguration config = new JettyLoggerConfiguration();
-        JettyLoggerFactory factory = JettyLoggerFactory.getLoggerFactory().initialize(config);
+        JettyLoggerFactory factory = new JettyLoggerFactory(config);
 
+        StdErrAppender appender = (StdErrAppender)factory.getRootLogger().getAppender();
         CapturedStream output = new CapturedStream();
-        StdErrAppender appender = new StdErrAppender(config, output, UTC);
-        factory.getRootLogger().setAppender(appender);
+        appender.setStream(output);
 
         JettyLogger log = factory.getJettyLogger(JettyLoggerTest.class.getName());
 
@@ -549,11 +502,11 @@ public class JettyLoggerTest
     public void testToString()
     {
         JettyLoggerConfiguration config = new JettyLoggerConfiguration();
-        JettyLoggerFactory factory = JettyLoggerFactory.getLoggerFactory().initialize(config);
+        JettyLoggerFactory factory = new JettyLoggerFactory(config);
 
+        StdErrAppender appender = (StdErrAppender)factory.getRootLogger().getAppender();
         CapturedStream output = new CapturedStream();
-        StdErrAppender appender = new StdErrAppender(config, output, UTC);
-        factory.getRootLogger().setAppender(appender);
+        appender.setStream(output);
 
         JettyLogger log = factory.getJettyLogger("xxx");
 
@@ -584,11 +537,11 @@ public class JettyLoggerTest
         props.setProperty("org.eclipse.jetty.io.LEVEL", "WARN");
 
         JettyLoggerConfiguration config = new JettyLoggerConfiguration(props);
-        JettyLoggerFactory factory = JettyLoggerFactory.getLoggerFactory().initialize(config);
+        JettyLoggerFactory factory = new JettyLoggerFactory(config);
 
+        StdErrAppender appender = (StdErrAppender)factory.getRootLogger().getAppender();
         CapturedStream output = new CapturedStream();
-        StdErrAppender appender = new StdErrAppender(config, output, UTC);
-        factory.getRootLogger().setAppender(appender);
+        appender.setStream(output);
 
         JettyLogger root = factory.getJettyLogger("");
         assertLevel(root, Level.INFO); // default
@@ -616,11 +569,11 @@ public class JettyLoggerTest
     public void testSuppressed()
     {
         JettyLoggerConfiguration config = new JettyLoggerConfiguration();
-        JettyLoggerFactory factory = JettyLoggerFactory.getLoggerFactory().initialize(config);
+        JettyLoggerFactory factory = new JettyLoggerFactory(config);
 
+        StdErrAppender appender = (StdErrAppender)factory.getRootLogger().getAppender();
         CapturedStream output = new CapturedStream();
-        StdErrAppender appender = new StdErrAppender(config, output, UTC);
-        factory.getRootLogger().setAppender(appender);
+        appender.setStream(output);
 
         JettyLogger log = factory.getJettyLogger("xxx");
 

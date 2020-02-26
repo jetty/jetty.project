@@ -41,8 +41,8 @@ public class JettyLoggingServiceProvider implements SLF4JServiceProvider
     @Override
     public void initialize()
     {
-        JettyLoggerConfiguration config = new JettyLoggerConfiguration().loadRuntime(this.getClass().getClassLoader());
-        loggerFactory = JettyLoggerFactory.getLoggerFactory().initialize(config);
+        JettyLoggerConfiguration config = new JettyLoggerConfiguration().load(this.getClass().getClassLoader());
+        loggerFactory = new JettyLoggerFactory(config);
         markerFactory = new BasicMarkerFactory();
         mdcAdapter = new NOPMDCAdapter(); // TODO: Provide Jetty Implementation?
     }

@@ -18,7 +18,10 @@
 
 package org.eclipse.jetty.logging;
 
+import org.slf4j.event.Level;
+
 public interface JettyAppender
 {
-    void emit(JettyLoggingEvent event);
+    void emit(JettyLogger logger, Level level, long timestamp, String threadName,
+              Throwable throwable, String message, Object... argumentArray);
 }
