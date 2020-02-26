@@ -160,6 +160,7 @@ public class HouseKeeper extends AbstractLifeCycle
             _task = null;
             if (_ownScheduler && _scheduler != null)
             {
+                _ownScheduler = false;
                 _scheduler.stop();
                 _scheduler = null;
             }
