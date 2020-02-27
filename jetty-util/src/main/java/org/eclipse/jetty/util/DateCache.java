@@ -239,7 +239,7 @@ public class DateCache
         // recheck the tick, to save multiple formats
         if (tick == null || tick._seconds != seconds)
         {
-            String s = ZonedDateTime.ofInstant(Instant.now(), _zoneId).format(_tzFormat);
+            String s = ZonedDateTime.ofInstant(Instant.ofEpochMilli(now), _zoneId).format(_tzFormat);
             _tick = new Tick(seconds, s);
             tick = _tick;
         }

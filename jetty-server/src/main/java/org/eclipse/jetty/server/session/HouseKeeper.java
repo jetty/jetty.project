@@ -158,8 +158,9 @@ public class HouseKeeper extends AbstractLifeCycle
                 LOG.info("{} Stopped scavenging", _sessionIdManager.getWorkerName());
             }
             _task = null;
-            if (_ownScheduler)
+            if (_ownScheduler && _scheduler != null)
             {
+                _ownScheduler = false;
                 _scheduler.stop();
                 _scheduler = null;
             }

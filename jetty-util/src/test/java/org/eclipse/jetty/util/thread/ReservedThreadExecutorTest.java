@@ -32,6 +32,8 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -183,6 +185,26 @@ public class ReservedThreadExecutorTest
         assertThat(_reservedExecutor.getAvailable(), is(0));
     }
 
+    @Test
+    public void testReservedIdleTimeoutWithOneReservedThread() throws Exception
+    {
+        long idleTimeout = 500;
+        _reservedExecutor.stop();
+        _reservedExecutor.setIdleTimeout(idleTimeout, TimeUnit.MILLISECONDS);
+        _reservedExecutor.start();
+
+        assertThat(_reservedExecutor.tryExecute(NOOP), is(false));
+        Thread thread = _executor.startThread();
+        assertNotNull(thread);
+        waitForAvailable(1);
+
+        Thread.sleep(2 * idleTimeout);
+
+        waitForAvailable(0);
+        thread.join(2 * idleTimeout);
+        assertFalse(thread.isAlive());
+    }
+
     protected void waitForAvailable(int size) throws InterruptedException
     {
         long started = System.nanoTime();
@@ -211,11 +233,16 @@ public class ReservedThreadExecutorTest
             _queue.addLast(task);
         }
 
-        public void startThread()
+        public Thread startThread()
         {
             Runnable task = _queue.pollFirst();
             if (task != null)
-                new Thread(task).start();
+            {
+                Thread thread = new Thread(task);
+                thread.start();
+                return thread;
+            }
+            return null;
         }
     }
 
