@@ -1,3 +1,5 @@
+jetty-9.4.28-SNAPSHOT
+
 jetty-9.4.27.v20200227 - 27 February 2020
  + 3247 Generate jetty-maven-plugin website
  + 4247 Cookie security attributes are going to mandated by Google Chrome
