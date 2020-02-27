@@ -22,7 +22,7 @@ lib/logging/slf4j-api-${slf4j.version}.jar
 lib/logging/slf4j-jdk14-${slf4j.version}.jar
 
 [ini]
-slf4j.version?=1.8.0-beta1
+slf4j.version?=2.0.0-alpha1
 java.util.logging.config.file=${jetty.base}/resources/java-util-logging.properties
 jetty.webapp.addSystemClasses+=,org.slf4j.
 

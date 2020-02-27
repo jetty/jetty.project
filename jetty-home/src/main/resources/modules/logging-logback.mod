@@ -24,8 +24,8 @@ lib/logging/logback-classic-${logback.version}.jar
 lib/logging/logback-core-${logback.version}.jar
 
 [ini]
-slf4j.version?=1.8.0-beta1
-logback.version?=1.3.0-alpha4
+slf4j.version?=2.0.0-alpha1
+logback.version?=1.3.0-alpha5
 jetty.webapp.addSystemClasses+=,org.slf4j.,ch.qos.logback.
 
 [license]
