@@ -18,7 +18,9 @@
 
 package org.eclipse.jetty.fcgi.server;
 
+import java.util.LinkedList;
 import java.util.Locale;
+import java.util.Queue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -36,7 +38,6 @@ import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpChannelState;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpInput;
-import org.eclipse.jetty.server.HttpInputOverFCGI;
 import org.eclipse.jetty.server.HttpTransport;
 import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
@@ -46,6 +47,8 @@ public class HttpChannelOverFCGI extends HttpChannel
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpChannelOverFCGI.class);
 
+    private final Queue<HttpInput.Content> _contentQueue = new LinkedList<>();
+    private boolean _contentFailed;
     private final HttpFields.Mutable fields = HttpFields.build();
     private final Dispatcher dispatcher;
     private String method;
@@ -58,6 +61,46 @@ public class HttpChannelOverFCGI extends HttpChannel
     {
         super(connector, configuration, endPoint, transport);
         this.dispatcher = new Dispatcher(connector.getServer().getThreadPool(), this);
+    }
+
+    void enqueueContent(HttpInput.Content content)
+    {
+        synchronized (_contentQueue)
+        {
+            if (_contentFailed)
+                content.failed(null);
+            else
+                _contentQueue.offer(content);
+        }
+    }
+
+    void pushContent()
+    {
+        HttpInput.Content content;
+        synchronized (_contentQueue)
+        {
+            if (_contentFailed)
+                content = null;
+            else
+                content = _contentQueue.poll();
+        }
+        if (content != null)
+            onContent(content);
+    }
+
+    void failContent(Throwable failure)
+    {
+        synchronized (_contentQueue)
+        {
+            _contentFailed = true;
+            while (true)
+            {
+                HttpInput.Content content = _contentQueue.poll();
+                if (content == null)
+                    break;
+                content.failed(failure);
+            }
+        }
     }
 
     @Override
