@@ -47,7 +47,7 @@ import static org.eclipse.jetty.server.handler.InetAccessSet.PatternTuple;
  * provided by and {@link IncludeExcludeSet} over a {@link InetAddressSet}. This
  * handler uses the real internet address of the connection, not one reported in
  * the forwarded for headers, as this cannot be as easily forged.
- * <p>
+ * </p>
  */
 public class InetAccessHandler extends HandlerWrapper
 {
@@ -67,13 +67,13 @@ public class InetAccessHandler extends HandlerWrapper
     /**
      * Includes an InetAccess pattern with an optional connector name, address and URI mapping.
      *
-     * The connector name is separated from the InetAddress pattern with an '@' character,
+     * <p>The connector name is separated from the InetAddress pattern with an '@' character,
      * and the InetAddress pattern is separated from the URI pattern using the "|" (pipe)
      * character. URI patterns follow the servlet specification for simple * prefix and
-     * suffix wild cards (e.g. /, /foo, /foo/bar, /foo/bar/*, *.baz).
+     * suffix wild cards (e.g. /, /foo, /foo/bar, /foo/bar/*, *.baz).</p>
      *
+     * <br>Examples:
      * <ul>
-     * Examples:
      * <li>"connector1@127.0.0.1|/foo"</li>
      * <li>"127.0.0.1|/foo"</li>
      * <li>"connector1@127.0.0.1"</li>
@@ -112,15 +112,15 @@ public class InetAccessHandler extends HandlerWrapper
     }
 
     /**
-     * Excludes an InetAccess entry pattern with an optional connector name and URI mapping.
+     * Excludes an InetAccess entry pattern with an optional connector name, address and URI mapping.
      *
-     * The connector name is separated from the InetAddress pattern with an '@' character,
+     * <p>The connector name is separated from the InetAddress pattern with an '@' character,
      * and the InetAddress pattern is separated from the URI pattern using the "|" (pipe)
      * character. URI patterns follow the servlet specification for simple * prefix and
-     * suffix wild cards (e.g. /, /foo, /foo/bar, /foo/bar/*, *.baz).
+     * suffix wild cards (e.g. /, /foo, /foo/bar, /foo/bar/*, *.baz).</p>
      *
+     * <br>Examples:
      * <ul>
-     * Examples:
      * <li>"connector1@127.0.0.1|/foo"</li>
      * <li>"127.0.0.1|/foo"</li>
      * <li>"connector1@127.0.0.1"</li>

@@ -106,14 +106,14 @@ public class InetAccessHandlerTest
         {
             if (inc.length() > 0)
             {
-                _handler.includeConnector(inc);
+                _handler.include(inc + "@");
             }
         }
         for (String exc : excludeConnectors.split(";", -1))
         {
             if (exc.length() > 0)
             {
-                _handler.excludeConnector(exc);
+                _handler.exclude(exc + "@");
             }
         }
 
@@ -177,24 +177,24 @@ public class InetAccessHandlerTest
             // test includeConnector
             {"", "127.0.0.1", "", "http_connector1", "", "200;200"},
             {"", "127.0.0.1-127.0.0.254", "", "http_connector1", "", "200;200"},
-            {"", "192.0.0.1", "", "http_connector1", "", "403;200"},
-            {"", "192.0.0.1-192.0.0.254", "", "http_connector1", "", "403;200"},
-            {"", "192.0.0.1", "", "http_connector2", "", "200;403"},
-            {"", "192.0.0.1-192.0.0.254", "", "http_connector2", "", "200;403"},
+            {"", "192.0.0.1", "", "http_connector1", "", "200;403"},
+            {"", "192.0.0.1-192.0.0.254", "", "http_connector1", "", "200;403"},
+            {"", "192.0.0.1", "", "http_connector2", "", "403;200"},
+            {"", "192.0.0.1-192.0.0.254", "", "http_connector2", "", "403;200"},
 
             // test includeConnector names where none of them match
             {"", "127.0.0.1", "", "nothttp", "", "200;200"},
             {"", "127.0.0.1-127.0.0.254", "", "nothttp", "", "200;200"},
-            {"", "192.0.0.1", "", "nothttp", "", "200;200"},
-            {"", "192.0.0.1-192.0.0.254", "", "nothttp", "", "200;200"},
+            {"", "192.0.0.1", "", "nothttp", "", "403;403"},
+            {"", "192.0.0.1-192.0.0.254", "", "nothttp", "", "403;403"},
 
             // text excludeConnector
-            {"", "127.0.0.1", "", "", "http_connector1", "200;200"},
-            {"", "127.0.0.1-127.0.0.254", "", "", "http_connector1", "200;200"},
-            {"", "192.0.0.1", "", "", "http_connector1", "200;403"},
-            {"", "192.0.0.1-192.0.0.254", "", "", "http_connector1", "200;403"},
-            {"", "192.0.0.1", "", "", "http_connector2", "403;200"},
-            {"", "192.0.0.1-192.0.0.254", "", "", "http_connector2", "403;200"},
+            {"", "127.0.0.1", "", "", "http_connector1", "403;200"},
+            {"", "127.0.0.1-127.0.0.254", "", "", "http_connector1", "403;200"},
+            {"", "192.0.0.1", "", "", "http_connector1", "403;403"},
+            {"", "192.0.0.1-192.0.0.254", "", "", "http_connector1", "403;403"},
+            {"", "192.0.0.1", "", "", "http_connector2", "403;403"},
+            {"", "192.0.0.1-192.0.0.254", "", "", "http_connector2", "403;403"},
 
             // test excludeConnector where none of them match.
             {"", "127.0.0.1", "", "", "nothttp", "200;200"},
@@ -203,38 +203,42 @@ public class InetAccessHandlerTest
             {"", "192.0.0.1-192.0.0.254", "", "", "nothttp", "403;403"},
 
             // both connectors are excluded
-            {"", "127.0.0.1", "", "", "http_connector1;http_connector2", "200;200"},
-            {"", "127.0.0.1-127.0.0.254", "", "", "http_connector1;http_connector2", "200;200"},
-            {"", "192.0.0.1", "", "", "http_connector1;http_connector2", "200;200"},
-            {"", "192.0.0.1-192.0.0.254", "", "", "http_connector1;http_connector2", "200;200"},
+            {"", "127.0.0.1", "", "", "http_connector1;http_connector2", "403;403"},
+            {"", "127.0.0.1-127.0.0.254", "", "", "http_connector1;http_connector2", "403;403"},
+            {"", "192.0.0.1", "", "", "http_connector1;http_connector2", "403;403"},
+            {"", "192.0.0.1-192.0.0.254", "", "", "http_connector1;http_connector2", "403;403"},
 
             // both connectors are included
             {"", "127.0.0.1", "", "http_connector1;http_connector2", "", "200;200"},
             {"", "127.0.0.1-127.0.0.254", "", "http_connector1;http_connector2", "", "200;200"},
-            {"", "192.0.0.1", "", "http_connector1;http_connector2", "", "403;403"},
-            {"", "192.0.0.1-192.0.0.254", "", "http_connector1;http_connector2", "", "403;403"},
+            {"", "192.0.0.1", "", "http_connector1;http_connector2", "", "200;200"},
+            {"", "192.0.0.1-192.0.0.254", "", "http_connector1;http_connector2", "", "200;200"},
+            {"", "", "127.0.0.1", "http_connector1;http_connector2", "", "403;403"},
 
             // exclude takes precedence over include
-            {"", "127.0.0.1", "", "http_connector1;http_connector2", "http_connector1;http_connector2", "200;200"},
-            {"", "127.0.0.1-127.0.0.254", "", "http_connector1;http_connector2", "http_connector1;http_connector2", "200;200"},
-            {"", "192.0.0.1", "", "http_connector1;http_connector2", "http_connector1;http_connector2", "200;200"},
-            {"", "192.0.0.1-192.0.0.254", "", "http_connector1;http_connector2", "http_connector1;http_connector2", "200;200"},
+            {"", "127.0.0.1", "", "http_connector1;http_connector2", "http_connector1;http_connector2", "403;403"},
+            {"", "127.0.0.1-127.0.0.254", "", "http_connector1;http_connector2", "http_connector1;http_connector2", "403;403"},
+            {"", "192.0.0.1", "", "http_connector1;http_connector2", "http_connector1;http_connector2", "403;403"},
+            {"", "192.0.0.1-192.0.0.254", "", "http_connector1;http_connector2", "http_connector1;http_connector2", "403;403"},
 
             // Test path specific include/exclude.
-            {"/testPath", "", "", "http_connector1", "", "200;200"},
+            {"/testPath", "", "", "http_connector1", "", "200;403"},
             {"/", "127.0.0.1", "127.0.0.1|/testPath", "http_connector1", "", "200;200"},
-            {"/testPath", "127.0.0.1", "127.0.0.1|/testPath", "http_connector1", "", "403;200"},
-            {"/notTestPath", "127.0.1.11|/testPath", "", "http_connector1", "", "200;200"},
-            {"/testPath", "127.0.1.11|/testPath", "", "http_connector1", "", "403;200"},
+            {"/testPath", "127.0.0.1", "127.0.0.1|/testPath", "http_connector1", "", "403;403"},
+            {"/notTestPath", "127.0.1.11|/testPath", "", "http_connector1", "", "200;403"},
+            {"/testPath", "127.0.1.11|/testPath", "", "http_connector1", "", "200;403"},
             {"/testPath", "127.0.0.13|/testPath;127.0.0.1|/testPath", "", "http_connector1", "", "200;200"},
-            {"/testPath", "127.0.0.1", "127.0.0.1|/testPath", "http_connector1", "", "403;200"},
-            {"/a/b", "", "127.0.0.1|/a/*", "http_connector1", "", "403;200"},
-            {"/b/a", "", "127.0.0.1|/a/*", "http_connector1", "", "200;200"},
-            {"/org/eclipse/jetty/test.html", "127.0.0.1|*.html", "127.0.0.1|*.xml", "", "http_connector2", "200;200"},
-            {"/org/eclipse/jetty/test.xml", "127.0.0.1|*.html", "127.0.0.1|*.xml", "", "http_connector2", "403;200"},
-            {"/a/test.html", "", "127.0.0.1|*.html;127.0.0.10|/a/*", "http_connector1", "", "403;200"},
-            {"/foo/bar/test.xml", "127.0.0.1|/foo/*", "127.0.0.0-127.0.0.2|*.html", "http_connector1", "", "200;200"},
-            {"/foo/bar/test.html", "127.0.0.1|/foo/*", "127.0.0.0-127.0.0.2|*.html", "http_connector1", "", "403;200"},
+            {"/testPath", "127.0.0.1", "127.0.0.1|/testPath", "http_connector1", "", "403;403"},
+            {"/", "127.0.0.1", "127.0.0.1|/testPath", "http_connector1", "", "200;200"},
+            {"/a/b", "", "127.0.0.1|/a/*", "", "", "403;403"},
+            {"/b/a", "", "127.0.0.1|/a/*", "", "", "200;200"},
+            {"/org/eclipse/jetty/test.html", "127.0.0.1|*.html", "127.0.0.1|*.xml", "", "", "200;200"},
+            {"/org/eclipse/jetty/test.xml", "127.0.0.1|*.html", "127.0.0.1|*.xml", "", "", "403;403"},
+            {"/org/eclipse/jetty/test.pdf", "127.0.0.1|*.html", "127.0.0.1|*.xml", "", "", "403;403"},
+            {"/a/test.html", "", "127.0.0.1|*.html;127.0.0.10|/a/*", "", "", "403;403"},
+            {"/foo/bar/test.xml", "127.0.0.1|/foo/*", "127.0.0.0-127.0.0.2|*.html", "", "", "200;200"},
+            {"/foo/bar/test.html", "127.0.0.1|/foo/*", "127.0.0.0-127.0.0.2|*.html", "", "", "403;403"},
+            {"/foo/bar/test.xml", "127.0.0.1|/foo/bar/*", "127.0.0.1|/foo/*", "", "", "403;403"},
         };
         return Arrays.stream(data).map(Arguments::of);
     }
