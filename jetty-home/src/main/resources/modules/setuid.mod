@@ -9,7 +9,7 @@ changing to a restricted user (eg jetty).
 server
 
 [lib]
-lib/setuid/jetty-setuid-java-1.0.3.jar
+lib/setuid/*.jar
 
 [xml]
 etc/jetty-setuid.xml
@@ -20,3 +20,4 @@ etc/jetty-setuid.xml
 # jetty.setuid.userName=jetty
 # jetty.setuid.groupName=jetty
 # jetty.setuid.umask=002
+# jetty.setuid.clearSupplementalGroups=false
