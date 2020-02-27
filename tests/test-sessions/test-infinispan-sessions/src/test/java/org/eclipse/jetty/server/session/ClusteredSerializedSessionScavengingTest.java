@@ -24,7 +24,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 /**
- * ClusteredSessionScavengingTest
+ * ClusteredSerializedSessionScavengingTest
  */
 public class ClusteredSerializedSessionScavengingTest extends AbstractClusteredSessionScavengingTest
 {

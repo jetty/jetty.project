@@ -18,9 +18,18 @@
 
 package org.eclipse.jetty.session.infinispan;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+import org.infinispan.commons.marshall.Externalizer;
+import org.infinispan.protostream.FileDescriptorSource;
 import org.infinispan.protostream.MessageMarshaller;
+import org.infinispan.protostream.ProtobufUtil;
+import org.infinispan.protostream.SerializationContext;
 
 /**
  * SessionDataMarshaller
@@ -30,13 +39,35 @@ import org.infinispan.protostream.MessageMarshaller;
  * control to ensure that session attributes can be deserialized using either
  * the container class loader or the webapp classloader, as appropriate.
  */
-public class SessionDataMarshaller implements MessageMarshaller<InfinispanSessionData>
+public class SessionDataMarshaller implements MessageMarshaller<InfinispanSessionData>, Externalizer<InfinispanSessionData>
 {
     /**
      * The version of the serializer.
      */
     private static final int VERSION = 0;
 
+    private static final Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
+    
+    private static SerializationContext serializationContext;
+
+    static
+    {
+        FileDescriptorSource fds = new FileDescriptorSource();
+        try
+        {
+            fds.addProtoFiles("/session.proto");
+            serializationContext = ProtobufUtil.newSerializationContext();
+            serializationContext.registerProtoFiles(fds);
+            serializationContext.registerMarshaller(new SessionDataMarshaller());
+        }
+        catch (IOException e)
+        {
+            serializationContext = null;
+            LOG.warn("SerializationContext cannot be initialized", e);
+        }
+
+    }
+    
     @Override
     public Class<? extends InfinispanSessionData> getJavaClass()
     {
@@ -49,6 +80,50 @@ public class SessionDataMarshaller implements MessageMarshaller<InfinispanSessio
         return "org_eclipse_jetty_session_infinispan.InfinispanSessionData";
     }
 
+    @Override
+    public InfinispanSessionData readObject(ObjectInput input) throws IOException, ClassNotFoundException
+    {
+        if (serializationContext != null)
+        {
+            ByteArrayOutputStream os = new ByteArrayOutputStream();
+            int bufferSize = 4 * 1024;
+            byte[] buffer = new byte[bufferSize];
+            int len = -1;
+            while ((len = input.read(buffer, 0, bufferSize)) != -1)
+            {
+                os.write(buffer, 0, len);
+            }
+
+            // invokes readFrom(ProtoStreamReader)
+            InfinispanSessionData data = ProtobufUtil.fromByteArray(serializationContext, os.toByteArray(),
+                    InfinispanSessionData.class);
+            if (data != null)
+            {
+                data.deserializeAttributes();
+            }
+            return data;
+        }
+        else
+        {
+            throw new IOException("SerializationContext is not initialized");
+        }
+    }
+    
+    @Override
+    public void writeObject(ObjectOutput output, InfinispanSessionData object) throws IOException
+    {
+        if (serializationContext != null) 
+        {
+            // invokes writeTo(ProtoStreamWriter, InfinispanSessionData)
+            byte[] data = ProtobufUtil.toByteArray(serializationContext, object);
+            output.write(data);
+        }
+        else
+        {
+            throw new IOException("SerializationContext is not initialized");
+        }
+    }
+    
     @Override
     public InfinispanSessionData readFrom(ProtoStreamReader in) throws IOException
     {

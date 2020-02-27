@@ -33,7 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
 /**
- * InfinispanSessionDataStoreTest
+ * SerializedInfinispanSessionDataStoreTest
  */
 public class SerializedInfinispanSessionDataStoreTest extends AbstractSessionDataStoreTest
 {
