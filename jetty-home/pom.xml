@@ -13,7 +13,7 @@
   <properties>
     <assembly-directory>${basedir}/target/jetty-home</assembly-directory>
     <source-assembly-directory>${basedir}/target/jetty-home-sources</source-assembly-directory>
-    <jetty-setuid-version>1.0.3</jetty-setuid-version>
+    <jetty-setuid-version>1.0.4</jetty-setuid-version>
   </properties>
 
   <build>
