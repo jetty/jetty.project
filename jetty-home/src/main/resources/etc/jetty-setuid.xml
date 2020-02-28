@@ -13,6 +13,9 @@
         <Set name="umaskOctal"><Property name="jetty.setuid.umask" default="002"/></Set>
         <Set name="username"><Property name="jetty.setuid.userName" default="jetty"/></Set>
         <Set name="groupname"><Property name="jetty.setuid.groupName" default="jetty"/></Set>
+        <Set name="clearSupplementalGroups">
+          <Property name="jetty.setuid.clearSupplementalGroups" default="false" />
+        </Set>
         <!-- uncomment to change the limits on number of open file descriptors for root -->
         <!--
         <Call name="setRLimitNoFiles">

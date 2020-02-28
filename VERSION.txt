@@ -355,6 +355,40 @@ jetty-10.0.0-alpha0 - 11 July 2019
  + 3849 ClosedChannelException from jetty-test-webapp javax websocket chat
    example
 
+jetty-9.4.27.v20200227 - 27 February 2020
+ + 3247 Generate jetty-maven-plugin website
+ + 4247 Cookie security attributes are going to mandated by Google Chrome
+ + 4360 Upgrade to Apache Jasper 8.5.49
+ + 4475 WebSocket JSR356 implementation not honoring javadoc of MessageHandler
+   on Whole<Reader>
+ + 4495 Review ReservedThreadExecutor's concurrency model
+ + 4504 X-Forwarded-Server header overwrites X-Forwarded-Host
+ + 4520 Jetty jdbc session manager causing exceptions for violating primary key
+   in inserting session in the table
+ + 4529 ErrorHandler showing servlet info, can not be disabled unless
+   overriding most of its functionality
+ + 4533 Reinstate hard close in dispatcher
+ + 4537 High CPU on Jetty Websocket thread
+ + 4541 Jetty server always allocates maximum response header size
+ + 4550 XmlConfiguration constructor selection based on number of arguments
+ + 4567 Jetty logging supporting Throwable as last argument
+ + 4573 Order dependency of X-Forwarded-Host and X-Forwarded-Port
+ + 4575 Stopping ReservedThreadExecutor may hang
+ + 4577 request getPathInfo returns null
+ + 4594 ServletContextListeners added to destroyServletContextListeners in
+   ContextHandler::startContext() are not removed by
+   ContextHandler::removeEventListener()
+ + 4606 DateCache.formatNow(long now) does not honor the passed in long
+ + 4612 ReservedThreadExecutor hangs when the last reserved thread idles out
+
+jetty-9.4.26.v20200117 - 17 January 2020
+ + 2620 Exception from user endpoint onClose results in unclosed
+   WebSocketSession
+ + 4383 Errors deleting multipart tmp files java.lang.NullPointerException
+   under heavy load
+ + 4444 TLS Connection Timeout Intermittently
+ + 4461 IllegalStateException in HttpOutput with Jersey
+
 jetty-9.4.25.v20191220 - 20 December 2019
  + 995 UrlEncoded.encodeString should skip more characters
  + 2195 Add parameter expansion to start.jar --exec parameters
