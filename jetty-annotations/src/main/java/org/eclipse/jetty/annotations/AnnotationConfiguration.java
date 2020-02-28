@@ -39,6 +39,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import javax.servlet.ServletContainerInitializer;
 import javax.servlet.annotation.HandlesTypes;
 
@@ -811,11 +812,11 @@ public class AnnotationConfiguration extends AbstractConfiguration
         long start = 0;
         if (LOG.isDebugEnabled())
             start = System.nanoTime();
-        List<ServletContainerInitializer> scis = TypeUtil.loadAll(ServiceLoader.load(ServletContainerInitializer.class));
+        List<ServletContainerInitializer> scis = TypeUtil.load(ServiceLoader.load(ServletContainerInitializer.class)).collect(Collectors.toList());
         if (LOG.isDebugEnabled())
             LOG.debug("Service loaders found in {}ms", (TimeUnit.MILLISECONDS.convert((System.nanoTime() - start), TimeUnit.NANOSECONDS)));
 
-        Map<ServletContainerInitializer, Resource> sciResourceMap = new HashMap<ServletContainerInitializer, Resource>();
+        Map<ServletContainerInitializer, Resource> sciResourceMap = new HashMap<>();
         ServletContainerInitializerOrdering initializerOrdering = getInitializerOrdering(context);
 
         //Get initial set of SCIs that aren't from excluded jars or excluded by the containerExclusionPattern, or excluded

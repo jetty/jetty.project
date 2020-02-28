@@ -54,7 +54,7 @@ public class ALPNClientConnectionFactory extends NegotiatingClientConnectionFact
         IllegalStateException failure = new IllegalStateException("No Client ALPNProcessors!");
 
         // Use a for loop on iterator so load exceptions can be caught and ignored
-        for (Client processor : TypeUtil.loadAll(ServiceLoader.load(Client.class)))
+        TypeUtil.load(ServiceLoader.load(Client.class)).forEach((processor) ->
         {
             try
             {
@@ -67,7 +67,7 @@ public class ALPNClientConnectionFactory extends NegotiatingClientConnectionFact
                     LOG.debug("Could not initialize " + processor, x);
                 failure.addSuppressed(x);
             }
-        }
+        });
 
         if (LOG.isDebugEnabled())
         {

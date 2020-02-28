@@ -51,7 +51,7 @@ public class ALPNServerConnectionFactory extends NegotiatingServerConnectionFact
 
         IllegalStateException failure = new IllegalStateException("No Server ALPNProcessors!");
         // Use a for loop on iterator so load exceptions can be caught and ignored
-        for (Server processor : TypeUtil.loadAll(ServiceLoader.load(Server.class)))
+        TypeUtil.load(ServiceLoader.load(Server.class)).forEach((processor) ->
         {
             try
             {
@@ -65,7 +65,7 @@ public class ALPNServerConnectionFactory extends NegotiatingServerConnectionFact
                 if (x != failure)
                     failure.addSuppressed(x);
             }
-        }
+        });
 
         if (LOG.isDebugEnabled())
         {

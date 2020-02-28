@@ -23,6 +23,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.List;
 import java.util.ServiceLoader;
+import java.util.stream.Collectors;
 
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -43,7 +44,7 @@ public abstract class Credential implements Serializable
 {
     private static final long serialVersionUID = -7760551052768181572L;
     private static final Logger LOG = Log.getLogger(Credential.class);
-    private static final List<CredentialProvider> CREDENTIAL_PROVIDERS = TypeUtil.loadAll(ServiceLoader.load(CredentialProvider.class));
+    private static final List<CredentialProvider> CREDENTIAL_PROVIDERS = TypeUtil.load(ServiceLoader.load(CredentialProvider.class)).collect(Collectors.toList());
 
     /**
      * Check a credential

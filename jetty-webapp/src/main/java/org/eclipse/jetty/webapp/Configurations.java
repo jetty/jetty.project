@@ -75,19 +75,18 @@ public class Configurations extends AbstractList<Configuration> implements Dumpa
     {
         if (__known.isEmpty())
         {
-            List<Configuration> configs = TypeUtil.loadAll(ServiceLoader.load(Configuration.class));
-            for (Configuration configuration : configs)
+            TypeUtil.load(ServiceLoader.load(Configuration.class)).forEach(configuration ->
             {
                 if (!configuration.isAvailable())
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("Configuration unavailable: " + configuration);
                     __unavailable.add(configuration);
-                    continue;
+                    return;
                 }
                 __known.add(configuration);
                 __knownByClassName.add(configuration.getClass().getName());
-            }
+            });
 
             sort(__known);
             if (LOG.isDebugEnabled())

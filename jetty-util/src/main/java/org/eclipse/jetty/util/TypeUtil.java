@@ -41,10 +41,11 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.ServiceConfigurationError;
 import java.util.ServiceLoader;
-import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -66,7 +67,6 @@ public class TypeUtil
     public static final int LF = '\n';
 
     private static final HashMap<String, Class<?>> name2Class = new HashMap<>();
-    private static final int MAX_ERRORS = 1000;
 
     static
     {
@@ -757,87 +757,27 @@ public class TypeUtil
     }
 
     /**
-     * Uses the {@link ServiceLoader} to assemble the service providers into a list.
+     * Uses the {@link ServiceLoader} to return a Stream of the service providers which does not throw.
      * If loading a service type throws {@link ServiceConfigurationError},
      * it warns and continues iterating through the service loader.
      * @param <T> The class of the service type.
      * @param serviceLoader The service loader to use.
-     * @return a list of the loaded service providers.
-     * @throws ServiceConfigurationError If the number of errors exceeds {@link #MAX_ERRORS}
+     * @return a stream of the loaded service providers.
      */
-    public static <T> List<T> loadAll(ServiceLoader<T> serviceLoader)
+    public static <T> Stream<T> load(ServiceLoader<T> serviceLoader)
     {
-        List<T> list = new ArrayList<>();
-        Iterator<T> iterator = serviceLoader.iterator();
-
-        int errors = 0;
-        while (true)
+        return serviceLoader.stream().map((provider) ->
         {
             try
             {
-                if (!iterator.hasNext())
-                    break;
-                list.add(iterator.next());
+                // Attempt to load service, will either return a service, throw an error, or return null.
+                return provider.get();
             }
-            catch (ServiceConfigurationError e)
+            catch (ServiceConfigurationError error)
             {
-                LOG.warn(e);
-                if (++errors >= MAX_ERRORS)
-                    throw e;
+                LOG.warn("Service Provider failed to load", error);
             }
-        }
-
-        return list;
-    }
-
-    /**
-     * Uses the {@link ServiceLoader} to get the first available service provider.
-     * If loading a service type throws {@link ServiceConfigurationError},
-     * it warns and continues iterating through the service loader until one is found.
-     * @param <T> The class of the service type.
-     * @param serviceLoader The service loader to use.
-     * @return an instance of a service provider, or null if none could be found.
-     * @throws ServiceConfigurationError If the number of errors exceeds {@link #MAX_ERRORS}
-     */
-    public static <T> T loadFirst(ServiceLoader<T> serviceLoader)
-    {
-        return loadFirst(serviceLoader, t -> true);
-    }
-
-    /**
-     * Uses the {@link ServiceLoader} to get the first service provider to match the provided predicate.
-     * If loading a service type throws {@link ServiceConfigurationError},
-     * it warns and continues iterating through the service loader until one is found.
-     * @param <T> The class of the service type.
-     * @param serviceLoader The service loader to use.
-     * @param predicate The predicate used to match a service provider.
-     * @return an instance of a service provider, or null if none could be found.
-     * @throws ServiceConfigurationError If the number of errors exceeds {@link #MAX_ERRORS}
-     */
-    public static <T> T loadFirst(ServiceLoader<T> serviceLoader, Predicate<T> predicate)
-    {
-        Iterator<T> iterator = serviceLoader.iterator();
-
-        int errors = 0;
-        while (true)
-        {
-            try
-            {
-                if (!iterator.hasNext())
-                    break;
-
-                T t = iterator.next();
-                if (predicate.test(t))
-                    return t;
-            }
-            catch (ServiceConfigurationError e)
-            {
-                LOG.warn(e);
-                if (++errors >= MAX_ERRORS)
-                    throw e;
-            }
-        }
-
-        return null;
+            return null;
+        }).filter(Objects::nonNull);
     }
 }
