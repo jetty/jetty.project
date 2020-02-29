@@ -64,7 +64,6 @@ public class InetAccessSet extends AbstractSet<InetAccessSet.PatternTuple> imple
         if (entry == null)
             return false;
 
-        // TODO: Can this be done more efficiently with something like PathMappings.
         for (PatternTuple tuple : tuples)
         {
             if (tuple.test(entry))
