@@ -41,10 +41,10 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.ServiceConfigurationError;
 import java.util.ServiceLoader;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.log.Log;
@@ -757,27 +757,23 @@ public class TypeUtil
     }
 
     /**
-     * Uses the {@link ServiceLoader} to return a Stream of the service providers which does not throw.
-     * If loading a service type throws {@link ServiceConfigurationError},
-     * it warns and continues iterating through the service loader.
+     * Used on a {@link ServiceLoader#stream()} with {@link Stream#flatMap(Function)},
+     * so that in the case a {@link ServiceConfigurationError} is thrown it warns and
+     * continues iterating through the service loader.
      * @param <T> The class of the service type.
-     * @param serviceLoader The service loader to use.
+     * @param provider The service provider to instantiate.
      * @return a stream of the loaded service providers.
      */
-    public static <T> Stream<T> load(ServiceLoader<T> serviceLoader)
+    public static <T> Stream<T> providerMap(ServiceLoader.Provider<T> provider)
     {
-        return serviceLoader.stream().map((provider) ->
+        try
         {
-            try
-            {
-                // Attempt to load service, will either return a service, throw an error, or return null.
-                return provider.get();
-            }
-            catch (ServiceConfigurationError error)
-            {
-                LOG.warn("Service Provider failed to load", error);
-            }
-            return null;
-        }).filter(Objects::nonNull);
+            return Stream.of(provider.get());
+        }
+        catch (ServiceConfigurationError error)
+        {
+            LOG.warn("Service Provider failed to load", error);
+            return Stream.empty();
+        }
     }
 }

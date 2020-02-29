@@ -77,7 +77,8 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
 
     static
     {
-        TypeUtil.load(ServiceLoader.load(Authenticator.Factory.class)).forEach(__knownAuthenticatorFactories::add);
+        ServiceLoader.load(Authenticator.Factory.class).stream()
+            .flatMap(TypeUtil::providerMap).forEach(__knownAuthenticatorFactories::add);
         __knownAuthenticatorFactories.add(new DefaultAuthenticatorFactory());
     }
 
