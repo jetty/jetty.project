@@ -188,6 +188,7 @@ public class WebSocketPolicy
      *
      * @return the timeout for async write operations. negative values indicate disabled timeout.
      */
+    @Deprecated
     public long getAsyncWriteTimeout()
     {
         return asyncWriteTimeout;
