@@ -82,7 +82,8 @@
               <artifactSet>
                 <excludes>
                   <exclude>javax:*</exclude>
-                  <exclude>org.eclipse.jetty.orbit:*</exclude>
+                  <exclude>org.eclipse.jetty.orbit:javax.mail.glassfish</exclude>
+                  <exclude>org.eclipse.jetty.orbit:javax.activation</exclude>
                   <exclude>org.mortbay.jetty:*</exclude>
                   <exclude>org.mortbay.jetty.alpn:*</exclude>
                   <exclude>org.slf4j:*</exclude>
