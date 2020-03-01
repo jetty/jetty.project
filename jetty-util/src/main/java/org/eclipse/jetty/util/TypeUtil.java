@@ -760,6 +760,8 @@ public class TypeUtil
      * Used on a {@link ServiceLoader#stream()} with {@link Stream#flatMap(Function)},
      * so that in the case a {@link ServiceConfigurationError} is thrown it warns and
      * continues iterating through the service loader.
+     * <br>Usage Example:
+     * <p>{@code ServiceLoader.load(Service.class).stream().flatMap(TypeUtil::providerMap).collect(Collectors.toList());}</p>
      * @param <T> The class of the service type.
      * @param provider The service provider to instantiate.
      * @return a stream of the loaded service providers.
