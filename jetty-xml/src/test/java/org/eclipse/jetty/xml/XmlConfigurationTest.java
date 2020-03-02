@@ -65,6 +65,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.emptyString;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
@@ -1381,6 +1382,9 @@ public class XmlConfigurationTest
             assertThat("Server instance created", server, instanceOf(BogusServer.class));
             BogusServer bogusServer = (BogusServer)server;
             assertThat("Server has thread pool", bogusServer.getThreadPool(), instanceOf(BogusThreadPool.class));
+            List<BogusConnector> connectors = bogusServer.getConnectors();
+            assertThat("Server has connectors", connectors, not(empty()));
+            assertThat("Connector[0]", connectors.get(0).getName(), is("plain"));
             List<String> warnLogs = logCapture.getLines()
                 .stream().filter(line -> line.contains(":WARN:"))
                 .collect(Collectors.toList());
