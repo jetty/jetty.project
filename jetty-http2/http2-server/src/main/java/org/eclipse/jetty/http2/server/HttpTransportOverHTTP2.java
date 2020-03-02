@@ -320,12 +320,16 @@ public class HttpTransportOverHTTP2 implements HttpTransport
         Request request = channel.getRequest();
         if (request.getHttpInput().hasContent())
             return channel.sendErrorOrAbort("Unexpected content in CONNECT request");
+
         Connection connection = (Connection)request.getAttribute(UPGRADE_CONNECTION_ATTRIBUTE);
+        if (connection == null)
+            return channel.sendErrorOrAbort("No UPGRADE_CONNECTION_ATTRIBUTE available");
+
         EndPoint endPoint = connection.getEndPoint();
         endPoint.upgrade(connection);
         stream.setAttachment(endPoint);
-        // Only now that we have switched the attachment,
-        // we can demand DATA frames to process them.
+
+        // Only now that we have switched the attachment, we can demand DATA frames to process them.
         stream.demand(1);
 
         if (LOG.isDebugEnabled())
@@ -340,21 +344,6 @@ public class HttpTransportOverHTTP2 implements HttpTransport
         Object attachment = stream.getAttachment();
         if (attachment instanceof HttpChannelOverHTTP2)
         {
-            // TODO: we used to "fake" a 101 response to upgrade the endpoint
-            //  but we don't anymore, so this code should be deleted.
-            HttpChannelOverHTTP2 channel = (HttpChannelOverHTTP2)attachment;
-            if (channel.getResponse().getStatus() == HttpStatus.SWITCHING_PROTOCOLS_101)
-            {
-                Connection connection = (Connection)channel.getRequest().getAttribute(UPGRADE_CONNECTION_ATTRIBUTE);
-                EndPoint endPoint = connection.getEndPoint();
-                // TODO: check that endPoint implements HTTP2Channel.
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Tunnelling DATA frames through {}", endPoint);
-                endPoint.upgrade(connection);
-                stream.setAttachment(endPoint);
-                return;
-            }
-
             // If the stream is not closed, it is still reading the request content.
             // Send a reset to the other end so that it stops sending data.
             if (!stream.isClosed())
@@ -366,6 +355,7 @@ public class HttpTransportOverHTTP2 implements HttpTransport
 
             // Consume the existing queued data frames to
             // avoid stalling the session flow control.
+            HttpChannelOverHTTP2 channel = (HttpChannelOverHTTP2)attachment;
             channel.consumeInput();
         }
     }

@@ -490,7 +490,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                                 break;
                         }
 
-                        // Check if an update is done (if so, do not close)
+                        // If an upgrade is attempted and failed with sendError call, then do not close here.
                         if (checkAndPrepareUpgrade())
                             break;
 
