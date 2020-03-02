@@ -245,7 +245,8 @@ public class InetAccessHandler extends HandlerWrapper
     protected boolean isAllowed(InetAddress addr, Request baseRequest, HttpServletRequest request)
     {
         String connectorName = baseRequest.getHttpChannel().getConnector().getName();
-        return _set.test(new AccessTuple(connectorName, addr, baseRequest.getPathInfo()));
+        String path = baseRequest.getMetaData().getURI().getDecodedPath();
+        return _set.test(new AccessTuple(connectorName, addr, path));
     }
 
     @Override
