@@ -45,6 +45,9 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.log.StdErrLog;
 import org.eclipse.jetty.util.resource.PathResource;
+import org.eclipse.jetty.xml.objects.BogusConnector;
+import org.eclipse.jetty.xml.objects.BogusServer;
+import org.eclipse.jetty.xml.objects.BogusThreadPool;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.RepeatedTest;
@@ -60,7 +63,10 @@ import org.xml.sax.SAXException;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.emptyString;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
@@ -265,7 +271,12 @@ public class XmlConfigurationTest
 
     public XmlConfiguration asXmlConfiguration(String rawXml) throws IOException, SAXException
     {
-        Path testFile = workDir.getEmptyPathDir().resolve("raw.xml");
+        return asXmlConfiguration("raw.xml", rawXml);
+    }
+
+    public XmlConfiguration asXmlConfiguration(String filename, String rawXml) throws IOException, SAXException
+    {
+        Path testFile = workDir.getEmptyPathDir().resolve(filename);
         try (BufferedWriter writer = Files.newBufferedWriter(testFile, UTF_8))
         {
             writer.write(rawXml);
@@ -1307,6 +1318,97 @@ public class XmlConfigurationTest
             assertThat(propName, tc.getTestString(), is(notNullValue()));
             assertThat(propName, tc.getTestString(), startsWith("file:"));
         }
+    }
+
+    @Test
+    public void testConfiguredWithNamedArg() throws Exception
+    {
+        XmlConfiguration xmlThreadPool = asXmlConfiguration("threadpool.xml",
+            "<Configure>\n" +
+                "  <New id=\"threadPool\" class=\"" + BogusThreadPool.class.getName() + "\">\n" +
+                "  </New>\n" +
+                "</Configure>");
+        XmlConfiguration xmlServer = asXmlConfiguration("server.xml",
+            "<Configure id=\"Server\" class=\"" + BogusServer.class.getName() + "\">\n" +
+                "  <Arg name=\"threadPool\"><Ref refid=\"threadPool\"/></Arg>\n" +
+                "</Configure>");
+
+        try (StdErrCapture logCapture = new StdErrCapture(XmlConfiguration.class))
+        {
+            Map<String, Object> idMap = mimicXmlConfigurationMain(xmlThreadPool, xmlServer);
+            Object server = idMap.get("Server");
+            assertThat("Server instance created", server, instanceOf(BogusServer.class));
+            BogusServer bogusServer = (BogusServer)server;
+            assertThat("Server has thread pool", bogusServer.getThreadPool(), instanceOf(BogusThreadPool.class));
+            List<String> logLines = logCapture.getLines();
+
+            String warnings = logLines.stream()
+                .filter(line -> line.contains(":WARN:"))
+                .collect(Collectors.joining("\n"));
+
+            assertThat("WARN logs", warnings, is(emptyString()));
+        }
+    }
+
+    @Test
+    public void testConfiguredSameWithNamedArgTwice() throws Exception
+    {
+        XmlConfiguration xmlThreadPool = asXmlConfiguration("threadpool.xml",
+            "<Configure>\n" +
+                "  <New id=\"threadPool\" class=\"" + BogusThreadPool.class.getName() + "\">\n" +
+                "  </New>\n" +
+                "</Configure>");
+        XmlConfiguration xmlServer = asXmlConfiguration("server.xml",
+            "<Configure id=\"Server\" class=\"" + BogusServer.class.getName() + "\">\n" +
+                "  <Arg name=\"threadPool\"><Ref refid=\"threadPool\"/></Arg>\n" +
+                "</Configure>");
+        XmlConfiguration xmlConnector = asXmlConfiguration("connector.xml",
+            "<Configure id=\"Server\" class=\"" + BogusServer.class.getName() + "\">\n" +
+                "  <Arg name=\"threadPool\"><Ref refid=\"threadPool\"/></Arg>\n" + // invalid line
+                "  <Call name=\"addConnector\">\n" +
+                "    <Arg>\n" +
+                "      <New class=\"" + BogusConnector.class.getName() + "\">\n" +
+                "        <Arg>plain</Arg>\n" +
+                "      </New>\n" +
+                "    </Arg>\n" +
+                "  </Call>\n" +
+                "</Configure>");
+
+        try (StdErrCapture logCapture = new StdErrCapture(XmlConfiguration.class))
+        {
+            Map<String, Object> idMap = mimicXmlConfigurationMain(xmlThreadPool, xmlServer, xmlConnector);
+            Object server = idMap.get("Server");
+            assertThat("Server instance created", server, instanceOf(BogusServer.class));
+            BogusServer bogusServer = (BogusServer)server;
+            assertThat("Server has thread pool", bogusServer.getThreadPool(), instanceOf(BogusThreadPool.class));
+            List<String> warnLogs = logCapture.getLines()
+                .stream().filter(line -> line.contains(":WARN:"))
+                .collect(Collectors.toList());
+
+            assertThat("WARN logs count", warnLogs.size(), is(1));
+
+            String actualWarn = warnLogs.get(0);
+            assertThat("WARN logs", actualWarn,
+                allOf(containsString("Ignored arg <Arg name="),
+                    containsString("connector.xml")
+                ));
+        }
+    }
+
+    /**
+     * This mimics the XML load behavior in XmlConfiguration.main(String ... args)
+     */
+    private Map<String, Object> mimicXmlConfigurationMain(XmlConfiguration... configurations) throws Exception
+    {
+        XmlConfiguration last = null;
+        for (XmlConfiguration configuration : configurations)
+        {
+            if (last != null)
+                configuration.getIdMap().putAll(last.getIdMap());
+            configuration.configure();
+            last = configuration;
+        }
+        return last.getIdMap();
     }
 
     @Test

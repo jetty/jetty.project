@@ -396,6 +396,8 @@ public class XmlConfiguration
      */
     public Object configure() throws Exception
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Configure {}", _location);
         return _processor.configure();
     }
 
@@ -466,6 +468,12 @@ public class XmlConfiguration
                     throw new IllegalStateException(String.format("No matching constructor %s in %s", oClass, _configuration));
                 }
             }
+            else
+            {
+                // The Object already existed, if it has <Arg> nodes, warn about them not being used.
+                XmlConfiguration.getNodes(_root, "Arg")
+                    .forEach((node) -> LOG.warn("Ignored arg {} in {}", node, this._configuration._location));
+            }
             if (id != null)
                 _configuration.getIdMap().put(id, obj);
 
@@ -502,7 +510,7 @@ public class XmlConfiguration
                 XmlParser.Node node = (XmlParser.Node)o;
                 if ("Arg".equals(node.getTag()))
                 {
-                    LOG.warn("Ignored arg: " + node);
+                    // Skip <Arg> nodes (not handled here, see: newObj(), call(), and construct() methods)
                     continue;
                 }
                 break;
@@ -1894,7 +1902,7 @@ public class XmlConfiguration
                 {
                     if (!arg.toLowerCase(Locale.ENGLISH).endsWith(".properties") && (arg.indexOf('=') < 0))
                     {
-                        XmlConfiguration configuration = new XmlConfiguration(Resource.newResource(arg).getURI().toURL());
+                        XmlConfiguration configuration = new XmlConfiguration(Resource.newResource(arg));
                         if (last != null)
                             configuration.getIdMap().putAll(last.getIdMap());
                         if (properties.size() > 0)
