@@ -41,13 +41,11 @@ import java.util.stream.Stream;
 
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.log.StdErrLog;
 import org.eclipse.jetty.util.resource.PathResource;
-import org.eclipse.jetty.xml.objects.BogusConnector;
-import org.eclipse.jetty.xml.objects.BogusServer;
-import org.eclipse.jetty.xml.objects.BogusThreadPool;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.RepeatedTest;
@@ -66,7 +64,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.emptyString;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
@@ -1321,70 +1318,96 @@ public class XmlConfigurationTest
         }
     }
 
+    public static class BarNamed
+    {
+        private String foo;
+        private List<String> zeds;
+
+        public BarNamed(@Name("foo") String foo)
+        {
+            this.foo = foo;
+        }
+
+        public void addZed(String zed)
+        {
+            if (zeds == null)
+                zeds = new ArrayList<>();
+            zeds.add(zed);
+        }
+
+        public List<String> getZeds()
+        {
+            return zeds;
+        }
+
+        public String getFoo()
+        {
+            return foo;
+        }
+    }
+
     @Test
     public void testConfiguredWithNamedArg() throws Exception
     {
-        XmlConfiguration xmlThreadPool = asXmlConfiguration("threadpool.xml",
+        XmlConfiguration xmlFoo = asXmlConfiguration("foo.xml",
             "<Configure>\n" +
-                "  <New id=\"threadPool\" class=\"" + BogusThreadPool.class.getName() + "\">\n" +
+                "  <New id=\"foo\" class=\"java.lang.String\">\n" +
+                "    <Arg>foozball</Arg>\n" +
                 "  </New>\n" +
                 "</Configure>");
-        XmlConfiguration xmlServer = asXmlConfiguration("server.xml",
-            "<Configure id=\"Server\" class=\"" + BogusServer.class.getName() + "\">\n" +
-                "  <Arg name=\"threadPool\"><Ref refid=\"threadPool\"/></Arg>\n" +
+        XmlConfiguration xmlBar = asXmlConfiguration("bar.xml",
+            "<Configure id=\"bar\" class=\"" + BarNamed.class.getName() + "\">\n" +
+                "  <Arg name=\"foo\"><Ref refid=\"foo\"/></Arg>\n" +
                 "</Configure>");
 
         try (StdErrCapture logCapture = new StdErrCapture(XmlConfiguration.class))
         {
-            Map<String, Object> idMap = mimicXmlConfigurationMain(xmlThreadPool, xmlServer);
-            Object server = idMap.get("Server");
-            assertThat("Server instance created", server, instanceOf(BogusServer.class));
-            BogusServer bogusServer = (BogusServer)server;
-            assertThat("Server has thread pool", bogusServer.getThreadPool(), instanceOf(BogusThreadPool.class));
-            List<String> logLines = logCapture.getLines();
+            Map<String, Object> idMap = mimicXmlConfigurationMain(xmlFoo, xmlBar);
+            Object obj = idMap.get("bar");
+            assertThat("BarNamed instance created", obj, instanceOf(BarNamed.class));
+            BarNamed bar = (BarNamed)obj;
+            assertThat("BarNamed has foo", bar.getFoo(), is("foozball"));
 
-            String warnings = logLines.stream()
-                .filter(line -> line.contains(":WARN:"))
-                .collect(Collectors.joining("\n"));
+            List<String> warnLogs = logCapture.getLines()
+                .stream().filter(line -> line.contains(":WARN:"))
+                .collect(Collectors.toList());
 
-            assertThat("WARN logs", warnings, is(emptyString()));
+            assertThat("WARN logs size", warnLogs.size(), is(0));
         }
     }
 
     @Test
     public void testConfiguredSameWithNamedArgTwice() throws Exception
     {
-        XmlConfiguration xmlThreadPool = asXmlConfiguration("threadpool.xml",
+        XmlConfiguration xmlFoo = asXmlConfiguration("foo.xml",
             "<Configure>\n" +
-                "  <New id=\"threadPool\" class=\"" + BogusThreadPool.class.getName() + "\">\n" +
+                "  <New id=\"foo\" class=\"java.lang.String\">\n" +
+                "    <Arg>foozball</Arg>\n" +
                 "  </New>\n" +
                 "</Configure>");
-        XmlConfiguration xmlServer = asXmlConfiguration("server.xml",
-            "<Configure id=\"Server\" class=\"" + BogusServer.class.getName() + "\">\n" +
-                "  <Arg name=\"threadPool\"><Ref refid=\"threadPool\"/></Arg>\n" +
+        XmlConfiguration xmlBar = asXmlConfiguration("bar.xml",
+            "<Configure id=\"bar\" class=\"" + BarNamed.class.getName() + "\">\n" +
+                "  <Arg name=\"foo\"><Ref refid=\"foo\"/></Arg>\n" +
                 "</Configure>");
-        XmlConfiguration xmlConnector = asXmlConfiguration("connector.xml",
-            "<Configure id=\"Server\" class=\"" + BogusServer.class.getName() + "\">\n" +
-                "  <Arg name=\"threadPool\"><Ref refid=\"threadPool\"/></Arg>\n" + // invalid line
-                "  <Call name=\"addConnector\">\n" +
-                "    <Arg>\n" +
-                "      <New class=\"" + BogusConnector.class.getName() + "\">\n" +
-                "        <Arg>plain</Arg>\n" +
-                "      </New>\n" +
-                "    </Arg>\n" +
+        XmlConfiguration xmlAddZed = asXmlConfiguration("zed.xml",
+            "<Configure id=\"bar\" class=\"" + BarNamed.class.getName() + "\">\n" +
+                "  <Arg name=\"foo\">baz</Arg>\n" + // the invalid line
+                "  <Call name=\"addZed\">\n" +
+                "    <Arg>plain-zero</Arg>\n" +
                 "  </Call>\n" +
                 "</Configure>");
 
         try (StdErrCapture logCapture = new StdErrCapture(XmlConfiguration.class))
         {
-            Map<String, Object> idMap = mimicXmlConfigurationMain(xmlThreadPool, xmlServer, xmlConnector);
-            Object server = idMap.get("Server");
-            assertThat("Server instance created", server, instanceOf(BogusServer.class));
-            BogusServer bogusServer = (BogusServer)server;
-            assertThat("Server has thread pool", bogusServer.getThreadPool(), instanceOf(BogusThreadPool.class));
-            List<BogusConnector> connectors = bogusServer.getConnectors();
-            assertThat("Server has connectors", connectors, not(empty()));
-            assertThat("Connector[0]", connectors.get(0).getName(), is("plain"));
+            Map<String, Object> idMap = mimicXmlConfigurationMain(xmlFoo, xmlBar, xmlAddZed);
+            Object obj = idMap.get("bar");
+            assertThat("BarNamed instance created", obj, instanceOf(BarNamed.class));
+            BarNamed bar = (BarNamed)obj;
+            assertThat("BarNamed has foo", bar.getFoo(), is("foozball"));
+            List<String> zeds = bar.getZeds();
+            assertThat("BarNamed has zeds", zeds, not(empty()));
+            assertThat("Zeds[0]", zeds.get(0), is("plain-zero"));
+
             List<String> warnLogs = logCapture.getLines()
                 .stream().filter(line -> line.contains(":WARN:"))
                 .collect(Collectors.toList());
@@ -1394,7 +1417,7 @@ public class XmlConfigurationTest
             String actualWarn = warnLogs.get(0);
             assertThat("WARN logs", actualWarn,
                 allOf(containsString("Ignored arg <Arg name="),
-                    containsString("connector.xml")
+                    containsString("zed.xml")
                 ));
         }
     }
