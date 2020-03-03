@@ -234,6 +234,7 @@ public class ModulesTest
 
         // Collect active module list
         List<Module> active = modules.getEnabled();
+        modules.checkEnabledModules();
 
         // Assert names are correct, and in the right order
         List<String> expectedNames = new ArrayList<>();
@@ -282,6 +283,7 @@ public class ModulesTest
 
         // Collect active module list
         List<Module> active = modules.getEnabled();
+        modules.checkEnabledModules();
 
         // Assert names are correct, and in the right order
         List<String> expectedNames = new ArrayList<>();
@@ -331,6 +333,7 @@ public class ModulesTest
 
         // Collect active module list
         List<Module> active = modules.getEnabled();
+        modules.checkEnabledModules();
 
         // Assert names are correct, and in the right order
         List<String> expectedNames = new ArrayList<>();
