@@ -1097,6 +1097,16 @@
         <artifactId>jnr-unixsocket</artifactId>
         <version>0.24</version>
       </dependency>
+      <dependency>
+        <groupId>org.apache.derby</groupId>
+        <artifactId>derby</artifactId>
+        <version>10.14.2.0</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.derby</groupId>
+        <artifactId>derbytools</artifactId>
+        <version>10.14.2.0</version>
+      </dependency>
       <!-- avoid depending on a range dependency from a transitive dependency -->
       <dependency>
         <groupId>io.grpc</groupId>
