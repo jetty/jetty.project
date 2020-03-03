@@ -501,21 +501,6 @@ public class XmlConfiguration
          */
         public void configure(Object obj, XmlParser.Node cfg, int i) throws Exception
         {
-            // Object already constructed so skip any arguments
-            for (; i < cfg.size(); i++)
-            {
-                Object o = cfg.get(i);
-                if (o instanceof String)
-                    continue;
-                XmlParser.Node node = (XmlParser.Node)o;
-                if ("Arg".equals(node.getTag()))
-                {
-                    // Skip <Arg> nodes (not handled here, see: newObj(), call(), and construct() methods)
-                    continue;
-                }
-                break;
-            }
-
             // Process real arguments
             for (; i < cfg.size(); i++)
             {
@@ -529,6 +514,9 @@ public class XmlConfiguration
                     String tag = node.getTag();
                     switch (tag)
                     {
+                        case "Arg":
+                            // ignore, we've already processed these nodes in newObj/call/construct
+                            break;
                         case "Set":
                             set(obj, node);
                             break;
