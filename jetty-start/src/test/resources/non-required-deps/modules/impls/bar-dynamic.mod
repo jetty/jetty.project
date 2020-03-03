@@ -1,0 +1,2 @@
+[ini]
+bar.name=dynamic
