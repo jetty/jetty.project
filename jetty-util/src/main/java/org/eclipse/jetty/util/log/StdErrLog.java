@@ -135,7 +135,8 @@ public class StdErrLog extends AbstractLogger
     private int _level;
     // Level that this Logger was configured as (remembered in special case of .setDebugEnabled())
     private int _configuredLevel;
-    private PrintStream _stderr = System.err;
+    // The alternate stream to print to (if set)
+    private PrintStream _altStream;
     private boolean _source;
     // Print the long form names, otherwise use abbreviated
     private boolean _printLongNames = __long;
@@ -389,16 +390,14 @@ public class StdErrLog extends AbstractLogger
         this._level = level;
     }
 
+    /**
+     * The alternate stream to use for STDERR.
+     *
+     * @param stream the stream of choice, or {@code null} to use {@link System#err}
+     */
     public void setStdErrStream(PrintStream stream)
     {
-        if (stream == null)
-        {
-            this._stderr = System.err;
-        }
-        else
-        {
-            this._stderr = stream;
-        }
+        this._altStream = stream;
     }
 
     @Override
@@ -442,7 +441,14 @@ public class StdErrLog extends AbstractLogger
 
     private void println(StringBuilder builder)
     {
-        _stderr.println(builder);
+        if (_altStream != null)
+            _altStream.println(builder);
+        else
+        {
+            // We always use the PrintStream stored in System.err,
+            // just in case someone has replaced it with a call to System.setErr(PrintStream)
+            System.err.println(builder);
+        }
     }
 
     private void format(StringBuilder builder, String level, String msg, Object... inArgs)
@@ -648,7 +654,7 @@ public class StdErrLog extends AbstractLogger
         StdErrLog logger = new StdErrLog(fullname);
         // Preserve configuration for new loggers configuration
         logger.setPrintLongNames(_printLongNames);
-        logger._stderr = this._stderr;
+        logger._altStream = this._altStream;
 
         // Force the child to have any programmatic configuration
         if (_level != _configuredLevel)
