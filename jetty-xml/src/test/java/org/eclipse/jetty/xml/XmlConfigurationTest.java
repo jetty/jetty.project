@@ -1377,6 +1377,65 @@ public class XmlConfigurationTest
     }
 
     @Test
+    public void testConfiguredWithArgNotUsingName() throws Exception
+    {
+        XmlConfiguration xmlFoo = asXmlConfiguration("foo.xml",
+            "<Configure>\n" +
+                "  <New id=\"foo\" class=\"java.lang.String\">\n" +
+                "    <Arg>foozball</Arg>\n" +
+                "  </New>\n" +
+                "</Configure>");
+        XmlConfiguration xmlBar = asXmlConfiguration("bar.xml",
+            "<Configure id=\"bar\" class=\"" + BarNamed.class.getName() + "\">\n" +
+                "  <Arg><Ref refid=\"foo\"/></Arg>\n" + // no name specified
+                "</Configure>");
+
+        try (StdErrCapture logCapture = new StdErrCapture(XmlConfiguration.class))
+        {
+            Map<String, Object> idMap = mimicXmlConfigurationMain(xmlFoo, xmlBar);
+            Object obj = idMap.get("bar");
+            assertThat("BarNamed instance created", obj, instanceOf(BarNamed.class));
+            BarNamed bar = (BarNamed)obj;
+            assertThat("BarNamed has foo", bar.getFoo(), is("foozball"));
+
+            List<String> warnLogs = logCapture.getLines()
+                .stream().filter(line -> line.contains(":WARN:"))
+                .collect(Collectors.toList());
+
+            assertThat("WARN logs size", warnLogs.size(), is(0));
+        }
+    }
+
+    @Test
+    public void testConfiguredWithBadNamedArg() throws Exception
+    {
+        XmlConfiguration xmlBar = asXmlConfiguration("bar.xml",
+            "<Configure id=\"bar\" class=\"" + BarNamed.class.getName() + "\">\n" +
+                "  <Arg name=\"foozball\">foozball</Arg>\n" + // wrong name specified
+                "</Configure>");
+
+        IllegalStateException cause = assertThrows(IllegalStateException.class, () ->
+            mimicXmlConfigurationMain(xmlBar));
+
+        assertThat("Cause message", cause.getMessage(), containsString("No matching constructor"));
+    }
+
+    @Test
+    public void testConfiguredWithTooManyNamedArgs() throws Exception
+    {
+        XmlConfiguration xmlBar = asXmlConfiguration("bar.xml",
+            "<Configure id=\"bar\" class=\"" + BarNamed.class.getName() + "\">\n" +
+                "  <Arg name=\"foo\">foozball</Arg>\n" +
+                "  <Arg name=\"foo\">soccer</Arg>\n" + // neither should win
+                "</Configure>");
+
+        IllegalStateException cause = assertThrows(IllegalStateException.class, () ->
+            mimicXmlConfigurationMain(xmlBar));
+
+        assertThat("Cause message", cause.getMessage(), containsString("No matching constructor"));
+    }
+
+    @Test
     public void testConfiguredSameWithNamedArgTwice() throws Exception
     {
         XmlConfiguration xmlFoo = asXmlConfiguration("foo.xml",
