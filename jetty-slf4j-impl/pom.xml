@@ -33,8 +33,6 @@
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
-      <!-- move to top level pom after next PR -->
-      <version>2.0.0-alpha1</version>
     </dependency>
   </dependencies>
 </project>

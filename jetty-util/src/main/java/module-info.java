@@ -33,6 +33,9 @@ module org.eclipse.jetty.util
     exports org.eclipse.jetty.util.thread.strategy;
     exports org.eclipse.jetty.util.compression;
 
+    // Required Slf4j
+    requires org.slf4j;
+
     // Required by SSL code (for X509).
     requires transitive java.naming;
 
@@ -44,8 +47,6 @@ module org.eclipse.jetty.util
     requires static java.sql;
     // Only required if using DOMLeakPreventer.
     requires static java.xml;
-    // Only required if using Slf4jLog.
-    requires static org.slf4j;
 
     uses CredentialProvider;
 }

@@ -36,7 +36,6 @@ import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.StdErrLog;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.webapp.WebAppContext;
@@ -47,8 +46,6 @@ public class TestTransparentProxyServer
 {
     public static void main(String[] args) throws Exception
     {
-        ((StdErrLog)Log.getLog()).setSource(false);
-
         String jettyRoot = "../../..";
 
         // Setup Threadpool

@@ -114,6 +114,11 @@ public class StdErrAppender implements JettyAppender
         return threadPadding;
     }
 
+    public PrintStream getStream()
+    {
+        return stderr;
+    }
+
     public void setStream(PrintStream stream)
     {
         this.stderr = stream;

@@ -43,6 +43,7 @@ import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpServletResponseWrapper;
 
+import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.DebugListener;
 import org.eclipse.jetty.server.HttpChannel;
@@ -55,7 +56,6 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.eclipse.jetty.util.log.StacklessLogging;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;

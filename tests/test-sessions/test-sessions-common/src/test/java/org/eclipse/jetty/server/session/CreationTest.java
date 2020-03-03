@@ -33,11 +33,10 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.StacklessLogging;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
@@ -83,7 +82,7 @@ public class CreationTest
         server1.start();
         int port1 = server1.getPort();
 
-        try (StacklessLogging stackless = new StacklessLogging(Log.getLogger("org.eclipse.jetty.server.session")))
+        try (StacklessLogging stackless = new StacklessLogging(CreationTest.class.getPackage()))
         {
             HttpClient client = new HttpClient();
             client.start();
@@ -152,7 +151,7 @@ public class CreationTest
         server1.start();
         int port1 = server1.getPort();
 
-        try (StacklessLogging stackless = new StacklessLogging(Log.getLogger("org.eclipse.jetty.server.session")))
+        try (StacklessLogging stackless = new StacklessLogging(CreationTest.class.getPackage()))
         {
             HttpClient client = new HttpClient();
             client.start();
@@ -204,7 +203,7 @@ public class CreationTest
         server1.start();
         int port1 = server1.getPort();
 
-        try (StacklessLogging stackless = new StacklessLogging(Log.getLogger("org.eclipse.jetty.server.session")))
+        try (StacklessLogging stackless = new StacklessLogging(CreationTest.class.getPackage()))
         {
             HttpClient client = new HttpClient();
             client.start();
@@ -252,7 +251,7 @@ public class CreationTest
         server1.start();
         int port1 = server1.getPort();
 
-        try (StacklessLogging stackless = new StacklessLogging(Log.getLogger("org.eclipse.jetty.server.session")))
+        try (StacklessLogging stackless = new StacklessLogging(CreationTest.class.getPackage()))
         {
             HttpClient client = new HttpClient();
             client.start();
@@ -307,7 +306,7 @@ public class CreationTest
         server1.start();
         int port1 = server1.getPort();
 
-        try (StacklessLogging stackless = new StacklessLogging(Log.getLogger("org.eclipse.jetty.server.session")))
+        try (StacklessLogging stackless = new StacklessLogging(CreationTest.class.getPackage()))
         {
             HttpClient client = new HttpClient();
             client.start();
@@ -362,7 +361,7 @@ public class CreationTest
         server1.start();
         int port1 = server1.getPort();
 
-        try (StacklessLogging stackless = new StacklessLogging(Log.getLogger("org.eclipse.jetty.server.session")))
+        try (StacklessLogging stackless = new StacklessLogging(CreationTest.class.getPackage()))
         {
             HttpClient client = new HttpClient();
             client.start();

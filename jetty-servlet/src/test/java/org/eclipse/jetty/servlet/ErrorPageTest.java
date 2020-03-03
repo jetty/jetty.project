@@ -43,6 +43,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Dispatcher;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpChannelState;
@@ -51,7 +52,6 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.StacklessLogging;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;

@@ -20,6 +20,7 @@ module org.eclipse.jetty.proxy
 {
     exports org.eclipse.jetty.proxy;
 
+    requires org.slf4j;
     requires transitive org.eclipse.jetty.client;
     requires transitive org.eclipse.jetty.server;
 }

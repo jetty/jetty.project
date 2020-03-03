@@ -332,7 +332,7 @@ public class ProxyServlet extends AbstractProxyServlet
             }
             catch (Throwable x)
             {
-                _log.ignore(x);
+                _log.trace("IGNORED", x);
             }
         }
 

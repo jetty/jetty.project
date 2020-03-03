@@ -47,13 +47,12 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.tools.HttpTester;
+import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.LocalConnector.LocalEndPoint;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.log.StacklessLogging;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -61,6 +60,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -72,6 +72,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpConnectionTest
 {
+    private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(HttpConnectionTest.class);
     private Server server;
     private LocalConnector connector;
 
@@ -1121,10 +1122,9 @@ public class HttpConnectionTest
             "\r\n" +
             "abcdefghij\r\n";
 
-        Logger logger = Log.getLogger(HttpChannel.class);
-        try (StacklessLogging stackless = new StacklessLogging(logger))
+        try (StacklessLogging stackless = new StacklessLogging(HttpChannel.class))
         {
-            logger.info("EXPECTING: java.lang.IllegalStateException...");
+            LOG.info("EXPECTING: java.lang.IllegalStateException...");
             String response = connector.getResponse(requests);
             offset = checkContains(response, offset, "HTTP/1.1 500");
             offset = checkContains(response, offset, "Connection: close");
@@ -1246,11 +1246,10 @@ public class HttpConnectionTest
         });
         server.start();
 
-        Logger logger = Log.getLogger(HttpChannel.class);
         String response = null;
-        try (StacklessLogging stackless = new StacklessLogging(logger))
+        try (StacklessLogging stackless = new StacklessLogging(HttpChannel.class))
         {
-            logger.info("Expect IOException: Response header too large...");
+            LOG.info("Expect IOException: Response header too large...");
             response = connector.getResponse("GET / HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
                 "\r\n"
@@ -1313,7 +1312,7 @@ public class HttpConnectionTest
     public void testAsterisk() throws Exception
     {
         String response = null;
-        try (StacklessLogging stackless = new StacklessLogging(HttpParser.LOG))
+        try (StacklessLogging stackless = new StacklessLogging(HttpParser.class))
         {
             int offset = 0;
 

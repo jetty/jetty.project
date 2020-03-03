@@ -24,9 +24,9 @@ import javax.servlet.ServletRegistration;
 import javax.servlet.UnavailableException;
 import javax.servlet.http.HttpServlet;
 
+import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.MultiException;
-import org.eclipse.jetty.util.log.StacklessLogging;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
