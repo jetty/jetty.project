@@ -24,9 +24,10 @@
     <profile>
       <id>jdk8</id>
       <activation>
-        <jdk>[1.8,1.9)</jdk>
+        <jdk>[1.8,9)</jdk>
       </activation>
       <modules>
+        <!-- These tests can only be run in Java 8 -->
         <module>http2-alpn-tests</module>
       </modules>
     </profile>

@@ -18,13 +18,20 @@
 
 package org.eclipse.jetty.alpn.openjdk8.client;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.List;
 import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLException;
+import javax.net.ssl.SSLHandshakeException;
+import javax.net.ssl.SSLParameters;
 
 import org.eclipse.jetty.alpn.ALPN;
 import org.eclipse.jetty.alpn.client.ALPNClientConnection;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.ssl.ALPNProcessor;
+import org.eclipse.jetty.io.ssl.SslConnection;
+import org.eclipse.jetty.io.ssl.SslHandshakeListener;
 import org.eclipse.jetty.util.JavaVersion;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -33,11 +40,28 @@ public class OpenJDK8ClientALPNProcessor implements ALPNProcessor.Client
 {
     private static final Logger LOG = Log.getLogger(OpenJDK8ClientALPNProcessor.class);
 
+    private Method alpnProtocols;
+    private Method alpnProtocol;
+
     @Override
     public void init()
     {
         if (JavaVersion.VERSION.getPlatform() != 8)
             throw new IllegalStateException(this + " not applicable for java " + JavaVersion.VERSION);
+
+        try
+        {
+            // JDK 8u252 has the JDK 9 ALPN API backported.
+            // Use reflection so we can build with a JDK version less than 8u252.
+            alpnProtocols = SSLParameters.class.getMethod("setApplicationProtocols", String[].class);
+            alpnProtocol = SSLEngine.class.getMethod("getApplicationProtocol");
+            return;
+        }
+        catch (NoSuchMethodException ignored)
+        {
+        }
+
+        // Backported ALPN APIs not available.
         if (ALPN.class.getClassLoader() != null)
             throw new IllegalStateException(ALPN.class.getName() + " must be on JVM boot classpath");
         if (LOG.isDebugEnabled())
@@ -53,14 +77,34 @@ public class OpenJDK8ClientALPNProcessor implements ALPNProcessor.Client
     @Override
     public void configure(SSLEngine sslEngine, Connection connection)
     {
-        connection.addListener(new ALPNListener((ALPNClientConnection)connection));
+        ALPNClientConnection alpnConnection = (ALPNClientConnection)connection;
+        if (alpnProtocols == null)
+        {
+            connection.addListener(new ALPNConnectionListener(alpnConnection));
+        }
+        else
+        {
+            try
+            {
+                Object protocols = alpnConnection.getProtocols().toArray(new String[0]);
+                SSLParameters sslParameters = sslEngine.getSSLParameters();
+                alpnProtocols.invoke(sslParameters, protocols);
+                sslEngine.setSSLParameters(sslParameters);
+                ((SslConnection.DecryptedEndPoint)connection.getEndPoint()).getSslConnection()
+                    .addHandshakeListener(new ALPNSSLListener(alpnConnection));
+            }
+            catch (IllegalAccessException | InvocationTargetException x)
+            {
+                throw new IllegalStateException(this + " unable to set ALPN protocols", x);
+            }
+        }
     }
 
-    private final class ALPNListener implements ALPN.ClientProvider, Connection.Listener
+    private static final class ALPNConnectionListener implements ALPN.ClientProvider, Connection.Listener
     {
         private final ALPNClientConnection alpnConnection;
 
-        private ALPNListener(ALPNClientConnection connection)
+        private ALPNConnectionListener(ALPNClientConnection connection)
         {
             alpnConnection = connection;
         }
@@ -100,6 +144,34 @@ public class OpenJDK8ClientALPNProcessor implements ALPNProcessor.Client
         public void selected(String protocol)
         {
             alpnConnection.selected(protocol);
+        }
+    }
+
+    private final class ALPNSSLListener implements SslHandshakeListener
+    {
+        private final ALPNClientConnection alpnConnection;
+
+        private ALPNSSLListener(ALPNClientConnection connection)
+        {
+            alpnConnection = connection;
+        }
+
+        @Override
+        public void handshakeSucceeded(Event event) throws SSLException
+        {
+            try
+            {
+                SSLEngine sslEngine = alpnConnection.getSSLEngine();
+                String protocol = (String)alpnProtocol.invoke(sslEngine);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("selected protocol {}", protocol);
+                alpnConnection.selected(protocol);
+            }
+            catch (IllegalAccessException | InvocationTargetException x)
+            {
+                SSLHandshakeException failure = new SSLHandshakeException(this + " unable to get ALPN protocol");
+                throw (SSLHandshakeException)failure.initCause(x);
+            }
         }
     }
 }

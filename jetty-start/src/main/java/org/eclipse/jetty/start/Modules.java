@@ -487,17 +487,19 @@ public class Modules implements Iterable<Module>
         _modules.stream().filter(Module::isEnabled).forEach(m ->
         {
             // Check dependencies
-            m.getDepends().forEach(d ->
-            {
-                Set<Module> providers = getAvailableProviders(d);
-                if (providers.stream().filter(Module::isEnabled).count() == 0)
+            m.getDepends().stream()
+                .filter(Module::isRequiredDependency)
+                .forEach(d ->
                 {
-                    if (unsatisfied.length() > 0)
-                        unsatisfied.append(',');
-                    unsatisfied.append(m.getName());
-                    StartLog.error("Module %s requires a module providing %s from one of %s%n", m.getName(), d, providers);
-                }
-            });
+                    Set<Module> providers = getAvailableProviders(d);
+                    if (providers.stream().noneMatch(Module::isEnabled))
+                    {
+                        if (unsatisfied.length() > 0)
+                            unsatisfied.append(',');
+                        unsatisfied.append(m.getName());
+                        StartLog.error("Module %s requires a module providing %s from one of %s%n", m.getName(), d, providers);
+                    }
+                });
         });
 
         if (unsatisfied.length() > 0)

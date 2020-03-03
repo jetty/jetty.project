@@ -708,8 +708,16 @@ public class DetectorConnectionTest
             sb.append("AAAA");
         }
         String request = sb.toString();
-        String response = getResponse(request);
 
-        assertThat(response, Matchers.nullValue());
+        try
+        {
+            String response = getResponse(request);
+            assertThat(response, Matchers.nullValue());
+        }
+        catch (SocketException expected)
+        {
+            // The test may fail writing the "request"
+            // bytes as the server sends back a TCP RST.
+        }
     }
 }
