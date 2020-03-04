@@ -99,7 +99,7 @@ public class Slf4jEffort
 
                     if (Files.exists(testLoggingProps) && isOldLogClassPropPresent(testLoggingProps))
                     {
-                        // System.err.printf("[Deprecated: log.class=LogImpl] %s%n", testLoggingProps);
+                        System.err.printf("[Deprecated: log.class=LogImpl] %s%n", testLoggingProps);
                         countOldLogClassProps.incrementAndGet();
                     }
                 }
