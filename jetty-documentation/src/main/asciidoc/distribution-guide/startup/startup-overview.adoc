@@ -103,7 +103,7 @@ Following the server dependency, the `${jetty.home}/modules/server.mod` file inc
 ....
 [jetty-distribution-{VERSION}]$ cat modules/server.mod
 [lib]
-lib/jetty-servlet-api-4.0.2.jar
+lib/jetty-jakarta-servlet-api-4.0.2.jar
 lib/jetty-http-${jetty.version}.jar
 lib/jetty-server-${jetty.version}.jar
 lib/jetty-xml-${jetty.version}.jar
@@ -162,7 +162,7 @@ Jetty Server Classpath:
 Version Information on 7 entries in the classpath.
 Note: order presented here is how they would appear on the classpath.
       changes to the --module=name command line options will be reflected here.
- 0:                    3.1.0 | ${jetty.home}/lib/jetty-servlet-api-4.0.2.jar
+ 0:                    3.1.0 | ${jetty.home}/lib/jetty-jakarta-servlet-api-4.0.2.jar
  2:               {VERSION} | ${jetty.home}/lib/jetty-http-{VERSION}.jar
  3:               {VERSION} | ${jetty.home}/lib/jetty-server-{VERSION}.jar
  4:               {VERSION} | ${jetty.home}/lib/jetty-xml-{VERSION}.jar
@@ -191,7 +191,7 @@ The following is the equivalent Java command line for what the `start.jar` boots
 [jetty-distribution-{VERSION}]$ java -Djetty.home=$JETTY_HOME \
 -Djetty.base=$JETTY_BASE \
 -cp \
- $JETTY_HOME/lib/jetty-servlet-api-4.0.2.jar\
+ $JETTY_HOME/lib/jetty-jakarta-servlet-api-4.0.2.jar\
 :$JETTY_HOME/lib/jetty-http-$JETTY_VERSION.jar\
 :$JETTY_HOME/lib/jetty-server-$JETTY_VERSION.jar \
 :$JETTY_HOME/lib/jetty-xml-$JETTY_VERSION.jar\

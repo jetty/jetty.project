@@ -22,19 +22,20 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Consumer;
-import javax.servlet.ServletContainerInitializer;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletContextEvent;
-import javax.servlet.ServletContextListener;
+
+import jakarta.servlet.ServletContainerInitializer;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletContextEvent;
+import jakarta.servlet.ServletContextListener;
 
 /**
- * Utility Methods for manual execution of {@link javax.servlet.ServletContainerInitializer} when
+ * Utility Methods for manual execution of {@link jakarta.servlet.ServletContainerInitializer} when
  * using Embedded Jetty.
  */
 public final class ContainerInitializer
 {
     /**
-     * Utility Method to allow for manual execution of {@link javax.servlet.ServletContainerInitializer} when
+     * Utility Method to allow for manual execution of {@link jakarta.servlet.ServletContainerInitializer} when
      * using Embedded Jetty.
      *
      * <pre>

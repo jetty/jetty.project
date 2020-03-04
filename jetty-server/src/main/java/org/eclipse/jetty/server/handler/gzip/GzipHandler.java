@@ -25,12 +25,12 @@ import java.util.ListIterator;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.zip.Deflater;
-import javax.servlet.DispatcherType;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
+import jakarta.servlet.DispatcherType;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -60,7 +60,7 @@ import org.slf4j.LoggerFactory;
  * <p>
  * Both Request uncompress and Response compress are gated by a configurable
  * {@link DispatcherType} check on the GzipHandler.
- * (This is similar in behavior to a {@link javax.servlet.Filter} configuration
+ * (This is similar in behavior to a {@link jakarta.servlet.Filter} configuration
  * you would find in a Servlet Descriptor file ({@code WEB-INF/web.xml})
  * <br>(Default: {@link DispatcherType#REQUEST}).
  * </p>
@@ -129,12 +129,12 @@ import org.slf4j.LoggerFactory;
  * </p>
  * <ul>
  * <li>
- * {@link javax.servlet.ServletOutputStream} - Obtained from {@link HttpServletResponse#getOutputStream()}
+ * {@link jakarta.servlet.ServletOutputStream} - Obtained from {@link HttpServletResponse#getOutputStream()}
  * using the traditional Blocking I/O techniques
  * </li>
  * <li>
- * {@link javax.servlet.WriteListener} - Provided to
- * {@link javax.servlet.ServletOutputStream#setWriteListener(javax.servlet.WriteListener)}
+ * {@link jakarta.servlet.WriteListener} - Provided to
+ * {@link jakarta.servlet.ServletOutputStream#setWriteListener(jakarta.servlet.WriteListener)}
  * using the new (since Servlet 3.1) Async I/O techniques
  * </li>
  * <li>
@@ -144,7 +144,7 @@ import org.slf4j.LoggerFactory;
  * </ul>
  * <p>
  * Historically the compression of responses were accomplished via
- * Servlet Filters (eg: {@code GzipFilter}) and usage of {@link javax.servlet.http.HttpServletResponseWrapper}.
+ * Servlet Filters (eg: {@code GzipFilter}) and usage of {@link jakarta.servlet.http.HttpServletResponseWrapper}.
  * Since the introduction of Async I/O in Servlet 3.1, this older form of Gzip support
  * in web applications has been problematic and bug ridden.
  * </p>

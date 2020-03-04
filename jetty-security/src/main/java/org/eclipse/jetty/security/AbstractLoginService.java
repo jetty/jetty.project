@@ -21,8 +21,8 @@ package org.eclipse.jetty.security;
 import java.io.Serializable;
 import java.security.Principal;
 import javax.security.auth.Subject;
-import javax.servlet.ServletRequest;
 
+import jakarta.servlet.ServletRequest;
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.security.Credential;

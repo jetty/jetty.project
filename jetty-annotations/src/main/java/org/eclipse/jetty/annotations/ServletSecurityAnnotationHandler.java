@@ -20,11 +20,11 @@ package org.eclipse.jetty.annotations;
 
 import java.util.ArrayList;
 import java.util.List;
-import javax.servlet.ServletSecurityElement;
-import javax.servlet.annotation.ServletSecurity;
-import javax.servlet.annotation.ServletSecurity.EmptyRoleSemantic;
-import javax.servlet.annotation.ServletSecurity.TransportGuarantee;
 
+import jakarta.servlet.ServletSecurityElement;
+import jakarta.servlet.annotation.ServletSecurity;
+import jakarta.servlet.annotation.ServletSecurity.EmptyRoleSemantic;
+import jakarta.servlet.annotation.ServletSecurity.TransportGuarantee;
 import org.eclipse.jetty.annotations.AnnotationIntrospector.AbstractIntrospectableAnnotationHandler;
 import org.eclipse.jetty.security.ConstraintAware;
 import org.eclipse.jetty.security.ConstraintMapping;

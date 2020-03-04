@@ -24,10 +24,10 @@ import java.lang.management.ManagementFactory;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.server.CustomRequestLog;
@@ -126,7 +126,7 @@ public class TestServer
         webapp.setResourceBase(jettyRoot.resolve("tests/test-webapps/test-jetty-webapp/src/main/webapp").toString());
         webapp.setAttribute(MetaInfConfiguration.CONTAINER_JAR_PATTERN,
             ".*/test-jetty-webapp/target/classes.*$|" +
-                ".*/jetty-servlet-api-[^/]*\\.jar$|.*/javax.servlet.jsp.jstl-.*\\.jar$|.*/org.apache.taglibs.taglibs-standard-impl-.*\\.jar$"
+                ".*/jetty-jakarta-servlet-api-[^/]*\\.jar$|.*/jakarta.servlet.jsp.jstl-.*\\.jar$|.*/org.apache.taglibs.taglibs-standard-impl-.*\\.jar$"
         );
 
         webapp.setAttribute("testAttribute", "testValue");

@@ -18,8 +18,8 @@
 
 package org.eclipse.jetty.servlet.listener;
 
-import javax.servlet.ServletContextEvent;
-import javax.servlet.ServletContextListener;
+import jakarta.servlet.ServletContextEvent;
+import jakarta.servlet.ServletContextListener;
 
 /**
  * IntrospectorCleaner

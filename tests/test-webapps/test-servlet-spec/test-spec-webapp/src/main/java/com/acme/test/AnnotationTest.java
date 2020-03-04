@@ -28,16 +28,17 @@ import javax.annotation.Resource;
 import javax.annotation.security.DeclareRoles;
 import javax.annotation.security.RunAs;
 import javax.naming.InitialContext;
-import javax.servlet.ServletConfig;
-import javax.servlet.ServletException;
-import javax.servlet.ServletOutputStream;
-import javax.servlet.annotation.WebInitParam;
-import javax.servlet.annotation.WebServlet;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import javax.sql.DataSource;
 import javax.transaction.UserTransaction;
+
+import jakarta.servlet.ServletConfig;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletOutputStream;
+import jakarta.servlet.annotation.WebInitParam;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 /**
  * AnnotationTest
@@ -210,8 +211,8 @@ public class AnnotationTest extends HttpServlet
             boolean fragInitParamResult = "123".equals(config.getInitParameter("extra1")) && "345".equals(config.getInitParameter("extra2"));
             out.println("<p><b>Result: " + (fragInitParamResult ? "<span class=\"pass\">PASS" : "<span class=\"fail\">FAIL") + "</span></p>");
 
-            __HandlesTypes = Arrays.asList("javax.servlet.GenericServlet",
-                "javax.servlet.http.HttpServlet",
+            __HandlesTypes = Arrays.asList("jakarta.servlet.GenericServlet",
+                "jakarta.servlet.http.HttpServlet",
                 "com.acme.test.AsyncListenerServlet",
                 "com.acme.test.ClassLoaderServlet",
                 "com.acme.test.AnnotationTest",
@@ -223,7 +224,7 @@ public class AnnotationTest extends HttpServlet
                 "com.acme.test.Bar");
             out.println("<h2>@ContainerInitializer</h2>");
             out.println("<pre>");
-            out.println("@HandlesTypes({javax.servlet.Servlet.class, Foo.class})");
+            out.println("@HandlesTypes({jakarta.servlet.Servlet.class, Foo.class})");
             out.println("</pre>");
             out.print("<p><b>Result: ");
             List<Class> classes = (List<Class>)config.getServletContext().getAttribute("com.acme.Foo");

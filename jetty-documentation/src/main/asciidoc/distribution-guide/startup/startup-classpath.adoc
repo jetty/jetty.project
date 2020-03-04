@@ -68,7 +68,7 @@ Note: order presented here is how they would appear on the classpath.
  1:      1.4.1.v201005082020 | ${jetty.base}/lib/ext/javax.mail.glassfish-1.4.1.v201005082020.jar
  2:               {VERSION} | ${jetty.base}/lib/ext/test-mock-resources-{VERSION}.jar
  3:                    (dir) | ${jetty.home}/resources
- 4:                    4.0.2 | ${jetty.home}/lib/jetty-servlet-api-4.0.2.jar
+ 4:                    4.0.2 | ${jetty.home}/lib/jetty-jakarta-servlet-api-4.0.2.jar
  6:               {VERSION} | ${jetty.home}/lib/jetty-http-{VERSION}.jar
  7:               {VERSION} | ${jetty.home}/lib/jetty-continuation-{VERSION}.jar
  8:               {VERSION} | ${jetty.home}/lib/jetty-server-{VERSION}.jar
@@ -84,9 +84,9 @@ Note: order presented here is how they would appear on the classpath.
 18:               {VERSION} | ${jetty.home}/lib/jetty-security-{VERSION}.jar
 19:               {VERSION} | ${jetty.home}/lib/jetty-servlet-{VERSION}.jar
 20:                    3.0.0 | ${jetty.home}/lib/jsp/javax.el-3.0.0.jar
-21:      1.2.0.v201105211821 | ${jetty.home}/lib/jsp/javax.servlet.jsp.jstl-1.2.0.v201105211821.jar
-22:                    2.3.2 | ${jetty.home}/lib/jsp/javax.servlet.jsp-2.3.2.jar
-23:                    2.3.1 | ${jetty.home}/lib/jsp/javax.servlet.jsp-api-2.3.1.jar
+21:      1.2.0.v201105211821 | ${jetty.home}/lib/jsp/jakarta.servlet.jsp.jstl-1.2.0.v201105211821.jar
+22:                    2.3.2 | ${jetty.home}/lib/jsp/jakarta.servlet.jsp-2.3.2.jar
+23:                    2.3.1 | ${jetty.home}/lib/jsp/jakarta.servlet.jsp-api-2.3.1.jar
 24:                    2.3.3 | ${jetty.home}/lib/jsp/jetty-jsp-jdt-2.3.3.jar
 25:      1.2.0.v201112081803 | ${jetty.home}/lib/jsp/org.apache.taglibs.standard.glassfish-1.2.0.v201112081803.jar
 26:   3.8.2.v20130121-145325 | ${jetty.home}/lib/jsp/org.eclipse.jdt.core-3.8.2.v20130121.jar

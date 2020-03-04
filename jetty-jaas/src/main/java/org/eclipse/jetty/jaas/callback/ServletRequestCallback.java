@@ -19,7 +19,8 @@
 package org.eclipse.jetty.jaas.callback;
 
 import javax.security.auth.callback.Callback;
-import javax.servlet.ServletRequest;
+
+import jakarta.servlet.ServletRequest;
 
 /**
  * ServletRequestCallback

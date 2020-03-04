@@ -24,10 +24,10 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.tools.HttpTester;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.junit.jupiter.api.AfterEach;
@@ -109,8 +109,8 @@ public class ForwardedRequestCustomizerTest
         {
             actual = new Actual();
             actual.wasSecure.set(request.isSecure());
-            actual.sslSession.set(String.valueOf(request.getAttribute("javax.servlet.request.ssl_session_id")));
-            actual.sslCertificate.set(String.valueOf(request.getAttribute("javax.servlet.request.cipher_suite")));
+            actual.sslSession.set(String.valueOf(request.getAttribute("jakarta.servlet.request.ssl_session_id")));
+            actual.sslCertificate.set(String.valueOf(request.getAttribute("jakarta.servlet.request.cipher_suite")));
             actual.scheme.set(request.getScheme());
             actual.serverName.set(request.getServerName());
             actual.serverPort.set(request.getServerPort());

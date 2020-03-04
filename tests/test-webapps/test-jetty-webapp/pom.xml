@@ -65,7 +65,7 @@
             <supportedProjectType>war</supportedProjectType>
           </supportedProjectTypes>
           <instructions>
-            <Import-Package>javax.servlet.jsp.*;version="[2.2.0,4.1)",org.eclipse.jetty.*;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))",*</Import-Package>
+            <Import-Package>jakarta.servlet.jsp.*;version="[2.2.0,4.1)",org.eclipse.jetty.*;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))",*</Import-Package>
             <Export-Package>!com.acme*</Export-Package>
             <!-- the test webapp is configured via a jetty xml file
             in order to add the security handler. -->
@@ -151,7 +151,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
-      <artifactId>jetty-servlet-api</artifactId>
+      <artifactId>jetty-jakarta-servlet-api</artifactId>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -185,13 +185,13 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>javax.servlet.jsp</groupId>
+      <groupId>jakarta.servlet.jsp</groupId>
       <artifactId>jsp-api</artifactId>
       <version>2.1</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>javax.servlet</groupId>
+      <groupId>jakarta.servlet</groupId>
       <artifactId>jstl</artifactId>
       <version>1.2</version>
       <scope>provided</scope>

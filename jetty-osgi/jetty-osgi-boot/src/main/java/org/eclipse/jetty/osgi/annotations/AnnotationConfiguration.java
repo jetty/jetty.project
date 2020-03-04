@@ -22,8 +22,8 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.util.HashSet;
 import java.util.Set;
-import javax.servlet.ServletContainerInitializer;
 
+import jakarta.servlet.ServletContainerInitializer;
 import org.eclipse.jetty.annotations.AnnotationParser.Handler;
 import org.eclipse.jetty.osgi.boot.OSGiMetaInfConfiguration;
 import org.eclipse.jetty.osgi.boot.OSGiWebappConstants;

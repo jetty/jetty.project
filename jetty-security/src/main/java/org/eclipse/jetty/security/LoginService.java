@@ -18,8 +18,7 @@
 
 package org.eclipse.jetty.security;
 
-import javax.servlet.ServletRequest;
-
+import jakarta.servlet.ServletRequest;
 import org.eclipse.jetty.server.UserIdentity;
 
 /**

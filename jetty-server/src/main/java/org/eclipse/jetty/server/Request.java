@@ -42,30 +42,30 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import javax.servlet.AsyncContext;
-import javax.servlet.AsyncListener;
-import javax.servlet.DispatcherType;
-import javax.servlet.MultipartConfigElement;
-import javax.servlet.RequestDispatcher;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.ServletInputStream;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletRequestAttributeEvent;
-import javax.servlet.ServletRequestAttributeListener;
-import javax.servlet.ServletRequestWrapper;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletMapping;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletRequestWrapper;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
-import javax.servlet.http.HttpUpgradeHandler;
-import javax.servlet.http.MappingMatch;
-import javax.servlet.http.Part;
-import javax.servlet.http.PushBuilder;
 
+import jakarta.servlet.AsyncContext;
+import jakarta.servlet.AsyncListener;
+import jakarta.servlet.DispatcherType;
+import jakarta.servlet.MultipartConfigElement;
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletInputStream;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletRequestAttributeEvent;
+import jakarta.servlet.ServletRequestAttributeListener;
+import jakarta.servlet.ServletRequestWrapper;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletMapping;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequestWrapper;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
+import jakarta.servlet.http.HttpUpgradeHandler;
+import jakarta.servlet.http.MappingMatch;
+import jakarta.servlet.http.Part;
+import jakarta.servlet.http.PushBuilder;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.HostPortHttpField;
@@ -101,7 +101,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Jetty Request.
  * <p>
- * Implements {@link javax.servlet.http.HttpServletRequest} from the <code>javax.servlet.http</code> package.
+ * Implements {@link jakarta.servlet.http.HttpServletRequest} from the <code>jakarta.servlet.http</code> package.
  * </p>
  * <p>
  * The standard interface of mostly getters, is extended with setters so that the request is mutable by the handlers that it is passed to. This allows the
@@ -693,7 +693,7 @@ public class Request implements HttpServletRequest
      * While these attributes may look like security problems, they are exposing nothing that is not already
      * available via reflection from a Request instance.
      *
-     * @see javax.servlet.ServletRequest#getAttribute(java.lang.String)
+     * @see jakarta.servlet.ServletRequest#getAttribute(java.lang.String)
      */
     @Override
     public Object getAttribute(String name)
@@ -1154,7 +1154,7 @@ public class Request implements HttpServletRequest
     }
 
     /*
-     * @see javax.servlet.ServletRequest#getProtocol()
+     * @see jakarta.servlet.ServletRequest#getProtocol()
      */
     public HttpVersion getHttpVersion()
     {
@@ -1870,7 +1870,7 @@ public class Request implements HttpServletRequest
      * Set a request attribute. if the attribute name is "org.eclipse.jetty.server.server.Request.queryEncoding" then the value is also passed in a call to
      * {@link #setQueryEncoding}.
      *
-     * @see javax.servlet.ServletRequest#setAttribute(java.lang.String, java.lang.Object)
+     * @see jakarta.servlet.ServletRequest#setAttribute(java.lang.String, java.lang.Object)
      */
     @Override
     public void setAttribute(String name, Object value)
@@ -1939,7 +1939,7 @@ public class Request implements HttpServletRequest
     }
 
     /*
-     * @see javax.servlet.ServletRequest#setCharacterEncoding(java.lang.String)
+     * @see jakarta.servlet.ServletRequest#setCharacterEncoding(java.lang.String)
      */
     public void setCharacterEncodingUnchecked(String encoding)
     {
@@ -1947,7 +1947,7 @@ public class Request implements HttpServletRequest
     }
 
     /*
-     * @see javax.servlet.ServletRequest#getContentType()
+     * @see jakarta.servlet.ServletRequest#getContentType()
      */
     public void setContentType(String contentType)
     {
@@ -2319,7 +2319,7 @@ public class Request implements HttpServletRequest
     private MultiPartFormInputStream newMultiParts(MultipartConfigElement config) throws IOException
     {
         return new MultiPartFormInputStream(getInputStream(), getContentType(), config,
-            (_context != null ? (File)_context.getAttribute("javax.servlet.context.tempdir") : null));
+            (_context != null ? (File)_context.getAttribute("jakarta.servlet.context.tempdir") : null));
     }
 
     @Override

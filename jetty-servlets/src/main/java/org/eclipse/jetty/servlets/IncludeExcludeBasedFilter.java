@@ -18,13 +18,12 @@
 
 package org.eclipse.jetty.servlets;
 
-import javax.servlet.Filter;
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
+import jakarta.servlet.Filter;
+import jakarta.servlet.FilterConfig;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.pathmap.PathSpecSet;
 import org.eclipse.jetty.util.IncludeExclude;
@@ -40,7 +39,7 @@ import org.slf4j.LoggerFactory;
  * This is an abstract filter which helps with filtering based on include/exclude of paths, mime types, and/or http methods.
  * <p>
  * Use the {@link #shouldFilter(HttpServletRequest, HttpServletResponse)} method to determine if a request/response should be filtered. If mime types are used,
- * it should be called after {@link javax.servlet.FilterChain#doFilter(javax.servlet.ServletRequest, javax.servlet.ServletResponse)} since the mime type may not
+ * it should be called after {@link jakarta.servlet.FilterChain#doFilter(jakarta.servlet.ServletRequest, jakarta.servlet.ServletResponse)} since the mime type may not
  * be written until then.
  *
  * Supported init params:

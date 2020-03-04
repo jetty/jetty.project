@@ -18,9 +18,9 @@
 
 package org.eclipse.jetty.annotations;
 
-import javax.servlet.annotation.WebInitParam;
-import javax.servlet.annotation.WebServlet;
-import javax.servlet.http.HttpServlet;
+import jakarta.servlet.annotation.WebInitParam;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.HttpServlet;
 
 @WebServlet(urlPatterns = {"/", "/bah/*"}, name = "DServlet", initParams = {
     @WebInitParam(name = "x", value = "y")

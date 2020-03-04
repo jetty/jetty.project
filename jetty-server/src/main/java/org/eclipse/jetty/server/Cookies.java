@@ -20,8 +20,8 @@ package org.eclipse.jetty.server;
 
 import java.util.ArrayList;
 import java.util.List;
-import javax.servlet.http.Cookie;
 
+import jakarta.servlet.http.Cookie;
 import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.http.CookieCutter;

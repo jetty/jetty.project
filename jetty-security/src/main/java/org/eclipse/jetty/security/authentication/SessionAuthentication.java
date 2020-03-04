@@ -21,11 +21,11 @@ package org.eclipse.jetty.security.authentication;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.Serializable;
-import javax.servlet.http.HttpSession;
-import javax.servlet.http.HttpSessionActivationListener;
-import javax.servlet.http.HttpSessionBindingListener;
-import javax.servlet.http.HttpSessionEvent;
 
+import jakarta.servlet.http.HttpSession;
+import jakarta.servlet.http.HttpSessionActivationListener;
+import jakarta.servlet.http.HttpSessionBindingListener;
+import jakarta.servlet.http.HttpSessionEvent;
 import org.eclipse.jetty.security.AbstractUserAuthentication;
 import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.security.SecurityHandler;

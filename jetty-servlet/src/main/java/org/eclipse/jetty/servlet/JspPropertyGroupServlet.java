@@ -20,12 +20,12 @@ package org.eclipse.jetty.servlet;
 
 import java.io.IOException;
 import java.util.Locale;
-import javax.servlet.GenericServlet;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
 
+import jakarta.servlet.GenericServlet;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
 import org.eclipse.jetty.server.Dispatcher;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.URIUtil;

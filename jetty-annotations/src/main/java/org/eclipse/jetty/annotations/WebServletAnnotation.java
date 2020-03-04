@@ -21,11 +21,11 @@ package org.eclipse.jetty.annotations;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import javax.servlet.Servlet;
-import javax.servlet.annotation.WebInitParam;
-import javax.servlet.annotation.WebServlet;
-import javax.servlet.http.HttpServlet;
 
+import jakarta.servlet.Servlet;
+import jakarta.servlet.annotation.WebInitParam;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.HttpServlet;
 import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlet.ServletMapping;
@@ -72,7 +72,7 @@ public class WebServletAnnotation extends DiscoveredAnnotation
         //Servlet Spec 8.1.1
         if (!HttpServlet.class.isAssignableFrom(clazz))
         {
-            LOG.warn(clazz.getName() + " is not assignable from javax.servlet.http.HttpServlet");
+            LOG.warn(clazz.getName() + " is not assignable from jakarta.servlet.http.HttpServlet");
             return;
         }
 

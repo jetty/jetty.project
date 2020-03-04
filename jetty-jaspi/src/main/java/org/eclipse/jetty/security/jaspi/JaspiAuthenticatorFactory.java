@@ -29,8 +29,8 @@ import javax.security.auth.message.config.AuthConfigFactory;
 import javax.security.auth.message.config.AuthConfigProvider;
 import javax.security.auth.message.config.RegistrationListener;
 import javax.security.auth.message.config.ServerAuthConfig;
-import javax.servlet.ServletContext;
 
+import jakarta.servlet.ServletContext;
 import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.security.Authenticator.AuthConfiguration;
 import org.eclipse.jetty.security.DefaultAuthenticatorFactory;

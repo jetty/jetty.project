@@ -376,7 +376,7 @@ Defaults to "true".
 Controls whether any overlaid wars are added before or after the original base resource(s) of the webapp.
 See the section on link:#using-overlaid-wars[overlaid wars] for more information.
 containerIncludeJarPattern;;
-Defaults to `.*/jetty-servlet-api-[^/]*\.jar$|.*javax.servlet.jsp.jstl-[^/]*\.jar|.*taglibs-standard-impl-.*\.jar`.
+Defaults to `.*/jetty-jakarta-servlet-api-[^/]*\.jar$|.*jakarta.servlet.jsp.jstl-[^/]*\.jar|.*taglibs-standard-impl-.*\.jar`.
 This is a pattern that is applied to the names of the jars on the container's classpath (ie the classpath of the plugin, not that of the webapp) that should be scanned for fragments, tlds, annotations etc.
 This is analogous to the context attribute link:#container-include-jar-pattern[org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern] that is documented link:#container-include-jar-pattern[here].
 You can define extra patterns of jars that will be included in the scan.
@@ -494,7 +494,7 @@ overrideDescriptor:::
 The path to a `web.xml` file that Jetty applies after reading your `web.xml`.
 You can use this to replace or add configuration.
 containerIncludeJarPattern:::
-Defaults to `.*/jetty-servlet-api-[^/]*\.jar$|.*javax.servlet.jsp.jstl-[^/]*\.jar|.*taglibs-standard-impl-.*\.jar`.
+Defaults to `.*/jetty-jakarta-servlet-api-[^/]*\.jar$|.*jakarta.servlet.jsp.jstl-[^/]*\.jar|.*taglibs-standard-impl-.*\.jar`.
 This is a pattern that is applied to the names of the jars on the container's classpath (ie the classpath of the plugin, not that of the webapp) that should be scanned for fragments, tlds, annotations etc.
 This is analogous to the context attribute link:#container-include-jar-pattern[org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern] that is documented link:#container-include-jar-pattern[here].
 You can define extra patterns of jars that will be included in the scan.
@@ -605,7 +605,7 @@ Defaults to "true".
 Controls whether any overlaid wars are added before or after the original base resource(s) of the webapp.
 See the section on link:#using-overlaid-wars[overlaid wars] for more information.
 containerIncludeJarPattern;;
-Defaults to `.*/jetty-servlet-api-[^/]*\.jar$|.*javax.servlet.jsp.jstl-[^/]*\.jar|.*taglibs-standard-impl-.*\.jar`.
+Defaults to `.*/jetty-jakarta-servlet-api-[^/]*\.jar$|.*jakarta.servlet.jsp.jstl-[^/]*\.jar|.*taglibs-standard-impl-.*\.jar`.
 This is a pattern that is applied to the names of the jars on the container's classpath (ie the classpath of the plugin, not that of the webapp) that should be scanned for fragments, tlds, annotations etc.
 This is analogous to the context attribute link:#container-include-jar-pattern[org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern] that is documented link:#container-include-jar-pattern[here].
 You can define extra patterns of jars that will be included in the scan.
@@ -677,7 +677,7 @@ overrideDescriptor:::
 The path to a `web.xml` file that Jetty applies after reading your `web.xml`.
 You can use this to replace or add configuration.
 containerIncludeJarPattern:::
-Defaults to `.*/jetty-servlet-api-[^/]*\.jar$|.*javax.servlet.jsp.jstl-[^/]*\.jar|.*taglibs-standard-impl-.*\.jar`.
+Defaults to `.*/jetty-jakarta-servlet-api-[^/]*\.jar$|.*jakarta.servlet.jsp.jstl-[^/]*\.jar|.*taglibs-standard-impl-.*\.jar`.
 This is a pattern that is applied to the names of the jars on the container's classpath (ie the classpath of the plugin, not that of the webapp) that should be scanned for fragments, tlds, annotations etc.
 This is analogous to the context attribute link:#container-include-jar-pattern[org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern] that is documented link:#container-include-jar-pattern[here].
 You can define extra patterns of jars that will be included in the scan.
@@ -787,7 +787,7 @@ overrideDescriptor:::
 The path to a `web.xml` file that Jetty applies after reading your `web.xml`.
 You can use this to replace or add configuration.
 containerIncludeJarPattern:::
-Defaults to `.*/jetty-servlet-api-[^/]*\.jar$|.*javax.servlet.jsp.jstl-[^/]*\.jar|.*taglibs-standard-impl-.*\.jar`.
+Defaults to `.*/jetty-jakarta-servlet-api-[^/]*\.jar$|.*jakarta.servlet.jsp.jstl-[^/]*\.jar|.*taglibs-standard-impl-.*\.jar`.
 This is a pattern that is applied to the names of the jars on the container's classpath (ie the classpath of the plugin, not that of the webapp) that should be scanned for fragments, tlds, annotations etc.
 This is analogous to the context attribute link:#container-include-jar-pattern[org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern] that is documented link:#container-include-jar-pattern[here].
 You can define extra patterns of jars that will be included in the scan.

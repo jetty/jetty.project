@@ -28,8 +28,8 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
-import javax.servlet.ServletRequest;
 
+import jakarta.servlet.ServletRequest;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.security.Credential;

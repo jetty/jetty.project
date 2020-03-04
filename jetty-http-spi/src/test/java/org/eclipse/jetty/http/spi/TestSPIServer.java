@@ -24,12 +24,12 @@ import java.net.URI;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
-import javax.servlet.http.HttpServletResponse;
 
 import com.sun.net.httpserver.BasicAuthenticator;
 import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpContext;
 import com.sun.net.httpserver.HttpServer;
+import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;

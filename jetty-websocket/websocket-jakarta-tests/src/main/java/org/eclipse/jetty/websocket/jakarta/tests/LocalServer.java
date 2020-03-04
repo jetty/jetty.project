@@ -21,11 +21,11 @@ package org.eclipse.jetty.websocket.jakarta.tests;
 import java.net.URI;
 import java.util.Map;
 import java.util.function.BiConsumer;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import jakarta.websocket.OnMessage;
 import jakarta.websocket.server.ServerEndpoint;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.io.ByteBufferPool;

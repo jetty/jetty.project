@@ -31,7 +31,7 @@
         <configuration>
           <instructions>
             <Import-Package>org.objectweb.asm;version="5",*</Import-Package>
-            <Require-Capability>osgi.serviceloader; filter:="(osgi.serviceloader=javax.servlet.ServletContainerInitializer)";resolution:=optional;cardinality:=multiple, osgi.extender; filter:="(osgi.extender=osgi.serviceloader.processor)";resolution:=optional
+            <Require-Capability>osgi.serviceloader; filter:="(osgi.serviceloader=jakarta.servlet.ServletContainerInitializer)";resolution:=optional;cardinality:=multiple, osgi.extender; filter:="(osgi.extender=osgi.serviceloader.processor)";resolution:=optional
             </Require-Capability>
           </instructions>
         </configuration>
@@ -73,7 +73,10 @@
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
     </dependency>
-
+    <dependency>
+      <groupId>org.eclipse.jetty.toolchain</groupId>
+      <artifactId>jetty-jakarta-servlet-api</artifactId>
+    </dependency>
     <dependency>
       <groupId>jakarta.transaction</groupId>
       <artifactId>jakarta.transaction-api</artifactId>

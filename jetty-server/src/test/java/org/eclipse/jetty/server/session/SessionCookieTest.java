@@ -20,9 +20,9 @@ package org.eclipse.jetty.server.session;
 
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
-import javax.servlet.SessionCookieConfig;
-import javax.servlet.http.HttpServletRequest;
 
+import jakarta.servlet.SessionCookieConfig;
+import jakarta.servlet.http.HttpServletRequest;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.server.Server;
 import org.junit.jupiter.api.Test;

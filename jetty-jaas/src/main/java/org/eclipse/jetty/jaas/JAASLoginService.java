@@ -34,8 +34,8 @@ import javax.security.auth.login.Configuration;
 import javax.security.auth.login.FailedLoginException;
 import javax.security.auth.login.LoginContext;
 import javax.security.auth.login.LoginException;
-import javax.servlet.ServletRequest;
 
+import jakarta.servlet.ServletRequest;
 import org.eclipse.jetty.jaas.callback.DefaultCallbackHandler;
 import org.eclipse.jetty.jaas.callback.ObjectCallback;
 import org.eclipse.jetty.jaas.callback.RequestParameterCallback;

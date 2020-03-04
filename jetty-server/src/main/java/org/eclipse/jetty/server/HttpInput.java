@@ -26,9 +26,9 @@ import java.util.Deque;
 import java.util.Objects;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
-import javax.servlet.ReadListener;
-import javax.servlet.ServletInputStream;
 
+import jakarta.servlet.ReadListener;
+import jakarta.servlet.ServletInputStream;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.EofException;

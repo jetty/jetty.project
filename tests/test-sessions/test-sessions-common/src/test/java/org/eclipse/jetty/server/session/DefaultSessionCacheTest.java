@@ -20,8 +20,8 @@ package org.eclipse.jetty.server.session;
 
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
-import javax.servlet.http.HttpSession;
 
+import jakarta.servlet.http.HttpSession;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;

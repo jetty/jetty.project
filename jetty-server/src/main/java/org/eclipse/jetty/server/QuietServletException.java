@@ -18,8 +18,7 @@
 
 package org.eclipse.jetty.server;
 
-import javax.servlet.ServletException;
-
+import jakarta.servlet.ServletException;
 import org.eclipse.jetty.io.QuietException;
 
 /**

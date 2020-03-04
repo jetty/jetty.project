@@ -31,12 +31,12 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
-import javax.servlet.HttpConstraintElement;
-import javax.servlet.HttpMethodConstraintElement;
-import javax.servlet.ServletSecurityElement;
-import javax.servlet.annotation.ServletSecurity.EmptyRoleSemantic;
-import javax.servlet.annotation.ServletSecurity.TransportGuarantee;
 
+import jakarta.servlet.HttpConstraintElement;
+import jakarta.servlet.HttpMethodConstraintElement;
+import jakarta.servlet.ServletSecurityElement;
+import jakarta.servlet.annotation.ServletSecurity.EmptyRoleSemantic;
+import jakarta.servlet.annotation.ServletSecurity.TransportGuarantee;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.pathmap.MappedResource;
 import org.eclipse.jetty.http.pathmap.PathMappings;

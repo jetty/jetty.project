@@ -18,8 +18,7 @@
 
 package org.eclipse.jetty.security.openid;
 
-import javax.servlet.ServletContext;
-
+import jakarta.servlet.ServletContext;
 import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.LoginService;

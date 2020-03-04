@@ -25,13 +25,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import javax.servlet.ServletContext;
+import jakarta.servlet.ServletContext;
 
 import org.eclipse.jetty.util.resource.EmptyResource;
 import org.eclipse.jetty.util.resource.Resource;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 /**
  * MetaData
  *
@@ -42,7 +42,7 @@ public class MetaData
     private static final Logger LOG = LoggerFactory.getLogger(MetaData.class);
 
     public static final String VALIDATE_XML = "org.eclipse.jetty.webapp.validateXml";
-    public static final String ORDERED_LIBS = "javax.servlet.context.orderedLibs";
+    public static final String ORDERED_LIBS = "jakarta.servlet.context.orderedLibs";
     public static final Resource NON_FRAG_RESOURCE = EmptyResource.INSTANCE;
 
     protected Map<String, OriginInfo> _origins = new HashMap<>();

@@ -40,8 +40,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import javax.servlet.ServletContainerInitializer;
-import javax.servlet.annotation.HandlesTypes;
+
+import jakarta.servlet.ServletContainerInitializer;
+import jakarta.servlet.annotation.HandlesTypes;
 
 import org.eclipse.jetty.annotations.AnnotationParser.Handler;
 import org.eclipse.jetty.plus.annotation.ContainerInitializer;

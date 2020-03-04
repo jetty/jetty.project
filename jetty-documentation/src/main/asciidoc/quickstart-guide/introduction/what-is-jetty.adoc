@@ -19,7 +19,7 @@
 [[what-is-jetty]]
 === What is Jetty?
 
-Jetty is an open-source project providing an HTTP server, HTTP client, and javax.servlet container.
+Jetty is an open-source project providing an HTTP server, HTTP client, and jakarta.servlet container.
 
 This guide is broken up in to five parts:
 

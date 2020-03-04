@@ -15,9 +15,9 @@
      
 	<!-- Set DispatcherTypes  -->
 	<Set name="dispatcherTypes">
-	  <Array type="javax.servlet.DispatcherType">
-	    <Item><Call class="javax.servlet.DispatcherType" name="valueOf"><Arg>REQUEST</Arg></Call></Item>
-	    <Item><Call class="javax.servlet.DispatcherType" name="valueOf"><Arg>ASYNC</Arg></Call></Item>
+	  <Array type="jakarta.servlet.DispatcherType">
+	    <Item><Call class="jakarta.servlet.DispatcherType" name="valueOf"><Arg>REQUEST</Arg></Call></Item>
+	    <Item><Call class="jakarta.servlet.DispatcherType" name="valueOf"><Arg>ASYNC</Arg></Call></Item>
 	  </Array>
 	</Set>
 

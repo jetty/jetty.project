@@ -19,8 +19,8 @@
 package org.eclipse.jetty.websocket.core;
 
 import java.util.zip.Deflater;
-import javax.servlet.ServletContext;
 
+import jakarta.servlet.ServletContext;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.DecoratedObjectFactory;

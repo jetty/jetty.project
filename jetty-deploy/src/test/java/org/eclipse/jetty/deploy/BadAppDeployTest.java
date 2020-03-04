@@ -21,8 +21,8 @@ package org.eclipse.jetty.deploy;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import javax.servlet.ServletException;
 
+import jakarta.servlet.ServletException;
 import org.eclipse.jetty.deploy.providers.WebAppProvider;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Server;

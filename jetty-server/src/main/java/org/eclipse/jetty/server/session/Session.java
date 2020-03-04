@@ -25,14 +25,14 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSessionActivationListener;
-import javax.servlet.http.HttpSessionBindingEvent;
-import javax.servlet.http.HttpSessionBindingListener;
-import javax.servlet.http.HttpSessionContext;
-import javax.servlet.http.HttpSessionEvent;
 
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSessionActivationListener;
+import jakarta.servlet.http.HttpSessionBindingEvent;
+import jakarta.servlet.http.HttpSessionBindingListener;
+import jakarta.servlet.http.HttpSessionContext;
+import jakarta.servlet.http.HttpSessionEvent;
 import org.eclipse.jetty.io.CyclicTimeout;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
@@ -851,7 +851,7 @@ public class Session implements SessionHandler.SessionIf
      * as a request enters the session if the session has expired, or called by
      * manager as a result of scavenger expiring session
      *
-     * @see javax.servlet.http.HttpSession#invalidate()
+     * @see jakarta.servlet.http.HttpSession#invalidate()
      */
     @Override
     public void invalidate()

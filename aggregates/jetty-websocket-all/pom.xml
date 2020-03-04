@@ -24,7 +24,7 @@
             </goals>
             <configuration>
               <excludes>**/MANIFEST.MF</excludes>
-              <excludeGroupIds>jakarta.annotation,org.objectweb.asm,javax.servlet,org.slf4j,org.eclipse.jetty.orbit,org.mortbay.jetty.npn</excludeGroupIds>
+              <excludeGroupIds>jakarta.annotation,org.objectweb.asm,jakarta.servlet,org.slf4j,org.eclipse.jetty.orbit,org.mortbay.jetty.npn</excludeGroupIds>
               <outputDirectory>${project.build.directory}/classes</outputDirectory>
               <overWriteReleases>false</overWriteReleases>
               <overWriteSnapshots>true</overWriteSnapshots>
@@ -149,7 +149,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
-      <artifactId>jetty-servlet-api</artifactId>
+      <artifactId>jetty-jakarta-servlet-api</artifactId>
       <scope>compile</scope>
     </dependency>
     <dependency>

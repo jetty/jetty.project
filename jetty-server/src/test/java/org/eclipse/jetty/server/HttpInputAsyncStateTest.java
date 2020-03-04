@@ -22,8 +22,8 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Queue;
 import java.util.concurrent.LinkedBlockingQueue;
-import javax.servlet.ReadListener;
 
+import jakarta.servlet.ReadListener;
 import org.eclipse.jetty.server.HttpChannelState.Action;
 import org.eclipse.jetty.server.HttpInput.Content;
 import org.eclipse.jetty.util.BufferUtil;

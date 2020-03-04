@@ -24,10 +24,10 @@ import java.util.EnumSet;
 import java.util.Enumeration;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import javax.servlet.DispatcherType;
-import javax.servlet.Filter;
-import javax.servlet.Servlet;
 
+import jakarta.servlet.DispatcherType;
+import jakarta.servlet.Filter;
+import jakarta.servlet.Servlet;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;

@@ -28,7 +28,7 @@
               <appendOutput>false</appendOutput>
               <outputFile>${project.build.directory}/deps.txt</outputFile>
               <sort>true</sort>
-              <excludeGroupIds>org.eclipse.jetty,javax.servlet,org.slf4j</excludeGroupIds>
+              <excludeGroupIds>org.eclipse.jetty,jakarta.servlet,org.slf4j</excludeGroupIds>
               <prependGroupId>true</prependGroupId>
               <includeScope>runtime</includeScope>
             </configuration>

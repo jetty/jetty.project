@@ -23,8 +23,8 @@ import java.io.InterruptedIOException;
 import java.io.PrintWriter;
 import java.util.Formatter;
 import java.util.Locale;
-import javax.servlet.ServletResponse;
 
+import jakarta.servlet.ServletResponse;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.util.Callback;

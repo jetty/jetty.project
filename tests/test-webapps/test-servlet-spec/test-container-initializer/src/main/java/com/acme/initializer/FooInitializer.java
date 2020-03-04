@@ -20,14 +20,15 @@ package com.acme.initializer;
 
 import java.util.ArrayList;
 import java.util.Set;
-import javax.servlet.ServletContainerInitializer;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletContextEvent;
-import javax.servlet.ServletContextListener;
-import javax.servlet.ServletRegistration;
-import javax.servlet.annotation.HandlesTypes;
 
-@HandlesTypes({javax.servlet.Servlet.class, Foo.class})
+import jakarta.servlet.ServletContainerInitializer;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletContextEvent;
+import jakarta.servlet.ServletContextListener;
+import jakarta.servlet.ServletRegistration;
+import jakarta.servlet.annotation.HandlesTypes;
+
+@HandlesTypes({jakarta.servlet.Servlet.class, Foo.class})
 public class FooInitializer implements ServletContainerInitializer
 {
     public static class BarListener implements ServletContextListener

@@ -67,7 +67,7 @@ Copy and paste the following content as `$JETTY_BASE/webapps/jetty-wordpress.xml
         <Arg>/*</Arg>
         <Arg>
             <Call name="of" class="java.util.EnumSet">
-                <Arg><Get name="REQUEST" class="javax.servlet.DispatcherType" /></Arg>
+                <Arg><Get name="REQUEST" class="jakarta.servlet.DispatcherType" /></Arg>
             </Call>
         </Arg>
         <Call name="setInitParameter">

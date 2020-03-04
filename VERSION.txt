@@ -2175,7 +2175,7 @@ jetty-9.4.0.M0 - 03 June 2016
  + 437786 SslContextFactory: Allow Password.getPassword to be overridden
  + 469 Update to Apache Jasper 8.0.33
  + 472675 No main manifest attribute, in jetty-runner regression
- + 478918 Change javax.servlet.error,forward,include literals to
+ + 478918 Change jakarta.servlet.error,forward,include literals to
    RequestDispatcher constants
  + 479179 Fixed NPE from debug
  + 479343 calls to MetaData#orderFragments() with relative ordering adds
@@ -2390,7 +2390,7 @@ jetty-9.3.8.RC0 - 25 February 2016
  + 352 Integrate session idling for MongoSessionManager
  + 354 Spin loop in case of exception thrown during accept()
  + 355 Improve close behavior for failed pending writes
- + 478918 Change javax.servlet.error,forward,include literals to
+ + 478918 Change jakarta.servlet.error,forward,include literals to
    RequestDispatcher constants
  + 484446 InputStreamResponseListener's InputStream uses default read (3) and
    blocks early on never-ending response.
@@ -3693,7 +3693,7 @@ jetty-9.2.0.M1 - 08 May 2014
  + 432468 Improve command CGI path handling
  + 432473 web.xml declaration order of filters not preserved on calls to init()
  + 432483 make osgi.serviceloader support for
-   javax.servlet.ServletContainerInitializer optional (cherry picked from
+   jakarta.servlet.ServletContainerInitializer optional (cherry picked from
    commit 31043d25708edbea9ef31948093f4eaf2247919b)
  + 432528 IllegalStateException when using DeferredContentProvider
  + 432777 Async Write Loses Data with HTTPS Server
@@ -3782,7 +3782,7 @@ jetty-9.1.5.v20140505 - 05 May 2014
  + 432270 Slow requests with response content delimited by EOF fail
  + 432473 web.xml declaration order of filters not preserved on calls to init()
  + 432483 make osgi.serviceloader support for
-   javax.servlet.ServletContainerInitializer optional (cherry picked from
+   jakarta.servlet.ServletContainerInitializer optional (cherry picked from
    commit 31043d25708edbea9ef31948093f4eaf2247919b)
  + 432528 IllegalStateException when using DeferredContentProvider
  + 432777 Async Write Loses Data with HTTPS Server
@@ -5678,7 +5678,7 @@ jetty-8.1.3.v20120416 - 16 April 2012
  + 373952 bind called too frequently on refresh
  + 374018 correctly handle requestperminuted underflow
  + 374152 jetty-all-server MANIFEST contains wrong import:
-   javax.servlet.annotation;version="[2.6,3)"
+   jakarta.servlet.annotation;version="[2.6,3)"
  + 374252 SslConnection.onClose() does not forward to nested connection
  + 374258 SPDY leaks SSLEngines. Made the test more reliable
  + 374367 NPE in QueuedThreadPool.dump() with early java6 jvms
@@ -5955,7 +5955,7 @@ jetty-7.6.0.RC2 - 22 December 2011
  + JETTY-1465 NPE in ContextHandler.toString
 
 jetty-8.1.0.RC1 - 06 December 2011
- + 360245 The version of the javax.servlet packages to import is 2.6 instead of
+ + 360245 The version of the jakarta.servlet packages to import is 2.6 instead of
    3.0
  + 365370 ServletHandler can fall through to nested handler
 
@@ -7484,7 +7484,7 @@ jetty-7.0.0.M0 - 27 March 2009
  + JETTY-814 Add org.eclipse.jetty.client.Address.toString()
  + JETTY-816 Implement reconnect on java bayeux client
  + JETTY-817 Aborted SSL connections may cause jetty to hang with full cpu
- + JETTY-818 Support javax.servlet.request.ssl_session_id
+ + JETTY-818 Support jakarta.servlet.request.ssl_session_id
  + JETTY-821 Allow lazy loading of persistent sessions
  + JETTY-822 Commit when autocommit=true causes error with mysql
  + JETTY-823 Extend start.config profiles
@@ -8025,7 +8025,7 @@ jetty-7.0.0pre0 - 21 April 2008
  + Ensure Jotm tx mgr can be found in jetty-env.xml
  + HttpClient supports pipelined request
  + Jetty-6.1.8 Changes
- + Make javax.servlet.jsp optional osgi import for jetty module
+ + Make jakarta.servlet.jsp optional osgi import for jetty module
  + QueuedThreadPool default
  + Refactor of Continuation towards servlet 3.0 proposal
  + Renamed modules management and naming to jmx and jndi.
@@ -8045,7 +8045,7 @@ jetty-6.1.9 - 26 March 2008
  + JETTY-538 test harness fix for windows
  + JETTY-541 Cometd per client timeouts
  + Ensure Jotm tx mgr can be found in jetty-env.xml
- + Make javax.servlet.jsp optional osgi import for jetty module
+ + Make jakarta.servlet.jsp optional osgi import for jetty module
 
 jetty-6.1.8 - 28 February 2008
  + JETTY-350 log ssl errors on SslSocketConnector
@@ -8155,7 +8155,7 @@ jetty-6.1.6rc0 - 03 October 2007
  + JETTY-407 AJP handles unknown content length
  + JETTY-413 Make rolloveroutputstream timer daemon
  + JETTY-422 Allow <Property> values to be null in config files
- + JETTY-423 Ensure javax.servlet.forward parameters are latched on first
+ + JETTY-423 Ensure jakarta.servlet.forward parameters are latched on first
    forward
  + JETTY-425 Handle duplicate stop calls better
  + JETTY-430 improved cometd logging
@@ -8511,7 +8511,7 @@ jetty-6.1.0rc0 - 08 December 2006
  + Added org.mortbay.thread.concurrent.ThreadPool
  + Added spring ejb3 demo example
  + DefaultHandler links virtual hosts.
- + Dispatcher does not protect javax.servlet attributes
+ + Dispatcher does not protect jakarta.servlet attributes
  + Fixed cachesize on invalidate
  + Fixed idle timeout
  + flush if content-length written
@@ -11017,7 +11017,7 @@ jetty-2.3.0A - 22 September 1999
  + Expanded tabs to spaces in source.
  + Made session IDs less predictable and removed race.
  + ServerContext available to HtmlFilters via context param
- + Use javax.servlet classes from JWSDK1.0
+ + Use jakarta.servlet classes from JWSDK1.0
 
 jetty-2.2.8 - 15 September 1999
  + Added disableLog() to turn off logging.
@@ -11395,11 +11395,11 @@ jetty-2.0Alpha2 - 01 May 1998
  + Added timezone to Log
  + Handle params in getIntHeader and getDateHeader
  + Handle Single Threaded servlets with servlet pool
- + JDK1.2 javax.servlet API
+ + JDK1.2 jakarta.servlet API
  + Removed HttpRequest.getByteContent
- + Use javax.servlet.http.Cookie
- + Use javax.servlet.http.HttpSession
- + Use javax.servlet.http.HttpUtils.parsePostData
+ + Use jakarta.servlet.http.Cookie
+ + Use jakarta.servlet.http.HttpSession
+ + Use jakarta.servlet.http.HttpUtils.parsePostData
 
 jetty-1.3.5 - 01 May 1998
  + Added date format to Log

@@ -31,9 +31,9 @@ public class JspConfig
 {
     public static void init(WebAppContext context, URI baseUri, File scratchDir)
     {
-        context.setAttribute("javax.servlet.context.tempdir", scratchDir);
+        context.setAttribute("jakarta.servlet.context.tempdir", scratchDir);
         context.setAttribute("org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern",
-            ".*/jetty-servlet-api-[^/]*\\.jar$|.*javax.servlet.jsp.jstl-[^/]*\\.jar|.*taglibs-standard-impl-.*\\.jar");
+            ".*/jetty-jakarta-servlet-api-[^/]*\\.jar$|.*jakarta.servlet.jsp.jstl-[^/]*\\.jar|.*taglibs-standard-impl-.*\\.jar");
         context.setWar(baseUri.toASCIIString());
         context.setResourceBase(baseUri.toASCIIString());
     }

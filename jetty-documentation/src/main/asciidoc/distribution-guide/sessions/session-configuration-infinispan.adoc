@@ -222,7 +222,7 @@ How to use the converter:
 
 [source, screen, subs="{sub-order}"]
 ----
-java -cp jetty-servlet-api-4.0.2.jar:jetty-util-{VERSION}.jar:jetty-server-{VERSION}.jar:infinispan-remote-9.1.0.Final.jar:jetty-infinispan-{VERSION}.jar:[other classpath]  org.eclipse.jetty.session.infinispan.InfinispanSessionLegacyConverter
+java -cp jetty-jakarta-servlet-api-4.0.2.jar:jetty-util-{VERSION}.jar:jetty-server-{VERSION}.jar:infinispan-remote-9.1.0.Final.jar:jetty-infinispan-{VERSION}.jar:[other classpath]  org.eclipse.jetty.session.infinispan.InfinispanSessionLegacyConverter
 
 Usage:  InfinispanSessionLegacyConverter [-Dhost=127.0.0.1] [-Dverbose=true|false] <cache-name> [check]
 ----
@@ -242,7 +242,7 @@ The following command will attempt to convert all sessions in the cached named `
 
 [source, screen, subs="{sub-order}"]
 ----
-java -cp jetty-servlet-api-4.0.2.jar:jetty-util-{VERSION}.jar:jetty-server-{VERSION}.jar:infinispan-remote-9.1.0.Final.jar:jetty-infinispan-{VERSION}.jar:/my/custom/classes  org.eclipse.jetty.session.infinispan.InfinispanSessionLegacyConverter -Dhost=myhost my-remote-cache
+java -cp jetty-jakarta-servlet-api-4.0.2.jar:jetty-util-{VERSION}.jar:jetty-server-{VERSION}.jar:infinispan-remote-9.1.0.Final.jar:jetty-infinispan-{VERSION}.jar:/my/custom/classes  org.eclipse.jetty.session.infinispan.InfinispanSessionLegacyConverter -Dhost=myhost my-remote-cache
 ----
 
 If the converter fails to convert a session, an error message and stacktrace will be printed and the conversion will abort. The failed session should be untouched, however _it is prudent to take a backup of your cache before attempting the conversion_.

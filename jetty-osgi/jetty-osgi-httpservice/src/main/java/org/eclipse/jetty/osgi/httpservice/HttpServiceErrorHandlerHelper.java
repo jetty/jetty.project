@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.osgi.httpservice;
 
-import javax.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServlet;
 
 /**
  * For jetty agnostic handling of errors issued by the HttpService.

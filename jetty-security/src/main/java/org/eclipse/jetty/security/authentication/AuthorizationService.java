@@ -18,8 +18,7 @@
 
 package org.eclipse.jetty.security.authentication;
 
-import javax.servlet.http.HttpServletRequest;
-
+import jakarta.servlet.http.HttpServletRequest;
 import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.server.UserIdentity;
 

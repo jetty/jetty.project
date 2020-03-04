@@ -55,7 +55,7 @@ public class ServerWithAnnotations
         webapp.setWar(warFile.getAbsolutePath());
         webapp.setAttribute(
             "org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern",
-            ".*/jetty-servlet-api-[^/]*\\.jar$");
+            ".*/jetty-jakarta-servlet-api-[^/]*\\.jar$");
         server.setHandler(webapp);
 
         // Register new transaction manager in JNDI

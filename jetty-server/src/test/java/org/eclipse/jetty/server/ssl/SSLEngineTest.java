@@ -38,11 +38,11 @@ import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSession;
-import javax.servlet.ServletException;
-import javax.servlet.ServletOutputStream;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletOutputStream;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
@@ -368,7 +368,7 @@ public class SSLEngineTest
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             // System.err.println("HANDLE "+request.getRequestURI());
-            String sslId = (String)request.getAttribute("javax.servlet.request.ssl_session_id");
+            String sslId = (String)request.getAttribute("jakarta.servlet.request.ssl_session_id");
             assertNotNull(sslId);
 
             if (request.getParameter("dump") != null)

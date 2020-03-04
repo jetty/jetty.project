@@ -21,8 +21,8 @@ package org.eclipse.jetty.server.session;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
-import javax.servlet.SessionTrackingMode;
 
+import jakarta.servlet.SessionTrackingMode;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;

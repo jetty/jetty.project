@@ -22,11 +22,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.function.Function;
-import javax.servlet.ServletContext;
-
 import jakarta.websocket.DeploymentException;
 import jakarta.websocket.server.ServerEndpoint;
 import jakarta.websocket.server.ServerEndpointConfig;
+import jakarta.servlet.ServletContext;
+
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
@@ -39,7 +39,6 @@ import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.core.exception.WebSocketException;
 import org.eclipse.jetty.websocket.jakarta.client.JakartaWebSocketClientContainer;
 import org.eclipse.jetty.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
-
 import org.eclipse.jetty.websocket.servlet.WebSocketMapping;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

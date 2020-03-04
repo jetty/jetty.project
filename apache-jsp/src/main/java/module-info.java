@@ -16,8 +16,7 @@
 // ========================================================================
 //
 
-import javax.servlet.ServletContainerInitializer;
-
+import jakarta.servlet.ServletContainerInitializer;
 import org.apache.juli.logging.Log;
 import org.eclipse.jetty.apache.jsp.JettyJasperInitializer;
 import org.eclipse.jetty.apache.jsp.JuliLog;

@@ -28,9 +28,9 @@ import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.apache.kerby.kerberos.kerb.server.SimpleKdcServer;
 import org.eclipse.jetty.client.AbstractHttpClientServerTest;
 import org.eclipse.jetty.client.EmptyServerHandler;

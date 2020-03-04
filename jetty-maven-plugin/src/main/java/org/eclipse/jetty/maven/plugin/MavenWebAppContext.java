@@ -58,7 +58,7 @@ public class MavenWebAppContext extends WebAppContext
 {
     private static final Logger LOG = LoggerFactory.getLogger(MavenWebAppContext.class);
 
-    private static final String DEFAULT_CONTAINER_INCLUDE_JAR_PATTERN = ".*/javax.servlet-[^/]*\\.jar$|.*/jetty-servlet-api-[^/]*\\.jar$|.*javax.servlet.jsp.jstl-[^/]*\\.jar|.*taglibs-standard-impl-.*\\.jar";
+    private static final String DEFAULT_CONTAINER_INCLUDE_JAR_PATTERN = ".*/jakarta.servlet-[^/]*\\.jar$|.*/jetty-jakarta-servlet-api-[^/]*\\.jar$|.*jakarta.servlet.jsp.jstl-[^/]*\\.jar|.*taglibs-standard-impl-.*\\.jar";
 
     private static final String WEB_INF_CLASSES_PREFIX = "/WEB-INF/classes";
 

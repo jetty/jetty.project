@@ -18,8 +18,7 @@
 
 package org.eclipse.jetty.server;
 
-import javax.servlet.http.Cookie;
-
+import jakarta.servlet.http.Cookie;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 

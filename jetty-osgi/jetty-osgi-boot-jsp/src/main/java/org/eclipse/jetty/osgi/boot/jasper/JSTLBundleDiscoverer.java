@@ -23,8 +23,8 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
-import javax.servlet.jsp.JspFactory;
 
+import jakarta.servlet.jsp.JspFactory;
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.osgi.boot.JettyBootstrapActivator;
 import org.eclipse.jetty.osgi.boot.utils.BundleFileLocatorHelper;
@@ -79,7 +79,7 @@ public class JSTLBundleDiscoverer implements TldBundleDiscoverer
         }
         try
         {
-            Class<javax.servlet.ServletContext> servletContextClass = javax.servlet.ServletContext.class;
+            Class<jakarta.servlet.ServletContext> servletContextClass = jakarta.servlet.ServletContext.class;
             // bug #299733
             JspFactory fact = JspFactory.getDefaultFactory();
             if (fact == null)

@@ -34,10 +34,10 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLSession;
 import javax.net.ssl.TrustManagerFactory;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.LeakTrackingByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
@@ -294,10 +294,10 @@ public class SelectChannelServerSslTest extends HttpServerTestBase
             response.getOutputStream().println("Hello world");
             response.getOutputStream().println("scheme='" + request.getScheme() + "'");
             response.getOutputStream().println("isSecure='" + request.isSecure() + "'");
-            response.getOutputStream().println("X509Certificate='" + request.getAttribute("javax.servlet.request.X509Certificate") + "'");
-            response.getOutputStream().println("cipher_suite='" + request.getAttribute("javax.servlet.request.cipher_suite") + "'");
-            response.getOutputStream().println("key_size='" + request.getAttribute("javax.servlet.request.key_size") + "'");
-            response.getOutputStream().println("ssl_session_id='" + request.getAttribute("javax.servlet.request.ssl_session_id") + "'");
+            response.getOutputStream().println("X509Certificate='" + request.getAttribute("jakarta.servlet.request.X509Certificate") + "'");
+            response.getOutputStream().println("cipher_suite='" + request.getAttribute("jakarta.servlet.request.cipher_suite") + "'");
+            response.getOutputStream().println("key_size='" + request.getAttribute("jakarta.servlet.request.key_size") + "'");
+            response.getOutputStream().println("ssl_session_id='" + request.getAttribute("jakarta.servlet.request.ssl_session_id") + "'");
             SSLSession sslSession = (SSLSession)request.getAttribute("SSL_SESSION");
             response.getOutputStream().println("ssl_session='" + sslSession + "'");
         }

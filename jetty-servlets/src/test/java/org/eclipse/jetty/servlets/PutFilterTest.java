@@ -28,9 +28,9 @@ import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
-import javax.servlet.DispatcherType;
-import javax.servlet.http.HttpServletResponse;
 
+import jakarta.servlet.DispatcherType;
+import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.tools.HttpTester;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletTester;

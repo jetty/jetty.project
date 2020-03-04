@@ -20,8 +20,8 @@ package org.eclipse.jetty.security;
 
 import java.io.Serializable;
 import java.util.Set;
-import javax.servlet.ServletRequest;
 
+import jakarta.servlet.ServletRequest;
 import org.eclipse.jetty.security.authentication.LoginAuthenticator;
 import org.eclipse.jetty.server.Authentication;
 import org.eclipse.jetty.server.Authentication.User;

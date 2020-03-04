@@ -29,10 +29,10 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
-import javax.servlet.ServletRequest;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSession;
 
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.common.JettyExtensionConfig;
 import org.eclipse.jetty.websocket.core.server.Negotiation;
@@ -48,7 +48,7 @@ public class JettyServerUpgradeRequest
     }
 
     /**
-     * @return The {@link X509Certificate} instance at request attribute "javax.servlet.request.X509Certificate" or null.
+     * @return The {@link X509Certificate} instance at request attribute "jakarta.servlet.request.X509Certificate" or null.
      */
     public X509Certificate[] getCertificates()
     {

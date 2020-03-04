@@ -77,7 +77,7 @@
                 </Export-Package>
                 <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)";resolution:=optional</Require-Capability>
                 <Provide-Capability>
-                  osgi.serviceloader;osgi.serviceloader=org.eclipse.jetty.webapp.Configuration,osgi.serviceloader;osgi.serviceloader=javax.servlet.ServletContainerInitializer,osgi.serviceloader;osgi.serviceloader=jakarta.websocket.server.ServerEndpointConfig$Configurator
+                  osgi.serviceloader;osgi.serviceloader=org.eclipse.jetty.webapp.Configuration,osgi.serviceloader;osgi.serviceloader=jakarta.servlet.ServletContainerInitializer,osgi.serviceloader;osgi.serviceloader=javax.websocket.server.ServerEndpointConfig$Configurator
                 </Provide-Capability>
               </instructions>
             </configuration>

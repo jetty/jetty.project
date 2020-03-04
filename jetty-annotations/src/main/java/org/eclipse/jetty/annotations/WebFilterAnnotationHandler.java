@@ -40,7 +40,7 @@ public class WebFilterAnnotationHandler extends AbstractDiscoverableAnnotationHa
     @Override
     public void handle(ClassInfo info, String annotationName)
     {
-        if (annotationName == null || !"javax.servlet.annotation.WebFilter".equals(annotationName))
+        if (annotationName == null || !"jakarta.servlet.annotation.WebFilter".equals(annotationName))
             return;
 
         WebFilterAnnotation wfAnnotation = new WebFilterAnnotation(_context, info.getClassName(), info.getContainingResource());
@@ -50,7 +50,7 @@ public class WebFilterAnnotationHandler extends AbstractDiscoverableAnnotationHa
     @Override
     public void handle(FieldInfo info, String annotationName)
     {
-        if (annotationName == null || !"javax.servlet.annotation.WebFilter".equals(annotationName))
+        if (annotationName == null || !"jakarta.servlet.annotation.WebFilter".equals(annotationName))
             return;
         LOG.warn("@WebFilter not applicable for fields: " + info.getClassInfo().getClassName() + "." + info.getFieldName());
     }
@@ -58,7 +58,7 @@ public class WebFilterAnnotationHandler extends AbstractDiscoverableAnnotationHa
     @Override
     public void handle(MethodInfo info, String annotationName)
     {
-        if (annotationName == null || !"javax.servlet.annotation.WebFilter".equals(annotationName))
+        if (annotationName == null || !"jakarta.servlet.annotation.WebFilter".equals(annotationName))
             return;
         LOG.warn("@WebFilter not applicable for methods: " + info.getClassInfo().getClassName() + "." + info.getMethodName() + " " + info.getSignature());
     }

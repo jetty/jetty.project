@@ -22,7 +22,7 @@
             <Bundle-SymbolicName>org.eclipse.jetty.tests.test-servlet-container-initializer;singleton:=true</Bundle-SymbolicName>
             <Bundle-Description>A bundle containing a ServletContainerInitializer for testing</Bundle-Description>
             <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)"</Require-Capability>
-            <Provide-Capability>osgi.serviceloader; osgi.serviceloader=javax.servlet.ServletContainerInitializer</Provide-Capability>
+            <Provide-Capability>osgi.serviceloader; osgi.serviceloader=jakarta.servlet.ServletContainerInitializer</Provide-Capability>
             <Export-Package>com.acme.initializer;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"</Export-Package>
             <_nouses>true</_nouses>
           </instructions>
@@ -33,7 +33,7 @@
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
-      <artifactId>jetty-servlet-api</artifactId>
+      <artifactId>jetty-jakarta-servlet-api</artifactId>
       <scope>provided</scope>
     </dependency>
   </dependencies>

@@ -21,13 +21,13 @@ package org.eclipse.jetty.servlets;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import javax.servlet.RequestDispatcher;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.util.URIUtil;
 
 /**
@@ -36,7 +36,7 @@ import org.eclipse.jetty.util.URIUtil;
  * <p>It is intended to be used to load multiple
  * javascript or css files, but may be used for any content of the
  * same mime type that can be meaningfully concatenated.</p>
- * <p>The servlet uses {@link RequestDispatcher#include(javax.servlet.ServletRequest, javax.servlet.ServletResponse)}
+ * <p>The servlet uses {@link RequestDispatcher#include(jakarta.servlet.ServletRequest, jakarta.servlet.ServletResponse)}
  * to combine the requested content, so dynamically generated content
  * may be combined (Eg engine.js for DWR).</p>
  * <p>The servlet uses parameter names of the query string as resource names

@@ -19,13 +19,12 @@
 package org.eclipse.jetty.websocket.jakarta.server.examples;
 
 import java.io.IOException;
-import javax.servlet.http.HttpSession;
-
 import jakarta.websocket.EndpointConfig;
 import jakarta.websocket.OnMessage;
 import jakarta.websocket.OnOpen;
 import jakarta.websocket.Session;
 import jakarta.websocket.server.ServerEndpoint;
+import jakarta.servlet.http.HttpSession;
 
 @ServerEndpoint(value = "/example", configurator = GetHttpSessionConfigurator.class)
 public class GetHttpSessionSocket

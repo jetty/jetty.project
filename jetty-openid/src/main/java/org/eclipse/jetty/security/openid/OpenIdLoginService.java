@@ -20,8 +20,8 @@ package org.eclipse.jetty.security.openid;
 
 import java.security.Principal;
 import javax.security.auth.Subject;
-import javax.servlet.ServletRequest;
 
+import jakarta.servlet.ServletRequest;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.LoginService;
