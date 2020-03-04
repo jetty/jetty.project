@@ -23,6 +23,7 @@ module org.eclipse.jetty.util
     exports org.eclipse.jetty.util;
     exports org.eclipse.jetty.util.annotation;
     exports org.eclipse.jetty.util.component;
+    exports org.eclipse.jetty.util.compression;
     exports org.eclipse.jetty.util.log;
     exports org.eclipse.jetty.util.preventers;
     exports org.eclipse.jetty.util.resource;
@@ -31,13 +32,10 @@ module org.eclipse.jetty.util
     exports org.eclipse.jetty.util.statistic;
     exports org.eclipse.jetty.util.thread;
     exports org.eclipse.jetty.util.thread.strategy;
-    exports org.eclipse.jetty.util.compression;
-
-    // Required Slf4j
-    requires org.slf4j;
 
     // Required by SSL code (for X509).
     requires transitive java.naming;
+    requires org.slf4j;
 
     // Only required if using AppContextLeakPreventer/AWTLeakPreventer.
     requires static java.desktop;

@@ -22,4 +22,5 @@ module org.eclipse.jetty.io
     exports org.eclipse.jetty.io.ssl;
 
     requires transitive org.eclipse.jetty.util;
+    requires org.slf4j;
 }

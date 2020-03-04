@@ -28,6 +28,7 @@ module org.eclipse.jetty.security.jaspi
     requires javax.security.auth.message;
     requires jetty.servlet.api;
     requires transitive org.eclipse.jetty.security;
+    requires org.slf4j;
 
     provides Authenticator.Factory with JaspiAuthenticatorFactory;
 }

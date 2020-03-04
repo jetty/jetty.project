@@ -24,6 +24,7 @@ module org.eclipse.jetty.servlets
     exports org.eclipse.jetty.servlets;
 
     requires transitive jetty.servlet.api;
+    requires org.slf4j;
 
     // Only required if using CloseableDoSFilter.
     requires static org.eclipse.jetty.io;
