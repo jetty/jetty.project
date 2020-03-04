@@ -44,9 +44,14 @@
       <version>@slf4j.version@</version>
     </dependency>
     <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-slf4j18-impl</artifactId>
-      <version>@log4j2.version@</version>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-log4j12</artifactId>
+      <version>@slf4j.version@</version>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>jul-to-slf4j</artifactId>
+      <version>@slf4j.version@</version>
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
@@ -87,9 +92,7 @@
               <systemProperties>
                   <jetty.port.file>${jetty.port.file}</jetty.port.file>
               </systemProperties>
-              <jettyXmls>
-                <jettyXml>${basedir}/src/config/jetty.xml</jettyXml>
-              </jettyXmls>
+              <jettyXml>${basedir}/src/config/jetty.xml</jettyXml>
             </configuration>
           </execution>
         </executions>
