@@ -20,11 +20,11 @@ package org.eclipse.jetty.annotations;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
-import javax.servlet.DispatcherType;
-import javax.servlet.Filter;
-import javax.servlet.annotation.WebFilter;
-import javax.servlet.annotation.WebInitParam;
 
+import jakarta.servlet.DispatcherType;
+import jakarta.servlet.Filter;
+import jakarta.servlet.annotation.WebFilter;
+import jakarta.servlet.annotation.WebInitParam;
 import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.FilterMapping;
@@ -69,7 +69,7 @@ public class WebFilterAnnotation extends DiscoveredAnnotation
         //Servlet Spec 8.1.2
         if (!Filter.class.isAssignableFrom(clazz))
         {
-            LOG.warn(clazz.getName() + " is not assignable from javax.servlet.Filter");
+            LOG.warn(clazz.getName() + " is not assignable from jakarta.servlet.Filter");
             return;
         }
         MetaData metaData = _context.getMetaData();

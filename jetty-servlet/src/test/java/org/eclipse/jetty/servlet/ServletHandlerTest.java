@@ -19,8 +19,8 @@
 package org.eclipse.jetty.servlet;
 
 import java.util.EnumSet;
-import javax.servlet.DispatcherType;
 
+import jakarta.servlet.DispatcherType;
 import org.eclipse.jetty.http.pathmap.MappedResource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

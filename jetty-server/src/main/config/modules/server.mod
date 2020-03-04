@@ -14,7 +14,7 @@ bytebufferpool
 logging
 
 [lib]
-lib/jetty-servlet-api-4.0.*.jar
+lib/jetty-jakarta-servlet-api-4.0.*.jar
 lib/jetty-http-${jetty.version}.jar
 lib/jetty-server-${jetty.version}.jar
 lib/jetty-xml-${jetty.version}.jar

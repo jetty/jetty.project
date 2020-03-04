@@ -21,11 +21,11 @@ package org.eclipse.jetty.server;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import javax.servlet.AsyncListener;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletResponse;
-import javax.servlet.UnavailableException;
 
+import jakarta.servlet.AsyncListener;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.UnavailableException;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.QuietException;
@@ -36,12 +36,12 @@ import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static javax.servlet.RequestDispatcher.ERROR_EXCEPTION;
-import static javax.servlet.RequestDispatcher.ERROR_EXCEPTION_TYPE;
-import static javax.servlet.RequestDispatcher.ERROR_MESSAGE;
-import static javax.servlet.RequestDispatcher.ERROR_REQUEST_URI;
-import static javax.servlet.RequestDispatcher.ERROR_SERVLET_NAME;
-import static javax.servlet.RequestDispatcher.ERROR_STATUS_CODE;
+import static jakarta.servlet.RequestDispatcher.ERROR_EXCEPTION;
+import static jakarta.servlet.RequestDispatcher.ERROR_EXCEPTION_TYPE;
+import static jakarta.servlet.RequestDispatcher.ERROR_MESSAGE;
+import static jakarta.servlet.RequestDispatcher.ERROR_REQUEST_URI;
+import static jakarta.servlet.RequestDispatcher.ERROR_SERVLET_NAME;
+import static jakarta.servlet.RequestDispatcher.ERROR_STATUS_CODE;
 
 /**
  * Implementation of AsyncContext interface that holds the state of request-response cycle.

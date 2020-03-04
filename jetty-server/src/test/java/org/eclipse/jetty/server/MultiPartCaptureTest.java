@@ -33,9 +33,9 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Stream;
-import javax.servlet.MultipartConfigElement;
-import javax.servlet.http.Part;
 
+import jakarta.servlet.MultipartConfigElement;
+import jakarta.servlet.http.Part;
 import org.eclipse.jetty.toolchain.test.Hex;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;

@@ -23,8 +23,8 @@ import java.net.URL;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import javax.servlet.ServletContext;
 
+import jakarta.servlet.ServletContext;
 import org.apache.jasper.servlet.JasperInitializer;
 import org.apache.jasper.servlet.TldScanner;
 import org.apache.juli.logging.Log;

@@ -69,7 +69,7 @@ This will give an output looking something like this (broken in sections for cla
 [source, screen, subs="{sub-order}"]
 ....
 /opt/openjdk-11+28/bin/java
---module-path /opt/jetty/lib/jetty-servlet-api-4.0.2.jar:/opt/jetty/lib/jetty-http-{VERSION}.jar:...
+--module-path /opt/jetty/lib/jetty-jakarta-servlet-api-4.0.2.jar:/opt/jetty/lib/jetty-http-{VERSION}.jar:...
 --module org.eclipse.jetty.xml/org.eclipse.jetty.xml.XmlConfiguration /opt/jetty/etc/jetty-threadpool.xml /opt/jetty/etc/jetty.xml ...
 ....
 
@@ -79,7 +79,7 @@ This list depends on the Jetty modules that have been enabled via the link:#star
 The `--module` option tells the JVM to run main class `XmlConfiguration` from the `org.eclipse.jetty.xml` module, with the given XML files as program arguments.
 
 When the JVM starts, module `org.eclipse.jetty.xml` is added to the set of JPMS _root modules_; all other Jetty modules, being automatic, will be resolved and added to the module graph.
-JAR files that are not modules, such as `jetty-servlet-api-4.0.2.jar`, are on the module-path and therefore will be made automatic modules by the JVM (hence the derived module name `servlet.api` for this jar, referenced by the `--patch-module` command line option above).
+JAR files that are not modules, such as `jetty-jakarta-servlet-api-4.0.2.jar`, are on the module-path and therefore will be made automatic modules by the JVM (hence the derived module name `servlet.api` for this jar, referenced by the `--patch-module` command line option above).
 
 [[jpms-advanced-config]]
 ==== Advanced JPMS Configuration

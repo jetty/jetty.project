@@ -135,7 +135,7 @@
         <exclusions>
           <exclusion>
             <!-- we use the servlet jar from orbit -->
-            <groupId>javax.servlet</groupId>
+            <groupId>jakarta.servlet</groupId>
             <artifactId>servlet-api</artifactId>
           </exclusion>
           <exclusion>

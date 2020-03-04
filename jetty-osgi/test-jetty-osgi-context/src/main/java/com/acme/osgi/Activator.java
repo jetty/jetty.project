@@ -20,9 +20,9 @@ package com.acme.osgi;
 
 import java.util.Dictionary;
 import java.util.Hashtable;
-import javax.servlet.ServletContextEvent;
-import javax.servlet.ServletContextListener;
 
+import jakarta.servlet.ServletContextEvent;
+import jakarta.servlet.ServletContextListener;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;

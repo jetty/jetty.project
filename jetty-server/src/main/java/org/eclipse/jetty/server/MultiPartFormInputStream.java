@@ -35,10 +35,10 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
-import javax.servlet.MultipartConfigElement;
-import javax.servlet.ServletInputStream;
-import javax.servlet.http.Part;
 
+import jakarta.servlet.MultipartConfigElement;
+import jakarta.servlet.ServletInputStream;
+import jakarta.servlet.http.Part;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.ByteArrayOutputStream2;
 import org.eclipse.jetty.util.MultiException;
@@ -358,7 +358,7 @@ public class MultiPartFormInputStream
      * @param in Request input stream
      * @param contentType Content-Type header
      * @param config MultipartConfigElement
-     * @param contextTmpDir javax.servlet.context.tempdir
+     * @param contextTmpDir jakarta.servlet.context.tempdir
      */
     public MultiPartFormInputStream(InputStream in, String contentType, MultipartConfigElement config, File contextTmpDir)
     {

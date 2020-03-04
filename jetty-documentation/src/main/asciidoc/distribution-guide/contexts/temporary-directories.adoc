@@ -39,7 +39,7 @@ jetty-0.0.0.0-8080-test.war-_test-any-8900275691885214790.dir
 
 Where `0.0.0.0` is the host address, `8080` is the port, `test.war` is the resourceBase, `test` is the context path (with / converted to _), `any` is the virtual host, and `randomdigits` are a string of digits guaranteed to be unique.
 
-Once the temp directory is created, it is retrievable as the value (as a File) of the context attribute `javax.servlet.context.tempdir.`
+Once the temp directory is created, it is retrievable as the value (as a File) of the context attribute `jakarta.servlet.context.tempdir.`
 
 ===== The location of the temp directory
 
@@ -104,7 +104,7 @@ context.setWar("foo.war");
 context.setTempDirectory(new File("/some/dir/foo"));
 ----
 
-===== Setting the javax.servlet.context.tempdir Context Attribute
+===== Setting the jakarta.servlet.context.tempdir Context Attribute
 You should set this context attribute with the name of directory you want to use as the temp directory.
 Again, you can do this in XML:
 
@@ -116,7 +116,7 @@ Again, you can do this in XML:
   <Set name="war">foo.war</Set>
 
   <Call name="setAttribute">
-    <Arg>javax.servlet.context.tempdir</Arg>
+    <Arg>jakarta.servlet.context.tempdir</Arg>
     <Arg>/some/dir/foo</Arg>
   </Call>
 
@@ -130,10 +130,10 @@ Or in java:
 WebAppContext context = new WebAppContext();
 context.setContextPath("/test");
 context.setWar("foo.war");
-context.setAttribute("javax.servlet.context.tempdir", "/some/dir/foo");
+context.setAttribute("jakarta.servlet.context.tempdir", "/some/dir/foo");
 ----
 
-Once a temporary directory has been created by either of these methods, a file instance for it is set as the value of the `javax.servlet.context.tempdir` attribute of the web application.
+Once a temporary directory has been created by either of these methods, a file instance for it is set as the value of the `jakarta.servlet.context.tempdir` attribute of the web application.
 
 ____
 [NOTE]

@@ -20,9 +20,9 @@ package org.eclipse.jetty.cdi;
 
 import java.util.Objects;
 import java.util.Set;
-import javax.servlet.ServletContainerInitializer;
-import javax.servlet.ServletContext;
 
+import jakarta.servlet.ServletContainerInitializer;
+import jakarta.servlet.ServletContext;
 import org.eclipse.jetty.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.Loader;

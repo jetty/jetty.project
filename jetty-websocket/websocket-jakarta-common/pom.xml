@@ -49,12 +49,12 @@
               <rules>
                 <bannedDependencies>
                   <includes>
-                    <include>javax.servlet</include>
+                    <include>jakarta.servlet</include>
                     <include>servletapi</include>
-                    <include>org.eclipse.jetty.orbit:javax.servlet</include>
+                    <include>org.eclipse.jetty.orbit:jakarta.servlet</include>
                     <include>org.mortbay.jetty:servlet-api</include>
                     <include>jetty:servlet-api</include>
-                    <include>jetty-servlet-api</include>
+                    <include>jetty-jakarta-servlet-api</include>
                   </includes>
                 </bannedDependencies>
               </rules>

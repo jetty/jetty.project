@@ -109,7 +109,7 @@ response.addCookie(cookie);
 ----
 
 The introduction of RFC6265 has rendered this approach no longer possible; users are now required to encode cookie values that use these special characters.
-This can be done utilizing `javax.servlet.http.Cookie` as follows:
+This can be done utilizing `jakarta.servlet.http.Cookie` as follows:
 
 [source, java, subs="{sub-order}"]
 ----

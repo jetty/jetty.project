@@ -18,8 +18,7 @@
 
 package org.eclipse.jetty.websocket.server.internal;
 
-import javax.servlet.ServletContext;
-
+import jakarta.servlet.ServletContext;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.component.LifeCycle;

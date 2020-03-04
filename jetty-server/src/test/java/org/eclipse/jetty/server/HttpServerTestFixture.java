@@ -26,10 +26,10 @@ import java.io.PrintWriter;
 import java.net.Socket;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.HotSwapHandler;
 import org.eclipse.jetty.util.IO;

@@ -31,11 +31,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import javax.servlet.ServletRequest;
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSession;
 
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
@@ -81,11 +81,11 @@ public class ServletUpgradeRequest
     }
 
     /**
-     * @return The {@link X509Certificate} instance at request attribute "javax.servlet.request.X509Certificate" or null.
+     * @return The {@link X509Certificate} instance at request attribute "jakarta.servlet.request.X509Certificate" or null.
      */
     public X509Certificate[] getCertificates()
     {
-        return (X509Certificate[])request.getAttribute("javax.servlet.request.X509Certificate");
+        return (X509Certificate[])request.getAttribute("jakarta.servlet.request.X509Certificate");
     }
 
     /**

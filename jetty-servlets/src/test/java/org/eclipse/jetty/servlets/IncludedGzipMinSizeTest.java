@@ -18,8 +18,7 @@
 
 package org.eclipse.jetty.servlets;
 
-import javax.servlet.Servlet;
-
+import jakarta.servlet.Servlet;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;

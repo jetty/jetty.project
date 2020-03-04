@@ -34,15 +34,15 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletRegistration.Dynamic;
-import javax.servlet.ServletSecurityElement;
-import javax.servlet.http.HttpSessionActivationListener;
-import javax.servlet.http.HttpSessionAttributeListener;
-import javax.servlet.http.HttpSessionBindingListener;
-import javax.servlet.http.HttpSessionIdListener;
-import javax.servlet.http.HttpSessionListener;
 
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletRegistration.Dynamic;
+import jakarta.servlet.ServletSecurityElement;
+import jakarta.servlet.http.HttpSessionActivationListener;
+import jakarta.servlet.http.HttpSessionAttributeListener;
+import jakarta.servlet.http.HttpSessionBindingListener;
+import jakarta.servlet.http.HttpSessionIdListener;
+import jakarta.servlet.http.HttpSessionListener;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.security.ConstraintAware;
 import org.eclipse.jetty.security.ConstraintMapping;
@@ -129,7 +129,7 @@ import org.slf4j.LoggerFactory;
  * <ul>
  * <li>add {@link ManagedAttributeListener}</li>
  * <li>{@link AbstractHandler#doStart}</li>
- * <li>{@link #callContextInitialized(javax.servlet.ServletContextListener, javax.servlet.ServletContextEvent)}</li>
+ * <li>{@link #callContextInitialized(jakarta.servlet.ServletContextListener, jakarta.servlet.ServletContextEvent)}</li>
  * </ul>
  * </li>
  * <li>{@link ServletHandler#initialize()}</li>
@@ -156,7 +156,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 {
     static final Logger LOG = LoggerFactory.getLogger(WebAppContext.class);
 
-    public static final String TEMPDIR = "javax.servlet.context.tempdir";
+    public static final String TEMPDIR = "jakarta.servlet.context.tempdir";
     public static final String BASETEMPDIR = "org.eclipse.jetty.webapp.basetempdir";
     public static final String WEB_DEFAULTS_XML = "org/eclipse/jetty/webapp/webdefault.xml";
     public static final String ERROR_PAGE = "org.eclipse.jetty.server.error_page";
@@ -1146,7 +1146,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
     /**
      * Set temporary directory for context.
-     * The javax.servlet.context.tempdir attribute is also set.
+     * The jakarta.servlet.context.tempdir attribute is also set.
      *
      * @param dir Writable temporary directory.
      */

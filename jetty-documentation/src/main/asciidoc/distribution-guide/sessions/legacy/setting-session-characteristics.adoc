@@ -160,16 +160,16 @@ What was achievable before only via Jetty-specific link:#session-init-params[ini
 [[session-cookie-configuration]]
 ===== SessionCookieConfiguration
 
-The http://docs.oracle.com/javaee/6/api/javax/servlet/SessionCookieConfig.html[javax.servlet.SessionCookieConfig] class can be used to set up session handling characteristics. 
+The http://docs.oracle.com/javaee/6/api/javax/servlet/SessionCookieConfig.html[jakarta.servlet.SessionCookieConfig] class can be used to set up session handling characteristics.
 For full details, consult the http://docs.oracle.com/javaee/6/api/javax/servlet/SessionCookieConfig.html[javadoc].
 
 Below is an example of this implementation: a `ServletContextListener` retrieves the `SessionCookieConfig` and sets up some new values when the context is being initialized:
 
 [source, java, subs="{sub-order}"]
 ----
-import javax.servlet.SessionCookieConfig;
-import javax.servlet.ServletContextEvent;
-import javax.servlet.ServletContextListener;
+import jakarta.servlet.SessionCookieConfig;
+import jakarta.servlet.ServletContextEvent;
+import jakarta.servlet.ServletContextListener;
 
 public class TestListener implements ServletContextListener 
 {
@@ -232,33 +232,33 @@ You can also use `web.xml` to configure the session handling characteristics ins
 [[session-tracking-modes]]
 ===== SessionTrackingModes
 
-In addition to the configuration of link:#session-cookie-configuration[session cookies], since Servlet 3.0 you can also use the http://docs.oracle.com/javaee/6/api/javax/servlet/SessionTrackingMode.html[javax.servlet.SessionTrackingMode] to configure session tracking.
+In addition to the configuration of link:#session-cookie-configuration[session cookies], since Servlet 3.0 you can also use the http://docs.oracle.com/javaee/6/api/javax/servlet/SessionTrackingMode.html[jakarta.servlet.SessionTrackingMode] to configure session tracking.
 
 To determine what are the _default_ session tracking characteristics used by the container, call:
 
 [source, java, subs="{sub-order}"]
 ----
-javax.servlet.SessionContext.getDefaultSessionTrackingModes();
+jakarta.servlet.SessionContext.getDefaultSessionTrackingModes();
 ----
 
-This returns a java.util.Set of javax.servlet.SessionTrackingMode. The
+This returns a java.util.Set of jakarta.servlet.SessionTrackingMode. The
 _default_ session tracking modes for Jetty are:
 
 * http://docs.oracle.com/javaee/6/api/javax/servlet/SessionTrackingMode.html#COOKIE[SessionTrackingMode.COOKIE]
 * http://docs.oracle.com/javaee/6/api/javax/servlet/SessionTrackingMode.html#URL[SessionTrackingMode.URL]
 
-To see which session tracking modes are actually in effect for this Context, the following call returns a `java.util.Set` of `javax.servlet.SessionTrackingMode`:
+To see which session tracking modes are actually in effect for this Context, the following call returns a `java.util.Set` of `jakarta.servlet.SessionTrackingMode`:
 
 [source, java, subs="{sub-order}"]
 ----
-javax.servlet.SessionContext.getEffectiveSessionTrackingModes();
+jakarta.servlet.SessionContext.getEffectiveSessionTrackingModes();
 ----
 
 To change the session tracking modes, call:
 
 [source, java, subs="{sub-order}"]
 ----
-javax.servlet.SessionContext.setSessionTrackingModes(Set<SessionTrackingMode>);
+jakarta.servlet.SessionContext.setSessionTrackingModes(Set<SessionTrackingMode>);
 ----
 
 You may also set the tracking mode in `web.xml`, e.g.:

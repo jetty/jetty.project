@@ -19,8 +19,8 @@
 package org.eclipse.jetty.annotations;
 
 import javax.annotation.security.DeclareRoles;
-import javax.servlet.Servlet;
 
+import jakarta.servlet.Servlet;
 import org.eclipse.jetty.annotations.AnnotationIntrospector.AbstractIntrospectableAnnotationHandler;
 import org.eclipse.jetty.security.ConstraintAware;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
@@ -44,7 +44,7 @@ public class DeclareRolesAnnotationHandler extends AbstractIntrospectableAnnotat
     public void doHandle(Class clazz)
     {
         if (!Servlet.class.isAssignableFrom(clazz))
-            return; //only applicable on javax.servlet.Servlet derivatives
+            return; //only applicable on jakarta.servlet.Servlet derivatives
 
         if (!(_context.getSecurityHandler() instanceof ConstraintAware))
         {

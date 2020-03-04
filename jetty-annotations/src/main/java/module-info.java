@@ -16,8 +16,7 @@
 // ========================================================================
 //
 
-import javax.servlet.ServletContainerInitializer;
-
+import jakarta.servlet.ServletContainerInitializer;
 import org.eclipse.jetty.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.webapp.Configuration;
 

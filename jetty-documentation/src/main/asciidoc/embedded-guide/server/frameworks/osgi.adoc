@@ -45,7 +45,7 @@ Here's the absolute minimal set of Jetty jars:
 |jetty-webapp |org.eclipse.jetty.webapp
 |jetty-deploy |org.eclipse.jetty.deploy
 |jetty-xml |org.eclipse.jetty.xml
-|jetty-servlet-api |org.eclipse.jetty.servlet-api
+|jetty-jakarta-servlet-api |org.eclipse.jetty.servlet-api
 |===================================================
 
 You *must also install the Apache Aries SPI Fly bundles* as  many parts of Jetty - for example ALPN, websocket, annotations - use the `ServiceLoader` mechanism, which requires an OSGi Service Loader Mediator like SPI Fly:
@@ -252,8 +252,8 @@ Here's an example of a bundle where the resources of the webapp are not located 
 ----
 Bundle-Name: Web
 Jetty-WarResourcePath: web
-Import-Package: javax.servlet;version="3.1",
- javax.servlet.resources;version="3.1"
+Import-Package: jakarta.servlet;version="3.1",
+ jakarta.servlet.resources;version="3.1"
 Bundle-SymbolicName: com.acme.sample.web
 ----
 
@@ -282,8 +282,8 @@ Here's an example based on the previous one where we use the `Web-ContextPath` h
 Bundle-Name: Web
 Jetty-WarResourcePath: web
 Web-ContextPath: /sample
-Import-Package: javax.servlet;version="3.1",
- javax.servlet.resources;version="3.1"
+Import-Package: jakarta.servlet;version="3.1",
+ jakarta.servlet.resources;version="3.1"
 Bundle-SymbolicName: com.acme.sample.web
 ----
 
@@ -549,8 +549,8 @@ Bundle-Classpath: .
 Bundle-Name: Jetty OSGi Test Context
 DynamicImport-Package: org.eclipse.jetty.*;version="[9.0,10.0)"
 Bundle-Activator: com.acme.osgi.Activator
-Import-Package: javax.servlet;version="2.6.0",
- javax.servlet.resources;version="2.6.0",
+Import-Package: jakarta.servlet;version="2.6.0",
+ jakarta.servlet.resources;version="2.6.0",
  org.eclipse.jetty.server.handler;version="[9.0,10)",
  org.osgi.framework;version="[1.5,2)",
  org.osgi.service.cm;version="1.2.0",
@@ -705,9 +705,9 @@ For the JSTL library, we recommend the use of the implementation from Glassfish,
 |Jar |Bundle Symbolic Name
 |The link:#osgi-jsp[jsp jars]|
 
-|org.eclipse.jetty.orbit:javax.servlet.jsp.jstl-1.2.0.v201105211821.jar| javax.servlet.jsp.jstl
+|org.eclipse.jetty.orbit:jakarta.servlet.jsp.jstl-1.2.0.v201105211821.jar| jakarta.servlet.jsp.jstl
 
-|org.glassfish.web:javax.servlet.jsp.jstl-1.2.2.jar|org.glassfish.web.javax.servlet.jsp.jstl
+|org.glassfish.web:jakarta.servlet.jsp.jstl-1.2.2.jar|org.glassfish.web.jakarta.servlet.jsp.jstl
 |=======================================================================
 
 However, if you wish, you may use the JSTL implementation from Apache instead, although you will need to source some dependency jars with suitable OSGi manifests:
@@ -870,7 +870,7 @@ ____
 You may be able to deploy later versions or other providers of these specifications, however these particular versions are known to have correct manifests and have been tested and known to work with OSGi.
 ____
 
-Even if your webapp itself does not not use annotations, you may need to deploy these jars because your webapp depends on a Jetty module or a 3rd party library that uses a http://docs.oracle.com/javaee/6/api/javax/servlet/ServletContainerInitializer.html[javax.servlet.ServletContainerInitializer].
+Even if your webapp itself does not not use annotations, you may need to deploy these jars because your webapp depends on a Jetty module or a 3rd party library that uses a http://docs.oracle.com/javaee/6/api/javax/servlet/ServletContainerInitializer.html[jakarta.servlet.ServletContainerInitializer].
 This interface requires annotation support.
 It is implemented by providers of code that extend the capabilities of the container.
 An example of this is the Jetty JSR356 Websocket implementation, although it is being used increasingly commonly in popular libraries like link:http://projects.spring.io/spring-framework/[Spring], link:https://jersey.java.net/[Jersey] and JSP containers.

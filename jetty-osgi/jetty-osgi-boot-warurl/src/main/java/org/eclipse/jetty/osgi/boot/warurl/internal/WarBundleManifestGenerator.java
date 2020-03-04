@@ -171,8 +171,8 @@ public class WarBundleManifestGenerator
             //The spec does not specify that the jsp imports are optional
             //kind of nice to have them optional so we can run simple wars in
             //simple environments.
-            alreadyImportPackage = "javax.servlet; version=\"2.5\"," +
-                "javax.servlet.http;version=\"2.5\"," +
+            alreadyImportPackage = "jakarta.servlet; version=\"2.5\"," +
+                "jakarta.servlet.http;version=\"2.5\"," +
                 "javax.el;version=\"1.0\"" +
                 "javax.jsp;version=\"2.1\";resolution:=optional," +
                 "javax.jsp.tagext;version=\"2.1\";resolution:=optional";

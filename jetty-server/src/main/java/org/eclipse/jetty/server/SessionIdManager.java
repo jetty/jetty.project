@@ -19,8 +19,8 @@
 package org.eclipse.jetty.server;
 
 import java.util.Set;
-import javax.servlet.http.HttpServletRequest;
 
+import jakarta.servlet.http.HttpServletRequest;
 import org.eclipse.jetty.server.session.HouseKeeper;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.util.component.LifeCycle;

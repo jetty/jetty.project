@@ -158,7 +158,7 @@ re-compilation attempt? Used in development mode only and is disabled by
 default as compilation may be expensive and could lead to excessive
 resource usage. |FALSE |–
 
-|scratchDir |Directory where servlets are generated. The default is the value of the context attribute `javax.servlet.context.tempdir`, or the system property `java.io.tmpdir` if the context attribute is not set. |– |–
+|scratchDir |Directory where servlets are generated. The default is the value of the context attribute `jakarta.servlet.context.tempdir`, or the system property `java.io.tmpdir` if the context attribute is not set. |– |–
 
 |strictQuoteEscaping |Should the quote escaping required by section JSP.1.6 of the JSP specification be applied to scriplet expression.
              |TRUE|-

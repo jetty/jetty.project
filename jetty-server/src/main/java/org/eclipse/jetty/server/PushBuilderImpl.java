@@ -19,8 +19,8 @@
 package org.eclipse.jetty.server;
 
 import java.util.Set;
-import javax.servlet.http.PushBuilder;
 
+import jakarta.servlet.http.PushBuilder;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;

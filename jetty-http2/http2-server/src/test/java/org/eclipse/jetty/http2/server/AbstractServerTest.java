@@ -23,8 +23,8 @@ import java.io.InputStream;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
-import javax.servlet.http.HttpServlet;
 
+import jakarta.servlet.http.HttpServlet;
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpScheme;

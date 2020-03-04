@@ -24,8 +24,8 @@ import java.util.Set;
 import javax.management.Attribute;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
-import javax.servlet.DispatcherType;
 
+import jakarta.servlet.DispatcherType;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;

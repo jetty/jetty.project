@@ -50,7 +50,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
-      <artifactId>jetty-servlet-api</artifactId>
+      <artifactId>jetty-jakarta-servlet-api</artifactId>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -95,13 +95,13 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>javax.servlet.jsp</groupId>
+      <groupId>jakarta.servlet.jsp</groupId>
       <artifactId>jsp-api</artifactId>
       <version>2.1</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>javax.servlet</groupId>
+      <groupId>jakarta.servlet</groupId>
       <artifactId>jstl</artifactId>
       <version>1.2</version>
       <scope>provided</scope>

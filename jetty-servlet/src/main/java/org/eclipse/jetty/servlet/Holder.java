@@ -24,9 +24,9 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import javax.servlet.Registration;
-import javax.servlet.ServletContext;
 
+import jakarta.servlet.Registration;
+import jakarta.servlet.ServletContext;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.slf4j.Logger;

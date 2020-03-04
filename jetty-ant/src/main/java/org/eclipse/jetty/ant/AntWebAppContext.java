@@ -32,8 +32,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.jar.Manifest;
-import javax.servlet.Servlet;
 
+import jakarta.servlet.Servlet;
 import org.apache.tools.ant.AntClassLoader;
 import org.apache.tools.ant.BuildException;
 import org.apache.tools.ant.Project;

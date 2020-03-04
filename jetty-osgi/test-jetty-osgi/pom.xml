@@ -146,7 +146,7 @@
 
     <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
-      <artifactId>jetty-servlet-api</artifactId>
+      <artifactId>jetty-jakarta-servlet-api</artifactId>
     </dependency>
     <dependency>
       <groupId>org.apache.geronimo.specs</groupId>
@@ -180,19 +180,19 @@
     </dependency>
     <dependency>
       <groupId>org.glassfish.web</groupId>
-      <artifactId>javax.servlet.jsp.jstl</artifactId>
+      <artifactId>jakarta.servlet.jsp.jstl</artifactId>
       <version>1.2.2</version>
       <exclusions>
         <exclusion>
-          <groupId>javax.servlet.jsp.jstl</groupId>
+          <groupId>jakarta.servlet.jsp.jstl</groupId>
           <artifactId>jstl-api</artifactId>
         </exclusion>
         <exclusion>
-          <groupId>javax.servlet</groupId>
+          <groupId>jakarta.servlet</groupId>
           <artifactId>servlet-api</artifactId>
         </exclusion>
         <exclusion>
-          <groupId>javax.servlet.jsp</groupId>
+          <groupId>jakarta.servlet.jsp</groupId>
           <artifactId>jsp-api</artifactId>
         </exclusion>
         <exclusion>
@@ -203,16 +203,16 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.orbit</groupId>
-      <artifactId>javax.servlet.jsp.jstl</artifactId>
+      <artifactId>jakarta.servlet.jsp.jstl</artifactId>
       <version>1.2.0.v201105211821</version>
       <exclusions>
         <exclusion>
           <groupId>org.eclipse.jetty.orbit</groupId>
-          <artifactId>javax.servlet</artifactId>
+          <artifactId>jakarta.servlet</artifactId>
         </exclusion>
         <exclusion>
           <groupId>org.eclipse.jetty.orbit</groupId>
-          <artifactId>javax.servlet.jsp</artifactId>
+          <artifactId>jakarta.servlet.jsp</artifactId>
         </exclusion>
       </exclusions>
     </dependency>

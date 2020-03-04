@@ -23,8 +23,8 @@ import java.util.concurrent.TimeUnit;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSession;
-import javax.servlet.ServletRequest;
 
+import jakarta.servlet.ServletRequest;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
@@ -227,10 +227,10 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
      * The requirements of the Servlet specs are:
      * </p>
      * <ul>
-     * <li>an attribute named "javax.servlet.request.ssl_session_id" of type String (since Servlet Spec 3.0).</li>
-     * <li>an attribute named "javax.servlet.request.cipher_suite" of type String.</li>
-     * <li>an attribute named "javax.servlet.request.key_size" of type Integer.</li>
-     * <li>an attribute named "javax.servlet.request.X509Certificate" of type java.security.cert.X509Certificate[]. This
+     * <li>an attribute named "jakarta.servlet.request.ssl_session_id" of type String (since Servlet Spec 3.0).</li>
+     * <li>an attribute named "jakarta.servlet.request.cipher_suite" of type String.</li>
+     * <li>an attribute named "jakarta.servlet.request.key_size" of type Integer.</li>
+     * <li>an attribute named "jakarta.servlet.request.X509Certificate" of type java.security.cert.X509Certificate[]. This
      * is an array of objects of type X509Certificate, the order of this array is defined as being in ascending order of
      * trust. The first certificate in the chain is the one set by the client, the next is the one used to authenticate
      * the first, and so on.</li>
@@ -287,11 +287,11 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
             }
 
             if (certs != null)
-                request.setAttribute("javax.servlet.request.X509Certificate", certs);
+                request.setAttribute("jakarta.servlet.request.X509Certificate", certs);
 
-            request.setAttribute("javax.servlet.request.cipher_suite", cipherSuite);
-            request.setAttribute("javax.servlet.request.key_size", keySize);
-            request.setAttribute("javax.servlet.request.ssl_session_id", idStr);
+            request.setAttribute("jakarta.servlet.request.cipher_suite", cipherSuite);
+            request.setAttribute("jakarta.servlet.request.key_size", keySize);
+            request.setAttribute("jakarta.servlet.request.ssl_session_id", idStr);
             String sessionAttribute = getSslSessionAttribute();
             if (sessionAttribute != null && !sessionAttribute.isEmpty())
                 request.setAttribute(sessionAttribute, sslSession);

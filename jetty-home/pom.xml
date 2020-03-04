@@ -338,11 +338,11 @@
               <artifactItems>
                 <artifactItem>
                   <groupId>org.eclipse.jetty.toolchain</groupId>
-                  <artifactId>jetty-servlet-api</artifactId>
+                  <artifactId>jetty-jakarta-servlet-api</artifactId>
                   <version>${servlet.api.version}</version>
                   <overWrite>true</overWrite>
                   <outputDirectory>${assembly-directory}/lib</outputDirectory>
-                  <destFileName>jetty-servlet-api-${servlet.api.version}.jar</destFileName>
+                  <destFileName>jetty-jakarta-servlet-api-${servlet.api.version}.jar</destFileName>
                 </artifactItem>
               </artifactItems>
             </configuration>

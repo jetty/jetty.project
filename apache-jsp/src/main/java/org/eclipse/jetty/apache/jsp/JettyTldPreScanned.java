@@ -20,8 +20,8 @@ package org.eclipse.jetty.apache.jsp;
 
 import java.net.URL;
 import java.util.Collection;
-import javax.servlet.ServletContext;
 
+import jakarta.servlet.ServletContext;
 import org.apache.jasper.servlet.TldPreScanned;
 import org.apache.tomcat.util.descriptor.tld.TldResourcePath;
 

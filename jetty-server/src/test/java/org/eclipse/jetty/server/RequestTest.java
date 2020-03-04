@@ -37,15 +37,15 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import javax.servlet.DispatcherType;
-import javax.servlet.MultipartConfigElement;
-import javax.servlet.ServletException;
-import javax.servlet.ServletInputStream;
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletMapping;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.Part;
+
+import jakarta.servlet.DispatcherType;
+import jakarta.servlet.MultipartConfigElement;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletInputStream;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.Part;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpCompliance;
@@ -1487,7 +1487,7 @@ public class RequestTest
             @Override
             public boolean check(HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                javax.servlet.http.Cookie[] ca = request.getCookies();
+                jakarta.servlet.http.Cookie[] ca = request.getCookies();
                 if (ca != null)
                     cookies.addAll(Arrays.asList(ca));
                 response.getOutputStream().println("Hello World");
@@ -1615,7 +1615,7 @@ public class RequestTest
             @Override
             public boolean check(HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                javax.servlet.http.Cookie[] ca = request.getCookies();
+                jakarta.servlet.http.Cookie[] ca = request.getCookies();
                 if (ca != null)
                     cookies.addAll(Arrays.asList(ca));
                 response.getOutputStream().println("Hello World");

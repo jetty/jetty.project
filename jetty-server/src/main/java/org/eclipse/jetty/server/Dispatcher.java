@@ -22,15 +22,15 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashSet;
-import javax.servlet.DispatcherType;
-import javax.servlet.RequestDispatcher;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletMapping;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
+import jakarta.servlet.DispatcherType;
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.HttpServletMapping;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -46,12 +46,12 @@ public class Dispatcher implements RequestDispatcher
     /**
      * Dispatch include attribute names
      */
-    public static final String __INCLUDE_PREFIX = "javax.servlet.include.";
+    public static final String __INCLUDE_PREFIX = "jakarta.servlet.include.";
 
     /**
      * Dispatch include attribute names
      */
-    public static final String __FORWARD_PREFIX = "javax.servlet.forward.";
+    public static final String __FORWARD_PREFIX = "jakarta.servlet.forward.";
 
     private final ContextHandler _contextHandler;
     private final HttpURI _uri;
@@ -177,7 +177,7 @@ public class Dispatcher implements RequestDispatcher
                     attr._requestURI = (String)old_attr.getAttribute(FORWARD_REQUEST_URI);
                     attr._contextPath = (String)old_attr.getAttribute(FORWARD_CONTEXT_PATH);
                     attr._servletPath = (String)old_attr.getAttribute(FORWARD_SERVLET_PATH);
-                    attr._mapping = (HttpServletMapping)old_attr.getAttribute(FORWARD_MAPPING);
+                    attr._mapping = (HttpServletMapping)old_attr.getAttribute( FORWARD_MAPPING);
                 }
                 else
                 {
@@ -332,7 +332,7 @@ public class Dispatcher implements RequestDispatcher
         @Override
         public void setAttribute(String key, Object value)
         {
-            if (_named == null && key.startsWith("javax.servlet."))
+            if (_named == null && key.startsWith("jakarta.servlet."))
             {
                 if (key.equals(FORWARD_PATH_INFO))
                     _pathInfo = (String)value;
@@ -450,7 +450,7 @@ public class Dispatcher implements RequestDispatcher
         @Override
         public void setAttribute(String key, Object value)
         {
-            if (_named == null && key.startsWith("javax.servlet."))
+            if (_named == null && key.startsWith("jakarta.servlet."))
             {
                 if (key.equals(INCLUDE_PATH_INFO))
                     _pathInfo = (String)value;

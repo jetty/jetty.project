@@ -23,8 +23,8 @@ import java.io.IOException;
 import java.util.Queue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeoutException;
-import javax.servlet.ReadListener;
 
+import jakarta.servlet.ReadListener;
 import org.eclipse.jetty.util.BufferUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;

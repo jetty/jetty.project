@@ -102,35 +102,35 @@ public class WebDescriptor extends Descriptor
             void mapResources()
             {
                 //set up cache of DTDs and schemas locally
-                final URL dtd22 = Loader.getResource("javax/servlet/resources/web-app_2_2.dtd");
-                final URL dtd23 = Loader.getResource("javax/servlet/resources/web-app_2_3.dtd");
-                final URL j2ee14xsd = Loader.getResource("javax/servlet/resources/j2ee_1_4.xsd");
-                final URL javaee5 = Loader.getResource("javax/servlet/resources/javaee_5.xsd");
-                final URL javaee6 = Loader.getResource("javax/servlet/resources/javaee_6.xsd");
-                final URL javaee7 = Loader.getResource("javax/servlet/resources/javaee_7.xsd");
-                final URL javaee8 = Loader.getResource("javax/servlet/resources/javaee_8.xsd");
+                final URL dtd22 = Loader.getResource("jakarta/servlet/resources/web-app_2_2.dtd");
+                final URL dtd23 = Loader.getResource("jakarta/servlet/resources/web-app_2_3.dtd");
+                final URL j2ee14xsd = Loader.getResource("jakarta/servlet/resources/j2ee_1_4.xsd");
+                final URL javaee5 = Loader.getResource("jakarta/servlet/resources/javaee_5.xsd");
+                final URL javaee6 = Loader.getResource("jakarta/servlet/resources/javaee_6.xsd");
+                final URL javaee7 = Loader.getResource("jakarta/servlet/resources/javaee_7.xsd");
+                final URL javaee8 = Loader.getResource("jakarta/servlet/resources/javaee_8.xsd");
 
-                final URL webapp24xsd = Loader.getResource("javax/servlet/resources/web-app_2_4.xsd");
-                final URL webapp25xsd = Loader.getResource("javax/servlet/resources/web-app_2_5.xsd");
-                final URL webapp30xsd = Loader.getResource("javax/servlet/resources/web-app_3_0.xsd");
-                final URL webapp31xsd = Loader.getResource("javax/servlet/resources/web-app_3_1.xsd");
-                final URL webapp40xsd = Loader.getResource("javax/servlet/resources/web-app_4_0.xsd");
+                final URL webapp24xsd = Loader.getResource("jakarta/servlet/resources/web-app_2_4.xsd");
+                final URL webapp25xsd = Loader.getResource("jakarta/servlet/resources/web-app_2_5.xsd");
+                final URL webapp30xsd = Loader.getResource("jakarta/servlet/resources/web-app_3_0.xsd");
+                final URL webapp31xsd = Loader.getResource("jakarta/servlet/resources/web-app_3_1.xsd");
+                final URL webapp40xsd = Loader.getResource("jakarta/servlet/resources/web-app_4_0.xsd");
 
-                final URL webcommon30xsd = Loader.getResource("javax/servlet/resources/web-common_3_0.xsd");
-                final URL webcommon31xsd = Loader.getResource("javax/servlet/resources/web-common_3_1.xsd");
-                final URL webcommon40xsd = Loader.getResource("javax/servlet/resources/web-common_4_0.xsd");
+                final URL webcommon30xsd = Loader.getResource("jakarta/servlet/resources/web-common_3_0.xsd");
+                final URL webcommon31xsd = Loader.getResource("jakarta/servlet/resources/web-common_3_1.xsd");
+                final URL webcommon40xsd = Loader.getResource("jakarta/servlet/resources/web-common_4_0.xsd");
 
-                final URL webfragment30xsd = Loader.getResource("javax/servlet/resources/web-fragment_3_0.xsd");
-                final URL webfragment31xsd = Loader.getResource("javax/servlet/resources/web-fragment_3_1.xsd");
-                final URL webfragment40xsd = Loader.getResource("javax/servlet/resources/web-fragment_4_0.xsd");
+                final URL webfragment30xsd = Loader.getResource("jakarta/servlet/resources/web-fragment_3_0.xsd");
+                final URL webfragment31xsd = Loader.getResource("jakarta/servlet/resources/web-fragment_3_1.xsd");
+                final URL webfragment40xsd = Loader.getResource("jakarta/servlet/resources/web-fragment_4_0.xsd");
 
-                final URL schemadtd = Loader.getResource("javax/servlet/resources/XMLSchema.dtd");
-                final URL xmlxsd = Loader.getResource("javax/servlet/resources/xml.xsd");
-                final URL webservice11xsd = Loader.getResource("javax/servlet/resources/j2ee_web_services_client_1_1.xsd");
-                final URL webservice12xsd = Loader.getResource("javax/servlet/resources/javaee_web_services_client_1_2.xsd");
-                final URL webservice13xsd = Loader.getResource("javax/servlet/resources/javaee_web_services_client_1_3.xsd");
-                final URL webservice14xsd = Loader.getResource("javax/servlet/resources/javaee_web_services_client_1_4.xsd");
-                final URL datatypesdtd = Loader.getResource("javax/servlet/resources/datatypes.dtd");
+                final URL schemadtd = Loader.getResource("jakarta/servlet/resources/XMLSchema.dtd");
+                final URL xmlxsd = Loader.getResource("jakarta/servlet/resources/xml.xsd");
+                final URL webservice11xsd = Loader.getResource("jakarta/servlet/resources/j2ee_web_services_client_1_1.xsd");
+                final URL webservice12xsd = Loader.getResource("jakarta/servlet/resources/javaee_web_services_client_1_2.xsd");
+                final URL webservice13xsd = Loader.getResource("jakarta/servlet/resources/javaee_web_services_client_1_3.xsd");
+                final URL webservice14xsd = Loader.getResource("jakarta/servlet/resources/javaee_web_services_client_1_4.xsd");
+                final URL datatypesdtd = Loader.getResource("jakarta/servlet/resources/datatypes.dtd");
 
                 URL jsp20xsd = null;
                 URL jsp21xsd = null;
@@ -139,11 +139,11 @@ public class WebDescriptor extends Descriptor
 
                 try
                 {
-                    //try both javax/servlet/resources and javax/servlet/jsp/resources to load 
-                    jsp20xsd = Loader.getResource("javax/servlet/resources/jsp_2_0.xsd");
-                    jsp21xsd = Loader.getResource("javax/servlet/resources/jsp_2_1.xsd");
-                    jsp22xsd = Loader.getResource("javax/servlet/resources/jsp_2_2.xsd");
-                    jsp23xsd = Loader.getResource("javax/servlet/resources/jsp_2_3.xsd");
+                    //try both jakarta/servlet/resources and jakarta/servlet/jsp/resources to load 
+                    jsp20xsd = Loader.getResource("jakarta/servlet/resources/jsp_2_0.xsd");
+                    jsp21xsd = Loader.getResource("jakarta/servlet/resources/jsp_2_1.xsd");
+                    jsp22xsd = Loader.getResource("jakarta/servlet/resources/jsp_2_2.xsd");
+                    jsp23xsd = Loader.getResource("jakarta/servlet/resources/jsp_2_3.xsd");
                 }
                 catch (Exception e)
                 {
@@ -152,13 +152,13 @@ public class WebDescriptor extends Descriptor
                 finally
                 {
                     if (jsp20xsd == null)
-                        jsp20xsd = Loader.getResource("javax/servlet/jsp/resources/jsp_2_0.xsd");
+                        jsp20xsd = Loader.getResource("jakarta/servlet/jsp/resources/jsp_2_0.xsd");
                     if (jsp21xsd == null)
-                        jsp21xsd = Loader.getResource("javax/servlet/jsp/resources/jsp_2_1.xsd");
+                        jsp21xsd = Loader.getResource("jakarta/servlet/jsp/resources/jsp_2_1.xsd");
                     if (jsp22xsd == null)
-                        jsp22xsd = Loader.getResource("javax/servlet/jsp/resources/jsp_2_2.xsd");
+                        jsp22xsd = Loader.getResource("jakarta/servlet/jsp/resources/jsp_2_2.xsd");
                     if (jsp23xsd == null)
-                        jsp23xsd = Loader.getResource("javax/servlet/jsp/resources/jsp_2_3.xsd");
+                        jsp23xsd = Loader.getResource("jakarta/servlet/jsp/resources/jsp_2_3.xsd");
                 }
 
                 redirectEntity("web-app_2_2.dtd", dtd22);

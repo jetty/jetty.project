@@ -209,7 +209,7 @@ Jetty Server Classpath:
 Version Information on 11 entries in the classpath.
 : order presented here is how they would appear on the classpath.
       changes to the --module=name command line options will be reflected here.
- 0:                    4.0.2 | ${jetty.home}/lib/jetty-servlet-api-4.0.2.jar
+ 0:                    4.0.2 | ${jetty.home}/lib/jetty-jakarta-servlet-api-4.0.2.jar
  2:                {VERSION} | ${jetty.home}/lib/jetty-http-{VERSION}.jar
  3:                {VERSION} | ${jetty.home}/lib/jetty-continuation-{VERSION}.jar
  4:                {VERSION} | ${jetty.home}/lib/jetty-server-{VERSION}.jar
@@ -383,7 +383,7 @@ Module: security
   depends: [server]
 
 Module: server
-      LIB: lib/jetty-servlet-api-4.0.2.jar
+      LIB: lib/jetty-jakarta-servlet-api-4.0.2.jar
       LIB: lib/jetty-http-${jetty.version}.jar
       LIB: lib/jetty-continuation-${jetty.version}.jar
       LIB: lib/jetty-server-${jetty.version}.jar

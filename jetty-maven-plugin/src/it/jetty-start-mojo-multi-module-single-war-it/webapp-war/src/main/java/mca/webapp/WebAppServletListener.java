@@ -19,8 +19,8 @@
 package mca.webapp;
 
 import java.net.URL;
-import javax.servlet.ServletContextEvent;
-import javax.servlet.ServletContextListener;
+import jakarta.servlet.ServletContextEvent;
+import jakarta.servlet.ServletContextListener;
 
 import static java.lang.String.format;
 
@@ -30,7 +30,7 @@ public class WebAppServletListener implements ServletContextListener
     @Override
     public void contextInitialized(ServletContextEvent servletContextEvent)
     {
-        print("1", "javax.servlet.ServletContextListener");
+        print("1", "jakarta.servlet.ServletContextListener");
         print("2", "mca.common.CommonService");
         print("3", "mca.module.ModuleApi");
         print("4", "mca.module.ModuleImpl");

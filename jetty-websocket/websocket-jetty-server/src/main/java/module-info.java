@@ -16,8 +16,7 @@
 // ========================================================================
 //
 
-import javax.servlet.ServletContainerInitializer;
-
+import jakarta.servlet.ServletContainerInitializer;
 import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.websocket.server.config.JettyWebSocketConfiguration;
 import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;

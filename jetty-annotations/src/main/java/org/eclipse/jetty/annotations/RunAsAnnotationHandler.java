@@ -18,8 +18,7 @@
 
 package org.eclipse.jetty.annotations;
 
-import javax.servlet.Servlet;
-
+import jakarta.servlet.Servlet;
 import org.eclipse.jetty.annotations.AnnotationIntrospector.AbstractIntrospectableAnnotationHandler;
 import org.eclipse.jetty.plus.annotation.RunAsCollection;
 import org.eclipse.jetty.servlet.ServletHolder;

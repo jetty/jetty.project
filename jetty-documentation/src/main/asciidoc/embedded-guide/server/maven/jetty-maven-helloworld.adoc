@@ -61,9 +61,9 @@ Use an editor to create the file `src/main/java/org/example/HelloWorld.java` wit
 ----
 package org.example;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.ServletException;
 import java.io.IOException;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.Request;
@@ -173,7 +173,7 @@ You can observe what Maven is doing for you behind the scenes by using the `mvn 
 ...
 [INFO] org.example:hello-world:jar:0.1-SNAPSHOT
 [INFO] \- org.eclipse.jetty:jetty-server:jar:9.3.9.v20160517:compile
-[INFO]    +- javax.servlet:javax.servlet-api:jar:3.1.0:compile
+[INFO]    +- jakarta.servlet:jakarta.servlet-api:jar:3.1.0:compile
 [INFO]    +- org.eclipse.jetty:jetty-http:jar:9.3.9.v20160517:compile
 [INFO]    |  \- org.eclipse.jetty:jetty-util:jar:9.3.9.v20160517:compile
 [INFO]    \- org.eclipse.jetty:jetty-io:jar:9.3.9.v20160517:compile
@@ -211,10 +211,10 @@ Use an editor to create the file `src/main/java/org/example/HelloServlet.java` w
 package org.example;
 
 import java.io.IOException;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 public class HelloServlet extends HttpServlet
 {
@@ -277,8 +277,8 @@ Use an editor to create the file `pom.xml` with the following contents in the `J
 
   <dependencies>
     <dependency>
-      <groupId>javax.servlet</groupId>
-      <artifactId>javax.servlet-api</artifactId>
+      <groupId>jakarta.servlet</groupId>
+      <artifactId>jakarta.servlet-api</artifactId>
       <version>3.1.0</version>
       <scope>provided</scope>
     </dependency>

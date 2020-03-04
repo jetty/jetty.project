@@ -65,7 +65,7 @@ Jetty Server Classpath:
 Version Information on 11 entries in the classpath.
 Note: order presented here is how they would appear on the classpath.
       changes to the --module=name command line options will be reflected here.
- 0:                    3.1.0 | ${jetty.home}/lib/jetty-servlet-api-4.0.2.jar
+ 0:                    3.1.0 | ${jetty.home}/lib/jetty-jakarta-servlet-api-4.0.2.jar
  2:           {VERSION} | ${jetty.home}/lib/jetty-http-{VERSION}.jar
  3:           {VERSION} | ${jetty.home}/lib/jetty-server-{VERSION}.jar
  4:           {VERSION} | ${jetty.home}/lib/jetty-xml-{VERSION}.jar

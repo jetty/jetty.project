@@ -19,9 +19,10 @@
 package org.eclipse.jetty.test;
 
 import java.util.Set;
-import javax.servlet.ServletContainerInitializer;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
+
+import jakarta.servlet.ServletContainerInitializer;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
 
 /**
  * A SCI that tosses an Error to intentionally to cause issues with the DeploymentManager

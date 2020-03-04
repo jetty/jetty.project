@@ -20,8 +20,9 @@ package com.acme;
 
 import java.util.ArrayList;
 import java.util.List;
-import javax.servlet.ServletRequestEvent;
-import javax.servlet.ServletRequestListener;
+
+import jakarta.servlet.ServletRequestEvent;
+import jakarta.servlet.ServletRequestListener;
 
 public final class AddListServletRequestListener
     implements ServletRequestListener

@@ -122,7 +122,7 @@ classPath::
   All contexts may have additional classpath entries added.
 attributes::
   Attributes are arbitrary named objects that are associated with a context and are frequently used to pass entities between a web application and its container. 
-  For example the attribute `javax.servlet.context.tempdir` is used to pass the File instance that represents the assigned temporary directory for a web application.
+  For example the attribute `jakarta.servlet.context.tempdir` is used to pass the File instance that represents the assigned temporary directory for a web application.
 resourceBase::
   The resource base is a directory (or collection of directories or URL) that contains the static resources for the context. 
   These can be images and HTML files ready to serve or JSP source files ready to be compiled. 

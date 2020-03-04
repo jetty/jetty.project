@@ -20,10 +20,11 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.util.Collection;
-import javax.servlet.ServletResponse;
-import javax.servlet.ServletResponseWrapper;
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletResponse;
+
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.ServletResponseWrapper;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 
 /**
  * ServletResponseHttpWrapper

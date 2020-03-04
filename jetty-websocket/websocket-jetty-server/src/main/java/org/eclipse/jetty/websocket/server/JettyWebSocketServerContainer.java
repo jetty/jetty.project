@@ -24,8 +24,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
-import javax.servlet.ServletContext;
 
+import jakarta.servlet.ServletContext;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;

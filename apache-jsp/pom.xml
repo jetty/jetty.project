@@ -28,7 +28,7 @@
             <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)";resolution:=optional
             </Require-Capability>
             <Provide-Capability>
-              osgi.serviceloader;osgi.serviceloader=javax.servlet.ServletContainerInitializer,osgi.serviceloader;osgi.serviceloader=org.apache.juli.logging.Log
+              osgi.serviceloader;osgi.serviceloader=jakarta.servlet.ServletContainerInitializer,osgi.serviceloader;osgi.serviceloader=org.apache.juli.logging.Log
             </Provide-Capability>
             <_nouses>true</_nouses>
           </instructions>
@@ -74,7 +74,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
-      <artifactId>jetty-servlet-api</artifactId>
+      <artifactId>jetty-jakarta-servlet-api</artifactId>
     </dependency>
     <dependency>
       <groupId>org.mortbay.jasper</groupId>
