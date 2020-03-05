@@ -477,8 +477,9 @@
             <source>${compiler.source}</source>
             <target>${compiler.target}</target>
             <release>${compiler.release}</release>
+            <showWarnings>true</showWarnings>
             <compilerArgs>
-              <compilerArg>-Xlint:exports</compilerArg>
+              <compilerArg>-Xlint:module,exports</compilerArg>
             </compilerArgs>
           </configuration>
         </plugin>
