@@ -1371,17 +1371,21 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     {
         if (_firstByteTimeStamp == -1 || _firstByteTimeStamp == Long.MAX_VALUE)
             return;
-        long minDataRate = getHttpChannel().getHttpConfiguration().getMinResponseDataRate();
         _flushed += bytes;
         long elapsed = System.nanoTime() - _firstByteTimeStamp;
-        long minFlushed = minDataRate * TimeUnit.NANOSECONDS.toMillis(elapsed) / TimeUnit.SECONDS.toMillis(1);
-        if (LOG.isDebugEnabled())
-            LOG.debug("Flushed bytes min/actual {}/{}", minFlushed, _flushed);
-        if (_flushed < minFlushed)
-        {
-            IOException ioe = new IOException(String.format("Response content data rate < %d B/s", minDataRate));
-            _channel.abort(ioe);
-            throw ioe;
+
+        long graceConfig =_channelState.getHttpChannel().getHttpConfiguration().getMinDataRateGracePeriod();
+        long grace = TimeUnit.MILLISECONDS.toNanos(Math.max(graceConfig, 0));
+        if (elapsed > grace) {
+            long minDataRate = getHttpChannel().getHttpConfiguration().getMinResponseDataRate();
+            long minFlushed = minDataRate * TimeUnit.NANOSECONDS.toMillis(elapsed) / TimeUnit.SECONDS.toMillis(1);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Flushed bytes min/actual {}/{}", minFlushed, _flushed);
+            if (_flushed < minFlushed) {
+                IOException ioe = new IOException(String.format("Response content data rate < %d B/s", minDataRate));
+                _channel.abort(ioe);
+                throw ioe;
+            }
         }
     }
 

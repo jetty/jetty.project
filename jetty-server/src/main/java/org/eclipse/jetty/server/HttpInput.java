@@ -283,8 +283,10 @@ public class HttpInput extends ServletInputStream implements Runnable
             long minRequestDataRate = _channelState.getHttpChannel().getHttpConfiguration().getMinRequestDataRate();
             if (minRequestDataRate > 0 && _firstByteTimeStamp != -1)
             {
+                long graceConfig =_channelState.getHttpChannel().getHttpConfiguration().getMinDataRateGracePeriod();
+                long grace = TimeUnit.MILLISECONDS.toNanos(Math.max(graceConfig, 0));
                 long period = System.nanoTime() - _firstByteTimeStamp;
-                if (period > 0)
+                if (period > grace)
                 {
                     long minimumData = minRequestDataRate * TimeUnit.NANOSECONDS.toMillis(period) / TimeUnit.SECONDS.toMillis(1);
                     if (_contentArrived < minimumData)

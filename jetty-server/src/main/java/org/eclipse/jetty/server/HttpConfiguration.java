@@ -72,6 +72,7 @@ public class HttpConfiguration implements Dumpable
     private int _maxErrorDispatches = 10;
     private long _minRequestDataRate;
     private long _minResponseDataRate;
+    private long _minDataRateGracePeriod;
     private CookieCompliance _requestCookieCompliance = CookieCompliance.RFC6265;
     private CookieCompliance _responseCookieCompliance = CookieCompliance.RFC6265;
     private MultiPartFormDataCompliance _multiPartCompliance = MultiPartFormDataCompliance.LEGACY; // TODO change default in jetty-10
@@ -138,6 +139,7 @@ public class HttpConfiguration implements Dumpable
         _maxErrorDispatches = config._maxErrorDispatches;
         _minRequestDataRate = config._minRequestDataRate;
         _minResponseDataRate = config._minResponseDataRate;
+        _minDataRateGracePeriod = config._minDataRateGracePeriod;
         _requestCookieCompliance = config._requestCookieCompliance;
         _responseCookieCompliance = config._responseCookieCompliance;
         _multiPartCompliance = config._multiPartCompliance;
@@ -556,6 +558,23 @@ public class HttpConfiguration implements Dumpable
     }
 
     /**
+     * @return The grace period in milliseconds used when measuring minimum data rates or &lt;=0 for none
+     */
+    @ManagedAttribute("The data rate measurement grace period in milliseconds")
+    public long getMinDataRateGracePeriod()
+    {
+        return _minDataRateGracePeriod;
+    }
+
+    /**
+     * @param period The grace period in milliseconds used when measuring minimum data rates or &lt;=0 for none
+     */
+    public void setMinDataRateGracePeriod(long period)
+    {
+        _minDataRateGracePeriod = period;
+    }
+
+    /**
      * @return The CookieCompliance used for parsing request <code>Cookie</code> headers.
      * @see #getResponseCookieCompliance()
      */
@@ -671,6 +690,7 @@ public class HttpConfiguration implements Dumpable
             "maxErrorDispatches=" + _maxErrorDispatches,
             "minRequestDataRate=" + _minRequestDataRate,
             "minResponseDataRate=" + _minResponseDataRate,
+            "minDataRateGracePeriod=" + _minDataRateGracePeriod,
             "cookieCompliance=" + _requestCookieCompliance,
             "setRequestCookieCompliance=" + _responseCookieCompliance,
             "notifyRemoteAsyncErrors=" + _notifyRemoteAsyncErrors
