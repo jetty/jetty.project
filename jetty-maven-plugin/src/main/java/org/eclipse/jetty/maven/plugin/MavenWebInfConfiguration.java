@@ -41,7 +41,7 @@ public class MavenWebInfConfiguration extends WebInfConfiguration
     {
         hide("org.apache.maven.",
             "org.codehaus.plexus.",
-            "javax.enterprise.",
+            "jakarta.enterprise.",
             "javax.decorator.");
     }
 

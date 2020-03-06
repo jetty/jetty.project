@@ -69,12 +69,12 @@ public class CdiSpiDecorator implements Decorator
 
         try
         {
-            Class<?> cdiClass = classLoader.loadClass("javax.enterprise.inject.spi.CDI");
-            Class<?> beanManagerClass = classLoader.loadClass("javax.enterprise.inject.spi.BeanManager");
-            Class<?> annotatedTypeClass = classLoader.loadClass("javax.enterprise.inject.spi.AnnotatedType");
-            Class<?> injectionTargetClass = classLoader.loadClass("javax.enterprise.inject.spi.InjectionTarget");
-            Class<?> creationalContextClass = classLoader.loadClass("javax.enterprise.context.spi.CreationalContext");
-            Class<?> contextualClass = classLoader.loadClass("javax.enterprise.context.spi.Contextual");
+            Class<?> cdiClass = classLoader.loadClass("jakarta.enterprise.inject.spi.CDI");
+            Class<?> beanManagerClass = classLoader.loadClass("jakarta.enterprise.inject.spi.BeanManager");
+            Class<?> annotatedTypeClass = classLoader.loadClass("jakarta.enterprise.inject.spi.AnnotatedType");
+            Class<?> injectionTargetClass = classLoader.loadClass("jakarta.enterprise.inject.spi.InjectionTarget");
+            Class<?> creationalContextClass = classLoader.loadClass("jakarta.enterprise.context.spi.CreationalContext");
+            Class<?> contextualClass = classLoader.loadClass("jakarta.enterprise.context.spi.Contextual");
 
             MethodHandles.Lookup lookup = MethodHandles.lookup();
             _current = lookup.findStatic(cdiClass, "current", MethodType.methodType(cdiClass));

@@ -18,9 +18,9 @@
 
 package org.eclipse.jetty.test;
 
-import javax.enterprise.inject.Produces;
-import javax.enterprise.inject.spi.InjectionPoint;
-import javax.inject.Named;
+import jakarta.enterprise.inject.Produces;
+import jakarta.enterprise.inject.spi.InjectionPoint;
+import jakarta.inject.Named;
 
 public class FriendlyGreetings
 {

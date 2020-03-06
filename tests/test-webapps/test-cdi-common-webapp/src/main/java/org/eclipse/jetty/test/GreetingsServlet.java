@@ -19,9 +19,9 @@
 package org.eclipse.jetty.test;
 
 import java.io.IOException;
-import javax.inject.Inject;
-import javax.inject.Named;
 
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;

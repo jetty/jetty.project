@@ -181,7 +181,7 @@
     <dependency>
       <groupId>org.glassfish.web</groupId>
       <artifactId>jakarta.servlet.jsp.jstl</artifactId>
-      <version>1.2.2</version>
+      <version>1.2.6</version>
       <exclusions>
         <exclusion>
           <groupId>jakarta.servlet.jsp.jstl</groupId>
@@ -201,7 +201,7 @@
         </exclusion>
       </exclusions>
     </dependency>
-    <dependency>
+    <!--dependency TODO: fix this mess!>
       <groupId>org.eclipse.jetty.orbit</groupId>
       <artifactId>jakarta.servlet.jsp.jstl</artifactId>
       <version>1.2.0.v201105211821</version>
@@ -215,7 +215,7 @@
           <artifactId>jakarta.servlet.jsp</artifactId>
         </exclusion>
       </exclusions>
-    </dependency>
+    </dependency-->
 
     <!-- Jetty Deps -->
     <dependency>
