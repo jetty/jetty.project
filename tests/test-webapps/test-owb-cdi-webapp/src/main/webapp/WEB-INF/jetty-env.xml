@@ -8,7 +8,7 @@
     <Arg>BeanManager</Arg>
     <Arg>
       <New class="javax.naming.Reference">
-        <Arg>javax.enterprise.inject.spi.BeanManager</Arg>
+        <Arg>jakarta.enterprise.inject.spi.BeanManager</Arg>
         <Arg>org.apache.webbeans.container.ManagerObjectFactory</Arg>
         <Arg/>
       </New>

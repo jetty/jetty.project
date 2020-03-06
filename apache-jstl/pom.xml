@@ -35,15 +35,15 @@
   <dependencies>
     <!-- JSTL Api -->
     <dependency>
-      <groupId>org.apache.taglibs</groupId>
-      <artifactId>taglibs-standard-spec</artifactId>
+      <groupId>jakarta.servlet.jsp.jstl</groupId>
+      <artifactId>jakarta.servlet.jsp.jstl-api</artifactId>
     </dependency>
 
     <!-- JSTL Impl -->
-    <dependency>
+    <!-- dependency> TODO: Is already inside JSP?? need to include apache-jsp?
       <groupId>org.apache.taglibs</groupId>
       <artifactId>taglibs-standard-impl</artifactId>
-    </dependency>
+    </dependency-->
 
     <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
