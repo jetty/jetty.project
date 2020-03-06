@@ -479,7 +479,7 @@
             <release>${compiler.release}</release>
             <showWarnings>true</showWarnings>
             <compilerArgs>
-              <compilerArg>-Xlint:module,exports</compilerArg>
+              <compilerArg>-Xlint:exports</compilerArg>
             </compilerArgs>
           </configuration>
         </plugin>
