@@ -1,6 +1,6 @@
 #!groovy
 
-def jdk = 'jdk7'
+def jdk = 'jdk8'
 
 node("linux") {
   // System Dependent Locations
