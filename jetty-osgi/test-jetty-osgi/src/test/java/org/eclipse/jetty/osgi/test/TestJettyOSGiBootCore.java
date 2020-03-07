@@ -84,7 +84,10 @@ public class TestJettyOSGiBootCore
 
         String mavenRepoPath = System.getProperty( "mavenRepoPath" );
         if (!StringUtil.isBlank( mavenRepoPath))
+        {
             res.add( systemProperty( "org.ops4j.pax.url.mvn.localRepository" ).value( mavenRepoPath ) );
+            res.add(systemProperty("org.ops4j.pax.url.mvn.repositories").value("+https://repo1.maven.org/maven2@id=maven.central.repo"));
+        }
 
         res.add(mavenBundle().groupId( "org.ow2.asm" ).artifactId( "asm" ).versionAsInProject().start());
         res.add(mavenBundle().groupId( "org.ow2.asm" ).artifactId( "asm-commons" ).versionAsInProject().start());
