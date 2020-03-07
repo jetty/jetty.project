@@ -11,6 +11,12 @@
   <url>http://www.eclipse.org/jetty</url>
   <build>
    <plugins>
+     <plugin>
+       <artifactId>maven-surefire-plugin</artifactId>
+       <configuration>
+         <excludedGroups>org.eclipse.jetty.start.SpdyTestGroup</excludedGroups>
+       </configuration>
+     </plugin>
       <plugin>
         <artifactId>maven-jar-plugin</artifactId>
         <configuration>

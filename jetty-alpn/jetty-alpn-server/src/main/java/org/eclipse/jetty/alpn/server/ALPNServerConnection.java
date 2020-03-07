@@ -36,6 +36,9 @@ public class ALPNServerConnection extends NegotiatingServerConnection implements
     public ALPNServerConnection(Connector connector, EndPoint endPoint, SSLEngine engine, List<String> protocols, String defaultProtocol)
     {
         super(connector, endPoint, engine, protocols, defaultProtocol);
+        // Server-side ALPN support is only available via Jetty ALPN API, so JDK 8u252 is not supported.
+        // Support for JDK 8u252 requires a TLS handshake listener so that when the TLS handshake is
+        // finished setProtocol() can be called, but SslHandshakeListener is not backported to 9.2.x.
         ALPN.put(engine, this);
     }
 

@@ -30,6 +30,7 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
@@ -156,6 +157,7 @@ public class MainTest
     }
     
     @Test
+    @Category(SpdyTestGroup.class)
     public void testWithSpdy() throws Exception
     {
         List<String> cmdLineArgs = new ArrayList<>();

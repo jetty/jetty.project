@@ -31,6 +31,7 @@ import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;
@@ -101,6 +102,7 @@ public class LicenseTest
     }
     
     @Test
+    @Category(SpdyTestGroup.class)
     public void testAdd_SPDY_Licensed() throws Exception
     {
         File basePath = testdir.getEmptyDir();
@@ -117,6 +119,7 @@ public class LicenseTest
     }
     
     @Test
+    @Category(SpdyTestGroup.class)
     public void testAdd_HttpSpdy_Then_Deploy() throws Exception
     {
         File basePath = testdir.getEmptyDir();
@@ -143,6 +146,7 @@ public class LicenseTest
     }
     
     @Test
+    @Category(SpdyTestGroup.class)
     public void testCreate_SPDY_Licensed() throws Exception
     {
         File basePath = testdir.getEmptyDir();

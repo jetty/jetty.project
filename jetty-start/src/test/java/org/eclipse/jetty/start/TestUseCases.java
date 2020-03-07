@@ -24,6 +24,7 @@ import java.util.List;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
 /**
  * Various Home + Base use cases
@@ -104,6 +105,7 @@ public class TestUseCases
     }
     
     @Test
+    @Category(SpdyTestGroup.class)
     public void testWithSpdy() throws Exception
     {
         assertUseCase("home","base.enable.spdy","assert-enable-spdy.txt","java.version=1.7.0_60");

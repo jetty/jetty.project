@@ -1027,6 +1027,9 @@ public class HttpClientStreamTest extends AbstractHttpClientServerTest
     public void testUploadWithConnectFailureClosesStream() throws Exception
     {
         start(new EmptyServerHandler());
+        client.stop();
+        client.setConnectTimeout(1000);
+        client.start();
 
         final CountDownLatch closeLatch = new CountDownLatch(1);
         InputStream stream = new ByteArrayInputStream("test".getBytes(StandardCharsets.UTF_8))

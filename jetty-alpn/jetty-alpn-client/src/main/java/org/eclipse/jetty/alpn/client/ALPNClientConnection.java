@@ -41,6 +41,9 @@ public class ALPNClientConnection extends NegotiatingClientConnection implements
     {
         super(endPoint, executor, sslEngine, connectionFactory, context);
         this.protocol = protocol;
+        // Client-side ALPN support is only available via Jetty ALPN API, so JDK 8u252 is not supported.
+        // Support for JDK 8u252 requires a TLS handshake listener so that when the TLS handshake is
+        // finished completed() can be called, but SslHandshakeListener is not backported to 9.2.x.
         ALPN.put(sslEngine, this);
     }
 

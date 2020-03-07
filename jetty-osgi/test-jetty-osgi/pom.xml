@@ -303,12 +303,6 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.mortbay.jetty.alpn</groupId>
-      <artifactId>alpn-boot</artifactId>
-      <version>${alpn.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>org.eclipse.jetty.osgi</groupId>
       <artifactId>jetty-osgi-alpn</artifactId>
       <version>${project.version}</version>
@@ -389,11 +383,14 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <!-- No point defining -Xbootclasspath as the actual OSGi VM is run as a forked process by pax-exam -->
-          <!-- But we do pass the sys property of the alpn-boot jar so that it can be configued inside tests -->
+          <!-- But we do pass the sys property of the alpn-boot jar so that it can be configured inside tests -->
           <argLine>-Dmortbay-alpn-boot=${settings.localRepository}/org/mortbay/jetty/alpn/alpn-boot/${alpn.version}/alpn-boot-${alpn.version}.jar</argLine>
           <systemPropertyVariables>
             <mavenRepoPath>${settings.localRepository}</mavenRepoPath>
           </systemPropertyVariables>
+          <excludes>
+            <exclude>**/TestJettyOSGiBootSpdy.java</exclude>
+          </excludes>
         </configuration>
       </plugin>
       <plugin>
