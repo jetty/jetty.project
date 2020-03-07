@@ -29,7 +29,7 @@ node("linux") {
             globalMavenSettingsConfig: settingsName,
             mavenOpts: mavenOpts,
             mavenLocalRepo: localRepo) {
-          sh "mvn -B clean install -Dtest=None"
+          sh "mvn -B clean install -DskipTests"
         }
       }
     }
@@ -40,7 +40,7 @@ node("linux") {
       timeout(time: 15, unit: 'MINUTES') {
         withMaven(
             maven: mvnName,
-            jdk: "$jdk",
+            jdk: "jdk7",
             publisherStrategy: 'EXPLICIT',
             globalMavenSettingsConfig: settingsName,
             mavenOpts: mavenOpts,
@@ -98,7 +98,7 @@ node("linux") {
                   [parserName: 'JavaDoc'],
                   [parserName: 'JavaC']
               ]])
-          }
+        }
       }
     }
   }
