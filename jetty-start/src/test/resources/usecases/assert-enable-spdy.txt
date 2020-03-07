@@ -37,8 +37,8 @@ PROP|spdy.port=8443
 PROP|spdy.timeout=30000
 
 # The Downloads
-DOWNLOAD|http://central.maven.org/maven2/org/mortbay/jetty/alpn/alpn-boot/7.1.0.v20141016/alpn-boot-7.1.0.v20141016.jar|lib/alpn/alpn-boot-7.1.0.v20141016.jar
-DOWNLOAD|http://git.eclipse.org/c/jetty/org.eclipse.jetty.project.git/plain/jetty-server/src/main/config/etc/keystore|etc/keystore
+DOWNLOAD|https://repo1.maven.org/maven2/org/mortbay/jetty/alpn/alpn-boot/7.1.0.v20141016/alpn-boot-7.1.0.v20141016.jar|lib/alpn/alpn-boot-7.1.0.v20141016.jar
+DOWNLOAD|https://github.com/eclipse/jetty.project/raw/jetty-9.2.x/jetty-server/src/main/config/etc/keystore
 
 # The Bootlib
 BOOTLIB|-Xbootclasspath/p:lib/alpn/alpn-boot-7.1.0.v20141016.jar

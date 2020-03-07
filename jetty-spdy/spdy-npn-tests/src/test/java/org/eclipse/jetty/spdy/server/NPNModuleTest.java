@@ -59,17 +59,17 @@ public class NPNModuleTest
     static
     {
         /** The main() method in this test case can be run to validate this list independently */
-        KNOWN_GOOD_NPN_URLS.add("http://central.maven.org/maven2/org/mortbay/jetty/npn/npn-boot/1.1.11.v20150415/npn-boot-1.1.11.v20150415.jar");
-        KNOWN_GOOD_NPN_URLS.add("http://central.maven.org/maven2/org/mortbay/jetty/npn/npn-boot/1.1.10.v20150130/npn-boot-1.1.10.v20150130.jar");
-        KNOWN_GOOD_NPN_URLS.add("http://central.maven.org/maven2/org/mortbay/jetty/npn/npn-boot/1.1.9.v20141016/npn-boot-1.1.9.v20141016.jar");
-        KNOWN_GOOD_NPN_URLS.add("http://central.maven.org/maven2/org/mortbay/jetty/npn/npn-boot/1.1.8.v20141013/npn-boot-1.1.8.v20141013.jar");
-        KNOWN_GOOD_NPN_URLS.add("http://central.maven.org/maven2/org/mortbay/jetty/npn/npn-boot/1.1.6.v20130911/npn-boot-1.1.6.v20130911.jar");
-        KNOWN_GOOD_NPN_URLS.add("http://central.maven.org/maven2/org/mortbay/jetty/npn/npn-boot/1.1.5.v20130313/npn-boot-1.1.5.v20130313.jar");
-        KNOWN_GOOD_NPN_URLS.add("http://central.maven.org/maven2/org/mortbay/jetty/npn/npn-boot/1.1.4.v20130313/npn-boot-1.1.4.v20130313.jar");
-        KNOWN_GOOD_NPN_URLS.add("http://central.maven.org/maven2/org/mortbay/jetty/npn/npn-boot/1.1.3.v20130313/npn-boot-1.1.3.v20130313.jar");
-        KNOWN_GOOD_NPN_URLS.add("http://central.maven.org/maven2/org/mortbay/jetty/npn/npn-boot/1.1.2.v20130305/npn-boot-1.1.2.v20130305.jar");
-        KNOWN_GOOD_NPN_URLS.add("http://central.maven.org/maven2/org/mortbay/jetty/npn/npn-boot/1.1.1.v20121030/npn-boot-1.1.1.v20121030.jar");
-        KNOWN_GOOD_NPN_URLS.add("http://central.maven.org/maven2/org/mortbay/jetty/npn/npn-boot/1.1.0.v20120525/npn-boot-1.1.0.v20120525.jar");
+        KNOWN_GOOD_NPN_URLS.add("https://repo1.maven.org/maven2/org/mortbay/jetty/npn/npn-boot/1.1.11.v20150415/npn-boot-1.1.11.v20150415.jar");
+        KNOWN_GOOD_NPN_URLS.add("https://repo1.maven.org/maven2/org/mortbay/jetty/npn/npn-boot/1.1.10.v20150130/npn-boot-1.1.10.v20150130.jar");
+        KNOWN_GOOD_NPN_URLS.add("https://repo1.maven.org/maven2/org/mortbay/jetty/npn/npn-boot/1.1.9.v20141016/npn-boot-1.1.9.v20141016.jar");
+        KNOWN_GOOD_NPN_URLS.add("https://repo1.maven.org/maven2/org/mortbay/jetty/npn/npn-boot/1.1.8.v20141013/npn-boot-1.1.8.v20141013.jar");
+        KNOWN_GOOD_NPN_URLS.add("https://repo1.maven.org/maven2/org/mortbay/jetty/npn/npn-boot/1.1.6.v20130911/npn-boot-1.1.6.v20130911.jar");
+        KNOWN_GOOD_NPN_URLS.add("https://repo1.maven.org/maven2/org/mortbay/jetty/npn/npn-boot/1.1.5.v20130313/npn-boot-1.1.5.v20130313.jar");
+        KNOWN_GOOD_NPN_URLS.add("https://repo1.maven.org/maven2/org/mortbay/jetty/npn/npn-boot/1.1.4.v20130313/npn-boot-1.1.4.v20130313.jar");
+        KNOWN_GOOD_NPN_URLS.add("https://repo1.maven.org/maven2/org/mortbay/jetty/npn/npn-boot/1.1.3.v20130313/npn-boot-1.1.3.v20130313.jar");
+        KNOWN_GOOD_NPN_URLS.add("https://repo1.maven.org/maven2/org/mortbay/jetty/npn/npn-boot/1.1.2.v20130305/npn-boot-1.1.2.v20130305.jar");
+        KNOWN_GOOD_NPN_URLS.add("https://repo1.maven.org/maven2/org/mortbay/jetty/npn/npn-boot/1.1.1.v20121030/npn-boot-1.1.1.v20121030.jar");
+        KNOWN_GOOD_NPN_URLS.add("https://repo1.maven.org/maven2/org/mortbay/jetty/npn/npn-boot/1.1.0.v20120525/npn-boot-1.1.0.v20120525.jar");
     }
 
     @Parameters(name = "{index}: mod:{0}")

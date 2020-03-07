@@ -24,7 +24,7 @@ import org.eclipse.jetty.xml.XmlConfiguration;
 /**
  * Configures and Starts a Jetty server from an XML declaration.
  * <p>
- * See <a href="https://raw.githubusercontent.com/eclipse/jetty.project/master/examples/embedded/src/main/resources/exampleserver.xml">exampleserver.xml</a>
+ * See <a href="https://github.com/eclipse/jetty.project/raw/jetty-9.2.x/examples/embedded/src/main/resources/exampleserver.xml">exampleserver.xml</a>
  * </p>
  */
 public class ExampleServerXml

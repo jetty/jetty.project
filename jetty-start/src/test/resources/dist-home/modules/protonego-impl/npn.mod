@@ -14,7 +14,7 @@
 #            Java versions.
 #
 # All versions of npn-boot can be found at
-# http://central.maven.org/maven2/org/mortbay/jetty/npn/npn-boot/
+# https://repo1.maven.org/maven2/org/mortbay/jetty/npn/npn-boot/
 
 
 [name]

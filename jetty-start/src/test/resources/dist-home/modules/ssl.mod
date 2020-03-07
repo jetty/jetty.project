@@ -9,7 +9,7 @@ server
 etc/jetty-ssl.xml
 
 [files]
-https://raw.githubusercontent.com/eclipse/jetty.project/master/jetty-server/src/test/config/etc/keystore?id=${jetty.tag.version}|etc/keystore
+https://github.com/eclipse/jetty.project/raw/jetty-9.2.x/jetty-server/src/main/config/etc/keystore|etc/keystore
 
 [ini-template]
 ### SSL Keystore Configuration

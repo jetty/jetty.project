@@ -70,7 +70,7 @@
                   <url>http://eclipse.org/jetty</url>
                   <Built-By>${user.name}</Built-By>
                   <package>org.eclipse.jetty</package>
-                  <Bundle-License>https://raw.githubusercontent.com/eclipse/jetty.project/master/NOTICE.txt</Bundle-License>
+                  <Bundle-License>https://github.com/eclipse/jetty.project/raw/jetty-9.2.x/NOTICE.txt</Bundle-License>
                   <Bundle-Name>Jetty</Bundle-Name>
                 </manifestEntries>
               </archive>

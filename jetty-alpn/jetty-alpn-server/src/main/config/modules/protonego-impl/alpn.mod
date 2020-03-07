@@ -15,7 +15,7 @@
 #            Java versions.
 #
 # All versions of alpn-boot can be found at
-# http://central.maven.org/maven2/org/mortbay/jetty/alpn/alpn-boot/
+# https://repo1.maven.org/maven2/org/mortbay/jetty/alpn/alpn-boot/
 
 [name]
 protonego-impl

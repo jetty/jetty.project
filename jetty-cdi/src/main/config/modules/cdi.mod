@@ -11,7 +11,7 @@ jsp
 
 [files]
 lib/weld/
-http://central.maven.org/maven2/org/jboss/weld/servlet/weld-servlet/2.2.5.Final/weld-servlet-2.2.5.Final.jar|lib/weld/weld-servlet-2.2.5.Final.jar
+https://repo1.maven.org/maven2/org/jboss/weld/servlet/weld-servlet/2.2.5.Final/weld-servlet-2.2.5.Final.jar|lib/weld/weld-servlet-2.2.5.Final.jar
 
 [lib]
 lib/weld/weld-servlet-2.2.5.Final.jar
