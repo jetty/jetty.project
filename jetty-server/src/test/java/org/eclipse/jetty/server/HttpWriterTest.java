@@ -49,9 +49,13 @@ public class HttpWriterTest
         HttpChannel channel = new HttpChannel(new MockConnector(), new HttpConfiguration(), null, null)
         {
             @Override
-            protected HttpInput newHttpInput(HttpChannelState state)
+            public void produceContent()
             {
-                return null;
+            }
+
+            @Override
+            public void failContent(Throwable failure)
+            {
             }
 
             @Override

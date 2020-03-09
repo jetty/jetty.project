@@ -18,7 +18,9 @@
 
 package org.eclipse.jetty.fcgi.server;
 
+import java.util.ArrayList;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Locale;
 import java.util.Queue;
 import java.util.concurrent.Executor;
@@ -35,7 +37,6 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpChannel;
-import org.eclipse.jetty.server.HttpChannelState;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpInput;
 import org.eclipse.jetty.server.HttpTransport;
@@ -48,7 +49,7 @@ public class HttpChannelOverFCGI extends HttpChannel
     private static final Logger LOG = LoggerFactory.getLogger(HttpChannelOverFCGI.class);
 
     private final Queue<HttpInput.Content> _contentQueue = new LinkedList<>();
-    private boolean _contentFailed;
+    private Throwable _contentFailure;
     private final HttpFields.Mutable fields = HttpFields.build();
     private final Dispatcher dispatcher;
     private String method;
@@ -65,21 +66,24 @@ public class HttpChannelOverFCGI extends HttpChannel
 
     void enqueueContent(HttpInput.Content content)
     {
+        Throwable failure;
         synchronized (_contentQueue)
         {
-            if (_contentFailed)
-                content.failed(null);
-            else
+            failure = _contentFailure;
+            if (failure == null)
                 _contentQueue.offer(content);
         }
+        if (failure != null)
+            content.failed(failure);
     }
 
-    void pushContent()
+    @Override
+    public void produceContent()
     {
         HttpInput.Content content;
         synchronized (_contentQueue)
         {
-            if (_contentFailed)
+            if (_contentFailure != null)
                 content = null;
             else
                 content = _contentQueue.poll();
@@ -88,25 +92,21 @@ public class HttpChannelOverFCGI extends HttpChannel
             onContent(content);
     }
 
-    void failContent(Throwable failure)
+    @Override
+    public void failContent(Throwable failure)
     {
+        List<HttpInput.Content> copy;
         synchronized (_contentQueue)
         {
-            _contentFailed = true;
-            while (true)
-            {
-                HttpInput.Content content = _contentQueue.poll();
-                if (content == null)
-                    break;
-                content.failed(failure);
-            }
-        }
-    }
+            if (_contentFailure == null)
+                _contentFailure = failure;
+            else if (_contentFailure != failure)
+                _contentFailure.addSuppressed(failure);
 
-    @Override
-    protected HttpInput newHttpInput(HttpChannelState state)
-    {
-        return new HttpInputOverFCGI(state);
+            copy = new ArrayList<>(_contentQueue);
+            _contentQueue.clear();
+        }
+        copy.forEach(content -> content.failed(failure));
     }
 
     protected void header(HttpField field)

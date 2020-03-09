@@ -119,7 +119,14 @@ public abstract class HttpChannel implements Runnable, HttpOutput.Interceptor
         return _state.isSendError();
     }
 
-    protected abstract HttpInput newHttpInput(HttpChannelState state);
+    private HttpInput newHttpInput(HttpChannelState state)
+    {
+        return new HttpInput(state);
+    }
+
+    public abstract void produceContent();
+
+    public abstract void failContent(Throwable failure);
 
     protected HttpOutput newHttpOutput()
     {

@@ -41,11 +41,11 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.WriteFlusher;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpChannel;
-import org.eclipse.jetty.server.HttpChannelState;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpInput;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,58 +62,58 @@ public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable, Writ
 
     private class RequestContent
     {
-        private final ThreadLocal<Boolean> _syncFetchContentTl = new ThreadLocal<>();
         private HttpInput.Content _content;
         private boolean _endStream;
         private boolean _producing;
+        private final AutoLock _lock = new AutoLock();
 
-        public void demand()
+        void setContent(boolean endStream, HttpInput.Content content)
         {
-            if (!_producing)
+            try (AutoLock ignored = _lock.lock())
             {
-                _producing = true;
-                _syncFetchContentTl.set(Boolean.TRUE);
-                try
-                {
-                    getStream().demand(1);
-                }
-                finally
-                {
-                    _syncFetchContentTl.remove();
-                }
+                if (_content != null)
+                    throw new AssertionError("content cannot be queued; stream=" + getStream());
+                _endStream = endStream;
+                _content = content;
+                _producing = false;
             }
         }
 
-        public void offerContent(HttpInput.Content content)
+        private HttpInput.Content takeContent(boolean[] endStreamResult)
         {
-            if (_content != null)
-                throw new AssertionError("content cannot be queued");
-            _content = content;
-            _producing = false;
+            try (AutoLock ignored = _lock.lock())
+            {
+                if (_content == null)
+                    return null;
+                HttpInput.Content contentCopy = _content;
+                endStreamResult[0] = _endStream;
+                _content = null;
+                _endStream = false;
+                return contentCopy;
+            }
         }
 
-        public HttpInput.Content takeContent()
+        HttpInput.Content takeContentOrDemand(boolean[] endStreamResult)
         {
-            HttpInput.Content contentCopy = _content;
-            _content = null;
-            return contentCopy;
-        }
+            HttpInput.Content content = takeContent(endStreamResult);
+            if (content != null)
+                return content;
 
-        public void reachedEndOfStream(boolean endStream)
-        {
-            _endStream = endStream;
-        }
+            boolean demand;
+            try (AutoLock ignored = _lock.lock())
+            {
+                demand = !_producing;
+                if (demand)
+                {
+                    if (_content != null)
+                        throw new AssertionError("_content should be null");
+                    _producing = true;
+                }
+            }
+            if (demand)
+                getStream().demand(1);
 
-        public boolean hasReachedEndOfStream()
-        {
-            boolean copy = _endStream;
-            _endStream = false;
-            return copy;
-        }
-
-        private boolean isFetchingContent()
-        {
-            return !Boolean.TRUE.equals(_syncFetchContentTl.get());
+            return takeContent(endStreamResult);
         }
     }
 
@@ -160,12 +160,6 @@ public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable, Writ
     public void onFlushed(long bytes) throws IOException
     {
         getResponse().getHttpOutput().onFlushed(bytes);
-    }
-
-    @Override
-    protected HttpInput newHttpInput(HttpChannelState state)
-    {
-        return new HttpInputOverHTTP2(state);
     }
 
     public Runnable onRequest(HeadersFrame frame)
@@ -316,8 +310,6 @@ public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable, Writ
         ByteBuffer buffer = frame.getData();
         int length = buffer.remaining();
 
-        _requestContent.reachedEndOfStream(frame.isEndStream());
-
         if (LOG.isDebugEnabled())
         {
             LOG.debug("HTTP2 Request #{}/{}: {} bytes of content",
@@ -329,7 +321,7 @@ public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable, Writ
         boolean wasDelayed = _delayedUntilContent;
         _delayedUntilContent = false;
 
-        _requestContent.offerContent(new HttpInput.Content(buffer)
+        _requestContent.setContent(frame.isEndStream(), new HttpInput.Content(buffer)
         {
             @Override
             public void succeeded()
@@ -351,8 +343,8 @@ public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable, Writ
         });
         if (getState().isAsync())
         {
-            boolean handle = _requestContent.isFetchingContent() && getState().onReadPossible();
-            return  handle || wasDelayed ? this : null;
+            boolean handle = getState().onReadPossible();
+            return handle || wasDelayed ? this : null;
         }
         else
         {
@@ -361,30 +353,29 @@ public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable, Writ
         }
     }
 
-    void fetchContent()
+    @Override
+    public void produceContent()
     {
-        // HttpInputOverHttp2 calls this method via produceRawContent;
+        // HttpInputOverHttp2 calls this method via produceRawContent();
         // this is the equivalent of Http1 parseAndFill().
 
-        HttpInput.Content content = _requestContent.takeContent();
+        boolean[] endStreamResult = new boolean[1];
+        HttpInput.Content content = _requestContent.takeContentOrDemand(endStreamResult);
         if (content != null)
         {
             onContent(content);
+            if (endStreamResult[0])
+            {
+                onContentComplete();
+                onRequestComplete();
+            }
         }
-        else
-        {
-            _requestContent.demand();
-            // If content was produced synchronously, consume it right away.
-            content = _requestContent.takeContent();
-            if (content != null)
-                onContent(content);
-        }
+    }
 
-        if (_requestContent.hasReachedEndOfStream())
-        {
-            onContentComplete();
-            onRequestComplete();
-        }
+    @Override
+    public void failContent(Throwable failure)
+    {
+        getStream().fail(failure);
     }
 
     @Override

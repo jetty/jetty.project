@@ -319,7 +319,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     /**
      * Parse and fill data, looking for content
      */
-    protected void parseAndFillForContent()
+    void parseAndFillForContent()
     {
         // parseRequestBuffer() must always be called after fillRequestBuffer() otherwise this method doesn't trigger EOF/earlyEOF
         // which breaks AsyncRequestReadTest.testPartialReadThenShutdown()
@@ -328,6 +328,20 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         {
             boolean handled = parseRequestBuffer();
             if (handled || filled <= 0 || _input.hasContent())
+                break;
+            filled = fillRequestBuffer();
+        }
+    }
+
+    void failContent(Throwable failure)
+    {
+        int filled = Integer.MAX_VALUE;
+        while (_parser.inContentState())
+        {
+            // The parser is going generate and forward contents to the HttpInput
+            // so it's up to it to fail them individually.
+            parseRequestBuffer();
+            if (filled <= 0 || _input.hasContent())
                 break;
             filled = fillRequestBuffer();
         }

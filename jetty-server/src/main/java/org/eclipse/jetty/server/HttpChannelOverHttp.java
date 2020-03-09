@@ -76,6 +76,18 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
     }
 
     @Override
+    public void produceContent()
+    {
+        ((HttpConnection)getEndPoint().getConnection()).parseAndFillForContent();
+    }
+
+    @Override
+    public void failContent(Throwable failure)
+    {
+        ((HttpConnection)getEndPoint().getConnection()).failContent(failure);
+    }
+
+    @Override
     public void badMessage(BadMessageException failure)
     {
         _httpConnection.getGenerator().setPersistent(false);
@@ -456,12 +468,6 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
     {
         _httpConnection.getGenerator().setPersistent(false);
         super.handleException(x);
-    }
-
-    @Override
-    protected HttpInput newHttpInput(HttpChannelState state)
-    {
-        return new HttpInputOverHTTP(state);
     }
 
     /**

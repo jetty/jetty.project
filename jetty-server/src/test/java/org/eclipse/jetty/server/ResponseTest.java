@@ -178,9 +178,13 @@ public class ResponseTest
         })
         {
             @Override
-            protected HttpInput newHttpInput(HttpChannelState state)
+            public void produceContent()
             {
-                return new HttpInputOverHTTP(state);
+            }
+
+            @Override
+            public void failContent(Throwable failure)
+            {
             }
         };
     }
