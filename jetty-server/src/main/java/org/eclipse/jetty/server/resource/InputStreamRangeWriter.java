@@ -43,7 +43,7 @@ public class InputStreamRangeWriter implements RangeWriter
     private long pos;
 
     /**
-     * Create InputStremRangeWriter
+     * Create InputStreamRangeWriter
      *
      * @param inputStreamSupplier Supplier of the InputStream.  If the stream needs to be regenerated, such as the next
      * requested range being before the current position, then the current InputStream is closed and a new one obtained

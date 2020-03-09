@@ -32,9 +32,6 @@ import java.security.Security;
 public class SecurityProviderLeakPreventer extends AbstractLeakPreventer
 {
 
-    /**
-     * @see org.eclipse.jetty.util.preventers.AbstractLeakPreventer#prevent(java.lang.ClassLoader)
-     */
     @Override
     public void prevent(ClassLoader loader)
     {

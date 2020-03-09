@@ -31,18 +31,12 @@ import org.eclipse.jetty.util.BufferUtil;
 public class HpackFieldPreEncoder implements HttpFieldPreEncoder
 {
 
-    /**
-     * @see org.eclipse.jetty.http.HttpFieldPreEncoder#getHttpVersion()
-     */
     @Override
     public HttpVersion getHttpVersion()
     {
         return HttpVersion.HTTP_2;
     }
 
-    /**
-     * @see org.eclipse.jetty.http.HttpFieldPreEncoder#getEncodedField(org.eclipse.jetty.http.HttpHeader, java.lang.String, java.lang.String)
-     */
     @Override
     public byte[] getEncodedField(HttpHeader header, String name, String value)
     {

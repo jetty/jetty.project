@@ -32,8 +32,7 @@ public class Source
     {
         EMBEDDED, JAVAX_API, DESCRIPTOR, ANNOTATION
     }
-
-    ;
+    
     public Origin _origin;
     public String _resource;
 
@@ -65,9 +64,6 @@ public class Source
         return _resource;
     }
 
-    /**
-     * @see java.lang.Object#toString()
-     */
     @Override
     public String toString()
     {

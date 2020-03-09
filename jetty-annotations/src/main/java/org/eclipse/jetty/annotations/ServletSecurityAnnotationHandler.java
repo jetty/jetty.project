@@ -57,17 +57,11 @@ public class ServletSecurityAnnotationHandler extends AbstractIntrospectableAnno
 {
     private static final Logger LOG = Log.getLogger(ServletSecurityAnnotationHandler.class);
 
-    private WebAppContext _context;
-
     public ServletSecurityAnnotationHandler(WebAppContext wac)
     {
-        super(false);
-        _context = wac;
+        super(false, wac);
     }
 
-    /**
-     * @see org.eclipse.jetty.annotations.AnnotationIntrospector.IntrospectableAnnotationHandler#handle(java.lang.Class)
-     */
     @Override
     public void doHandle(Class clazz)
     {

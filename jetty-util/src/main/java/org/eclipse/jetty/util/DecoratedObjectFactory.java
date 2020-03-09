@@ -45,9 +45,26 @@ public class DecoratedObjectFactory implements Iterable<Decorator>
      * ServletContext attribute for the active DecoratedObjectFactory
      */
     public static final String ATTR = DecoratedObjectFactory.class.getName();
+    
+    private static final ThreadLocal<Object> decoratorInfo = new ThreadLocal<>(); 
 
     private List<Decorator> decorators = new ArrayList<>();
 
+    public static void associateInfo(Object info)
+    {
+        decoratorInfo.set(info);
+    }
+    
+    public static void disassociateInfo()
+    {
+        decoratorInfo.set(null);
+    }
+    
+    public static Object getAssociatedInfo()
+    {
+        return decoratorInfo.get();
+    }
+    
     public void addDecorator(Decorator decorator)
     {
         LOG.debug("Adding Decorator: {}", decorator);
@@ -70,7 +87,7 @@ public class DecoratedObjectFactory implements Iterable<Decorator>
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("Creating Instance: " + clazz);
+            LOG.debug("Creating Instance: {}", clazz);
         }
         T o = clazz.getDeclaredConstructor().newInstance();
         return decorate(o);

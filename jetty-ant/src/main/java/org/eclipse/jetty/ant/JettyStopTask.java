@@ -49,9 +49,6 @@ public class JettyStopTask extends Task
         TaskLog.setTask(this);
     }
 
-    /**
-     * @see org.apache.tools.ant.Task#execute()
-     */
     @Override
     public void execute() throws BuildException
     {

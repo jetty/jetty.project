@@ -563,9 +563,6 @@ public class AntWebAppContext extends WebAppContext
         }
     }
 
-    /**
-     *
-     */
     @Override
     public void doStart()
     {

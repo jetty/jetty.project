@@ -293,9 +293,6 @@ public class RewriteHandler extends HandlerWrapper
         _dispatchTypes = EnumSet.copyOf(Arrays.asList(types));
     }
 
-    /* (non-Javadoc)
-     * @see org.eclipse.jetty.server.handler.HandlerWrapper#handle(java.lang.String, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, int)
-     */
     @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {

@@ -35,17 +35,11 @@ public class DeclareRolesAnnotationHandler extends AbstractIntrospectableAnnotat
 {
     private static final Logger LOG = Log.getLogger(DeclareRolesAnnotationHandler.class);
 
-    protected WebAppContext _context;
-
     public DeclareRolesAnnotationHandler(WebAppContext context)
     {
-        super(false);
-        _context = context;
+        super(false, context);
     }
 
-    /**
-     * @see org.eclipse.jetty.annotations.AnnotationIntrospector.AbstractIntrospectableAnnotationHandler#doHandle(java.lang.Class)
-     */
     @Override
     public void doHandle(Class clazz)
     {

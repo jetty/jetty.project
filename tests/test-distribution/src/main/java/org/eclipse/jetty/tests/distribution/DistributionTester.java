@@ -479,9 +479,6 @@ public class DistributionTester
             consoleStreamers.forEach(ConsoleStreamer::stop);
         }
 
-        /**
-         * @see #destroy()
-         */
         @Override
         public void close()
         {
@@ -550,6 +547,11 @@ public class DistributionTester
                 stop = true;
                 IO.close(reader);
             }
+        }
+
+        public Queue<String> getLogs()
+        {
+            return logs;
         }
     }
 

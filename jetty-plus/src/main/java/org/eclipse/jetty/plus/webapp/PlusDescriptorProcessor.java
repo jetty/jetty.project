@@ -69,9 +69,6 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
         }
     }
 
-    /**
-     * @see org.eclipse.jetty.webapp.IterativeDescriptorProcessor#start(WebAppContext, org.eclipse.jetty.webapp.Descriptor)
-     */
     @Override
     public void start(WebAppContext context, Descriptor descriptor)
     {
@@ -98,9 +95,6 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public void end(WebAppContext context, Descriptor descriptor)
     {
@@ -754,8 +748,9 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
                 injections.add(injection);
 
                 //Record which was the first descriptor to declare an injection for this name
-                if (context.getMetaData().getOriginDescriptor(node.getTag() + "." + jndiName + ".injection") == null)
-                    context.getMetaData().setOrigin(node.getTag() + "." + jndiName + ".injection", descriptor);
+                String name = node.getTag() + "." + jndiName + ".injection";
+                if (context.getMetaData().getOriginDescriptor(name) == null)
+                    context.getMetaData().setOrigin(name, descriptor);
             }
             catch (ClassNotFoundException e)
             {

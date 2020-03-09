@@ -43,9 +43,6 @@ public class ClusteredOrphanedSessionTest extends AbstractClusteredOrphanedSessi
         MongoTestHelper.dropCollection();
     }
 
-    /**
-     * @see org.eclipse.jetty.server.session.AbstractTestBase#createSessionDataStoreFactory()
-     */
     @Override
     public SessionDataStoreFactory createSessionDataStoreFactory()
     {

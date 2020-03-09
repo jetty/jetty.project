@@ -128,7 +128,7 @@ There are a number of properties that can be defined in the configuration that w
 [source, screen, subs="{sub-order}"]
 ....
 2016-10-21 15:31:01.248:INFO::main: Logging initialized @332ms to org.eclipse.jetty.util.log.StdErrLog
-2016-10-21 15:31:01.370:INFO:oejs.Server:main: jetty-9.4.0-SNAPSHOT
+2016-10-21 15:31:01.370:INFO:oejs.Server:main: jetty-{VERSION}
 2016-10-21 15:31:01.400:INFO:oejs.AbstractConnector:main: Started ServerConnector@2c330fbc{HTTP/1.1,[http/1.1]}{0.0.0.0:8080}
 2016-10-21 15:31:01.400:INFO:oejs.Server:main: Started @485ms
 ....
@@ -138,7 +138,7 @@ There are a number of properties that can be defined in the configuration that w
 [source, screen, subs="{sub-order}"]
 ....
 2016-10-21 15:31:35.020:INFO::main: Logging initialized @340ms to org.eclipse.jetty.util.log.StdErrLog
-2016-10-21 15:31:35.144:INFO:org.eclipse.jetty.server.Server:main: jetty-9.4.0-SNAPSHOT
+2016-10-21 15:31:35.144:INFO:org.eclipse.jetty.server.Server:main: jetty-{VERSION}
 2016-10-21 15:31:35.174:INFO:org.eclipse.jetty.server.AbstractConnector:main: Started ServerConnector@edf4efb{HTTP/1.1,[http/1.1]}{0.0.0.0:8080}
 2016-10-21 15:31:35.175:INFO:org.eclipse.jetty.server.Server:main: Started @495ms
 ....

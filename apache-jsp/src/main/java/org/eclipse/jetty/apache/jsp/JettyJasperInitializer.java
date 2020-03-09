@@ -54,27 +54,18 @@ public class JettyJasperInitializer extends JasperInitializer
             super(context, namespaceAware, validation, blockExternal);
         }
 
-        /**
-         * @see org.apache.jasper.servlet.TldScanner#scan()
-         */
         @Override
         public void scan() throws IOException, SAXException
         {
             return; //do nothing
         }
 
-        /**
-         * @see org.apache.jasper.servlet.TldScanner#getListeners()
-         */
         @Override
         public List<String> getListeners()
         {
             return Collections.emptyList();
         }
 
-        /**
-         * @see org.apache.jasper.servlet.TldScanner#scanJars()
-         */
         @Override
         public void scanJars()
         {

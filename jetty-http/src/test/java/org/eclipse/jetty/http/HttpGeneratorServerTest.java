@@ -111,6 +111,38 @@ public class HttpGeneratorServerTest
     }
 
     @Test
+    public void testHeaderOverflow() throws Exception
+    {
+        HttpGenerator gen = new HttpGenerator();
+
+        MetaData.Response info = new MetaData.Response(HttpVersion.HTTP_1_1, 302, null, new HttpFields(), 0);
+        info.getFields().add("Location", "http://somewhere/else");
+
+        HttpGenerator.Result result = gen.generateResponse(info, false, null, null, null, true);
+        assertEquals(HttpGenerator.Result.NEED_HEADER, result);
+
+        ByteBuffer header = BufferUtil.allocate(16);
+        result = gen.generateResponse(info, false, header, null, null, true);
+        assertEquals(HttpGenerator.Result.HEADER_OVERFLOW, result);
+
+        header = BufferUtil.allocate(8096);
+        result = gen.generateResponse(info, false, header, null, null, true);
+        assertEquals(HttpGenerator.Result.FLUSH, result);
+        assertEquals(HttpGenerator.State.COMPLETING, gen.getState());
+        String response = BufferUtil.toString(header);
+        BufferUtil.clear(header);
+
+        result = gen.generateResponse(null, false, null, null, null, false);
+        assertEquals(HttpGenerator.Result.DONE, result);
+        assertEquals(HttpGenerator.State.END, gen.getState());
+
+        assertEquals(0, gen.getContentPrepared());
+
+        assertThat(response, containsString("HTTP/1.1 302 Found"));
+        assertThat(response, containsString("Location: http://somewhere/else"));
+    }
+
+    @Test
     public void test204() throws Exception
     {
         ByteBuffer header = BufferUtil.allocate(8096);

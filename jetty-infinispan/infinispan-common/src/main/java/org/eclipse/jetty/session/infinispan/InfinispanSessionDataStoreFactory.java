@@ -49,9 +49,6 @@ public class InfinispanSessionDataStoreFactory extends AbstractSessionDataStoreF
         _infinispanIdleTimeoutSec = infinispanIdleTimeoutSec;
     }
 
-    /**
-     * @see org.eclipse.jetty.server.session.SessionDataStoreFactory#getSessionDataStore(org.eclipse.jetty.server.session.SessionHandler)
-     */
     @Override
     public SessionDataStore getSessionDataStore(SessionHandler handler) throws Exception
     {

@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.annotations;
 
+import java.util.Objects;
+
+import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.Decorator;
 import org.eclipse.jetty.webapp.WebAppContext;
 
@@ -26,23 +29,26 @@ import org.eclipse.jetty.webapp.WebAppContext;
  */
 public class AnnotationDecorator implements Decorator
 {
-    protected AnnotationIntrospector _introspector = new AnnotationIntrospector();
+    protected AnnotationIntrospector _introspector;
+    protected WebAppContext _context;
 
     public AnnotationDecorator(WebAppContext context)
     {
-        registerHandlers(context);
+        _context = Objects.requireNonNull(context);
+        _introspector = new AnnotationIntrospector(_context);
+        registerHandlers();
     }
 
-    public void registerHandlers(WebAppContext context)
+    private void registerHandlers()
     {
-        _introspector.registerHandler(new ResourceAnnotationHandler(context));
-        _introspector.registerHandler(new ResourcesAnnotationHandler(context));
-        _introspector.registerHandler(new RunAsAnnotationHandler(context));
-        _introspector.registerHandler(new PostConstructAnnotationHandler(context));
-        _introspector.registerHandler(new PreDestroyAnnotationHandler(context));
-        _introspector.registerHandler(new DeclareRolesAnnotationHandler(context));
-        _introspector.registerHandler(new MultiPartConfigAnnotationHandler(context));
-        _introspector.registerHandler(new ServletSecurityAnnotationHandler(context));
+        _introspector.registerHandler(new ResourceAnnotationHandler(_context));
+        _introspector.registerHandler(new ResourcesAnnotationHandler(_context));
+        _introspector.registerHandler(new RunAsAnnotationHandler(_context));
+        _introspector.registerHandler(new PostConstructAnnotationHandler(_context));
+        _introspector.registerHandler(new PreDestroyAnnotationHandler(_context));
+        _introspector.registerHandler(new DeclareRolesAnnotationHandler(_context));
+        _introspector.registerHandler(new MultiPartConfigAnnotationHandler(_context));
+        _introspector.registerHandler(new ServletSecurityAnnotationHandler(_context));
     }
 
     /**
@@ -50,22 +56,28 @@ public class AnnotationDecorator implements Decorator
      * <ul>
      * <li> Resource </li>
      * <li> Resources </li>
+     * <li> RunAs </li>
      * <li> PostConstruct </li>
      * <li> PreDestroy </li>
-     * <li> ServletSecurity? </li>
+     * <li> DeclareRoles </li>
+     * <li> MultiPart </li>
+     * <li> ServletSecurity</li>
      * </ul>
      *
-     * @param o the object ot introspect
+     * @param o the object to introspect
+     * @param metaInfo information about the object to introspect
      */
-    protected void introspect(Object o)
+    protected void introspect(Object o, Object metaInfo)
     {
-        _introspector.introspect(o.getClass());
+        if (o == null)
+            return;
+        _introspector.introspect(o, metaInfo);
     }
 
     @Override
     public Object decorate(Object o)
     {
-        introspect(o);
+        introspect(o, DecoratedObjectFactory.getAssociatedInfo());
         return o;
     }
 

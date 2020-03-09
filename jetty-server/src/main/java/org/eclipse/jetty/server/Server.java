@@ -612,45 +612,30 @@ public class Server extends HandlerWrapper implements Attributes
         _sessionIdManager = sessionIdManager;
     }
 
-    /*
-     * @see org.eclipse.util.AttributesMap#clearAttributes()
-     */
     @Override
     public void clearAttributes()
     {
         _attributes.clearAttributes();
     }
 
-    /*
-     * @see org.eclipse.util.AttributesMap#getAttribute(java.lang.String)
-     */
     @Override
     public Object getAttribute(String name)
     {
         return _attributes.getAttribute(name);
     }
 
-    /*
-     * @see org.eclipse.util.AttributesMap#getAttributeNames()
-     */
     @Override
     public Enumeration<String> getAttributeNames()
     {
         return _attributes.getAttributeNames();
     }
 
-    /*
-     * @see org.eclipse.util.AttributesMap#removeAttribute(java.lang.String)
-     */
     @Override
     public void removeAttribute(String name)
     {
         _attributes.removeAttribute(name);
     }
 
-    /*
-     * @see org.eclipse.util.AttributesMap#setAttribute(java.lang.String, java.lang.Object)
-     */
     @Override
     public void setAttribute(String name, Object attribute)
     {

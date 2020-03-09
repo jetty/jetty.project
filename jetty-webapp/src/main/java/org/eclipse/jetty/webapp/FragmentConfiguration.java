@@ -66,11 +66,11 @@ public class FragmentConfiguration extends AbstractConfiguration
             {
                 if (key.isDirectory()) //tolerate the case where the library is a directory, not a jar. useful for OSGi for example
                 {
-                    metaData.addFragment(key, frags.get(key));
+                    metaData.addFragmentDescriptor(key, new FragmentDescriptor(frags.get(key)));
                 }
                 else //the standard case: a jar most likely inside WEB-INF/lib
                 {
-                    metaData.addFragment(key, frags.get(key));
+                    metaData.addFragmentDescriptor(key, new FragmentDescriptor(frags.get(key)));
                 }
             }
         }

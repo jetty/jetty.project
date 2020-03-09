@@ -74,9 +74,6 @@ public class FileSessionDataStoreTest extends AbstractSessionDataStoreTest
         }
     }
 
-    /**
-     *
-     */
     @Override
     public boolean checkSessionPersisted(SessionData data) throws Exception
     {

@@ -33,18 +33,12 @@ import org.eclipse.jetty.webapp.WebAppContext;
  */
 public class MultiPartConfigAnnotationHandler extends AbstractIntrospectableAnnotationHandler
 {
-    protected WebAppContext _context;
-
     public MultiPartConfigAnnotationHandler(WebAppContext context)
     {
         //TODO verify that MultipartConfig is not inheritable
-        super(false);
-        _context = context;
+        super(false, context);
     }
 
-    /**
-     * @see org.eclipse.jetty.annotations.AnnotationIntrospector.AbstractIntrospectableAnnotationHandler#doHandle(java.lang.Class)
-     */
     @Override
     public void doHandle(Class clazz)
     {

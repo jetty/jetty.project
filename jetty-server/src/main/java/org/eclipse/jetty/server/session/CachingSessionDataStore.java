@@ -83,9 +83,6 @@ public class CachingSessionDataStore extends ContainerLifeCycle implements Sessi
         return _cache;
     }
 
-    /**
-     * @see org.eclipse.jetty.server.session.SessionDataStore#load(java.lang.String)
-     */
     @Override
     public SessionData load(String id) throws Exception
     {
@@ -110,9 +107,6 @@ public class CachingSessionDataStore extends ContainerLifeCycle implements Sessi
         return d;
     }
 
-    /**
-     * @see org.eclipse.jetty.server.session.SessionDataStore#delete(java.lang.String)
-     */
     @Override
     public boolean delete(String id) throws Exception
     {
@@ -124,9 +118,6 @@ public class CachingSessionDataStore extends ContainerLifeCycle implements Sessi
         return deleted;
     }
 
-    /**
-     * @see org.eclipse.jetty.server.session.SessionDataStore#getExpired(Set)
-     */
     @Override
     public Set<String> getExpired(Set<String> candidates)
     {
@@ -134,9 +125,6 @@ public class CachingSessionDataStore extends ContainerLifeCycle implements Sessi
         return _store.getExpired(candidates);
     }
 
-    /**
-     * @see org.eclipse.jetty.server.session.SessionDataStore#store(java.lang.String, org.eclipse.jetty.server.session.SessionData)
-     */
     @Override
     public void store(String id, SessionData data) throws Exception
     {
@@ -162,18 +150,12 @@ public class CachingSessionDataStore extends ContainerLifeCycle implements Sessi
         super.doStop();
     }
 
-    /**
-     * @see org.eclipse.jetty.server.session.SessionDataStore#isPassivating()
-     */
     @Override
     public boolean isPassivating()
     {
         return _store.isPassivating();
     }
 
-    /**
-     * @see org.eclipse.jetty.server.session.SessionDataStore#exists(java.lang.String)
-     */
     @Override
     public boolean exists(String id) throws Exception
     {
@@ -193,9 +175,6 @@ public class CachingSessionDataStore extends ContainerLifeCycle implements Sessi
         return _store.exists(id);
     }
 
-    /**
-     * @see org.eclipse.jetty.server.session.SessionDataStore#initialize(org.eclipse.jetty.server.session.SessionContext)
-     */
     @Override
     public void initialize(SessionContext context) throws Exception
     {
@@ -204,9 +183,6 @@ public class CachingSessionDataStore extends ContainerLifeCycle implements Sessi
         _cache.initialize(context);
     }
 
-    /**
-     * @see org.eclipse.jetty.server.session.SessionDataStore#newSessionData(java.lang.String, long, long, long, long)
-     */
     @Override
     public SessionData newSessionData(String id, long created, long accessed, long lastAccessed, long maxInactiveMs)
     {

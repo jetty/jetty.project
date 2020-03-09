@@ -144,7 +144,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
         @Override
         public void matched(URI uri) throws Exception
         {
-            _context.getMetaData().addWebInfJar(Resource.newResource(uri));
+            _context.getMetaData().addWebInfResource(Resource.newResource(uri));
         }
     }
 
@@ -169,7 +169,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
         findAndFilterWebAppPaths(context);
 
         //No pattern to appy to classes, just add to metadata
-        context.getMetaData().setWebInfClassesDirs(findClassDirs(context));
+        context.getMetaData().setWebInfClassesResources(findClassDirs(context));
 
         scanJars(context);
     }
@@ -358,7 +358,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
         List<String> scanTypes = new ArrayList<>(__allScanTypes);
         if (context.getMetaData().isMetaDataComplete() || (context.getServletContext().getEffectiveMajorVersion() < 3) && !context.isConfigurationDiscovered())
             scanTypes.remove(METAINF_FRAGMENTS);
-        scanJars(context, context.getMetaData().getWebInfJars(), false, scanTypes);
+        scanJars(context, context.getMetaData().getWebInfResources(false), false, scanTypes);
     }
 
     /**

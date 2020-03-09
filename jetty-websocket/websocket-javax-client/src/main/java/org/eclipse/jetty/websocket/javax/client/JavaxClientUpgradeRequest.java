@@ -19,6 +19,7 @@
 package org.eclipse.jetty.websocket.javax.client;
 
 import java.net.URI;
+import java.security.Principal;
 
 import org.eclipse.jetty.client.HttpResponse;
 import org.eclipse.jetty.io.EndPoint;
@@ -28,25 +29,20 @@ import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketFrameHandler;
 import org.eclipse.jetty.websocket.javax.common.UpgradeRequest;
 
-public class JavaxClientUpgradeRequest extends ClientUpgradeRequest
+public class JavaxClientUpgradeRequest extends ClientUpgradeRequest implements UpgradeRequest
 {
-    private final JavaxWebSocketClientContainer containerContext;
     private final JavaxWebSocketFrameHandler frameHandler;
 
     public JavaxClientUpgradeRequest(JavaxWebSocketClientContainer clientContainer, WebSocketCoreClient coreClient, URI requestURI, Object websocketPojo)
     {
         super(coreClient, requestURI);
-        this.containerContext = clientContainer;
-
-        UpgradeRequest upgradeRequest = new DelegatedJavaxClientUpgradeRequest(this);
-        frameHandler = containerContext.newFrameHandler(websocketPojo, upgradeRequest);
+        frameHandler = clientContainer.newFrameHandler(websocketPojo, this);
     }
 
     @Override
     public void upgrade(HttpResponse response, EndPoint endPoint)
     {
-        frameHandler.setUpgradeRequest(new DelegatedJavaxClientUpgradeRequest(this));
-        frameHandler.setUpgradeResponse(new DelegatedJavaxClientUpgradeResponse(response));
+        frameHandler.setUpgradeRequest(this);
         super.upgrade(response, endPoint);
     }
 
@@ -54,5 +50,18 @@ public class JavaxClientUpgradeRequest extends ClientUpgradeRequest
     public FrameHandler getFrameHandler()
     {
         return frameHandler;
+    }
+
+    @Override
+    public Principal getUserPrincipal()
+    {
+        // User Principal not available from Client API
+        return null;
+    }
+
+    @Override
+    public URI getRequestURI()
+    {
+        return getURI();
     }
 }

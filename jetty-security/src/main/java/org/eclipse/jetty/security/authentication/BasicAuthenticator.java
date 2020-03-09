@@ -44,18 +44,12 @@ public class BasicAuthenticator extends LoginAuthenticator
     {
     }
 
-    /**
-     * @see org.eclipse.jetty.security.Authenticator#getAuthMethod()
-     */
     @Override
     public String getAuthMethod()
     {
         return Constraint.__BASIC_AUTH;
     }
 
-    /**
-     * @see org.eclipse.jetty.security.Authenticator#validateRequest(javax.servlet.ServletRequest, javax.servlet.ServletResponse, boolean)
-     */
     @Override
     public Authentication validateRequest(ServletRequest req, ServletResponse res, boolean mandatory) throws ServerAuthException
     {

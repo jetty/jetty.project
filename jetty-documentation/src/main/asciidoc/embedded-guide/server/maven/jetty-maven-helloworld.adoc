@@ -29,7 +29,7 @@ ____
 [NOTE]
 Use of Maven and the jetty-maven-plugin is *not* required.
 Using Maven for Jetty implementations is a popular choice, but users encouraged to manage their projects in whatever way suits their needs.
-Other popular tools include Ant and Gradle. 
+Other popular tools include Ant and Gradle.
 ____
 
 First we'll have a look at a very simple HelloWorld java application that embeds Jetty, then a simple webapp which makes use of the link:#jetty-maven-plugin[jetty-maven-plugin] to speed up the development cycle.
@@ -117,7 +117,7 @@ Use an editor to create the file `pom.xml` in the `JettyMavenHelloWorld` directo
       <!-- Adapt this to a version found on
            https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-maven-plugin/
         -->
-      <jettyVersion>9.4.22.v20191022</jettyVersion>
+      <jettyVersion>{VERSION}</jettyVersion>
   </properties>
 
   <dependencies>

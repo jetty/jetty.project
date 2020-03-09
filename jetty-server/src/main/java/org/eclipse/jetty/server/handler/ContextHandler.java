@@ -112,15 +112,15 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     public static final int SERVLET_MAJOR_VERSION = 4;
     public static final int SERVLET_MINOR_VERSION = 0;
     public static final Class<?>[] SERVLET_LISTENER_TYPES =
-    {
-        ServletContextListener.class,
-        ServletContextAttributeListener.class,
-        ServletRequestListener.class,
-        ServletRequestAttributeListener.class,
-        HttpSessionIdListener.class,
-        HttpSessionListener.class,
-        HttpSessionAttributeListener.class
-    };
+        {
+            ServletContextListener.class,
+            ServletContextAttributeListener.class,
+            ServletRequestListener.class,
+            ServletRequestAttributeListener.class,
+            HttpSessionIdListener.class,
+            HttpSessionListener.class,
+            HttpSessionAttributeListener.class
+        };
 
     public static final int DEFAULT_LISTENER_TYPE_INDEX = 1;
 
@@ -199,7 +199,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
     private final List<EventListener> _programmaticListeners = new CopyOnWriteArrayList<>();
     private final List<ServletContextListener> _servletContextListeners = new CopyOnWriteArrayList<>();
-    private final List<ServletContextListener> _destroySerletContextListeners = new ArrayList<>();
+    private final List<ServletContextListener> _destroyServletContextListeners = new ArrayList<>();
     private final List<ServletContextAttributeListener> _servletContextAttributeListeners = new CopyOnWriteArrayList<>();
     private final List<ServletRequestListener> _servletRequestListeners = new CopyOnWriteArrayList<>();
     private final List<ServletRequestAttributeListener> _servletRequestAttributeListeners = new CopyOnWriteArrayList<>();
@@ -477,18 +477,12 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         return vhosts;
     }
 
-    /*
-     * @see javax.servlet.ServletContext#getAttribute(java.lang.String)
-     */
     @Override
     public Object getAttribute(String name)
     {
         return _attributes.getAttribute(name);
     }
 
-    /*
-     * @see javax.servlet.ServletContext#getAttributeNames()
-     */
     @Override
     public Enumeration<String> getAttributeNames()
     {
@@ -652,7 +646,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 _contextListeners.remove(listener);
 
             if (listener instanceof ServletContextListener)
+            {
                 _servletContextListeners.remove(listener);
+                _destroyServletContextListeners.remove(listener);
+            }
 
             if (listener instanceof ServletContextAttributeListener)
                 _servletContextAttributeListeners.remove(listener);
@@ -681,7 +678,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     {
         return _programmaticListeners.contains(listener);
     }
-    
+
     public boolean isDurableListener(EventListener listener)
     {
         // The durable listeners are those set when the context is started
@@ -747,9 +744,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         _logger = logger;
     }
 
-    /*
-     * @see org.eclipse.thread.AbstractLifeCycle#doStart()
-     */
     @Override
     protected void doStart() throws Exception
     {
@@ -847,14 +841,14 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         super.doStart();
 
         // Call context listeners
-        _destroySerletContextListeners.clear();
+        _destroyServletContextListeners.clear();
         if (!_servletContextListeners.isEmpty())
         {
             ServletContextEvent event = new ServletContextEvent(_scontext);
             for (ServletContextListener listener : _servletContextListeners)
             {
                 callContextInitialized(listener, event);
-                _destroySerletContextListeners.add(listener);
+                _destroyServletContextListeners.add(listener);
             }
         }
     }
@@ -863,9 +857,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     {
         // Call the context listeners
         ServletContextEvent event = new ServletContextEvent(_scontext);
-        Collections.reverse(_destroySerletContextListeners);
+        Collections.reverse(_destroyServletContextListeners);
         MultiException ex = new MultiException();
-        for (ServletContextListener listener : _destroySerletContextListeners)
+        for (ServletContextListener listener : _destroyServletContextListeners)
         {
             try
             {
@@ -904,9 +898,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         l.contextDestroyed(e);
     }
 
-    /*
-     * @see org.eclipse.thread.AbstractLifeCycle#doStop()
-     */
     @Override
     protected void doStop() throws Exception
     {
@@ -1080,10 +1071,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         return true;
     }
 
-    /**
-     * @see org.eclipse.jetty.server.handler.ScopedHandler#doScope(java.lang.String, org.eclipse.jetty.server.Request, javax.servlet.http.HttpServletRequest,
-     * javax.servlet.http.HttpServletResponse)
-     */
     @Override
     public void doScope(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
@@ -1229,10 +1216,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         }
     }
 
-    /**
-     * @see org.eclipse.jetty.server.handler.ScopedHandler#doHandle(java.lang.String, org.eclipse.jetty.server.Request, javax.servlet.http.HttpServletRequest,
-     * javax.servlet.http.HttpServletResponse)
-     */
     @Override
     public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
@@ -1414,9 +1397,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         return Arrays.copyOf(_protectedTargets, _protectedTargets.length);
     }
 
-    /*
-     * @see javax.servlet.ServletContext#removeAttribute(java.lang.String)
-     */
     @Override
     public void removeAttribute(String name)
     {
@@ -1470,7 +1450,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         setContextPath(contextPath);
         _contextPathDefault = true;
     }
-    
+
     public void setDefaultRequestCharacterEncoding(String encoding)
     {
         _defaultRequestCharacterEncoding = encoding;
@@ -1480,17 +1460,17 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     {
         return _defaultRequestCharacterEncoding;
     }
-    
+
     public void setDefaultResponseCharacterEncoding(String encoding)
     {
         _defaultResponseCharacterEncoding = encoding;
     }
-    
+
     public String getDefaultResponseCharacterEncoding()
     {
         return _defaultResponseCharacterEncoding;
     }
-    
+
     /**
      * @return True if the current contextPath is from default settings
      */
@@ -1988,9 +1968,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             return ContextHandler.this;
         }
 
-        /*
-         * @see javax.servlet.ServletContext#getContext(java.lang.String)
-         */
         @Override
         public ServletContext getContext(String uripath)
         {
@@ -2077,9 +2054,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             return null;
         }
 
-        /*
-         * @see javax.servlet.ServletContext#getMimeType(java.lang.String)
-         */
         @Override
         public String getMimeType(String file)
         {
@@ -2088,9 +2062,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             return _mimeTypes.getMimeByExtension(file);
         }
 
-        /*
-         * @see javax.servlet.ServletContext#getRequestDispatcher(java.lang.String)
-         */
         @Override
         public RequestDispatcher getRequestDispatcher(String uriInContext)
         {
@@ -2123,9 +2094,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             return null;
         }
 
-        /*
-         * @see javax.servlet.ServletContext#getRealPath(java.lang.String)
-         */
         @Override
         public String getRealPath(String path)
         {
@@ -2163,9 +2131,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             return null;
         }
 
-        /*
-         * @see javax.servlet.ServletContext#getResourceAsStream(java.lang.String)
-         */
         @Override
         public InputStream getResourceAsStream(String path)
         {
@@ -2187,36 +2152,24 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             }
         }
 
-        /*
-         * @see javax.servlet.ServletContext#getResourcePaths(java.lang.String)
-         */
         @Override
         public Set<String> getResourcePaths(String path)
         {
             return ContextHandler.this.getResourcePaths(path);
         }
 
-        /*
-         * @see javax.servlet.ServletContext#log(java.lang.Exception, java.lang.String)
-         */
         @Override
         public void log(Exception exception, String msg)
         {
             _logger.warn(msg, exception);
         }
 
-        /*
-         * @see javax.servlet.ServletContext#log(java.lang.String)
-         */
         @Override
         public void log(String msg)
         {
             _logger.info(msg);
         }
 
-        /*
-         * @see javax.servlet.ServletContext#log(java.lang.String, java.lang.Throwable)
-         */
         @Override
         public void log(String message, Throwable throwable)
         {
@@ -2226,27 +2179,18 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 _logger.warn(message, throwable);
         }
 
-        /*
-         * @see javax.servlet.ServletContext#getInitParameter(java.lang.String)
-         */
         @Override
         public String getInitParameter(String name)
         {
             return ContextHandler.this.getInitParameter(name);
         }
 
-        /*
-         * @see javax.servlet.ServletContext#getInitParameterNames()
-         */
         @Override
         public Enumeration<String> getInitParameterNames()
         {
             return ContextHandler.this.getInitParameterNames();
         }
 
-        /*
-         * @see javax.servlet.ServletContext#getAttribute(java.lang.String)
-         */
         @Override
         public synchronized Object getAttribute(String name)
         {
@@ -2256,9 +2200,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             return o;
         }
 
-        /*
-         * @see javax.servlet.ServletContext#getAttributeNames()
-         */
         @Override
         public synchronized Enumeration<String> getAttributeNames()
         {
@@ -2277,9 +2218,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             return Collections.enumeration(set);
         }
 
-        /*
-         * @see javax.servlet.ServletContext#setAttribute(java.lang.String, java.lang.Object)
-         */
         @Override
         public synchronized void setAttribute(String name, Object value)
         {
@@ -2306,9 +2244,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             }
         }
 
-        /*
-         * @see javax.servlet.ServletContext#removeAttribute(java.lang.String)
-         */
         @Override
         public synchronized void removeAttribute(String name)
         {
@@ -2325,9 +2260,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             }
         }
 
-        /*
-         * @see javax.servlet.ServletContext#getServletContextName()
-         */
         @Override
         public String getServletContextName()
         {

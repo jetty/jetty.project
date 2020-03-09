@@ -126,9 +126,9 @@ public class AnnotationConfiguration extends org.eclipse.jetty.annotations.Annot
                     continue;
 
                 Resource bundleRes = oparser.indexBundle(bundle);
-                if (!context.getMetaData().getWebInfJars().contains(bundleRes))
+                if (!context.getMetaData().getWebInfResources(false).contains(bundleRes))
                 {
-                    context.getMetaData().addWebInfJar(bundleRes);
+                    context.getMetaData().addWebInfResource(bundleRes);
                 }
 
                 if (bundle.getHeaders().get(Constants.FRAGMENT_HOST) != null)
@@ -194,9 +194,6 @@ public class AnnotationConfiguration extends org.eclipse.jetty.annotations.Annot
         parseBundle(context, parser, webbundle, webbundle);
     }
 
-    /**
-     * @see org.eclipse.jetty.annotations.AnnotationConfiguration#parseWebInfClasses(org.eclipse.jetty.webapp.WebAppContext, org.eclipse.jetty.annotations.AnnotationParser)
-     */
     @Override
     public void parseWebInfClasses(WebAppContext context, org.eclipse.jetty.annotations.AnnotationParser parser)
         throws Exception

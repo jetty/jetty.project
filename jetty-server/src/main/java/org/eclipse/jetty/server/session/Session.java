@@ -445,9 +445,6 @@ public class Session implements SessionHandler.SessionIf
         }
     }
 
-    /**
-     * @see javax.servlet.http.HttpSession#getId()
-     */
     @Override
     public String getId()
     {
@@ -472,9 +469,6 @@ public class Session implements SessionHandler.SessionIf
         return _sessionData.getVhost();
     }
 
-    /**
-     * @see javax.servlet.http.HttpSession#getLastAccessedTime()
-     */
     @Override
     public long getLastAccessedTime()
     {
@@ -488,9 +482,6 @@ public class Session implements SessionHandler.SessionIf
         }
     }
 
-    /**
-     * @see javax.servlet.http.HttpSession#getServletContext()
-     */
     @Override
     public ServletContext getServletContext()
     {
@@ -499,9 +490,6 @@ public class Session implements SessionHandler.SessionIf
         return _handler._context;
     }
 
-    /**
-     * @see javax.servlet.http.HttpSession#setMaxInactiveInterval(int)
-     */
     @Override
     public void setMaxInactiveInterval(int secs)
     {
@@ -596,9 +584,6 @@ public class Session implements SessionHandler.SessionIf
         return time;
     }
 
-    /**
-     * @see javax.servlet.http.HttpSession#getMaxInactiveInterval()
-     */
     @Override
     public int getMaxInactiveInterval()
     {
@@ -609,9 +594,6 @@ public class Session implements SessionHandler.SessionIf
         }
     }
 
-    /**
-     * @see javax.servlet.http.HttpSession#getSessionContext()
-     */
     @Override
     @Deprecated(since = "Servlet API 2.1")
     public HttpSessionContext getSessionContext()
@@ -670,9 +652,6 @@ public class Session implements SessionHandler.SessionIf
             throw new IllegalStateException("Invalid for read: id=" + _sessionData.getId() + " not resident");
     }
 
-    /**
-     * @see javax.servlet.http.HttpSession#getAttribute(java.lang.String)
-     */
     @Override
     public Object getAttribute(String name)
     {
@@ -683,9 +662,6 @@ public class Session implements SessionHandler.SessionIf
         }
     }
 
-    /**
-     * @see javax.servlet.http.HttpSession#getValue(java.lang.String)
-     */
     @Override
     @Deprecated(since = "Servlet API 2.2")
     public Object getValue(String name)
@@ -697,9 +673,6 @@ public class Session implements SessionHandler.SessionIf
         }
     }
 
-    /**
-     * @see javax.servlet.http.HttpSession#getAttributeNames()
-     */
     @Override
     public Enumeration<String> getAttributeNames()
     {
@@ -758,10 +731,6 @@ public class Session implements SessionHandler.SessionIf
         }
     }
 
-    /**
-     * @see javax.servlet.http.HttpSession#setAttribute(java.lang.String,
-     * java.lang.Object)
-     */
     @Override
     public void setAttribute(String name, Object value)
     {
@@ -778,10 +747,6 @@ public class Session implements SessionHandler.SessionIf
         callSessionAttributeListeners(name, value, old);
     }
 
-    /**
-     * @see javax.servlet.http.HttpSession#putValue(java.lang.String,
-     * java.lang.Object)
-     */
     @Override
     @Deprecated(since = "Servlet API 2.2")
     public void putValue(String name, Object value)
@@ -789,18 +754,12 @@ public class Session implements SessionHandler.SessionIf
         setAttribute(name, value);
     }
 
-    /**
-     * @see javax.servlet.http.HttpSession#removeAttribute(java.lang.String)
-     */
     @Override
     public void removeAttribute(String name)
     {
         setAttribute(name, null);
     }
 
-    /**
-     * @see javax.servlet.http.HttpSession#removeValue(java.lang.String)
-     */
     @Override
     @Deprecated(since = "Servlet API 2.1")
     public void removeValue(String name)

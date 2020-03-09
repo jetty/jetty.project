@@ -28,7 +28,9 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.nio.channels.ReadableByteChannel;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Base64;
@@ -819,25 +821,6 @@ public abstract class Resource implements ResourceFactory, Closeable
     }
 
     /**
-     * @param out the output stream to write to
-     * @param start First byte to write
-     * @param count Bytes to write or -1 for all of them.
-     * @throws IOException if unable to copy the Resource to the output
-     */
-    public void writeTo(OutputStream out, long start, long count)
-        throws IOException
-    {
-        try (InputStream in = getInputStream())
-        {
-            in.skip(start);
-            if (count < 0)
-                IO.copy(in, out);
-            else
-                IO.copy(in, out, count);
-        }
-    }
-
-    /**
      * Copy the Resource to the new destination file.
      * <p>
      * Will not replace existing destination file.
@@ -851,9 +834,20 @@ public abstract class Resource implements ResourceFactory, Closeable
         if (destination.exists())
             throw new IllegalArgumentException(destination + " exists");
 
-        try (OutputStream out = new FileOutputStream(destination))
+        // attempt simple file copy
+        File src = getFile();
+        if (src != null)
         {
-            writeTo(out, 0, -1);
+            Files.copy(src.toPath(), destination.toPath(),
+                StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.COPY_ATTRIBUTES, StandardCopyOption.REPLACE_EXISTING);
+            return;
+        }
+
+        // use old school stream based copy
+        try (InputStream in = getInputStream();
+             OutputStream out = new FileOutputStream(destination))
+        {
+            IO.copy(in, out);
         }
     }
 

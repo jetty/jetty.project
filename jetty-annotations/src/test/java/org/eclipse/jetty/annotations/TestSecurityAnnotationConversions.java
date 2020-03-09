@@ -89,7 +89,7 @@ public class TestSecurityAnnotationConversions
 
         //Assume we found 1 servlet with a @HttpConstraint with value=EmptyRoleSemantic.DENY security annotation
         ServletSecurityAnnotationHandler annotationHandler = new ServletSecurityAnnotationHandler(wac);
-        AnnotationIntrospector introspector = new AnnotationIntrospector();
+        AnnotationIntrospector introspector = new AnnotationIntrospector(wac);
         introspector.registerHandler(annotationHandler);
 
         //set up the expected outcomes:
@@ -108,7 +108,7 @@ public class TestSecurityAnnotationConversions
         expectedMappings[1].setConstraint(expectedConstraint);
         expectedMappings[1].setPathSpec("*.foo");
 
-        introspector.introspect(DenyServlet.class);
+        introspector.introspect(new DenyServlet(), null);
 
         compareResults(expectedMappings, ((ConstraintAware)wac.getSecurityHandler()).getConstraintMappings());
     }
@@ -122,15 +122,15 @@ public class TestSecurityAnnotationConversions
         });
 
         ServletSecurityAnnotationHandler annotationHandler = new ServletSecurityAnnotationHandler(wac);
-        AnnotationIntrospector introspector = new AnnotationIntrospector();
+        AnnotationIntrospector introspector = new AnnotationIntrospector(wac);
         introspector.registerHandler(annotationHandler);
 
         //set up the expected outcomes - no constraints at all as per Servlet Spec 3.1 pg 129
         //1 ConstraintMapping per ServletMapping pathSpec
 
         ConstraintMapping[] expectedMappings = new ConstraintMapping[]{};
-
-        introspector.introspect(PermitServlet.class);
+        PermitServlet permit = new PermitServlet();
+        introspector.introspect(permit, null);
 
         compareResults(expectedMappings, ((ConstraintAware)wac.getSecurityHandler()).getConstraintMappings());
     }
@@ -146,7 +146,7 @@ public class TestSecurityAnnotationConversions
         });
 
         ServletSecurityAnnotationHandler annotationHandler = new ServletSecurityAnnotationHandler(wac);
-        AnnotationIntrospector introspector = new AnnotationIntrospector();
+        AnnotationIntrospector introspector = new AnnotationIntrospector(wac);
         introspector.registerHandler(annotationHandler);
 
         //set up the expected outcomes:compareResults
@@ -164,8 +164,7 @@ public class TestSecurityAnnotationConversions
         expectedMappings[1] = new ConstraintMapping();
         expectedMappings[1].setConstraint(expectedConstraint);
         expectedMappings[1].setPathSpec("*.foo");
-
-        introspector.introspect(RolesServlet.class);
+        introspector.introspect(new RolesServlet(), null);
         compareResults(expectedMappings, ((ConstraintAware)wac.getSecurityHandler()).getConstraintMappings());
     }
 
@@ -211,10 +210,10 @@ public class TestSecurityAnnotationConversions
         expectedMappings[3].setPathSpec("*.foo");
         expectedMappings[3].setMethod("GET");
 
-        AnnotationIntrospector introspector = new AnnotationIntrospector();
+        AnnotationIntrospector introspector = new AnnotationIntrospector(wac);
         ServletSecurityAnnotationHandler annotationHandler = new ServletSecurityAnnotationHandler(wac);
         introspector.registerHandler(annotationHandler);
-        introspector.introspect(Method1Servlet.class);
+        introspector.introspect(new Method1Servlet(), null);
         compareResults(expectedMappings, ((ConstraintAware)wac.getSecurityHandler()).getConstraintMappings());
     }
 
@@ -227,7 +226,7 @@ public class TestSecurityAnnotationConversions
             "/foo/*", "*.foo"
         });
 
-        AnnotationIntrospector introspector = new AnnotationIntrospector();
+        AnnotationIntrospector introspector = new AnnotationIntrospector(wac);
         ServletSecurityAnnotationHandler annotationHandler = new ServletSecurityAnnotationHandler(wac);
         introspector.registerHandler(annotationHandler);
 
@@ -263,7 +262,7 @@ public class TestSecurityAnnotationConversions
         expectedMappings[3].setPathSpec("*.foo");
         expectedMappings[3].setMethod("GET");
 
-        introspector.introspect(Method2Servlet.class);
+        introspector.introspect(new Method2Servlet(), null);
         compareResults(expectedMappings, ((ConstraintAware)wac.getSecurityHandler()).getConstraintMappings());
     }
 

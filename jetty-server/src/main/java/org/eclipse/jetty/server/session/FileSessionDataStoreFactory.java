@@ -60,9 +60,6 @@ public class FileSessionDataStoreFactory extends AbstractSessionDataStoreFactory
         _storeDir = storeDir;
     }
 
-    /**
-     * @see org.eclipse.jetty.server.session.SessionDataStoreFactory#getSessionDataStore(org.eclipse.jetty.server.session.SessionHandler)
-     */
     @Override
     public SessionDataStore getSessionDataStore(SessionHandler handler)
     {
