@@ -6,9 +6,9 @@ SLF4J is used as the core logging mechanism.
 
 [tags]
 logging
-java-util-logging
 
 [depends]
+logging-slf4j
 resources
 
 [provides]
@@ -20,13 +20,11 @@ basehome:modules/logging/jul
 maven://org.slf4j/slf4j-jdk14/${slf4j.version}|lib/logging/slf4j-jdk14-${slf4j.version}.jar
 
 [lib]
-lib/logging/slf4j-api-${slf4j.version}.jar
 lib/logging/slf4j-jdk14-${slf4j.version}.jar
 
 [ini]
 slf4j.version?=2.0.0-alpha1
 java.util.logging.config.file=${jetty.base}/resources/java-util-logging.properties
-jetty.webapp.addSystemClasses+=,org.slf4j.
 
 [license]
 SLF4J is distributed under the MIT License.

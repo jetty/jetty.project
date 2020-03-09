@@ -8,6 +8,7 @@ Provides a ${jetty.base}/resources/jetty-logging.properties.
 logging
 
 [depends]
+logging-slf4j
 resources
 
 [provides]
@@ -17,9 +18,7 @@ logging|default
 basehome:modules/logging/jetty
 
 [lib]
-lib/logging/slf4j-api-${slf4j.version}.jar
 lib/logging/jetty-slf4j-impl-${jetty.version}.jar
 
 [ini]
-slf4j.version?=2.0.0-alpha1
-jetty.webapp.addSystemClasses+=,org.slf4j.,org.eclipse.jetty.logging.
+jetty.webapp.addSystemClasses+=,org.eclipse.jetty.logging.

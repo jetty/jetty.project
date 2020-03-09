@@ -8,6 +8,7 @@ SLF4J is used as the core logging mechanism.
 logging
 
 [depends]
+logging-slf4j
 resources
 
 [provides]
@@ -19,12 +20,10 @@ maven://ch.qos.logback/logback-classic/${logback.version}|lib/logging/logback-cl
 maven://ch.qos.logback/logback-core/${logback.version}|lib/logging/logback-core-${logback.version}.jar
 
 [lib]
-lib/logging/slf4j-api-${slf4j.version}.jar
 lib/logging/logback-classic-${logback.version}.jar
 lib/logging/logback-core-${logback.version}.jar
 
 [ini]
-slf4j.version?=2.0.0-alpha1
 logback.version?=1.3.0-alpha5
 jetty.webapp.addSystemClasses+=,org.slf4j.,ch.qos.logback.
 

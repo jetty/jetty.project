@@ -6,9 +6,9 @@ SLF4J is used as the core logging mechanism.
 
 [tags]
 logging
-log4j
 
 [depends]
+logging-slf4j
 resources
 
 [provides]
@@ -22,13 +22,11 @@ maven://org.apache.logging.log4j/log4j-api/${log4j.version}|lib/logging/log4j-ap
 maven://org.apache.logging.log4j/log4j-core/${log4j.version}|lib/logging/log4j-core-${log4j.version}.jar
 
 [lib]
-lib/logging/slf4j-api-${slf4j.version}.jar
 lib/logging/log4j-slf4j18-impl-${log4j.version}.jar
 lib/logging/log4j-api-${log4j.version}.jar
 lib/logging/log4j-core-${log4j.version}.jar
 
 [ini]
-slf4j.version?=2.0.0-alpha1
 log4j.version?=2.13.0
 jetty.webapp.addSystemClasses+=,org.slf4j.,org.apache.logging.log4j.
 
