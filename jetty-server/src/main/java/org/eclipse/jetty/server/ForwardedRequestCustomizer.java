@@ -639,19 +639,23 @@ public class ForwardedRequestCustomizer implements Customizer
         @SuppressWarnings("unused")
         public void handlePort(HttpField field)
         {
+            String port = getLeftMost(field.getValue());
+            if (StringUtil.isEmpty(port))
+                throw new IllegalArgumentException(field.getName() + " has empty value");
+
             if (!getForwardedPortAsAuthority())
             {
                 if (_for == null)
-                    _for = new PortSetHostPort(_request.getRemoteHost(), Integer.parseInt(getLeftMost(field.getValue())));
+                    _for = new PortSetHostPort(_request.getRemoteHost(), Integer.parseInt(port));
                 else if (_for instanceof PossiblyPartialHostPort && _for.getPort() <= 0)
-                    _for = new HostPort(HostPort.normalizeHost(_for.getHost()), Integer.parseInt(getLeftMost(field.getValue())));
+                    _for = new HostPort(HostPort.normalizeHost(_for.getHost()), Integer.parseInt(port));
             }
             else
             {
                 if (_host == null)
-                    _host = new PortSetHostPort(_request.getServerName(), Integer.parseInt(getLeftMost(field.getValue())));
+                    _host = new PortSetHostPort(_request.getServerName(), Integer.parseInt(port));
                 else if (_host instanceof PossiblyPartialHostPort && _host.getPort() <= 0)
-                    _host = new HostPort(HostPort.normalizeHost(_host.getHost()), Integer.parseInt(getLeftMost(field.getValue())));
+                    _host = new HostPort(HostPort.normalizeHost(_host.getHost()), Integer.parseInt(port));
             }
         }
 
