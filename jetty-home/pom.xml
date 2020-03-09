@@ -178,7 +178,7 @@
             </goals>
             <configuration>
               <includeGroupIds>org.eclipse.jetty,org.slf4j</includeGroupIds>
-              <includeArtifactIds>jetty-slf4j-impl,slf4j-api</includeArtifactIds>
+              <includeArtifactIds>jetty-slf4j-impl,slf4j-api,jul-to-slf4j,jcl-over-slf4j,log4j-over-slf4j</includeArtifactIds>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${assembly-directory}/lib/logging</outputDirectory>
             </configuration>
@@ -191,7 +191,7 @@
             </goals>
             <configuration>
               <includeGroupIds>org.eclipse.jetty,org.slf4j</includeGroupIds>
-              <includeArtifactIds>jetty-slf4j-impl,slf4j-api</includeArtifactIds>
+              <includeArtifactIds>jetty-slf4j-impl,slf4j-api,jul-to-slf4j,jcl-over-slf4j,log4j-over-slf4j</includeArtifactIds>
               <includeTypes>jar</includeTypes>
               <classifier>sources</classifier>
               <outputDirectory>${source-assembly-directory}/lib/logging</outputDirectory>
@@ -627,6 +627,21 @@
     <dependency>
       <groupId>org.ow2.asm</groupId>
       <artifactId>asm-analysis</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>jul-to-slf4j</artifactId>
+      <version>${slf4j.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>jcl-over-slf4j</artifactId>
+      <version>${slf4j.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>log4j-over-slf4j</artifactId>
+      <version>${slf4j.version}</version>
     </dependency>
 
     <!-- jetty deps -->

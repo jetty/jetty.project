@@ -6,12 +6,14 @@ SLF4J is used as the core logging mechanism.
 
 [tags]
 logging
+log4j
 
 [depends]
 resources
 
 [provides]
 logging
+log4j
 
 [files]
 basehome:modules/logging-log4j2
