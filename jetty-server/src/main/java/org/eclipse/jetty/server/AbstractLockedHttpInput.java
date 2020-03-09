@@ -78,11 +78,11 @@ public abstract class AbstractLockedHttpInput extends AbstractHttpInput
     }
 
     @Override
-    public boolean addContent(Content content)
+    public void addContent(Content content)
     {
         try (AutoLock lock = _contentLock.lock())
         {
-            return super.addContent(content);
+            super.addContent(content);
         }
     }
 

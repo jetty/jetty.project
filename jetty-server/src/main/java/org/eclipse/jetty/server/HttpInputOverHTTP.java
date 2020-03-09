@@ -27,10 +27,9 @@ public class HttpInputOverHTTP extends AbstractHttpInput
     }
 
     @Override
-    public boolean addContent(Content content)
+    public void addContent(Content content)
     {
         super.addContent(content);
-        return true;
     }
 
     @Override

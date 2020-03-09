@@ -95,7 +95,7 @@ public abstract class AbstractHttpInput extends HttpInput
     }
 
     @Override
-    public boolean addContent(Content content)
+    public void addContent(Content content)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("addContent {} {}", content, _contentProducer);
@@ -107,9 +107,7 @@ public abstract class AbstractHttpInput extends HttpInput
         }
         _contentProducer.addContent(content);
         if (isAsync())
-            return _channelState.onContentAdded();
-        unblock();
-        return false;
+            _channelState.onContentAdded();
     }
 
     @Override

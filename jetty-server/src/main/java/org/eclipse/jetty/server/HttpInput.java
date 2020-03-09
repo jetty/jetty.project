@@ -67,9 +67,8 @@ public abstract class HttpInput extends ServletInputStream implements Runnable
      * Adds some content to this input stream.
      *
      * @param content the content to add
-     * @return true if content channel woken for read
      */
-    public abstract boolean addContent(Content content);
+    public abstract void addContent(Content content);
 
     public abstract boolean hasContent();
 

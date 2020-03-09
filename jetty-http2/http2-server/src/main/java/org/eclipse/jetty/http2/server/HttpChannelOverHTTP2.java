@@ -58,6 +58,64 @@ public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable, Writ
     private boolean _expect100Continue;
     private boolean _delayedUntilContent;
     private boolean _useOutputDirectByteBuffers;
+    private final RequestContent _requestContent = new RequestContent();
+
+    private class RequestContent
+    {
+        private final ThreadLocal<Boolean> _syncFetchContentTl = new ThreadLocal<>();
+        private HttpInput.Content _content;
+        private boolean _endStream;
+        private boolean _producing;
+
+        public void demand()
+        {
+            if (!_producing)
+            {
+                _producing = true;
+                _syncFetchContentTl.set(Boolean.TRUE);
+                try
+                {
+                    getStream().demand(1);
+                }
+                finally
+                {
+                    _syncFetchContentTl.remove();
+                }
+            }
+        }
+
+        public void offerContent(HttpInput.Content content)
+        {
+            if (_content != null)
+                throw new AssertionError("content cannot be queued");
+            _content = content;
+            _producing = false;
+        }
+
+        public HttpInput.Content takeContent()
+        {
+            HttpInput.Content contentCopy = _content;
+            _content = null;
+            return contentCopy;
+        }
+
+        public void reachedEndOfStream(boolean endStream)
+        {
+            _endStream = endStream;
+        }
+
+        public boolean hasReachedEndOfStream()
+        {
+            boolean copy = _endStream;
+            _endStream = false;
+            return copy;
+        }
+
+        private boolean isFetchingContent()
+        {
+            return !Boolean.TRUE.equals(_syncFetchContentTl.get());
+        }
+    }
 
     public HttpChannelOverHTTP2(Connector connector, HttpConfiguration configuration, EndPoint endPoint, HttpTransportOverHTTP2 transport)
     {
@@ -257,7 +315,21 @@ public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable, Writ
 
         ByteBuffer buffer = frame.getData();
         int length = buffer.remaining();
-        boolean handle = onContent(new HttpInput.Content(buffer)
+
+        _requestContent.reachedEndOfStream(frame.isEndStream());
+
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("HTTP2 Request #{}/{}: {} bytes of content",
+                    stream.getId(),
+                    Integer.toHexString(stream.getSession().hashCode()),
+                    length);
+        }
+
+        boolean wasDelayed = _delayedUntilContent;
+        _delayedUntilContent = false;
+
+        _requestContent.offerContent(new HttpInput.Content(buffer)
         {
             @Override
             public void succeeded()
@@ -277,28 +349,42 @@ public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable, Writ
                 return callback.getInvocationType();
             }
         });
-
-        boolean endStream = frame.isEndStream();
-        if (endStream)
+        if (getState().isAsync())
         {
-            boolean handleContent = onContentComplete();
-            boolean handleRequest = onRequestComplete();
-            handle |= handleContent | handleRequest;
+            boolean handle = _requestContent.isFetchingContent() && getState().onReadPossible();
+            return  handle || wasDelayed ? this : null;
+        }
+        else
+        {
+            getRequest().getHttpInput().unblock();
+            return wasDelayed ? this : null;
+        }
+    }
+
+    void fetchContent()
+    {
+        // HttpInputOverHttp2 calls this method via produceRawContent;
+        // this is the equivalent of Http1 parseAndFill().
+
+        HttpInput.Content content = _requestContent.takeContent();
+        if (content != null)
+        {
+            onContent(content);
+        }
+        else
+        {
+            _requestContent.demand();
+            // If content was produced synchronously, consume it right away.
+            content = _requestContent.takeContent();
+            if (content != null)
+                onContent(content);
         }
 
-        if (LOG.isDebugEnabled())
+        if (_requestContent.hasReachedEndOfStream())
         {
-            LOG.debug("HTTP2 Request #{}/{}: {} bytes of {} content, handle: {}",
-                    stream.getId(),
-                    Integer.toHexString(stream.getSession().hashCode()),
-                    length,
-                    endStream ? "last" : "some",
-                    handle);
+            onContentComplete();
+            onRequestComplete();
         }
-
-        boolean wasDelayed = _delayedUntilContent;
-        _delayedUntilContent = false;
-        return handle || wasDelayed ? this : null;
     }
 
     @Override

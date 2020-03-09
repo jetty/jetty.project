@@ -98,10 +98,9 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
     @Override
     public boolean content(ByteBuffer content)
     {
-        HttpInput.Content c = _httpConnection.newContent(content);
-        boolean handle = onContent(c) || _delayedForContent;
+        onContent(_httpConnection.newContent(content));
         _delayedForContent = false;
-        return handle;
+        return true;
     }
 
     @Override

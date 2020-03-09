@@ -20,46 +20,18 @@ package org.eclipse.jetty.http2.server;
 
 import org.eclipse.jetty.server.AbstractLockedHttpInput;
 import org.eclipse.jetty.server.HttpChannelState;
-import org.eclipse.jetty.util.thread.AutoLock;
 
 public class HttpInputOverHTTP2 extends AbstractLockedHttpInput
 {
-    private boolean _producing;
-
     public HttpInputOverHTTP2(HttpChannelState state)
     {
         super(state);
     }
 
     @Override
-    public void recycle()
-    {
-        try (AutoLock lock = _contentLock.lock())
-        {
-            super.recycle();
-            _producing = false;
-        }
-    }
-
-    @Override
-    public boolean addContent(Content content)
-    {
-        try (AutoLock lock = _contentLock.lock())
-        {
-            boolean b = super.addContent(content);
-            _producing = false;
-            return b;
-        }
-    }
-
-    @Override
     protected void produceRawContent()
     {
-        if (!_producing)
-        {
-            _producing = true;
-            ((HttpChannelOverHTTP2)_channelState.getHttpChannel()).getStream().demand(1);
-        }
+        ((HttpChannelOverHTTP2)_channelState.getHttpChannel()).fetchContent();
     }
 
     @Override

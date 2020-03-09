@@ -698,12 +698,12 @@ public abstract class HttpChannel implements Runnable, HttpOutput.Interceptor
                 request.getFields());
     }
 
-    public boolean onContent(HttpInput.Content content)
+    public void onContent(HttpInput.Content content)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("onContent {} {}", this, content);
         _combinedListener.onRequestContent(_request, content.getByteBuffer());
-        return _request.getHttpInput().addContent(content);
+        _request.getHttpInput().addContent(content);
     }
 
     public boolean onContentComplete()
