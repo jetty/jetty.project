@@ -16,27 +16,15 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.webapp;
+package org.eclipse.jetty.annotations;
 
-public enum Origin
+import javax.annotation.PreDestroy;
+import javax.servlet.http.HttpServlet;
+
+public class ServletE extends HttpServlet
 {
-    NotSet, WebXml, WebDefaults, WebOverride, WebFragment, Annotation, API;
-
-    public static Origin of(Object o)
+    @PreDestroy
+    public void preDestroy()
     {
-        if (o == null)
-            return null;
-        if (o instanceof java.lang.annotation.Annotation)
-            return Annotation;
-        if (o instanceof FragmentDescriptor)
-            return WebFragment;
-        else if (o instanceof OverrideDescriptor)
-            return WebOverride;
-        else if (o instanceof DefaultsDescriptor)
-            return WebDefaults;
-        else if (o instanceof WebDescriptor)
-            return WebXml;
-        else
-            return API;
     }
 }

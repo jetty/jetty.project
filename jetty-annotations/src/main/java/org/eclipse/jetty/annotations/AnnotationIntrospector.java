@@ -18,10 +18,20 @@
 
 package org.eclipse.jetty.annotations;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
+
+import org.eclipse.jetty.servlet.BaseHolder;
+import org.eclipse.jetty.servlet.Source.Origin;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.webapp.WebAppContext;
+import org.eclipse.jetty.webapp.WebDescriptor;
 
 /**
  * AnnotationIntrospector
@@ -30,8 +40,10 @@ import java.util.Set;
  */
 public class AnnotationIntrospector
 {
+    private static final Logger LOG = Log.getLogger(AnnotationIntrospector.class);
     private final Set<Class<?>> _introspectedClasses = new HashSet<>();
     private final List<IntrospectableAnnotationHandler> _handlers = new ArrayList<IntrospectableAnnotationHandler>();
+    private final WebAppContext _context;
 
     /**
      * IntrospectableAnnotationHandler
@@ -51,12 +63,14 @@ public class AnnotationIntrospector
      */
     public abstract static class AbstractIntrospectableAnnotationHandler implements IntrospectableAnnotationHandler
     {
-        private boolean _introspectAncestors;
+        protected boolean _introspectAncestors;
+        protected WebAppContext _context;
 
         public abstract void doHandle(Class<?> clazz);
 
-        public AbstractIntrospectableAnnotationHandler(boolean introspectAncestors)
+        public AbstractIntrospectableAnnotationHandler(boolean introspectAncestors, WebAppContext context)
         {
+            _context = Objects.requireNonNull(context);
             _introspectAncestors = introspectAncestors;
         }
 
@@ -75,20 +89,113 @@ public class AnnotationIntrospector
                 c = c.getSuperclass();
             }
         }
+        
+        public WebAppContext getContext()
+        {
+            return _context;
+        }
+    }
+    
+    public AnnotationIntrospector(WebAppContext context)
+    {
+        _context = Objects.requireNonNull(context);
     }
 
     public void registerHandler(IntrospectableAnnotationHandler handler)
     {
         _handlers.add(handler);
     }
-
-    public void introspect(Class<?> clazz)
+    
+    /**
+     * Test if an object should be introspected for some specific types of annotations 
+     * like PostConstruct/PreDestroy/MultiPart etc etc.
+     * 
+     * According to servlet 4.0, these types of annotations should only be evaluated iff any
+     * of the following are true:
+     * <ol>
+     * <li>the object was created by the javax.servlet.ServletContext.createServlet/Filter/Listener method</li>
+     * <li>the object comes either from a discovered annotation (WebServlet/Filter/Listener) or a declaration
+     * in a descriptor AND web.xml is NOT metadata-complete AND any web-fragment.xml associated with the location of
+     * the class is NOT metadata-complete</li>
+     * </ol>
+     * 
+     * We also support evaluations of these types of annotations for objects that were created directly
+     * by the jetty api.
+     *  
+     * @param o the object to check for its ability to be introspected for annotations
+     * @param metaInfo meta information about the object to be introspected
+     * @return true if it can be introspected according to servlet 4.0 rules
+     */
+    public boolean isIntrospectable(Object o, Object metaInfo)
     {
-        if (_handlers == null)
-            return;
-        if (clazz == null)
-            return;
+        if (o == null)
+            return false; //nothing to introspect
+        
+        if (metaInfo == null)
+            return true;  //no information about the object to introspect, assume introspectable
+        
+        @SuppressWarnings("rawtypes")
+        BaseHolder holder = null;
+        
+        try
+        {
+            holder = (BaseHolder)metaInfo;
+        }
+        catch (ClassCastException e)
+        {
+            LOG.warn(e);
+            return true; //not the type of information we were expecting, assume introspectable
+        }
+        
+        Origin origin = (holder.getSource() == null ? null : holder.getSource().getOrigin());
+        if (origin == null)
+            return true; //assume introspectable
+        
+        switch (origin)
+        {
+            case EMBEDDED:
+            case JAVAX_API:
+            {
+                return true; //objects created from the jetty or servlet api are always introspectable
+            }
+            case ANNOTATION:
+            {
+                return true; //we will have discovered annotations only if metadata-complete==false
+            }
+            default:
+            {
+                //must be from a descriptor. Only introspect if the descriptor with which it was associated
+                //is not metadata-complete
+                if (_context.getMetaData().isMetaDataComplete())
+                    return false;
+                
+                String descriptorLocation = holder.getSource().getResource();
+                if (descriptorLocation == null)
+                    return true; //no descriptor, can't be metadata-complete
+                try
+                {
+                    return !WebDescriptor.isMetaDataComplete(_context.getMetaData().getFragmentDescriptor(Resource.newResource(descriptorLocation)));
+                }
+                catch (IOException e)
+                {
+                    LOG.warn("Unable to get Resource for descriptor {}", descriptorLocation, e);
+                    return false; //something wrong with the descriptor
+                }
+            }
+        }
+    }
 
+    /**
+     * @param o
+     * @param metaInfo
+     */
+    public void introspect(Object o, Object metaInfo)
+    {
+        if (!isIntrospectable(o, metaInfo))
+            return;
+        
+        Class<?> clazz = o.getClass();
+        
         synchronized (_introspectedClasses)
         {
             //Synchronize on the set of already introspected classes.

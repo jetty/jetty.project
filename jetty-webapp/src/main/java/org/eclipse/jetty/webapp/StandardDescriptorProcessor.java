@@ -21,7 +21,6 @@ package org.eclipse.jetty.webapp;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
-import java.util.EventListener;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -97,7 +96,6 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             registerVisitor("filter", this.getClass().getMethod("visitFilter", __signature));
             registerVisitor("filter-mapping", this.getClass().getMethod("visitFilterMapping", __signature));
             registerVisitor("listener", this.getClass().getMethod("visitListener", __signature));
-            registerVisitor("distributable", this.getClass().getMethod("visitDistributable", __signature));
             registerVisitor("deny-uncovered-http-methods", this.getClass().getMethod("visitDenyUncoveredHttpMethods", __signature));
             registerVisitor("default-context-path", this.getClass().getMethod("visitDefaultContextPath", __signature));
             registerVisitor("request-character-encoding", this.getClass().getMethod("visitRequestCharacterEncoding", __signature));
@@ -1894,7 +1892,6 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
     public void visitListener(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
     {
         String className = node.getString("listener-class", false, true);
-        EventListener listener = null;
         try
         {
             if (className != null && className.length() > 0)
@@ -1920,14 +1917,6 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             LOG.warn("Could not instantiate listener " + className, e);
             return;
         }
-    }
-
-    public void visitDistributable(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
-    {
-        // the element has no content, so its simple presence
-        // indicates that the webapp is distributable...
-        //Servlet Spec 3.0 p.74  distributable only if all fragments are distributable
-        ((WebDescriptor)descriptor).setDistributable(true);
     }
 
     /**

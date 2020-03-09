@@ -33,14 +33,11 @@ public class RunAsAnnotationHandler extends AbstractIntrospectableAnnotationHand
 {
     private static final Logger LOG = Log.getLogger(RunAsAnnotationHandler.class);
 
-    protected WebAppContext _context;
-
     public RunAsAnnotationHandler(WebAppContext wac)
     {
         //Introspect only the given class for a RunAs annotation, as it is a class level annotation,
         //and according to Common Annotation Spec p2-6 a class-level annotation is not inheritable.
-        super(false);
-        _context = wac;
+        super(false, wac);
     }
 
     @Override

@@ -60,10 +60,10 @@ public class FragmentDescriptor extends WebDescriptor
     }
 
     @Override
-    public void parse()
+    public void parse(XmlParser parser)
         throws Exception
     {
-        super.parse();
+        super.parse(parser);
         processName();
     }
 

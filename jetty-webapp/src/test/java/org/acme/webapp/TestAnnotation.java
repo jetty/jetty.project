@@ -16,9 +16,34 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.webapp;
+package org.acme.webapp;
 
-public enum MetaDataComplete
+import java.util.List;
+
+import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.webapp.DiscoveredAnnotation;
+import org.eclipse.jetty.webapp.WebAppContext;
+
+public class TestAnnotation extends DiscoveredAnnotation
 {
-    NotSet, True, False
+    private List<TestAnnotation> applications;
+    
+    public TestAnnotation(WebAppContext context, String className, Resource resource, List<TestAnnotation> applications)
+    {
+        super(context, className, resource);
+        this.applications = applications;
+    }
+
+    @Override
+    public void apply()
+    {
+        if (applications != null)
+            applications.add(this);
+    }
+
+    @Override
+    public String toString()
+    {
+        return getClassName();
+    }
 }

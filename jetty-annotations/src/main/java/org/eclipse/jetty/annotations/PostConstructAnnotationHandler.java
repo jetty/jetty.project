@@ -31,12 +31,9 @@ import org.eclipse.jetty.webapp.WebAppContext;
 
 public class PostConstructAnnotationHandler extends AbstractIntrospectableAnnotationHandler
 {
-    protected WebAppContext _context;
-
     public PostConstructAnnotationHandler(WebAppContext wac)
     {
-        super(true);
-        _context = wac;
+        super(true, wac);
     }
 
     @Override

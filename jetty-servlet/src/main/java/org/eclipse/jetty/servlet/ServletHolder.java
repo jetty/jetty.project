@@ -33,6 +33,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
 import java.util.concurrent.TimeUnit;
+
 import javax.servlet.GenericServlet;
 import javax.servlet.MultipartConfigElement;
 import javax.servlet.Servlet;
@@ -1110,30 +1111,22 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
      * @throws NoSuchMethodException if creating new instance resulted in error
      * @throws InvocationTargetException If creating new instance throws an exception
      */
-    protected Servlet newInstance() throws ServletException, IllegalAccessException, InstantiationException,
-        NoSuchMethodException, InvocationTargetException
+    protected Servlet newInstance() throws Exception
     {
-        try
-        {
-            ServletContext ctx = getServletHandler().getServletContext();
-            if (ctx != null)
-                return ctx.createServlet(getHeldClass());
-            return getHeldClass().getDeclaredConstructor().newInstance();
+        return createInstance();
+    }
 
-        }
-        catch (ServletException ex)
+    @Override
+    protected synchronized Servlet createInstance() throws Exception
+    {
+        Servlet servlet = super.createInstance();
+        if (servlet == null)
         {
-            Throwable cause = ex.getRootCause();
-            if (cause instanceof InstantiationException)
-                throw (InstantiationException)cause;
-            if (cause instanceof IllegalAccessException)
-                throw (IllegalAccessException)cause;
-            if (cause instanceof NoSuchMethodException)
-                throw (NoSuchMethodException)cause;
-            if (cause instanceof InvocationTargetException)
-                throw (InvocationTargetException)cause;
-            throw ex;
+            ServletContext ctx = getServletContext();
+            if (ctx != null)
+                servlet = ctx.createServlet(getHeldClass());
         }
+        return servlet;
     }
 
     @Override

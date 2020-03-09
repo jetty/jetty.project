@@ -55,8 +55,7 @@ public class QuickStartTest
         PreconfigureStandardTestWar.main(new String[]{});
 
         WebDescriptor descriptor = new WebDescriptor(Resource.newResource("./target/test-standard-preconfigured/WEB-INF/quickstart-web.xml"));
-        descriptor.setValidating(!Log.getLogger(QuickStartGeneratorConfiguration.class).isDebugEnabled());
-        descriptor.parse();
+        descriptor.parse(WebDescriptor.getParser(!Log.getLogger(QuickStartGeneratorConfiguration.class).isDebugEnabled()));
         Node node = descriptor.getRoot();
         assertThat(node, Matchers.notNullValue());
 
@@ -109,8 +108,7 @@ public class QuickStartTest
         assertTrue(Files.exists(webXmlPath), "Path should exist:" + webXmlPath);
 
         WebDescriptor descriptor = new WebDescriptor(new PathResource(webXmlPath));
-        descriptor.setValidating(!Log.getLogger(QuickStartGeneratorConfiguration.class).isDebugEnabled());
-        descriptor.parse();
+        descriptor.parse(WebDescriptor.getParser(!Log.getLogger(QuickStartGeneratorConfiguration.class).isDebugEnabled()));
         Node node = descriptor.getRoot();
         assertThat(node, Matchers.notNullValue());
 
@@ -160,8 +158,7 @@ public class QuickStartTest
         PreconfigureJNDIWar.main(new String[]{});
 
         WebDescriptor descriptor = new WebDescriptor(Resource.newResource("./target/test-jndi-preconfigured/WEB-INF/quickstart-web.xml"));
-        descriptor.setValidating(!Log.getLogger(QuickStartGeneratorConfiguration.class).isDebugEnabled());
-        descriptor.parse();
+        descriptor.parse(WebDescriptor.getParser(!Log.getLogger(QuickStartGeneratorConfiguration.class).isDebugEnabled()));
         Node node = descriptor.getRoot();
         assertThat(node, Matchers.notNullValue());
 
