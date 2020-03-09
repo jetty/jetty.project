@@ -36,4 +36,4 @@ jetty.session.hazelcast.onlyClient=true
 jetty.session.hazelcast.scavengeZombies=false
 jetty.session.gracePeriod.seconds=3600
 jetty.session.savePeriod.seconds=0
-#jetty.session.hazelcast.addresses=192.168.1.5,192.168.1.6
+#jetty.session.hazelcast.addresses=

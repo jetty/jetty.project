@@ -30,12 +30,12 @@ import com.hazelcast.config.SerializerConfig;
 import com.hazelcast.config.XmlConfigBuilder;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
+
 import org.eclipse.jetty.server.session.AbstractSessionDataStoreFactory;
 import org.eclipse.jetty.server.session.SessionData;
 import org.eclipse.jetty.server.session.SessionDataStore;
 import org.eclipse.jetty.server.session.SessionDataStoreFactory;
 import org.eclipse.jetty.server.session.SessionHandler;
-
 
 /**
  * Factory to construct {@link HazelcastSessionDataStore}
@@ -59,7 +59,7 @@ public class HazelcastSessionDataStoreFactory
 
     private boolean scavengeZombies = false;
 
-	private String addresses;
+    private String addresses;
     
     public boolean isScavengeZombies()
     {
@@ -88,8 +88,8 @@ public class HazelcastSessionDataStoreFactory
                         
                         if (addresses != null && !addresses.isEmpty())
                         {
-							config.getNetworkConfig().setAddresses(Arrays.asList(addresses.split(",")));
-						}
+                            config.getNetworkConfig().setAddresses(Arrays.asList(addresses.split(",")));
+                        }
                         
                         SerializerConfig sc = new SerializerConfig()
                             .setImplementation(new SessionDataSerializer())
@@ -214,11 +214,11 @@ public class HazelcastSessionDataStoreFactory
     
     public String getAddresses()
     {
-		return addresses;
-	}
+        return addresses;
+    }
 
-	public void setAddresses(String addresses)
-	{
-		this.addresses = addresses;
-	}
+    public void setAddresses(String addresses)
+    {
+        this.addresses = addresses;
+    }
 }
