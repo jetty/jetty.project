@@ -14,7 +14,7 @@ resources
 logging|default
 
 [files]
-basehome:modules/logging-jetty
+basehome:modules/logging/jetty
 
 [lib]
 lib/logging/slf4j-api-${slf4j.version}.jar

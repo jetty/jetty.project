@@ -14,7 +14,7 @@ resources
 logging
 
 [files]
-basehome:modules/logging-logback
+basehome:modules/logging/logback
 maven://ch.qos.logback/logback-classic/${logback.version}|lib/logging/logback-classic-${logback.version}.jar
 maven://ch.qos.logback/logback-core/${logback.version}|lib/logging/logback-core-${logback.version}.jar
 

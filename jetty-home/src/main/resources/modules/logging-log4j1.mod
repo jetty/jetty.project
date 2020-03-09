@@ -16,7 +16,7 @@ logging
 log4j
 
 [files]
-basehome:modules/logging-log4j1
+basehome:modules/logging/log4j1
 maven://org.slf4j/slf4j-log4j12/${slf4j.version}|lib/logging/slf4j-log4j12-${slf4j.version}.jar
 maven://log4j/log4j/${log4j1.version}|lib/logging/log4j-${log4j.version}.jar
 

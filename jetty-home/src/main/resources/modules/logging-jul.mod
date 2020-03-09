@@ -16,7 +16,7 @@ logging
 java-util-logging
 
 [files]
-basehome:modules/logging-jul
+basehome:modules/logging/jul
 maven://org.slf4j/slf4j-jdk14/${slf4j.version}|lib/logging/slf4j-jdk14-${slf4j.version}.jar
 
 [lib]
