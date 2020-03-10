@@ -6,5 +6,8 @@ Configure logging to use SLF4J No-Op Implementation
 [tags]
 logging
 
+[provides]
+logging
+
 [depends]
-logging-slf4j
+logging/slf4j

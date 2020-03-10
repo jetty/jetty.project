@@ -8,7 +8,7 @@ SLF4J is used as the core logging mechanism.
 logging
 
 [depends]
-logging-slf4j
+logging/slf4j
 resources
 
 [provides]

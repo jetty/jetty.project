@@ -7,7 +7,7 @@ Capture jakarta-commons-logging events and bridge them to org.slf4j
 logging
 
 [depends]
-logging-slf4j
+logging/slf4j
 logging
 
 [provides]

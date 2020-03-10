@@ -8,7 +8,7 @@ Provides a ${jetty.base}/resources/jetty-logging.properties.
 logging
 
 [depends]
-logging-slf4j
+logging/slf4j
 resources
 
 [provides]
