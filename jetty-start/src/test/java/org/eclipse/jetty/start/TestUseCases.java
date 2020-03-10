@@ -83,19 +83,7 @@ public class TestUseCases
         PrintStream originalStream = StartLog.setStream(new PrintStream(out));
         try
         {
-            // If there is a "{caseName}.prepare.txt" then use those
-            // lines as if you are calling start.jar once to setup
-            // the base directory.
-            List<String> prepareArgs = lines(caseName + ".prepare.txt");
-            if (!prepareArgs.isEmpty())
-            {
-                Main main = new Main();
-                List<String> cmdLine = new ArrayList<>();
-                cmdLine.add("--testing-mode");
-                cmdLine.addAll(prepareArgs);
-
-                main.start(main.processCommandLine(cmdLine));
-            }
+            prepare(caseName);
 
             Main main = new Main();
             List<String> cmdLine = new ArrayList<>();
@@ -132,6 +120,23 @@ public class TestUseCases
         finally
         {
             StartLog.setStream(originalStream);
+        }
+    }
+
+    private void prepare(String caseName) throws Exception
+    {
+        // If there is a "{caseName}.prepare.txt" then use those
+        // lines as if you are calling start.jar once to setup
+        // the base directory.
+        List<String> prepareArgs = lines(caseName + ".prepare.txt");
+        if (!prepareArgs.isEmpty())
+        {
+            Main main = new Main();
+            List<String> cmdLine = new ArrayList<>();
+            cmdLine.add("--testing-mode");
+            cmdLine.addAll(prepareArgs);
+
+            main.start(main.processCommandLine(cmdLine));
         }
     }
 

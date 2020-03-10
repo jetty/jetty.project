@@ -5,6 +5,7 @@ XML|${jetty.base}/etc/logging-a.xml
 
 # The Properties we expect (order is irrelevant)
 PROP|logging.prop=a
+PROP|logging.a=true
 
 # Files / Directories to create
 

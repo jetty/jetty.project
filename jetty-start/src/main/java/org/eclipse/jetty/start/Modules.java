@@ -295,6 +295,50 @@ public class Modules implements Iterable<Module>
         return enabled;
     }
 
+    public List<Module> getSortedAll()
+    {
+        List<Module> all = new ArrayList(_modules);
+
+        TopologicalSort<Module> sort = new TopologicalSort<>();
+        for (Module module : all)
+        {
+            Consumer<String> add = name ->
+            {
+                Module dependency = _names.get(name);
+                if (dependency != null)
+                    sort.addDependency(module, dependency);
+
+                Set<Module> provided = _provided.get(name);
+                if (provided != null)
+                    for (Module p : provided)
+                    {
+                        sort.addDependency(module, p);
+                    }
+            };
+            module.getDepends().forEach(add);
+            module.getOptional().forEach(add);
+        }
+
+        sort.sort(all);
+        return all;
+    }
+
+    public List<String> getSortedNames(List<String> enabledModules)
+    {
+        List<Module> all = getSortedAll();
+        List<String> order = new ArrayList<>();
+        for (Module module : all)
+        {
+            String name = module.getName();
+            if (enabledModules.contains(name))
+            {
+                order.add(name);
+            }
+        }
+
+        return order;
+    }
+
     /**
      * Enable a module
      *
@@ -340,7 +384,6 @@ public class Modules implements Iterable<Module>
                             throw new UsageException("Module %s provides %s, which is already provided by %s enabled in %s", module.getName(), name, p.getName(), p.getEnableSources());
                     }
                 }
-                ;
             }
         }
 
