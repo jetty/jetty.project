@@ -52,6 +52,7 @@ public class AsyncDelayHandler extends HandlerWrapper
         Object asyncQueryString = null;
         Object asyncRequestUri = null;
         Object asyncServletPath = null;
+        Object asyncHttpServletMapping = null;
 
         // Is this request a restarted one?
         boolean restart = false;
@@ -72,6 +73,8 @@ public class AsyncDelayHandler extends HandlerWrapper
             baseRequest.setAttribute(AsyncContext.ASYNC_REQUEST_URI, null);
             asyncServletPath = baseRequest.getAttribute(AsyncContext.ASYNC_SERVLET_PATH);
             baseRequest.setAttribute(AsyncContext.ASYNC_SERVLET_PATH, null);
+            asyncHttpServletMapping = baseRequest.getAttribute(AsyncContext.ASYNC_MAPPING);
+            baseRequest.setAttribute(AsyncContext.ASYNC_MAPPING, null);
         }
 
         // Should we handle this request now?
@@ -101,6 +104,7 @@ public class AsyncDelayHandler extends HandlerWrapper
                 baseRequest.setAttribute(AsyncContext.ASYNC_QUERY_STRING, asyncQueryString);
                 baseRequest.setAttribute(AsyncContext.ASYNC_REQUEST_URI, asyncRequestUri);
                 baseRequest.setAttribute(AsyncContext.ASYNC_SERVLET_PATH, asyncServletPath);
+                baseRequest.setAttribute(AsyncContext.ASYNC_MAPPING, asyncHttpServletMapping);
             }
 
             // signal the request is leaving the handler

@@ -60,6 +60,7 @@ public class AsyncContextEvent extends AsyncEvent implements Runnable
                 baseRequest.setAttribute(AsyncContext.ASYNC_SERVLET_PATH, baseRequest.getAttribute(RequestDispatcher.FORWARD_SERVLET_PATH));
                 baseRequest.setAttribute(AsyncContext.ASYNC_PATH_INFO, baseRequest.getAttribute(RequestDispatcher.FORWARD_PATH_INFO));
                 baseRequest.setAttribute(AsyncContext.ASYNC_QUERY_STRING, baseRequest.getAttribute(RequestDispatcher.FORWARD_QUERY_STRING));
+                baseRequest.setAttribute(AsyncContext.ASYNC_MAPPING, baseRequest.getAttribute(RequestDispatcher.FORWARD_MAPPING));
             }
             else
             {
@@ -68,6 +69,7 @@ public class AsyncContextEvent extends AsyncEvent implements Runnable
                 baseRequest.setAttribute(AsyncContext.ASYNC_SERVLET_PATH, baseRequest.getServletPath());
                 baseRequest.setAttribute(AsyncContext.ASYNC_PATH_INFO, baseRequest.getPathInfo());
                 baseRequest.setAttribute(AsyncContext.ASYNC_QUERY_STRING, baseRequest.getQueryString());
+                baseRequest.setAttribute(AsyncContext.ASYNC_MAPPING, baseRequest.getHttpServletMapping());
             }
         }
     }
