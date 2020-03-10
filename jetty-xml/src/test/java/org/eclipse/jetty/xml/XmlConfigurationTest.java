@@ -1481,36 +1481,6 @@ public class XmlConfigurationTest
         }
     }
 
-    @Test
-    public void testConfiguredWithNamedArgNotFirst() throws Exception
-    {
-        XmlConfiguration xmlAddZed = asXmlConfiguration("zed.xml",
-            "<Configure id=\"bar\" class=\"" + BarNamed.class.getName() + "\">\n" +
-                "  <Call name=\"addZed\">\n" +
-                "    <Arg>zilch</Arg>\n" +
-                "  </Call>\n" +
-                "  <Arg name=\"foo\">baz</Arg>\n" + // after the <Call> line intentionally
-                "</Configure>");
-
-        try (StdErrCapture logCapture = new StdErrCapture(XmlConfiguration.class))
-        {
-            Map<String, Object> idMap = mimicXmlConfigurationMain(xmlAddZed);
-            Object obj = idMap.get("bar");
-            assertThat("BarNamed instance created", obj, instanceOf(BarNamed.class));
-            BarNamed bar = (BarNamed)obj;
-            assertThat("BarNamed has foo", bar.getFoo(), is("baz"));
-            List<String> zeds = bar.getZeds();
-            assertThat("BarNamed has zeds", zeds, not(empty()));
-            assertThat("Zeds[0]", zeds.get(0), is("zilch"));
-
-            List<String> warnLogs = logCapture.getLines()
-                .stream().filter(line -> line.contains(":WARN:"))
-                .collect(Collectors.toList());
-
-            assertThat("WARN logs size", warnLogs.size(), is(0));
-        }
-    }
-
     /**
      * This mimics the XML load behavior in XmlConfiguration.main(String ... args)
      */

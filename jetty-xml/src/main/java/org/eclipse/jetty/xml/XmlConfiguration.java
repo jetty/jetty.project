@@ -444,7 +444,12 @@ public class XmlConfiguration
             String id = _root.getAttribute("id");
             if (id != null)
                 _configuration.getIdMap().put(id, obj);
-            configure(obj, _root, 0);
+
+            AttrOrElementNode aoeNode = new AttrOrElementNode(obj, _root, "Arg");
+            // The Object already existed, if it has <Arg> nodes, warn about them not being used.
+            aoeNode.getNodes("Arg")
+                .forEach((node) -> LOG.warn("Ignored arg {} in {}", node, this._configuration._location));
+            configure(obj, _root, aoeNode.getNext());
             return obj;
         }
 
@@ -456,12 +461,14 @@ public class XmlConfiguration
             String id = _root.getAttribute("id");
             Object obj = id == null ? null : _configuration.getIdMap().get(id);
 
-            int index = 0;
+            AttrOrElementNode aoeNode;
+
             if (obj == null && oClass != null)
             {
+                aoeNode = new AttrOrElementNode(_root, "Arg");
                 try
                 {
-                    obj = construct(oClass, new Args(null, oClass, XmlConfiguration.getNodes(_root, "Arg")));
+                    obj = construct(oClass, new Args(null, oClass, aoeNode.getNodes("Arg")));
                 }
                 catch (NoSuchMethodException x)
                 {
@@ -470,15 +477,16 @@ public class XmlConfiguration
             }
             else
             {
+                aoeNode = new AttrOrElementNode(obj, _root, "Arg");
                 // The Object already existed, if it has <Arg> nodes, warn about them not being used.
-                XmlConfiguration.getNodes(_root, "Arg")
+                aoeNode.getNodes("Arg")
                     .forEach((node) -> LOG.warn("Ignored arg {} in {}", node, this._configuration._location));
             }
             if (id != null)
                 _configuration.getIdMap().put(id, obj);
 
             _configuration.initializeDefaults(obj);
-            configure(obj, _root, index);
+            configure(obj, _root, aoeNode.getNext());
             return obj;
         }
 
@@ -515,8 +523,9 @@ public class XmlConfiguration
                     switch (tag)
                     {
                         case "Arg":
-                            // ignore, we've already processed these nodes in newObj/call/construct
-                            break;
+                        case "Class":
+                        case "Id":
+                            throw new IllegalStateException("Element '" + tag + "' not skipped");
                         case "Set":
                             set(obj, node);
                             break;
