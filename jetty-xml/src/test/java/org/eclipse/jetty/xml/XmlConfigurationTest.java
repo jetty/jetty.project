@@ -27,6 +27,7 @@ import java.lang.reflect.Method;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -1388,20 +1389,23 @@ public class XmlConfigurationTest
                 "  <Arg name=\"foo\"><Ref refid=\"foo\"/></Arg>\n" +
                 "</Configure>");
 
-        try (StdErrCapture logCapture = new StdErrCapture(XmlConfiguration.class))
-        {
-            Map<String, Object> idMap = mimicXmlConfigurationMain(xmlFoo, xmlBar);
-            Object obj = idMap.get("bar");
-            assertThat("BarNamed instance created", obj, instanceOf(BarNamed.class));
-            BarNamed bar = (BarNamed)obj;
-            assertThat("BarNamed has foo", bar.getFoo(), is("foozball"));
+        Logger logger = Log.getLogger(XmlConfiguration.class);
+        assertTrue(logger instanceof StdErrLog);
+        StdErrLog stdErrLog = (StdErrLog)logger;
+        ByteArrayOutputStream logBytes = new ByteArrayOutputStream();
+        stdErrLog.setStdErrStream(new PrintStream(logBytes));
 
-            List<String> warnLogs = logCapture.getLines()
-                .stream().filter(line -> line.contains(":WARN:"))
-                .collect(Collectors.toList());
+        Map<String, Object> idMap = mimicXmlConfigurationMain(xmlFoo, xmlBar);
+        Object obj = idMap.get("bar");
+        assertThat("BarNamed instance created", obj, instanceOf(BarNamed.class));
+        BarNamed bar = (BarNamed)obj;
+        assertThat("BarNamed has foo", bar.getFoo(), is("foozball"));
 
-            assertThat("WARN logs size", warnLogs.size(), is(0));
-        }
+        List<String> warnLogs = Arrays.stream(logBytes.toString(UTF_8.name()).split(System.lineSeparator()))
+            .filter(line -> line.contains(":WARN"))
+            .collect(Collectors.toList());
+
+        assertThat("WARN logs size", warnLogs.size(), is(0));
     }
 
     @Test
@@ -1418,20 +1422,23 @@ public class XmlConfigurationTest
                 "  <Arg><Ref refid=\"foo\"/></Arg>\n" + // no name specified
                 "</Configure>");
 
-        try (StdErrCapture logCapture = new StdErrCapture(XmlConfiguration.class))
-        {
-            Map<String, Object> idMap = mimicXmlConfigurationMain(xmlFoo, xmlBar);
-            Object obj = idMap.get("bar");
-            assertThat("BarNamed instance created", obj, instanceOf(BarNamed.class));
-            BarNamed bar = (BarNamed)obj;
-            assertThat("BarNamed has foo", bar.getFoo(), is("foozball"));
+        Logger logger = Log.getLogger(XmlConfiguration.class);
+        assertTrue(logger instanceof StdErrLog);
+        StdErrLog stdErrLog = (StdErrLog)logger;
+        ByteArrayOutputStream logBytes = new ByteArrayOutputStream();
+        stdErrLog.setStdErrStream(new PrintStream(logBytes));
 
-            List<String> warnLogs = logCapture.getLines()
-                .stream().filter(line -> line.contains(":WARN:"))
-                .collect(Collectors.toList());
+        Map<String, Object> idMap = mimicXmlConfigurationMain(xmlFoo, xmlBar);
+        Object obj = idMap.get("bar");
+        assertThat("BarNamed instance created", obj, instanceOf(BarNamed.class));
+        BarNamed bar = (BarNamed)obj;
+        assertThat("BarNamed has foo", bar.getFoo(), is("foozball"));
 
-            assertThat("WARN logs size", warnLogs.size(), is(0));
-        }
+        List<String> warnLogs = Arrays.stream(logBytes.toString(UTF_8.name()).split(System.lineSeparator()))
+            .filter(line -> line.contains(":WARN"))
+            .collect(Collectors.toList());
+
+        assertThat("WARN logs size", warnLogs.size(), is(0));
     }
 
     @Test
@@ -1484,29 +1491,34 @@ public class XmlConfigurationTest
                 "  </Call>\n" +
                 "</Configure>");
 
-        try (StdErrCapture logCapture = new StdErrCapture(XmlConfiguration.class))
-        {
-            Map<String, Object> idMap = mimicXmlConfigurationMain(xmlFoo, xmlBar, xmlAddZed);
-            Object obj = idMap.get("bar");
-            assertThat("BarNamed instance created", obj, instanceOf(BarNamed.class));
-            BarNamed bar = (BarNamed)obj;
-            assertThat("BarNamed has foo", bar.getFoo(), is("foozball"));
-            List<String> zeds = bar.getZeds();
-            assertThat("BarNamed has zeds", zeds, not(empty()));
-            assertThat("Zeds[0]", zeds.get(0), is("plain-zero"));
 
-            List<String> warnLogs = logCapture.getLines()
-                .stream().filter(line -> line.contains(":WARN:"))
-                .collect(Collectors.toList());
+        Logger logger = Log.getLogger(XmlConfiguration.class);
+        assertTrue(logger instanceof StdErrLog);
+        StdErrLog stdErrLog = (StdErrLog)logger;
+        ByteArrayOutputStream logBytes = new ByteArrayOutputStream();
+        stdErrLog.setStdErrStream(new PrintStream(logBytes));
 
-            assertThat("WARN logs count", warnLogs.size(), is(1));
+        Map<String, Object> idMap = mimicXmlConfigurationMain(xmlFoo, xmlBar, xmlAddZed);
+        Object obj = idMap.get("bar");
+        assertThat("BarNamed instance created", obj, instanceOf(BarNamed.class));
+        BarNamed bar = (BarNamed)obj;
+        assertThat("BarNamed has foo", bar.getFoo(), is("foozball"));
+        List<String> zeds = bar.getZeds();
+        assertThat("BarNamed has zeds", zeds, not(empty()));
+        assertThat("Zeds[0]", zeds.get(0), is("plain-zero"));
 
-            String actualWarn = warnLogs.get(0);
-            assertThat("WARN logs", actualWarn,
-                allOf(containsString("Ignored arg <Arg name="),
-                    containsString("zed.xml")
-                ));
-        }
+
+        List<String> warnLogs = Arrays.stream(logBytes.toString(UTF_8.name()).split(System.lineSeparator()))
+            .filter(line -> line.contains(":WARN"))
+            .collect(Collectors.toList());
+
+        assertThat("WARN logs count", warnLogs.size(), is(1));
+
+        String actualWarn = warnLogs.get(0);
+        assertThat("WARN logs", actualWarn,
+            allOf(containsString("Ignored arg <Arg name="),
+                containsString("zed.xml")
+            ));
     }
 
     /**
