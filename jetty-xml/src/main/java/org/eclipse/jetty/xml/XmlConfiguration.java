@@ -388,7 +388,7 @@ public class XmlConfiguration
             if (id != null)
                 _configuration.getIdMap().put(id, obj);
 
-            AttrOrElementNode aoeNode = new AttrOrElementNode(obj, _root, "Arg");
+            AttrOrElementNode aoeNode = new AttrOrElementNode(obj, _root, "Id", "Class", "Arg");
             // The Object already existed, if it has <Arg> nodes, warn about them not being used.
             aoeNode.getNodes("Arg")
                 .forEach((node) -> LOG.warn("Ignored arg {} in {}", node, this._configuration._location));
@@ -399,19 +399,22 @@ public class XmlConfiguration
         @Override
         public Object configure() throws Exception
         {
-            Class<?> oClass = nodeClass(_root);
-
-            String id = _root.getAttribute("id");
+            AttrOrElementNode aoeNode = new AttrOrElementNode(_root, "Id", "Class", "Arg");
+            String id = aoeNode.getString("Id");
+            String clazz = aoeNode.getString("Class");
             Object obj = id == null ? null : _configuration.getIdMap().get(id);
+            Class<?> oClass = clazz != null ? Loader.loadClass(clazz) : obj == null ? null : obj.getClass();
 
-            AttrOrElementNode aoeNode;
+            if (LOG.isDebugEnabled())
+                LOG.debug("Configure {} {}", oClass, obj);
 
             if (obj == null && oClass != null)
             {
-                aoeNode = new AttrOrElementNode(_root, "Arg");
                 try
                 {
                     obj = construct(oClass, new Args(null, oClass, aoeNode.getNodes("Arg")));
+                    if (id != null)
+                        _configuration.getIdMap().put(id, obj);
                 }
                 catch (NoSuchMethodException x)
                 {
@@ -420,13 +423,10 @@ public class XmlConfiguration
             }
             else
             {
-                aoeNode = new AttrOrElementNode(obj, _root, "Arg");
                 // The Object already existed, if it has <Arg> nodes, warn about them not being used.
                 aoeNode.getNodes("Arg")
                     .forEach((node) -> LOG.warn("Ignored arg {} in {}", node, this._configuration._location));
             }
-            if (id != null)
-                _configuration.getIdMap().put(id, obj);
 
             _configuration.initializeDefaults(obj);
             configure(obj, _root, aoeNode.getNext());
@@ -1021,13 +1021,14 @@ public class XmlConfiguration
          */
         private Object refObj(XmlParser.Node node) throws Exception
         {
-            String refid = node.getAttribute("refid");
+            AttrOrElementNode aoeNode = new AttrOrElementNode(node, "Id");
+            String refid = aoeNode.getString("Id");
             if (refid == null)
-                refid = node.getAttribute("id");
+                refid = node.getAttribute("refid");
             Object obj = _configuration.getIdMap().get(refid);
             if (obj == null && node.size() > 0)
                 throw new IllegalStateException("No object for refid=" + refid);
-            configure(obj, node, 0);
+            configure(obj, node, aoeNode.getNext());
             return obj;
         }
 
