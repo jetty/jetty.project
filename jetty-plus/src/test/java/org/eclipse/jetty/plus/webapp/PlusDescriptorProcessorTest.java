@@ -22,7 +22,14 @@ import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
 import javax.naming.Context;
 import javax.naming.InitialContext;
+import javax.naming.Name;
 
+import org.eclipse.jetty.jndi.NamingUtil;
+import org.eclipse.jetty.plus.annotation.Injection;
+import org.eclipse.jetty.plus.annotation.InjectionCollection;
+import org.eclipse.jetty.plus.jndi.EnvEntry;
+import org.eclipse.jetty.plus.jndi.NamingEntryUtil;
+import org.eclipse.jetty.util.IntrospectionUtil;
 import org.eclipse.jetty.webapp.Descriptor;
 import org.eclipse.jetty.webapp.FragmentDescriptor;
 import org.eclipse.jetty.webapp.Origin;
@@ -39,6 +46,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -48,6 +56,7 @@ import static org.junit.jupiter.api.Assertions.fail;
  */
 public class PlusDescriptorProcessorTest
 {
+    protected static final Class<?>[] STRING_ARG = new Class[]{String.class};
     protected WebDescriptor webDescriptor;
     protected FragmentDescriptor fragDescriptor1;
     protected FragmentDescriptor fragDescriptor2;
@@ -55,19 +64,84 @@ public class PlusDescriptorProcessorTest
     protected FragmentDescriptor fragDescriptor4;
     protected WebAppContext context;
 
+    public static class TestInjections
+    {
+        private String foo;
+        private String bah;
+        private String empty;
+        private String vacuum;
+        
+        public String getVacuum()
+        {
+            return vacuum;
+        }
+
+        public void setVacuum(String val)
+        {
+            vacuum = val;
+        }
+
+        public String getEmpty()
+        {
+            return empty;
+        }
+
+        public void setEmpty(String val)
+        {
+            empty = val;
+        }
+
+        public void setFoo(String val)
+        {
+            foo = val;
+        }
+        
+        public String getFoo()
+        {
+            return foo;
+        }
+
+        public String getBah()
+        {
+            return bah;
+        }
+
+        public void setBah(String val)
+        {
+            bah = val;
+        }
+    }
+    
     @BeforeEach
     public void setUp() throws Exception
     {
         context = new WebAppContext();
         context.setClassLoader(new WebAppClassLoader(Thread.currentThread().getContextClassLoader(), context));
+        context.getServerClasspathPattern().add("-org.eclipse.jetty.plus.webapp."); //need visbility of the TestInjections class
         ClassLoader oldLoader = Thread.currentThread().getContextClassLoader();
         Thread.currentThread().setContextClassLoader(context.getClassLoader());
         Context icontext = new InitialContext();
         Context compCtx = (Context)icontext.lookup("java:comp");
-        compCtx.createSubcontext("env");
-        Thread.currentThread().setContextClassLoader(oldLoader);
+        Context envCtx = compCtx.createSubcontext("env");
 
+        @SuppressWarnings("unused")
         org.eclipse.jetty.plus.jndi.Resource ds = new org.eclipse.jetty.plus.jndi.Resource(context, "jdbc/mydatasource", new Object());
+        
+        //An EnvEntry that should override any value supplied in a web.xml file
+        org.eclipse.jetty.plus.jndi.EnvEntry fooStringEnvEntry = new org.eclipse.jetty.plus.jndi.EnvEntry("foo", "FOO", true);
+        doEnvConfiguration(envCtx, fooStringEnvEntry);
+        
+        //An EnvEntry that should NOT override any value supplied in a web.xml file
+        org.eclipse.jetty.plus.jndi.EnvEntry bahStringEnvEntry = new org.eclipse.jetty.plus.jndi.EnvEntry("bah", "BAH", false);
+        doEnvConfiguration(envCtx, bahStringEnvEntry);
+        
+        //An EnvEntry that will override an empty value in web.xml
+        org.eclipse.jetty.plus.jndi.EnvEntry emptyStringEnvEntry = new org.eclipse.jetty.plus.jndi.EnvEntry("empty", "EMPTY", true);
+        doEnvConfiguration(envCtx, emptyStringEnvEntry);
+        
+        //An EnvEntry that will NOT override an empty value in web.xml
+        org.eclipse.jetty.plus.jndi.EnvEntry vacuumStringEnvEntry = new org.eclipse.jetty.plus.jndi.EnvEntry("vacuum", "VACUUM", false);
+        doEnvConfiguration(envCtx, vacuumStringEnvEntry);
 
         URL webXml = Thread.currentThread().getContextClassLoader().getResource("web.xml");
         webDescriptor = new WebDescriptor(org.eclipse.jetty.util.resource.Resource.newResource(webXml));
@@ -85,6 +159,22 @@ public class PlusDescriptorProcessorTest
         URL frag4Xml = Thread.currentThread().getContextClassLoader().getResource("web-fragment-4.xml");
         fragDescriptor4 = new FragmentDescriptor(org.eclipse.jetty.util.resource.Resource.newResource(frag4Xml));
         fragDescriptor4.parse();
+        
+        Thread.currentThread().setContextClassLoader(oldLoader);
+    }
+    
+    /**
+     * Do the kind of processing that EnvConfiguration would do.
+     * 
+     * @param envCtx the java:comp/env context
+     * @param envEntry the EnvEntry
+     * @throws Exception
+     */
+    private void doEnvConfiguration(Context envCtx, EnvEntry envEntry) throws Exception
+    {
+        envEntry.bindToENC(envEntry.getJndiName());
+        Name namingEntryName = NamingEntryUtil.makeNamingEntryName(null, envEntry);
+        NamingUtil.bind(envCtx, namingEntryName.toString(), envEntry);
     }
 
     @AfterEach
@@ -134,6 +224,52 @@ public class PlusDescriptorProcessorTest
 
             pdp.process(context, fragDescriptor1);
             pdp.process(context, fragDescriptor2);
+        }
+        finally
+        {
+            Thread.currentThread().setContextClassLoader(oldLoader);
+        }
+    }
+    
+    @Test
+    public void testEnvEntries() throws Exception
+    {
+        ClassLoader oldLoader = Thread.currentThread().getContextClassLoader();
+        Thread.currentThread().setContextClassLoader(context.getClassLoader());
+        try
+        {
+            PlusDescriptorProcessor pdp = new PlusDescriptorProcessor();
+            //process web.xml
+            pdp.process(context, webDescriptor);
+            InjectionCollection injections = (InjectionCollection)context.getAttribute(InjectionCollection.INJECTION_COLLECTION);
+            assertNotNull(injections);
+            
+            //check that there is an injection for "foo" with the value from the overriding EnvEntry of "FOO"
+            Injection foo = injections.getInjection("foo", TestInjections.class, 
+                IntrospectionUtil.findMethod(TestInjections.class, "setFoo", STRING_ARG, false, true), 
+                String.class);
+            assertNotNull(foo);
+            assertEquals("FOO", foo.lookupInjectedValue());
+            
+            //check that there is an injection for "bah" with the value from web.xml of "beer"
+            Injection bah = injections.getInjection("bah", TestInjections.class,
+                IntrospectionUtil.findMethod(TestInjections.class, "setBah", STRING_ARG, false, true),
+                String.class);
+            assertNotNull(bah);
+            assertEquals("beer", bah.lookupInjectedValue());
+            
+            //check that there is an injection for "empty" with the value from the overriding EnvEntry of "EMPTY"
+            Injection empty = injections.getInjection("empty", TestInjections.class,
+                IntrospectionUtil.findMethod(TestInjections.class, "setEmpty", STRING_ARG, false, true),
+                String.class);
+            assertNotNull(empty);
+            assertEquals("EMPTY", empty.lookupInjectedValue());
+            
+            //check that there is NOT an injection for "vacuum"
+            Injection vacuum = injections.getInjection("vacuum", TestInjections.class,
+                IntrospectionUtil.findMethod(TestInjections.class, "setVacuum", STRING_ARG, false, true),
+                String.class);
+            assertNull(vacuum);  
         }
         finally
         {
