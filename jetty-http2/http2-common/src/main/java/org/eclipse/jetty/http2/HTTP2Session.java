@@ -102,7 +102,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     private boolean connectProtocolEnabled;
     private long idleTime;
     private GoAwayFrame closeFrame;
-    private Callback.Completable closeCallback;
+    private Callback.Completable shutdownCallback;
 
     public HTTP2Session(Scheduler scheduler, EndPoint endPoint, Generator generator, Session.Listener listener, FlowControlStrategy flowControl, int initialStreamId)
     {
@@ -439,27 +439,17 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         if (LOG.isDebugEnabled())
             LOG.debug("Received {}", frame);
 
-        while (true)
+        if (closed.compareAndSet(CloseState.NOT_CLOSED, CloseState.REMOTELY_CLOSED))
         {
-            CloseState current = closed.get();
-            if (current == CloseState.NOT_CLOSED)
-            {
-                if (closed.compareAndSet(current, CloseState.REMOTELY_CLOSED))
-                {
-                    // We received a GO_AWAY, so try to write
-                    // what's in the queue and then disconnect.
-                    closeFrame = frame;
-                    notifyClose(this, frame, new DisconnectCallback());
-                    return;
-                }
-            }
-            else
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Ignored {}, already closed", frame);
-                return;
-            }
+            // We received a GO_AWAY, so try to write
+            // what's in the queue and then disconnect.
+            closeFrame = frame;
+            notifyClose(this, frame, new DisconnectCallback());
+            return;
         }
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("Ignored {}, already closed", frame);
     }
 
     @Override
@@ -671,60 +661,42 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     @Override
     public boolean close(int error, String reason, Callback callback)
     {
-        while (true)
+        if (closed.compareAndSet(CloseState.NOT_CLOSED, CloseState.LOCALLY_CLOSED))
         {
-            CloseState current = closed.get();
-            if (current == CloseState.NOT_CLOSED)
-            {
-                if (closed.compareAndSet(current, CloseState.LOCALLY_CLOSED))
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Closing {}/{}", error, reason);
-                    closeFrame = newGoAwayFrame(CloseState.LOCALLY_CLOSED, error, reason);
-                    control(null, callback, closeFrame);
-                    return true;
-                }
-            }
-            else
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Ignoring close {}/{}, already closed", error, reason);
-                callback.succeeded();
-                return false;
-            }
+            if (LOG.isDebugEnabled())
+                LOG.debug("Closing {}/{}", error, reason);
+            closeFrame = newGoAwayFrame(CloseState.LOCALLY_CLOSED, error, reason);
+            control(null, callback, closeFrame);
+            return true;
         }
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("Ignoring close {}/{}, already closed", error, reason);
+        callback.succeeded();
+        return false;
     }
 
     @Override
     public CompletableFuture<Void> shutdown()
     {
-        while (true)
+        if (closed.compareAndSet(CloseState.NOT_CLOSED, CloseState.LOCALLY_CLOSED))
         {
-            CloseState current = closed.get();
-            if (current == CloseState.NOT_CLOSED)
-            {
-                if (closed.compareAndSet(current, CloseState.LOCALLY_CLOSED))
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Shutting down {}", this);
-                    closeFrame = newGoAwayFrame(CloseState.LOCALLY_CLOSED, ErrorCode.NO_ERROR.code, "shutdown");
-                    closeCallback = new Callback.Completable();
-                    // Only send the close frame when we can flip Hi and Lo = 0, see onStreamClosed().
-                    if (streamCount.compareAndSet(0, 1, 0, 0))
-                        control(null, closeCallback, closeFrame);
-                    return closeCallback;
-                }
-            }
-            else
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Ignoring shutdown, already closed");
-                Callback.Completable result = closeCallback;
-                // Result may be null if the shutdown is in progress,
-                // don't wait and return a completed CompletableFuture.
-                return result != null ? result : CompletableFuture.completedFuture(null);
-            }
+            if (LOG.isDebugEnabled())
+                LOG.debug("Shutting down {}", this);
+            closeFrame = newGoAwayFrame(CloseState.LOCALLY_CLOSED, ErrorCode.NO_ERROR.code, "shutdown");
+            shutdownCallback = new Callback.Completable();
+            // Only send the close frame when we can flip Hi and Lo = 0, see onStreamClosed().
+            if (streamCount.compareAndSet(0, 1, 0, 0))
+                control(null, shutdownCallback, closeFrame);
+            return shutdownCallback;
         }
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("Ignoring shutdown, already closed");
+        Callback.Completable result = shutdownCallback;
+        // Result may be null if the shutdown is in progress,
+        // don't wait and return a completed CompletableFuture.
+        return result != null ? result : CompletableFuture.completedFuture(null);
     }
 
     private GoAwayFrame newGoAwayFrame(CloseState closeState, int error, String reason)
@@ -1075,13 +1047,23 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
 
     protected void onStreamClosed(IStream stream)
     {
-        if (streamCount.addAndGetLo(-1) == 0)
+        Callback callback = null;
+        while (true)
         {
-            Callback.Completable callback = closeCallback;
-            // Only send the close frame if we can flip Hi, see shutdown().
-            if (callback != null && streamCount.compareAndSet(0, 1, 0, 0))
-                control(null, callback, closeFrame);
+            long encoded = streamCount.get();
+            int closed = AtomicBiInteger.getHi(encoded);
+            int streams = AtomicBiInteger.getLo(encoded) - 1;
+            if (streams == 0 && closed == 0)
+            {
+                callback = shutdownCallback;
+                closed = 1;
+            }
+            if (streamCount.compareAndSet(encoded, closed, streams))
+                break;
         }
+        // Only send the close frame if we can flip Hi and Lo = 0, see shutdown().
+        if (callback != null)
+            control(null, callback, closeFrame);
     }
 
     @Override
