@@ -345,6 +345,8 @@ public class XmlConfiguration
      */
     public Object configure() throws Exception
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Configure {}", _location);
         return _processor.configure();
     }
 
@@ -385,7 +387,12 @@ public class XmlConfiguration
             String id = _root.getAttribute("id");
             if (id != null)
                 _configuration.getIdMap().put(id, obj);
-            configure(obj, _root, 0);
+
+            AttrOrElementNode aoeNode = new AttrOrElementNode(obj, _root, "Arg");
+            // The Object already existed, if it has <Arg> nodes, warn about them not being used.
+            aoeNode.getNodes("Arg")
+                .forEach((node) -> LOG.warn("Ignored arg {} in {}", node, this._configuration._location));
+            configure(obj, _root, aoeNode.getNext());
             return obj;
         }
 
@@ -397,23 +404,32 @@ public class XmlConfiguration
             String id = _root.getAttribute("id");
             Object obj = id == null ? null : _configuration.getIdMap().get(id);
 
-            int index = 0;
+            AttrOrElementNode aoeNode;
+
             if (obj == null && oClass != null)
             {
+                aoeNode = new AttrOrElementNode(_root, "Arg");
                 try
                 {
-                    obj = construct(oClass, new Args(null, oClass, XmlConfiguration.getNodes(_root, "Arg")));
+                    obj = construct(oClass, new Args(null, oClass, aoeNode.getNodes("Arg")));
                 }
                 catch (NoSuchMethodException x)
                 {
                     throw new IllegalStateException(String.format("No matching constructor %s in %s", oClass, _configuration));
                 }
             }
+            else
+            {
+                aoeNode = new AttrOrElementNode(obj, _root, "Arg");
+                // The Object already existed, if it has <Arg> nodes, warn about them not being used.
+                aoeNode.getNodes("Arg")
+                    .forEach((node) -> LOG.warn("Ignored arg {} in {}", node, this._configuration._location));
+            }
             if (id != null)
                 _configuration.getIdMap().put(id, obj);
 
             _configuration.initializeDefaults(obj);
-            configure(obj, _root, index);
+            configure(obj, _root, aoeNode.getNext());
             return obj;
         }
 
@@ -436,21 +452,6 @@ public class XmlConfiguration
          */
         public void configure(Object obj, XmlParser.Node cfg, int i) throws Exception
         {
-            // Object already constructed so skip any arguments
-            for (; i < cfg.size(); i++)
-            {
-                Object o = cfg.get(i);
-                if (o instanceof String)
-                    continue;
-                XmlParser.Node node = (XmlParser.Node)o;
-                if ("Arg".equals(node.getTag()))
-                {
-                    LOG.warn("Ignored arg: " + node);
-                    continue;
-                }
-                break;
-            }
-
             // Process real arguments
             for (; i < cfg.size(); i++)
             {
@@ -464,6 +465,10 @@ public class XmlConfiguration
                     String tag = node.getTag();
                     switch (tag)
                     {
+                        case "Arg":
+                        case "Class":
+                        case "Id":
+                            throw new IllegalStateException("Element '" + tag + "' not skipped");
                         case "Set":
                             set(obj, node);
                             break;
