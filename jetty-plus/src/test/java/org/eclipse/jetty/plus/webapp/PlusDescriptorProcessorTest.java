@@ -70,7 +70,18 @@ public class PlusDescriptorProcessorTest
         private String bah;
         private String empty;
         private String vacuum;
+        private String webXmlOnly;
         
+        public String getWebXmlOnly()
+        {
+            return webXmlOnly;
+        }
+
+        public void setWebXmlOnly(String webXmlOnly)
+        {
+            this.webXmlOnly = webXmlOnly;
+        }
+
         public String getVacuum()
         {
             return vacuum;
@@ -269,7 +280,14 @@ public class PlusDescriptorProcessorTest
             Injection vacuum = injections.getInjection("vacuum", TestInjections.class,
                 IntrospectionUtil.findMethod(TestInjections.class, "setVacuum", STRING_ARG, false, true),
                 String.class);
-            assertNull(vacuum);  
+            assertNull(vacuum); 
+            
+            //check that there is an injection for "webxmlonly" with the value from web.xml of "WEBXMLONLY"
+            Injection webXmlOnly = injections.getInjection("webxmlonly", TestInjections.class,
+                IntrospectionUtil.findMethod(TestInjections.class, "setWebXmlOnly", STRING_ARG, false, true),
+                String.class);
+            assertNotNull(webXmlOnly);
+            assertEquals("WEBXMLONLY", webXmlOnly.lookupInjectedValue());
         }
         finally
         {
