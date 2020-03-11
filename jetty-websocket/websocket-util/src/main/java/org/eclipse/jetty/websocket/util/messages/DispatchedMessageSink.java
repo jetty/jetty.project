@@ -18,10 +18,12 @@
 
 package org.eclipse.jetty.websocket.util.messages;
 
+import java.io.Closeable;
 import java.lang.invoke.MethodHandle;
 import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 
@@ -93,11 +95,8 @@ import org.eclipse.jetty.websocket.core.Frame;
  *                           EOF                                           stream.read EOF
  *     RESUME(NEXT MSG)
  * </pre>
- *
- * @param <T> the type of object to give to user function
  */
-@SuppressWarnings("Duplicates")
-public abstract class DispatchedMessageSink<T> extends AbstractMessageSink
+public abstract class DispatchedMessageSink extends AbstractMessageSink
 {
     private CompletableFuture<Void> dispatchComplete;
     private MessageSink typeSink;
@@ -114,44 +113,45 @@ public abstract class DispatchedMessageSink<T> extends AbstractMessageSink
         if (typeSink == null)
         {
             typeSink = newSink(frame);
-            // Dispatch to end user function (will likely start with blocking for data/accept)
             dispatchComplete = new CompletableFuture<>();
+
+            // Dispatch to end user function (will likely start with blocking for data/accept).
+            // If the MessageSink can be closed do this after invoking and before completing the CompletableFuture.
             new Thread(() ->
             {
-                final T dispatchedType = (T)typeSink;
                 try
                 {
-                    methodHandle.invoke(dispatchedType);
+                    methodHandle.invoke(typeSink);
+                    if (typeSink instanceof Closeable)
+                        IO.close((Closeable)typeSink);
+
                     dispatchComplete.complete(null);
                 }
                 catch (Throwable throwable)
                 {
+                    if (typeSink instanceof Closeable)
+                        IO.close((Closeable)typeSink);
+
                     dispatchComplete.completeExceptionally(throwable);
                 }
             }).start();
         }
 
-        final Callback frameCallback;
-
+        Callback frameCallback = callback;
         if (frame.isFin())
         {
-            CompletableFuture<Void> finComplete = new CompletableFuture<>();
-            frameCallback = Callback.from(() -> finComplete.complete(null), finComplete::completeExceptionally);
-            CompletableFuture.allOf(dispatchComplete, finComplete).whenComplete(
-                (aVoid, throwable) ->
-                {
-                    typeSink = null;
-                    dispatchComplete = null;
-                    if (throwable != null)
-                        callback.failed(throwable);
-                    else
-                        callback.succeeded();
-                });
-        }
-        else
-        {
-            // Non-fin-frame
-            frameCallback = callback;
+            // This is the final frame we should wait for the frame callback and the dispatched thread.
+            Callback.Completable completableCallback = new Callback.Completable();
+            frameCallback = completableCallback;
+            CompletableFuture.allOf(dispatchComplete, completableCallback).whenComplete((aVoid, throwable) ->
+            {
+                typeSink = null;
+                dispatchComplete = null;
+                if (throwable != null)
+                    callback.failed(throwable);
+                else
+                    callback.succeeded();
+            });
         }
 
         typeSink.accept(frame, frameCallback);

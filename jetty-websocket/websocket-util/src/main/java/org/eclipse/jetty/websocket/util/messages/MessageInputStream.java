@@ -21,10 +21,12 @@ package org.eclipse.jetty.websocket.util.messages;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InterruptedIOException;
-import java.util.ArrayDeque;
-import java.util.Deque;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
@@ -40,10 +42,12 @@ import org.eclipse.jetty.websocket.core.Frame;
 public class MessageInputStream extends InputStream implements MessageSink
 {
     private static final Logger LOG = Log.getLogger(MessageInputStream.class);
-    private static final CallbackBuffer EOF = new CallbackBuffer(Callback.NOOP, BufferUtil.EMPTY_BUFFER);
-    private final Deque<CallbackBuffer> buffers = new ArrayDeque<>(2);
-    private final AtomicBoolean closed = new AtomicBoolean(false);
-    private CallbackBuffer activeFrame;
+    private static final Entry EOF = new Entry(BufferUtil.EMPTY_BUFFER, Callback.NOOP);
+    private static final Entry CLOSED = new Entry(BufferUtil.EMPTY_BUFFER, Callback.NOOP);
+    private final BlockingArrayQueue<Entry> buffers = new BlockingArrayQueue<>();
+    private boolean closed = false;
+    private Entry currentEntry;
+    private long timeoutMs = -1;
 
     @Override
     public void accept(Frame frame, Callback callback)
@@ -51,119 +55,28 @@ public class MessageInputStream extends InputStream implements MessageSink
         if (LOG.isDebugEnabled())
             LOG.debug("accepting {}", frame);
 
-        // If closed, we should just toss incoming payloads into the bit bucket.
-        if (closed.get())
+        boolean succeed = false;
+        synchronized (this)
         {
-            callback.failed(new IOException("Already Closed"));
-            return;
-        }
-
-        if (!frame.hasPayload() && !frame.isFin())
-        {
-            callback.succeeded();
-            return;
-        }
-
-        synchronized (buffers)
-        {
-            boolean notify = false;
-            if (frame.hasPayload())
+            // If closed or we have no payload, request the next frame.
+            if (closed || (!frame.hasPayload() && !frame.isFin()))
             {
-                buffers.offer(new CallbackBuffer(callback, frame.getPayload()));
-                notify = true;
+                succeed = true;
             }
             else
             {
-                // We cannot wake up blocking read for a zero length frame.
-                callback.succeeded();
-            }
+                if (frame.hasPayload())
+                    buffers.add(new Entry(frame.getPayload(), callback));
+                else
+                    succeed = true;
 
-            if (frame.isFin())
-            {
-                buffers.offer(EOF);
-                notify = true;
-            }
-
-            if (notify)
-            {
-                // notify other thread
-                buffers.notify();
+                if (frame.isFin())
+                    buffers.add(EOF);
             }
         }
-    }
 
-    @Override
-    public void close() throws IOException
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("close()");
-
-        if (closed.compareAndSet(false, true))
-        {
-            synchronized (buffers)
-            {
-                buffers.offer(EOF);
-                buffers.notify();
-            }
-        }
-        super.close();
-    }
-
-    public CallbackBuffer getActiveFrame() throws InterruptedIOException
-    {
-        if (activeFrame == null)
-        {
-            // sync and poll queue
-            CallbackBuffer result;
-            synchronized (buffers)
-            {
-                try
-                {
-                    while ((result = buffers.poll()) == null)
-                    {
-                        // TODO: handle read timeout here?
-                        buffers.wait();
-                    }
-                }
-                catch (InterruptedException e)
-                {
-                    shutdown();
-                    throw new InterruptedIOException();
-                }
-            }
-            activeFrame = result;
-        }
-
-        return activeFrame;
-    }
-
-    private void shutdown()
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("shutdown()");
-        synchronized (buffers)
-        {
-            closed.set(true);
-            Throwable cause = new IOException("Shutdown");
-            for (CallbackBuffer buffer : buffers)
-            {
-                buffer.callback.failed(cause);
-            }
-            // Removed buffers that may have remained in the queue.
-            buffers.clear();
-        }
-    }
-
-    @Override
-    public void mark(int readlimit)
-    {
-        // Not supported.
-    }
-
-    @Override
-    public boolean markSupported()
-    {
-        return false;
+        if (succeed)
+            callback.succeeded();
     }
 
     @Override
@@ -184,43 +97,142 @@ public class MessageInputStream extends InputStream implements MessageSink
     @Override
     public int read(final byte[] b, final int off, final int len) throws IOException
     {
-        if (closed.get())
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Stream closed");
-            return -1;
-        }
+        return read(ByteBuffer.wrap(b, off, len).flip());
+    }
 
-        CallbackBuffer result = getActiveFrame();
-
+    public int read(ByteBuffer buffer) throws IOException
+    {
+        Entry currentEntry = getCurrentEntry();
         if (LOG.isDebugEnabled())
-            LOG.debug("result = {}", result);
+            LOG.debug("currentEntry = {}", currentEntry);
 
-        if (result == EOF)
+        if (currentEntry == CLOSED)
+            throw new IOException("Closed");
+
+        if (currentEntry == EOF)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Read EOF");
-            shutdown();
             return -1;
         }
 
-        // We have content
-        int fillLen = Math.min(result.buffer.remaining(), len);
-        result.buffer.get(b, off, fillLen);
+        // We have content.
+        int fillLen = BufferUtil.append(buffer, currentEntry.buffer);
+        if (!currentEntry.buffer.hasRemaining())
+            succeedCurrentEntry();
 
-        if (!result.buffer.hasRemaining())
-        {
-            activeFrame = null;
-            result.callback.succeeded();
-        }
-
-        // return number of bytes actually copied into buffer
+        // Return number of bytes actually copied into buffer.
+        if (LOG.isDebugEnabled())
+            LOG.debug("filled {} bytes from {}", fillLen, currentEntry);
         return fillLen;
     }
 
     @Override
-    public void reset() throws IOException
+    public void close() throws IOException
     {
-        throw new IOException("reset() not supported");
+        if (LOG.isDebugEnabled())
+            LOG.debug("close()");
+
+        ArrayList<Entry> entries = new ArrayList<>();
+        synchronized (this)
+        {
+            if (closed)
+                return;
+            closed = true;
+
+            if (currentEntry != null)
+            {
+                entries.add(currentEntry);
+                currentEntry = null;
+            }
+
+            // Clear queue and fail all entries.
+            entries.addAll(buffers);
+            buffers.clear();
+            buffers.offer(CLOSED);
+        }
+
+        // Succeed all entries as we don't need them anymore (failing would close the connection).
+        for (Entry e : entries)
+        {
+            e.callback.succeeded();
+        }
+
+        super.close();
+    }
+
+    public void setTimeout(long timeoutMs)
+    {
+        this.timeoutMs = timeoutMs;
+    }
+
+    private void succeedCurrentEntry()
+    {
+        Entry current;
+        synchronized (this)
+        {
+            current = currentEntry;
+            currentEntry = null;
+        }
+        if (current != null)
+            current.callback.succeeded();
+    }
+
+    private Entry getCurrentEntry() throws IOException
+    {
+        synchronized (this)
+        {
+            if (currentEntry != null)
+                return currentEntry;
+        }
+
+        try
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Waiting {} ms to read", timeoutMs);
+
+            Entry result;
+            if (timeoutMs < 0)
+            {
+                // Wait forever until a buffer is available.
+                result = buffers.take();
+            }
+            else
+            {
+                // Wait at most for the given timeout.
+                result = buffers.poll(timeoutMs, TimeUnit.MILLISECONDS);
+                if (result == null)
+                    throw new IOException(String.format("Read timeout: %,dms expired", timeoutMs));
+            }
+
+            synchronized (this)
+            {
+                currentEntry = result;
+                return currentEntry;
+            }
+        }
+        catch (InterruptedException e)
+        {
+            close();
+            throw new InterruptedIOException();
+        }
+    }
+
+    private static class Entry
+    {
+        public ByteBuffer buffer;
+        public Callback callback;
+
+        public Entry(ByteBuffer buffer, Callback callback)
+        {
+            this.buffer = Objects.requireNonNull(buffer);
+            this.callback = callback;
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format("Entry[%s,%s]", BufferUtil.toDetailString(buffer), callback.getClass().getSimpleName());
+        }
     }
 }

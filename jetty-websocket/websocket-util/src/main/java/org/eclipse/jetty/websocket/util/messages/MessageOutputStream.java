@@ -55,7 +55,6 @@ public class MessageOutputStream extends OutputStream
         this.bufferPool = bufferPool;
         this.bufferSize = coreSession.getOutputBufferSize();
         this.buffer = bufferPool.acquire(bufferSize, true);
-        BufferUtil.clear(buffer);
     }
 
     void setMessageType(byte opcode)
@@ -84,6 +83,20 @@ public class MessageOutputStream extends OutputStream
         try
         {
             send(ByteBuffer.wrap(new byte[]{(byte)b}));
+        }
+        catch (Throwable x)
+        {
+            // Notify without holding locks.
+            notifyFailure(x);
+            throw x;
+        }
+    }
+
+    public void write(ByteBuffer buffer) throws IOException
+    {
+        try
+        {
+            send(buffer);
         }
         catch (Throwable x)
         {

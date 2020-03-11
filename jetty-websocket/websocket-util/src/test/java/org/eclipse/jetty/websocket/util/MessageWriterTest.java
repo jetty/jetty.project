@@ -16,9 +16,10 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.javax.common.messages;
+package org.eclipse.jetty.websocket.util;
 
 import java.io.IOException;
+import java.nio.charset.MalformedInputException;
 import java.util.Arrays;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -36,10 +37,72 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class MessageWriterTest
 {
-    private ByteBufferPool bufferPool = new MappedByteBufferPool();
+    private final CoreSession coreSession = new CoreSession.Empty();
+    private final ByteBufferPool bufferPool = new MappedByteBufferPool();
+
+    @Test
+    public void testMultipleWrites() throws Exception
+    {
+        WholeMessageCapture capture = new WholeMessageCapture();
+        try (MessageWriter stream = new MessageWriter(capture, bufferPool))
+        {
+            stream.write("Hello");
+            stream.write(" ");
+            stream.write("World");
+        }
+
+        assertThat("Socket.messageQueue.size", capture.messages.size(), is(1));
+        String msg = capture.messages.poll();
+        assertThat("Message", msg, is("Hello World"));
+    }
+
+    @Test
+    public void testSingleWrite() throws Exception
+    {
+        WholeMessageCapture capture = new WholeMessageCapture();
+        try (MessageWriter stream = new MessageWriter(capture, bufferPool))
+        {
+            stream.append("Hello World");
+        }
+
+        assertThat("Socket.messageQueue.size", capture.messages.size(), is(1));
+        String msg = capture.messages.poll();
+        assertThat("Message", msg, is("Hello World"));
+    }
+
+    @Test
+    public void testWriteLargeRequiringMultipleBuffers() throws Exception
+    {
+        int outputBufferSize = 4096;
+        int size = (int)(outputBufferSize * 2.5);
+        char[] buf = new char[size];
+
+        Arrays.fill(buf, 'x');
+        buf[size - 1] = 'o'; // mark last entry for debugging
+
+        WholeMessageCapture capture = new WholeMessageCapture();
+        try (MessageWriter stream = new MessageWriter(capture, bufferPool))
+        {
+            stream.write(buf);
+        }
+
+        assertThat("Socket.messageQueue.size", capture.messages.size(), is(1));
+        String msg = capture.messages.poll();
+        String expected = new String(buf);
+        assertThat("Message", msg, is(expected));
+    }
+
+    @Test
+    public void testInvalidUtf8()
+    {
+        final String invalidUtf8String = "\uD800";
+        MessageWriter writer = new MessageWriter(coreSession, bufferPool);
+        assertThrows(MalformedInputException.class, () -> writer.write(invalidUtf8String.toCharArray()));
+    }
 
     @Test
     public void testSingleByteArray512b() throws IOException, InterruptedException
