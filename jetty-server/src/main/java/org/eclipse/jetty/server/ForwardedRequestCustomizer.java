@@ -24,6 +24,7 @@ import java.lang.invoke.MethodType;
 import java.net.InetSocketAddress;
 import javax.servlet.ServletRequest;
 
+import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -592,16 +593,23 @@ public class ForwardedRequestCustomizer implements Customizer
         @SuppressWarnings("unused")
         public void handleHost(HttpField field)
         {
-            if (getForwardedPortAsAuthority() && !StringUtil.isEmpty(getForwardedPortHeader()))
+            try
             {
-                if (_host == null)
-                    _host = new PossiblyPartialHostPort(getLeftMost(field.getValue()));
-                else if (_host instanceof PortSetHostPort)
-                    _host = new HostPort(HostPort.normalizeHost(getLeftMost(field.getValue())), _host.getPort());
+                if (getForwardedPortAsAuthority() && !StringUtil.isEmpty(getForwardedPortHeader()))
+                {
+                    if (_host == null)
+                        _host = new PossiblyPartialHostPort(getLeftMost(field.getValue()));
+                    else if (_host instanceof PortSetHostPort)
+                        _host = new HostPort(HostPort.normalizeHost(getLeftMost(field.getValue())), _host.getPort());
+                }
+                else if (_host == null)
+                {
+                    _host = new HostPort(getLeftMost(field.getValue()));
+                }
             }
-            else if (_host == null)
+            catch (Throwable t)
             {
-                _host = new HostPort(getLeftMost(field.getValue()));
+                throw new BadMessageException("Bad header value for " + field.getName());
             }
         }
 
@@ -623,39 +631,51 @@ public class ForwardedRequestCustomizer implements Customizer
         @SuppressWarnings("unused")
         public void handleFor(HttpField field)
         {
-            if (!getForwardedPortAsAuthority() && !StringUtil.isEmpty(getForwardedPortHeader()))
+            try
             {
-                if (_for == null)
-                    _for = new PossiblyPartialHostPort(getLeftMost(field.getValue()));
-                else if (_for instanceof PortSetHostPort)
-                    _for = new HostPort(HostPort.normalizeHost(getLeftMost(field.getValue())), _for.getPort());
+                String authority = getLeftMost(field.getValue());
+                if (!getForwardedPortAsAuthority() && !StringUtil.isEmpty(getForwardedPortHeader()))
+                {
+                    if (_for == null)
+                        _for = new PossiblyPartialHostPort(authority);
+                    else if (_for instanceof PortSetHostPort)
+                        _for = new HostPort(HostPort.normalizeHost(authority), _for.getPort());
+                }
+                else if (_for == null)
+                {
+                    _for = new HostPort(authority);
+                }
             }
-            else if (_for == null)
+            catch (Throwable t)
             {
-                _for = new HostPort(getLeftMost(field.getValue()));
+                throw new BadMessageException("Bad header value for " + field.getName());
             }
         }
 
         @SuppressWarnings("unused")
         public void handlePort(HttpField field)
         {
-            String port = getLeftMost(field.getValue());
-            if (StringUtil.isEmpty(port))
-                throw new IllegalArgumentException(field.getName() + " has empty value");
-
-            if (!getForwardedPortAsAuthority())
+            try
             {
-                if (_for == null)
-                    _for = new PortSetHostPort(_request.getRemoteHost(), Integer.parseInt(port));
-                else if (_for instanceof PossiblyPartialHostPort && _for.getPort() <= 0)
-                    _for = new HostPort(HostPort.normalizeHost(_for.getHost()), Integer.parseInt(port));
+                int port = HostPort.parsePort(getLeftMost(field.getValue()));
+                if (!getForwardedPortAsAuthority())
+                {
+                    if (_for == null)
+                        _for = new PortSetHostPort(_request.getRemoteHost(), port);
+                    else if (_for instanceof PossiblyPartialHostPort && _for.getPort() <= 0)
+                        _for = new HostPort(HostPort.normalizeHost(_for.getHost()), port);
+                }
+                else
+                {
+                    if (_host == null)
+                        _host = new PortSetHostPort(_request.getServerName(), port);
+                    else if (_host instanceof PossiblyPartialHostPort && _host.getPort() <= 0)
+                        _host = new HostPort(HostPort.normalizeHost(_host.getHost()), port);
+                }
             }
-            else
+            catch (Throwable t)
             {
-                if (_host == null)
-                    _host = new PortSetHostPort(_request.getServerName(), Integer.parseInt(port));
-                else if (_host instanceof PossiblyPartialHostPort && _host.getPort() <= 0)
-                    _host = new HostPort(HostPort.normalizeHost(_host.getHost()), Integer.parseInt(port));
+                throw new BadMessageException("Bad header value for " + field.getName());
             }
         }
 
