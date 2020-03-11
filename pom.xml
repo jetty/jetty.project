@@ -26,7 +26,7 @@
     <jetty-test-policy.version>1.2</jetty-test-policy.version>
     <servlet.api.version>5.0.0-SNAPSHOT</servlet.api.version>
     <websocket.api.version>2.0.0-SNAPSHOT</websocket.api.version>
-    <jsp.version>9.0.0-SNAPSHOT</jsp.version>
+    <jsp.version>10.0.0-SNAPSHOT</jsp.version>
     <infinispan.version>9.4.8.Final</infinispan.version>
     <conscrypt.version>2.4.0</conscrypt.version>
     <asm.version>7.2</asm.version>
