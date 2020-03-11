@@ -45,6 +45,7 @@ import org.junit.jupiter.api.Test;
 import static org.eclipse.jetty.client.ProxyProtocolClientConnectionFactory.V1;
 import static org.eclipse.jetty.client.ProxyProtocolClientConnectionFactory.V2;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -165,6 +166,7 @@ public class HttpClientProxyProtocolTest
     @Test
     public void testClientProxyProtocolV2WithVectors() throws Exception
     {
+        int typeTLS = 0x20;
         String tlsVersion = "TLSv1.3";
         byte[] tlsVersionBytes = tlsVersion.getBytes(StandardCharsets.US_ASCII);
         startServer(new EmptyServerHandler()
@@ -176,7 +178,10 @@ public class HttpClientProxyProtocolTest
                 assertTrue(endPoint instanceof ProxyConnectionFactory.ProxyEndPoint);
                 ProxyConnectionFactory.ProxyEndPoint proxyEndPoint = (ProxyConnectionFactory.ProxyEndPoint)endPoint;
                 if (target.equals("/tls_version"))
+                {
+                    assertNotNull(proxyEndPoint.getTLV(typeTLS));
                     assertEquals(tlsVersion, proxyEndPoint.getAttribute(ProxyConnectionFactory.TLS_VERSION));
+                }
                 response.setContentType(MimeTypes.Type.TEXT_PLAIN.asString());
                 response.getOutputStream().print(request.getRemotePort());
             }
@@ -186,7 +191,6 @@ public class HttpClientProxyProtocolTest
         int serverPort = connector.getLocalPort();
 
         int clientPort = ThreadLocalRandom.current().nextInt(1024, 65536);
-        int typeTLS = 0x20;
         byte[] dataTLS = new byte[1 + 4 + (1 + 2 + tlsVersionBytes.length)];
         dataTLS[0] = 0x01; // CLIENT_SSL
         dataTLS[5] = 0x21; // SUBTYPE_SSL_VERSION

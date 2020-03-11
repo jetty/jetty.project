@@ -1260,6 +1260,21 @@ public class ServletContextHandler extends ContextHandler
         {
             return _objFactory.decorate(super.createInstance(clazz));
         }
+        
+        public <T> T createInstance(BaseHolder<T> holder) throws ServletException
+        {
+            try
+            {
+                //set a thread local
+                DecoratedObjectFactory.associateInfo(holder);
+                return createInstance(holder.getHeldClass());
+            }
+            finally
+            {
+                //unset the thread local
+                DecoratedObjectFactory.disassociateInfo();
+            }
+        }
 
         public <T extends Filter> void destroyFilter(T f)
         {

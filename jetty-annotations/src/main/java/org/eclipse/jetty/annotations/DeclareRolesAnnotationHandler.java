@@ -35,12 +35,9 @@ public class DeclareRolesAnnotationHandler extends AbstractIntrospectableAnnotat
 {
     private static final Logger LOG = Log.getLogger(DeclareRolesAnnotationHandler.class);
 
-    protected WebAppContext _context;
-
     public DeclareRolesAnnotationHandler(WebAppContext context)
     {
-        super(false);
-        _context = context;
+        super(false, context);
     }
 
     @Override

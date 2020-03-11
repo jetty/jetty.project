@@ -67,8 +67,8 @@ public class Log
     /**
      * Logging Configuration Properties
      */
-    protected static final Properties __props = new Properties();
-    private static final ConcurrentMap<String, Logger> __loggers = new ConcurrentHashMap<>();
+    protected static final Properties PROPS = new Properties();
+    private static final ConcurrentMap<String, Logger> LOGGERS = new ConcurrentHashMap<>();
     private static boolean __initialized;
     private static Logger LOG;
 
@@ -83,7 +83,7 @@ public class Log
                 // * This is an optional feature used by embedded mode use, and test cases to allow for early
                 // * configuration of the Log class in situations where access to the System.properties are
                 // * either too late or just impossible.
-                loadProperties("jetty-logging.properties", __props);
+                loadProperties("jetty-logging.properties", PROPS);
 
                  // Next see if an OS specific jetty-logging.properties object exists in the classpath.
                  // This really for setting up test specific logging behavior based on OS.
@@ -92,7 +92,7 @@ public class Log
                 {
                     // NOTE: cannot use jetty-util's StringUtil.replace() as it may initialize logging itself.
                     osName = osName.toLowerCase(Locale.ENGLISH).replace(' ', '-');
-                    loadProperties("jetty-logging-" + osName + ".properties", __props);
+                    loadProperties("jetty-logging-" + osName + ".properties", PROPS);
                 }
 
                 // Now load the System.properties as-is into the __props,
@@ -105,12 +105,12 @@ public class Log
                     String val = System.getProperty(key);
                     // Protect against application code insertion of non-String values (returned as null).
                     if (val != null)
-                        __props.setProperty(key, val);
+                        PROPS.setProperty(key, val);
                 }
 
                 // Now use the configuration properties to configure the Log statics.
-                __logClass = __props.getProperty("org.eclipse.jetty.util.log.class", "org.eclipse.jetty.util.log.Slf4jLog");
-                __ignored = Boolean.parseBoolean(__props.getProperty("org.eclipse.jetty.util.log.IGNORED", "false"));
+                __logClass = PROPS.getProperty("org.eclipse.jetty.util.log.class", "org.eclipse.jetty.util.log.Slf4jLog");
+                __ignored = Boolean.parseBoolean(PROPS.getProperty("org.eclipse.jetty.util.log.IGNORED", "false"));
                 return null;
             }
         });
@@ -148,7 +148,7 @@ public class Log
                 return;
             __initialized = true;
 
-            boolean announce = Boolean.parseBoolean(__props.getProperty("org.eclipse.jetty.util.log.announce", "true"));
+            boolean announce = Boolean.parseBoolean(PROPS.getProperty("org.eclipse.jetty.util.log.announce", "true"));
             try
             {
                 Class<?> logClass = Loader.loadClass(Log.class, __logClass);
@@ -278,7 +278,7 @@ public class Log
         if (name == null)
             return LOG;
 
-        Logger logger = __loggers.get(name);
+        Logger logger = LOGGERS.get(name);
         if (logger == null)
             logger = LOG.getLogger(name);
 
@@ -287,7 +287,7 @@ public class Log
 
     static ConcurrentMap<String, Logger> getMutableLoggers()
     {
-        return __loggers;
+        return LOGGERS;
     }
 
     /**
@@ -298,11 +298,16 @@ public class Log
     @ManagedAttribute("list of all instantiated loggers")
     public static Map<String, Logger> getLoggers()
     {
-        return Collections.unmodifiableMap(__loggers);
+        return Collections.unmodifiableMap(LOGGERS);
     }
 
     public static Properties getProperties()
     {
-        return __props;
+        return PROPS;
+    }
+
+    public static String getProperty(String key, String defaultValue)
+    {
+        return PROPS.getProperty(key, defaultValue);
     }
 }
