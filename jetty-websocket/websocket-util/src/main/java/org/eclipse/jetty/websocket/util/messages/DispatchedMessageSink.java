@@ -136,20 +136,7 @@ public abstract class DispatchedMessageSink<T> extends AbstractMessageSink
         if (frame.isFin())
         {
             CompletableFuture<Void> finComplete = new CompletableFuture<>();
-            frameCallback = new Callback()
-            {
-                @Override
-                public void failed(Throwable cause)
-                {
-                    finComplete.completeExceptionally(cause);
-                }
-
-                @Override
-                public void succeeded()
-                {
-                    finComplete.complete(null);
-                }
-            };
+            frameCallback = Callback.from(() -> finComplete.complete(null), finComplete::completeExceptionally);
             CompletableFuture.allOf(dispatchComplete, finComplete).whenComplete(
                 (aVoid, throwable) ->
                 {
