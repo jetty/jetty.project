@@ -19,8 +19,7 @@ my be specified if a match is not achieved.
 
 <!ENTITY % CONFIG "Set|Get|Put|Call|New|Ref|Array|Map|Property">
 <!ENTITY % VALUE "#PCDATA|Get|Call|New|Ref|Array|Map|SystemProperty|Env|Property">
-
-<!ENTITY % TYPE_ATTR "type CDATA #IMPLIED " > <!-- String|Character|Short|Byte|Integer|Long|Boolean|Float|Double|char|short|byte|int|long|boolean|float|double|URL|InetAddress|InetAddrPort| #classname -->
+<!ENTITY % TYPE_ATTR "type CDATA #IMPLIED " >
 <!ENTITY % CLASS_ATTR "class CDATA #IMPLIED" >
 <!ENTITY % NAME_ATTR_REQUIRED "name CDATA #REQUIRED" >
 <!ENTITY % NAME_ATTR "name CDATA #IMPLIED" >
