@@ -36,8 +36,6 @@ import org.eclipse.jetty.util.ArrayTrie;
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.Trie;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 
 import static java.lang.invoke.MethodType.methodType;
 
@@ -64,8 +62,6 @@ import static java.lang.invoke.MethodType.methodType;
  */
 public class ForwardedRequestCustomizer implements Customizer
 {
-    private static final Logger LOG = Log.getLogger(ForwardedRequestCustomizer.class);
-
     private HostPortHttpField _forcedHost;
     private boolean _proxyAsAuthority = false;
     private boolean _forwardedPortAsAuthority = true;
@@ -434,8 +430,7 @@ public class ForwardedRequestCustomizer implements Customizer
 
     protected void onError(HttpField field, Throwable t)
     {
-        LOG.warn("Exception while processing {}", field, t);
-        throw new BadMessageException("Bad header value for " + field.getName());
+        throw new BadMessageException("Bad header value for " + field.getName(), t);
     }
 
     protected String getLeftMost(String headerValue)
