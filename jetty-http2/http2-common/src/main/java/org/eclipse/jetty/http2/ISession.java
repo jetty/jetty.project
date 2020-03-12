@@ -19,6 +19,7 @@
 package org.eclipse.jetty.http2;
 
 import java.io.IOException;
+import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
@@ -151,4 +152,14 @@ public interface ISession extends Session
      * @param callback the callback to notify when the frame has been processed
      */
     public void onData(DataFrame frame, Callback callback);
+
+    /**
+     * <p>Gracefully closes the session, returning a {@code CompletableFuture} that
+     * is completed when all the streams currently being processed are completed.</p>
+     * <p>Implementation is idempotent, i.e. calling this method a second time
+     * or concurrently results in a no-operation.</p>
+     *
+     * @return a {@code CompletableFuture} that is completed when all the streams are completed
+     */
+    public CompletableFuture<Void> shutdown();
 }

@@ -48,7 +48,7 @@ public class AbsoluteOrdering implements Ordering
 
         //1. put everything into the list of named others, and take the named ones out of there,
         //assuming we will want to use the <other> clause
-        Map<String, FragmentDescriptor> others = new HashMap<String, FragmentDescriptor>(_metaData.getNamedFragments());
+        Map<String, FragmentDescriptor> others = new HashMap<String, FragmentDescriptor>(_metaData.getNamedFragmentDescriptors());
 
         //2. for each name, take out of the list of others, add to tail of list
         int index = -1;
@@ -59,7 +59,7 @@ public class AbsoluteOrdering implements Ordering
                 FragmentDescriptor f = others.remove(item);
                 if (f != null)
                 {
-                    Resource jar = _metaData.getJarForFragment(item);
+                    Resource jar = _metaData.getJarForFragmentName(item);
                     orderedList.add(jar); //take from others and put into final list in order, ignoring duplicate names
                     //remove resource from list for resource matching name of descriptor
                     tmp.remove(jar);

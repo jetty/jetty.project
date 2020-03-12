@@ -39,32 +39,50 @@ public class WebDescriptor extends Descriptor
 {
     private static final Logger LOG = Log.getLogger(WebDescriptor.class);
 
-    protected static XmlParser _nonValidatingStaticParser;
-    protected MetaDataComplete _metaDataComplete;
+    public static XmlParser __nonValidatingStaticParser = newParser(false);
+    protected MetaData.Complete _metaDataComplete;
     protected int _majorVersion = 4; //default to container version
     protected int _minorVersion = 0;
-    protected ArrayList<String> _classNames = new ArrayList<String>();
+    protected ArrayList<String> _classNames = new ArrayList<>();
     protected boolean _distributable;
-
     protected boolean _isOrdered = false;
-    protected List<String> _ordering = new ArrayList<String>();
-
-    @Override
-    public XmlParser ensureParser() throws ClassNotFoundException
+    protected List<String> _ordering = new ArrayList<>();
+     
+    /**
+     * Check if the descriptor is metadata-complete.
+     * 
+     * @param d the descriptor (web.xml, web-fragment.xml, 
+     * web-default.xml, web-override.xml) to check
+     * 
+     * @return true iff metadata-complete=true is declared in the
+     * descriptor
+     */
+    public static boolean isMetaDataComplete(WebDescriptor d)
     {
-        synchronized (WebDescriptor.class)
-        {
-            if (_nonValidatingStaticParser == null)
-                _nonValidatingStaticParser = newParser(false);
-        }
+        return (d != null && d.getMetaDataComplete() == MetaData.Complete.True);
+    }
 
-        if (!isValidating())
-            return _nonValidatingStaticParser;
+    /**
+     * Get a parser for parsing web descriptor content.
+     * 
+     * @param validating true if the parser should validate syntax, false otherwise
+     * @return an XmlParser for web descriptors
+     */
+    public static XmlParser getParser(boolean validating)
+    {
+        if (!validating)
+            return __nonValidatingStaticParser;
         else
             return newParser(true);
     }
-
-    public static XmlParser newParser(boolean validating) throws ClassNotFoundException
+    
+    /**
+     * Create a new parser for parsing web descriptors.
+     * 
+     * @param validating if true, the parser will validate syntax
+     * @return an XmlParser
+     */
+    public static XmlParser newParser(boolean validating)
     {
         XmlParser xmlParser = new XmlParser(validating)
         {
@@ -216,17 +234,18 @@ public class WebDescriptor extends Descriptor
     {
         super(xml);
     }
-
+    
     @Override
-    public void parse()
+    public void parse(XmlParser parser)
         throws Exception
     {
-        super.parse();
+        super.parse(parser);
         processVersion();
         processOrdering();
+        processDistributable();
     }
 
-    public MetaDataComplete getMetaDataComplete()
+    public MetaData.Complete getMetaDataComplete()
     {
         return _metaDataComplete;
     }
@@ -266,14 +285,14 @@ public class WebDescriptor extends Descriptor
         }
 
         if (_majorVersion <= 2 && _minorVersion < 5)
-            _metaDataComplete = MetaDataComplete.True; // does not apply before 2.5
+            _metaDataComplete = MetaData.Complete.True; // does not apply before 2.5
         else
         {
             String s = (String)_root.getAttribute("metadata-complete");
             if (s == null)
-                _metaDataComplete = MetaDataComplete.NotSet;
+                _metaDataComplete = MetaData.Complete.NotSet;
             else
-                _metaDataComplete = Boolean.valueOf(s).booleanValue() ? MetaDataComplete.True : MetaDataComplete.False;
+                _metaDataComplete = Boolean.valueOf(s).booleanValue() ? MetaData.Complete.True : MetaData.Complete.False;
         }
 
         if (LOG.isDebugEnabled())
@@ -308,6 +327,14 @@ public class WebDescriptor extends Descriptor
                 _ordering.add(node.toString(false, true));
         }
     }
+    
+    public void processDistributable()
+    {
+        XmlParser.Node distributable = _root.get("distributable");
+        if (distributable == null)
+            return; //no <distributable> element
+        _distributable = true;
+    }
 
     public void addClassName(String className)
     {
@@ -320,25 +347,9 @@ public class WebDescriptor extends Descriptor
         return _classNames;
     }
 
-    public void setDistributable(boolean distributable)
-    {
-        _distributable = distributable;
-    }
-
     public boolean isDistributable()
     {
         return _distributable;
-    }
-
-    @Override
-    public void setValidating(boolean validating)
-    {
-        _validating = validating;
-    }
-
-    public boolean isValidating()
-    {
-        return _validating;
     }
 
     public boolean isOrdered()

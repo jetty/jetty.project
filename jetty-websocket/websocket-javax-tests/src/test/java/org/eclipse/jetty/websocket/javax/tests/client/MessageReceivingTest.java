@@ -477,7 +477,7 @@ public class MessageReceivingTest
         @Override
         public void onMessage(ByteBuffer message)
         {
-            final String stringResult = new String(message.array());
+            final String stringResult = BufferUtil.toString(message);
             messageQueue.offer(stringResult);
         }
     }

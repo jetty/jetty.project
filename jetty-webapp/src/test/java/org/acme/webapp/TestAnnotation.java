@@ -16,29 +16,34 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.util.messages;
+package org.acme.webapp;
 
-import java.nio.ByteBuffer;
-import java.util.Objects;
+import java.util.List;
 
-import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.webapp.DiscoveredAnnotation;
+import org.eclipse.jetty.webapp.WebAppContext;
 
-public class CallbackBuffer
+public class TestAnnotation extends DiscoveredAnnotation
 {
-    public ByteBuffer buffer;
-    public Callback callback;
-
-    public CallbackBuffer(Callback callback, ByteBuffer buffer)
+    private List<TestAnnotation> applications;
+    
+    public TestAnnotation(WebAppContext context, String className, Resource resource, List<TestAnnotation> applications)
     {
-        Objects.requireNonNull(buffer, "buffer");
-        this.callback = callback;
-        this.buffer = buffer;
+        super(context, className, resource);
+        this.applications = applications;
+    }
+
+    @Override
+    public void apply()
+    {
+        if (applications != null)
+            applications.add(this);
     }
 
     @Override
     public String toString()
     {
-        return String.format("CallbackBuffer[%s,%s]", BufferUtil.toDetailString(buffer), callback.getClass().getSimpleName());
+        return getClassName();
     }
 }
