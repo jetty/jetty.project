@@ -24,8 +24,8 @@ module org.eclipse.jetty.websocket.jetty.common
     exports org.eclipse.jetty.websocket.common;
 
     requires transitive org.eclipse.jetty.websocket.core;
-    requires transitive org.eclipse.jetty.websocket.util;
     requires transitive org.eclipse.jetty.websocket.jetty.api;
+    requires transitive org.eclipse.jetty.websocket.util;
 
     provides ExtensionConfig.Parser with ExtensionConfigParser;
 }

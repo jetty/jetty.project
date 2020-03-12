@@ -16,14 +16,11 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.common;
+package org.eclipse.jetty.websocket.api;
 
 import java.util.Collection;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
-
-import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.WebSocketSessionListener;
 
 /**
  * Generic interface to the Container (server or client)
