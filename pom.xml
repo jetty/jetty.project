@@ -133,7 +133,8 @@
     <module>jetty-distribution</module>
     <module>jetty-runner</module>
     <module>jetty-http-spi</module>
-    <module>jetty-osgi</module>
+    <!-- FIXME if possible... -->
+<!--    <module>jetty-osgi</module>-->
     <module>jetty-alpn</module>
     <module>jetty-home</module>
     <module>jetty-bom</module>
@@ -973,6 +974,11 @@
         <groupId>jakarta.annotation</groupId>
         <artifactId>jakarta.annotation-api</artifactId>
         <version>${annotation-api.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>jakarta.inject</groupId>
+        <artifactId>jakarta.inject-api</artifactId>
+        <version>2.0.0-RC2</version>
       </dependency>
       <dependency>
         <groupId>org.ow2.asm</groupId>
