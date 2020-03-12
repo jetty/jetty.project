@@ -145,7 +145,7 @@ Properties:
  jetty.secure.port = 8443
  jetty.truststore = etc/keystore
  jetty.truststore.password = OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4
- org.eclipse.jetty.websocket.javax = false
+ org.eclipse.jetty.websocket.jakarta = false
  threads.max = 200
  threads.min = 10
  threads.timeout = 60000
@@ -189,8 +189,8 @@ Note: order presented here is how they would appear on the classpath.
 32:                      1.2 | ${jetty.home}/lib/annotations/javax.annotation-api-1.2.jar
 33:          {VERSION} | ${jetty.home}/lib/jetty-deploy-{VERSION}.jar
 34:                      1.0 | ${jetty.home}/lib/websocket/javax.websocket-api-1.0.jar
-35:          {VERSION} | ${jetty.home}/lib/websocket/websocket-javax-client-{VERSION}.jar
-36:          {VERSION} | ${jetty.home}/lib/websocket/websocket-javax-server-{VERSION}.jar
+35:          {VERSION} | ${jetty.home}/lib/websocket/websocket-jakarta-client-{VERSION}.jar
+36:          {VERSION} | ${jetty.home}/lib/websocket/websocket-jakarta-server-{VERSION}.jar
 37:          {VERSION} | ${jetty.home}/lib/websocket/websocket-api-{VERSION}.jar
 38:          {VERSION} | ${jetty.home}/lib/websocket/websocket-client-{VERSION}.jar
 39:          {VERSION} | ${jetty.home}/lib/websocket/websocket-common-{VERSION}.jar
@@ -235,7 +235,7 @@ etc/demo-rewrite-rules.xml
 
 # Websocket chat examples needs websocket enabled
 # Don't start for all contexts (set to true in test.xml context)
-org.eclipse.jetty.websocket.javax=false
+org.eclipse.jetty.websocket.jakarta=false
 --module=websocket
 
 # Create and configure the test realm

@@ -139,7 +139,7 @@ Here is an example, setting the context attribute in code (although you can also
 ----
 WebAppContext context = new WebAppContext();
 context.setAttribute("org.eclipse.jetty.containerInitializerOrder",
-                     "org.eclipse.jetty.websocket.javax.server.JavaxWebSocketServletContainerInitializer, com.acme.Foo.MySCI, *");
+                     "org.eclipse.jetty.websocket.jakarta.server.JakartaWebSocketServletContainerInitializer, com.acme.Foo.MySCI, *");
 ----
 
 In this example, we ensure that the `WebSocketServerContainerInitializer` is the very first `ServletContainerInitializer` that is called, followed by MySCI and then any other `ServletContainerInitializer` instances that were discovered but not yet called.

@@ -113,7 +113,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
-      <artifactId>websocket-javax-server</artifactId>
+      <artifactId>websocket-jakarta-server</artifactId>
       <version>${project.version}</version>
       <scope>provided</scope>
     </dependency>
@@ -144,7 +144,7 @@
     <!-- dependencies that jetty-all needs (some optional) -->
     <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
-      <artifactId>jetty-javax-websocket-api</artifactId>
+      <artifactId>jetty-jakarta-websocket-api</artifactId>
       <scope>compile</scope>
     </dependency>
     <dependency>
