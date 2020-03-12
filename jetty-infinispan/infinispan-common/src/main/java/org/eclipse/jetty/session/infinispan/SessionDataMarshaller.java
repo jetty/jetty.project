@@ -21,9 +21,8 @@ package org.eclipse.jetty.session.infinispan;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.nio.ByteBuffer;
 
-import org.infinispan.commons.marshall.DelegatingObjectInput;
-import org.infinispan.commons.marshall.DelegatingObjectOutput;
 import org.infinispan.commons.marshall.Externalizer;
 import org.infinispan.protostream.FileDescriptorSource;
 import org.infinispan.protostream.MessageMarshaller;
@@ -74,7 +73,7 @@ public class SessionDataMarshaller
         SerializationContext serializationContext = initSerializationContext();
 
         // invokes readFrom(ProtoStreamReader)
-        InfinispanSessionData data = ProtobufUtil.readFrom(serializationContext, new DelegatingObjectInput(input),
+        InfinispanSessionData data = ProtobufUtil.readFrom(serializationContext, new BoundDelegatingInputStream(input),
                 InfinispanSessionData.class);
         if (data != null)
         {
@@ -88,8 +87,11 @@ public class SessionDataMarshaller
     {
         SerializationContext serializationContext = initSerializationContext();
 
-        // invokes writeTo(ProtoStreamWriter, InfinispanSessionData)
-        ProtobufUtil.writeTo(serializationContext, new DelegatingObjectOutput(output), object);
+     // invokes writeTo(ProtoStreamWriter, InfinispanSessionData)
+        byte[] data = ProtobufUtil.toByteArray(serializationContext, object);
+        int length = data.length;
+        output.write(ByteBuffer.allocate(4).putInt(length).array());
+        output.write(data);        
     }
 
     @Override
