@@ -75,7 +75,7 @@
                 <bannedDependencies>
                   <includes>
                     <include>org.eclipse.jetty.websocket:websocket-jetty-api</include>
-                    <include>javax.websocket</include>
+                    <include>jakarta.websocket</include>
                   </includes>
                 </bannedDependencies>
               </rules>
@@ -114,7 +114,7 @@
             </goals>
             <configuration>
               <instructions>
-                <Bundle-Description>javax.websocket.servlet Implementation</Bundle-Description>
+                <Bundle-Description>jakarta.websocket.servlet Implementation</Bundle-Description>
                 <Export-Package>
                   org.eclipse.jetty.websocket.servlet.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"
                 </Export-Package>

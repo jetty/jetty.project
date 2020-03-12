@@ -79,7 +79,7 @@
                 <bannedDependencies>
                   <includes>
                     <include>org.eclipse.jetty.websocket:websocket-jetty-api</include>
-                    <include>javax.websocket</include>
+                    <include>jakarta.websocket</include>
                   </includes>
                 </bannedDependencies>
               </rules>

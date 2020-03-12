@@ -223,27 +223,27 @@
             </configuration>
           </execution>
           <execution>
-            <id>copy-lib-javax-websocket-deps</id>
+            <id>copy-lib-jakarta-websocket-deps</id>
             <phase>generate-resources</phase>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
             <configuration>
               <includeGroupIds>org.eclipse.jetty.toolchain</includeGroupIds>
-              <includeArtifactIds>jetty-javax-websocket-api</includeArtifactIds>
+              <includeArtifactIds>jetty-jakarta-websocket-api</includeArtifactIds>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${assembly-directory}/lib/websocket</outputDirectory>
             </configuration>
           </execution>
           <execution>
-            <id>copy-lib-javax-websocket-src-deps</id>
+            <id>copy-lib-jakarta-websocket-src-deps</id>
             <phase>generate-resources</phase>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
             <configuration>
               <includeGroupIds>org.eclipse.jetty.toolchain</includeGroupIds>
-              <includeArtifactIds>jetty-javax-websocket-api</includeArtifactIds>
+              <includeArtifactIds>jetty-jakarta-websocket-api</includeArtifactIds>
               <includeTypes>jar</includeTypes>
               <classifier>sources</classifier>
               <outputDirectory>${source-assembly-directory}/lib/websocket</outputDirectory>
@@ -673,7 +673,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
-      <artifactId>websocket-javax-server</artifactId>
+      <artifactId>websocket-jakarta-server</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
