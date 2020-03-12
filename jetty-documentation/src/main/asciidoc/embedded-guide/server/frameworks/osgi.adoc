@@ -1150,13 +1150,13 @@ There is a list of Eclipse P2 sites for the jetty releases maintained at http://
 Each P2 repo has one big feature group that defines most of the Jetty jars.
 *Beware: No 3rd party dependency jars are included, so you will need to have installed the dependencies listed previously in this document.*
 
-In addition, as the feature group includes websocket, you will need to download and have installed the `javax.websocket-api` jar:
+In addition, as the feature group includes websocket, you will need to download and have installed the `jakarta.websocket-api` jar:
 
 .Extra Jars Required for Websocket
 [cols=",,",options="header",]
 |=======================================================================
 |Jar |Bundle Symbolic Name |Location
-|javax.websocket-api |javax.websocket-api
-|https://repo1.maven.org/maven2/javax/websocket/websocket-api[Maven
+|jakarta.websocket-api |jakarta.websocket-api
+|https://repo1.maven.org/maven2/jakarta/websocket/jakarta.websocket-api/[Maven
 central]
 |=======================================================================

@@ -16,16 +16,20 @@
 // ========================================================================
 //
 
+<<<<<<< HEAD:jetty-websocket/websocket-javax-client/src/main/java/org/eclipse/jetty/websocket/javax/client/internal/JsrUpgradeListener.java
 package org.eclipse.jetty.websocket.javax.client.internal;
+=======
+package org.eclipse.jetty.websocket.jakarta.client;
+>>>>>>> Issue #4568 - use jakarta.websocket for jetty-11:jetty-websocket/websocket-jakarta-client/src/main/java/org/eclipse/jetty/websocket/jakarta/client/JsrUpgradeListener.java
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
-import javax.websocket.ClientEndpointConfig.Configurator;
-import javax.websocket.HandshakeResponse;
 
+import jakarta.websocket.ClientEndpointConfig.Configurator;
+import jakarta.websocket.HandshakeResponse;
 import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.HttpResponse;
 import org.eclipse.jetty.http.HttpFields;

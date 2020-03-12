@@ -341,17 +341,17 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.websocket</groupId>
-        <artifactId>websocket-javax-client</artifactId>
+        <artifactId>websocket-jakarta-client</artifactId>
         <version>11.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.websocket</groupId>
-        <artifactId>websocket-javax-server</artifactId>
+        <artifactId>websocket-jakarta-server</artifactId>
         <version>11.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.websocket</groupId>
-        <artifactId>websocket-javax-common</artifactId>
+        <artifactId>websocket-jakarta-common</artifactId>
         <version>11.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>
