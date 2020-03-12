@@ -881,7 +881,29 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             addEventListener(new ManagedAttributeListener(this, StringUtil.csvSplit(managedAttributes)));
 
         super.doStart();
+    }
 
+    public void contextDestroyed() throws Exception
+    {
+        MultiException ex = new MultiException();
+        ServletContextEvent event = new ServletContextEvent(_scontext);
+        Collections.reverse(_destroyServletContextListeners);
+        for (ServletContextListener listener : _destroyServletContextListeners)
+        {
+            try
+            {
+                callContextDestroyed(listener, event);
+            }
+            catch (Exception x)
+            {
+                ex.add(x);
+            }
+        }
+        ex.ifExceptionThrow();
+    }
+    
+    public void contextInitialized() throws Exception
+    {
         // Call context listeners
         _destroyServletContextListeners.clear();
         if (!_servletContextListeners.isEmpty())
@@ -897,33 +919,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
     protected void stopContext() throws Exception
     {
-        // Call the context listeners
-        ServletContextEvent event = new ServletContextEvent(_scontext);
-        Collections.reverse(_destroyServletContextListeners);
-        MultiException ex = new MultiException();
-        for (ServletContextListener listener : _destroyServletContextListeners)
-        {
-            try
-            {
-                callContextDestroyed(listener, event);
-            }
-            catch (Exception x)
-            {
-                ex.add(x);
-            }
-        }
-
         // stop all the handler hierarchy
-        try
-        {
-            super.doStop();
-        }
-        catch (Exception x)
-        {
-            ex.add(x);
-        }
-
-        ex.ifExceptionThrow();
+        super.doStop();
     }
 
     protected void callContextInitialized(ServletContextListener l, ServletContextEvent e)
@@ -940,9 +937,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         l.contextDestroyed(e);
     }
 
-    /*
-     * @see org.eclipse.thread.AbstractLifeCycle#doStop()
-     */
     @Override
     protected void doStop() throws Exception
     {

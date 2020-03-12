@@ -35,6 +35,7 @@ import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
 import javax.servlet.FilterRegistration;
+import javax.servlet.GenericServlet;
 import javax.servlet.Servlet;
 import javax.servlet.ServletContainerInitializer;
 import javax.servlet.ServletContext;
@@ -106,6 +107,75 @@ public class ServletContextHandlerTest
     private LocalConnector _connector;
 
     private static final AtomicInteger __testServlets = new AtomicInteger();
+    private static int __initIndex = 0;
+    private static int __destroyIndex = 0;
+    
+    public class StopTestFilter implements Filter
+    {
+        int _initIndex;
+        int _destroyIndex;
+        
+        @Override
+        public void init(FilterConfig filterConfig) throws ServletException
+        {
+            _initIndex = __initIndex++;
+        }
+
+        @Override
+        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException,
+            ServletException
+        {
+        }
+
+        @Override
+        public void destroy()
+        {
+            _destroyIndex = __destroyIndex++;
+        }
+    }
+
+    public class StopTestServlet extends GenericServlet
+    {        
+        int _initIndex;
+        int _destroyIndex;
+
+        @Override
+        public void destroy()
+        {
+            _destroyIndex = __destroyIndex++;
+            super.destroy();
+        }
+
+        @Override
+        public void init() throws ServletException
+        {
+            _initIndex = __initIndex++;
+            super.init();
+        }
+
+        @Override
+        public void service(ServletRequest req, ServletResponse res) throws ServletException, IOException
+        {
+        }
+    }
+
+    public class StopTestListener implements ServletContextListener
+    {
+        int _initIndex;
+        int _destroyIndex;
+
+        @Override
+        public void contextInitialized(ServletContextEvent sce)
+        {
+            _initIndex = __initIndex++;
+        }
+
+        @Override
+        public void contextDestroyed(ServletContextEvent sce)
+        {
+            _destroyIndex = __destroyIndex++;
+        }
+    }
 
     public static class MySCI implements ServletContainerInitializer
     {
@@ -405,6 +475,37 @@ public class ServletContextHandlerTest
         _server.join();
     }
 
+    @Test
+    public void testDestroyOrder() throws Exception
+    {
+        ContextHandlerCollection contexts = new ContextHandlerCollection();
+        _server.setHandler(contexts);
+
+        ServletContextHandler root = new ServletContextHandler(contexts, "/", ServletContextHandler.SESSIONS);
+        ListenerHolder listenerHolder = new ListenerHolder();
+        StopTestListener stopTestListener = new StopTestListener();
+        listenerHolder.setListener(stopTestListener);
+        root.getServletHandler().addListener(listenerHolder);
+        ServletHolder servletHolder = new ServletHolder();
+        StopTestServlet stopTestServlet = new StopTestServlet();
+        servletHolder.setServlet(stopTestServlet);
+        root.addServlet(servletHolder, "/test");
+        FilterHolder filterHolder = new FilterHolder();
+        StopTestFilter stopTestFilter = new StopTestFilter();
+        filterHolder.setFilter(stopTestFilter);
+        root.addFilter(filterHolder, "/*", EnumSet.of(DispatcherType.REQUEST));
+        _server.start();
+        _server.stop();
+        
+        assertEquals(0, stopTestListener._initIndex); //listeners contextInitialized called first
+        assertEquals(1, stopTestFilter._initIndex); //filters init
+        assertEquals(2, stopTestServlet._initIndex); //servlets init
+
+        assertEquals(0, stopTestFilter._destroyIndex); //filters destroyed first
+        assertEquals(1, stopTestServlet._destroyIndex); //servlets destroyed next
+        assertEquals(2, stopTestListener._destroyIndex); //listener contextDestroyed last
+    }
+    
     @Test
     public void testAddSessionListener() throws Exception
     {
