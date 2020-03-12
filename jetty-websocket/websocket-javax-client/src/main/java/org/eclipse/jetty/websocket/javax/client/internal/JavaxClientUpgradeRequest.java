@@ -16,7 +16,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.javax.client;
+package org.eclipse.jetty.websocket.javax.client.internal;
 
 import java.net.URI;
 import java.security.Principal;

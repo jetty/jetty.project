@@ -24,7 +24,7 @@ import javax.websocket.EndpointConfig;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.websocket.javax.client.BasicClientEndpointConfig;
+import org.eclipse.jetty.websocket.javax.client.internal.BasicClientEndpointConfig;
 import org.eclipse.jetty.websocket.javax.common.decoders.AvailableDecoders;
 import org.eclipse.jetty.websocket.javax.common.encoders.AvailableEncoders;
 import org.eclipse.jetty.websocket.javax.server.config.JavaxWebSocketServletContainerInitializer;
