@@ -298,7 +298,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
-      <artifactId>websocket-javax-client</artifactId>
+      <artifactId>websocket-jakarta-client</artifactId>
       <version>${project.version}</version>
       <scope>runtime</scope>
     </dependency>
@@ -316,12 +316,12 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
-      <artifactId>jetty-javax-websocket-api</artifactId>
+      <artifactId>jetty-jakarta-websocket-api</artifactId>
       <scope>runtime</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
-      <artifactId>websocket-javax-server</artifactId>
+      <artifactId>websocket-jakarta-server</artifactId>
       <version>${project.version}</version>
       <scope>runtime</scope>
     </dependency>

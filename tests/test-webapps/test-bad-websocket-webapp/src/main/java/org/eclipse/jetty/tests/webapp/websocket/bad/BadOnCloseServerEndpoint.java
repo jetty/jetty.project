@@ -19,12 +19,13 @@
 package org.eclipse.jetty.tests.webapp.websocket.bad;
 
 import java.io.IOException;
-import javax.websocket.OnClose;
-import javax.websocket.OnError;
-import javax.websocket.OnMessage;
-import javax.websocket.Session;
-import javax.websocket.server.PathParam;
-import javax.websocket.server.ServerEndpoint;
+
+import jakarta.websocket.OnClose;
+import jakarta.websocket.OnError;
+import jakarta.websocket.OnMessage;
+import jakarta.websocket.Session;
+import jakarta.websocket.server.PathParam;
+import jakarta.websocket.server.ServerEndpoint;
 
 @ServerEndpoint("/badonclose/{arg}")
 public class BadOnCloseServerEndpoint

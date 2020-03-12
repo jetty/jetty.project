@@ -57,7 +57,7 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
 
     public static JettyWebSocketServerContainer ensureContainer(ServletContext servletContext)
     {
-        ServletContextHandler contextHandler = ServletContextHandler.getServletContextHandler(servletContext, "Javax Websocket");
+        ServletContextHandler contextHandler = ServletContextHandler.getServletContextHandler(servletContext, "Jakarta Websocket");
         if (contextHandler.getServer() == null)
             throw new IllegalStateException("Server has not been set on the ServletContextHandler");
 

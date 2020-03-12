@@ -25,7 +25,7 @@
     <spring-version>5.1.1.RELEASE</spring-version>
     <jetty-test-policy.version>1.2</jetty-test-policy.version>
     <servlet.api.version>4.0.3</servlet.api.version>
-    <websocket.api.version>1.1.2</websocket.api.version>
+    <websocket.api.version>2.0.0-SNAPSHOT</websocket.api.version>
     <jsp.version>9.0.29</jsp.version>
     <infinispan.version>9.4.8.Final</infinispan.version>
     <!-- default values are unsupported, but required to be defined for reactor sanity reasons -->
@@ -958,7 +958,7 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.toolchain</groupId>
-        <artifactId>jetty-javax-websocket-api</artifactId>
+        <artifactId>jetty-jakarta-websocket-api</artifactId>
         <version>${websocket.api.version}</version>
       </dependency>
       <dependency>
@@ -1421,7 +1421,8 @@
     <profile>
       <id>snapshot-repositories</id>
       <activation>
-        <activeByDefault>false</activeByDefault>
+        <!-- temporary until we get jetty-jakarta-api released -->
+        <activeByDefault>true</activeByDefault>
       </activation>
       <repositories>
         <repository>
@@ -1431,6 +1432,9 @@
           <snapshots>
             <enabled>true</enabled>
           </snapshots>
+          <releases>
+            <enabled>false</enabled>
+          </releases>
         </repository>
         <!--repository>
           <id>apache.snapshots</id>

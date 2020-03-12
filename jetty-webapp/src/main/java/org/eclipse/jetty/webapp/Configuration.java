@@ -30,7 +30,7 @@ import org.eclipse.jetty.util.TopologicalSort;
  * A {@link WebAppContext} is configured by the application of one or more {@link Configuration}
  * instances.  Typically each implemented Configuration is responsible for an aspect of the
  * servlet specification (eg {@link WebXmlConfiguration}, {@link FragmentConfiguration}, etc.)
- * or feature (eg {@code JavaxWebSocketConfiguration}, {@code JmxConfiguration} etc.)
+ * or feature (eg {@code JakartaWebSocketConfiguration}, {@code JmxConfiguration} etc.)
  * </p>
  * <p>Configuration instances are discovered by the {@link Configurations} class using either the
  * {@link ServiceLoader} mechanism or by an explicit call to {@link Configurations#setKnown(String...)}.
