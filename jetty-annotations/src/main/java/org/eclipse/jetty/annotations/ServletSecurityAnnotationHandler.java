@@ -57,12 +57,9 @@ public class ServletSecurityAnnotationHandler extends AbstractIntrospectableAnno
 {
     private static final Logger LOG = Log.getLogger(ServletSecurityAnnotationHandler.class);
 
-    private WebAppContext _context;
-
     public ServletSecurityAnnotationHandler(WebAppContext wac)
     {
-        super(false);
-        _context = wac;
+        super(false, wac);
     }
 
     @Override

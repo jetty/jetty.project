@@ -19,9 +19,7 @@
 package org.eclipse.jetty.websocket.util.messages;
 
 import java.lang.invoke.MethodHandle;
-import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
@@ -41,29 +39,13 @@ public class PartialByteBufferMessageSink extends AbstractMessageSink
         */
     }
 
-    @SuppressWarnings("Duplicates")
     @Override
     public void accept(Frame frame, Callback callback)
     {
         try
         {
-            ByteBuffer buffer;
-
-            if (frame.hasPayload())
-            {
-                ByteBuffer payload = frame.getPayload();
-                // copy buffer here
-                buffer = ByteBuffer.allocate(payload.remaining());
-                BufferUtil.clearToFill(buffer);
-                BufferUtil.put(payload, buffer);
-                BufferUtil.flipToFlush(buffer, 0);
-            }
-            else
-            {
-                buffer = BufferUtil.EMPTY_BUFFER;
-            }
-
-            methodHandle.invoke(buffer, frame.isFin());
+            if (frame.hasPayload() || frame.isFin())
+                methodHandle.invoke(frame.getPayload(), frame.isFin());
 
             callback.succeeded();
         }

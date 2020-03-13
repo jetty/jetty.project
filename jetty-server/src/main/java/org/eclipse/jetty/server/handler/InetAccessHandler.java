@@ -26,15 +26,19 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.util.IncludeExclude;
 import org.eclipse.jetty.util.IncludeExcludeSet;
+import org.eclipse.jetty.util.InetAddressPattern;
 import org.eclipse.jetty.util.InetAddressSet;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+
+import static org.eclipse.jetty.server.handler.InetAccessSet.AccessTuple;
+import static org.eclipse.jetty.server.handler.InetAccessSet.PatternTuple;
 
 /**
  * InetAddress Access Handler
@@ -43,18 +47,13 @@ import org.eclipse.jetty.util.log.Logger;
  * provided by and {@link IncludeExcludeSet} over a {@link InetAddressSet}. This
  * handler uses the real internet address of the connection, not one reported in
  * the forwarded for headers, as this cannot be as easily forged.
- * <p>
- * Additionally, there may be times when you want to only apply this handler to
- * a subset of your connectors. In this situation you can use
- * <b>connectorNames</b> to specify the connector names that you want this IP
- * access filter to apply to.
+ * </p>
  */
 public class InetAccessHandler extends HandlerWrapper
 {
     private static final Logger LOG = Log.getLogger(InetAccessHandler.class);
 
-    private final IncludeExcludeSet<String, InetAddress> _addrs = new IncludeExcludeSet<>(InetAddressSet.class);
-    private final IncludeExclude<String> _names = new IncludeExclude<>();
+    private final IncludeExcludeSet<PatternTuple, AccessTuple> _set = new IncludeExcludeSet<>(InetAccessSet.class);
 
     /**
      * Clears all the includes, excludes, included connector names and excluded
@@ -62,92 +61,150 @@ public class InetAccessHandler extends HandlerWrapper
      */
     public void clear()
     {
-        _addrs.clear();
-        _names.clear();
+        _set.clear();
     }
 
     /**
-     * Includes an InetAddress pattern
+     * Includes an InetAccess pattern with an optional connector name, address and URI mapping.
      *
-     * @param pattern InetAddress pattern to include
+     * <p>The connector name is separated from the InetAddress pattern with an '@' character,
+     * and the InetAddress pattern is separated from the URI pattern using the "|" (pipe)
+     * character. URI patterns follow the servlet specification for simple * prefix and
+     * suffix wild cards (e.g. /, /foo, /foo/bar, /foo/bar/*, *.baz).</p>
+     *
+     * <br>Examples:
+     * <ul>
+     * <li>"connector1@127.0.0.1|/foo"</li>
+     * <li>"127.0.0.1|/foo"</li>
+     * <li>"connector1@127.0.0.1"</li>
+     * <li>"127.0.0.1"</li>
+     * </ul>
+     *
+     * @param pattern InetAccess pattern to include
      * @see InetAddressSet
      */
     public void include(String pattern)
     {
-        _addrs.include(pattern);
+        _set.include(PatternTuple.from(pattern));
     }
 
     /**
-     * Includes InetAddress patterns
+     * Includes InetAccess patterns
      *
      * @param patterns InetAddress patterns to include
      * @see InetAddressSet
      */
     public void include(String... patterns)
     {
-        _addrs.include(patterns);
+        for (String pattern : patterns)
+            include(pattern);
     }
 
     /**
-     * Excludes an InetAddress pattern
+     * Includes an InetAccess entry.
+     * @param connectorName optional name of a connector to include.
+     * @param addressPattern optional InetAddress pattern to include.
+     * @param pathSpec optional pathSpec to include.
+     */
+    public void include(String connectorName, String addressPattern, PathSpec pathSpec)
+    {
+        _set.include(new PatternTuple(connectorName, InetAddressPattern.from(addressPattern), pathSpec));
+    }
+
+    /**
+     * Excludes an InetAccess entry pattern with an optional connector name, address and URI mapping.
+     *
+     * <p>The connector name is separated from the InetAddress pattern with an '@' character,
+     * and the InetAddress pattern is separated from the URI pattern using the "|" (pipe)
+     * character. URI patterns follow the servlet specification for simple * prefix and
+     * suffix wild cards (e.g. /, /foo, /foo/bar, /foo/bar/*, *.baz).</p>
+     *
+     * <br>Examples:
+     * <ul>
+     * <li>"connector1@127.0.0.1|/foo"</li>
+     * <li>"127.0.0.1|/foo"</li>
+     * <li>"connector1@127.0.0.1"</li>
+     * <li>"127.0.0.1"</li>
+     * </ul>
      *
      * @param pattern InetAddress pattern to exclude
      * @see InetAddressSet
      */
     public void exclude(String pattern)
     {
-        _addrs.exclude(pattern);
+        _set.exclude(PatternTuple.from(pattern));
     }
 
     /**
-     * Excludes InetAddress patterns
+     * Excludes InetAccess patterns
      *
      * @param patterns InetAddress patterns to exclude
      * @see InetAddressSet
      */
     public void exclude(String... patterns)
     {
-        _addrs.exclude(patterns);
+        for (String pattern : patterns)
+            exclude(pattern);
+    }
+
+    /**
+     * Excludes an InetAccess entry.
+     * @param connectorName optional name of a connector to exclude.
+     * @param addressPattern optional InetAddress pattern to exclude.
+     * @param pathSpec optional pathSpec to exclude.
+     */
+    public void exclude(String connectorName, String addressPattern, PathSpec pathSpec)
+    {
+        _set.exclude(new PatternTuple(connectorName, InetAddressPattern.from(addressPattern), pathSpec));
     }
 
     /**
      * Includes a connector name.
      *
      * @param name Connector name to include in this handler.
+     * @deprecated use {@link InetAccessHandler#include(String)} instead.
      */
+    @Deprecated
     public void includeConnector(String name)
     {
-        _names.include(name);
+        throw new UnsupportedOperationException();
     }
 
     /**
      * Excludes a connector name.
      *
      * @param name Connector name to exclude in this handler.
+     * @deprecated use {@link InetAccessHandler#include(String)} instead.
      */
+    @Deprecated
     public void excludeConnector(String name)
     {
-        _names.exclude(name);
+        _set.exclude(new PatternTuple(name, null, null));
     }
 
     /**
      * Includes connector names.
      *
      * @param names Connector names to include in this handler.
+     * @deprecated use {@link InetAccessHandler#include(String)} instead.
      */
+    @Deprecated
     public void includeConnectors(String... names)
     {
-        _names.include(names);
+        throw new UnsupportedOperationException();
     }
 
     /**
      * Excludes connector names.
      *
      * @param names Connector names to exclude in this handler.
+     * @deprecated use {@link InetAccessHandler#include(String)} instead.
      */
+    @Deprecated
     public void excludeConnectors(String... names)
     {
-        _names.exclude(names);
+        for (String name : names)
+            excludeConnector(name);
     }
 
     /**
@@ -187,26 +244,16 @@ public class InetAccessHandler extends HandlerWrapper
      */
     protected boolean isAllowed(InetAddress addr, Request baseRequest, HttpServletRequest request)
     {
-        String name = baseRequest.getHttpChannel().getConnector().getName();
-        boolean filterAppliesToConnector = _names.test(name);
-        boolean allowedByAddr = _addrs.test(addr);
-        if (LOG.isDebugEnabled())
-        {
-            LOG.debug("name = {}/{} addr={}/{} appliesToConnector={} allowedByAddr={}",
-                name, _names, addr, _addrs, filterAppliesToConnector, allowedByAddr);
-        }
-        if (!filterAppliesToConnector)
-            return true;
-        return allowedByAddr;
+        String connectorName = baseRequest.getHttpChannel().getConnector().getName();
+        String path = baseRequest.getMetaData().getURI().getDecodedPath();
+        return _set.test(new AccessTuple(connectorName, addr, path));
     }
 
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
         dumpObjects(out, indent,
-            new DumpableCollection("included", _addrs.getIncluded()),
-            new DumpableCollection("excluded", _addrs.getExcluded()),
-            new DumpableCollection("includedConnector", _names.getIncluded()),
-            new DumpableCollection("excludedConnector", _names.getExcluded()));
+            new DumpableCollection("included", _set.getIncluded()),
+            new DumpableCollection("excluded", _set.getExcluded()));
     }
 }

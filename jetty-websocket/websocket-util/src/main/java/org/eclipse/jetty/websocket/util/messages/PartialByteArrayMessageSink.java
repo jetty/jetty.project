@@ -20,7 +20,6 @@ package org.eclipse.jetty.websocket.util.messages;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodType;
-import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -30,6 +29,8 @@ import org.eclipse.jetty.websocket.util.InvalidSignatureException;
 
 public class PartialByteArrayMessageSink extends AbstractMessageSink
 {
+    private static byte[] EMPTY_BUFFER = new byte[0];
+
     public PartialByteArrayMessageSink(CoreSession session, MethodHandle methodHandle)
     {
         super(session, methodHandle);
@@ -42,28 +43,17 @@ public class PartialByteArrayMessageSink extends AbstractMessageSink
         }
     }
 
-    @SuppressWarnings("Duplicates")
     @Override
     public void accept(Frame frame, Callback callback)
     {
         try
         {
-            byte[] buffer;
-            int offset = 0;
-            int length = 0;
-
-            if (frame.hasPayload())
+            if (frame.hasPayload() || frame.isFin())
             {
-                ByteBuffer payload = frame.getPayload();
-                length = payload.remaining();
-                buffer = BufferUtil.toArray(payload);
-            }
-            else
-            {
-                buffer = new byte[0];
+                byte[] buffer = frame.hasPayload() ? BufferUtil.toArray(frame.getPayload()) : EMPTY_BUFFER;
+                methodHandle.invoke(buffer, 0, buffer.length, frame.isFin());
             }
 
-            methodHandle.invoke(buffer, offset, length, frame.isFin());
             callback.succeeded();
         }
         catch (Throwable t)

@@ -20,10 +20,13 @@ package org.eclipse.jetty.servlet;
 
 import java.util.Collections;
 import java.util.Set;
+
+import javax.servlet.Servlet;
 import javax.servlet.ServletRegistration;
 import javax.servlet.UnavailableException;
 import javax.servlet.http.HttpServlet;
 
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.log.StacklessLogging;
@@ -33,6 +36,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -112,6 +116,30 @@ public class ServletHolderTest
         assertEquals("org.apache.jsp.blah_jsp", h.getClassNameForJsp("blah.jsp"));
         assertEquals("org.apache.jsp.a.b.c.blah_jsp", h.getClassNameForJsp("/a/b/c/blah.jsp"));
         assertEquals("org.apache.jsp.a.b.c.blah_jsp", h.getClassNameForJsp("a/b/c/blah.jsp"));
+    }
+    
+    @Test
+    public void testCreateInstance() throws Exception
+    {
+        try (StacklessLogging ignore = new StacklessLogging(ServletHandler.class, ContextHandler.class, ServletContextHandler.class))
+        {
+            //test without a ServletContextHandler or current ContextHandler
+            ServletHolder holder = new ServletHolder();
+            holder.setName("foo");
+            holder.setHeldClass(FakeServlet.class);
+            Servlet servlet = holder.createInstance();
+            assertNotNull(servlet);
+            
+            //test with a ServletContextHandler
+            Server server = new Server();
+            ServletContextHandler context = new ServletContextHandler();
+            server.setHandler(context);
+            ServletHandler handler = context.getServletHandler();
+            handler.addServlet(holder);
+            holder.setServletHandler(handler);
+            context.start();
+            assertNotNull(holder.getServlet());
+        }
     }
 
     @Test

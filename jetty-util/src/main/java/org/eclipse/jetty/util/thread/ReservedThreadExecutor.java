@@ -282,7 +282,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
             {
                 LOG.ignore(e);
                 _size.getAndIncrement();
-                _stack.addFirst(this);
+                _stack.offerFirst(this);
                 return false;
             }
         }
@@ -307,14 +307,13 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
                     if (task != null)
                         return task;
 
-                    // Because threads are held in a stack, excess threads will be
-                    // idle.  However, we cannot remove threads from the bottom of
-                    // the stack, so we submit a poison pill job to stop the thread
-                    // on top of the stack (which unfortunately will be the most
-                    // recently used)
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("{} IDLE", this);
-                    tryExecute(STOP);
+                    if (_stack.remove(this))
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("{} IDLE", this);
+                        _size.decrementAndGet();
+                        return STOP;
+                    }
                 }
                 catch (InterruptedException e)
                 {

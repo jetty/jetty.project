@@ -31,12 +31,9 @@ import org.eclipse.jetty.webapp.WebAppContext;
 
 public class PreDestroyAnnotationHandler extends AbstractIntrospectableAnnotationHandler
 {
-    WebAppContext _context;
-
     public PreDestroyAnnotationHandler(WebAppContext wac)
     {
-        super(true);
-        _context = wac;
+        super(true, wac);
     }
 
     @Override

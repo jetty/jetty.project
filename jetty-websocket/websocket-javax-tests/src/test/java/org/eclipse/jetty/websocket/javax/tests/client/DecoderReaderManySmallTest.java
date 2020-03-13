@@ -21,7 +21,6 @@ package org.eclipse.jetty.websocket.javax.tests.client;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Reader;
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
@@ -37,15 +36,13 @@ import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
 
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.MessageHandler;
-import org.eclipse.jetty.websocket.core.server.Negotiation;
+import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 import org.eclipse.jetty.websocket.javax.tests.CoreServer;
 import org.eclipse.jetty.websocket.javax.tests.WSEventTracker;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInfo;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -58,21 +55,14 @@ public class DecoderReaderManySmallTest
     @BeforeEach
     public void setUp() throws Exception
     {
-        server = new CoreServer(new CoreServer.BaseNegotiator()
+        server = new CoreServer(WebSocketNegotiator.from((negotiation) ->
         {
-            @Override
-            public FrameHandler negotiate(Negotiation negotiation) throws IOException
-            {
-                List<String> offeredSubProtocols = negotiation.getOfferedSubprotocols();
+            List<String> offeredSubProtocols = negotiation.getOfferedSubprotocols();
+            if (!offeredSubProtocols.isEmpty())
+                negotiation.setSubprotocol(offeredSubProtocols.get(0));
 
-                if (!offeredSubProtocols.isEmpty())
-                {
-                    negotiation.setSubprotocol(offeredSubProtocols.get(0));
-                }
-
-                return new EventIdFrameHandler();
-            }
-        });
+            return new EventIdFrameHandler();
+        }));
         server.start();
 
         client = ContainerProvider.getWebSocketContainer();
@@ -86,15 +76,13 @@ public class DecoderReaderManySmallTest
     }
 
     @Test
-    public void testManyIds(TestInfo testInfo) throws Exception
+    public void testManyIds() throws Exception
     {
-        URI wsUri = server.getWsUri().resolve("/eventids");
-        EventIdSocket clientSocket = new EventIdSocket(testInfo.getTestMethod().toString());
-
         final int from = 1000;
         final int to = 2000;
 
-        try (Session clientSession = client.connectToServer(clientSocket, wsUri))
+        EventIdSocket clientSocket = new EventIdSocket();
+        try (Session clientSession = client.connectToServer(clientSocket, server.getWsUri()))
         {
             clientSession.getAsyncRemote().sendText("seq|" + from + "|" + to);
         }
@@ -154,12 +142,6 @@ public class DecoderReaderManySmallTest
     {
         public BlockingQueue<EventId> messageQueue = new LinkedBlockingDeque<>();
 
-        public EventIdSocket(String id)
-        {
-            super(id);
-        }
-
-        @SuppressWarnings("unused")
         @OnMessage
         public void onMessage(EventId msg)
         {

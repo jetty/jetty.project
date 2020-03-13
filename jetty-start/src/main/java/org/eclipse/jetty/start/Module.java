@@ -154,12 +154,12 @@ public class Module implements Comparable<Module>
     private final List<String> _license = new ArrayList<>();
 
     /**
-     * Dependencies
+     * Dependencies from {@code [depends]} section
      */
     private final List<String> _depends = new ArrayList<>();
 
     /**
-     * Optional
+     * Optional dependencies from {@code [optional]} section are structural in nature.
      */
     private final Set<String> _optional = new HashSet<>();
 
@@ -194,6 +194,18 @@ public class Module implements Comparable<Module>
         _dynamic = _name.contains("/");
 
         process(basehome);
+    }
+
+    public static boolean isRequiredDependency(String depends)
+    {
+        return (depends != null) && (depends.charAt(0) != '?');
+    }
+
+    public static String normalizeModuleName(String name)
+    {
+        if (!isRequiredDependency(name))
+            return name.substring(1);
+        return name;
     }
 
     public String getName()

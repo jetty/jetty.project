@@ -23,10 +23,13 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,12 +39,15 @@ import java.util.stream.Collectors;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.log.StdErrLog;
 import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -50,7 +56,10 @@ import org.xml.sax.SAXException;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
@@ -253,7 +262,12 @@ public class XmlConfigurationTest
 
     public XmlConfiguration asXmlConfiguration(String rawXml) throws IOException, SAXException
     {
-        Path testFile = workDir.getEmptyPathDir().resolve("raw.xml");
+        return asXmlConfiguration("raw.xml", rawXml);
+    }
+
+    public XmlConfiguration asXmlConfiguration(String filename, String rawXml) throws IOException, SAXException
+    {
+        Path testFile = workDir.getEmptyPathDir().resolve(filename);
         try (BufferedWriter writer = Files.newBufferedWriter(testFile, UTF_8))
         {
             writer.write(rawXml);
@@ -633,6 +647,72 @@ public class XmlConfigurationTest
         assertEquals("arg3", atc.getNested().getThird(), "nested third parameter not wired correctly");
     }
 
+    private static class TestOrder
+    {
+        public void call()
+        {
+        }
+
+        public void call(int o)
+        {
+        }
+
+        public void call(Object o)
+        {
+        }
+
+        public void call(String s)
+        {
+        }
+
+        public void call(String... ss)
+        {
+        }
+
+        public void call(String s, String... ss)
+        {
+        }
+    }
+
+    @RepeatedTest(10)
+    public void testMethodOrdering() throws Exception
+    {
+        List<Method> methods = Arrays.stream(TestOrder.class.getMethods()).filter(m -> "call".equals(m.getName())).collect(Collectors.toList());
+        Collections.shuffle(methods);
+        Collections.sort(methods, XmlConfiguration.EXECUTABLE_COMPARATOR);
+        assertThat(methods, Matchers.contains(
+            TestOrder.class.getMethod("call"),
+            TestOrder.class.getMethod("call", int.class),
+            TestOrder.class.getMethod("call", String.class),
+            TestOrder.class.getMethod("call", Object.class),
+            TestOrder.class.getMethod("call", String[].class),
+            TestOrder.class.getMethod("call", String.class, String[].class)
+        ));
+    }
+
+    @Test
+    public void testOverloadedCall() throws Exception
+    {
+        XmlConfiguration xmlConfiguration = asXmlConfiguration(
+            "<Configure class=\"org.eclipse.jetty.xml.AnnotatedTestConfiguration\">" +
+                "  <Call name=\"call\">" +
+                "    <Arg type=\"int\">1</Arg>" +
+                "  </Call>" +
+                "  <Call name=\"call\">" +
+                "    <Arg>2</Arg>" +
+                "  </Call>" +
+                "  <Call name=\"call\">" +
+                "    <Arg type=\"Long\">3</Arg>" +
+                "  </Call>" +
+                "</Configure>");
+
+        AnnotatedTestConfiguration atc = (AnnotatedTestConfiguration)xmlConfiguration.configure();
+
+        assertEquals("1", atc.getFirst());
+        assertEquals("2", atc.getSecond());
+        assertEquals("3", atc.getThird());
+    }
+
     @Test
     public void testNestedConstructorNamedInjectionUnOrdered() throws Exception
     {
@@ -818,6 +898,38 @@ public class XmlConfigurationTest
         assertEquals("one", atc.getFirst(), "first parameter not wired correctly");
         assertNull(atc.getSecond());
         assertNull(atc.getThird());
+    }
+
+    public static List<String> typeTestData()
+    {
+        return Arrays.asList(
+            "byte",
+            "int",
+            "short",
+            "long",
+            "float",
+            "double",
+            "Byte",
+            "Integer",
+            "Short",
+            "Long",
+            "Float",
+            "Double");
+    }
+
+    @ParameterizedTest
+    @MethodSource("typeTestData")
+    public void testCallNumberConversion(String type) throws Exception
+    {
+        XmlConfiguration xmlConfiguration = asXmlConfiguration(
+            "<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\">" +
+                " <Call name=\"setNumber\">" +
+                "  <Arg type=\"" + type + "\">42</Arg>" +
+                " </Call>" +
+                "</Configure>");
+
+        TestConfiguration tc = (TestConfiguration)xmlConfiguration.configure();
+        assertEquals(42.0D, tc.number);
     }
 
     @Test
@@ -1233,6 +1345,196 @@ public class XmlConfigurationTest
             assertThat(propName, tc.getTestString(), is(notNullValue()));
             assertThat(propName, tc.getTestString(), startsWith("file:"));
         }
+    }
+
+    public static class BarNamed
+    {
+        private String foo;
+        private List<String> zeds;
+
+        public BarNamed(@Name("foo") String foo)
+        {
+            this.foo = foo;
+        }
+
+        public void addZed(String zed)
+        {
+            if (zeds == null)
+                zeds = new ArrayList<>();
+            zeds.add(zed);
+        }
+
+        public List<String> getZeds()
+        {
+            return zeds;
+        }
+
+        public String getFoo()
+        {
+            return foo;
+        }
+    }
+
+    @Test
+    public void testConfiguredWithNamedArg() throws Exception
+    {
+        XmlConfiguration xmlFoo = asXmlConfiguration("foo.xml",
+            "<Configure>\n" +
+                "  <New id=\"foo\" class=\"java.lang.String\">\n" +
+                "    <Arg>foozball</Arg>\n" +
+                "  </New>\n" +
+                "</Configure>");
+        XmlConfiguration xmlBar = asXmlConfiguration("bar.xml",
+            "<Configure id=\"bar\" class=\"" + BarNamed.class.getName() + "\">\n" +
+                "  <Arg name=\"foo\"><Ref refid=\"foo\"/></Arg>\n" +
+                "</Configure>");
+
+        Logger logger = Log.getLogger(XmlConfiguration.class);
+        assertTrue(logger instanceof StdErrLog);
+        StdErrLog stdErrLog = (StdErrLog)logger;
+        ByteArrayOutputStream logBytes = new ByteArrayOutputStream();
+        stdErrLog.setStdErrStream(new PrintStream(logBytes));
+
+        Map<String, Object> idMap = mimicXmlConfigurationMain(xmlFoo, xmlBar);
+        Object obj = idMap.get("bar");
+        assertThat("BarNamed instance created", obj, instanceOf(BarNamed.class));
+        BarNamed bar = (BarNamed)obj;
+        assertThat("BarNamed has foo", bar.getFoo(), is("foozball"));
+
+        List<String> warnLogs = Arrays.stream(logBytes.toString(UTF_8.name()).split(System.lineSeparator()))
+            .filter(line -> line.contains(":WARN"))
+            .collect(Collectors.toList());
+
+        assertThat("WARN logs size", warnLogs.size(), is(0));
+    }
+
+    @Test
+    public void testConfiguredWithArgNotUsingName() throws Exception
+    {
+        XmlConfiguration xmlFoo = asXmlConfiguration("foo.xml",
+            "<Configure>\n" +
+                "  <New id=\"foo\" class=\"java.lang.String\">\n" +
+                "    <Arg>foozball</Arg>\n" +
+                "  </New>\n" +
+                "</Configure>");
+        XmlConfiguration xmlBar = asXmlConfiguration("bar.xml",
+            "<Configure id=\"bar\" class=\"" + BarNamed.class.getName() + "\">\n" +
+                "  <Arg><Ref refid=\"foo\"/></Arg>\n" + // no name specified
+                "</Configure>");
+
+        Logger logger = Log.getLogger(XmlConfiguration.class);
+        assertTrue(logger instanceof StdErrLog);
+        StdErrLog stdErrLog = (StdErrLog)logger;
+        ByteArrayOutputStream logBytes = new ByteArrayOutputStream();
+        stdErrLog.setStdErrStream(new PrintStream(logBytes));
+
+        Map<String, Object> idMap = mimicXmlConfigurationMain(xmlFoo, xmlBar);
+        Object obj = idMap.get("bar");
+        assertThat("BarNamed instance created", obj, instanceOf(BarNamed.class));
+        BarNamed bar = (BarNamed)obj;
+        assertThat("BarNamed has foo", bar.getFoo(), is("foozball"));
+
+        List<String> warnLogs = Arrays.stream(logBytes.toString(UTF_8.name()).split(System.lineSeparator()))
+            .filter(line -> line.contains(":WARN"))
+            .collect(Collectors.toList());
+
+        assertThat("WARN logs size", warnLogs.size(), is(0));
+    }
+
+    @Test
+    public void testConfiguredWithBadNamedArg() throws Exception
+    {
+        XmlConfiguration xmlBar = asXmlConfiguration("bar.xml",
+            "<Configure id=\"bar\" class=\"" + BarNamed.class.getName() + "\">\n" +
+                "  <Arg name=\"foozball\">foozball</Arg>\n" + // wrong name specified
+                "</Configure>");
+
+        IllegalStateException cause = assertThrows(IllegalStateException.class, () ->
+            mimicXmlConfigurationMain(xmlBar));
+
+        assertThat("Cause message", cause.getMessage(), containsString("No matching constructor"));
+    }
+
+    @Test
+    public void testConfiguredWithTooManyNamedArgs() throws Exception
+    {
+        XmlConfiguration xmlBar = asXmlConfiguration("bar.xml",
+            "<Configure id=\"bar\" class=\"" + BarNamed.class.getName() + "\">\n" +
+                "  <Arg name=\"foo\">foozball</Arg>\n" +
+                "  <Arg name=\"foo\">soccer</Arg>\n" + // neither should win
+                "</Configure>");
+
+        IllegalStateException cause = assertThrows(IllegalStateException.class, () ->
+            mimicXmlConfigurationMain(xmlBar));
+
+        assertThat("Cause message", cause.getMessage(), containsString("No matching constructor"));
+    }
+
+    @Test
+    public void testConfiguredSameWithNamedArgTwice() throws Exception
+    {
+        XmlConfiguration xmlFoo = asXmlConfiguration("foo.xml",
+            "<Configure>\n" +
+                "  <New id=\"foo\" class=\"java.lang.String\">\n" +
+                "    <Arg>foozball</Arg>\n" +
+                "  </New>\n" +
+                "</Configure>");
+        XmlConfiguration xmlBar = asXmlConfiguration("bar.xml",
+            "<Configure id=\"bar\" class=\"" + BarNamed.class.getName() + "\">\n" +
+                "  <Arg name=\"foo\"><Ref refid=\"foo\"/></Arg>\n" +
+                "</Configure>");
+        XmlConfiguration xmlAddZed = asXmlConfiguration("zed.xml",
+            "<Configure id=\"bar\" class=\"" + BarNamed.class.getName() + "\">\n" +
+                "  <Arg name=\"foo\">baz</Arg>\n" + // the invalid line
+                "  <Call name=\"addZed\">\n" +
+                "    <Arg>plain-zero</Arg>\n" +
+                "  </Call>\n" +
+                "</Configure>");
+
+
+        Logger logger = Log.getLogger(XmlConfiguration.class);
+        assertTrue(logger instanceof StdErrLog);
+        StdErrLog stdErrLog = (StdErrLog)logger;
+        ByteArrayOutputStream logBytes = new ByteArrayOutputStream();
+        stdErrLog.setStdErrStream(new PrintStream(logBytes));
+
+        Map<String, Object> idMap = mimicXmlConfigurationMain(xmlFoo, xmlBar, xmlAddZed);
+        Object obj = idMap.get("bar");
+        assertThat("BarNamed instance created", obj, instanceOf(BarNamed.class));
+        BarNamed bar = (BarNamed)obj;
+        assertThat("BarNamed has foo", bar.getFoo(), is("foozball"));
+        List<String> zeds = bar.getZeds();
+        assertThat("BarNamed has zeds", zeds, not(empty()));
+        assertThat("Zeds[0]", zeds.get(0), is("plain-zero"));
+
+
+        List<String> warnLogs = Arrays.stream(logBytes.toString(UTF_8.name()).split(System.lineSeparator()))
+            .filter(line -> line.contains(":WARN"))
+            .collect(Collectors.toList());
+
+        assertThat("WARN logs count", warnLogs.size(), is(1));
+
+        String actualWarn = warnLogs.get(0);
+        assertThat("WARN logs", actualWarn,
+            allOf(containsString("Ignored arg <Arg name="),
+                containsString("zed.xml")
+            ));
+    }
+
+    /**
+     * This mimics the XML load behavior in XmlConfiguration.main(String ... args)
+     */
+    private Map<String, Object> mimicXmlConfigurationMain(XmlConfiguration... configurations) throws Exception
+    {
+        XmlConfiguration last = null;
+        for (XmlConfiguration configuration : configurations)
+        {
+            if (last != null)
+                configuration.getIdMap().putAll(last.getIdMap());
+            configuration.configure();
+            last = configuration;
+        }
+        return last.getIdMap();
     }
 
     @Test

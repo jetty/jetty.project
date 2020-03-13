@@ -16,9 +16,15 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.webapp;
+package org.eclipse.jetty.annotations;
 
-public enum MetaDataComplete
+import javax.annotation.PreDestroy;
+import javax.servlet.http.HttpServlet;
+
+public class ServletE extends HttpServlet
 {
-    NotSet, True, False
+    @PreDestroy
+    public void preDestroy()
+    {
+    }
 }
