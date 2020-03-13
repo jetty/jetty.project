@@ -174,6 +174,13 @@
                     <exclude>jakarta.enterprise:jakarta.enterprise.cdi-api</exclude>
                   </excludes>
                 </requireUpperBoundDeps>
+                <!-- olamy we should ban those dependencies as they contain bad module-info.java -->
+<!--                <bannedDependencies>-->
+<!--                  <excludes>-->
+<!--                    <exclude>jakarta.servlet:jakarta.servlet-api</exclude>-->
+<!--                    <exclude>javax.servlet:javax.servlet-api</exclude>-->
+<!--                  </excludes>-->
+<!--                </bannedDependencies>-->
               </rules>
             </configuration>
           </execution>
@@ -964,6 +971,36 @@
         <groupId>org.eclipse.jetty.toolchain</groupId>
         <artifactId>jetty-jakarta-servlet-api</artifactId>
         <version>${servlet.api.version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>jakarta.servlet</groupId>
+            <artifactId>jakarta.servlet-api</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>jakarta.servlet.jsp</groupId>
+        <artifactId>jakarta.servlet.jsp-api</artifactId>
+        <version>3.0.0-M1</version>
+        <scope>provided</scope>
+        <exclusions>
+          <exclusion>
+            <groupId>jakarta.servlet</groupId>
+            <artifactId>jakarta.servlet-api</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>jakarta.servlet.jsp.jstl</groupId>
+        <artifactId>jakarta.servlet.jsp.jstl-api</artifactId>
+        <version>2.0.0-RC1</version>
+        <scope>provided</scope>
+        <exclusions>
+          <exclusion>
+            <groupId>jakarta.servlet</groupId>
+            <artifactId>jakarta.servlet-api</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.toolchain</groupId>
