@@ -177,7 +177,7 @@ public class Dispatcher implements RequestDispatcher
                     attr._requestURI = (String)old_attr.getAttribute(FORWARD_REQUEST_URI);
                     attr._contextPath = (String)old_attr.getAttribute(FORWARD_CONTEXT_PATH);
                     attr._servletPath = (String)old_attr.getAttribute(FORWARD_SERVLET_PATH);
-                    attr._mapping = (HttpServletMapping)old_attr.getAttribute( FORWARD_MAPPING);
+                    attr._mapping = (HttpServletMapping)old_attr.getAttribute(FORWARD_MAPPING);
                 }
                 else
                 {
