@@ -732,7 +732,7 @@ public class DispatcherTest
             assertEquals("/ForwardServlet", request.getAttribute(Dispatcher.FORWARD_SERVLET_PATH));
             assertEquals(null, request.getAttribute(Dispatcher.FORWARD_PATH_INFO));
             assertEquals("do=assertforward&do=more&test=1", request.getAttribute(Dispatcher.FORWARD_QUERY_STRING));
-            HttpServletMapping fwdMapping = (HttpServletMapping)request.getAttribute( Dispatcher.FORWARD_MAPPING);
+            HttpServletMapping fwdMapping = (HttpServletMapping)request.getAttribute(Dispatcher.FORWARD_MAPPING);
             assertNotNull(fwdMapping);
             assertEquals("/ForwardServlet", fwdMapping.getMatchValue());
 
