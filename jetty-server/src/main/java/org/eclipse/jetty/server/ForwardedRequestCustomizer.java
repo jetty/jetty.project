@@ -377,25 +377,18 @@ public class ForwardedRequestCustomizer implements Customizer
 
         // Do a single pass through the header fields as it is a more efficient single iteration.
         Forwarded forwarded = new Forwarded(request, config);
-        try
+        for (HttpField field : httpFields)
         {
-            for (HttpField field : httpFields)
+            try
             {
-                try
-                {
-                    MethodHandle handle = _handles.get(field.getName());
-                    if (handle != null)
-                        handle.invoke(forwarded, field);
-                }
-                catch (Throwable t)
-                {
-                    onError(field, t);
-                }
+                MethodHandle handle = _handles.get(field.getName());
+                if (handle != null)
+                    handle.invoke(forwarded, field);
             }
-        }
-        catch (Throwable e)
-        {
-            throw new RuntimeException(e);
+            catch (Throwable t)
+            {
+                onError(field, t);
+            }
         }
 
         if (forwarded._proto != null)
