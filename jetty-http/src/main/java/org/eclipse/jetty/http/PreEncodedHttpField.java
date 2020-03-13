@@ -43,7 +43,7 @@ public class PreEncodedHttpField extends HttpField
 
     static
     {
-        List<HttpFieldPreEncoder> encoders = ServiceLoader.load(HttpFieldPreEncoder.class).stream()
+        List<HttpFieldPreEncoder> encoders = TypeUtil.serviceLoaderStream(ServiceLoader.load(HttpFieldPreEncoder.class))
             .flatMap(TypeUtil::providerMap)
             .filter(encoder -> index(encoder.getHttpVersion()) >= 0)
             .collect(Collectors.toList());

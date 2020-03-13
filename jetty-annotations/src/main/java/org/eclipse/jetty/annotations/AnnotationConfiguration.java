@@ -812,7 +812,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
         long start = 0;
         if (LOG.isDebugEnabled())
             start = System.nanoTime();
-        List<ServletContainerInitializer> scis = ServiceLoader.load(ServletContainerInitializer.class).stream()
+        List<ServletContainerInitializer> scis = TypeUtil.serviceLoaderStream(ServiceLoader.load(ServletContainerInitializer.class))
             .flatMap(TypeUtil::providerMap)
             .collect(Collectors.toList());
         if (LOG.isDebugEnabled())

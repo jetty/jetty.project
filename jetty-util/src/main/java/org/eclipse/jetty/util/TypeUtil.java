@@ -46,6 +46,7 @@ import java.util.ServiceConfigurationError;
 import java.util.ServiceLoader;
 import java.util.function.Function;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -777,5 +778,18 @@ public class TypeUtil
             LOG.warn("Service Provider failed to load", error);
             return Stream.empty();
         }
+    }
+
+    /**
+     * Utility to create a stream which provides the same functionality as {@link ServiceLoader#stream()}.
+     * However this also guards the case in which {@link Iterator#hasNext()} throws. Any exceptions
+     * from the underlying iterator will be cached until the {@link ServiceLoader.Provider#get()} is called.
+     * @param serviceLoader the ServiceLoader instance to use.
+     * @param <T> the type of the service to load.
+     * @return A stream that lazily loads providers for this loader's service
+     */
+    public static <T> Stream<ServiceLoader.Provider<T>> serviceLoaderStream(ServiceLoader<T> serviceLoader)
+    {
+        return StreamSupport.stream(new ServiceLoaderSpliterator<T>(serviceLoader), false);
     }
 }

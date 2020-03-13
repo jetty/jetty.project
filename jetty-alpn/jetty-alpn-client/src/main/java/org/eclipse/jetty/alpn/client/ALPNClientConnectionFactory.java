@@ -54,7 +54,7 @@ public class ALPNClientConnectionFactory extends NegotiatingClientConnectionFact
         IllegalStateException failure = new IllegalStateException("No Client ALPNProcessors!");
 
         // Use a for loop on iterator so load exceptions can be caught and ignored
-        ServiceLoader.load(Client.class).stream().flatMap(TypeUtil::providerMap).forEach((processor) ->
+        TypeUtil.serviceLoaderStream(ServiceLoader.load(Client.class)).flatMap(TypeUtil::providerMap).forEach((processor) ->
         {
             try
             {

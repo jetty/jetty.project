@@ -75,7 +75,7 @@ public class Configurations extends AbstractList<Configuration> implements Dumpa
     {
         if (__known.isEmpty())
         {
-            ServiceLoader.load(Configuration.class).stream().flatMap(TypeUtil::providerMap).forEach(configuration ->
+            TypeUtil.serviceLoaderStream(ServiceLoader.load(Configuration.class)).flatMap(TypeUtil::providerMap).forEach(configuration ->
             {
                 if (!configuration.isAvailable())
                 {
