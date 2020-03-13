@@ -75,6 +75,12 @@
     <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
       <artifactId>jetty-jakarta-servlet-api</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>jakarta.servlet</groupId>
+          <artifactId>jakarta.servlet-api</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.mortbay.jasper</groupId>
@@ -115,6 +121,7 @@
       <artifactId>jetty-test-helper</artifactId>
       <scope>test</scope>
     </dependency>
+
   </dependencies>
 
 </project>
