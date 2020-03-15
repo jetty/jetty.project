@@ -781,6 +781,18 @@ public class TypeUtil
     }
 
     /**
+     * Shortcut method combining {@link #serviceProviderStream(ServiceLoader)} with
+     * with {@link #providerMap(ServiceLoader.Provider)} using {@link Stream#flatMap(Function)}.
+     * @param serviceLoader the ServiceLoader instance to use.
+     * @param <T> the type of the service to load.
+     * @return a stream of the service provider type which will not throw {@link ServiceConfigurationError}.
+     */
+    public static <T> Stream<T> serviceStream(ServiceLoader<T> serviceLoader)
+    {
+        return serviceProviderStream(serviceLoader).flatMap(TypeUtil::providerMap);
+    }
+
+    /**
      * Utility to create a stream which provides the same functionality as {@link ServiceLoader#stream()}.
      * However this also guards the case in which {@link Iterator#hasNext()} throws. Any exceptions
      * from the underlying iterator will be cached until the {@link ServiceLoader.Provider#get()} is called.
@@ -788,7 +800,7 @@ public class TypeUtil
      * @param <T> the type of the service to load.
      * @return A stream that lazily loads providers for this loader's service
      */
-    public static <T> Stream<ServiceLoader.Provider<T>> serviceLoaderStream(ServiceLoader<T> serviceLoader)
+    public static <T> Stream<ServiceLoader.Provider<T>> serviceProviderStream(ServiceLoader<T> serviceLoader)
     {
         return StreamSupport.stream(new ServiceLoaderSpliterator<T>(serviceLoader), false);
     }

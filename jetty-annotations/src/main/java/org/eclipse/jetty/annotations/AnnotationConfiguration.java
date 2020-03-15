@@ -815,8 +815,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
         long start = 0;
         if (LOG.isDebugEnabled())
             start = System.nanoTime();
-        List<ServletContainerInitializer> scis = TypeUtil.serviceLoaderStream(ServiceLoader.load(ServletContainerInitializer.class))
-            .flatMap(TypeUtil::providerMap)
+        List<ServletContainerInitializer> scis = TypeUtil.serviceStream(ServiceLoader.load(ServletContainerInitializer.class))
             .collect(Collectors.toList());
         if (LOG.isDebugEnabled())
             LOG.debug("Service loaders found in {}ms", (TimeUnit.MILLISECONDS.convert((System.nanoTime() - start), TimeUnit.NANOSECONDS)));

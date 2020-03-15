@@ -44,7 +44,7 @@ public abstract class Credential implements Serializable
 {
     private static final long serialVersionUID = -7760551052768181572L;
     private static final Logger LOG = Log.getLogger(Credential.class);
-    private static final List<CredentialProvider> CREDENTIAL_PROVIDERS = TypeUtil.serviceLoaderStream(ServiceLoader.load(CredentialProvider.class)).flatMap(TypeUtil::providerMap).collect(Collectors.toList());
+    private static final List<CredentialProvider> CREDENTIAL_PROVIDERS = TypeUtil.serviceStream(ServiceLoader.load(CredentialProvider.class)).collect(Collectors.toList());
 
     /**
      * Check a credential

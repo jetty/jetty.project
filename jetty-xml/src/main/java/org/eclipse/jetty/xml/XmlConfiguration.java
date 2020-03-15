@@ -97,8 +97,8 @@ public class XmlConfiguration
         {
             ArrayList.class, HashSet.class, Queue.class, List.class, Set.class, Collection.class
         };
-    private static final List<ConfigurationProcessorFactory> PROCESSOR_FACTORIES = TypeUtil.serviceLoaderStream(ServiceLoader.load(ConfigurationProcessorFactory.class))
-        .flatMap(TypeUtil::providerMap).collect(Collectors.toList());
+    private static final List<ConfigurationProcessorFactory> PROCESSOR_FACTORIES = TypeUtil.serviceStream(ServiceLoader.load(ConfigurationProcessorFactory.class))
+        .collect(Collectors.toList());
     private static final XmlParser PARSER = initParser();
     public static final Comparator<Executable> EXECUTABLE_COMPARATOR = (e1, e2) ->
     {
