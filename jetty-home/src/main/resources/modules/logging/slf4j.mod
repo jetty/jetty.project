@@ -15,4 +15,4 @@ lib/logging/slf4j-api-${slf4j.version}.jar
 
 [ini]
 slf4j.version?=2.0.0-alpha1
-jetty.webapp.addSystemClasses+=,org.slf4j.
+jetty.webapp.addServerClasses+=,org.slf4j.

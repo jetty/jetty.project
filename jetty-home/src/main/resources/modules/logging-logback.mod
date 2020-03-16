@@ -25,7 +25,7 @@ lib/logging/logback-core-${logback.version}.jar
 
 [ini]
 logback.version?=1.3.0-alpha5
-jetty.webapp.addSystemClasses+=,org.slf4j.,ch.qos.logback.
+jetty.webapp.addServerClasses+=,ch.qos.logback.
 
 [license]
 Logback: the reliable, generic, fast and flexible logging framework.

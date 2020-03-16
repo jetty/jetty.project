@@ -21,4 +21,4 @@ basehome:modules/logging/jetty
 lib/logging/jetty-slf4j-impl-${jetty.version}.jar
 
 [ini]
-jetty.webapp.addSystemClasses+=,org.eclipse.jetty.logging.
+jetty.webapp.addServerClasses+=,org.eclipse.jetty.logging.
