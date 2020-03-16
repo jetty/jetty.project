@@ -33,6 +33,7 @@ import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -41,6 +42,7 @@ import javax.servlet.MultipartConfigElement;
 import javax.servlet.ServletException;
 import javax.servlet.ServletInputStream;
 import javax.servlet.http.Cookie;
+import javax.servlet.http.HttpServletMapping;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.Part;
@@ -48,6 +50,7 @@ import javax.servlet.http.Part;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.http.tools.HttpTester;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.LocalConnector.LocalEndPoint;
@@ -1410,6 +1413,69 @@ public class RequestTest
     }
 
     @Test
+    public void testHttpServletMapping() throws Exception
+    {
+        String request = "GET / HTTP/1.1\n" +
+            "Host: whatever\n" +
+            "Connection: close\n" +
+            "\n";
+        
+        _server.stop();
+        PathMappingHandler handler = new PathMappingHandler(null, null, null);
+        _server.setHandler(handler);
+        _server.start();
+        String response = _connector.getResponse(request);
+        assertTrue(response.startsWith("HTTP/1.1 200 OK"));
+        assertThat("Response body content", response, containsString("HttpServletMapping{matchValue=, pattern=, servletName=, mappingMatch=null}"));
+        _server.stop();
+        
+        ServletPathSpec spec = new ServletPathSpec("");
+        handler = new PathMappingHandler(spec, spec.getPathMatch("foo"), "Something");
+        _server.setHandler(handler);
+        _server.start();
+        response = _connector.getResponse(request);
+        assertTrue(response.startsWith("HTTP/1.1 200 OK"));
+        assertThat("Response body content", response, containsString("HttpServletMapping{matchValue=, pattern=, servletName=Something, mappingMatch=CONTEXT_ROOT}"));
+        _server.stop();
+        
+        spec = new ServletPathSpec("/");
+        handler = new PathMappingHandler(spec, "", "Default");
+        _server.setHandler(handler);
+        _server.start();
+        response = _connector.getResponse(request);
+        assertTrue(response.startsWith("HTTP/1.1 200 OK"));
+        assertThat("Response body content", response, containsString("HttpServletMapping{matchValue=/, pattern=/, servletName=Default, mappingMatch=DEFAULT}"));
+        _server.stop();
+        
+        spec = new ServletPathSpec("/foo/*");
+        handler = new PathMappingHandler(spec, spec.getPathMatch("/foo/bar"), "BarServlet");
+        _server.setHandler(handler);
+        _server.start();
+        response = _connector.getResponse(request);
+        assertTrue(response.startsWith("HTTP/1.1 200 OK"));
+        assertThat("Response body content", response, containsString("HttpServletMapping{matchValue=/foo, pattern=/foo/*, servletName=BarServlet, mappingMatch=PATH}"));
+        _server.stop();
+
+        spec = new ServletPathSpec("*.jsp");
+        handler = new PathMappingHandler(spec, spec.getPathMatch("/foo/bar.jsp"), "JspServlet");
+        _server.setHandler(handler);
+        _server.start();
+        response = _connector.getResponse(request);
+        assertTrue(response.startsWith("HTTP/1.1 200 OK"));
+        assertThat("Response body content", response, containsString("HttpServletMapping{matchValue=/foo/bar, pattern=*.jsp, servletName=JspServlet, mappingMatch=EXTENSION}"));
+        _server.stop();
+        
+        spec = new ServletPathSpec("/catalog");
+        handler = new PathMappingHandler(spec, spec.getPathMatch("/catalog"), "CatalogServlet");
+        _server.setHandler(handler);
+        _server.start();
+        response = _connector.getResponse(request);
+        assertTrue(response.startsWith("HTTP/1.1 200 OK"));
+        assertThat("Response body content", response, containsString("HttpServletMapping{matchValue=catalog, pattern=/catalog, servletName=CatalogServlet, mappingMatch=EXACT}"));
+        _server.stop();
+    }
+    
+    @Test
     public void testCookies() throws Exception
     {
         final ArrayList<Cookie> cookies = new ArrayList<>();
@@ -1913,5 +1979,69 @@ public class RequestTest
                 response.sendError(500);
             }
         }
+    }
+
+    private class TestUserIdentityScope implements UserIdentity.Scope
+    {
+        private ContextHandler _handler;
+        private String _contextPath;
+        private String _name;
+        
+        public TestUserIdentityScope(ContextHandler handler, String contextPath, String name)
+        {
+            _handler = handler;
+            _contextPath = contextPath;
+            _name = name;
+        }
+        
+        @Override
+        public ContextHandler getContextHandler()
+        {
+            return _handler;
+        }
+
+        @Override
+        public String getContextPath()
+        {
+            return _contextPath;
+        }
+
+        @Override
+        public String getName()
+        {
+            return _name;
+        }
+
+        @Override
+        public Map<String, String> getRoleRefMap()
+        {
+            return null;
+        }
+    }
+
+    private class PathMappingHandler extends AbstractHandler
+    {
+        private ServletPathSpec _spec;
+        private String _servletPath;
+        private String _servletName;
+        
+        public PathMappingHandler(ServletPathSpec spec, String servletPath, String servletName)
+        {
+            _spec = spec;
+            _servletPath = servletPath;
+            _servletName = servletName;
+        }
+        
+        @Override
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        {
+            ((Request)request).setHandled(true);
+            baseRequest.setServletPath(_servletPath);
+            baseRequest.setPathSpec(_spec);
+            if (_servletName != null)
+                baseRequest.setUserIdentityScope(new TestUserIdentityScope(null, null, _servletName));
+            HttpServletMapping mapping = baseRequest.getHttpServletMapping();
+            response.getWriter().println(mapping);
+        }   
     }
 }

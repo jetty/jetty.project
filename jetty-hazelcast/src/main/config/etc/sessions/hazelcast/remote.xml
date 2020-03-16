@@ -5,7 +5,7 @@
 
   <!-- ===================================================================== -->
   <!-- Configure a factory for HazelcastSessionDataStore using               -->
-  <!-- an embedded Hazelcast Instance                                        -->
+  <!-- an remote Hazelcast Instance                                        -->
   <!-- ===================================================================== -->
   <Call name="addBean">
     <Arg>
@@ -16,6 +16,7 @@
         <Set name="gracePeriodSec"><Property name="jetty.session.gracePeriod.seconds" default="3600" /></Set>
         <Set name="savePeriodSec"><Property name="jetty.session.savePeriod.seconds" default="0" /></Set>
         <Set name="onlyClient"><Property name="jetty.session.hazelcast.onlyClient" default="true" /></Set>
+        <Set name="addresses"><Property name="jetty.session.hazelcast.addresses" default="" /></Set>
       </New>
     </Arg>
   </Call>

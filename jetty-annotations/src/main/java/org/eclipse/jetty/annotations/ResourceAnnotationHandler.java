@@ -48,12 +48,9 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
             Float.class
         });
 
-    protected WebAppContext _context;
-
     public ResourceAnnotationHandler(WebAppContext wac)
     {
-        super(true);
-        _context = wac;
+        super(true, wac);
     }
 
     /**

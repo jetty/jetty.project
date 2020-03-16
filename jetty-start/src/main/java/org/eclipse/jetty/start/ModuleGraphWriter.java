@@ -247,6 +247,7 @@ public class ModuleGraphWriter
         {
             for (String depends : module.getDepends())
             {
+                depends = Module.normalizeModuleName(depends);
                 out.printf("    \"%s\" -> \"%s\";%n", module.getName(), depends);
             }
             for (String optional : module.getOptional())

@@ -189,6 +189,85 @@ public class Request implements HttpServletRequest
 
         return null;
     }
+    
+    public static HttpServletMapping getServletMapping(PathSpec pathSpec, String servletPath, String servletName)
+    {
+        final MappingMatch match;
+        final String mapping;
+        if (pathSpec instanceof ServletPathSpec)
+        {
+            switch (((ServletPathSpec)pathSpec).getGroup())
+            {
+                case ROOT:
+                    match = MappingMatch.CONTEXT_ROOT;
+                    mapping = "";
+                    break;
+                case DEFAULT:
+                    match = MappingMatch.DEFAULT;
+                    mapping = "/";
+                    break;
+                case EXACT:
+                    match = MappingMatch.EXACT;
+                    mapping = servletPath.startsWith("/") ? servletPath.substring(1) : servletPath;
+                    break;
+                case SUFFIX_GLOB:
+                    match = MappingMatch.EXTENSION;
+                    int dot = servletPath.lastIndexOf('.');
+                    mapping = servletPath.substring(0, dot);
+                    break;
+                case PREFIX_GLOB:
+                    match = MappingMatch.PATH;
+                    mapping = servletPath;
+                    break;
+                default:
+                    match = null;
+                    mapping = servletPath;
+                    break;
+            }
+        }
+        else
+        {
+            match = null;
+            mapping = servletPath;
+        }
+        
+        return new HttpServletMapping()
+        {
+            @Override
+            public String getMatchValue()
+            {
+                return (mapping == null ? "" : mapping);
+            }
+
+            @Override
+            public String getPattern()
+            {
+                if (pathSpec != null)
+                    return pathSpec.getDeclaration();
+                return "";
+            }
+
+            @Override
+            public String getServletName()
+            {
+                return (servletName == null ? "" : servletName);
+            }
+
+            @Override
+            public MappingMatch getMappingMatch()
+            {
+                return match;
+            }
+
+            @Override
+            public String toString()
+            {
+                return "HttpServletMapping{matchValue=" + getMatchValue() + 
+                    ", pattern=" + getPattern() + ", servletName=" + getServletName() + 
+                    ", mappingMatch=" + getMappingMatch() + "}";
+            }    
+        };
+    }
 
     private final HttpChannel _channel;
     private final List<ServletRequestAttributeListener> _requestAttributeListeners = new ArrayList<>();
@@ -2354,73 +2433,6 @@ public class Request implements HttpServletRequest
     @Override
     public HttpServletMapping getHttpServletMapping()
     {
-        final PathSpec pathSpec = _pathSpec;
-        final MappingMatch match;
-        final String mapping;
-        if (pathSpec instanceof ServletPathSpec)
-        {
-            switch (((ServletPathSpec)pathSpec).getGroup())
-            {
-                case ROOT:
-                    match = MappingMatch.CONTEXT_ROOT;
-                    mapping = "";
-                    break;
-                case DEFAULT:
-                    match = MappingMatch.DEFAULT;
-                    mapping = "/";
-                    break;
-                case EXACT:
-                    match = MappingMatch.EXACT;
-                    mapping = _servletPath.startsWith("/") ? _servletPath.substring(1) : _servletPath;
-                    break;
-                case SUFFIX_GLOB:
-                    match = MappingMatch.EXTENSION;
-                    int dot = _servletPath.lastIndexOf('.');
-                    mapping = _servletPath.substring(0, dot);
-                    break;
-                case PREFIX_GLOB:
-                    match = MappingMatch.PATH;
-                    mapping = _servletPath;
-                    break;
-                default:
-                    match = null;
-                    mapping = _servletPath;
-                    break;
-            }
-        }
-        else
-        {
-            match = null;
-            mapping = _servletPath;
-        }
-
-        return new HttpServletMapping()
-        {
-            @Override
-            public String getMatchValue()
-            {
-                return mapping;
-            }
-
-            @Override
-            public String getPattern()
-            {
-                if (pathSpec != null)
-                    pathSpec.toString();
-                return null;
-            }
-
-            @Override
-            public String getServletName()
-            {
-                return Request.this.getServletName();
-            }
-
-            @Override
-            public MappingMatch getMappingMatch()
-            {
-                return match;
-            }
-        };
+        return Request.getServletMapping(_pathSpec, _servletPath, getServletName());
     }
 }

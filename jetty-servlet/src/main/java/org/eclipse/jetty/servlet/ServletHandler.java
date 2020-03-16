@@ -449,6 +449,7 @@ public class ServletHandler extends ScopedHandler
                 {
                     baseRequest.setAttribute(RequestDispatcher.INCLUDE_SERVLET_PATH, servletPath);
                     baseRequest.setAttribute(RequestDispatcher.INCLUDE_PATH_INFO, pathInfo);
+                    baseRequest.setAttribute(RequestDispatcher.INCLUDE_MAPPING, Request.getServletMapping(pathSpec, servletPath, servletHolder.getName()));
                 }
                 else
                 {

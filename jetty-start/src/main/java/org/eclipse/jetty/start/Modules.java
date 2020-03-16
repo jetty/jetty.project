@@ -20,6 +20,7 @@ package org.eclipse.jetty.start;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -133,7 +134,12 @@ public class Modules implements Iterable<Module>
                     label = "     Depend: %s";
                     for (String parent : module.getDepends())
                     {
+                        parent = Module.normalizeModuleName(parent);
                         System.out.printf(label, parent);
+                        if (!Module.isRequiredDependency(parent))
+                        {
+                            System.out.print(" [not-required]");
+                        }
                         label = ", %s";
                     }
                     System.out.println();
@@ -412,42 +418,56 @@ public class Modules implements Iterable<Module>
 
         // Process module dependencies (always processed as may be dynamic)
         StartLog.debug("Enabled module [%s] depends on %s", module.getName(), module.getDepends());
-        for (String dependsOn : module.getDepends())
+        for (String dependsOnRaw : module.getDepends())
         {
-            // Look for modules that provide that dependency
-            Set<Module> providers = getAvailableProviders(dependsOn);
+            boolean isRequired = Module.isRequiredDependency(dependsOnRaw);
+            // Final to allow lambda's below to use name
+            final String dependentModule = Module.normalizeModuleName(dependsOnRaw);
 
-            StartLog.debug("Module [%s] depends on [%s] provided by %s", module, dependsOn, providers);
+            // Look for modules that provide that dependency
+            Set<Module> providers = getAvailableProviders(dependentModule);
+
+            StartLog.debug("Module [%s] depends on [%s] provided by %s", module, dependentModule, providers);
 
             // If there are no known providers of the module
             if (providers.isEmpty())
             {
                 // look for a dynamic module
-                if (dependsOn.contains("/"))
+                if (dependentModule.contains("/"))
                 {
-                    Path file = _baseHome.getPath("modules/" + dependsOn + ".mod");
-                    registerModule(file).expandDependencies(_args.getProperties());
-                    providers = _provided.get(dependsOn);
-                    if (providers == null || providers.isEmpty())
-                        throw new UsageException("Module %s does not provide %s", _baseHome.toShortForm(file), dependsOn);
+                    Path file = _baseHome.getPath("modules/" + dependentModule + ".mod");
+                    if (isRequired || Files.exists(file))
+                    {
+                        registerModule(file).expandDependencies(_args.getProperties());
+                        providers = _provided.get(dependentModule);
+                        if (providers == null || providers.isEmpty())
+                            throw new UsageException("Module %s does not provide %s", _baseHome.toShortForm(file), dependentModule);
 
-                    enable(newlyEnabled, providers.stream().findFirst().get(), "dynamic dependency of " + module.getName(), true);
+                        enable(newlyEnabled, providers.stream().findFirst().get(), "dynamic dependency of " + module.getName(), true);
+                        continue;
+                    }
+                }
+                // is this a non-required module
+                if (!isRequired)
+                {
+                    StartLog.debug("Skipping non-required module [%s]: doesn't exist", dependentModule);
                     continue;
                 }
-                throw new UsageException("No module found to provide %s for %s", dependsOn, module);
+                // throw an exception (not a dynamic module and a required dependency)
+                throw new UsageException("No module found to provide %s for %s", dependentModule, module);
             }
 
             // If a provider is already enabled, then add a transitive enable
-            if (providers.stream().filter(Module::isEnabled).count() > 0)
-                providers.stream().filter(m -> m.isEnabled() && !m.equals(module)).forEach(m -> enable(newlyEnabled, m, "transitive provider of " + dependsOn + " for " + module.getName(), true));
+            if (providers.stream().anyMatch(Module::isEnabled))
+                providers.stream().filter(m -> m.isEnabled() && !m.equals(module)).forEach(m -> enable(newlyEnabled, m, "transitive provider of " + dependentModule + " for " + module.getName(), true));
             else
             {
-                Optional<Module> dftProvider = findDefaultProvider(providers, dependsOn);
+                Optional<Module> dftProvider = findDefaultProvider(providers, dependentModule);
 
                 if (dftProvider.isPresent())
                 {
-                    StartLog.debug("Using [%s] provider as default for [%s]", dftProvider.get(), dependsOn);
-                    enable(newlyEnabled, dftProvider.get(), "transitive provider of " + dependsOn + " for " + module.getName(), true);
+                    StartLog.debug("Using [%s] provider as default for [%s]", dftProvider.get(), dependentModule);
+                    enable(newlyEnabled, dftProvider.get(), "transitive provider of " + dependentModule + " for " + module.getName(), true);
                 }
             }
         }

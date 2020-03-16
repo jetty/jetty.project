@@ -26,7 +26,9 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
@@ -36,6 +38,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTimeout;
 
 public class MessageInputStreamTest
@@ -166,7 +169,7 @@ public class MessageInputStreamTest
                     {
                         // wait for a little bit before sending input closed
                         TimeUnit.MILLISECONDS.sleep(400);
-                        stream.close();
+                        stream.accept(new Frame(OpCode.TEXT, true, BufferUtil.EMPTY_BUFFER), Callback.NOOP);
                     }
                     catch (Throwable t)
                     {
@@ -177,11 +180,22 @@ public class MessageInputStreamTest
 
                 // Read byte from stream.
                 int b = stream.read();
-                // Should be a -1, indicating the end of the stream.
 
-                // Test it
+                // Should be a -1, indicating the end of the stream.
                 assertThat("Error when closing", hadError.get(), is(false));
                 assertThat("Initial byte (Should be EOF)", b, is(-1));
+
+                // Close the stream.
+                stream.close();
+
+                // Any frame content after stream is closed should be discarded, and the callback succeeded.
+                FutureCallback callback = new FutureCallback();
+                stream.accept(new Frame(OpCode.TEXT, true, BufferUtil.toBuffer("hello world")), callback);
+                callback.block(5, TimeUnit.SECONDS);
+
+                // Any read after the stream is closed leads to an IOException.
+                IOException error = assertThrows(IOException.class, stream::read);
+                assertThat(error.getMessage(), is("Closed"));
             }
         });
     }

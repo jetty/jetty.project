@@ -51,6 +51,11 @@ public abstract class DiscoveredAnnotation
         _className = className;
         _resource = resource;
     }
+    
+    public String getClassName()
+    {
+        return _className;
+    }
 
     public Resource getResource()
     {
@@ -83,5 +88,11 @@ public abstract class DiscoveredAnnotation
         {
             LOG.warn(e);
         }
+    }
+    
+    @Override
+    public String toString()
+    {
+        return getClass().getName() + "[" + getClassName() + "," + getResource() + "]";
     }
 }

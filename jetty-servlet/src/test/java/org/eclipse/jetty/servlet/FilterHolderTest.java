@@ -28,9 +28,11 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 
 import org.eclipse.jetty.logging.StacklessLogging;
+import org.eclipse.jetty.server.Server;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.fail;
 
 /**
@@ -38,6 +40,22 @@ import static org.junit.jupiter.api.Assertions.fail;
  */
 public class FilterHolderTest
 {
+    public static class DummyFilter implements Filter
+    {
+        public DummyFilter()
+        {
+        }
+
+        @Override
+        public void init(FilterConfig filterConfig) throws ServletException
+        {
+        }
+
+        @Override
+        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
+        {
+        }
+    }
 
     @Test
     public void testInitialize()
@@ -94,5 +112,29 @@ public class FilterHolderTest
         assertEquals(1, counter.get());
         fh.initialize();
         assertEquals(2, counter.get());
+    }
+
+    @Test
+    public void testCreateInstance() throws Exception
+    {
+        try (StacklessLogging ignore = new StacklessLogging(ServletHandler.class, ServletContextHandler.class))
+        {
+            //test without a ServletContextHandler or current ContextHandler
+            FilterHolder holder = new FilterHolder();
+            holder.setName("foo");
+            holder.setHeldClass(DummyFilter.class);
+            Filter filter = holder.createInstance();
+            assertNotNull(filter);
+
+            //test with a ServletContextHandler
+            Server server = new Server();
+            ServletContextHandler context = new ServletContextHandler();
+            server.setHandler(context);
+            ServletHandler handler = context.getServletHandler();
+            handler.addFilter(holder);
+            holder.setServletHandler(handler);
+            context.start();
+            assertNotNull(holder.getFilter());
+        }
     }
 }

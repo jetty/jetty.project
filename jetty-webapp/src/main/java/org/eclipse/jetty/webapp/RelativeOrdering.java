@@ -52,7 +52,7 @@ public class RelativeOrdering implements Ordering
         // Pass 1: split the jars into 'before others', 'others' or 'after others'
         for (Resource jar : jars)
         {
-            FragmentDescriptor fragment = _metaData.getFragment(jar);
+            FragmentDescriptor fragment = _metaData.getFragmentDescriptorForJar(jar);
 
             if (fragment == null)
                 others.add(jar);
@@ -79,7 +79,7 @@ public class RelativeOrdering implements Ordering
         Set<Resource> referenced = new HashSet<>();
         for (Resource jar : jars)
         {
-            FragmentDescriptor fragment = _metaData.getFragment(jar);
+            FragmentDescriptor fragment = _metaData.getFragmentDescriptorForJar(jar);
 
             if (fragment != null)
             {
@@ -87,7 +87,7 @@ public class RelativeOrdering implements Ordering
                 // and remember that the dependency has been referenced.
                 for (String name : fragment.getAfters())
                 {
-                    Resource after = _metaData.getJarForFragment(name);
+                    Resource after = _metaData.getJarForFragmentName(name);
                     sort.addDependency(jar, after);
                     referenced.add(after);
                 }
@@ -96,7 +96,7 @@ public class RelativeOrdering implements Ordering
                 // and remember that the dependency has been referenced.
                 for (String name : fragment.getBefores())
                 {
-                    Resource before = _metaData.getJarForFragment(name);
+                    Resource before = _metaData.getJarForFragmentName(name);
                     sort.addDependency(before, jar);
                     referenced.add(before);
                 }
