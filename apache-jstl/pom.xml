@@ -50,10 +50,15 @@
     </dependency>
 
     <!-- JSTL Impl -->
-    <!-- dependency> TODO: Is already inside JSP?? need to include apache-jsp?
-      <groupId>org.apache.taglibs</groupId>
-      <artifactId>taglibs-standard-impl</artifactId>
-    </dependency-->
+<!--    <dependency>-->
+<!--      <groupId>org.apache.taglibs</groupId>-->
+<!--      <artifactId>taglibs-standard-impl</artifactId>-->
+<!--    </dependency>-->
+
+    <dependency>
+      <groupId>org.mortbay.jasper</groupId>
+      <artifactId>taglibs-standard</artifactId>
+    </dependency>
 
     <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
