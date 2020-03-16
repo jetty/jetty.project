@@ -126,7 +126,7 @@ public class TestServer
         webapp.setResourceBase(jettyRoot.resolve("tests/test-webapps/test-jetty-webapp/src/main/webapp").toString());
         webapp.setAttribute(MetaInfConfiguration.CONTAINER_JAR_PATTERN,
             ".*/test-jetty-webapp/target/classes.*$|" +
-                ".*/jetty-jakarta-servlet-api-[^/]*\\.jar$|.*/jakarta.servlet.jsp.jstl-.*\\.jar$|.*/org.apache.taglibs.taglibs-standard-impl-.*\\.jar$"
+                ".*/jetty-jakarta-servlet-api-[^/]*\\.jar$|.*/jakarta.servlet.jsp.jstl-.*\\.jar$|.*/org.apache.taglibs.taglibs-standard.*\\.jar$"
         );
 
         webapp.setAttribute("testAttribute", "testValue");

@@ -991,18 +991,6 @@
         </exclusions>
       </dependency>
       <dependency>
-        <groupId>jakarta.servlet.jsp.jstl</groupId>
-        <artifactId>jakarta.servlet.jsp.jstl-api</artifactId>
-        <version>2.0.0-RC1</version>
-        <scope>provided</scope>
-        <exclusions>
-          <exclusion>
-            <groupId>jakarta.servlet</groupId>
-            <artifactId>jakarta.servlet-api</artifactId>
-          </exclusion>
-        </exclusions>
-      </dependency>
-      <dependency>
         <groupId>org.eclipse.jetty.toolchain</groupId>
         <artifactId>jetty-jakarta-websocket-api</artifactId>
         <version>${websocket.api.version}</version>
@@ -1048,17 +1036,27 @@
         <artifactId>apache-jsp</artifactId>
         <version>${jsp.version}</version>
       </dependency>
-      <!-- JSTL Impl TODO: maybe already in jasper,-->
 <!--      <dependency>-->
 <!--        <groupId>org.apache.taglibs</groupId>-->
 <!--        <artifactId>taglibs-standard-impl</artifactId>-->
 <!--        <version>1.2.5</version>-->
 <!--      </dependency>-->
+      <dependency>
+        <groupId>org.mortbay.jasper</groupId>
+        <artifactId>taglibs-standard</artifactId>
+        <version>10.0.0-SNAPSHOT</version>
+      </dependency>
       <!-- JSTL API -->
       <dependency>
         <groupId>jakarta.servlet.jsp.jstl</groupId>
         <artifactId>jakarta.servlet.jsp.jstl-api</artifactId>
         <version>2.0.0-RC1</version>
+        <exclusions>
+          <exclusion>
+            <groupId>jakarta.servlet</groupId>
+            <artifactId>jakarta.servlet-api</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.orbit</groupId>
