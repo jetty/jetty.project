@@ -254,7 +254,8 @@ public class CrossOriginFilter implements Filter
                     allowedOriginPatternStore.clear();
                     return true;
                 }
-                else if (allowedOrigin.contains("*")) {
+                else if (allowedOrigin.contains("*"))
+                {
                     allowedOriginPatternStore.add(Pattern.compile(parseAllowedWildcardOriginToRegex(allowedOrigin)));
                 }
                 else
