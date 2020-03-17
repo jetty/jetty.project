@@ -19,9 +19,12 @@
 package org.eclipse.jetty.plus.webapp;
 
 import java.util.Iterator;
+import java.util.Objects;
+
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NameNotFoundException;
+import javax.naming.NamingException;
 
 import org.eclipse.jetty.jndi.NamingUtil;
 import org.eclipse.jetty.plus.annotation.Injection;
@@ -35,6 +38,7 @@ import org.eclipse.jetty.plus.jndi.EnvEntry;
 import org.eclipse.jetty.plus.jndi.Link;
 import org.eclipse.jetty.plus.jndi.NamingEntry;
 import org.eclipse.jetty.plus.jndi.NamingEntryUtil;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.webapp.Descriptor;
 import org.eclipse.jetty.webapp.FragmentDescriptor;
@@ -115,14 +119,6 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
         String type = node.getString("env-entry-type", false, true);
         String valueStr = node.getString("env-entry-value", false, true);
 
-        //if there's no value there's no point in making a jndi entry
-        //nor processing injection entries
-        if (valueStr == null || valueStr.equals(""))
-        {
-            LOG.warn("No value for env-entry-name " + name);
-            return;
-        }
-
         Origin o = context.getMetaData().getOrigin("env-entry." + name);
         switch (o)
         {
@@ -130,14 +126,7 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
             {
                 //no descriptor has configured an env-entry of this name previously
                 context.getMetaData().setOrigin("env-entry." + name, descriptor);
-                //the javaee_5.xsd says that the env-entry-type is optional
-                //if there is an <injection> element, because you can get
-                //type from the element, but what to do if there is more
-                //than one <injection> element, do you just pick the type
-                //of the first one?
-                addInjections(context, descriptor, node, name, TypeUtil.fromName(type));
-                Object value = TypeUtil.valueOf(type, valueStr);
-                bindEnvEntry(name, value);
+                makeEnvEntryInjectionsAndBindings(context, descriptor, node, name, type, valueStr);        
                 break;
             }
             case WebXml:
@@ -152,9 +141,7 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
                     //We're processing web-defaults, web.xml or web-override. Any of them can
                     //set or change the env-entry.
                     context.getMetaData().setOrigin("env-entry." + name, descriptor);
-                    addInjections(context, descriptor, node, name, TypeUtil.fromName(type));
-                    Object value = TypeUtil.valueOf(type, valueStr);
-                    bindEnvEntry(name, value);
+                    makeEnvEntryInjectionsAndBindings(context, descriptor, node, name, type, valueStr);
                 }
                 else
                 {
@@ -715,6 +702,9 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
      */
     public void addInjections(WebAppContext context, Descriptor descriptor, XmlParser.Node node, String jndiName, Class<?> valueClass)
     {
+        Objects.requireNonNull(context);
+        Objects.requireNonNull(node);
+        
         Iterator<XmlParser.Node> itor = node.iterator("injection-target");
 
         while (itor.hasNext())
@@ -766,31 +756,59 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
      */
     public void bindEnvEntry(String name, Object value) throws Exception
     {
-        InitialContext ic = null;
-        boolean bound = false;
-        //check to see if we bound a value and an EnvEntry with this name already
-        //when we processed the server and the webapp's naming environment
-        //@see EnvConfiguration.bindEnvEntries()
-        ic = new InitialContext();
+        InitialContext ic = new InitialContext();
+        Context envCtx = (Context)ic.lookup("java:comp/env");
+        NamingUtil.bind(envCtx, name, value);
+    }
+    
+    /**
+     * Make injections and any java:comp/env bindings necessary given an env-entry declaration.
+     * The handling of env-entries is different to other resource declarations like resource-ref, resource-env-ref etc
+     * because we allow the EnvEntry (@see org.eclipse.jetty.plus.jndi.EnvEntry) class that is configured externally to the webapp 
+     * to specify a value that can override a value present in a web.xml descriptor.
+     * 
+     * @param context the WebAppContext of the env-entry
+     * @param descriptor the web.xml, web-default.xml, web-override.xml or web-fragment.xml
+     * @param node the parsed xml representation of the env-entry declaration
+     * @param name the name field of the env-entry
+     * @param type the type field of the env-entry
+     * @param value the value field of the env-entry
+     * @throws Exception
+     */
+    public void makeEnvEntryInjectionsAndBindings(WebAppContext context, Descriptor descriptor, XmlParser.Node node, String name, String type, String value) throws Exception
+    {
+        InitialContext ic = new InitialContext();
         try
         {
-            NamingEntry ne = (NamingEntry)ic.lookup("java:comp/env/" + NamingEntryUtil.makeNamingEntryName(ic.getNameParser(""), name));
-            if (ne != null && ne instanceof EnvEntry)
+            EnvEntry envEntry = (EnvEntry)ic.lookup("java:comp/env/" + NamingEntryUtil.makeNamingEntryName(ic.getNameParser(""), name));
+
+            if (StringUtil.isEmpty(value))
             {
-                EnvEntry ee = (EnvEntry)ne;
-                bound = ee.isOverrideWebXml();
+                //There is an empty or missing value in the env-entry:
+                //If there is an existing EnvEntry (eg from a declaration in jetty-env.xml) that is override=true, then
+                //we make the injection, but we can skip the rebinding becase we want to use the value already bound.
+                //If there isn't an existing EnvEntry then there is nothing to do: according to the spec we do not make
+                //an injection if the env-entry value is missing, and of course there is no value to rebind.
+                if (envEntry != null && envEntry.isOverrideWebXml())
+                    addInjections(context, descriptor, node, name, TypeUtil.fromName(type));
+            }
+            else
+            {
+                //There is a value for the env-entry:
+                //According to the spec, we need to make an injection (if one is present).
+                //If there is an existing EnvEntry(eg from a declaration in jetty-env.xml) that is override=false, then
+                //we need to rebind name with the value from web.xml.
+                addInjections(context, descriptor, node, name, TypeUtil.fromName(type));
+
+                if (envEntry == null || !envEntry.isOverrideWebXml())
+                    bindEnvEntry(name, TypeUtil.valueOf(type, value));
             }
         }
         catch (NameNotFoundException e)
         {
-            bound = false;
-        }
-
-        if (!bound)
-        {
-            //either nothing was bound or the value from web.xml should override
-            Context envCtx = (Context)ic.lookup("java:comp/env");
-            NamingUtil.bind(envCtx, name, value);
+            //No matching EnvEntry has previously been bound so make the injection and do the binding with the value from web.xml
+            addInjections(context, descriptor, node, name, TypeUtil.fromName(type));
+            bindEnvEntry(name, TypeUtil.valueOf(type, value));
         }
     }
 

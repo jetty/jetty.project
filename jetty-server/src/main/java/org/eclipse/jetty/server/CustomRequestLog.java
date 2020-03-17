@@ -1034,12 +1034,16 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
 
     private static void logRequestCookie(String arg, StringBuilder b, Request request, Response response)
     {
-        for (Cookie c : request.getCookies())
+        Cookie[] cookies = request.getCookies();
+        if (cookies != null)
         {
-            if (arg.equals(c.getName()))
+            for (Cookie c : cookies)
             {
-                b.append(c.getValue());
-                return;
+                if (arg.equals(c.getName()))
+                {
+                    b.append(c.getValue());
+                    return;
+                }
             }
         }
 
