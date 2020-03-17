@@ -22,8 +22,8 @@ import java.util.Map;
 
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.ajax.JSON.Output;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Convert an {@link Enum} to JSON.
@@ -33,7 +33,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class JSONEnumConvertor implements JSON.Convertor
 {
-    private static final Logger LOG = Log.getLogger(JSONEnumConvertor.class);
+    private static final Logger LOG = LoggerFactory.getLogger(JSONEnumConvertor.class);
     private boolean _fromJSON;
 
     public JSONEnumConvertor()
@@ -51,15 +51,17 @@ public class JSONEnumConvertor implements JSON.Convertor
     {
         if (!_fromJSON)
             throw new UnsupportedOperationException();
+
+        String clazzname = (String)map.get("class");
         try
         {
             @SuppressWarnings({"rawtypes", "unchecked"})
-            Class<? extends Enum> type = Loader.loadClass((String)map.get("class"));
+            Class<? extends Enum> type = Loader.loadClass(clazzname);
             return Enum.valueOf(type, (String)map.get("value"));
         }
         catch (Exception e)
         {
-            LOG.warn(e);
+            LOG.warn("Unable to load class: {}", clazzname, e);
             return null;
         }
     }

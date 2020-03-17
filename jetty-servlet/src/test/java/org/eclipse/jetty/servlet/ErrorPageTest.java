@@ -43,6 +43,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Dispatcher;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpChannelState;
@@ -50,12 +51,12 @@ import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.StacklessLogging;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -65,6 +66,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ErrorPageTest
 {
+    private static final Logger LOG = LoggerFactory.getLogger(ErrorPageTest.class);
+
     private Server _server;
     private LocalConnector _connector;
     private StacklessLogging _stackless;
@@ -556,7 +559,7 @@ public class ErrorPageTest
                         }
                         catch (IllegalStateException e)
                         {
-                            Log.getLog().ignore(e);
+                            LOG.trace("IGNORED", e);
                         }
                         finally
                         {
@@ -565,7 +568,7 @@ public class ErrorPageTest
                     }
                     catch (IOException e)
                     {
-                        Log.getLog().warn(e);
+                        LOG.warn("Unable to send error", e);
                     }
                 });
                 hold.await();
@@ -604,7 +607,7 @@ public class ErrorPageTest
             }
             catch (Throwable ignore)
             {
-                Log.getLog().ignore(ignore);
+                LOG.trace("IGNORED", ignore);
             }
         }
     }

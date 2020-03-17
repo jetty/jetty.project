@@ -48,8 +48,8 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Handler for Error pages
@@ -61,7 +61,7 @@ import org.eclipse.jetty.util.log.Logger;
 public class ErrorHandler extends AbstractHandler
 {
     // TODO This classes API needs to be majorly refactored/cleanup in jetty-10
-    private static final Logger LOG = Log.getLogger(ErrorHandler.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ErrorHandler.class);
     public static final String ERROR_PAGE = "org.eclipse.jetty.server.error_page";
     public static final String ERROR_CONTEXT = "org.eclipse.jetty.server.error_context";
 
@@ -113,7 +113,7 @@ public class ErrorHandler extends AbstractHandler
                 }
                 catch (ServletException e)
                 {
-                    LOG.debug(e);
+                    LOG.debug("Unable to call error dispatcher", e);
                     if (response.isCommitted())
                         return;
                 }
@@ -206,7 +206,7 @@ public class ErrorHandler extends AbstractHandler
             }
             catch (Exception e)
             {
-                LOG.ignore(e);
+                LOG.trace("IGNORED", e);
             }
         }
         return null;
@@ -254,7 +254,7 @@ public class ErrorHandler extends AbstractHandler
                 }
                 catch (Exception e)
                 {
-                    LOG.ignore(e);
+                    LOG.trace("IGNORED", e);
                 }
             }
             if (charset == null)
@@ -327,9 +327,10 @@ public class ErrorHandler extends AbstractHandler
             }
             catch (BufferOverflowException e)
             {
-                LOG.warn("Error page too large: {} {} {}", code, message, request);
                 if (LOG.isDebugEnabled())
-                    LOG.warn(e);
+                    LOG.warn("Error page too large: {} {} {}", code, message, request, e);
+                else
+                    LOG.warn("Error page too large: {} {} {}", code, message, request);
                 baseRequest.getResponse().resetContent();
                 if (!_disableStacks)
                 {

@@ -25,9 +25,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.util.SharedBlockingCallback.Blocker;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
@@ -39,7 +39,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 public class SharedBlockingCallbackTest
 {
-    private static final Logger LOG = Log.getLogger(SharedBlockingCallback.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SharedBlockingCallback.class);
 
     final AtomicInteger notComplete = new AtomicInteger();
     final SharedBlockingCallback sbcb = new SharedBlockingCallback()

@@ -53,12 +53,12 @@ import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class HttpConnectionOverFCGI extends AbstractConnection implements IConnection
 {
-    private static final Logger LOG = Log.getLogger(HttpConnectionOverFCGI.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HttpConnectionOverFCGI.class);
 
     private final LinkedList<Integer> requests = new LinkedList<>();
     private final Map<Integer, HttpChannelOverFCGI> activeChannels = new ConcurrentHashMap<>();
@@ -152,9 +152,9 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
 
     void process()
     {
+        EndPoint endPoint = getEndPoint();
         try
         {
-            EndPoint endPoint = getEndPoint();
             while (true)
             {
                 if (parse(networkBuffer.getBuffer()))
@@ -185,7 +185,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
         catch (Exception x)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug(x);
+                LOG.debug("Unable to fill from endpoint {}", endPoint, x);
             networkBuffer.clear();
             releaseNetworkBuffer();
             close(x);

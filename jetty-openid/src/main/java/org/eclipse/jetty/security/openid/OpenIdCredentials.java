@@ -29,8 +29,8 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.util.FormContentProvider;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.ajax.JSON;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>The credentials of an user to be authenticated with OpenID Connect. This will contain
@@ -44,7 +44,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class OpenIdCredentials implements Serializable
 {
-    private static final Logger LOG = Log.getLogger(OpenIdCredentials.class);
+    private static final Logger LOG = LoggerFactory.getLogger(OpenIdCredentials.class);
     private static final long serialVersionUID = 4766053233370044796L;
 
     private final String redirectUri;

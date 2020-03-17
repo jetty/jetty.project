@@ -27,8 +27,8 @@ import java.util.TimeZone;
 
 import org.eclipse.jetty.util.DateCache;
 import org.eclipse.jetty.util.ajax.JSON.Output;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Convert a {@link Date} to JSON.
@@ -38,7 +38,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class JSONDateConvertor implements JSON.Convertor
 {
-    private static final Logger LOG = Log.getLogger(JSONDateConvertor.class);
+    private static final Logger LOG = LoggerFactory.getLogger(JSONDateConvertor.class);
 
     private final boolean _fromJSON;
     private final DateCache _dateCache;
@@ -84,7 +84,7 @@ public class JSONDateConvertor implements JSON.Convertor
         }
         catch (Exception e)
         {
-            LOG.warn(e);
+            LOG.warn("Unable to parse JSON Object", e);
         }
         return null;
     }

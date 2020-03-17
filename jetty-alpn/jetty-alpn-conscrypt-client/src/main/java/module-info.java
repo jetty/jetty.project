@@ -23,6 +23,7 @@ module org.eclipse.jetty.alpn.conscrypt.client
 {
     requires org.conscrypt;
     requires transitive org.eclipse.jetty.alpn.client;
+    requires org.slf4j;
 
     provides ALPNProcessor.Client with ConscryptClientALPNProcessor;
 }

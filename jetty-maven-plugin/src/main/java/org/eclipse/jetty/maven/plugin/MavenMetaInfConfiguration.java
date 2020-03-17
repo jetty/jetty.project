@@ -23,12 +23,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.webapp.MetaInfConfiguration;
 import org.eclipse.jetty.webapp.WebAppContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * MavenWebInfConfiguration
@@ -38,7 +38,7 @@ import org.eclipse.jetty.webapp.WebAppContext;
  */
 public class MavenMetaInfConfiguration extends MetaInfConfiguration
 {
-    private static final Logger LOG = Log.getLogger(MavenMetaInfConfiguration.class);
+    private static final Logger LOG = LoggerFactory.getLogger(MavenMetaInfConfiguration.class);
 
     protected static int COUNTER = 0;
 

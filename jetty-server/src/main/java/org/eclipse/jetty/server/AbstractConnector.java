@@ -48,13 +48,13 @@ import org.eclipse.jetty.util.component.Container;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.Graceful;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.ThreadPoolBudget;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>An abstract implementation of {@link Connector} that provides a {@link ConnectionFactory} mechanism
@@ -141,7 +141,7 @@ import org.eclipse.jetty.util.thread.ThreadPoolBudget;
 @ManagedObject("Abstract implementation of the Connector Interface")
 public abstract class AbstractConnector extends ContainerLifeCycle implements Connector, Dumpable
 {
-    protected static final Logger LOG = Log.getLogger(AbstractConnector.class);
+    protected static final Logger LOG = LoggerFactory.getLogger(AbstractConnector.class);
 
     private final AutoLock _lock = new AutoLock();
     private final Condition _setAccepting = _lock.newCondition();
@@ -643,17 +643,17 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
         {
             if (ex instanceof InterruptedException)
             {
-                LOG.debug(ex);
+                LOG.debug("Accept Interrupted", ex);
                 return true;
             }
 
             if (ex instanceof ClosedByInterruptException)
             {
-                LOG.debug(ex);
+                LOG.debug("Accept Closed by Interrupt", ex);
                 return false;
             }
 
-            LOG.warn(ex);
+            LOG.warn("Accept Failure", ex);
             try
             {
                 // Arbitrary sleep to avoid spin looping.
@@ -664,13 +664,13 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
             }
             catch (Throwable x)
             {
-                LOG.ignore(x);
+                LOG.trace("IGNORED", x);
             }
             return false;
         }
         else
         {
-            LOG.ignore(ex);
+            LOG.trace("IGNORED", ex);
             return false;
         }
     }

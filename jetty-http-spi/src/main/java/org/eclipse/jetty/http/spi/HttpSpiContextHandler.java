@@ -35,15 +35,15 @@ import com.sun.net.httpserver.HttpPrincipal;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Jetty handler that bridges requests to {@link HttpHandler}.
  */
 public class HttpSpiContextHandler extends ContextHandler
 {
-    public static final Logger LOG = Log.getLogger(HttpSpiContextHandler.class);
+    public static final Logger LOG = LoggerFactory.getLogger(HttpSpiContextHandler.class);
 
     private HttpContext _httpContext;
 
@@ -89,7 +89,7 @@ public class HttpSpiContextHandler extends ContextHandler
         }
         catch (Exception ex)
         {
-            LOG.debug(ex);
+            LOG.debug("Failed to handle", ex);
             PrintWriter writer = new PrintWriter(jettyHttpExchange.getResponseBody());
 
             resp.setStatus(500);

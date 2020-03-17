@@ -24,15 +24,15 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A scheduler based on the the JVM Timer class
  */
 public class TimerScheduler extends AbstractLifeCycle implements Scheduler, Runnable
 {
-    private static final Logger LOG = Log.getLogger(TimerScheduler.class);
+    private static final Logger LOG = LoggerFactory.getLogger(TimerScheduler.class);
 
     /*
      * This class uses the Timer class rather than an ScheduledExecutionService because

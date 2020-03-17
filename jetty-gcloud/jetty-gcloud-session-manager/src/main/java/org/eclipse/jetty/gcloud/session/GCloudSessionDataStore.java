@@ -45,8 +45,8 @@ import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * GCloudSessionDataStore
@@ -54,7 +54,7 @@ import org.eclipse.jetty.util.log.Logger;
 @ManagedObject
 public class GCloudSessionDataStore extends AbstractSessionDataStore
 {
-    private static final Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
+    private static final Logger LOG = LoggerFactory.getLogger(GCloudSessionDataStore.class);
 
     public static final int DEFAULT_MAX_QUERY_RESULTS = 100;
     public static final int DEFAULT_MAX_RETRIES = 5;
@@ -594,7 +594,7 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
                     }
                     catch (Exception e)
                     {
-                        LOG.warn(e);
+                        LOG.warn("Unable to expire candidate sessions individually", e);
                     }
                 }
             }
@@ -603,7 +603,7 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
         }
         catch (Exception e)
         {
-            LOG.warn(e);
+            LOG.warn("Unable to get expired", e);
             return expired; //return what we got
         }
     }
@@ -921,7 +921,7 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
         }
         catch (DatastoreException e)
         {
-            LOG.ignore(e);
+            LOG.trace("IGNORED", e);
         }
         long expiry = entity.getLong(_model.getExpiry());
         long maxInactive = entity.getLong(_model.getMaxInactive());

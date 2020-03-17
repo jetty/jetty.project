@@ -29,8 +29,6 @@ import org.eclipse.jetty.annotations.AnnotationDecorator;
 import org.eclipse.jetty.annotations.ServletContainerInitializersStarter;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.AbstractConfiguration;
 import org.eclipse.jetty.webapp.Configuration;
@@ -39,6 +37,8 @@ import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.webapp.WebDescriptor;
 import org.eclipse.jetty.webapp.WebInfConfiguration;
 import org.eclipse.jetty.webapp.WebXmlConfiguration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * QuickStartConfiguration
@@ -47,7 +47,7 @@ import org.eclipse.jetty.webapp.WebXmlConfiguration;
  */
 public class QuickStartConfiguration extends AbstractConfiguration
 {
-    private static final Logger LOG = Log.getLogger(QuickStartConfiguration.class);
+    private static final Logger LOG = LoggerFactory.getLogger(QuickStartConfiguration.class);
 
     public static final Set<Class<? extends Configuration>> __replacedConfigurations = new HashSet<>();
     public static final String ORIGIN_ATTRIBUTE = "org.eclipse.jetty.quickstart.origin";

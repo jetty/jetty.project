@@ -22,8 +22,8 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Password utility class.
@@ -52,7 +52,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class Password extends Credential
 {
-    private static final Logger LOG = Log.getLogger(Password.class);
+    private static final Logger LOG = LoggerFactory.getLogger(Password.class);
 
     private static final long serialVersionUID = 5062906681431569445L;
 
@@ -229,7 +229,7 @@ public class Password extends Credential
             }
             catch (IOException e)
             {
-                LOG.warn(Log.EXCEPTION, e);
+                LOG.warn("EXCEPTION", e);
             }
             if (passwd == null || passwd.length() == 0)
                 passwd = promptDft;

@@ -25,8 +25,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A WebAppClassLoader that caches {@link #getResource(String)} results.
@@ -37,7 +37,7 @@ import org.eclipse.jetty.util.log.Logger;
 @ManagedObject
 public class CachingWebAppClassLoader extends WebAppClassLoader
 {
-    private static final Logger LOG = Log.getLogger(CachingWebAppClassLoader.class);
+    private static final Logger LOG = LoggerFactory.getLogger(CachingWebAppClassLoader.class);
 
     private final Set<String> _notFound = ConcurrentHashMap.newKeySet();
     private final ConcurrentHashMap<String, URL> _cache = new ConcurrentHashMap<>();
@@ -104,8 +104,7 @@ public class CachingWebAppClassLoader extends WebAppClassLoader
             if (_notFound.add(name))
                 if (LOG.isDebugEnabled())
                 {
-                    LOG.debug("Caching not found {}", name);
-                    LOG.debug(nfe);
+                    LOG.debug("Caching not found {}", name, nfe);
                 }
             throw nfe;
         }

@@ -35,8 +35,6 @@ import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
@@ -46,6 +44,8 @@ import org.eclipse.jetty.websocket.server.JettyWebSocketCreator;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServlet;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServletFactory;
 import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Tool to help debug websocket circumstances reported around browsers.
@@ -55,7 +55,7 @@ import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerI
  */
 public class BrowserDebugTool
 {
-    private static final Logger LOG = Log.getLogger(BrowserDebugTool.class);
+    private static final Logger LOG = LoggerFactory.getLogger(BrowserDebugTool.class);
 
     public static void main(String[] args)
     {
@@ -78,7 +78,7 @@ public class BrowserDebugTool
         }
         catch (Throwable t)
         {
-            LOG.warn(t);
+            LOG.warn("Unable to start {}", BrowserDebugTool.class.getName(), t);
         }
     }
 

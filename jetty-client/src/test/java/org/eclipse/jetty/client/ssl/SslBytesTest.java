@@ -33,14 +33,14 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public abstract class SslBytesTest
 {
-    protected final Logger logger = Log.getLogger(getClass());
+    protected final Logger logger = LoggerFactory.getLogger(getClass());
 
     public static class TLSRecord
     {
@@ -146,10 +146,7 @@ public abstract class SslBytesTest
             }
             catch (IOException x)
             {
-                logger.info(x.getClass() + ": " + x.getMessage());
-
-                if (logger.isDebugEnabled())
-                    logger.debug(x);
+                logger.warn("Unable to accept from {}", serverSocket, x);
             }
         }
 

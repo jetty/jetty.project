@@ -32,12 +32,12 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.NegotiatingClientConnectionFactory;
 import org.eclipse.jetty.io.ssl.ALPNProcessor.Client;
 import org.eclipse.jetty.io.ssl.SslClientConnectionFactory;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ALPNClientConnectionFactory extends NegotiatingClientConnectionFactory
 {
-    private static final Logger LOG = Log.getLogger(ALPNClientConnectionFactory.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ALPNClientConnectionFactory.class);
 
     private final List<Client> processors = new ArrayList<>();
     private final Executor executor;
@@ -64,7 +64,7 @@ public class ALPNClientConnectionFactory extends NegotiatingClientConnectionFact
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug(x);
+                    LOG.debug("Unable to load client processor", x);
                 failure.addSuppressed(x);
                 continue;
             }

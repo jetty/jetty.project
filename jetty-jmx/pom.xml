@@ -18,7 +18,7 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <argLine>
-            @{argLine} ${jetty.surefire.argLine} --add-opens org.eclipse.jetty.jmx/org.eclipse.jetty.jmx=ALL-UNNAMED --add-opens org.eclipse.jetty.jmx/org.eclipse.jetty.util.log.jmx=ALL-UNNAMED
+            @{argLine} ${jetty.surefire.argLine} --add-opens org.eclipse.jetty.jmx/org.eclipse.jetty.jmx=ALL-UNNAMED --add-opens org.eclipse.jetty.jmx/org.eclipse.jetty.logging.jmx=ALL-UNNAMED
           </argLine>
         </configuration>
       </plugin>
@@ -41,6 +41,13 @@
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-util</artifactId>
       <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-slf4j-impl</artifactId>
+      <version>${project.version}</version>
+      <scope>provided</scope>
+      <optional>true</optional>
     </dependency>
 
     <dependency>

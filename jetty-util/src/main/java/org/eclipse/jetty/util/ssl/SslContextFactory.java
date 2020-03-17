@@ -86,12 +86,12 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.security.CertificateUtils;
 import org.eclipse.jetty.util.security.CertificateValidator;
 import org.eclipse.jetty.util.security.Password;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>SslContextFactory is used to configure SSL parameters
@@ -114,8 +114,8 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
      */
     public static final String PASSWORD_PROPERTY = "org.eclipse.jetty.ssl.password";
 
-    private static final Logger LOG = Log.getLogger(SslContextFactory.class);
-    private static final Logger LOG_CONFIG = LOG.getLogger("config");
+    private static final Logger LOG = LoggerFactory.getLogger(SslContextFactory.class);
+    private static final Logger LOG_CONFIG = LoggerFactory.getLogger(LOG.getName() + ".config");
     /**
      * Default Excluded Protocols List
      */
@@ -402,7 +402,7 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
         }
         catch (NoSuchAlgorithmException x)
         {
-            LOG.ignore(x);
+            LOG.trace("IGNORED", x);
         }
     }
 
@@ -1621,9 +1621,11 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
         }
         catch (Throwable cause)
         {
-            LOG.info("Unable to get CertificateFactory instance for type [{}] on provider [{}], using default", type, provider);
+            String msg = String.format("Unable to get CertificateFactory instance for type [%s] on provider [%s], using default", type, provider);
             if (LOG.isDebugEnabled())
-                LOG.debug(cause);
+                LOG.debug(msg, cause);
+            else
+                LOG.info(msg);
         }
 
         return CertificateFactory.getInstance(type);
@@ -1643,9 +1645,11 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
         }
         catch (Throwable cause)
         {
-            LOG.info("Unable to get CertStore instance for type [{}] on provider [{}], using default", type, provider);
+            String msg = String.format("Unable to get CertStore instance for type [%s] on provider [%s], using default", type, provider);
             if (LOG.isDebugEnabled())
-                LOG.debug(cause);
+                LOG.debug(msg, cause);
+            else
+                LOG.info(msg);
         }
 
         return CertStore.getInstance(type, new CollectionCertStoreParameters(crls));
@@ -1666,9 +1670,11 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
         catch (Throwable cause)
         {
             // fall back to non-provider option
-            LOG.info("Unable to get KeyManagerFactory instance for algorithm [{}] on provider [{}], using default", algorithm, provider);
+            String msg = String.format("Unable to get KeyManagerFactory instance for algorithm [%s] on provider [%s], using default", algorithm, provider);
             if (LOG.isDebugEnabled())
-                LOG.debug(cause);
+                LOG.debug(msg, cause);
+            else
+                LOG.info(msg);
         }
 
         return KeyManagerFactory.getInstance(algorithm);
@@ -1691,9 +1697,11 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
             }
             catch (Throwable cause)
             {
-                LOG.info("Unable to get SecureRandom instance for algorithm [{}] on provider [{}], using default", algorithm, provider);
+                String msg = String.format("Unable to get SecureRandom instance for algorithm [%s] on provider [%s], using default", algorithm, provider);
                 if (LOG.isDebugEnabled())
-                    LOG.debug(cause);
+                    LOG.debug(msg, cause);
+                else
+                    LOG.info(msg);
             }
 
             return SecureRandom.getInstance(algorithm);
@@ -1716,9 +1724,11 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
         }
         catch (Throwable cause)
         {
-            LOG.info("Unable to get SSLContext instance for protocol [{}] on provider [{}], using default", protocol, provider);
+            String msg = String.format("Unable to get SSLContext instance for protocol [%s] on provider [%s], using default", protocol, provider);
             if (LOG.isDebugEnabled())
-                LOG.debug(cause);
+                LOG.debug(msg, cause);
+            else
+                LOG.info(msg);
         }
 
         return SSLContext.getInstance(protocol);
@@ -1737,11 +1747,11 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
         }
         catch (Throwable cause)
         {
-            LOG.info("Unable to get TrustManagerFactory instance for algorithm [{}] on provider [{}], using default", algorithm, provider);
+            String msg = String.format("Unable to get TrustManagerFactory instance for algorithm [%s] on provider [%s], using default", algorithm, provider);
             if (LOG.isDebugEnabled())
-            {
-                LOG.debug(cause);
-            }
+                LOG.debug(msg, cause);
+            else
+                LOG.info(msg);
         }
 
         return TrustManagerFactory.getInstance(algorithm);
@@ -1918,7 +1928,7 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
         }
         catch (Exception e)
         {
-            LOG.warn(Log.EXCEPTION, e);
+            LOG.warn("Unable to get X509CertChain", e);
             return null;
         }
     }
@@ -2114,8 +2124,9 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
          * Does the default {@link #sniSelect(String, Principal[], SSLSession, String, Collection)} implementation
          * require an SNI match?  Note that if a non SNI handshake is accepted, requests may still be rejected
          * at the HTTP level for incorrect SNI (see SecureRequestCustomizer).
+         *
          * @return true if no SNI match is handled as no certificate match, false if no SNI match is handled by
-         *         delegation to the non SNI matching methods.
+         * delegation to the non SNI matching methods.
          */
         @ManagedAttribute("Whether the TLS handshake is rejected if there is no SNI host match")
         public boolean isSniRequired()
@@ -2129,8 +2140,9 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
          * at the HTTP level for incorrect SNI (see SecureRequestCustomizer).
          * This setting may have no effect if {@link #sniSelect(String, Principal[], SSLSession, String, Collection)} is
          * overridden or a non null function is passed to {@link #setSNISelector(SniX509ExtendedKeyManager.SniSelector)}.
+         *
          * @param sniRequired true if no SNI match is handled as no certificate match, false if no SNI match is handled by
-         *                    delegation to the non SNI matching methods.
+         * delegation to the non SNI matching methods.
          */
         public void setSniRequired(boolean sniRequired)
         {

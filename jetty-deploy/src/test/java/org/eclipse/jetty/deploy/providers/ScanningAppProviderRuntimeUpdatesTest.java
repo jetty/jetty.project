@@ -27,14 +27,14 @@ import org.eclipse.jetty.deploy.test.XmlConfiguredJetty;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.Scanner;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.junit.jupiter.api.condition.OS.WINDOWS;
 
@@ -45,7 +45,7 @@ import static org.junit.jupiter.api.condition.OS.WINDOWS;
 @ExtendWith(WorkDirExtension.class)
 public class ScanningAppProviderRuntimeUpdatesTest
 {
-    private static final Logger LOG = Log.getLogger(ScanningAppProviderRuntimeUpdatesTest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ScanningAppProviderRuntimeUpdatesTest.class);
 
     public WorkDir testdir;
     private static XmlConfiguredJetty jetty;
@@ -106,7 +106,7 @@ public class ScanningAppProviderRuntimeUpdatesTest
             }
             catch (InterruptedException e)
             {
-                LOG.warn(e);
+                LOG.warn("Sleep failed", e);
             }
         }
         while (_scans.get() < scan);

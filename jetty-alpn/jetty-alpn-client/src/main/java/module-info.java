@@ -23,6 +23,7 @@ module org.eclipse.jetty.alpn.client
     exports org.eclipse.jetty.alpn.client;
 
     requires transitive org.eclipse.jetty.io;
+    requires org.slf4j;
 
     uses ALPNProcessor.Client;
 }

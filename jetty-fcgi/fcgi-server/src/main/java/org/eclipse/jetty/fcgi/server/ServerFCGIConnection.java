@@ -34,12 +34,12 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpInput;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ServerFCGIConnection extends AbstractConnection
 {
-    private static final Logger LOG = Log.getLogger(ServerFCGIConnection.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ServerFCGIConnection.class);
 
     private final ConcurrentMap<Integer, HttpChannelOverFCGI> channels = new ConcurrentHashMap<>();
     private final Connector connector;
@@ -121,7 +121,7 @@ public class ServerFCGIConnection extends AbstractConnection
         catch (Exception x)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug(x);
+                LOG.debug("Unable to fill endpoint", x);
             bufferPool.release(buffer);
             // TODO: fail and close ?
         }

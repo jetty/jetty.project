@@ -36,8 +36,6 @@ import org.eclipse.jetty.jndi.local.localContextRoot;
 import org.eclipse.jetty.plus.jndi.EnvEntry;
 import org.eclipse.jetty.plus.jndi.NamingDump;
 import org.eclipse.jetty.plus.jndi.NamingEntryUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.AbstractConfiguration;
 import org.eclipse.jetty.webapp.FragmentConfiguration;
@@ -47,13 +45,15 @@ import org.eclipse.jetty.webapp.WebAppClassLoader;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.webapp.WebXmlConfiguration;
 import org.eclipse.jetty.xml.XmlConfiguration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * EnvConfiguration
  */
 public class EnvConfiguration extends AbstractConfiguration
 {
-    private static final Logger LOG = Log.getLogger(EnvConfiguration.class);
+    private static final Logger LOG = LoggerFactory.getLogger(EnvConfiguration.class);
 
     private static final String JETTY_ENV_BINDINGS = "org.eclipse.jetty.jndi.EnvConfiguration";
     private Resource jettyEnvXmlResource;
@@ -189,7 +189,7 @@ public class EnvConfiguration extends AbstractConfiguration
         }
         catch (NameNotFoundException e)
         {
-            LOG.warn(e);
+            LOG.warn("Unable to destroy InitialContext", e);
         }
         finally
         {
@@ -214,7 +214,7 @@ public class EnvConfiguration extends AbstractConfiguration
         }
         catch (NameNotFoundException e)
         {
-            LOG.ignore(e);
+            LOG.trace("IGNORED", e);
             LOG.debug("No jndi entries scoped to webapp {}", context);
         }
         catch (NamingException e)

@@ -44,8 +44,6 @@ import javax.websocket.server.ServerEndpointConfig;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
@@ -59,6 +57,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -67,7 +67,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TextStreamTest
 {
-    private static final Logger LOG = Log.getLogger(TextStreamTest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(TextStreamTest.class);
     private static final BlockingArrayQueue<QueuedTextStreamer> serverEndpoints = new BlockingArrayQueue<>();
 
     private final ClientEndpointConfig clientConfig = ClientEndpointConfig.Builder.create().build();

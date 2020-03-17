@@ -24,7 +24,6 @@
             @{argLine} ${jetty.surefire.argLine}
             --add-modules java.security.jgss
             --add-modules org.eclipse.jetty.jmx
-            --add-modules org.slf4j
           </argLine>
         </configuration>
       </plugin>
@@ -157,11 +156,10 @@
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
-      <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-simple</artifactId>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-slf4j-impl</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>

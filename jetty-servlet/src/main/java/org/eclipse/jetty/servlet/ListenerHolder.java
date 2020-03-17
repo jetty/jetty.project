@@ -19,7 +19,6 @@
 package org.eclipse.jetty.servlet;
 
 import java.util.EventListener;
-
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 
@@ -118,7 +117,7 @@ public class ListenerHolder extends BaseHolder<EventListener>
         }
         return listener;
     }
-    
+
     @Override
     public void doStop() throws Exception
     {

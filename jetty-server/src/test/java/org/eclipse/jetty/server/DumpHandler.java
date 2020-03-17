@@ -34,8 +34,8 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Dump request handler.
@@ -44,7 +44,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class DumpHandler extends AbstractHandler
 {
-    private static final Logger LOG = Log.getLogger(DumpHandler.class);
+    private static final Logger LOG = LoggerFactory.getLogger(DumpHandler.class);
 
     String label = "Dump HttpHandler";
 
@@ -223,10 +223,7 @@ public class DumpHandler extends AbstractHandler
             }
             catch (IOException e)
             {
-                if (LOG.isDebugEnabled())
-                    LOG.warn(e);
-                else
-                    LOG.warn(e.toString());
+                LOG.warn("Failed to copy request content", e);
                 writer.write(e.toString());
             }
         }
@@ -259,7 +256,7 @@ public class DumpHandler extends AbstractHandler
         }
         catch (Exception e)
         {
-            LOG.ignore(e);
+            LOG.trace("IGNORED", e);
         }
     }
 }

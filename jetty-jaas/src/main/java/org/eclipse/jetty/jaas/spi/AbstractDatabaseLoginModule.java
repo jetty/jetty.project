@@ -27,9 +27,9 @@ import java.util.Map;
 import javax.security.auth.Subject;
 import javax.security.auth.callback.CallbackHandler;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.security.Credential;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * AbstractDatabaseLoginModule
@@ -40,7 +40,7 @@ import org.eclipse.jetty.util.security.Credential;
  */
 public abstract class AbstractDatabaseLoginModule extends AbstractLoginModule
 {
-    private static final Logger LOG = Log.getLogger(AbstractDatabaseLoginModule.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AbstractDatabaseLoginModule.class);
 
     private String userQuery;
     private String rolesQuery;

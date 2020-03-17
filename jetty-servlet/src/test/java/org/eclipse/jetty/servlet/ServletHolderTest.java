@@ -20,16 +20,15 @@ package org.eclipse.jetty.servlet;
 
 import java.util.Collections;
 import java.util.Set;
-
 import javax.servlet.Servlet;
 import javax.servlet.ServletRegistration;
 import javax.servlet.UnavailableException;
 import javax.servlet.http.HttpServlet;
 
+import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.MultiException;
-import org.eclipse.jetty.util.log.StacklessLogging;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -117,7 +116,7 @@ public class ServletHolderTest
         assertEquals("org.apache.jsp.a.b.c.blah_jsp", h.getClassNameForJsp("/a/b/c/blah.jsp"));
         assertEquals("org.apache.jsp.a.b.c.blah_jsp", h.getClassNameForJsp("a/b/c/blah.jsp"));
     }
-    
+
     @Test
     public void testCreateInstance() throws Exception
     {
@@ -129,7 +128,7 @@ public class ServletHolderTest
             holder.setHeldClass(FakeServlet.class);
             Servlet servlet = holder.createInstance();
             assertNotNull(servlet);
-            
+
             //test with a ServletContextHandler
             Server server = new Server();
             ServletContextHandler context = new ServletContextHandler();
@@ -165,7 +164,7 @@ public class ServletHolderTest
             assertThat(e.getCause().getMessage(), containsString("foo"));
         }
     }
-    
+
     @Test
     public void testWithClass() throws Exception
     {
@@ -183,7 +182,7 @@ public class ServletHolderTest
             assertTrue(holder.isStarted());
         }
     }
-    
+
     @Test
     public void testWithClassName() throws Exception
     {
@@ -199,7 +198,7 @@ public class ServletHolderTest
             handler.start();
             assertTrue(holder.isAvailable());
             assertTrue(holder.isStarted());
-        } 
+        }
     }
 
     @Test

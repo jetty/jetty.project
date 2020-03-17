@@ -50,8 +50,8 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>A filter that builds a cache of secondary resources associated
@@ -75,7 +75,7 @@ import org.eclipse.jetty.util.log.Logger;
 @ManagedObject("Push cache based on the HTTP 'Referer' header")
 public class PushCacheFilter implements Filter
 {
-    private static final Logger LOG = Log.getLogger(PushCacheFilter.class);
+    private static final Logger LOG = LoggerFactory.getLogger(PushCacheFilter.class);
 
     private final Set<Integer> _ports = new HashSet<>();
     private final Set<String> _hosts = new HashSet<>();

@@ -25,8 +25,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.component.LifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
@@ -37,6 +35,8 @@ import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -87,7 +87,7 @@ public class WebSocketServerTest
     @WebSocket
     public static class TrackingClientEndpoint
     {
-        private static final Logger LOG = Log.getLogger(TrackingClientEndpoint.class);
+        private static final Logger LOG = LoggerFactory.getLogger(TrackingClientEndpoint.class);
         public LinkedBlockingQueue<String> messages = new LinkedBlockingQueue<>();
 
         @OnWebSocketMessage
@@ -99,7 +99,7 @@ public class WebSocketServerTest
         @OnWebSocketError
         public void onError(Throwable cause)
         {
-            LOG.warn(cause);
+            LOG.warn("TrackingClientEndpoint Error", cause);
         }
 
         @OnWebSocketClose

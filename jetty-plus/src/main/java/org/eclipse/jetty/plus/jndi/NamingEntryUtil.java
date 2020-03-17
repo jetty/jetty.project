@@ -31,12 +31,12 @@ import javax.naming.NamingEnumeration;
 import javax.naming.NamingException;
 
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class NamingEntryUtil
 {
-    private static final Logger LOG = Log.getLogger(NamingEntryUtil.class);
+    private static final Logger LOG = LoggerFactory.getLogger(NamingEntryUtil.class);
 
     /**
      * Link a name in a webapp's java:/comp/evn namespace to a pre-existing
@@ -196,7 +196,7 @@ public class NamingEntryUtil
         }
         catch (NamingException e)
         {
-            LOG.warn(e);
+            LOG.warn("Unable to get name for scope {}", scope, e);
             return null;
         }
     }

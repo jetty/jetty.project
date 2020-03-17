@@ -25,6 +25,7 @@ module org.eclipse.jetty.webapp
     requires transitive java.instrument;
     requires transitive org.eclipse.jetty.servlet;
     requires transitive org.eclipse.jetty.xml;
+    requires org.slf4j;
 
     uses Configuration;
 

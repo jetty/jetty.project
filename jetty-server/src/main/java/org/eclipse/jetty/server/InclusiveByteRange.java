@@ -24,8 +24,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.StringTokenizer;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Byte range inclusive of end points.
@@ -52,7 +52,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class InclusiveByteRange
 {
-    private static final Logger LOG = Log.getLogger(InclusiveByteRange.class);
+    private static final Logger LOG = LoggerFactory.getLogger(InclusiveByteRange.class);
 
     private long first;
     private long last;
@@ -237,14 +237,14 @@ public class InclusiveByteRange
                     catch (NumberFormatException e)
                     {
                         LOG.warn("Bad range format: {}", t);
-                        LOG.ignore(e);
+                        LOG.trace("IGNORED", e);
                     }
                 }
             }
             catch (Exception e)
             {
                 LOG.warn("Bad range format: {}", t);
-                LOG.ignore(e);
+                LOG.trace("IGNORED", e);
             }
         }
 

@@ -24,6 +24,7 @@ module org.eclipse.jetty.spring
     exports org.eclipse.jetty.spring;
 
     requires transitive org.eclipse.jetty.xml;
+    requires org.slf4j;
     requires spring.beans;
     requires spring.core;
 

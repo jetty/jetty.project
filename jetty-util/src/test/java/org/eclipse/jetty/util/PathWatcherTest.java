@@ -37,11 +37,11 @@ import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.PathWatcher.PathWatchEvent;
 import org.eclipse.jetty.util.PathWatcher.PathWatchEventType;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.eclipse.jetty.util.PathWatcher.PathWatchEventType.ADDED;
 import static org.eclipse.jetty.util.PathWatcher.PathWatchEventType.DELETED;
@@ -75,7 +75,7 @@ public class PathWatcherTest
     public static class PathWatchEventCapture implements PathWatcher.Listener
     {
         public static final String FINISH_TAG = "#finished#.tag";
-        private static final Logger LOG = Log.getLogger(PathWatcherTest.PathWatchEventCapture.class);
+        private static final Logger LOG = LoggerFactory.getLogger(PathWatcherTest.PathWatchEventCapture.class);
         private final Path baseDir;
 
         /**

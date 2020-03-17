@@ -24,6 +24,8 @@ package org.eclipse.jetty.util;
  */
 public class JavaVersion
 {
+    // IMPORTANT NOTE: This class cannot use Logging, as this class is used by jetty-start
+
     /**
      * Context attribute that can be set to target a different version of the jvm than the current runtime.
      * Acceptable values should correspond to those returned by JavaVersion.getPlatform().

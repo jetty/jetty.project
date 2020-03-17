@@ -46,9 +46,9 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.annotation.Name;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.AutoLock;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>Handler to limit the threads per IP address for DOS protection</p>
@@ -72,7 +72,7 @@ import org.eclipse.jetty.util.thread.AutoLock;
  */
 public class ThreadLimitHandler extends HandlerWrapper
 {
-    private static final Logger LOG = Log.getLogger(ThreadLimitHandler.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ThreadLimitHandler.class);
 
     private static final String REMOTE = "o.e.j.s.h.TLH.REMOTE";
     private static final String PERMIT = "o.e.j.s.h.TLH.PASS";
@@ -140,7 +140,7 @@ public class ThreadLimitHandler extends HandlerWrapper
             }
             catch (Exception e)
             {
-                LOG.ignore(e);
+                LOG.trace("IGNORED", e);
             }
         }
         return _threadLimit;

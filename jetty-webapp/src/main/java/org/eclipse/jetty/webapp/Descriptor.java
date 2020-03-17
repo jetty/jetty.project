@@ -52,7 +52,7 @@ public abstract class Descriptor
             }
         }
     }
-    
+
     public boolean isParsed()
     {
         return _root != null;

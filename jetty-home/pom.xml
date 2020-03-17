@@ -171,6 +171,33 @@
             </configuration>
           </execution>
           <execution>
+            <id>copy-lib-logging-deps</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <includeGroupIds>org.eclipse.jetty,org.slf4j</includeGroupIds>
+              <includeArtifactIds>jetty-slf4j-impl,slf4j-api</includeArtifactIds>
+              <includeTypes>jar</includeTypes>
+              <outputDirectory>${assembly-directory}/lib/logging</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>copy-lib-logging-src-deps</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <includeGroupIds>org.eclipse.jetty,org.slf4j</includeGroupIds>
+              <includeArtifactIds>jetty-slf4j-impl,slf4j-api</includeArtifactIds>
+              <includeTypes>jar</includeTypes>
+              <classifier>sources</classifier>
+              <outputDirectory>${source-assembly-directory}/lib/logging</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
             <id>copy-lib-websocket-deps</id>
             <phase>generate-resources</phase>
             <goals>
@@ -603,6 +630,11 @@
     </dependency>
 
     <!-- jetty deps -->
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-slf4j-impl</artifactId>
+      <version>${project.version}</version>
+    </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-deploy</artifactId>

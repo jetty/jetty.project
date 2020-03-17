@@ -41,21 +41,21 @@ import org.eclipse.jetty.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.security.Credential;
 import org.eclipse.jetty.websocket.javax.server.config.JavaxWebSocketServletContainerInitializer;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
 public class WebSocketServerExamplesTest
 {
-    private static final Logger LOG = Log.getLogger(WebSocketServerExamplesTest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(WebSocketServerExamplesTest.class);
 
     @ClientEndpoint
     public static class ClientSocket
@@ -86,7 +86,7 @@ public class WebSocketServerExamplesTest
         @OnError
         public void onError(Throwable cause)
         {
-            LOG.debug(cause);
+            LOG.debug("ClientSocket error", cause);
         }
     }
 

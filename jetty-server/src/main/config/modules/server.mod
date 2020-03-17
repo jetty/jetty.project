@@ -1,4 +1,4 @@
-DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
+# DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
 
 [description]
 Enables the core Jetty server on the classpath.
@@ -7,11 +7,11 @@ Enables the core Jetty server on the classpath.
 jvm
 ext
 resources
-logging
 
 [depend]
 threadpool
 bytebufferpool
+logging
 
 [lib]
 lib/jetty-servlet-api-4.0.*.jar

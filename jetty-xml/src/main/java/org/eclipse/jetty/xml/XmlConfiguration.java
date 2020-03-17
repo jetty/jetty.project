@@ -60,9 +60,9 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.LifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
 
 /**
@@ -82,7 +82,7 @@ import org.xml.sax.SAXException;
  */
 public class XmlConfiguration
 {
-    private static final Logger LOG = Log.getLogger(XmlConfiguration.class);
+    private static final Logger LOG = LoggerFactory.getLogger(XmlConfiguration.class);
     private static final Class<?>[] PRIMITIVES =
         {
             Boolean.TYPE, Character.TYPE, Byte.TYPE, Short.TYPE, Integer.TYPE, Long.TYPE, Float.TYPE, Double.TYPE, Void.TYPE
@@ -219,7 +219,7 @@ public class XmlConfiguration
         }
         catch (Exception e)
         {
-            LOG.warn(e);
+            LOG.warn("Unable to get webapp file reference", e);
         }
     }
 
@@ -578,7 +578,7 @@ public class XmlConfiguration
                 }
                 catch (IllegalArgumentException | IllegalAccessException | NoSuchMethodException e)
                 {
-                    LOG.ignore(e);
+                    LOG.trace("IGNORED", e);
                     me.add(e);
                 }
 
@@ -593,7 +593,7 @@ public class XmlConfiguration
                 }
                 catch (NoSuchFieldException | IllegalArgumentException | IllegalAccessException | NoSuchMethodException e)
                 {
-                    LOG.ignore(e);
+                    LOG.trace("IGNORED", e);
                     me.add(e);
                 }
 
@@ -630,7 +630,7 @@ public class XmlConfiguration
                 }
                 catch (NoSuchFieldException e)
                 {
-                    LOG.ignore(e);
+                    LOG.trace("IGNORED", e);
                     me.add(e);
                 }
 
@@ -654,7 +654,7 @@ public class XmlConfiguration
                         }
                         catch (IllegalArgumentException | IllegalAccessException e)
                         {
-                            LOG.ignore(e);
+                            LOG.trace("IGNORED", e);
                             me.add(e);
                         }
 
@@ -672,7 +672,7 @@ public class XmlConfiguration
                         }
                         catch (IllegalAccessException e)
                         {
-                            LOG.ignore(e);
+                            LOG.trace("IGNORED", e);
                             me.add(e);
                         }
                     }
@@ -704,7 +704,7 @@ public class XmlConfiguration
                     }
                     catch (NoSuchMethodException | IllegalAccessException | InstantiationException e)
                     {
-                        LOG.ignore(e);
+                        LOG.trace("IGNORED", e);
                         me.add(e);
                     }
                 }
@@ -947,7 +947,7 @@ public class XmlConfiguration
                 }
                 catch (IllegalAccessException | IllegalArgumentException e)
                 {
-                    LOG.ignore(e);
+                    LOG.trace("IGNORED", e);
                 }
             }
 
@@ -1007,7 +1007,7 @@ public class XmlConfiguration
                 }
                 catch (InstantiationException | IllegalAccessException | IllegalArgumentException e)
                 {
-                    LOG.ignore(e);
+                    LOG.trace("IGNORED", e);
                 }
             }
             throw new NoSuchMethodException("<init>");
@@ -1861,7 +1861,7 @@ public class XmlConfiguration
         }
         catch (Error | Exception e)
         {
-            LOG.warn(e);
+            LOG.warn("Unable to execute XmlConfiguration", e);
             throw e;
         }
     }

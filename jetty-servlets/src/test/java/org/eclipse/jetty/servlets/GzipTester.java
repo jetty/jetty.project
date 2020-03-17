@@ -51,9 +51,9 @@ import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.Sha1Sum;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.hamcrest.Matchers;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -66,7 +66,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class GzipTester
 {
-    private static final Logger LOG = Log.getLogger(GzipTester.class);
+    private static final Logger LOG = LoggerFactory.getLogger(GzipTester.class);
 
     public static class ContentMetadata
     {

@@ -56,7 +56,7 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpServletResponseWrapper;
 import javax.servlet.http.Part;
 
-import org.eclipse.jetty.util.log.Log;
+import org.slf4j.LoggerFactory;
 
 /**
  * Dump Servlet Request.
@@ -346,12 +346,12 @@ public class Dump extends HttpServlet
                 }
                 catch (IOException e2)
                 {
-                    Log.getLogger(Dump.class).ignore(e2);
+                    LoggerFactory.getLogger(Dump.class).trace("IGNORED", e2);
                 }
             }
             catch (IOException e)
             {
-                Log.getLogger(Dump.class).ignore(e);
+                LoggerFactory.getLogger(Dump.class).trace("IGNORED", e);
             }
             return;
         }

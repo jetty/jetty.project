@@ -37,10 +37,10 @@ import org.eclipse.jetty.server.ResourceService;
 import org.eclipse.jetty.server.ResourceService.WelcomeFactory;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
 import org.eclipse.jetty.util.URIUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Resource Handler.
@@ -50,7 +50,7 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
  */
 public class ResourceHandler extends HandlerWrapper implements ResourceFactory, WelcomeFactory
 {
-    private static final Logger LOG = Log.getLogger(ResourceHandler.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ResourceHandler.class);
 
     Resource _baseResource;
     ContextHandler _context;
@@ -174,7 +174,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
         }
         catch (Exception e)
         {
-            LOG.debug(e);
+            LOG.debug("Unable to get Resource for {}", path, e);
         }
 
         return null;
@@ -394,8 +394,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
         }
         catch (Exception e)
         {
-            LOG.warn(e.toString());
-            LOG.debug(e);
+            LOG.warn("Invalid Base Resource reference: {}", resourceBase, e);
             throw new IllegalArgumentException(resourceBase);
         }
     }
@@ -416,8 +415,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
         }
         catch (Exception e)
         {
-            LOG.warn(e.toString());
-            LOG.debug(e);
+            LOG.warn("Invalid StyleSheet reference: {}", stylesheet, e);
             throw new IllegalArgumentException(stylesheet);
         }
     }

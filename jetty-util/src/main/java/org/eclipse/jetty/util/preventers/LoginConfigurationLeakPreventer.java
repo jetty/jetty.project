@@ -39,7 +39,7 @@ public class LoginConfigurationLeakPreventer extends AbstractLeakPreventer
         }
         catch (ClassNotFoundException e)
         {
-            LOG.warn(e);
+            LOG.warn("Unable to load login config", e);
         }
     }
 }

@@ -42,11 +42,11 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
 import org.eclipse.jetty.util.PatternMatcher;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.EmptyResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * MetaInfConfiguration
@@ -67,7 +67,7 @@ import org.eclipse.jetty.util.resource.ResourceCollection;
  */
 public class MetaInfConfiguration extends AbstractConfiguration
 {
-    private static final Logger LOG = Log.getLogger(MetaInfConfiguration.class);
+    private static final Logger LOG = LoggerFactory.getLogger(MetaInfConfiguration.class);
 
     public static final String USE_CONTAINER_METAINF_CACHE = "org.eclipse.jetty.metainf.useCache";
     public static final boolean DEFAULT_USE_CONTAINER_METAINF_CACHE = true;
@@ -789,7 +789,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
                 }
                 catch (Exception ex)
                 {
-                    LOG.warn(Log.EXCEPTION, ex);
+                    LOG.warn("Unable to load WEB-INF file {}", files[f], ex);
                 }
             }
         }

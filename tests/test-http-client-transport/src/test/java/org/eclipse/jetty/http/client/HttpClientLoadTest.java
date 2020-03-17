@@ -58,20 +58,20 @@ import org.eclipse.jetty.unixsocket.server.UnixSocketConnector;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.LeakDetector;
 import org.eclipse.jetty.util.ProcessorUtils;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTransportScenario>
 {
-    private final Logger logger = Log.getLogger(HttpClientLoadTest.class);
+    private final Logger logger = LoggerFactory.getLogger(HttpClientLoadTest.class);
     private final AtomicLong requestCount = new AtomicLong();
     private final AtomicLong connectionLeaks = new AtomicLong();
 

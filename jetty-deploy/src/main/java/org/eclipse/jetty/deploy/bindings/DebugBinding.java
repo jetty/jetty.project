@@ -21,12 +21,12 @@ package org.eclipse.jetty.deploy.bindings;
 import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.deploy.AppLifeCycle;
 import org.eclipse.jetty.deploy.graph.Node;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class DebugBinding implements AppLifeCycle.Binding
 {
-    private static final Logger LOG = Log.getLogger(DebugBinding.class);
+    private static final Logger LOG = LoggerFactory.getLogger(DebugBinding.class);
 
     final String[] _targets;
 

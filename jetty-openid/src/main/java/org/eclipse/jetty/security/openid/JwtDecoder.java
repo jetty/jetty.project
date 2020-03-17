@@ -24,15 +24,15 @@ import java.util.Base64;
 import java.util.Map;
 
 import org.eclipse.jetty.util.ajax.JSON;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Used to decode the ID Token from the base64 encrypted JSON Web Token (JWT).
  */
 public class JwtDecoder
 {
-    private static final Logger LOG = Log.getLogger(JwtDecoder.class);
+    private static final Logger LOG = LoggerFactory.getLogger(JwtDecoder.class);
 
     /**
      * Decodes a JSON Web Token (JWT) into a Map of claims.

@@ -32,19 +32,19 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.session.SessionHandler;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class LocalAsyncContextTest
 {
-    public static final Logger LOG = Log.getLogger(LocalAsyncContextTest.class);
+    public static final Logger LOG = LoggerFactory.getLogger(LocalAsyncContextTest.class);
     protected Server _server;
     protected SuspendHandler _handler;
     protected Connector _connector;

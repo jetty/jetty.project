@@ -20,12 +20,12 @@ package org.eclipse.jetty.maven.plugin;
 
 import java.io.File;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.webapp.WebAppClassLoader;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.webapp.WebInfConfiguration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * MavenWebInfConfiguration
@@ -35,7 +35,7 @@ import org.eclipse.jetty.webapp.WebInfConfiguration;
  */
 public class MavenWebInfConfiguration extends WebInfConfiguration
 {
-    private static final Logger LOG = Log.getLogger(MavenWebInfConfiguration.class);
+    private static final Logger LOG = LoggerFactory.getLogger(MavenWebInfConfiguration.class);
 
     public MavenWebInfConfiguration()
     {

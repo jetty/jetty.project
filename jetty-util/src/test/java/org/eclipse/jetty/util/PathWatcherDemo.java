@@ -24,14 +24,16 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 import org.eclipse.jetty.util.PathWatcher.PathWatchEvent;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class PathWatcherDemo implements PathWatcher.Listener
 {
-    private static final Logger LOG = Log.getLogger(PathWatcherDemo.class);
+    private static final Logger LOG = LoggerFactory.getLogger(PathWatcherDemo.class);
 
     public static void main(String[] args)
     {
@@ -54,7 +56,9 @@ public class PathWatcherDemo implements PathWatcher.Listener
         }
         catch (Throwable t)
         {
-            LOG.warn(t);
+            LOG.warn("Failed to run paths: {}",
+                paths.stream().map(Objects::toString).collect(Collectors.joining(", ", "[", "]")),
+                t);
         }
     }
 

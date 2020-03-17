@@ -38,12 +38,12 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.unixsocket.client.HttpClientTransportOverUnixSockets;
 import org.eclipse.jetty.unixsocket.server.UnixSocketConnector;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledOnOs;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -58,7 +58,7 @@ import static org.junit.jupiter.api.condition.OS.MAC;
 @EnabledOnOs({LINUX, MAC})
 public class UnixSocketTest
 {
-    private static final Logger log = Log.getLogger(UnixSocketTest.class);
+    private static final Logger log = LoggerFactory.getLogger(UnixSocketTest.class);
 
     private Server server;
     private HttpClient httpClient;

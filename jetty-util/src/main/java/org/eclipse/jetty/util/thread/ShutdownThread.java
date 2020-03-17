@@ -24,8 +24,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.component.LifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * ShutdownThread is a shutdown hook thread implemented as
@@ -35,7 +35,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class ShutdownThread extends Thread
 {
-    private static final Logger LOG = Log.getLogger(ShutdownThread.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ShutdownThread.class);
     private static final ShutdownThread _thread = new ShutdownThread();
 
     private boolean _hooked;
@@ -60,7 +60,7 @@ public class ShutdownThread extends Thread
         }
         catch (Exception e)
         {
-            LOG.ignore(e);
+            LOG.trace("IGNORED", e);
             LOG.info("shutdown already commenced");
         }
     }
@@ -74,7 +74,7 @@ public class ShutdownThread extends Thread
         }
         catch (Exception e)
         {
-            LOG.ignore(e);
+            LOG.trace("IGNORED", e);
             LOG.debug("shutdown already commenced");
         }
     }
@@ -136,7 +136,7 @@ public class ShutdownThread extends Thread
             }
             catch (Exception ex)
             {
-                LOG.debug(ex);
+                LOG.debug("Unable to stop", ex);
             }
         }
     }

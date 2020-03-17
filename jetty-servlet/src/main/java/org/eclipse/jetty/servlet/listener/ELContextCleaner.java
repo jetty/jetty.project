@@ -25,8 +25,8 @@ import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 
 import org.eclipse.jetty.util.Loader;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * ELContextCleaner
@@ -39,7 +39,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class ELContextCleaner implements ServletContextListener
 {
-    private static final Logger LOG = Log.getLogger(ELContextCleaner.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ELContextCleaner.class);
 
     @Override
     public void contextInitialized(ServletContextEvent sce)

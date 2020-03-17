@@ -19,20 +19,20 @@
 package org.eclipse.jetty.websocket.core.internal;
 
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.AbstractExtension;
 import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Fragment Extension
  */
 public class FragmentExtension extends AbstractExtension
 {
-    private static final Logger LOG = Log.getLogger(FragmentExtension.class);
+    private static final Logger LOG = LoggerFactory.getLogger(FragmentExtension.class);
 
     private final FragmentingFlusher flusher;
     private final Configuration configuration = new Configuration.ConfigurationCustomizer();

@@ -22,16 +22,16 @@ import org.eclipse.jetty.plus.annotation.InjectionCollection;
 import org.eclipse.jetty.plus.annotation.LifeCycleCallbackCollection;
 import org.eclipse.jetty.plus.annotation.RunAsCollection;
 import org.eclipse.jetty.util.Decorator;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.webapp.WebAppContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * PlusDecorator
  */
 public class PlusDecorator implements Decorator
 {
-    private static final Logger LOG = Log.getLogger(PlusDecorator.class);
+    private static final Logger LOG = LoggerFactory.getLogger(PlusDecorator.class);
 
     protected WebAppContext _context;
 

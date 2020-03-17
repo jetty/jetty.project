@@ -23,10 +23,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import org.eclipse.jetty.server.handler.ContextHandler.AliasCheck;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Alias checking for working with FileSystems that normalize access to the
@@ -47,7 +47,7 @@ import org.eclipse.jetty.util.resource.Resource;
  */
 public class SameFileAliasChecker implements AliasCheck
 {
-    private static final Logger LOG = Log.getLogger(SameFileAliasChecker.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SameFileAliasChecker.class);
 
     @Override
     public boolean check(String uri, Resource resource)
@@ -71,7 +71,7 @@ public class SameFileAliasChecker implements AliasCheck
         }
         catch (IOException e)
         {
-            LOG.ignore(e);
+            LOG.trace("IGNORED", e);
         }
         return false;
     }

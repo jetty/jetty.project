@@ -23,8 +23,8 @@ import java.nio.charset.StandardCharsets;
 
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>A ConnectionFactory whose connections detect whether the first bytes are
@@ -36,7 +36,7 @@ import org.eclipse.jetty.util.log.Logger;
 @Deprecated
 public class OptionalSslConnectionFactory extends DetectorConnectionFactory
 {
-    private static final Logger LOG = Log.getLogger(OptionalSslConnectionFactory.class);
+    private static final Logger LOG = LoggerFactory.getLogger(OptionalSslConnectionFactory.class);
     private final String _nextProtocol;
 
     /**

@@ -37,8 +37,8 @@ import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>ConnectionFactory for the PROXY Protocol.</p>
@@ -50,7 +50,7 @@ import org.eclipse.jetty.util.log.Logger;
 public class ProxyConnectionFactory extends DetectorConnectionFactory
 {
     public static final String TLS_VERSION = "TLS_VERSION";
-    private static final Logger LOG = Log.getLogger(ProxyConnectionFactory.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ProxyConnectionFactory.class);
 
     public ProxyConnectionFactory()
     {

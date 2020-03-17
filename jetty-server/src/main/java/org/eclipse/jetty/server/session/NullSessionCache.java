@@ -21,6 +21,9 @@ package org.eclipse.jetty.server.session;
 import java.util.function.Function;
 import javax.servlet.http.HttpServletRequest;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * NullSessionCache
  *
@@ -31,6 +34,8 @@ import javax.servlet.http.HttpServletRequest;
  */
 public class NullSessionCache extends AbstractSessionCache
 {
+    private static final Logger LOG = LoggerFactory.getLogger(NullSessionCache.class);
+
     /**
      * @param handler The SessionHandler related to this SessionCache
      */

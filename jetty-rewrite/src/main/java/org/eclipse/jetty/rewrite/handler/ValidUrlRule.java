@@ -23,8 +23,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.util.URIUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This rule can be used to protect against invalid unicode characters in a url making it into applications.
@@ -38,7 +38,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class ValidUrlRule extends Rule
 {
-    private static final Logger LOG = Log.getLogger(ValidUrlRule.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ValidUrlRule.class);
 
     String _code = "400";
     String _message = "Illegal Url";

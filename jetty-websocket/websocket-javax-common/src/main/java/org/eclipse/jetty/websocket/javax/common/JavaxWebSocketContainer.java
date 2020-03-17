@@ -31,15 +31,15 @@ import javax.websocket.WebSocketContainer;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract class JavaxWebSocketContainer extends ContainerLifeCycle implements javax.websocket.WebSocketContainer
 {
-    private static final Logger LOG = Log.getLogger(JavaxWebSocketContainer.class);
+    private static final Logger LOG = LoggerFactory.getLogger(JavaxWebSocketContainer.class);
     private final SessionTracker sessionTracker = new SessionTracker();
     private final List<JavaxWebSocketSessionListener> sessionListeners = new ArrayList<>();
     protected final Configuration.ConfigurationCustomizer defaultCustomizer = new Configuration.ConfigurationCustomizer();

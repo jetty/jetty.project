@@ -25,19 +25,19 @@ import javax.servlet.ServletContext;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.listener.ContainerInitializer;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServerContainer;
 import org.eclipse.jetty.websocket.servlet.WebSocketMapping;
 import org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * ServletContext configuration for Jetty Native WebSockets API.
  */
 public class JettyWebSocketServletContainerInitializer implements ServletContainerInitializer
 {
-    private static final Logger LOG = Log.getLogger(JettyWebSocketServletContainerInitializer.class);
+    private static final Logger LOG = LoggerFactory.getLogger(JettyWebSocketServletContainerInitializer.class);
 
     public interface Configurator
     {

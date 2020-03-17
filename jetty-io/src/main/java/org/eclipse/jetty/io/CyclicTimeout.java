@@ -22,9 +22,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.util.component.Destroyable;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Scheduler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static java.lang.Long.MAX_VALUE;
 
@@ -50,7 +50,7 @@ import static java.lang.Long.MAX_VALUE;
  */
 public abstract class CyclicTimeout implements Destroyable
 {
-    private static final Logger LOG = Log.getLogger(CyclicTimeout.class);
+    private static final Logger LOG = LoggerFactory.getLogger(CyclicTimeout.class);
     private static final Timeout NOT_SET = new Timeout(MAX_VALUE, null);
     private static final Scheduler.Task DESTROYED = () -> false;
 

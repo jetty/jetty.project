@@ -40,13 +40,13 @@ import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.IStream;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Sweeper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.Sweepable
 {
-    private static final Logger LOG = Log.getLogger(HttpConnection.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HttpConnection.class);
 
     private final Set<HttpChannel> activeChannels = ConcurrentHashMap.newKeySet();
     private final Queue<HttpChannelOverHTTP2> idleChannels = new ConcurrentLinkedQueue<>();

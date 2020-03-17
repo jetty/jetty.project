@@ -25,8 +25,8 @@ import javax.security.auth.Subject;
 import javax.security.auth.callback.CallbackHandler;
 
 import org.eclipse.jetty.util.Loader;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * JDBCLoginModule
@@ -39,7 +39,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class JDBCLoginModule extends AbstractDatabaseLoginModule
 {
-    private static final Logger LOG = Log.getLogger(JDBCLoginModule.class);
+    private static final Logger LOG = LoggerFactory.getLogger(JDBCLoginModule.class);
 
     private String dbDriver;
     private String dbUrl;

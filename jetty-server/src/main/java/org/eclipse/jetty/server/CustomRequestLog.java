@@ -42,8 +42,8 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static java.lang.invoke.MethodHandles.dropArguments;
 import static java.lang.invoke.MethodHandles.foldArguments;
@@ -271,7 +271,7 @@ import static java.lang.invoke.MethodType.methodType;
 @ManagedObject("Custom format request log")
 public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
 {
-    protected static final Logger LOG = Log.getLogger(CustomRequestLog.class);
+    protected static final Logger LOG = LoggerFactory.getLogger(CustomRequestLog.class);
 
     public static final String DEFAULT_DATE_FORMAT = "dd/MMM/yyyy:HH:mm:ss ZZZ";
 
@@ -347,7 +347,7 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
         }
         catch (Throwable e)
         {
-            LOG.warn(e);
+            LOG.warn("Unable to log request", e);
         }
     }
 

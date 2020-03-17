@@ -29,8 +29,6 @@ import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.osgi.boot.internal.serverfactory.ServerInstanceWrapper;
 import org.eclipse.jetty.osgi.boot.utils.Util;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.Constants;
@@ -39,6 +37,8 @@ import org.osgi.framework.FrameworkUtil;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.ServiceRegistration;
 import org.osgi.util.tracker.ServiceTracker;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * ServiceContextProvider
@@ -47,7 +47,7 @@ import org.osgi.util.tracker.ServiceTracker;
  */
 public class ServiceContextProvider extends AbstractContextProvider implements ServiceProvider
 {
-    private static final Logger LOG = Log.getLogger(AbstractContextProvider.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AbstractContextProvider.class);
 
     private Map<ServiceReference, App> _serviceMap = new HashMap<>();
 
@@ -221,7 +221,7 @@ public class ServiceContextProvider extends AbstractContextProvider implements S
             }
             catch (Exception e)
             {
-                LOG.warn(e);
+                LOG.warn("Unable to unregister {}", _serviceRegForServices, e);
             }
         }
         super.doStop();

@@ -24,8 +24,8 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>A budget of required thread usage, used to warn or error for insufficient configured threads.</p>
@@ -34,7 +34,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class ThreadPoolBudget
 {
-    static final Logger LOG = Log.getLogger(ThreadPoolBudget.class);
+    static final Logger LOG = LoggerFactory.getLogger(ThreadPoolBudget.class);
 
     public interface Lease extends Closeable
     {

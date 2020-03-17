@@ -23,12 +23,12 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.ServiceLoader;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.xml.ConfigurationProcessor;
 import org.eclipse.jetty.xml.ConfigurationProcessorFactory;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.eclipse.jetty.xml.XmlParser;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanWrapper;
 import org.springframework.beans.PropertyValues;
 import org.springframework.beans.factory.config.BeanDefinition;
@@ -60,7 +60,7 @@ import org.springframework.core.io.UrlResource;
  */
 public class SpringConfigurationProcessor implements ConfigurationProcessor
 {
-    private static final Logger LOG = Log.getLogger(SpringConfigurationProcessor.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SpringConfigurationProcessor.class);
 
     private XmlConfiguration _configuration;
     private DefaultListableBeanFactory _beanFactory;
