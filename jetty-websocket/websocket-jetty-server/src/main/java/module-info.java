@@ -28,8 +28,9 @@ module org.eclipse.jetty.websocket.jetty.server
     exports org.eclipse.jetty.websocket.server.config;
 
     requires jetty.servlet.api;
+    requires org.eclipse.jetty.websocket.jetty.common;
     requires transitive org.eclipse.jetty.webapp;
-    requires transitive org.eclipse.jetty.websocket.jetty.common;
+    requires transitive org.eclipse.jetty.websocket.jetty.api;
     requires transitive org.eclipse.jetty.websocket.servlet;
     requires org.slf4j;
 

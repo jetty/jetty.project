@@ -23,11 +23,11 @@ import org.eclipse.jetty.websocket.javax.client.JavaxWebSocketClientContainerPro
 module org.eclipse.jetty.websocket.javax.client
 {
     exports org.eclipse.jetty.websocket.javax.client;
+    exports org.eclipse.jetty.websocket.javax.client.internal to org.eclipse.jetty.websocket.javax.server;
 
+    requires transitive jetty.websocket.api;
     requires transitive org.eclipse.jetty.client;
-    requires transitive org.eclipse.jetty.websocket.javax.common;
-    requires org.eclipse.jetty.websocket.core;
-    requires org.eclipse.jetty.websocket.util;
+    requires org.eclipse.jetty.websocket.javax.common;
 
     provides ContainerProvider with JavaxWebSocketClientContainerProvider;
 }

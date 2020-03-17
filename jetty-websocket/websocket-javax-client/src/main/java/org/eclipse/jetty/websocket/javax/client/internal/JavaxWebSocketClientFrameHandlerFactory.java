@@ -16,7 +16,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.javax.client;
+package org.eclipse.jetty.websocket.javax.client.internal;
 
 import javax.websocket.ClientEndpoint;
 import javax.websocket.Endpoint;
