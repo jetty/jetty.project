@@ -16,7 +16,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.javax.client;
+package org.eclipse.jetty.websocket.javax.client.internal;
 
 import java.util.ArrayList;
 import java.util.HashMap;
