@@ -21,7 +21,6 @@ package org.eclipse.jetty.session.infinispan;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.nio.ByteBuffer;
 
 import org.infinispan.commons.marshall.Externalizer;
 import org.infinispan.protostream.FileDescriptorSource;
@@ -45,14 +44,16 @@ public class SessionDataMarshaller
      */
     private static final int VERSION = 0;
 
-    private SerializationContext initSerializationContext() throws IOException
+    private static SerializationContext serializationContext;
+    
+    private static void initSerializationContext() throws IOException
     {
         FileDescriptorSource fds = new FileDescriptorSource();
         fds.addProtoFiles("/session.proto");
-        SerializationContext serializationContext = ProtobufUtil.newSerializationContext();
-        serializationContext.registerProtoFiles(fds);
-        serializationContext.registerMarshaller(this);
-        return serializationContext;
+        SerializationContext sCtx = ProtobufUtil.newSerializationContext();
+        sCtx.registerProtoFiles(fds);
+        sCtx.registerMarshaller(new SessionDataMarshaller());
+        serializationContext = sCtx;
     }
 
     @Override
@@ -70,7 +71,10 @@ public class SessionDataMarshaller
     @Override
     public InfinispanSessionData readObject(ObjectInput input) throws IOException, ClassNotFoundException
     {
-        SerializationContext serializationContext = initSerializationContext();
+        if (serializationContext == null)
+        {
+            initSerializationContext();
+        }
 
         // invokes readFrom(ProtoStreamReader)
         InfinispanSessionData data = ProtobufUtil.readFrom(serializationContext, new BoundDelegatingInputStream(input),
@@ -85,12 +89,15 @@ public class SessionDataMarshaller
     @Override
     public void writeObject(ObjectOutput output, InfinispanSessionData object) throws IOException
     {
-        SerializationContext serializationContext = initSerializationContext();
+        if (serializationContext == null)
+        {
+            initSerializationContext();
+        }
 
      // invokes writeTo(ProtoStreamWriter, InfinispanSessionData)
         byte[] data = ProtobufUtil.toByteArray(serializationContext, object);
         int length = data.length;
-        output.write(ByteBuffer.allocate(4).putInt(length).array());
+        output.writeInt(length);
         output.write(data);        
     }
 
