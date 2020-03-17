@@ -150,11 +150,15 @@
       <artifactId>jetty-util</artifactId>
       <version>${project.version}</version>
     </dependency>
+    <!--
+      Cannot be included.
+      It requires javax.security.auth.message which cannot legally be included in jetty-all
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-jaspi</artifactId>
       <version>${project.version}</version>
     </dependency>
+     -->
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-jndi</artifactId>
