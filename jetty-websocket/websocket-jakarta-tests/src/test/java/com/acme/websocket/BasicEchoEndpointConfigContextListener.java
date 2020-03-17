@@ -18,10 +18,10 @@
 
 package com.acme.websocket;
 
-import jakarta.websocket.DeploymentException;
-import jakarta.websocket.server.ServerEndpointConfig;
 import jakarta.servlet.ServletContextEvent;
 import jakarta.servlet.ServletContextListener;
+import jakarta.websocket.DeploymentException;
+import jakarta.websocket.server.ServerEndpointConfig;
 
 public class BasicEchoEndpointConfigContextListener implements ServletContextListener
 {

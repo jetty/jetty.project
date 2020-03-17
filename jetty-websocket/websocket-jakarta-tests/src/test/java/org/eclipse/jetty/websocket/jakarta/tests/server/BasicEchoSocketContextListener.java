@@ -18,10 +18,10 @@
 
 package org.eclipse.jetty.websocket.jakarta.tests.server;
 
-import jakarta.websocket.DeploymentException;
-import jakarta.websocket.server.ServerContainer;
 import jakarta.servlet.ServletContextEvent;
 import jakarta.servlet.ServletContextListener;
+import jakarta.websocket.DeploymentException;
+import jakarta.websocket.server.ServerContainer;
 
 import org.eclipse.jetty.websocket.jakarta.tests.server.sockets.echo.BasicEchoSocket;
 /**
