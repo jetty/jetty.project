@@ -35,6 +35,8 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /**
  * <p>A HttpUpgrader that upgrades to a given protocol.</p>
@@ -45,6 +47,8 @@ import org.eclipse.jetty.util.Promise;
  */
 public class ProtocolHttpUpgrader implements HttpUpgrader
 {
+    private static final Logger LOG = Log.getLogger(ProtocolHttpUpgrader.class);
+
     private final HttpDestination destination;
     private final String protocol;
 
@@ -78,6 +82,9 @@ public class ProtocolHttpUpgrader implements HttpUpgrader
                 context.put(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY, newDestination);
                 context.put(HttpResponse.class.getName(), response);
                 context.put(HttpClientTransport.HTTP_CONNECTION_PROMISE_CONTEXT_KEY, Promise.from(y -> callback.succeeded(), callback::failed));
+
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Upgrading {} on {}", response.getRequest(), endPoint);
 
                 dynamicTransport.upgrade(endPoint, context);
             }

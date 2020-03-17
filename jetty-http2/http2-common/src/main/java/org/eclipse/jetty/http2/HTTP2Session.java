@@ -557,6 +557,16 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         }
     }
 
+    /**
+     * <p>Creates a new stream allocating a stream id if the given HEADERS frame does not have one.</p>
+     * <p>The new HEADERS frame with the newly allocated stream id is returned as the first element
+     * of the array parameter.</p>
+     *
+     * @param frameIn the HEADERS frame that triggered the stream creation
+     * @param frameOut an array of size 1 to return the HEADERS frame with the newly
+     * allocated stream id, or null if not interested in the modified headers frame
+     * @return a new stream
+     */
     public IStream newStream(HeadersFrame frameIn, HeadersFrame[] frameOut)
     {
         HeadersFrame frame = frameIn;

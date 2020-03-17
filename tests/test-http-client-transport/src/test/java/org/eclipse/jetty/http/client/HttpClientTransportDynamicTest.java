@@ -20,6 +20,7 @@ package org.eclipse.jetty.http.client;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ThreadLocalRandom;
@@ -32,13 +33,18 @@ import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.client.AbstractConnectionPool;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpDestination;
+import org.eclipse.jetty.client.HttpProxy;
 import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Destination;
+import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.dynamic.HttpClientTransportDynamic;
 import org.eclipse.jetty.client.http.HttpClientConnectionFactory;
+import org.eclipse.jetty.client.util.BufferingResponseListener;
+import org.eclipse.jetty.client.util.BytesContentProvider;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
@@ -57,12 +63,14 @@ import org.eclipse.jetty.server.ProxyConnectionFactory;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import static org.eclipse.jetty.client.ProxyProtocolClientConnectionFactory.V1;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -559,11 +567,124 @@ public class HttpClientTransportDynamicTest
         assertEquals(content, response.getContentAsString());
         // We still have 2 destinations.
         assertEquals(2, client.getDestinations().size());
+    }
 
-        // TODO: make also a test over TLS!
+    @Test
+    public void testHTTP11UpgradeToH2CWithForwardProxy() throws Exception
+    {
+        String content = "upgrade";
+        startServer(this::h1H2C, new EmptyServerHandler()
+        {
+            @Override
+            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            {
+                response.setContentType("text/plain; charset=UTF-8");
+                response.getOutputStream().print(content);
+            }
+        });
+        ClientConnector clientConnector = new ClientConnector();
+        HTTP2Client http2Client = new HTTP2Client(clientConnector);
+        ClientConnectionFactory.Info h2c = new ClientConnectionFactoryOverHTTP2.H2C(http2Client);
+        startClient(clientConnector, HttpClientConnectionFactory.HTTP11, h2c);
 
-        // TODO: add a test with a forward proxy!
+        int proxyPort = connector.getLocalPort();
+        // The proxy speaks both http/1.1 and h2c.
+        Origin.Protocol proxyProtocol = new Origin.Protocol(List.of("http/1.1", "h2c"), false);
+        client.getProxyConfiguration().getProxies().add(new HttpProxy(new Origin.Address("localhost", proxyPort), false, proxyProtocol));
 
+        // Make an upgrade request from HTTP/1.1 to H2C.
+        int serverPort = proxyPort + 1; // Any port will do.
+        ContentResponse response = client.newRequest("localhost", serverPort)
+            .header(HttpHeader.UPGRADE, "h2c")
+            .header(HttpHeader.HTTP2_SETTINGS, "")
+            .header(HttpHeader.CONNECTION, "Upgrade, HTTP2-Settings")
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
+
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+        assertEquals(content, response.getContentAsString());
+        // Verify that we upgraded.
+        assertEquals(2, client.getDestinations().size());
+    }
+
+    @Test
+    public void testHTTP11UpgradeToH2COverTLS() throws Exception
+    {
+        String content = "upgrade";
+        startServer(this::sslH1H2C, new EmptyServerHandler()
+        {
+            @Override
+            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            {
+                response.setContentType("text/plain; charset=UTF-8");
+                response.getOutputStream().print(content);
+            }
+        });
+        ClientConnector clientConnector = new ClientConnector();
+        HTTP2Client http2Client = new HTTP2Client(clientConnector);
+        ClientConnectionFactory.Info h2c = new ClientConnectionFactoryOverHTTP2.H2C(http2Client);
+        startClient(clientConnector, HttpClientConnectionFactory.HTTP11, h2c);
+
+        // Make an upgrade request from HTTP/1.1 to H2C.
+        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+            .scheme(HttpScheme.HTTPS.asString())
+            .header(HttpHeader.UPGRADE, "h2c")
+            .header(HttpHeader.HTTP2_SETTINGS, "")
+            .header(HttpHeader.CONNECTION, "Upgrade, HTTP2-Settings")
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
+
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+        assertEquals(content, response.getContentAsString());
+        // Verify that we upgraded.
+        assertEquals(2, client.getDestinations().size());
+    }
+
+    @Test
+    public void testHTTP11UpgradeToH2CWithRequestContentDoesNotUpgrade() throws Exception
+    {
+        startServer(this::h1H2C, new EmptyServerHandler()
+        {
+            @Override
+            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            {
+                IO.copy(request.getInputStream(), response.getOutputStream());
+            }
+        });
+        ClientConnector clientConnector = new ClientConnector();
+        HTTP2Client http2Client = new HTTP2Client(clientConnector);
+        ClientConnectionFactory.Info h2c = new ClientConnectionFactoryOverHTTP2.H2C(http2Client);
+        startClient(clientConnector, HttpClientConnectionFactory.HTTP11, h2c);
+
+        // Make a POST upgrade request from HTTP/1.1 to H2C.
+        // We don't support upgrades with request content because
+        // the application would need to read the request content in
+        // HTTP/1.1 format but write the response in HTTP/2 format.
+        byte[] bytes = new byte[1024 * 1024];
+        new Random().nextBytes(bytes);
+        CountDownLatch latch = new CountDownLatch(1);
+        client.newRequest("localhost", connector.getLocalPort())
+            .method(HttpMethod.POST)
+            .header(HttpHeader.UPGRADE, "h2c")
+            .header(HttpHeader.HTTP2_SETTINGS, "")
+            .header(HttpHeader.CONNECTION, "Upgrade, HTTP2-Settings")
+            .content(new BytesContentProvider(bytes))
+            .timeout(5, TimeUnit.SECONDS)
+            .send(new BufferingResponseListener(bytes.length)
+            {
+                @Override
+                public void onComplete(Result result)
+                {
+                    assertTrue(result.isSucceeded());
+                    assertArrayEquals(bytes, getContent());
+                    latch.countDown();
+                }
+            });
+
+        assertTrue(latch.await(15, TimeUnit.SECONDS));
+
+        // Check that we did not upgrade.
+        assertEquals(1, client.getDestinations().size());
     }
 
     @Test
@@ -591,7 +712,7 @@ public class HttpClientTransportDynamicTest
         startServer(this::h1H2C, new EmptyServerHandler()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
             {
                 jettyRequest.getHttpChannel().getEndPoint().getConnection().close();
             }

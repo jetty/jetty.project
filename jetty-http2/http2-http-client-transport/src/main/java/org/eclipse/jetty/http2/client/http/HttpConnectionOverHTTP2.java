@@ -106,6 +106,7 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
         // (with upgrade) for a resource, and the response is HTTP/2.
         // Create the implicit stream#1 so that it can receive the HTTP/2 response.
         MetaData.Request metaData = new MetaData.Request(request.getMethod(), new HttpURI(request.getURI()), HttpVersion.HTTP_2, request.getHeaders());
+        // We do not support upgrade requests with content, so endStream=true.
         HeadersFrame frame = new HeadersFrame(metaData, null, true);
         IStream stream = ((HTTP2Session)session).newStream(frame, null);
         stream.updateClose(frame.isEndStream(), CloseState.Event.AFTER_SEND);
@@ -119,6 +120,9 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
         http2Channel.setStream(stream);
         newExchange.requestComplete(null);
         newExchange.terminateRequest();
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("Upgrade completed for {}", this);
     }
 
     @Override

@@ -89,6 +89,8 @@ public class MultiplexConnectionPool extends AbstractConnectionPool implements C
     public boolean accept(Connection connection)
     {
         boolean accepted = super.accept(connection);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Accepted {} {}", accepted, connection);
         if (accepted)
         {
             synchronized (this)

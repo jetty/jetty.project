@@ -30,6 +30,8 @@ import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.HTTP2ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.ssl.SslClientConnectionFactory;
+import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 
@@ -80,9 +82,12 @@ public class ClientConnectionFactoryOverHTTP2 extends ContainerLifeCycle impleme
                 @Override
                 public void succeeded(HttpConnectionOverHTTP2 connection)
                 {
+                    // This code is run when the client receives the server preface reply.
+                    // Upgrade the connection to setup HTTP/2 frame listeners that will
+                    // handle the HTTP/2 response to the upgrade request.
                     promise.succeeded(connection);
-                    destination.accept(connection);
                     connection.upgrade(context);
+                    destination.accept(connection);
                 }
 
                 @Override
@@ -98,7 +103,13 @@ public class ClientConnectionFactoryOverHTTP2 extends ContainerLifeCycle impleme
         {
             try
             {
-                endPoint.upgrade(factory.newConnection(endPoint, context));
+                // Avoid double TLS wrapping. We want to keep the existing
+                // SslConnection that has already performed the TLS handshake,
+                // and just upgrade the nested connection.
+                if (factory instanceof SslClientConnectionFactory && endPoint instanceof SslConnection.DecryptedEndPoint)
+                    factory = ((SslClientConnectionFactory)factory).getClientConnectionFactory();
+                var newConnection = factory.newConnection(endPoint, context);
+                endPoint.upgrade(newConnection);
             }
             catch (IOException x)
             {
