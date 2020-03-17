@@ -18,11 +18,11 @@
 
 package com.acme.websocket;
 
+import jakarta.servlet.ServletContextEvent;
+import jakarta.servlet.ServletContextListener;
 import jakarta.websocket.DeploymentException;
 import jakarta.websocket.server.ServerContainer;
 import jakarta.websocket.server.ServerEndpointConfig;
-import jakarta.servlet.ServletContextEvent;
-import jakarta.servlet.ServletContextListener;
 
 /**
  * Example of adding a server WebSocket (extending {@link jakarta.websocket.Endpoint}) programmatically via config
