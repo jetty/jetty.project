@@ -23,6 +23,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -33,6 +35,8 @@ import javax.servlet.http.Part;
 
 import org.eclipse.jetty.http.MultiPartFormInputStream.MultiPart;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.BlockingArrayQueue;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.junit.jupiter.api.Test;
 
@@ -883,6 +887,97 @@ public class MultiPartFormInputStreamTest
         baos = new ByteArrayOutputStream();
         IO.copy(p3.getInputStream(), baos);
         assertEquals("the end", baos.toString("US-ASCII"));
+    }
+
+    @Test
+    public void testFragmentation() throws IOException
+    {
+        String contentType = "multipart/form-data, boundary=----WebKitFormBoundaryhXfFAMfUnUKhmqT8";
+        String payload1 =
+            "------WebKitFormBoundaryhXfFAMfUnUKhmqT8\r\n" +
+                "Content-Disposition: form-data; name=\"field1\"\r\n\r\n" +
+                "value1" +
+                "\r\n--";
+        String payload2 = "----WebKitFormBoundaryhXfFAMfUnUKhmqT8\r\n" +
+            "Content-Disposition: form-data; name=\"field2\"\r\n\r\n" +
+            "value2" +
+            "\r\n------WebKitFormBoundaryhXfFAMfUnUKhmqT8--\r\n";
+
+        // Split the content into separate reads, with the content broken up on the boundary string.
+        AppendableInputStream stream = new AppendableInputStream();
+        stream.append(payload1);
+        stream.append("");
+        stream.append(payload2);
+        stream.endOfContent();
+
+        MultipartConfigElement config = new MultipartConfigElement(_dirname);
+        MultiPartFormInputStream mpis = new MultiPartFormInputStream(stream, contentType, config, _tmpDir);
+        mpis.setDeleteOnExit(true);
+
+        // Check size.
+        Collection<Part> parts = mpis.getParts();
+        assertThat(parts.size(), is(2));
+
+        // Check part content.
+        assertThat(IO.toString(mpis.getPart("field1").getInputStream()), is("value1"));
+        assertThat(IO.toString(mpis.getPart("field2").getInputStream()), is("value2"));
+    }
+
+    static class AppendableInputStream extends InputStream
+    {
+        private static final ByteBuffer EOF = ByteBuffer.allocate(0);
+        private final BlockingArrayQueue<ByteBuffer> buffers = new BlockingArrayQueue<>();
+        private ByteBuffer current;
+
+        public void append(String data)
+        {
+            append(data.getBytes(StandardCharsets.US_ASCII));
+        }
+
+        public void append(byte[] data)
+        {
+            buffers.add(BufferUtil.toBuffer(data));
+        }
+
+        public void endOfContent()
+        {
+            buffers.add(EOF);
+        }
+
+        @Override
+        public int read() throws IOException
+        {
+            byte[] buf = new byte[1];
+            while (true)
+            {
+                int len = read(buf, 0, 1);
+                if (len < 0)
+                    return -1;
+                if (len > 0)
+                    return buf[0];
+            }
+        }
+
+        @Override
+        public int read(byte[] b, int off, int len) throws IOException
+        {
+            if (current == null)
+                current = buffers.poll();
+            if (current == EOF)
+                return -1;
+            if (BufferUtil.isEmpty(current))
+            {
+                current = null;
+                return 0;
+            }
+
+            ByteBuffer buffer = ByteBuffer.wrap(b, off, len);
+            buffer.flip();
+            int read = BufferUtil.append(buffer, current);
+            if (BufferUtil.isEmpty(current))
+                current = buffers.poll();
+            return read;
+        }
     }
 
     @Test
