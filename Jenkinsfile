@@ -7,11 +7,11 @@ pipeline {
   stages {
     stage("Parallel Stage") {
       parallel {
-        stage("Build / Test - JDK8") {
+        stage("Build / Test - JDK9") {
           agent { node { label 'linux' } }
           options { timeout(time: 120, unit: 'MINUTES') }
           steps {
-            mavenBuild("jdk8", "install", "maven3", false)
+            mavenBuild("jdk9", "install", "maven3", false)
             // Collect up the jacoco execution results (only on main build)
             jacoco inclusionPattern: '**/org/eclipse/jetty/**/*.class',
                    exclusionPattern: '' +
