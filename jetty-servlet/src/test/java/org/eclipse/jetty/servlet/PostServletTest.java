@@ -26,14 +26,14 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.log.StacklessLogging;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -45,7 +45,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class PostServletTest
 {
-    private static final Logger LOG = Log.getLogger(PostServletTest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(PostServletTest.class);
     private static final AtomicBoolean posted = new AtomicBoolean(false);
     private static final AtomicReference<Throwable> ex0 = new AtomicReference<>();
     private static final AtomicReference<Throwable> ex1 = new AtomicReference<>();

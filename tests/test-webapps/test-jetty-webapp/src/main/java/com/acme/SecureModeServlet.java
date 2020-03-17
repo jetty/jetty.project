@@ -32,8 +32,8 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Dump Servlet Request.
@@ -41,7 +41,7 @@ import org.eclipse.jetty.util.log.Logger;
 @SuppressWarnings("serial")
 public class SecureModeServlet extends HttpServlet
 {
-    private static final Logger LOG = Log.getLogger(SecureModeServlet.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SecureModeServlet.class);
 
     @Override
     public void init(ServletConfig config) throws ServletException

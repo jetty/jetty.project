@@ -35,11 +35,11 @@ import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.xml.XmlConfiguration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -50,7 +50,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 public class XmlBasedJettyServer
 {
-    private static final Logger LOG = Log.getLogger(XmlBasedJettyServer.class);
+    private static final Logger LOG = LoggerFactory.getLogger(XmlBasedJettyServer.class);
     private List<Resource> _xmlConfigurations;
     private final Map<String, String> _properties = new HashMap<>();
     private Server _server;

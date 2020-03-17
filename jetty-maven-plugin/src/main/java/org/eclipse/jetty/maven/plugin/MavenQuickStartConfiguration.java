@@ -20,19 +20,19 @@ package org.eclipse.jetty.maven.plugin;
 
 import org.eclipse.jetty.quickstart.QuickStartConfiguration;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.webapp.WebAppContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * MavenQuickStartConfiguration
  */
 public class MavenQuickStartConfiguration extends QuickStartConfiguration
 {
-    private static final Logger LOG = Log.getLogger(QuickStartConfiguration.class);
+    private static final Logger LOG = LoggerFactory.getLogger(QuickStartConfiguration.class);
     
     @Override
     public Class<? extends Configuration> replaces()

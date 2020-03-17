@@ -22,12 +22,12 @@ import java.io.InputStream;
 import java.time.Instant;
 import java.util.Properties;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Jetty
 {
-    private static final Logger LOG = Log.getLogger(Jetty.class);
+    private static final Logger LOG = LoggerFactory.getLogger(Jetty.class);
 
     public static final String VERSION;
     public static final String POWERED_BY;
@@ -52,7 +52,7 @@ public class Jetty
         }
         catch (Exception e)
         {
-            LOG.ignore(e);
+            LOG.trace("IGNORED", e);
         }
 
         String gitHash = __buildProperties.getProperty("buildNumber", "unknown");
@@ -91,7 +91,7 @@ public class Jetty
         }
         catch (NumberFormatException e)
         {
-            LOG.ignore(e);
+            LOG.trace("IGNORED", e);
             return "unknown";
         }
     }

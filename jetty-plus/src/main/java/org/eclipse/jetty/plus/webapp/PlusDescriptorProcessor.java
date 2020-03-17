@@ -36,21 +36,21 @@ import org.eclipse.jetty.plus.jndi.Link;
 import org.eclipse.jetty.plus.jndi.NamingEntry;
 import org.eclipse.jetty.plus.jndi.NamingEntryUtil;
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.webapp.Descriptor;
 import org.eclipse.jetty.webapp.FragmentDescriptor;
 import org.eclipse.jetty.webapp.IterativeDescriptorProcessor;
 import org.eclipse.jetty.webapp.Origin;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.xml.XmlParser;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * PlusDescriptorProcessor
  */
 public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
 {
-    private static final Logger LOG = Log.getLogger(PlusDescriptorProcessor.class);
+    private static final Logger LOG = LoggerFactory.getLogger(PlusDescriptorProcessor.class);
 
     public PlusDescriptorProcessor()
     {

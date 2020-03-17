@@ -27,21 +27,21 @@ import org.eclipse.jetty.jndi.NamingContext;
 import org.eclipse.jetty.plus.annotation.InjectionCollection;
 import org.eclipse.jetty.plus.annotation.LifeCycleCallbackCollection;
 import org.eclipse.jetty.plus.jndi.Transaction;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.webapp.AbstractConfiguration;
 import org.eclipse.jetty.webapp.FragmentConfiguration;
 import org.eclipse.jetty.webapp.JettyWebXmlConfiguration;
 import org.eclipse.jetty.webapp.MetaInfConfiguration;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.webapp.WebXmlConfiguration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Configuration
  */
 public class PlusConfiguration extends AbstractConfiguration
 {
-    private static final Logger LOG = Log.getLogger(PlusConfiguration.class);
+    private static final Logger LOG = LoggerFactory.getLogger(PlusConfiguration.class);
 
     private Integer _key;
 

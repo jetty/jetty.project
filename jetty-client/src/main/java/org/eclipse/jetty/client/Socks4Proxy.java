@@ -35,8 +35,8 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Socks4Proxy extends ProxyConfiguration.Proxy
 {
@@ -78,7 +78,7 @@ public class Socks4Proxy extends ProxyConfiguration.Proxy
     private static class Socks4ProxyConnection extends AbstractConnection implements Callback
     {
         private static final Pattern IPv4_PATTERN = Pattern.compile("(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})");
-        private static final Logger LOG = Log.getLogger(Socks4ProxyConnection.class);
+        private static final Logger LOG = LoggerFactory.getLogger(Socks4ProxyConnection.class);
 
         private final Socks4Parser parser = new Socks4Parser();
         private final ClientConnectionFactory connectionFactory;

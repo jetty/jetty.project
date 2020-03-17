@@ -23,4 +23,5 @@ module org.eclipse.jetty.rewrite
 
     requires jetty.servlet.api;
     requires transitive org.eclipse.jetty.server;
+    requires org.slf4j;
 }

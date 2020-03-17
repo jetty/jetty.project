@@ -27,8 +27,8 @@ import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * The implementation of {@link LoginService} required to use OpenID Connect.
@@ -39,7 +39,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class OpenIdLoginService extends ContainerLifeCycle implements LoginService
 {
-    private static final Logger LOG = Log.getLogger(OpenIdLoginService.class);
+    private static final Logger LOG = LoggerFactory.getLogger(OpenIdLoginService.class);
 
     private final OpenIdConfiguration configuration;
     private final LoginService loginService;
@@ -94,7 +94,7 @@ public class OpenIdLoginService extends ContainerLifeCycle implements LoginServi
         }
         catch (Throwable e)
         {
-            LOG.warn(e);
+            LOG.warn("Unable to redeem auth code", e);
             return null;
         }
 

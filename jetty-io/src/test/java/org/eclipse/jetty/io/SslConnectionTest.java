@@ -42,7 +42,6 @@ import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.FutureCallback;
-import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -50,6 +49,8 @@ import org.eclipse.jetty.util.thread.TimerScheduler;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -60,6 +61,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class SslConnectionTest
 {
+    private static final Logger LOG = LoggerFactory.getLogger(SslConnectionTest.class);
+
     private static final int TIMEOUT = 1000000;
     private static ByteBufferPool __byteBufferPool = new LeakTrackingByteBufferPool(new MappedByteBufferPool.Tagged());
 
@@ -250,11 +253,11 @@ public class SslConnectionTest
             }
             catch (InterruptedException | EofException e)
             {
-                Log.getRootLogger().ignore(e);
+                LOG.trace("IGNORED", e);
             }
             catch (Exception e)
             {
-                Log.getRootLogger().warn(e);
+                LOG.warn("During onFillable", e);
             }
             finally
             {

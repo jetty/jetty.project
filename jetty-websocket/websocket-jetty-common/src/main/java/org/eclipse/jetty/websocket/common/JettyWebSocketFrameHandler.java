@@ -26,11 +26,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
+import org.eclipse.jetty.websocket.api.WebSocketContainer;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Configuration;
@@ -48,6 +47,8 @@ import org.eclipse.jetty.websocket.core.exception.WebSocketTimeoutException;
 import org.eclipse.jetty.websocket.util.InvalidSignatureException;
 import org.eclipse.jetty.websocket.util.InvokerUtils;
 import org.eclipse.jetty.websocket.util.messages.MessageSink;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class JettyWebSocketFrameHandler implements FrameHandler
 {
@@ -96,7 +97,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
                                       BatchMode batchMode,
                                       Configuration.Customizer customizer)
     {
-        this.log = Log.getLogger(endpointInstance.getClass());
+        this.log = LoggerFactory.getLogger(endpointInstance.getClass());
 
         this.container = container;
         this.endpointInstance = endpointInstance;

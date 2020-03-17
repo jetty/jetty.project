@@ -33,10 +33,9 @@ import javax.servlet.http.HttpSession;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.StacklessLogging;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -73,7 +72,7 @@ public class AsyncTest
         server.start();
         int port = server.getPort();
 
-        try (StacklessLogging stackless = new StacklessLogging(Log.getLogger("org.eclipse.jetty.server.session")))
+        try (StacklessLogging stackless = new StacklessLogging(AsyncTest.class.getPackage()))
         {
             HttpClient client = new HttpClient();
             client.start();
@@ -125,7 +124,7 @@ public class AsyncTest
         server.start();
         int port = server.getPort();
 
-        try (StacklessLogging stackless = new StacklessLogging(Log.getLogger("org.eclipse.jetty.server.session")))
+        try (StacklessLogging stackless = new StacklessLogging(AsyncTest.class.getPackage()))
         {
             HttpClient client = new HttpClient();
             client.start();
@@ -181,7 +180,7 @@ public class AsyncTest
         server.start();
         int port = server.getPort();
 
-        try (StacklessLogging stackless = new StacklessLogging(Log.getLogger("org.eclipse.jetty.server.session")))
+        try (StacklessLogging stackless = new StacklessLogging(AsyncTest.class.getPackage()))
         {
             HttpClient client = new HttpClient();
             client.start();
@@ -234,7 +233,7 @@ public class AsyncTest
         server.start();
         int port = server.getPort();
 
-        try (StacklessLogging stackless = new StacklessLogging(Log.getLogger("org.eclipse.jetty.server.session")))
+        try (StacklessLogging stackless = new StacklessLogging(AsyncTest.class.getPackage()))
         {
             HttpClient client = new HttpClient();
             client.start();
@@ -290,10 +289,10 @@ public class AsyncTest
         server.start();
         int port = server.getPort();
         HttpClient client = new HttpClient();
-        
-        try (StacklessLogging stackless = new StacklessLogging(Log.getLogger("org.eclipse.jetty.server.session")))
+
+        try (StacklessLogging stackless = new StacklessLogging(AsyncTest.class.getPackage()))
         {
-            
+
             client.start();
             String url = "http://localhost:" + port + "/ctxA/test?action=asyncComplete";
 

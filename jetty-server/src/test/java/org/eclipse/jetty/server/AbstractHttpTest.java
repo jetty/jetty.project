@@ -33,8 +33,8 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.tools.HttpTester;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
+import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.util.log.StacklessLogging;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 

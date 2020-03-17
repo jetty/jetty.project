@@ -70,8 +70,8 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.component.LifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Servlet HttpHandler.
@@ -89,7 +89,7 @@ import org.eclipse.jetty.util.log.Logger;
 @ManagedObject("Servlet Handler")
 public class ServletHandler extends ScopedHandler
 {
-    private static final Logger LOG = Log.getLogger(ServletHandler.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ServletHandler.class);
 
     public static final String __DEFAULT_SERVLET = "default";
 
@@ -232,29 +232,30 @@ public class ServletHandler extends ScopedHandler
         {
             for (int i = _filters.length; i-- > 0; )
             {
+                FilterHolder filter = _filters[i];
                 try
                 {
-                    _filters[i].stop();
+                    filter.stop();
                 }
                 catch (Exception e)
                 {
-                    LOG.warn(Log.EXCEPTION, e);
+                    LOG.warn("Unable to stop filter {}", filter, e);
                 }
-                if (_filters[i].getSource() != Source.EMBEDDED)
+                if (filter.getSource() != Source.EMBEDDED)
                 {
                     //remove all of the mappings that were for non-embedded filters
-                    _filterNameMap.remove(_filters[i].getName());
+                    _filterNameMap.remove(filter.getName());
                     //remove any mappings associated with this filter
                     ListIterator<FilterMapping> fmitor = filterMappings.listIterator();
                     while (fmitor.hasNext())
                     {
                         FilterMapping fm = fmitor.next();
-                        if (fm.getFilterName().equals(_filters[i].getName()))
+                        if (fm.getFilterName().equals(filter.getName()))
                             fmitor.remove();
                     }
                 }
                 else
-                    filterHolders.add(_filters[i]); //only retain embedded
+                    filterHolders.add(filter); //only retain embedded
             }
         }
 
@@ -274,30 +275,31 @@ public class ServletHandler extends ScopedHandler
         {
             for (int i = _servlets.length; i-- > 0; )
             {
+                ServletHolder servlet = _servlets[i];
                 try
                 {
-                    _servlets[i].stop();
+                    servlet.stop();
                 }
                 catch (Exception e)
                 {
-                    LOG.warn(Log.EXCEPTION, e);
+                    LOG.warn("Unable to stop servlet {}", servlet, e);
                 }
 
-                if (_servlets[i].getSource() != Source.EMBEDDED)
+                if (servlet.getSource() != Source.EMBEDDED)
                 {
                     //remove from servlet name map
-                    _servletNameMap.remove(_servlets[i].getName());
+                    _servletNameMap.remove(servlet.getName());
                     //remove any mappings associated with this servlet
                     ListIterator<ServletMapping> smitor = servletMappings.listIterator();
                     while (smitor.hasNext())
                     {
                         ServletMapping sm = smitor.next();
-                        if (sm.getServletName().equals(_servlets[i].getName()))
+                        if (sm.getServletName().equals(servlet.getName()))
                             smitor.remove();
                     }
                 }
                 else
-                    servletHolders.add(_servlets[i]); //only retain embedded 
+                    servletHolders.add(servlet); //only retain embedded
             }
         }
 
@@ -313,16 +315,17 @@ public class ServletHandler extends ScopedHandler
         {
             for (int i = _listeners.length; i-- > 0; )
             {
+                ListenerHolder listener = _listeners[i];
                 try
                 {
-                    _listeners[i].stop();
+                    listener.stop();
                 }
                 catch (Exception e)
                 {
-                    LOG.warn(Log.EXCEPTION, e);
+                    LOG.warn("Unable to stop listener {}", listener, e);
                 }
-                if (_listeners[i].getSource() == Source.EMBEDDED)
-                    listenerHolders.add(_listeners[i]);
+                if (listener.getSource() == Source.EMBEDDED)
+                    listenerHolders.add(listener);
             }
         }
         ListenerHolder[] listeners = (ListenerHolder[])LazyList.toArray(listenerHolders, ListenerHolder.class);
@@ -741,7 +744,7 @@ public class ServletHandler extends ScopedHandler
                 }
                 catch (Throwable e)
                 {
-                    LOG.debug(Log.EXCEPTION, e);
+                    LOG.debug("Unable to start {}", h, e);
                     mx.add(e);
                 }
             });

@@ -42,11 +42,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * Test the JettyForkedChild class, which
  * is the main that is executed by jetty:run/start in mode FORKED.
- *
  */
 public class TestForkedChild
 {
@@ -107,11 +107,14 @@ public class TestForkedChild
         testDir.mkdirs();
         tmpDir = new File(testDir, "tmp");
         webappPropsFile = new File(testDir, "webapp.props");
-        
-        stopPort = Integer.valueOf(System.getProperty("stop.port"));
+
+        String stopPortString = System.getProperty("stop.port");
+        assertNotNull(stopPortString, "stop.port System property");
+        stopPort = Integer.valueOf(stopPortString);
         jettyPortString = System.getProperty("jetty.port");
+        assertNotNull(jettyPortString, "jetty.port System property");
         jettyPort = Integer.valueOf(jettyPortString);
-        
+
         Random random = new Random();
         token = Long.toString(random.nextLong() ^ System.currentTimeMillis(), 36).toUpperCase(Locale.ENGLISH);
         tokenFile = testDir.toPath().resolve(token + ".txt").toFile();

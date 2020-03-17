@@ -26,8 +26,8 @@ import org.eclipse.jetty.http.HttpTokens;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.hpack.HpackContext.Entry;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Hpack Decoder
@@ -35,7 +35,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class HpackDecoder
 {
-    public static final Logger LOG = Log.getLogger(HpackDecoder.class);
+    public static final Logger LOG = LoggerFactory.getLogger(HpackDecoder.class);
     public static final HttpField.LongValueHttpField CONTENT_LENGTH_0 =
         new HttpField.LongValueHttpField(HttpHeader.CONTENT_LENGTH, 0L);
 

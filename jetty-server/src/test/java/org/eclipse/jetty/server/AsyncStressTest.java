@@ -38,14 +38,14 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -53,7 +53,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @Tag("stress")
 public class AsyncStressTest
 {
-    private static final Logger LOG = Log.getLogger(AsyncStressTest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AsyncStressTest.class);
 
     protected QueuedThreadPool _threads = new QueuedThreadPool();
     protected Server _server = new Server(_threads);
@@ -252,7 +252,8 @@ public class AsyncStressTest
                                     System.err.println(uri + "==" + br.getHttpURI());
                                     System.err.println(asyncContext + "==" + br.getHttpChannelState());
 
-                                    LOG.warn(e);
+                                    LOG.warn("Unable to complete async: request={}, uri={}, asyncContext={}",
+                                        br, br.getHttpURI(), br.getHttpChannelState(), e);
                                     System.exit(1);
                                 }
                             }

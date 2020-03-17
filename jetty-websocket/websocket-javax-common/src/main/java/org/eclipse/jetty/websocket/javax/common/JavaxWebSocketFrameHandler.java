@@ -38,8 +38,6 @@ import javax.websocket.server.ServerEndpointConfig;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
@@ -57,6 +55,8 @@ import org.eclipse.jetty.websocket.util.messages.MessageSink;
 import org.eclipse.jetty.websocket.util.messages.PartialByteArrayMessageSink;
 import org.eclipse.jetty.websocket.util.messages.PartialByteBufferMessageSink;
 import org.eclipse.jetty.websocket.util.messages.PartialStringMessageSink;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class JavaxWebSocketFrameHandler implements FrameHandler
 {
@@ -119,13 +119,13 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
                                       MethodHandle pongHandle,
                                       EndpointConfig endpointConfig)
     {
-        this.logger = Log.getLogger(endpointInstance.getClass());
+        this.logger = LoggerFactory.getLogger(endpointInstance.getClass());
 
         this.container = container;
         if (endpointInstance instanceof ConfiguredEndpoint)
         {
             RuntimeException oops = new RuntimeException("ConfiguredEndpoint needs to be unwrapped");
-            logger.warn(oops);
+            logger.warn("Unexpected ConfiguredEndpoint", oops);
             throw oops;
         }
         this.endpointInstance = endpointInstance;

@@ -57,10 +57,10 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.annotation.Name;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Denial of Service filter
@@ -127,7 +127,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
 @ManagedObject("limits exposure to abuse from request flooding, whether malicious, or as a result of a misconfigured client")
 public class DoSFilter implements Filter
 {
-    private static final Logger LOG = Log.getLogger(DoSFilter.class);
+    private static final Logger LOG = LoggerFactory.getLogger(DoSFilter.class);
 
     private static final String IPv4_GROUP = "(\\d{1,3})";
     private static final Pattern IPv4_PATTERN = Pattern.compile(IPv4_GROUP + "\\." + IPv4_GROUP + "\\." + IPv4_GROUP + "\\." + IPv4_GROUP);
@@ -426,7 +426,7 @@ public class DoSFilter implements Filter
         }
         catch (InterruptedException e)
         {
-            LOG.ignore(e);
+            LOG.trace("IGNORED", e);
             response.sendError(getTooManyCode());
         }
         finally
@@ -498,14 +498,14 @@ public class DoSFilter implements Filter
             }
             catch (IllegalStateException ise)
             {
-                LOG.ignore(ise);
+                LOG.trace("IGNORED", ise);
                 // abort instead
                 response.sendError(-1);
             }
         }
         catch (Throwable x)
         {
-            LOG.info(x);
+            LOG.info("Failed to sendError", x);
         }
 
         handlingThread.interrupt();
@@ -749,7 +749,7 @@ public class DoSFilter implements Filter
         }
         catch (Exception x)
         {
-            LOG.ignore(x);
+            LOG.trace("IGNORED", x);
         }
     }
 

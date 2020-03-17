@@ -27,7 +27,7 @@ import org.eclipse.jetty.webapp.WebAppContext;
 public class TestAnnotation extends DiscoveredAnnotation
 {
     private List<TestAnnotation> applications;
-    
+
     public TestAnnotation(WebAppContext context, String className, Resource resource, List<TestAnnotation> applications)
     {
         super(context, className, resource);

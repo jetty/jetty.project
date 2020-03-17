@@ -30,8 +30,6 @@ import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
@@ -44,6 +42,8 @@ import org.eclipse.jetty.websocket.tests.CloseTrackingEndpoint;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
@@ -150,7 +150,7 @@ public class BadNetworkTest
 
     public static class ServerEndpoint implements WebSocketListener
     {
-        private static final Logger LOG = Log.getLogger(ClientCloseTest.ServerEndpoint.class);
+        private static final Logger LOG = LoggerFactory.getLogger(ClientCloseTest.ServerEndpoint.class);
         private Session session;
 
         @Override
@@ -175,7 +175,7 @@ public class BadNetworkTest
             }
             catch (IOException e)
             {
-                LOG.warn(e);
+                LOG.warn("Failed to send string", e);
             }
         }
 
@@ -195,7 +195,7 @@ public class BadNetworkTest
         {
             if (LOG.isDebugEnabled())
             {
-                LOG.debug(cause);
+                LOG.debug("ServerEndpoint error", cause);
             }
         }
     }

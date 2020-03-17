@@ -18,15 +18,6 @@
 
 package org.eclipse.jetty.http;
 
-import java.io.InputStream;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.Collections;
-import java.util.Enumeration;
-import java.util.EventListener;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.http.HttpCookie.SameSite;

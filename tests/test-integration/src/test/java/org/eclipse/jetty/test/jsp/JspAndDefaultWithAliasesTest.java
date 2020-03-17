@@ -35,13 +35,13 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -54,7 +54,7 @@ import static org.hamcrest.Matchers.not;
  */
 public class JspAndDefaultWithAliasesTest
 {
-    private static final Logger LOG = Log.getLogger(JspAndDefaultWithAliasesTest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(JspAndDefaultWithAliasesTest.class);
     private static Server server;
     private static URI serverURI;
 

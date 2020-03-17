@@ -47,14 +47,14 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.MathUtils;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.component.Dumpable;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Scheduler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpable
 {
-    private static final Logger LOG = Log.getLogger(HTTP2Stream.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HTTP2Stream.class);
 
     private final AutoLock lock = new AutoLock();
     private final Queue<DataEntry> dataQueue = new ArrayDeque<>();

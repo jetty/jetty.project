@@ -22,4 +22,5 @@ module org.eclipse.jetty.websocket.servlet
 
     requires transitive org.eclipse.jetty.servlet;
     requires transitive org.eclipse.jetty.websocket.core;
+    requires org.slf4j;
 }

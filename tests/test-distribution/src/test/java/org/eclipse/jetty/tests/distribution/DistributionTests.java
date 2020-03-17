@@ -385,8 +385,6 @@ public class DistributionTests extends AbstractDistributionTest
             Path logFile = distribution.getJettyBase().resolve("resources").resolve("jetty-logging.properties");
             try (BufferedWriter writer = Files.newBufferedWriter(logFile, StandardCharsets.UTF_8, StandardOpenOption.CREATE))
             {
-                writer.write("org.eclipse.jetty.util.log.class=org.eclipse.jetty.util.log.StdErrLog");
-                writer.newLine();
                 writer.write("org.eclipse.jetty.LEVEL=INFO");
             }
 

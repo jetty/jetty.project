@@ -28,8 +28,8 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Simple ping into this webapp to see if it is here.
@@ -38,7 +38,7 @@ import org.eclipse.jetty.util.log.Logger;
 @ManagedObject("Ping Servlet")
 public class PingServlet extends HttpServlet
 {
-    private static final Logger LOG = Log.getLogger(PingServlet.class);
+    private static final Logger LOG = LoggerFactory.getLogger(PingServlet.class);
 
     @Override
     public void init(ServletConfig config) throws ServletException

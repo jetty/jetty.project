@@ -53,9 +53,9 @@ import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.SharedBlockingCallback.Blocker;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Scheduler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * HttpChannel represents a single endpoint for HTTP semantic processing.
@@ -68,8 +68,8 @@ import org.eclipse.jetty.util.thread.Scheduler;
  */
 public class HttpChannel implements Runnable, HttpOutput.Interceptor
 {
-    public static Listener NOOP_LISTENER = new Listener(){};
-    private static final Logger LOG = Log.getLogger(HttpChannel.class);
+    public static Listener NOOP_LISTENER = new Listener() {};
+    private static final Logger LOG = LoggerFactory.getLogger(HttpChannel.class);
 
     private final AtomicLong _requests = new AtomicLong();
     private final Connector _connector;
@@ -512,7 +512,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             catch (Throwable failure)
             {
                 if ("org.eclipse.jetty.continuation.ContinuationThrowable".equals(failure.getClass().getName()))
-                    LOG.ignore(failure);
+                    LOG.trace("IGNORED", failure);
                 else
                     handleException(failure);
             }
@@ -542,7 +542,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         }
         catch (Throwable x)
         {
-            LOG.ignore(x);
+            LOG.trace("IGNORED", x);
             abort(x);
         }
         return false;
@@ -803,7 +803,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         }
         catch (IOException e)
         {
-            LOG.debug(e);
+            LOG.debug("Unable to send bad message response", e);
         }
         finally
         {
@@ -813,7 +813,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             }
             catch (Throwable e)
             {
-                LOG.debug(e);
+                LOG.debug("Unable to complete bad message", e);
                 abort(e);
             }
         }
@@ -872,7 +872,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         catch (Throwable failure)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug(failure);
+                LOG.debug("Unable to send response", failure);
             abort(failure);
             throw failure;
         }

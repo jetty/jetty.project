@@ -30,10 +30,10 @@ import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.Container;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.statistic.RateStatistic;
 import org.eclipse.jetty.util.thread.Scheduler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>A Listener that limits the rate at which new connections are accepted</p>
@@ -62,7 +62,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
 @ManagedObject
 public class AcceptRateLimit extends AbstractLifeCycle implements SelectorManager.AcceptListener, Runnable
 {
-    private static final Logger LOG = Log.getLogger(AcceptRateLimit.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AcceptRateLimit.class);
 
     private final Server _server;
     private final List<AbstractConnector> _connectors = new ArrayList<>();

@@ -29,9 +29,9 @@ import javax.websocket.Endpoint;
 import javax.websocket.EndpointConfig;
 import javax.websocket.Session;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.hamcrest.Matcher;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -61,7 +61,7 @@ public abstract class WSEndpointTracker extends Endpoint
 
     public WSEndpointTracker(String id)
     {
-        logger = Log.getLogger(this.getClass().getName() + "." + id);
+        logger = LoggerFactory.getLogger(this.getClass().getName() + "." + id);
         logger.debug("init");
     }
 

@@ -38,10 +38,10 @@ import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.Dumpable;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Inline Servlet Filter to capture WebSocket upgrade requests.
@@ -73,7 +73,7 @@ import org.eclipse.jetty.websocket.core.WebSocketComponents;
 @ManagedObject("WebSocket Upgrade Filter")
 public class WebSocketUpgradeFilter implements Filter, Dumpable
 {
-    private static final Logger LOG = Log.getLogger(WebSocketUpgradeFilter.class);
+    private static final Logger LOG = LoggerFactory.getLogger(WebSocketUpgradeFilter.class);
 
     private static FilterHolder getFilter(ServletContext servletContext)
     {

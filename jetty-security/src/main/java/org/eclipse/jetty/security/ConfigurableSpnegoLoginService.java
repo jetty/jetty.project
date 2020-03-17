@@ -36,14 +36,14 @@ import javax.servlet.http.HttpSession;
 import org.eclipse.jetty.security.authentication.AuthorizationService;
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.ietf.jgss.GSSContext;
 import org.ietf.jgss.GSSCredential;
 import org.ietf.jgss.GSSException;
 import org.ietf.jgss.GSSManager;
 import org.ietf.jgss.GSSName;
 import org.ietf.jgss.Oid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>A configurable (as opposed to using system properties) SPNEGO LoginService.</p>
@@ -58,7 +58,7 @@ import org.ietf.jgss.Oid;
  */
 public class ConfigurableSpnegoLoginService extends ContainerLifeCycle implements LoginService
 {
-    private static final Logger LOG = Log.getLogger(ConfigurableSpnegoLoginService.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ConfigurableSpnegoLoginService.class);
 
     private final GSSManager _gssManager = GSSManager.getInstance();
     private final String _realm;

@@ -24,12 +24,12 @@ import java.util.concurrent.Executor;
 import javax.net.ssl.SSLEngine;
 
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract class NegotiatingClientConnection extends AbstractConnection
 {
-    private static final Logger LOG = Log.getLogger(NegotiatingClientConnection.class);
+    private static final Logger LOG = LoggerFactory.getLogger(NegotiatingClientConnection.class);
 
     private final SSLEngine engine;
     private final ClientConnectionFactory connectionFactory;
@@ -108,7 +108,7 @@ public abstract class NegotiatingClientConnection extends AbstractConnection
         }
         catch (IOException x)
         {
-            LOG.debug(x);
+            LOG.debug("Unable to fill from endpoint", x);
             close();
             return -1;
         }
@@ -123,7 +123,7 @@ public abstract class NegotiatingClientConnection extends AbstractConnection
         }
         catch (Throwable x)
         {
-            LOG.debug(x);
+            LOG.debug("Unable to replace connection", x);
             close();
         }
     }

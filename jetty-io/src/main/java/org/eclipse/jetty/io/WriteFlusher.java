@@ -31,10 +31,10 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.Invocable.InvocationType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A Utility class to help implement {@link EndPoint#write(Callback, ByteBuffer...)} by calling
@@ -45,7 +45,7 @@ import org.eclipse.jetty.util.thread.Invocable.InvocationType;
  */
 public abstract class WriteFlusher
 {
-    private static final Logger LOG = Log.getLogger(WriteFlusher.class);
+    private static final Logger LOG = LoggerFactory.getLogger(WriteFlusher.class);
     private static final boolean DEBUG = LOG.isDebugEnabled(); // Easy for the compiler to remove the code if DEBUG==false
     private static final ByteBuffer[] EMPTY_BUFFERS = new ByteBuffer[]{BufferUtil.EMPTY_BUFFER};
     private static final EnumMap<StateType, Set<StateType>> __stateTransitions = new EnumMap<>(StateType.class);
@@ -325,7 +325,7 @@ public abstract class WriteFlusher
                 case IDLE:
                     for (Throwable t : suppressed)
                     {
-                        LOG.warn(t);
+                        LOG.warn("Failed Write Cause", t);
                     }
                     return;
 
@@ -489,7 +489,7 @@ public abstract class WriteFlusher
                     if (DEBUG)
                     {
                         LOG.debug("ignored: {} {}", cause, this);
-                        LOG.ignore(cause);
+                        LOG.trace("IGNORED", cause);
                     }
                     return false;
 

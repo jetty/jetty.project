@@ -22,12 +22,12 @@ import java.nio.ByteBuffer;
 import java.util.List;
 
 import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class RequestNotifier
 {
-    private static final Logger LOG = Log.getLogger(ResponseNotifier.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ResponseNotifier.class);
 
     private final HttpClient client;
 

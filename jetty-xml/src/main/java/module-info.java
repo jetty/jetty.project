@@ -24,6 +24,7 @@ module org.eclipse.jetty.xml
 
     requires transitive java.xml;
     requires transitive org.eclipse.jetty.util;
+    requires org.slf4j;
 
     uses ConfigurationProcessorFactory;
 }

@@ -35,6 +35,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -152,7 +153,7 @@ public class TestWebAppPropertyConverter
         assertEquals(true, webApp.isPersistTempDirectory());
         assertEquals(war.getAbsolutePath(), webApp.getWar());
         assertEquals(webXml.getAbsolutePath(), webApp.getDescriptor());
-        assertTrue(webApp.getBaseResource() instanceof ResourceCollection);        
+        assertThat(webApp.getBaseResource(), instanceOf(ResourceCollection.class));
         assertThat(webApp.getBaseResource().toString(), Matchers.containsString(Resource.newResource(base1).toString()));
         assertThat(webApp.getBaseResource().toString(), Matchers.containsString(Resource.newResource(base2).toString()));
     }

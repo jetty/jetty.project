@@ -25,13 +25,13 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Scheduler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
 {
-    private static final Logger LOG = Log.getLogger(AbstractEndPoint.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AbstractEndPoint.class);
 
     private final AtomicReference<State> _state = new AtomicReference<>(State.OPEN);
     private final long _created = System.currentTimeMillis();

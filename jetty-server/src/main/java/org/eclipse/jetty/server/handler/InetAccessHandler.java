@@ -34,8 +34,8 @@ import org.eclipse.jetty.util.IncludeExcludeSet;
 import org.eclipse.jetty.util.InetAddressPattern;
 import org.eclipse.jetty.util.InetAddressSet;
 import org.eclipse.jetty.util.component.DumpableCollection;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.eclipse.jetty.server.handler.InetAccessSet.AccessTuple;
 import static org.eclipse.jetty.server.handler.InetAccessSet.PatternTuple;
@@ -51,7 +51,7 @@ import static org.eclipse.jetty.server.handler.InetAccessSet.PatternTuple;
  */
 public class InetAccessHandler extends HandlerWrapper
 {
-    private static final Logger LOG = Log.getLogger(InetAccessHandler.class);
+    private static final Logger LOG = LoggerFactory.getLogger(InetAccessHandler.class);
 
     private final IncludeExcludeSet<PatternTuple, AccessTuple> _set = new IncludeExcludeSet<>(InetAccessSet.class);
 
@@ -97,11 +97,14 @@ public class InetAccessHandler extends HandlerWrapper
     public void include(String... patterns)
     {
         for (String pattern : patterns)
+        {
             include(pattern);
+        }
     }
 
     /**
      * Includes an InetAccess entry.
+     *
      * @param connectorName optional name of a connector to include.
      * @param addressPattern optional InetAddress pattern to include.
      * @param pathSpec optional pathSpec to include.
@@ -144,11 +147,14 @@ public class InetAccessHandler extends HandlerWrapper
     public void exclude(String... patterns)
     {
         for (String pattern : patterns)
+        {
             exclude(pattern);
+        }
     }
 
     /**
      * Excludes an InetAccess entry.
+     *
      * @param connectorName optional name of a connector to exclude.
      * @param addressPattern optional InetAddress pattern to exclude.
      * @param pathSpec optional pathSpec to exclude.
@@ -204,7 +210,9 @@ public class InetAccessHandler extends HandlerWrapper
     public void excludeConnectors(String... names)
     {
         for (String name : names)
+        {
             excludeConnector(name);
+        }
     }
 
     /**

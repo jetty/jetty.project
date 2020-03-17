@@ -24,12 +24,12 @@ import java.util.concurrent.CountDownLatch;
 
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class TestMessageHandler extends MessageHandler
 {
-    protected static final Logger LOG = Log.getLogger(TestMessageHandler.class);
+    protected static final Logger LOG = LoggerFactory.getLogger(TestMessageHandler.class);
 
     public CoreSession coreSession;
     public BlockingQueue<String> textMessages = new BlockingArrayQueue<>();

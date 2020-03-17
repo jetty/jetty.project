@@ -21,8 +21,8 @@ package org.eclipse.jetty.server;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A {@link HttpChannel.Listener} that holds a collection of
@@ -32,7 +32,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class HttpChannelListeners implements HttpChannel.Listener
 {
-    static final Logger LOG = Log.getLogger(HttpChannel.class);
+    static final Logger LOG = LoggerFactory.getLogger(HttpChannel.class);
     public static HttpChannel.Listener NOOP = new HttpChannel.Listener() {};
 
     private final NotifyRequest onRequestBegin;

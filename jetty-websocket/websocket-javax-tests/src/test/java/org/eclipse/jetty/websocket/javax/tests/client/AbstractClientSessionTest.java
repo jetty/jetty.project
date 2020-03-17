@@ -19,8 +19,8 @@
 package org.eclipse.jetty.websocket.javax.tests.client;
 
 import org.eclipse.jetty.websocket.core.CoreSession;
-import org.eclipse.jetty.websocket.javax.client.BasicClientEndpointConfig;
-import org.eclipse.jetty.websocket.javax.client.JavaxWebSocketClientContainer;
+import org.eclipse.jetty.websocket.javax.client.internal.BasicClientEndpointConfig;
+import org.eclipse.jetty.websocket.javax.client.internal.JavaxWebSocketClientContainer;
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketContainer;
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketFrameHandler;
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketSession;

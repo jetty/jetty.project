@@ -22,8 +22,8 @@ import java.util.Collection;
 
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
+import org.eclipse.jetty.websocket.api.WebSocketContainer;
 import org.eclipse.jetty.websocket.api.WriteCallback;
-import org.eclipse.jetty.websocket.common.WebSocketContainer;
 
 /**
  * On Message, return container information

@@ -28,8 +28,8 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.util.annotation.Name;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * HTTP2 Clear Text Connection factory.
@@ -46,7 +46,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class HTTP2CServerConnectionFactory extends HTTP2ServerConnectionFactory implements ConnectionFactory.Upgrading
 {
-    private static final Logger LOG = Log.getLogger(HTTP2CServerConnectionFactory.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HTTP2CServerConnectionFactory.class);
 
     public HTTP2CServerConnectionFactory(@Name("config") HttpConfiguration httpConfiguration)
     {

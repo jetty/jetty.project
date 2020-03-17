@@ -26,8 +26,8 @@ import javax.naming.NameParser;
 import javax.naming.NamingException;
 
 import org.eclipse.jetty.jndi.NamingUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * NamingEntry
@@ -42,7 +42,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public abstract class NamingEntry
 {
-    private static final Logger LOG = Log.getLogger(NamingEntry.class);
+    private static final Logger LOG = LoggerFactory.getLogger(NamingEntry.class);
     public static final String __contextName = "__"; //all NamingEntries stored in context called "__"
     protected final Object _scope;
     protected final String _jndiName;  //the name representing the object associated with the NamingEntry
@@ -115,7 +115,7 @@ public abstract class NamingEntry
         }
         catch (NamingException e)
         {
-            LOG.warn(e);
+            LOG.warn("Unable to unbind ENC", e);
         }
     }
 
@@ -134,7 +134,7 @@ public abstract class NamingEntry
         }
         catch (NamingException e)
         {
-            LOG.warn(e);
+            LOG.warn("Unable to release: {} and {}", _objectNameString, _namingEntryNameString, e);
         }
     }
 

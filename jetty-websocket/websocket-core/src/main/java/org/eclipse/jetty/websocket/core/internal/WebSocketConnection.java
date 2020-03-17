@@ -34,19 +34,19 @@ import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.Dumpable;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.websocket.core.Behavior;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.exception.WebSocketTimeoutException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Provides the implementation of {@link org.eclipse.jetty.io.Connection} that is suitable for WebSocket
  */
 public class WebSocketConnection extends AbstractConnection implements Connection.UpgradeTo, Dumpable, Runnable
 {
-    private static final Logger LOG = Log.getLogger(WebSocketConnection.class);
+    private static final Logger LOG = LoggerFactory.getLogger(WebSocketConnection.class);
 
     /**
      * Minimum size of a buffer is the determined to be what would be the maximum framing header size (not including payload)

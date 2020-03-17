@@ -31,14 +31,14 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.SocketAddressResolver;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -120,7 +120,7 @@ public class LivelockTest
 
         int requestRate = 5;
         long pause = 1000 / requestRate;
-        Logger clientLog = Log.getLogger("TESTClient");
+        Logger clientLog = LoggerFactory.getLogger("TESTClient");
         CountDownLatch latch = new CountDownLatch(count);
         for (int i = 0; i < count; ++i)
         {
@@ -133,9 +133,9 @@ public class LivelockTest
                     else
                     {
                         if (result.getRequestFailure() != null)
-                            clientLog.warn(result.getRequestFailure());
+                            clientLog.warn("Request Failure on {}", result, result.getRequestFailure());
                         if (result.getResponseFailure() != null)
-                            clientLog.warn(result.getResponseFailure());
+                            clientLog.warn("Response Failure on {}", result, result.getResponseFailure());
                     }
                 });
             sleep(pause);

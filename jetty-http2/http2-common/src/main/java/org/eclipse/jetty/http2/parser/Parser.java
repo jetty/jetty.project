@@ -36,8 +36,8 @@ import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.http2.hpack.HpackDecoder;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>The HTTP/2 protocol parser.</p>
@@ -46,7 +46,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class Parser
 {
-    private static final Logger LOG = Log.getLogger(Parser.class);
+    private static final Logger LOG = LoggerFactory.getLogger(Parser.class);
 
     private final ByteBufferPool byteBufferPool;
     private final Listener listener;
@@ -138,7 +138,7 @@ public class Parser
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug(x);
+                LOG.debug("Parse failed", x);
             connectionFailure(buffer, ErrorCode.PROTOCOL_ERROR, "parser_error");
         }
     }

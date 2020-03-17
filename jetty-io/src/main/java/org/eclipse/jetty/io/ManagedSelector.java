@@ -36,6 +36,7 @@ import java.util.Deque;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
@@ -47,11 +48,11 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ExecutionStrategy;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.strategy.EatWhatYouKill;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>{@link ManagedSelector} wraps a {@link Selector} simplifying non-blocking operations on channels.</p>
@@ -61,7 +62,7 @@ import org.eclipse.jetty.util.thread.strategy.EatWhatYouKill;
  */
 public class ManagedSelector extends ContainerLifeCycle implements Dumpable
 {
-    private static final Logger LOG = Log.getLogger(ManagedSelector.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ManagedSelector.class);
     private static final boolean FORCE_SELECT_NOW;
 
     static
@@ -302,7 +303,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         }
         catch (Throwable x)
         {
-            LOG.ignore(x);
+            LOG.trace("IGNORED", x);
             return -1;
         }
     }
@@ -315,7 +316,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         }
         catch (Throwable x)
         {
-            LOG.ignore(x);
+            LOG.trace("IGNORED", x);
             return -1;
         }
     }
@@ -434,7 +435,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                 }
                 catch (Throwable th)
                 {
-                    LOG.warn(th);
+                    LOG.warn("Cannot update selector {}", _selector, th);
                 }
             }
             _updateable.clear();
@@ -512,7 +513,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                 else
                 {
                     LOG.warn(x.toString());
-                    LOG.debug(x);
+                    LOG.debug("select() failure", x);
                 }
             }
             return false;
@@ -639,7 +640,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             }
             catch (InterruptedException x)
             {
-                LOG.ignore(x);
+                LOG.trace("IGNORED", x);
             }
             return keys;
         }
@@ -671,7 +672,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             catch (Throwable x)
             {
                 IO.close(_channel);
-                LOG.warn(x);
+                LOG.warn("Unable to register OP_ACCEPT on selector", x);
             }
         }
 
@@ -746,7 +747,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             {
                 IO.close(channel);
                 _selectorManager.onAcceptFailed(channel, x);
-                LOG.debug(x);
+                LOG.debug("Unable to register update for accept", x);
             }
         }
 
@@ -760,7 +761,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             }
             catch (Throwable x)
             {
-                LOG.debug(x);
+                LOG.debug("Unable to accept", x);
                 failed(x);
             }
         }
@@ -768,8 +769,8 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         protected void failed(Throwable failure)
         {
             IO.close(channel);
-            LOG.warn(String.valueOf(failure));
-            LOG.debug(failure);
+            LOG.warn("ManagedSelector#Accept failure : {}", Objects.toString(failure));
+            LOG.debug("ManagedSelector#Accept failure", failure);
             _selectorManager.onAcceptFailed(channel, failure);
         }
     }
@@ -934,8 +935,8 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             catch (Throwable failure)
             {
                 IO.close(_connect.channel);
-                LOG.warn(String.valueOf(failure));
-                LOG.debug(failure);
+                LOG.warn("ManagedSelector#CreateEndpoint failure : {}", Objects.toString(failure));
+                LOG.debug("ManagedSelector#CreateEndpoint failure", failure);
                 _connect.failed(failure);
             }
         }

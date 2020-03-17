@@ -53,8 +53,6 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlet.ServletMapping;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.webapp.AbstractConfiguration;
@@ -64,6 +62,8 @@ import org.eclipse.jetty.webapp.MetaInfConfiguration;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.webapp.WebInfConfiguration;
 import org.eclipse.jetty.xml.XmlAppendable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * QuickStartGeneratorConfiguration
@@ -77,7 +77,7 @@ import org.eclipse.jetty.xml.XmlAppendable;
  */
 public class QuickStartGeneratorConfiguration extends AbstractConfiguration
 {
-    private static final Logger LOG = Log.getLogger(QuickStartGeneratorConfiguration.class);
+    static final Logger LOG = LoggerFactory.getLogger(QuickStartGeneratorConfiguration.class);
     public static final String ORIGIN = "org.eclipse.jetty.originAttribute";
     public static final String DEFAULT_ORIGIN_ATTRIBUTE_NAME = "origin";
 

@@ -48,6 +48,7 @@ public class Modules implements Iterable<Module>
     private final List<Module> _modules = new ArrayList<>();
     private final Map<String, Module> _names = new HashMap<>();
     private final Map<String, Set<Module>> _provided = new HashMap<>();
+    private final Map<String, String> _providedDefaults = new HashMap<>();
     private final BaseHome _baseHome;
     private final StartArgs _args;
     private final Properties _deprecated = new Properties();
@@ -221,7 +222,22 @@ public class Modules implements Iterable<Module>
             _names.put(module.getName(), module);
             module.getProvides().forEach(n ->
             {
-                _provided.computeIfAbsent(n, k -> new HashSet<Module>()).add(module);
+                // Syntax can be :
+                // "<name>" - for a simple provider reference
+                // "<name>|default" - for a provider that is also the default implementation
+                String name = n;
+                boolean isDefaultProvider = false;
+                int idx = n.indexOf('|');
+                if (idx > 0)
+                {
+                    name = n.substring(0, idx);
+                    isDefaultProvider = n.substring(idx + 1).equalsIgnoreCase("default");
+                }
+                _provided.computeIfAbsent(name, k -> new HashSet<>()).add(module);
+                if (isDefaultProvider)
+                {
+                    _providedDefaults.computeIfAbsent(name, k -> module.getName());
+                }
             });
 
             return module;
@@ -285,6 +301,50 @@ public class Modules implements Iterable<Module>
         return enabled;
     }
 
+    public List<Module> getSortedAll()
+    {
+        List<Module> all = new ArrayList(_modules);
+
+        TopologicalSort<Module> sort = new TopologicalSort<>();
+        for (Module module : all)
+        {
+            Consumer<String> add = name ->
+            {
+                Module dependency = _names.get(name);
+                if (dependency != null)
+                    sort.addDependency(module, dependency);
+
+                Set<Module> provided = _provided.get(name);
+                if (provided != null)
+                    for (Module p : provided)
+                    {
+                        sort.addDependency(module, p);
+                    }
+            };
+            module.getDepends().forEach(add);
+            module.getOptional().forEach(add);
+        }
+
+        sort.sort(all);
+        return all;
+    }
+
+    public List<String> getSortedNames(List<String> enabledModules)
+    {
+        List<Module> all = getSortedAll();
+        List<String> order = new ArrayList<>();
+        for (Module module : all)
+        {
+            String name = module.getName();
+            if (enabledModules.contains(name))
+            {
+                order.add(name);
+            }
+        }
+
+        return order;
+    }
+
     /**
      * Enable a module
      *
@@ -305,11 +365,11 @@ public class Modules implements Iterable<Module>
 
     private void enable(Set<String> newlyEnabled, Module module, String enabledFrom, boolean transitive)
     {
-        StartLog.debug("enable %s from %s transitive=%b", module, enabledFrom, transitive);
+        StartLog.debug("Enable [%s] from [%s] transitive=%b", module, enabledFrom, transitive);
 
         if (newlyEnabled.contains(module.getName()))
         {
-            StartLog.debug("Cycle at %s", module);
+            StartLog.debug("Already enabled [%s] from %s", module.getName(), module.getEnableSources());
             return;
         }
 
@@ -330,14 +390,13 @@ public class Modules implements Iterable<Module>
                             throw new UsageException("Module %s provides %s, which is already provided by %s enabled in %s", module.getName(), name, p.getName(), p.getEnableSources());
                     }
                 }
-                ;
             }
         }
 
         // Enable the  module
         if (module.enable(enabledFrom, transitive))
         {
-            StartLog.debug("enabled %s", module.getName());
+            StartLog.debug("Enabled [%s]", module.getName());
             newlyEnabled.add(module.getName());
 
             // Expand module properties
@@ -358,7 +417,7 @@ public class Modules implements Iterable<Module>
         }
 
         // Process module dependencies (always processed as may be dynamic)
-        StartLog.debug("Enabled module %s depends on %s", module.getName(), module.getDepends());
+        StartLog.debug("Enabled module [%s] depends on %s", module.getName(), module.getDepends());
         for (String dependsOnRaw : module.getDepends())
         {
             boolean isRequired = Module.isRequiredDependency(dependsOnRaw);
@@ -368,7 +427,7 @@ public class Modules implements Iterable<Module>
             // Look for modules that provide that dependency
             Set<Module> providers = getAvailableProviders(dependentModule);
 
-            StartLog.debug("Module %s depends on %s provided by %s", module, dependentModule, providers);
+            StartLog.debug("Module [%s] depends on [%s] provided by %s", module, dependentModule, providers);
 
             // If there are no known providers of the module
             if (providers.isEmpty())
@@ -403,24 +462,46 @@ public class Modules implements Iterable<Module>
                 providers.stream().filter(m -> m.isEnabled() && !m.equals(module)).forEach(m -> enable(newlyEnabled, m, "transitive provider of " + dependentModule + " for " + module.getName(), true));
             else
             {
-                // Is there an obvious default?
-                Optional<Module> dftProvider = (providers.size() == 1)
-                    ? providers.stream().findFirst()
-                    : providers.stream().filter(m -> m.getName().equals(dependentModule)).findFirst();
+                Optional<Module> dftProvider = findDefaultProvider(providers, dependentModule);
 
                 if (dftProvider.isPresent())
+                {
+                    StartLog.debug("Using [%s] provider as default for [%s]", dftProvider.get(), dependentModule);
                     enable(newlyEnabled, dftProvider.get(), "transitive provider of " + dependentModule + " for " + module.getName(), true);
-                else if (StartLog.isDebugEnabled())
-                    StartLog.debug("Module %s requires a %s implementation from one of %s", module, dependentModule, providers);
+                }
             }
         }
+    }
+
+    private Optional<Module> findDefaultProvider(Set<Module> providers, String dependsOn)
+    {
+        // Is it obvious?
+        if (providers.size() == 1)
+            return providers.stream().findFirst();
+
+        // If more then one provider impl, is there one specified as "default"?
+        if (providers.size() > 1)
+        {
+            // Was it specified with [provides] "name|default" ?
+            String defaultProviderName = _providedDefaults.get(dependsOn);
+            if (defaultProviderName != null)
+            {
+                return providers.stream().filter(m -> m.getName().equals(defaultProviderName)).findFirst();
+            }
+
+            // Or does a module exist with the same name as the [provides] "name"
+            return providers.stream().filter(m -> m.getName().equals(dependsOn)).findFirst();
+        }
+
+        // No default provider
+        return Optional.empty();
     }
 
     private Set<Module> getAvailableProviders(String name)
     {
         // Get all available providers 
         Set<Module> providers = _provided.get(name);
-        StartLog.debug("Providers of %s are %s", name, providers);
+        StartLog.debug("Providers of [%s] are %s", name, providers);
         if (providers == null || providers.isEmpty())
             return Collections.emptySet();
 
@@ -455,7 +536,7 @@ public class Modules implements Iterable<Module>
             }
         }
 
-        StartLog.debug("Available providers of %s are %s", name, providers);
+        StartLog.debug("Available providers of [%s] are %s", name, providers);
         return providers;
     }
 
@@ -496,7 +577,7 @@ public class Modules implements Iterable<Module>
                     if (unsatisfied.length() > 0)
                         unsatisfied.append(',');
                     unsatisfied.append(m.getName());
-                    StartLog.error("Module %s requires a module providing %s from one of %s%n", m.getName(), d, providers);
+                    StartLog.error("Module [%s] requires a module providing [%s] from one of %s%n", m.getName(), d, providers);
                 }
             });
         });

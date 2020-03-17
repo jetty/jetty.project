@@ -27,8 +27,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
@@ -40,6 +38,8 @@ import org.eclipse.jetty.websocket.core.WebSocketTester;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -53,7 +53,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 public class WebSocketServerTest extends WebSocketTester
 {
-    private static Logger LOG = Log.getLogger(WebSocketServerTest.class);
+    private static Logger LOG = LoggerFactory.getLogger(WebSocketServerTest.class);
 
     private WebSocketServer server;
 

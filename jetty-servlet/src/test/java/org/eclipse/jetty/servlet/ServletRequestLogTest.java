@@ -50,13 +50,13 @@ import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static java.time.Duration.ofSeconds;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -68,7 +68,7 @@ import static org.hamcrest.Matchers.is;
 @Disabled
 public class ServletRequestLogTest
 {
-    private static final Logger LOG = Log.getLogger(ServletRequestLogTest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ServletRequestLogTest.class);
 
     public static class CaptureLog extends AbstractLifeCycle implements RequestLog
     {

@@ -24,6 +24,7 @@ module org.eclipse.jetty.security
     exports org.eclipse.jetty.security.authentication;
 
     requires transitive org.eclipse.jetty.server;
+    requires org.slf4j;
 
     // Only required if using JDBCLoginService.
     requires static java.sql;

@@ -39,8 +39,6 @@ import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.MultiReleaseJarFile;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassReader;
@@ -48,6 +46,8 @@ import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * AnnotationParser
@@ -69,7 +69,7 @@ import org.objectweb.asm.Opcodes;
  */
 public class AnnotationParser
 {
-    private static final Logger LOG = Log.getLogger(AnnotationParser.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AnnotationParser.class);
     protected static int ASM_OPCODE_VERSION = Opcodes.ASM7; //compatibility of api
     protected static String ASM_OPCODE_VERSION_STR = "ASM7";
 

@@ -25,12 +25,12 @@ import javax.websocket.DecodeException;
 import javax.websocket.Decoder;
 import javax.websocket.EndpointConfig;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class QuotesDecoder implements Decoder.TextStream<Quotes>
 {
-    private static final Logger LOG = Log.getLogger(QuotesDecoder.class);
+    private static final Logger LOG = LoggerFactory.getLogger(QuotesDecoder.class);
 
     @SuppressWarnings("RedundantThrows")
     @Override

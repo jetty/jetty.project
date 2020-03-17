@@ -26,18 +26,18 @@ import java.util.concurrent.CountDownLatch;
 
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 class WebSocketProxy
 {
-    protected static final Logger LOG = Log.getLogger(WebSocketProxy.class);
+    protected static final Logger LOG = LoggerFactory.getLogger(WebSocketProxy.class);
 
     enum State
     {

@@ -21,6 +21,7 @@ import org.eclipse.jetty.io.ssl.ALPNProcessor;
 
 module org.eclipse.jetty.alpn.java.server
 {
+    requires org.slf4j;
     requires transitive org.eclipse.jetty.alpn.server;
 
     provides ALPNProcessor.Server with JDK9ServerALPNProcessor;

@@ -39,8 +39,8 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.URIUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Dynamic Servlet Invoker.
@@ -67,7 +67,7 @@ import org.eclipse.jetty.util.log.Logger;
 @SuppressWarnings("serial")
 public class Invoker extends HttpServlet
 {
-    private static final Logger LOG = Log.getLogger(Invoker.class);
+    private static final Logger LOG = LoggerFactory.getLogger(Invoker.class);
 
     private ContextHandler _contextHandler;
     private ServletHandler _servletHandler;
@@ -194,7 +194,7 @@ public class Invoker extends HttpServlet
                     }
                     catch (Exception e)
                     {
-                        LOG.debug(e);
+                        LOG.debug("Unable to start {}", holder, e);
                         throw new UnavailableException(e.toString());
                     }
 
@@ -212,7 +212,7 @@ public class Invoker extends HttpServlet
                             }
                             catch (Exception e)
                             {
-                                LOG.ignore(e);
+                                LOG.trace("IGNORED", e);
                             }
 
                             LOG.warn("Dynamic servlet " + s +

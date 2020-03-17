@@ -18,12 +18,12 @@
 
 package org.eclipse.jetty.quickstart;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.webapp.Descriptor;
 import org.eclipse.jetty.webapp.IterativeDescriptorProcessor;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.xml.XmlParser;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * ExtraXmlDescriptorProcessor
@@ -33,7 +33,7 @@ import org.eclipse.jetty.xml.XmlParser;
 
 public class ExtraXmlDescriptorProcessor extends IterativeDescriptorProcessor
 {
-    private static final Logger LOG = Log.getLogger(ExtraXmlDescriptorProcessor.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ExtraXmlDescriptorProcessor.class);
 
     private final StringBuilder _buffer = new StringBuilder();
     private final boolean _showOrigin;

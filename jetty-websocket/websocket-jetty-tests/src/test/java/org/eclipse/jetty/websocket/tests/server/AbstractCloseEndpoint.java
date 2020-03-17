@@ -22,11 +22,11 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
 import org.hamcrest.Matcher;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -43,7 +43,7 @@ public abstract class AbstractCloseEndpoint extends WebSocketAdapter
 
     public AbstractCloseEndpoint()
     {
-        this.log = Log.getLogger(this.getClass().getName());
+        this.log = LoggerFactory.getLogger(this.getClass().getName());
     }
 
     @Override

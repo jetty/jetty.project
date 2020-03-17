@@ -76,7 +76,7 @@ public class TestResourceAnnotations
         AnnotationIntrospector parser = new AnnotationIntrospector(wac);
         ResourceAnnotationHandler handler = new ResourceAnnotationHandler(wac);
         parser.registerHandler(handler);
-        
+
         ResourceA resourceA = new ResourceA();
         ResourceB resourceB = new ResourceB();
         parser.introspect(resourceA, null);

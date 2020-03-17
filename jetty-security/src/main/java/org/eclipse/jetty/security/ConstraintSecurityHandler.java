@@ -47,9 +47,9 @@ import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.component.DumpableCollection;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.security.Constraint;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * ConstraintSecurityHandler
@@ -60,7 +60,7 @@ import org.eclipse.jetty.util.security.Constraint;
  */
 public class ConstraintSecurityHandler extends SecurityHandler implements ConstraintAware
 {
-    private static final Logger LOG = Log.getLogger(SecurityHandler.class); //use same as SecurityHandler
+    private static final Logger LOG = LoggerFactory.getLogger(SecurityHandler.class); //use same as SecurityHandler
 
     private static final String OMISSION_SUFFIX = ".omission";
     private static final String ALL_METHODS = "*";
@@ -744,12 +744,14 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         Set<String> paths = getPathsWithUncoveredHttpMethods();
         if (paths != null && !paths.isEmpty())
         {
+            ContextHandler.Context currentContext = ContextHandler.getCurrentContext();
+
             for (String p : paths)
             {
-                LOG.warn("{} has uncovered http methods for path: {}", ContextHandler.getCurrentContext(), p);
+                LOG.warn("{} has uncovered http methods for path: {}", currentContext, p);
             }
             if (LOG.isDebugEnabled())
-                LOG.debug(new Throwable());
+                LOG.debug("{} has uncovered http methods", currentContext, new Throwable());
             return true;
         }
         return false;

@@ -33,8 +33,8 @@ import java.util.NoSuchElementException;
 import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>A {@link ContentProvider} for files using JDK 7's {@code java.nio.file} APIs.</p>
@@ -46,7 +46,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class PathContentProvider extends AbstractTypedContentProvider
 {
-    private static final Logger LOG = Log.getLogger(PathContentProvider.class);
+    private static final Logger LOG = LoggerFactory.getLogger(PathContentProvider.class);
 
     private final Path filePath;
     private final long fileSize;
@@ -183,7 +183,7 @@ public class PathContentProvider extends AbstractTypedContentProvider
             }
             catch (Throwable x)
             {
-                LOG.ignore(x);
+                LOG.trace("IGNORED", x);
             }
         }
     }

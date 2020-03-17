@@ -28,8 +28,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
 import org.eclipse.jetty.util.ClassVisibilityChecker;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * SessionData
@@ -41,7 +41,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class SessionData implements Serializable
 {
-    private static final Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
+    private static final Logger LOG = LoggerFactory.getLogger(SessionData.class);
 
     private static final long serialVersionUID = 1L;
 

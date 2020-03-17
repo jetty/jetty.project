@@ -21,8 +21,6 @@ package org.eclipse.jetty.websocket.core.extensions;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.Behavior;
 import org.eclipse.jetty.websocket.core.Extension;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
@@ -35,6 +33,8 @@ import org.eclipse.jetty.websocket.core.internal.ExtensionStack;
 import org.eclipse.jetty.websocket.core.internal.IdentityExtension;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -42,7 +42,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ExtensionStackTest
 {
-    private static final Logger LOG = Log.getLogger(ExtensionStackTest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ExtensionStackTest.class);
     private static ExtensionStack stack;
 
     @BeforeAll

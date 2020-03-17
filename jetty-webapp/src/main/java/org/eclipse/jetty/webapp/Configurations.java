@@ -41,8 +41,8 @@ import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * An ordered list of {@link Configuration} instances.
@@ -65,7 +65,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class Configurations extends AbstractList<Configuration> implements Dumpable
 {
-    private static final Logger LOG = Log.getLogger(Configurations.class);
+    private static final Logger LOG = LoggerFactory.getLogger(Configurations.class);
 
     private static final List<Configuration> __known = new ArrayList<>();
     private static final List<Configuration> __unavailable = new ArrayList<>();

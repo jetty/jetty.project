@@ -40,15 +40,15 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * An HttpChannel customized to be transported over the HTTP/1 protocol
  */
 public class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandler, ComplianceViolation.Listener
 {
-    private static final Logger LOG = Log.getLogger(HttpChannelOverHttp.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HttpChannelOverHttp.class);
     private static final HttpField PREAMBLE_UPGRADE_H2C = new HttpField(HttpHeader.UPGRADE, "h2c");
     private final HttpFields _fields = new HttpFields();
     private final MetaData.Request _metadata = new MetaData.Request(_fields);
@@ -279,7 +279,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
         }
         catch (Exception e)
         {
-            LOG.ignore(e);
+            LOG.trace("IGNORED", e);
         }
 
         onBadMessage(failure);

@@ -31,9 +31,9 @@ import javax.websocket.OnError;
 import javax.websocket.OnOpen;
 import javax.websocket.Session;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.hamcrest.Matcher;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -90,7 +90,7 @@ public abstract class WSEventTracker
 
     public WSEventTracker(String id)
     {
-        logger = Log.getLogger(this.getClass().getName() + "." + id);
+        logger = LoggerFactory.getLogger(this.getClass().getName() + "." + id);
         logger.debug("init");
     }
 

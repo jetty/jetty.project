@@ -34,8 +34,8 @@ import org.eclipse.jetty.server.session.SessionData;
 import org.eclipse.jetty.server.session.SessionDataStore;
 import org.eclipse.jetty.server.session.UnreadableSessionDataException;
 import org.eclipse.jetty.util.annotation.ManagedObject;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Session data stored in Hazelcast
@@ -46,7 +46,7 @@ public class HazelcastSessionDataStore
     implements SessionDataStore
 {
 
-    private static final Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
+    private static final Logger LOG = LoggerFactory.getLogger(HazelcastSessionDataStore.class);
 
     private IMap<String, SessionData> sessionDataMap;
 

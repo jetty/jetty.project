@@ -33,8 +33,8 @@ import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.BufferingResponseListener;
 import org.eclipse.jetty.http.HttpMethod;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Utility class that handles HTTP redirects.
@@ -60,7 +60,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class HttpRedirector
 {
-    private static final Logger LOG = Log.getLogger(HttpRedirector.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HttpRedirector.class);
     private static final String SCHEME_REGEXP = "(^https?)";
     private static final String AUTHORITY_REGEXP = "([^/?#]+)";
     // The location may be relative so the scheme://authority part may be missing

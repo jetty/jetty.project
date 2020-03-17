@@ -22,15 +22,15 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * RunAsCollection
  */
 public class RunAsCollection
 {
-    private static final Logger LOG = Log.getLogger(RunAsCollection.class);
+    private static final Logger LOG = LoggerFactory.getLogger(RunAsCollection.class);
 
     public static final String RUNAS_COLLECTION = "org.eclipse.jetty.runAsCollection";
     private ConcurrentMap<String, RunAs> _runAsMap = new ConcurrentHashMap<String, RunAs>();//map of classname to run-as

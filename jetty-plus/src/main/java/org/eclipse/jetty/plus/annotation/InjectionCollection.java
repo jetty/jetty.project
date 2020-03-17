@@ -26,8 +26,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * InjectionCollection
@@ -39,7 +39,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class InjectionCollection
 {
-    private static final Logger LOG = Log.getLogger(InjectionCollection.class);
+    private static final Logger LOG = LoggerFactory.getLogger(InjectionCollection.class);
 
     public static final String INJECTION_COLLECTION = "org.eclipse.jetty.injectionCollection";
 

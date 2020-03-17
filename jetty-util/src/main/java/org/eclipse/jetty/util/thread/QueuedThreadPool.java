@@ -40,14 +40,14 @@ import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ThreadPool.SizedThreadPool;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @ManagedObject("A thread pool")
 public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactory, SizedThreadPool, Dumpable, TryExecutor
 {
-    private static final Logger LOG = Log.getLogger(QueuedThreadPool.class);
+    private static final Logger LOG = LoggerFactory.getLogger(QueuedThreadPool.class);
     private static Runnable NOOP = () ->
     {
     };
@@ -267,7 +267,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
                 }
                 catch (Throwable t)
                 {
-                    LOG.warn(t);
+                    LOG.warn("Unable to close job: " + job, t);
                 }
             }
             else if (job != NOOP)
@@ -950,11 +950,11 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
                     {
                         if (LOG.isDebugEnabled())
                             LOG.debug("interrupted {} in {}", job, QueuedThreadPool.this);
-                        LOG.ignore(e);
+                        LOG.trace("IGNORED", e);
                     }
                     catch (Throwable e)
                     {
-                        LOG.warn(e);
+                        LOG.warn("Job failed", e);
                     }
                     finally
                     {

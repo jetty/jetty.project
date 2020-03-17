@@ -21,15 +21,15 @@ package org.eclipse.jetty.plus.annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * PreDestroyCallback
  */
 public class PreDestroyCallback extends LifeCycleCallback
 {
-    private static final Logger LOG = Log.getLogger(PreDestroyCallback.class);
+    private static final Logger LOG = LoggerFactory.getLogger(PreDestroyCallback.class);
 
     /**
      * @param clazz the class object to be injected

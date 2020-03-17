@@ -31,9 +31,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Scheduler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>Creates {@link SocketAddress} instances, returning them through a {@link Promise}.</p>
@@ -107,7 +107,7 @@ public interface SocketAddressResolver
     @ManagedObject("The asynchronous address resolver")
     public static class Async implements SocketAddressResolver
     {
-        private static final Logger LOG = Log.getLogger(SocketAddressResolver.class);
+        private static final Logger LOG = LoggerFactory.getLogger(SocketAddressResolver.class);
 
         private final Executor executor;
         private final Scheduler scheduler;

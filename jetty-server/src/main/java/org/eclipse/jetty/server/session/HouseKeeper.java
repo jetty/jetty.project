@@ -24,10 +24,10 @@ import org.eclipse.jetty.server.SessionIdManager;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * HouseKeeper
@@ -37,7 +37,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
 @ManagedObject
 public class HouseKeeper extends AbstractLifeCycle
 {
-    private static final Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
+    private static final Logger LOG = LoggerFactory.getLogger(HouseKeeper.class);
 
     public static final long DEFAULT_PERIOD_MS = 1000L * 60 * 10;
     protected SessionIdManager _sessionIdManager;
@@ -252,7 +252,7 @@ public class HouseKeeper extends AbstractLifeCycle
                 }
                 catch (Exception e)
                 {
-                    LOG.warn(e);
+                    LOG.warn("Unable to scavenge", e);
                 }
             }
         }

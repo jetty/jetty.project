@@ -30,19 +30,19 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.AbstractExtension;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.WRITE;
 
 public class FrameCaptureExtension extends AbstractExtension
 {
-    private static final Logger LOG = Log.getLogger(FrameCaptureExtension.class);
+    private static final Logger LOG = LoggerFactory.getLogger(FrameCaptureExtension.class);
 
     private static final int BUFSIZE = 32768;
     private Generator generator;

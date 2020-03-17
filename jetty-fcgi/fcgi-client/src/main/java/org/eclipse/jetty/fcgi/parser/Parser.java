@@ -22,8 +22,8 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.fcgi.FCGI;
 import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>The FastCGI protocol exchanges <em>frames</em>.</p>
@@ -47,7 +47,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public abstract class Parser
 {
-    private static final Logger LOG = Log.getLogger(Parser.class);
+    private static final Logger LOG = LoggerFactory.getLogger(Parser.class);
 
     protected final HeaderParser headerParser = new HeaderParser();
     private State state = State.HEADER;

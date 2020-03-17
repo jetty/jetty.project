@@ -27,7 +27,7 @@ import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
 
 import org.eclipse.jetty.util.BlockingArrayQueue;
-import org.eclipse.jetty.websocket.javax.client.JavaxWebSocketClientContainer;
+import org.eclipse.jetty.websocket.javax.client.internal.JavaxWebSocketClientContainer;
 import org.eclipse.jetty.websocket.javax.tests.EventSocket;
 import org.eclipse.jetty.websocket.javax.tests.LocalServer;
 import org.junit.jupiter.api.AfterAll;

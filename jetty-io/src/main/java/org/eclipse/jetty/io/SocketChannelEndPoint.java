@@ -25,13 +25,13 @@ import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Scheduler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class SocketChannelEndPoint extends ChannelEndPoint
 {
-    private static final Logger LOG = Log.getLogger(SocketChannelEndPoint.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SocketChannelEndPoint.class);
     private final Socket _socket;
     private final InetSocketAddress _local;
     private final InetSocketAddress _remote;
@@ -77,7 +77,7 @@ public class SocketChannelEndPoint extends ChannelEndPoint
         }
         catch (IOException e)
         {
-            LOG.debug(e);
+            LOG.debug("Unable to shutdown output", e);
         }
     }
 }

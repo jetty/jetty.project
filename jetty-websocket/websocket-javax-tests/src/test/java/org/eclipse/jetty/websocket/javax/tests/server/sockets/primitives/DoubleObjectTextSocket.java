@@ -27,13 +27,13 @@ import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
 
 import org.eclipse.jetty.toolchain.test.StackUtils;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @ServerEndpoint("/echo/primitives/doubleobject")
 public class DoubleObjectTextSocket
 {
-    private static final Logger LOG = Log.getLogger(DoubleObjectTextSocket.class);
+    private static final Logger LOG = LoggerFactory.getLogger(DoubleObjectTextSocket.class);
 
     private Session session;
 

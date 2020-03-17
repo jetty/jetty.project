@@ -33,9 +33,9 @@ import org.eclipse.jetty.util.PathWatcher;
 import org.eclipse.jetty.util.PathWatcher.PathWatchEvent;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * JettyForkedChild
@@ -45,7 +45,7 @@ import org.eclipse.jetty.util.resource.Resource;
  */
 public class JettyForkedChild extends AbstractLifeCycle
 {
-    private static final Logger LOG = Log.getLogger(JettyForkedChild.class);
+    private static final Logger LOG = LoggerFactory.getLogger(JettyForkedChild.class);
     
     protected JettyEmbedder jetty;
     protected File tokenFile;

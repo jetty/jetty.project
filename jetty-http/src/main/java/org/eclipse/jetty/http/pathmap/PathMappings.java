@@ -32,8 +32,8 @@ import org.eclipse.jetty.util.Trie;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.Dumpable;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Path Mappings of PathSpec to Resource.
@@ -45,7 +45,7 @@ import org.eclipse.jetty.util.log.Logger;
 @ManagedObject("Path Mappings")
 public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
 {
-    private static final Logger LOG = Log.getLogger(PathMappings.class);
+    private static final Logger LOG = LoggerFactory.getLogger(PathMappings.class);
     private final Set<MappedResource<E>> _mappings = new TreeSet<>();
 
     private Trie<MappedResource<E>> _exactMap = new ArrayTernaryTrie<>(false);

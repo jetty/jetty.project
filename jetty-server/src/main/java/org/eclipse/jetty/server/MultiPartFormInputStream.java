@@ -45,8 +45,8 @@ import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * MultiPartInputStream
@@ -89,7 +89,7 @@ public class MultiPartFormInputStream
         DELETED
     }
 
-    private static final Logger LOG = Log.getLogger(MultiPartFormInputStream.class);
+    private static final Logger LOG = LoggerFactory.getLogger(MultiPartFormInputStream.class);
     private final MultiMap<Part> _parts = new MultiMap<>();
     private final InputStream _in;
     private final MultipartConfigElement _config;

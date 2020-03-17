@@ -36,12 +36,12 @@ import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpTransport;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class HttpChannelOverFCGI extends HttpChannel
 {
-    private static final Logger LOG = Log.getLogger(HttpChannelOverFCGI.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HttpChannelOverFCGI.class);
 
     private final HttpFields fields = new HttpFields();
     private final Dispatcher dispatcher;

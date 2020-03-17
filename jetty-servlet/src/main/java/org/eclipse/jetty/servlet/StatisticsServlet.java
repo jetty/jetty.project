@@ -38,12 +38,12 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.util.component.Container;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class StatisticsServlet extends HttpServlet
 {
-    private static final Logger LOG = Log.getLogger(StatisticsServlet.class);
+    private static final Logger LOG = LoggerFactory.getLogger(StatisticsServlet.class);
 
     boolean _restrictToLocalhost = true; // defaults to true
     private StatisticsHandler _statsHandler;

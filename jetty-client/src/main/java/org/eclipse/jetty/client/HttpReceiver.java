@@ -42,8 +42,8 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.MathUtils;
 import org.eclipse.jetty.util.component.Destroyable;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * {@link HttpReceiver} provides the abstract code to implement the various steps of the receive of HTTP responses.
@@ -72,7 +72,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public abstract class HttpReceiver
 {
-    protected static final Logger LOG = Log.getLogger(HttpReceiver.class);
+    protected static final Logger LOG = LoggerFactory.getLogger(HttpReceiver.class);
 
     private final AtomicReference<ResponseState> responseState = new AtomicReference<>(ResponseState.IDLE);
     private final HttpChannel channel;
@@ -286,7 +286,7 @@ public abstract class HttpReceiver
         catch (IOException x)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug(x);
+                LOG.debug("Unable to store cookies {} from {}", field, uri, x);
         }
     }
 

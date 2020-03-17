@@ -26,14 +26,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.core.internal.WebSocketConnection;
 import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
 import org.hamcrest.Matcher;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
@@ -42,7 +42,7 @@ import static org.hamcrest.Matchers.nullValue;
 
 public class CloseTrackingEndpoint extends WebSocketAdapter
 {
-    private static final Logger LOG = Log.getLogger(CloseTrackingEndpoint.class);
+    private static final Logger LOG = LoggerFactory.getLogger(CloseTrackingEndpoint.class);
 
     public int closeCode = -1;
     public String closeReason = null;

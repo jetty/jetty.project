@@ -21,12 +21,15 @@ package org.eclipse.jetty.websocket.core.client;
 import java.net.URL;
 
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.xml.XmlConfiguration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 class XmlHttpClientProvider implements HttpClientProvider
 {
+    private static final Logger LOG = LoggerFactory.getLogger(XmlHttpClientProvider.class);
+
     @Override
     public HttpClient newHttpClient()
     {
@@ -43,7 +46,7 @@ class XmlHttpClientProvider implements HttpClientProvider
         }
         catch (Throwable t)
         {
-            Log.getLogger(XmlHttpClientProvider.class).warn("Unable to load: " + resource, t);
+            LOG.warn("Unable to load: {}", resource, t);
         }
 
         return null;

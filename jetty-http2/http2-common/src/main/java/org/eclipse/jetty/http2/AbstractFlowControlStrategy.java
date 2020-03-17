@@ -30,13 +30,13 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.component.Dumpable;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @ManagedObject
 public abstract class AbstractFlowControlStrategy implements FlowControlStrategy, Dumpable
 {
-    protected static final Logger LOG = Log.getLogger(FlowControlStrategy.class);
+    protected static final Logger LOG = LoggerFactory.getLogger(FlowControlStrategy.class);
 
     private final AtomicLong sessionStall = new AtomicLong();
     private final AtomicLong sessionStallTime = new AtomicLong();

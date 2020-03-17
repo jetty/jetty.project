@@ -26,8 +26,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import org.eclipse.jetty.util.Uptime;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Basic implementation of the life cycle interface for components.
@@ -35,7 +35,7 @@ import org.eclipse.jetty.util.log.Logger;
 @ManagedObject("Abstract Implementation of LifeCycle")
 public abstract class AbstractLifeCycle implements LifeCycle
 {
-    private static final Logger LOG = Log.getLogger(AbstractLifeCycle.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AbstractLifeCycle.class);
 
     enum State
     {
@@ -99,7 +99,7 @@ public abstract class AbstractLifeCycle implements LifeCycle
                         catch (StopException e)
                         {
                             if (LOG.isDebugEnabled())
-                                LOG.debug(e);
+                                LOG.debug("Unable to stop", e);
                             setStopping();
                             doStop();
                             setStopped();

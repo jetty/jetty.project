@@ -28,13 +28,13 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.pathmap.PathSpecSet;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class WebSocketUpgradeHandler extends HandlerWrapper
 {
-    static final Logger LOG = Log.getLogger(WebSocketUpgradeHandler.class);
+    private static final Logger LOG = LoggerFactory.getLogger(WebSocketUpgradeHandler.class);
     final Handshaker handshaker = Handshaker.newInstance();
     final PathSpecSet paths = new PathSpecSet();
     final WebSocketNegotiator negotiator;

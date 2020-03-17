@@ -33,7 +33,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.GenericServlet;
 import javax.servlet.MultipartConfigElement;
 import javax.servlet.Servlet;
@@ -59,8 +58,8 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Servlet Instance and Context Holder.
@@ -73,7 +72,7 @@ import org.eclipse.jetty.util.log.Logger;
 @ManagedObject("Servlet Holder")
 public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope, Comparable<ServletHolder>
 {
-    private static final Logger LOG = Log.getLogger(ServletHolder.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ServletHolder.class);
     private int _initOrder = -1;
     private boolean _initOnStartup = false;
     private Map<String, String> _roleMap;
@@ -365,7 +364,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
             makeUnavailable(ex);
             if (getServletHandler().isStartWithUnavailable())
             {
-                LOG.ignore(ex);
+                LOG.trace("IGNORED", ex);
                 return;
             }
             else
@@ -382,7 +381,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
             makeUnavailable(ex);
             if (getServletHandler().isStartWithUnavailable())
             {
-                LOG.ignore(ex);
+                LOG.trace("IGNORED", ex);
                 return;
             }
             else
@@ -443,7 +442,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
                 }
                 catch (Exception e)
                 {
-                    LOG.warn(e);
+                    LOG.warn("Unable to destroy servlet {}", servlet, e);
                 }
             }
             _config = null;
@@ -595,7 +594,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         {
             makeUnavailable(e);
             if (getServletHandler().isStartWithUnavailable())
-                LOG.warn(e);
+                LOG.warn("{} is marked as Unavailable", this, e);
             else
                 throw e;
         }
@@ -793,8 +792,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
             String tmp = StringUtil.replace(jsp, '.', '_');
             if (LOG.isDebugEnabled())
             {
-                LOG.warn("JspUtil.makeJavaIdentifier failed for jsp " + jsp + " using " + tmp + " instead");
-                LOG.warn(e);
+                LOG.warn("JspUtil.makeJavaIdentifier failed for jsp {} using {} instead", jsp, tmp, e);
             }
             return tmp;
         }
@@ -830,8 +828,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
             tmp = (".".equals(tmp) ? "" : tmp);
             if (LOG.isDebugEnabled())
             {
-                LOG.warn("JspUtil.makeJavaPackage failed for " + jsp + " using " + tmp + " instead");
-                LOG.warn(e);
+                LOG.warn("JspUtil.makeJavaPackage failed for {} using {} instead", jsp, tmp, e);
             }
             return tmp;
         }
@@ -1014,13 +1011,14 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
             {
                 while (_stack.size() > 0)
                 {
+                    Servlet servlet = _stack.pop();
                     try
                     {
-                        (_stack.pop()).destroy();
+                        servlet.destroy();
                     }
                     catch (Exception e)
                     {
-                        LOG.warn(e);
+                        LOG.warn("Unable to destroy servlet {}", servlet, e);
                     }
                 }
             }
@@ -1209,7 +1207,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
                 }
                 catch (Throwable th)
                 {
-                    LOG.warn(th);
+                    LOG.warn("Unable to destroy {}", _servlet, th);
                 }
             }
         }
