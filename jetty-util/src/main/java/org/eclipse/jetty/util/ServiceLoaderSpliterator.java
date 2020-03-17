@@ -36,16 +36,16 @@ class ServiceLoaderSpliterator<T> implements Spliterator<ServiceLoader.Provider<
     @Override
     public boolean tryAdvance(Consumer<? super ServiceLoader.Provider<T>> action)
     {
-        Provider<T> next = new Provider<>();
+        ServiceProvider<T> next;
         try
         {
             if (!iterator.hasNext())
                 return false;
-            next.setServiceProvider(iterator.next());
+            next = new ServiceProvider<>(iterator.next());
         }
         catch (Throwable t)
         {
-            next.setError(t);
+            next = new ServiceProvider<>(t);
         }
 
         action.accept(next);
@@ -70,18 +70,25 @@ class ServiceLoaderSpliterator<T> implements Spliterator<ServiceLoader.Provider<
         return Spliterator.ORDERED;
     }
 
-    private static class Provider<T> implements ServiceLoader.Provider<T>
+    /**
+     * An implementation of the {@link ServiceLoader.Provider} which contains either an instance of the service or
+     * an error to be thrown when someone calls {@link #get()}.
+     * @param <T> the service type.
+     */
+    private static class ServiceProvider<T> implements ServiceLoader.Provider<T>
     {
-        private T serviceProvider;
-        private Throwable error;
+        private final T service;
+        private final Throwable error;
 
-        public void setServiceProvider(T serviceProvider)
+        public ServiceProvider(T service)
         {
-            this.serviceProvider = serviceProvider;
+            this.service = service;
+            this.error = null;
         }
 
-        public void setError(Throwable error)
+        public ServiceProvider(Throwable error)
         {
+            this.service = null;
             this.error = error;
         }
 
@@ -95,9 +102,9 @@ class ServiceLoaderSpliterator<T> implements Spliterator<ServiceLoader.Provider<
         @Override
         public T get()
         {
-            if (error != null)
+            if (service == null)
                 throw new ServiceConfigurationError("", error);
-            return serviceProvider;
+            return service;
         }
     }
 }

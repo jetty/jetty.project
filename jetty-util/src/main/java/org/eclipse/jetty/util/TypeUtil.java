@@ -767,7 +767,7 @@ public class TypeUtil
      * @param provider The service provider to instantiate.
      * @return a stream of the loaded service providers.
      */
-    public static <T> Stream<T> providerMap(ServiceLoader.Provider<T> provider)
+    public static <T> Stream<T> mapToService(ServiceLoader.Provider<T> provider)
     {
         try
         {
@@ -782,14 +782,14 @@ public class TypeUtil
 
     /**
      * Shortcut method combining {@link #serviceProviderStream(ServiceLoader)} with
-     * with {@link #providerMap(ServiceLoader.Provider)} using {@link Stream#flatMap(Function)}.
+     * with {@link #mapToService(ServiceLoader.Provider)} using {@link Stream#flatMap(Function)}.
      * @param serviceLoader the ServiceLoader instance to use.
      * @param <T> the type of the service to load.
      * @return a stream of the service provider type which will not throw {@link ServiceConfigurationError}.
      */
     public static <T> Stream<T> serviceStream(ServiceLoader<T> serviceLoader)
     {
-        return serviceProviderStream(serviceLoader).flatMap(TypeUtil::providerMap);
+        return serviceProviderStream(serviceLoader).flatMap(TypeUtil::mapToService);
     }
 
     /**
